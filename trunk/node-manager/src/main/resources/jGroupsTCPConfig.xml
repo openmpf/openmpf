@@ -1,0 +1,88 @@
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ NOTICE                                                                    ~
+  ~                                                                           ~
+  ~ This software (or technical data) was produced for the U.S. Government    ~
+  ~ under contract, and is subject to the Rights in Data-General Clause       ~
+  ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
+  ~                                                                           ~
+  ~ Copyright 2016 The MITRE Corporation. All Rights Reserved.                ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright 2016 The MITRE Corporation                                      ~
+  ~                                                                           ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
+  ~ you may not use this file except in compliance with the License.          ~
+  ~ You may obtain a copy of the License at                                   ~
+  ~                                                                           ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0                             ~
+  ~                                                                           ~
+  ~ Unless required by applicable law or agreed to in writing, software       ~
+  ~ distributed under the License is distributed on an "AS IS" BASIS,         ~
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  ~
+  ~ See the License for the specific language governing permissions and       ~
+  ~ limitations under the License.                                            ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<!--
+    TCP based stack, with flow control and message bundling. This is usually used when IP
+    multicasting cannot be used in a network, e.g. because it is disabled (routers discard multicast).
+    Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
+    -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]
+    author: Bela Ban
+-->
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.5.xsd">
+    <TCP bind_port="${jgroups.tcp.port:7800}"
+    	 bind_addr="${jgroups.tcp.address:localhost.localdomain}"
+         recv_buf_size="${tcp.recv_buf_size:5M}"
+         send_buf_size="${tcp.send_buf_size:640K}"
+         max_bundle_size="64K"
+         max_bundle_timeout="30"
+         use_send_queues="true"
+         sock_conn_timeout="300"
+         enable_diagnostics="false"
+
+         timer_type="new3"
+         timer.min_threads="4"
+         timer.max_threads="10"
+         timer.keep_alive_time="3000"
+         timer.queue_max_size="500"
+
+         thread_pool.enabled="false"
+         thread_pool.min_threads="1"
+         thread_pool.max_threads="10"
+         thread_pool.keep_alive_time="5000"
+         thread_pool.queue_enabled="true"
+         thread_pool.queue_max_size="10000"
+         thread_pool.rejection_policy="discard"
+
+         oob_thread_pool.enabled="true"
+         oob_thread_pool.min_threads="1"
+         oob_thread_pool.max_threads="8"
+         oob_thread_pool.keep_alive_time="5000"
+         oob_thread_pool.queue_enabled="false"
+         oob_thread_pool.queue_max_size="100"
+         oob_thread_pool.rejection_policy="discard"/>
+    <!-- initial_hosts should include the names of all possible hosts (machines) in our cluster -->
+    <TCPPING initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800]}"
+             port_range="10"/>
+    <MERGE2  min_interval="10000"
+             max_interval="30000"/>
+    <FD_SOCK/>
+    <FD timeout="7000" max_tries="3" />
+    <VERIFY_SUSPECT timeout="1500"  />
+    <BARRIER />
+    <pbcast.NAKACK2 use_mcast_xmit="false"
+                    discard_delivered_msgs="false"/>
+    <UNICAST3 />
+    <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
+                   max_bytes="4M"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="7000" view_bundling="true"/>
+    <MFC max_credits="2M"
+         min_threshold="0.4"/>
+    <FRAG2 frag_size="60K"  />
+    <!--RSVP resend_interval="2000" timeout="10000"/-->
+    <pbcast.STATE_TRANSFER/>
+</config>

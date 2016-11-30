@@ -1,0 +1,111 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2016 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+#file: roles/child/tasks/main.yml
+
+#TODO: Update the default ansible-managed placeholder to not include timestamp
+#      to prevent templates from changing when not desired
+
+- name: Ensure MPF directory structure
+  include: directories.yml
+
+- name: Validate existence of path validation file
+  stat: 
+    path={{ mpf_home }}/share/validate.install
+  register: validation
+  become: yes
+  become_user: mpf
+
+- name: Validate presence of MPF shared storage
+  fail: msg="Invalid MPF Configuration. Shared storage not found at /opt/mpf/share"
+  when: not validation.stat.exists
+
+- name: Configure MPF profile.d script
+  template: src=mpf-profile.sh.j2 dest=/etc/profile.d/mpf.sh
+  notify: Restart node-manager
+  tags: configure
+  when: "'mpf-master' not in group_names"
+
+- name: Ensure MPF data directory exists
+  file: path={{ mpf_home }}/data state=directory owner=mpf group=mpf
+
+- name: Check for component package descriptor
+  find:
+    paths="{{ mpf_home }}/manage/repo/files/"
+    pattern="mpf-*-package.json"
+  delegate_to: "{{ master_host }}"
+  register: mpf_package_descriptor
+  failed_when: mpf_package_descriptor.matched <= 0 or mpf_package_descriptor.matched > 1
+
+- name: Load component package descriptor
+  include_vars: "{{ mpf_package_descriptor.files[0].path }}"
+  delegate_to: "{{ master_host }}"
+
+- name: Install MPF Node Manager
+  yum: name=mpf-nodeManager state=latest update_cache=yes disablerepo=* enablerepo=mpf-repo
+  register: nm
+  environment:
+    no_proxy: "{{repo_host}}"
+
+- name: Install MPF Media Markup Component
+  yum: name=mpf-markup state=latest update_cache=yes disablerepo=* enablerepo=mpf-repo
+  register: markup
+
+- name: Install MPF Protocol Buffers
+  yum: name=mpf-protobuf state=latest update_cache=yes disablerepo=* enablerepo=mpf-repo
+  register: protobuf
+
+- name: Ensure MPF directory structure
+  include: directories.yml
+  
+- name: Install MPF Components
+  include: mpfcomponents.yml
+
+- name: Install MPF Java Component API
+  yum: name=mpf-java-component-api state=latest update_cache=yes disablerepo=* enablerepo=mpf-repo
+  register: java_component_api
+
+- name: Install MPF Java Component Executor
+  yum: name=mpf-java-component-executor state=latest update_cache=yes disablerepo=* enablerepo=mpf-repo
+  register: java_component_executor
+
+- name: Install MPF Speech Detection Component
+  yum: name=mpf-speech-detection state=latest update_cache=yes disablerepo=* enablerepo=mpf-repo
+  register: speech
+
+- name: Install MPF Video Overlay
+  yum: >
+    name=mpf-video-overlay
+    state=latest
+    update_cache=yes
+    disablerepo=*
+    enablerepo=mpf-repo
+  register: overlay
+
+- name: Run ldconfig
+  command: ldconfig
+
+- name: Start Node Manager and enable on startup
+  service: name=node-manager enabled=yes state=started

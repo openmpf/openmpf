@@ -1,0 +1,24 @@
+[submodule "mpf_components/CPP/detection/caffeComponent"]
+	path = mpf_components/CPP/detection/caffeComponent
+	url = https://github.com/openmpf/openmpf-caffe-component.git
+	branch = master
+[submodule "mpf_components/CPP/detection/dlibFaceComponent"]
+	path = mpf_components/CPP/detection/dlibFaceComponent
+	url = https://github.com/openmpf/openmpf-dlib-face-component.git
+	branch = master
+[submodule "mpf_components/CPP/detection/motionComponents"]
+	path = mpf_components/CPP/detection/motionComponents
+	url = https://github.com/openmpf/openmpf-motion-components.git
+	branch = master
+[submodule "mpf_components/CPP/detection/ocvPersonComponent"]
+	path = mpf_components/CPP/detection/ocvPersonComponent
+	url = https://github.com/openmpf/openmpf-ocv-person-component.git
+	branch = master
+[submodule "mpf_components/CPP/detection/ocvFaceComponent"]
+	path = mpf_components/CPP/detection/ocvFaceComponent
+	url = https://github.com/openmpf/openmpf-ocv-face-component.git
+	branch = master
+[submodule "mpf_components/CPP/detection/oalprTextComponent"]
+	path = mpf_components/CPP/detection/oalprTextComponent
+	url = https://github.com/openmpf/openmpf-oalpr-text-component.git
+	branch = master

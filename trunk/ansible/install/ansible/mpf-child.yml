@@ -1,0 +1,138 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2016 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+---
+# file: mpf-child.yml
+- hosts: mpf-child
+  roles:
+    - child
+  tags: configure, compdeploy, compreg
+  remote_user: mpf
+  become: yes
+  vars:
+    - deployment_config: "{{ lookup('file', '/opt/mpf/share/deployment_config.json') | from_json }}"
+    - plugins_dir: "{{ mpf_home }}/plugins"
+  pre_tasks:
+    - name: Validate Number of MPF Master hosts
+      fail: msg="The number of Master hosts must be exactly 1!"
+      when: num_master_hosts | int != 1
+
+    - name: Add localhost to repo inventory
+      add_host: name={{ inventory_hostname }} groups=mpf-repo
+
+  post_tasks:
+
+    - name: Get MPF component descriptors
+      set_fact:
+          mpf_component_descriptors: "{{ mpf_component_descriptors|default([]) + [lookup('file', '{{ mpf_home }}/plugins/{{ item }}')|from_json] }}"
+      with_items: "{{ mpf_descriptor_paths | default([]) }}"
+      delegate_to: "{{ master_host }}"
+      run_once: true
+
+    - name: Get external component descriptors
+      set_fact:
+          ext_component_descriptors: "{{ ext_component_descriptors|default([]) + [lookup('file', '{{ mpf_home }}/plugins/{{ item }}')|from_json] }}"
+      with_items: "{{ descriptor_paths | default([]) }}"
+      delegate_to: "{{ master_host }}"
+      run_once: true
+
+    - name: Check for existence of keystore file
+      stat:
+        path="{{ deployment_config.https.keystore_file }}"
+      when: deployment_config.https.install == "y"
+      register: keystore_filest
+      delegate_to: "{{ master_host }}"
+      run_once: true
+
+    - name: Set external component registration information
+      set_fact:
+        register_components: "{% if deployment_config.https.install == 'y' and keystore_filest.stat.exists == False %}False{% else %}True{% endif %}"
+        component_uri: "{% if deployment_config.https.install == 'y' %}https://{{ master_host }}:8443/workflow-manager/rest/component/registerViaFile?filePath={% else %}http://{{ master_host }}:8080/workflow-manager/rest/component/registerViaFile?filePath={% endif %}"
+      delegate_to: "{{ master_host }}"
+      run_once: true
+
+    - name: Run external component setup
+      include: "{{ plugins_dir }}/{{ item.componentName }}/{{ item.setupFile }}"
+      with_items: "{{ ext_component_descriptors | default([]) }}"
+      when: item.setupFile is defined and ext_component_descriptors is defined and register_components == True
+
+    - name: Run mpf component setup
+      include: "{{ plugins_dir }}/{{ item.componentName }}/{{ item.setupFile }}"
+      with_items: "{{ mpf_component_descriptors | default([]) }}"
+      when: item.setupFile is defined and mpf_component_descriptors is defined
+
+    - name: Register external components
+      uri:
+        url: "{{ component_uri }}{{ mpf_home }}/plugins/{{ item }}"
+        method: GET
+        follow_redirects: all
+        force_basic_auth: yes
+        user: "admin"
+        password: "{{ admin_wfm_pw }}"
+        status_code: 200
+        return_content: yes
+        timeout: 150
+        validate_certs: no
+      environment:
+        no_proxy: "{{ master_host }}"
+      with_items: "{{ descriptor_paths | default([]) }}"
+      delegate_to: "{{ master_host }}"
+      run_once: true
+      when: register_components == True
+
+    - name: Populate components.json with registered external components
+      command: "python {{ mpf_home }}/manage/ansible/roles/master/files/popvalues.py {{ mpf_home }} {{ item[1].componentName }} {{ mpf_home }}/share/components/{{ item[0].files[0].path | basename }}"
+      args:
+        chdir: "{{ mpf_home }}/share/components"
+      with_nested:
+        - "{{ external_component_filepaths.results }}"
+        - "{{ deployment_config.external_component }}"
+      when: "'{{ item[1].register }}' == 'y' and '{{ item[1].componentName | lower}}' in '{{ item[0].files[0].path | basename | lower }}'"
+      delegate_to: "{{ master_host }}"
+      run_once: true
+
+    - name: Download unregistered external component archives to upload path
+      get_url:
+        url="http://{{ repo_host }}/repo/extComponents/{{ item[0].files[0].path | basename }}"
+        dest="{{ mpf_home }}/share/components/{{ item[0].files[0].path | basename }}"
+        use_proxy=no
+        timeout=30
+      with_nested:
+        - "{{ external_component_filepaths.results }}"
+        - "{{ deployment_config.external_component }}"
+      when: "'{{ item[1].register }}' == 'n' and '{{ item[1].componentName | lower }}' in '{{ item[0].files[0].path | basename | lower }}'"
+      delegate_to: "{{ master_host }}"
+      run_once: true
+
+    - name: Set unregistered external components to uploaded state
+      command: "python {{ mpf_home }}/manage/ansible/roles/master/files/extcomponentuploaded.py {{ mpf_home }} {{ item[1].componentName }} {{ mpf_home }}/share/components/{{ item[0].files[0].path | basename }}"
+      args:
+        chdir: "{{ mpf_home }}/share/components"
+      with_nested:
+        - "{{ external_component_filepaths.results }}"
+        - "{{ deployment_config.external_component }}"
+      when: "'{{ item[1].register }}' == 'n' and '{{ item[1].componentName | lower }}' in '{{ item[0].files[0].path | basename | lower }}' and '{{ item[1].componentState }}'!= 'REGISTERED'"
+      delegate_to: "{{ master_host }}"
+      run_once: true

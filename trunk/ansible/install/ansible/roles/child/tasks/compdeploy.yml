@@ -1,0 +1,166 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2016 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+---
+#file: roles/child/tasks/compdeploy.yml
+#FAILED_PLUGINS_DIR_NOT_FOUND_ERROR - $MPF_HOME/plugins was not found
+#FAILED_COMPONENT_TOP_LEVEL_DIR_NOT_FOUND_ERROR - No top level directory was found in the component archive
+#FAILED_MULTIPLE_COMPONENT_TOP_LEVEL_DIR_FOUND_ERROR - More than 1 top level directory was found in the component archive
+#FAILED_DUPLICATE_ERROR - A top level directory with the same name already exists in $MPF_HOME/plugins
+#FAILED_EXTRACTION_ERROR - The component extraction has failed for some reason
+#FAILED_COMPONENT_DESCRIPTOR_ERROR - The component descriptor was not found or is not readable
+
+- hosts: mpf-child
+  tasks:
+    - name: Set component directories
+      set_fact:
+        plugins_dir: "{{ lookup('env','MPF_HOME') }}/plugins"
+        component_upload_dir: "{{ lookup('env','MPF_HOME') }}/share/components/"
+
+    - name: Ensure MPF plugins directory exists
+      stat:
+        path="{{ plugins_dir }}"
+      register: pluginst
+
+    - name: Fail if the plugins directory does not exist
+      fail:
+        msg="FAILED_PLUGINS_DIR_NOT_FOUND_ERROR PATH={{ plugins_dir }}"
+      when: pluginst.stat.exists == False
+
+    - name: Ensure MPF plugins directory exists
+      file:
+        path="{{ plugins_dir }}"
+        state=directory
+      register: pluginst
+
+      #Get the component path from passed argument
+    - name: Get the path to the component
+      find:
+        paths="{{ component_upload_dir }}"
+        patterns="{{ uploaded_component }}"
+        recurse=no
+      register: component_archives
+      run_once: true
+
+    - name: Get the contents of the component archive
+      shell: tar -tf {{ component_archives.files[0].path }}
+      register: component_contents
+
+    - name: Set component top level directory regex pattern
+      set_fact:
+        component_tld_regex: "^([a-zA-Z0-9_-]+)([\\/])$"
+
+    - name: Get the component top level directory
+      set_fact:
+        component_tld: "{{ component_tld|default([])|union([{'tld': item}]) }}"
+      when: "{{ item | match(component_tld_regex) }}"
+      with_items: "{{ component_contents.stdout_lines }}"
+      register: tld_r
+
+    - name: fail task component tld not found
+      fail:
+        msg="FAILED_COMPONENT_TOP_LEVEL_DIR_NOT_FOUND_ERROR SOURCE={{ component_contents.stdout_lines }}"
+      when: component_tld is not defined
+
+    - name: fail task component multiple tld found
+      fail:
+        msg="FAILED_MULTIPLE_COMPONENT_TOP_LEVEL_DIR_FOUND_ERROR SOURCE={{ component_tld }}"
+      when: component_tld|length > 1
+
+    - set_fact:
+        component_tld: "{{ component_tld[0].tld }}"
+
+    - name: Check for existing component directory at component tld
+      stat:
+        path="{{ plugins_dir }}/{{ component_tld }}"
+      register: component_tld_st
+
+    # fail the task when the component tld already exists
+    # the msg will get sent to stdout
+    - name: fail task dupe
+      fail:
+        msg="FAILED_DUPLICATE_ERROR PATH={{ plugins_dir }}/{{ component_tld }} ARCHIVE={{ uploaded_component }}"
+      when: component_tld_st.stat.exists == True
+
+    #Ansible can natively handle gzip, xz, bzip2, and uncompressed tars
+    #Extract components to $MPF_HOME/plugins/
+    - name: Extract the component archive
+      unarchive:
+        src="{{ item.path }}"
+        dest="{{ plugins_dir }}"
+        copy=no
+        list_files=true
+        mode=0755
+      with_items: "{{ component_archives.files }}"
+      when: pluginst is defined and component_archives > 0
+      register: component_paths
+
+    - name: fail task extraction
+      fail:
+        msg="FAILED_EXTRACTION_ERROR SOURCE={{ component_archives.files[0].path }} DEST={{ plugins_dir }}/{{ component_tld }}"
+      when: component_paths is undefined
+
+    - name: Get component descriptor path
+      find:
+        paths="{{ plugins_dir }}/{{ component_tld }}/descriptor"
+        patterns="*.json"
+        recurse=no
+      register: component_descriptor
+      run_once: true
+
+    - name: Check that component descriptor is readable
+      stat:
+        path="{{ component_descriptor.files[0].path }}"
+      register: descriptorst
+
+    - name: fail task component descriptor not readable
+      fail:
+        msg="FAILED_COMPONENT_DESCRIPTOR_ERROR SOURCE={{ component_descriptor.files[0].path }}"
+      when: descriptorst.stat.exists == False
+
+    - name: Load external component descriptor
+      set_fact:
+          ext_component_descriptor: "{{ lookup('file', '{{ component_descriptor.files[0].path }}')|from_json }}"
+
+    - name: fail task could not load component descriptor file
+      fail:
+        msg="FAILED_COULD_NOT_LOAD_COMPONENT_DESCRIPTOR_FILE PATH={{ component_descriptor.files[0].path }}')|from_json }}"
+      when: ext_component_descriptor is not defined
+
+    - name: Run external component pre-registration setup
+      include: "{{ plugins_dir }}/{{ component_tld }}/{{ item.setupFile }}"
+      when: item.setupFile is defined
+      with_items:
+        - "{{ ext_component_descriptor }}"
+      register: pre_reg_setup
+
+    - name: fail task could not run component pre registration setup playbook
+      fail:
+        msg="FAILED_COULD_RUN_COMPNENT_PRE_REG_SETUP PATH={{ plugins_dir }}/{{ component_tld }}/{{ item.setupFile }}"
+      when: pre_reg_setup is not defined
+
+    - name: Send the component descriptor path to stdout
+      debug:
+        msg="COMPONENT_DESCRIPTOR_PATH={{ component_descriptor.files[0].path }}"

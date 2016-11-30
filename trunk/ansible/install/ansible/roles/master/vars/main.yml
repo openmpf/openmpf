@@ -1,0 +1,42 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2016 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+---
+#file: roles/master/vars/main.yml
+mpf_properties: /opt/apache-tomcat/webapps/workflow-manager/WEB-INF/classes/properties/mpf.properties
+mpf_custom_properties: /opt/apache-tomcat/webapps/workflow-manager/WEB-INF/classes/properties/mpf-custom.properties
+mpf_home: "/opt/mpf"
+master_host: "{{ hostvars[groups['mpf-master'][0]]['inventory_hostname'] }}"
+mpf_version: 0.9.0
+first_child_host: "{{ hostvars[groups['mpf-child'][0]]['inventory_hostname'] }}"
+num_child_hosts: "{{ groups['mpf-child'] | length }}"
+wfm_war: workflow-manager-develop-343.war
+copyright_only_checksum: b0227fd8c7c91b39be37ff2e7a426638
+tmp: /tmp/
+tomcat_version: 7.0.72
+tomcat_home: /opt/apache-tomcat
+activemq_version: 5.13.0
+activemq_home: /opt/apache-activemq
+mpf_admin_scripts: "mpf-admin-scripts-{{ mpf_version }}.tar.gz"

@@ -1,0 +1,91 @@
+// NOTICE
+//
+// This software (or technical data) was produced for the U.S. Government
+// under contract, and is subject to the Rights in Data-General Clause
+// 52.227-14, Alt. IV (DEC 2007).
+//
+// Copyright 2016 The MITRE Corporation. All Rights Reserved.
+
+
+// Copyright 2016 The MITRE Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package org.mitre.mpf.wfm.buffers;
+
+option java_outer_classname = "Markup";
+
+enum MediaType {
+    UNKNOWN = 0;
+    VIDEO = 1;
+    IMAGE = 2;
+    AUDIO = 3;
+}
+
+message MarkupRequest {
+    required int32 media_index                           = 1; // The index of the media which is being marked up.
+    required int64 media_id                              = 2; // The id of the media which is being marked up.
+    required int64 request_id                            = 3; // The sequential id of this request.
+    required MediaType media_type                        = 4; // The type of media
+    required string source_uri                           = 5; // The URI of the source media file.
+    required string destination_uri                      = 6; // The URI of the file which should be created by this request.
+    repeated BoundingBoxMapEntry map_entries             = 7; // The collection of bounding boxes which must be written.
+    repeated MarkupRequestMetadataEntry metadata_entries = 8; // The collection of arbitrary key-value pairs.
+
+    required int32 task_index         = 501; // The index of the stage which produced this request.
+    required int32 action_index       = 502; // The index of the action within the stage which produced this request.
+}
+
+message BoundingBoxMapEntry {
+    required int32 frame_number       = 1; // The 1-based frame number on which the box will appear.
+    required BoundingBox bounding_box = 2; // The specification of the box.
+}
+
+message MarkupRequestMetadataEntry {
+    required string key = 1;
+    optional string value = 2 [default = ""];
+}
+
+message BoundingBox {
+    required int32 x          = 1; // The x-coordinate of the bounding box relative the top-left corner of the image (positive x values move right from this corner).
+    required int32 y          = 2; // The y-coordinate of the bounding box relative the top-left corner of the image (positive y values move down from this corner).
+    required int32 width      = 3; // The width of the bounding box.
+    required int32 height     = 4; // The height of the bounding box.
+    required int32 color_argb = 5; // See below.
+
+    // The color has a long where the bits of the long are set according to this diagram:
+    //
+    // +------+---+---+---+---+---+---+---+---+
+    // | BYTE | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 |
+    // +------+---+---+---+---+---+---+---+---+
+    //        | ALPHA |  RED  | GREEN |  BLUE |
+    //        +-------+-------+-------+-------+
+    //
+}
+
+message MarkupResponse {
+    required int32 media_index        = 1; // The index of the media in the job's media collection.
+    required int64 media_id           = 2; // The media_id of the corresponding MarkupRequest.
+    required int64 request_id         = 3; // The request_id of the corresponding MarkupRequest.
+    required bool has_error           = 4; // A flag indicating if an exception was encountered. This must be set correctly for upstream processes to make sense of the result.
+    optional string error_message     = 5; // The serialized representation of the exception.
+    optional string output_file_uri   = 6; // The URI of the path.
+    optional int64 request_timestamp  = 7; // The timestamp when the request was received.
+    optional int64 time_processing    = 8; // The number of milliseconds spent processing the request.
+    optional string error_stack_trace = 9; // The stack trace associated with the exception.
+
+    repeated MarkupRequestMetadataEntry metadata_entries = 10; // A collection of String key-value pairs to which arbitrary metadata elements may be added.
+
+    required int32 task_index         = 501; // The index of the stage which produced this request.
+    required int32 action_index       = 502; // The index of the action within the stage which produced this request.
+}

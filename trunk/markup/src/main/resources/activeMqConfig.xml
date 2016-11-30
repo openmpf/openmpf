@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ NOTICE                                                                    ~
+  ~                                                                           ~
+  ~ This software (or technical data) was produced for the U.S. Government    ~
+  ~ under contract, and is subject to the Rights in Data-General Clause       ~
+  ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
+  ~                                                                           ~
+  ~ Copyright 2016 The MITRE Corporation. All Rights Reserved.                ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright 2016 The MITRE Corporation                                      ~
+  ~                                                                           ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
+  ~ you may not use this file except in compliance with the License.          ~
+  ~ You may obtain a copy of the License at                                   ~
+  ~                                                                           ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0                             ~
+  ~                                                                           ~
+  ~ Unless required by applicable law or agreed to in writing, software       ~
+  ~ distributed under the License is distributed on an "AS IS" BASIS,         ~
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  ~
+  ~ See the License for the specific language governing permissions and       ~
+  ~ limitations under the License.                                            ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+         http://www.springframework.org/schema/util  http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <bean id="jmsFactory" class="org.springframework.jms.connection.CachingConnectionFactory">
+        <property name="targetConnectionFactory">
+            <bean class="org.apache.activemq.ActiveMQConnectionFactory">
+                <property name="brokerURL">
+                    <value>#{T(org.mitre.mpf.markup.MarkupMain).ACTIVEMQHOST}</value>
+                </property>
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="markupRequest" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg value="MPF.MARKUP_MARKUPCV_REQUEST"/>
+    </bean>
+
+    <bean id="markupRequestTemplate" class="org.springframework.jms.core.JmsTemplate">
+        <property name="connectionFactory" ref="jmsFactory"/>
+        <property name="defaultDestination" ref="markupRequest"/>
+        <property name="sessionTransacted" value="true"/>
+    </bean>
+
+    <bean id="markupRequestContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+        <property name="connectionFactory" ref="jmsFactory"/>
+        <property name="destination" ref="markupRequest"/>
+        <property name="messageListener" ref="markupRequestConsumer"/>
+        <property name="sessionTransacted" value="true"/>
+        <property name="autoStartup" value="true" />
+        <property name="concurrentConsumers" value="1"/>
+        <property name="maxConcurrentConsumers" value="1"/>
+    </bean>
+
+    <bean id="markupResponse" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg value="MARKUP_GENERIC_OCV_RESPONSE"/>
+    </bean>
+
+    <bean id="markupResponseTemplate" class="org.springframework.jms.core.JmsTemplate">
+        <property name="connectionFactory" ref="jmsFactory"/>
+        <property name="defaultDestination" ref="markupResponse"/>
+        <property name="sessionTransacted" value="true"/>
+    </bean>
+</beans>

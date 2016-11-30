@@ -1,0 +1,542 @@
+/******************************************************************************
+ * NOTICE                                                                     *
+ *                                                                            *
+ * This software (or technical data) was produced for the U.S. Government     *
+ * under contract, and is subject to the Rights in Data-General Clause        *
+ * 52.227-14, Alt. IV (DEC 2007).                                             *
+ *                                                                            *
+ * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ ******************************************************************************/
+
+/******************************************************************************
+ * Copyright 2016 The MITRE Corporation                                       *
+ *                                                                            *
+ * Licensed under the Apache License, Version 2.0 (the "License");            *
+ * you may not use this file except in compliance with the License.           *
+ * You may obtain a copy of the License at                                    *
+ *                                                                            *
+ *    http://www.apache.org/licenses/LICENSE-2.0                              *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the License is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ ******************************************************************************/
+.arrow-up-col {
+    float: left;
+}
+
+.abstractMediaCellHeader {
+	background-color: #B0B0B0;
+	font-weight: bold;
+}
+
+.abstractMediaCell {
+	background-color: #F8F8F8;
+}
+
+.arrow-up {
+    float: right;
+	width: 0; 
+	height: 0;  
+	border-left: 15px solid transparent;
+	border-right: 15px solid transparent;
+	border-bottom: 15px solid blue;
+}
+
+.arrow-down {
+    float: right;
+	
+	width: 0; 
+	height: 0; 
+	border-left: 15px solid transparent;
+	border-right: 15px solid transparent;
+	
+	border-top: 15px solid green;
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 100%;
+  }
+}
+
+.error-message {
+    color: #B80000;
+}
+
+/* custom file BROWSE button */
+.btn-file {
+    position: relative;
+    overflow: hidden;
+}
+.btn-file input[type=file] {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 100%;
+    min-height: 100%;
+    font-size: 100px;
+    text-align: right;
+    filter: alpha(opacity=0);
+    opacity: 0;
+    outline: none;
+    background: white;
+    cursor: inherit;
+    display: block;
+}
+
+.navbar-header  {
+    padding-left: 15px;
+}
+
+.navbar-brand  {
+    font-weight: bold;
+}
+
+.sidebar {
+  margin-top: 0px;
+}
+
+#content {
+    padding-top: 50px;
+    padding-left: 280px;
+    padding-right: 25px;
+}
+
+.table thead>tr>th, .table tbody>tr>th, .table tfoot>tr>th, .table thead>tr>td, .table tbody>tr>td, .table tfoot>tr>td {
+    padding:2px;
+    font-size:small;
+}
+
+h1 {
+    padding-bottom: 5px;
+}
+
+.spinner-active{
+	cursor:progress;
+}
+
+.custom-enter,
+.custom-move {
+  transition: 1s;
+  position:relative;
+  background-color: #915608;
+}
+
+/* update table created from ng-repeate on change */
+.custom-enter {
+  left:-10px;
+  opacity:0;
+}
+.custom-enter.custom-enter-active {
+  left:0;
+  opacity:1;
+}
+
+.custom-leave {
+  left:0;
+  opacity:1;
+}
+.custom-leave.custom-leave-active {
+  left:-10px;
+  opacity:0;
+}
+
+.custom-move {
+  opacity:0.5;
+  background-color: #915608;
+}
+.custom-move.custom-move-active {
+  opacity:1;
+  background-color: #915608;
+}
+
+
+.ng-modal-overlay {
+  /* A dark translucent div that covers the whole screen */
+  position:absolute;
+  z-index:9999;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background-color:#000000;
+  opacity: 0.8;
+}
+.ng-modal-dialog {
+  /* A centered div above the overlay with a box shadow. */
+  z-index:10000;
+  position: absolute;
+  width: 50%; /* Default */
+
+  /* Center the dialog */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  -webkit-transform: translate(-50%, -50%);
+  -moz-transform: translate(-50%, -50%);
+
+  background-color: #fff;
+  box-shadow: 4px 4px 80px #000;
+}
+.ng-modal-dialog-content {
+  padding:10px;
+  text-align: left;
+}
+.ng-modal-close {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  padding: 5px;
+  cursor: pointer;
+  font-size: 120%;
+  display: inline-block;
+  font-weight: bold;
+  font-family: 'arial', 'sans-serif';
+}
+
+.media-thumb{
+    height:60px;
+}
+
+.server-media-panel{
+    height: 100%;
+    overflow: auto;
+}
+
+div.server-media .panel{
+    height:450px;
+}
+div.server-media .panel-body{
+    height:400px;
+    overflow-y:auto;
+}
+
+#viewNodeModal{
+    height:100%;
+}
+
+html, body {
+    height: 100%;
+    margin: 0px;
+}
+.container {
+    height: 100%;
+    padding:0px;
+}
+
+
+/* intelligently wrap words so long text don't go out of bounds or disappear in narrow columns */
+/* from https://css-tricks.com/snippets/css/prevent-long-urls-from-breaking-out-of-container/ */
+.smart-wrap {
+    /* These are technically the same, but use both */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    -ms-word-break: break-all;
+    word-break: break-word;
+    /* Adds a hyphen where the word breaks, if supported */
+    -ms-hyphens: auto;
+    -moz-hyphens: auto;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+}
+
+/*------------------------- Admin Properties page ------------------------*/
+#mpfPropertiesTable {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.labelCol {
+    width:25%;
+}
+
+.valueCol {
+    width:75%;
+}
+
+.resetCol {
+     width:5.5em;
+}
+
+.admin-properties-table  tbody > tr > td, .table tfoot > tr > td {
+    border-top: 1px solid #eee;
+}
+
+.notificationNeedsServerRestart {
+    color: blue;
+}
+
+.labelNeedsServerRestart {
+    color: blue !important;
+    font-weight: bold;
+}
+
+.valueNeedsServerRestart {
+    color: blue !important;
+    border-color: blue;
+    backgound-color: #9999EE;
+    font-weight: bold;
+}
+
+.serverNeedsRestartIcon {
+    font-family: 'Glyphicons Halflings';
+    color: blue !important;
+    font-weight: normal;
+    padding: 0px 2px 0px 1px;
+}
+
+.formlabel {
+    color: #505050;
+    text-align: left;
+}
+
+.formlabelChanged {
+    color: #ab5d05 !important;
+    font-weight: bold;
+}
+
+.forminput {
+    width: 99%;
+    margin: 3px;
+    border: 1px solid #ccc;
+    padding: 3px 2px 3px 5px;
+    color: black;
+}
+
+.valuechanged {
+    border-color: #ab5d05;
+    font-weight: bold;
+    color: #ab5d05 !important;
+    background-color: #ffedd7;
+}
+
+.valueChangedIcon {
+    font-family: 'Glyphicons Halflings';
+    padding: 0px 2px 0px 1px;
+    color: #ab5d05;
+}
+
+.actionbutton {
+    width: 5.5em;
+    font-weight: bold;
+    margin: 2px 10px 2px 0px;
+}
+
+
+div.dataTables_filter {
+    text-align: left;
+    display:inline;
+    padding-left:5px;
+}
+
+.dataTables_filter input{
+    width:50%;
+}
+
+div.dataTables_length {
+    text-align: left;
+    display:inline;
+}
+
+table.dataTable.stripe tbody tr.odd, table.dataTable.display tbody tr.odd {
+    background-color: #F9F9F9;
+}
+
+div.dataTables_scrollBody thead th,
+div.dataTables_scrollBody thead td{
+    line-height:0;
+    opacity:0.0;
+    width:0px;
+    height:0px;
+}
+
+div.dt-buttons{
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 0px;
+}
+div.dt-buttons a{
+    margin-right: 3px;
+}
+
+#table-panel .panel-body {
+    height: calc(100vh - 230px);
+    overflow-y: auto;
+}
+
+.jobPriorityCell{
+    text-align:center;
+}
+.jobProgressPctCell{
+    text-align:center;
+}
+.jobButtons{
+    padding-right:8px;
+}
+
+table.dataTable thead > tr > th{
+    padding:2px;
+}
+
+#jobTable_wrapper a{
+    display: inline-block;
+    padding: 6px 12px;
+    margin-bottom: 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.42857143;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    -ms-touch-action: manipulation;
+    touch-action: manipulation;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-image: none;
+    border-radius: 4px;
+}
+
+#jobTable_wrapper button.dt-button, div.dt-button, a.dt-button{
+    color: #333;
+    background-color: #FFF;
+    border-color: #CCC;
+}
+#jobTable_wrapper button.dt-button:active:not(.disabled), button.dt-button.active:not(.disabled), div.dt-button:active:not(.disabled), div.dt-button.active:not(.disabled), a.dt-button:active:not(.disabled), a.dt-button.active:not(.disabled){
+    background-color: #5cb85c;
+    border-color: #4cae4c;
+}
+#jobTable_wrapper div.dt-buttons{
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 20px;
+}
+
+#jobTable_wrapper div.dt-buttons a{
+    margin-right: 0px;
+}
+
+#jobTable_wrapper a:first-child{
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+}
+#jobTable_wrapper a:last-child {
+    border-bottom-left-radius: 0px;
+    border-top-left-radius: 0px;
+}
+#jobTable_wrapper button.dt-button, div.dt-button, a.dt-button{
+    margin-right:0;
+}
+
+.license {
+    margin-bottom: 5em;
+}
+
+@media (min-width: 980px) {
+    #fileListWrap {
+        border-right: 2px solid #333;
+        border-left: 2px solid #333;
+    }
+    .columndiv {
+        height: 100%;
+    }
+}
+
+@media (max-width: 980px) {
+    .columndiv {
+        height:auto;
+    }
+}
+
+#selected_file_list_wrapper div.dt-buttons {
+    margin-right: 5px;
+}
+
+.treeview .list-group-item {
+    padding: 5px 5px 5px 2px;
+    white-space: nowrap;
+}
+
+#jobTable_wrapper .btn-session.active:hover,
+#jobTable_wrapper .btn-all.active:hover {
+    background-color: #47a447;
+    border-color: #398439;
+}
+
+#markupsTable_wrapper button.dt-button, #markupsTable_wrapper div.dt-button, #markupsTable_wrapper a.dt-button{
+    color: #FFF;
+    background-color: #ED9C28;
+    border-color: #D58512;
+}
+#markupsTable_wrapper button.dt-button:active:not(.disabled), #markupsTable_wrapper button.dt-button.active:not(.disabled), #markupsTable_wrapper div.dt-button:active:not(.disabled), #markupsTable_wrapper div.dt-button.active:not(.disabled), #markupsTable_wrapper a.dt-button:active:not(.disabled), #markupsTable_wrapper a.dt-button.active:not(.disabled){
+    background-color: #ED9C28;
+    border-color: #D58512;
+}
+#markupsTable_wrapper button.dt-button, #markupsTable_wrapper div.dt-button, #markupsTable_wrapper a.dt-button{
+    margin-right:15px;
+}
+#markupsTable_wrapper div.dt-buttons{
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right:5px;
+}
+
+#breadcrumb{
+    overflow:auto;
+}
+
+.panel-footer {
+    padding: 10px 15px;
+    padding-top: 5px;
+    padding-right: 15px;
+    padding-bottom: 5px;
+    padding-left: 15px;
+}
+
+.fill {
+    min-height: 100%;
+    height: 100%;
+}
+
+#directoryListDiv{
+    height:94%;
+    overflow:auto;
+}
+
+#directoryTreeview ul{
+    display:inline-block;
+}
+#directoryTreeview ul li{
+    white-space:nowrap;
+}
+
+.dropzone .dz-preview .dz-details,
+.dropzone-previews .dz-preview .dz-details {
+    height:auto;
+}
+
+#dropzone-preview {
+    width: 100%;
+    max-height: 500px;
+    overflow: auto;
+}
+
+#treeview-checkable {
+    max-height: 500px;
+    overflow: auto;
+}
+
+.panel-heading {
+    padding: 5px 15px;
+}
+
+
+

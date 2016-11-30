@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ NOTICE                                                                    ~
+  ~                                                                           ~
+  ~ This software (or technical data) was produced for the U.S. Government    ~
+  ~ under contract, and is subject to the Rights in Data-General Clause       ~
+  ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
+  ~                                                                           ~
+  ~ Copyright 2016 The MITRE Corporation. All Rights Reserved.                ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright 2016 The MITRE Corporation                                      ~
+  ~                                                                           ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
+  ~ you may not use this file except in compliance with the License.          ~
+  ~ You may obtain a copy of the License at                                   ~
+  ~                                                                           ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0                             ~
+  ~                                                                           ~
+  ~ Unless required by applicable law or agreed to in writing, software       ~
+  ~ distributed under the License is distributed on an "AS IS" BASIS,         ~
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  ~
+  ~ See the License for the specific language governing permissions and       ~
+  ~ limitations under the License.                                            ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<pipelines>
+    <pipeline name="DEFAULT_EXTRACTION_FACE_OCV_WITH_MOTION_PREPROCESSOR_AND_MARKUP_PIPELINE">
+        <description>Performs motion preprocessing followed by OCV face detection and markup on the input media.</description>
+        <task-refs>
+            <task-ref name="PREPROCESSOR_MOTION_MOG_TASK" />
+            <task-ref name="DEFAULT_EXTRACTION_FACE_OCV_TASK" />
+            <task-ref name="DEFAULT_MARKUP_GENERIC_OCV_TASK" />
+        </task-refs>
+    </pipeline>
+
+    <pipeline name="DEFAULT_EXTRACTION_SPEECH_SPHINX_PIPELINE">
+        <description>Performs speech detection and transcription on input media.</description>
+        <task-refs>
+            <task-ref name="DEFAULT_EXTRACTION_SPEECH_SPHINX_TASK" />
+        </task-refs>
+    </pipeline>
+
+    <pipeline name="DEFAULT_EXTRACTION_TEXT_OALPR_PIPELINE">
+        <description>Performs license plate text detection and transcription on the input media.</description>
+        <task-refs>
+            <task-ref name="DEFAULT_EXTRACTION_TEXT_OALPR_TASK" />
+        </task-refs>
+    </pipeline>
+
+    <pipeline name="DEFAULT_EXTRACTION_PERSON_OCV_PIPELINE">
+        <description>Performs OpenCV-based person detection on the input media.</description>
+        <task-refs>
+            <task-ref name="DEFAULT_EXTRACTION_PERSON_OCV_TASK" />
+        </task-refs>
+    </pipeline>
+
+    <pipeline name="DEFAULT_EXTRACTION_MOTION_MOG_PIPELINE">
+        <description>Performs motion detection on the input media. This pipeline will produce a large number of detections.</description>
+        <task-refs>
+            <task-ref name="DEFAULT_EXTRACTION_MOTION_MOG_TASK" />
+        </task-refs>
+    </pipeline>
+
+    <pipeline name="TRACKING_EXTRACTION_MOTION_MOG_PIPELINE">
+        <description>Executes the MOG motion extraction tracking task.</description>
+        <task-refs>
+            <task-ref name="TRACKING_EXTRACTION_MOTION_MOG_TASK" />
+        </task-refs>
+    </pipeline>
+
+    <pipeline name="PREPROCESSING_MOTION_EXTRACTION_MOTION_MOG_PIPELINE">
+        <description>Performs motion preprocessing which identifies the regions in a media where motion is present.</description>
+        <task-refs>
+            <task-ref name="PREPROCESSING_MOTION_EXTRACTION_MOTION_MOG_TASK" />
+        </task-refs>
+    </pipeline>
+    <pipeline name="DEFAULT_EXTRACTION_FACE_OCV_WITH_MARKUP_PIPELINE">
+        <description>Performs OCV face detection and markup on the input media.</description>
+        <task-refs>
+            <task-ref name="DEFAULT_EXTRACTION_FACE_OCV_TASK" />
+            <task-ref name="DEFAULT_MARKUP_GENERIC_OCV_TASK" />
+        </task-refs>
+    </pipeline>
+    <pipeline name="DEFAULT_EXTRACTION_FACE_OCV_PIPELINE">
+        <description>Performs OpenCV-based face detection on the input media.</description>
+        <task-refs>
+            <task-ref name="DEFAULT_EXTRACTION_FACE_OCV_TASK" />
+        </task-refs>
+    </pipeline>
+    <pipeline name="AUTO_ORIENT_EXTRACTION_FACE_OCV_PIPELINE">
+        <description>Executes the OpenCV face extraction algorithm with AUTO_ROTATE and AUTO_FLIP enabled.</description>
+        <task-refs>
+            <task-ref name="AUTO_ORIENT_EXTRACTION_FACE_OCV_TASK" />
+        </task-refs>
+    </pipeline>
+    <pipeline name="ROI_EXTRACTION_FACE_OCV_PIPELINE">
+        <description>Executes the OpenCV face extraction algorithm with region of interest parameters set.</description>
+        <task-refs>
+            <task-ref name="ROI_EXTRACTION_FACE_OCV_TASK" />
+        </task-refs>
+    </pipeline>
+    <pipeline name="DEFAULT_EXTRACTION_FACE_DLIB_PIPELINE">
+        <description>Performs dlib-based face detection on the input media.</description>
+        <task-refs>
+            <task-ref name="DEFAULT_EXTRACTION_FACE_DLIB_TASK" />
+        </task-refs>
+    </pipeline>
+
+    <pipeline name="DEFAULT_EXTRACTION_FACE_COMBINED_PIPELINE">
+        <description>Performs OpenCV and DLIB face detection in parallel.</description>
+        <task-refs>
+            <task-ref name="DEFAULT_EXTRACTION_FACE_COMBINED_TASK" />
+        </task-refs>
+    </pipeline>
+
+    <pipeline name="X_BAD_PREPROCESSOR_PIPELINE">
+        <description>A bad preprocessor pipeline which has too many actions in the first task.</description>
+        <task-refs>
+            <task-ref name="X_FACE_PARALLEL_TASK" />
+            <task-ref name="DEFAULT_EXTRACTION_FACE_OCV_TASK" />
+        </task-refs>
+    </pipeline>
+    <pipeline name="X_GOOD_PREPROCESSOR_PIPELINE">
+        <description>A good preprocessor pipeline which ends in a multi-extraction task.</description>
+        <task-refs>
+            <task-ref name="DEFAULT_EXTRACTION_FACE_OCV_TASK" />
+            <task-ref name="X_FACE_PARALLEL_TASK" />
+        </task-refs>
+    </pipeline>
+
+    <pipeline name="DEFAULT_DETECTION_PERSON_WITH_MARKUP_PIPELINE">
+        <description>Does person detection followed by markup.</description>
+        <task-refs>
+            <task-ref name="DEFAULT_EXTRACTION_PERSON_OCV_TASK" />
+            <task-ref name="DEFAULT_MARKUP_GENERIC_OCV_TASK" />
+        </task-refs>
+    </pipeline>
+
+    <pipeline name="CUSTOM_OCV_FACE_MIN_FACE_SIZE_100_PIPELINE">
+        <description>A test pipeline for extracting faces using a min face size of 100 vs. 48</description>
+        <task-refs>
+            <task-ref name="CUSTOM_OCV_FACE_MIN_FACE_SIZE_100_TASK" />
+        </task-refs>
+    </pipeline>
+</pipelines>

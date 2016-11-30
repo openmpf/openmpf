@@ -1,0 +1,255 @@
+{
+    "externalJobId": "23bb3b2e-03f9-497b-bbf5-c7a2e6936a62",
+    "jobId": 19,
+    "media": [
+        {
+            "detectionProcessingErrors": {},
+            "length": 1,
+            "markupResult": null,
+            "mediaId": 28,
+            "overriddenProperties":{},"mediaMetadata": {
+                "EXIF_ORIENTATION": 1,
+                "HORIZONTAL_FLIP": "FALSE",
+                "ROTATION": 0
+            },
+            "message": null,
+            "mimeType": "image/jpeg",
+            "path": "file:///var/jenkins/workspace/mpf-ecole/trunk/mpf-system-tests/target/test-classes/samples/text/lp-bmw.jpg",
+            "sha256": "8026df007258b0eaeb560254f867cd75b789864ec2139565bc9a5f15ea7327ff",
+            "status": "COMPLETE",
+            "tracks": {
+                "+#DEFAULT_EXTRACTION_TEXT_OALPR_ACTION": [
+                    {
+                        "detections": [
+                            {
+                                "artifactExtractionStatus": "COMPLETED",
+                                "artifactPath": "/var/jenkins/workspace/mpf-ecole/trunk/install/share/artifacts/19/28/0/lp-bmw.jpg",
+                                "confidence": 87.188515,
+                                "detectionProperties": {
+                                    "TEXT": "LV42DY"
+                                },
+                                "height": 59,
+                                "offset": 0,
+                                "offsetFrame": 0,
+                                "offsetTime": 0,
+                                "width": 112,
+                                "x": 359,
+                                "y": 420
+                            }
+                        ],
+                        "exemplar": {
+                            "artifactExtractionStatus": "COMPLETED",
+                            "artifactPath": "/var/jenkins/workspace/mpf-ecole/trunk/install/share/artifacts/19/28/0/lp-bmw.jpg",
+                            "confidence": 87.188515,
+                            "detectionProperties": {
+                                "TEXT": "LV42DY"
+                            },
+                            "height": 59,
+                            "offset": 0,
+                            "offsetFrame": 0,
+                            "offsetTime": 0,
+                            "width": 112,
+                            "x": 359,
+                            "y": 420
+                        },
+                        "id": "5976f6ff6ae25babcadc9878a053511a71ecac99d5b6621825e7b3091c56854b",
+                        "source": "+#DEFAULT_EXTRACTION_TEXT_OALPR_ACTION",
+                        "startOffset": 0,
+                        "startOffsetFrame": 0,
+                        "startOffsetTime": 0,
+                        "stopOffset": 1,
+                        "stopOffsetFrame": 1,
+                        "stopOffsetTime": 0,
+                        "type": "TEXT"
+                    }
+                ]
+            }
+        },
+        {
+            "detectionProcessingErrors": {},
+            "length": 1,
+            "markupResult": null,
+            "mediaId": 29,
+            "overriddenProperties":{},"mediaMetadata": {},
+            "message": null,
+            "mimeType": "image/jpeg",
+            "path": "file:///var/jenkins/workspace/mpf-ecole/trunk/mpf-system-tests/target/test-classes/samples/text/lp-police-car.jpg",
+            "sha256": "8702265ab5e48b937fc874bee33e9e20e44d9c5cf0e51acff574e96c7c1a4a34",
+            "status": "COMPLETE",
+            "tracks": {
+                "+#DEFAULT_EXTRACTION_TEXT_OALPR_ACTION": [
+                    {
+                        "detections": [
+                            {
+                                "artifactExtractionStatus": "COMPLETED",
+                                "artifactPath": "/var/jenkins/workspace/mpf-ecole/trunk/install/share/artifacts/19/29/0/lp-police-car.jpg",
+                                "confidence": 88.2964,
+                                "detectionProperties": {
+                                    "TEXT": "0116G"
+                                },
+                                "height": 121,
+                                "offset": 0,
+                                "offsetFrame": 0,
+                                "offsetTime": 0,
+                                "width": 259,
+                                "x": 568,
+                                "y": 1315
+                            }
+                        ],
+                        "exemplar": {
+                            "artifactExtractionStatus": "COMPLETED",
+                            "artifactPath": "/var/jenkins/workspace/mpf-ecole/trunk/install/share/artifacts/19/29/0/lp-police-car.jpg",
+                            "confidence": 88.2964,
+                            "detectionProperties": {
+                                "TEXT": "0116G"
+                            },
+                            "height": 121,
+                            "offset": 0,
+                            "offsetFrame": 0,
+                            "offsetTime": 0,
+                            "width": 259,
+                            "x": 568,
+                            "y": 1315
+                        },
+                        "id": "220cca18752d7eae030c366460b562c21db0394722b15c413fbe9f4cec20185e",
+                        "source": "+#DEFAULT_EXTRACTION_TEXT_OALPR_ACTION",
+                        "startOffset": 0,
+                        "startOffsetFrame": 0,
+                        "startOffsetTime": 0,
+                        "stopOffset": 1,
+                        "stopOffsetFrame": 1,
+                        "stopOffsetTime": 0,
+                        "type": "TEXT"
+                    }
+                ]
+            }
+        },
+        {
+            "detectionProcessingErrors": {},
+            "length": 1,
+            "markupResult": null,
+            "mediaId": 30,
+            "overriddenProperties":{},"mediaMetadata": {},
+            "message": null,
+            "mimeType": "image/jpeg",
+            "path": "file:///var/jenkins/workspace/mpf-ecole/trunk/mpf-system-tests/target/test-classes/samples/text/lp-police-cars.jpg",
+            "sha256": "63e676f07342281c9515d045bb1eb863b0b656d7af12f4a6169301b7a6681f87",
+            "status": "COMPLETE",
+            "tracks": {
+                "+#DEFAULT_EXTRACTION_TEXT_OALPR_ACTION": [
+                    {
+                        "detections": [
+                            {
+                                "artifactExtractionStatus": "COMPLETED",
+                                "artifactPath": "/var/jenkins/workspace/mpf-ecole/trunk/install/share/artifacts/19/30/0/lp-police-cars.jpg",
+                                "confidence": 84.56857,
+                                "detectionProperties": {
+                                    "TEXT": "3026"
+                                },
+                                "height": 82,
+                                "offset": 0,
+                                "offsetFrame": 0,
+                                "offsetTime": 0,
+                                "width": 179,
+                                "x": 393,
+                                "y": 878
+                            }
+                        ],
+                        "exemplar": {
+                            "artifactExtractionStatus": "COMPLETED",
+                            "artifactPath": "/var/jenkins/workspace/mpf-ecole/trunk/install/share/artifacts/19/30/0/lp-police-cars.jpg",
+                            "confidence": 84.56857,
+                            "detectionProperties": {
+                                "TEXT": "3026"
+                            },
+                            "height": 82,
+                            "offset": 0,
+                            "offsetFrame": 0,
+                            "offsetTime": 0,
+                            "width": 179,
+                            "x": 393,
+                            "y": 878
+                        },
+                        "id": "2689bd1cd21875c4de5320d465a960b4b15f74b16a5dad420ae344ecccd969df",
+                        "source": "+#DEFAULT_EXTRACTION_TEXT_OALPR_ACTION",
+                        "startOffset": 0,
+                        "startOffsetFrame": 0,
+                        "startOffsetTime": 0,
+                        "stopOffset": 1,
+                        "stopOffsetFrame": 1,
+                        "stopOffsetTime": 0,
+                        "type": "TEXT"
+                    },
+                    {
+                        "detections": [
+                            {
+                                "artifactExtractionStatus": "COMPLETED",
+                                "artifactPath": "/var/jenkins/workspace/mpf-ecole/trunk/install/share/artifacts/19/30/0/lp-police-cars.jpg",
+                                "confidence": 81.68265,
+                                "detectionProperties": {
+                                    "TEXT": "2687"
+                                },
+                                "height": 86,
+                                "offset": 0,
+                                "offsetFrame": 0,
+                                "offsetTime": 0,
+                                "width": 186,
+                                "x": 1821,
+                                "y": 829
+                            }
+                        ],
+                        "exemplar": {
+                            "artifactExtractionStatus": "COMPLETED",
+                            "artifactPath": "/var/jenkins/workspace/mpf-ecole/trunk/install/share/artifacts/19/30/0/lp-police-cars.jpg",
+                            "confidence": 81.68265,
+                            "detectionProperties": {
+                                "TEXT": "2687"
+                            },
+                            "height": 86,
+                            "offset": 0,
+                            "offsetFrame": 0,
+                            "offsetTime": 0,
+                            "width": 186,
+                            "x": 1821,
+                            "y": 829
+                        },
+                        "id": "9bb3f88fa5154ebe9308009acf821c61a30204abd1ee71aebf570773c774534b",
+                        "source": "+#DEFAULT_EXTRACTION_TEXT_OALPR_ACTION",
+                        "startOffset": 0,
+                        "startOffsetFrame": 0,
+                        "startOffsetTime": 0,
+                        "stopOffset": 1,
+                        "stopOffsetFrame": 1,
+                        "stopOffsetTime": 0,
+                        "type": "TEXT"
+                    }
+                ]
+            }
+        }
+    ],
+    "objectId": "e720a09c-7629-4a14-8c7f-ef06aa7c84eb",
+    "pipeline": {
+        "description": "Performs license plate text detection and transcription on the input media.",
+        "name": "DEFAULT_EXTRACTION_TEXT_OALPR_PIPELINE",
+        "stages": [
+            {
+                "actionType": "DETECTION",
+                "actions": [
+                    {
+                        "algorithm": "OALPR",
+                        "description": "Executes the OALPR text extraction algorithm using the default parameters.",
+                        "name": "DEFAULT_EXTRACTION_TEXT_OALPR_ACTION",
+                        "properties": {}
+                    }
+                ],
+                "description": "Executes the default OpenALPR text extraction action.",
+                "name": "DEFAULT_EXTRACTION_TEXT_OALPR_TASK"
+            }
+        ]
+    },
+    "priority": 4,
+    "siteId": "mpf1",
+    "status": "COMPLETE",
+    "timeStart": "2016-10-04 20:14:36.0",
+    "timeStop": "2016-10-04 20:14:40.0"
+}

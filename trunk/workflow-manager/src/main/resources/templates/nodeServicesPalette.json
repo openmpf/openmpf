@@ -1,0 +1,31 @@
+{
+  "Markup":{
+    "serviceName":"Markup",
+    "cmd":"${MPF_HOME}/bin/start-service-java.sh",
+    "args":[
+      "-jar mpf-markup-0.9.0.jar"
+    ],
+    "workingDirectory":"${MPF_HOME}/jars",
+    "serviceCount":1,
+    "serviceLauncher":"generic",
+    "serviceDescription":"Draws bounding boxes around successfully detected objects in images and videos.",
+    "environmentVariables":[
+
+    ]
+  },
+  "SphinxSpeechDetection":{
+    "serviceName":"SphinxSpeechDetection",
+    "cmd":"${MPF_HOME}/bin/start-java-component.sh",
+    "args":[
+      "mpf-speech-detection-0.9.0.jar",
+      "MPF.DETECTION_SPHINX_REQUEST"
+    ],
+    "workingDirectory":"${MPF_HOME}/jars",
+    "serviceCount":1,
+    "serviceLauncher":"generic",
+    "serviceDescription":"Detects and transcribes English language speech in audio and video files using the Sphinx Speech Recognition Library.",
+    "environmentVariables":[
+
+    ]
+  }
+}

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ NOTICE                                                                    ~
+  ~                                                                           ~
+  ~ This software (or technical data) was produced for the U.S. Government    ~
+  ~ under contract, and is subject to the Rights in Data-General Clause       ~
+  ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
+  ~                                                                           ~
+  ~ Copyright 2016 The MITRE Corporation. All Rights Reserved.                ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright 2016 The MITRE Corporation                                      ~
+  ~                                                                           ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
+  ~ you may not use this file except in compliance with the License.          ~
+  ~ You may obtain a copy of the License at                                   ~
+  ~                                                                           ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0                             ~
+  ~                                                                           ~
+  ~ Unless required by applicable law or agreed to in writing, software       ~
+  ~ distributed under the License is distributed on an "AS IS" BASIS,         ~
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  ~
+  ~ See the License for the specific language governing permissions and       ~
+  ~ limitations under the License.                                            ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- Hibernate session factory -->
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+        <property name="packagesToScan" value="org.mitre.mpf.wfm" />
+        <property name="dataSource" ref="dataSource" />
+
+        <property name="hibernateProperties">
+            <props>
+                <prop key="jadira.usertype.autoRegisterUserTypes">true</prop>
+                <prop key="jadira.usertype.databaseZone">America/New_York</prop>
+                <prop key="jadira.usertype.javaZone">America/New_York</prop>
+                <prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+                <prop key="hibernate.jdbc.batch_size">50000</prop>
+                <prop key="hibernate.show_sql">${hibernate.show.sql:false}</prop>
+                <prop key="hibernate.hbm2ddl.auto">${hibernate.update.mode:update}</prop>
+                <prop key="hibernate.cache.use_second_level_cache">true</prop>
+                <prop key="hibernate.cache.use_query_cache">true</prop>
+                <prop key="hibernate.cache.region.factory_class">org.hibernate.cache.infinispan.InfinispanRegionFactory</prop>
+
+                <prop key="hibernate.cache.infinispan.cachemanager">java:CacheManager/entity</prop>
+                <prop key="hibernate.cache.infinispan.cfg">infinispan.xml</prop>
+                <prop key="hibernate.cache.infinispan.query.cfg">mpfCache</prop>
+                <prop key="hibernate.cache.infinispan.entity.cfg">mpfCache</prop>
+                <prop key="hibernate.cache.infinispan.collection.cfg">mpfCache</prop>
+
+                <!--<prop key="hibernate.transaction.manager_lookup_class">com.atomikos.icatch.jta.hibernate3.TransactionManagerLookup</prop>-->
+                <!--<prop key="hibernate.transaction.factory_class">org.hibernate.engine.transaction.internal.jta.CMTTransactionFactory</prop>-->
+                <prop key="hibernate.transaction.jta.platform">org.hibernate.service.jta.platform.internal.JBossStandAloneJtaPlatform</prop>
+
+                <prop key="hibernate.transaction.manager_lookup_class">org.hibernate.cache.infinispan.tm.HibernateTransactionManagerLookup</prop>
+                <!--<prop key="hibernate.transaction.factory_class">org.hibernate.engine.transaction.internal.jta.CMTTransactionFactory</prop>-->
+            </props>
+        </property>
+
+        <!-- convert aaBb to aa_bb -->
+        <property name="PhysicalNamingStrategy">
+            <bean class="org.mitre.mpf.wfm.data.ImprovedNamingStrategy" />
+        </property>
+
+    </bean>
+</beans>

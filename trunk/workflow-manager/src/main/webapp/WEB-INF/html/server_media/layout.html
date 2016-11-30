@@ -1,0 +1,216 @@
+<!--
+    NOTICE
+
+    This software (or technical data) was produced for the U.S. Government
+    under contract, and is subject to the Rights in Data-General Clause
+    52.227-14, Alt. IV (DEC 2007).
+
+    Copyright 2016 The MITRE Corporation. All Rights Reserved.
+-->
+
+<!--
+    Copyright 2016 The MITRE Corporation
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+<div class="row" id="heading">
+    <h2>Create Job from Uploaded Media</h2>
+    <p>Select a directory to view its files. Checking a directory in the tree will add all the files and
+        directories beneath it. </p>
+    <p>Select the remote-media directory, or a subdirectory, before creating a folder or uploading media.</p>
+</div>
+<div class="row fileManager" id="fileManager" >
+        <div class="panel panel-default" style="margin-bottom:0;">
+            <div class="panel-heading">
+                <h3 class="panel-title">File Manager </h3>
+            </div>
+            <div class="panel-body" >
+                <div class="col-lg-3 col-md-3 columndiv" style="position:relative;height:62vh;" >
+                    <div class="row" id="directoryListDiv" >
+                        <div id="directoryList" >
+                            <div id="directoryTreeview" class="treeview fill">Loading....</div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div style="display:inline-block;">
+                            <div class="btn btn-success btn-sm " id="newfolder_btn" ng-disabled="disableBtns" data-toggle="modal" data-target="#newFolderModal" title="Create New Folder">
+                                <span class="glyphicon glyphicon-folder-open"></span>
+                            </div>
+                            <div class="btn btn-success btn-sm btn-add fileinput-button" id="addFiles_btn"  ng-disabled="disableBtns" title="Add Local Files">
+                                <span class="fa fa-upload" ></span>
+                            </div>
+                            <div class="btn btn-success btn-sm btn-upload " id="urlUpload_btn_btn" ng-click="uploadURLBtn()"  ng-disabled="disableBtns" title="Upload from URL">
+                                <span class="fa fa-cloud-upload" ></span>
+                            </div>
+                            <div class="btn btn-sm btn-warning" ng-click="refreshRequest()" title="Refresh Directories">
+                                <span class="fa fa-refresh" ></span>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="visible-sm-block visible-xs-block hidden-md hidden-lg"/>
+                </div>
+                <div class="col-lg-6 col-md-6 columndiv" id="fileListWrap">
+                    <table id="file_list_server" cellspacing="1" class="row-border cell-border" style="height:100%;"></table>
+                    <hr class="visible-sm-block visible-xs-block hidden-md hidden-lg"/>
+                </div>
+                <div class="col-lg-3 col-md-3 columndiv" id="pipelineWrap">
+                    <div class="alert alert-success">
+                        <span style="display:inline-block;"># Selected Files: {{filesToSubmitCount}}</span>
+                        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" style="margin-left:10px;" data-target="#viewNodeModal">View
+                        </button>
+                    </div>
+                    <pipeline-selection selected-pipeline="selectedPipelineServer" selected-priority="selectedJobPriorityServer" help-placement="left">
+                    </pipeline-selection>
+                    <hr>
+                    <div class="text-center">
+                        <button type="button" class="btn btn-success btn-lg" id="btn-submit-checked" ng-click="submitFiles();">
+                            <span class="glyphicon glyphicon-play"></span> Create Job
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="panel-footer">
+                <div id="breadcrumb"></div>
+            </div>
+        </div>
+
+</div>
+
+
+<div id="viewNodeModal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Files</h4>
+            </div>
+            <div class="modal-body">
+                <table id="selected_file_list" width="100%" cellspacing="1" class="display"></table>
+            </div>
+            <div class="modal-footer">
+                <button id="btnDismissOutputObjectModal" type="button" class="btn btn-default" ng-click="closeSelectedFileList();"
+                        data-dismiss="modal">Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="waitModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Loading</h4>
+            </div>
+            <div class="modal-body">
+                <p>Please wait while files are loading....</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="URLUploadModal" class="modal" tabindex="-1" role="dialog">
+    <form id="uploadURLsForm" ng-submit="submitUploadURLsForm($event)"
+          method="POST" style="margin-bottom: 10px;">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cancel" ><span class="fa fa-times"></span></button>
+                    <h4 class="modal-title"><span class="fa fa-cloud-upload"></span> URL File Upload</h4>
+                </div>
+                <div class="modal-body">
+                    <h3 style="margin-top:5px;">Select files to upload from the web</h3>
+                    <label for="URLsInput">URL(s) (newline separated):</label>
+                    <textarea id="URLsInput" class="form-control" rows="5" name="URLs" ng-model="urls"></textarea>
+                    <img id="loading_url" src="resources/img/ajax-loader-smaller.gif"/>
+                    <div class="localName"></div>
+                </div>
+                <div class="modal-footer">
+                    <button id="submitURLs" type="submit" class="btn btn-success btn-default"><span class="fa fa-cloud-upload"></span> Upload</button>
+                    <button id="cancelURLUpload" type="button" class="btn btn-danger" data-dismiss="modal" aria-label="Close" ><span class="fa fa-ban"></span> Close</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="progressModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     data-backdrop="static"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document" style="width:60%;height:100%;margin:0 auto;padding:0;">
+        <div class="modal-content" style="height:100%;">
+            <div class="modal-header">
+                <button type="button" class="close closeUpload" data-dismiss="modal" aria-label="Close"
+                        ng-click="closeUpload()"><span class="fa fa-times"></span></button>
+                <h4 class="modal-title" id="myModalLabel"><i class="fa fa-clock-o"></i> <span style="padding-left: 3px;" id="uploadTitle">Please Wait</span></h4>
+            </div>
+            <div class="modal-body center-block" style="">
+                <div id="progress-div" style="height:50px;width:80%;margin:0 auto;" class="text-center">
+                    <div>
+                        <strong>Total Files:<span id="total-count" style="display:inline;"></span></strong>
+                        <strong>Queued:</strong><span id="queued-count" style="display:inline;"></span>
+                        <strong>Completed:</strong><span id="success-count" style="display:inline;"></span>
+                        <strong>Rejected:</strong><span id="rejected-count" style="display:inline;"></span>
+                        <strong>Cancelled:</strong><span id="cancelled-count" style="display:inline;"></span>
+                    </div>
+                    <div id="total-progress">
+                        <div class="progress active" role="progressbar"
+                             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                            <div class="progress-bar progress-bar-success" style="width:0%;"
+                                 data-dz-uploadprogress><span id="percent" style="color:#000;"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="dropzone-preview" class="dropzone" style="overflow-y:auto;"></div>
+            </div>
+            <div class="modal-footer">
+                <div class="upload-modal-footer-text"><span id="fileCount" style="color:#000;display:inline;"></span> <span id="uploading" style="display:inline;"></span></div>
+                <button type="button" class="btn btn-danger closeUpload" data-dismiss="modal"
+                        ng-click="closeUpload()"><span class="fa fa-times"></span> Close</button>
+                <button id="cancelUpload" type="button" class="btn btn-danger" ng-click="cancelUpload()"><span class="fa fa-ban"></span> Cancel</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<!-- Modal -->
+<div class="modal fade" id="newFolderModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel"
+     data-backdrop="static"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document" style="">
+        <div class="modal-content" style="">
+            <form name="newFolderForm">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cancel"><span class="fa fa-times"></span></button>
+                    <h4 class="modal-title" id="modalLabel"><span class="fa fa-folder-open"></span><span> Create New Folder</span></h4>
+                </div>
+                <div class="modal-body center-block" style="">
+                    <div class="form-group">
+                        <label>New Folder</label>
+                        <input id="newfolder" type="text" name="newfolder" ng-model="newfolder" class="form-control" placeholder="Name" ng-pattern="/^[-_.\sa-zA-Z0-9]*$/" ng-maxlength="50" required/>
+                        <div ng-messages="newFolderForm.newfolder.$error">
+                            <div ng-message="pattern" class="text-danger">Invalid filename</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger " data-dismiss="modal"><span class="fa fa-ban"></span> Cancel</button>
+                    <button id="newFolderBtnSave" class="btn btn-success" data-dismiss="modal" ng-click="addFolder()" ng-disabled="newFolderForm.newfolder.$invalid"><span class="fa fa-plus"></span> Add</button>
+                </div>
+            </form>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->

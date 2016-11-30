@@ -1,0 +1,186 @@
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ NOTICE                                                                    ~
+  ~                                                                           ~
+  ~ This software (or technical data) was produced for the U.S. Government    ~
+  ~ under contract, and is subject to the Rights in Data-General Clause       ~
+  ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
+  ~                                                                           ~
+  ~ Copyright 2016 The MITRE Corporation. All Rights Reserved.                ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright 2016 The MITRE Corporation                                      ~
+  ~                                                                           ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
+  ~ you may not use this file except in compliance with the License.          ~
+  ~ You may obtain a copy of the License at                                   ~
+  ~                                                                           ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0                             ~
+  ~                                                                           ~
+  ~ Unless required by applicable law or agreed to in writing, software       ~
+  ~ distributed under the License is distributed on an "AS IS" BASIS,         ~
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  ~
+  ~ See the License for the specific language governing permissions and       ~
+  ~ limitations under the License.                                            ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>mpf-project</artifactId>
+    <groupId>org.mitre.mpf</groupId>
+    <version>0.9.0</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <groupId>org.mitre.mpf</groupId>
+  <artifactId>mpf-trunk-modules</artifactId>
+  <name>MPF Trunk Modules</name>
+
+  <properties>
+        <!-- The following properties are needed for the RPM build -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.rpm.prefix>/opt/mpf</maven.rpm.prefix>
+        <maven.build.timestamp.format>yyyy.MM.dd.HH.mm.ss</maven.build.timestamp.format>
+        <mpf.version.timestamp>${maven.build.timestamp}</mpf.version.timestamp>
+        <gitBranch>unknown</gitBranch>
+        <gitShortId>0</gitShortId>
+        <jenkinsBuildNumber>0</jenkinsBuildNumber>
+        <rpmReleasePrefix>0</rpmReleasePrefix>
+  </properties>
+
+    <build>
+        <plugins>
+            <!--
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>cobertura-maven-plugin</artifactId>
+                <version>2.7</version>
+                <configuration>
+                    <formats>
+                        <format>xml</format>
+                    </formats>
+                </configuration>
+            </plugin>
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>${exec.maven.plugin.version}</version>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <id>cmake-initialize</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>mkdir</executable>
+                            <arguments>
+                                <argument>build</argument>
+                                <argument>install</argument>
+                            </arguments>
+                            <successCodes>
+                                <successCode>0</successCode>
+                                <successCode>1</successCode>
+                            </successCodes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>cmake-generate-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>/usr/local/bin/cmake</executable>
+                            <arguments>
+                                <argument>-DCMAKE_RULE_MESSAGES=OFF</argument>
+                                <argument>-DCMAKE_VERBOSE_MAKEFILE=OFF</argument>
+                                <argument>-DBUILD_SHARED_LIBS=ON</argument>
+                                <argument>-DCMAKE_BUILD_TYPE=Release</argument>
+                                <argument>-DCMAKE_INSTALL_PREFIX=../install</argument>
+                                <argument>../</argument>
+                            </arguments>
+                            <successCodes>
+                                <successCode>0</successCode>
+                                <successCode>1</successCode>
+                            </successCodes>
+                            <workingDirectory>build</workingDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>cmake-compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>make</executable>
+                            <arguments>
+                                <argument>-j8</argument>
+                            </arguments>
+                            <workingDirectory>build</workingDirectory>
+                            <successCodes>
+                                <successCode>0</successCode>
+                                <successCode>1</successCode>
+                            </successCodes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>cmake-install</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>make</executable>
+                            <arguments>
+                                <argument>install</argument>
+                            </arguments>
+                            <workingDirectory>build</workingDirectory>
+                            <successCodes>
+                                <successCode>0</successCode>
+                                <successCode>1</successCode>
+                            </successCodes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>cmake-clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>rm</executable>
+                            <arguments>
+                                <argument>-rf</argument>
+                                <argument>install</argument>
+                                <argument>build</argument>
+                            </arguments>
+                            <successCodes>
+                                <successCode>0</successCode>
+                                <successCode>1</successCode>
+                            </successCodes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <source>1.8</source>
+                        <target>1.8</target>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+</project>

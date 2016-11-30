@@ -1,0 +1,34 @@
+{
+    "packageTag":"open-source",
+
+    "MPF_Core_RPMs": [
+	"markup",
+	"nodeManager",
+	"protobuf",
+	"video-overlay",
+	"workflowManager",
+	"java-component-api",
+	"java-component-executor"
+    ],
+
+    "MPF_Component_RPMs": [
+	"speech-detection"
+    ],
+
+    "MPF_Core_Tars": [
+	"mpf-install-dep"
+    ],
+
+    "MPF_Component_Tars": [
+	"MogMotionDetection",
+	"SubsenseMotionDetection",
+	"OalprTextDetection",
+	"OcvFaceDetection",
+	"DlibFaceDetection",
+	"OcvPersonDetection"
+    ],
+
+    "External_Component_Tars": [
+	"CaffeDetection"
+    ]
+}

@@ -1,0 +1,220 @@
+// NOTICE
+//
+// This software (or technical data) was produced for the U.S. Government
+// under contract, and is subject to the Rights in Data-General Clause
+// 52.227-14, Alt. IV (DEC 2007).
+//
+// Copyright 2016 The MITRE Corporation. All Rights Reserved.
+
+
+// Copyright 2016 The MITRE Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package org.mitre.mpf.wfm.buffers;
+
+import "algorithmproperty.proto";
+import "metrics.proto";
+
+option java_outer_classname = "DetectionProtobuf";
+
+enum DetectionError {
+    NO_DETECTION_ERROR             = 0;
+    DETECTION_NOT_INITIALIZED      = 1;
+    UNRECOGNIZED_DATA_TYPE         = 2;
+    UNSUPPORTED_DATA_TYPE          = 3;
+    INVALID_DATAFILE_URI           = 4;
+    COULD_NOT_OPEN_DATAFILE        = 5;
+    COULD_NOT_READ_DATAFILE        = 6;
+    IMAGE_READ_ERROR               = 7;
+    BAD_FRAME_SIZE                 = 8;
+    BOUNDING_BOX_SIZE_ERROR        = 9;
+    INVALID_FRAME_INTERVAL         = 10;
+    INVALID_START_FRAME            = 11;
+    INVALID_STOP_FRAME             = 12;
+    DETECTION_FAILED               = 13;
+    DETECTION_TRACKING_FAILED      = 14;
+    MEDIA_PROCESSING_BOUNDS_ERROR  = 15;
+    REQUEST_BUFFER_UNPACKING_ERROR = 16;
+    UNRECOGNIZED_DETECTION_ERROR   = 17;
+    REQUEST_CANCELLED              = 18; // The detection request was cancelled by the user.
+
+}
+
+message PropertyMap {
+          optional string key = 1;
+          optional string value = 2;
+}
+
+message DetectionRequest {
+    // A unique identifier for this request.
+    required int64 request_id = 1;
+
+    // The path (not URI or URL) to the medium to process.
+    required string data_uri = 2;
+
+    enum DataType {
+        UNKNOWN = 0;
+        VIDEO = 1;
+        IMAGE = 2;
+        AUDIO = 3;
+    }
+
+    optional DataType data_type = 3 [default = VIDEO];
+
+    repeated AlgorithmProperty algorithm_property = 4;
+
+    // The ID of the medium to process. Many requests may have the same ID.
+    optional int64 media_id = 400 [default = -1];
+
+    // The current stage index in the pipeline.
+    required int32 stage_index = 401 [ default = -1];
+
+    // The name of the current stage in the pipeline.
+    optional string stage_name = 402 [ default = "N/A"];
+
+    // The index of the action in the current stage of the pipeline.
+    required int32 action_index = 403 [ default = -1];
+
+    // The name of the action which was used to create this request.
+    optional string action_name = 404 [ default = "N/A"];
+
+    repeated PropertyMap media_metadata = 405;
+
+    // TODO: This is a placeholder. It's currently not used.
+    message GenericRequest {
+        // TODO: Add any necessary fields here.
+    }
+    optional GenericRequest generic_request = 500;
+
+    message VideoRequest {
+        // The zero-based start frame in the video.
+        optional int32 start_frame = 1 [default = -1];
+
+        // The zero-based and inclusive stop frame to process in the video.
+        optional int32 stop_frame = 2 [default = -1];
+    }
+    optional VideoRequest video_request = 501;
+
+    message AudioRequest {
+        // The start time in the audio or video file.
+        optional int32 start_time = 1 [default = -1];
+
+        // The stop time to process in the audio or video file.
+        optional int32 stop_time = 2 [default = -1];
+    }
+    optional AudioRequest audio_request = 502;
+
+    message ImageRequest {
+        // TODO: Add any necessary fields here.
+    }
+    optional ImageRequest image_request = 503;
+}
+
+message DetectionResponse {
+    required int64 request_id = 1;
+
+    enum DataType {
+        UNKNOWN = 0;
+        VIDEO = 1;
+        IMAGE = 2;
+        AUDIO = 3;
+    }
+
+    optional DataType data_type = 2 [default = VIDEO];
+
+    optional DetectionError error = 3;
+
+    optional int32 start_index = 4; // Maps back to the request's start_index.
+
+    optional int32 stop_index = 5; // Maps back to the request's stop_index.
+
+    // Copied from the request.
+    optional int64 media_id = 400 [default = -1];
+
+    // Copied from the request.
+    required int32 stage_index = 401 [ default = -1];
+
+    // Copied from the request.
+    optional string stage_name = 402 [ default = "N/A"];
+
+    // Copied from the request.
+    required int32 action_index = 403 [ default = -1];
+
+    // Copied from the request.
+    optional string action_name = 404 [ default = "N/A"];
+
+    // Profiling metrics.
+    optional MetricsMessage metrics = 405;
+
+
+    // TODO: This is a placeholder. It's currently not used.
+    message GenericResponse {
+        required string detection_type = 1;
+        optional bytes data = 2;
+        repeated PropertyMap detection_properties = 3;
+    }
+    repeated GenericResponse generic_responses = 500;
+
+    message ImageLocation {
+        optional int32 x_left_upper = 1;
+        optional int32 y_left_upper = 2;
+        optional int32 width = 3;
+        optional int32 height = 4;
+        optional float confidence = 5 [default = -1];
+        repeated PropertyMap detection_properties = 6;
+    }
+
+    message VideoResponse {
+        required string detection_type = 1;
+
+        message VideoTrack {
+            optional int32 start_frame = 1 [default = -1];
+            optional int32 stop_frame = 2 [default = -1];
+
+            // TODO: Upgrade development env to proto3 and use the following syntax:
+            // map<int32, ImageLocation> frame_locations = 3;
+
+            // Define a FrameLocationMap for now so that everything works with proto2.
+            message FrameLocationMap {
+              optional int32 frame = 1;
+              optional ImageLocation image_location = 2;
+            }
+            repeated FrameLocationMap frame_locations = 3;
+
+            optional float confidence = 4 [default = -1];
+            repeated PropertyMap detection_properties = 5;
+        }
+        repeated VideoTrack video_tracks = 2;
+    }
+    repeated VideoResponse video_responses = 501;
+
+    message AudioResponse {
+        required string detection_type = 1;
+
+        message AudioTrack {
+            optional int32 start_time = 1 [default = -1];
+            optional int32 stop_time = 2 [default = -1];
+            optional float confidence = 3 [default = -1];
+            repeated PropertyMap detection_properties = 4;
+        }
+        repeated AudioTrack audio_tracks = 2;
+    }
+    repeated AudioResponse audio_responses = 502;
+
+    message ImageResponse {
+        required string detection_type = 1;
+        repeated ImageLocation image_locations = 2;
+    }
+    repeated ImageResponse image_responses = 503;
+}

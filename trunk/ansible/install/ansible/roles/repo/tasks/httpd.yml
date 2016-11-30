@@ -1,0 +1,53 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2016 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+---
+#file: roles/repo/tasks/httpd.yml
+- name: Install httpd
+  yum: name=httpd state=present disablerepo=* enablerepo=mpf-local-repo
+
+- name: Config httpd
+  template: src=repo.conf.j2 dest=/etc/httpd/conf.d/repo.conf
+
+- name: Ensure web server file directory exists
+  file: path={{repo_directory}}/files state=directory
+
+- name: Set web server hostname
+  lineinfile: dest=/etc/httpd/conf/httpd.conf state=present insertafter="^#ServerName" line='ServerName {{ ansible_nodename }}'
+
+- name: Disable mod_ldap in httpd (due to apr conflict with MPF)
+  lineinfile: dest=/etc/httpd/conf/httpd.conf state=present regexp="^LoadModule ldap_module" line='#LoadModule ldap_module modules/mod_ldap.so'
+
+- name: Disable mod_authnz_ldap in httpd (due to apr conflict with MPF)
+  lineinfile: dest=/etc/httpd/conf/httpd.conf state=present regexp="^LoadModule authnz_ldap_module" line='#LoadModule authnz_ldap_module modules/mod_authnz_ldap.so'
+
+- name: Push repo file to web server
+  template: src=mpf.repo.j2 dest={{ repo_directory }}/files/mpf.repo
+
+- name: Set repo permissions
+  file: path={{ repo_directory }} recurse=yes mode=0755
+
+- name: Enable on startup (and start) httpd
+  service: name=httpd enabled=yes state=started

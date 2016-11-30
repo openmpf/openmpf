@@ -1,0 +1,129 @@
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ NOTICE                                                                    ~
+  ~                                                                           ~
+  ~ This software (or technical data) was produced for the U.S. Government    ~
+  ~ under contract, and is subject to the Rights in Data-General Clause       ~
+  ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
+  ~                                                                           ~
+  ~ Copyright 2016 The MITRE Corporation. All Rights Reserved.                ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright 2016 The MITRE Corporation                                      ~
+  ~                                                                           ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
+  ~ you may not use this file except in compliance with the License.          ~
+  ~ You may obtain a copy of the License at                                   ~
+  ~                                                                           ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0                             ~
+  ~                                                                           ~
+  ~ Unless required by applicable law or agreed to in writing, software       ~
+  ~ distributed under the License is distributed on an "AS IS" BASIS,         ~
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  ~
+  ~ See the License for the specific language governing permissions and       ~
+  ~ limitations under the License.                                            ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.mitre.mpf</groupId>
+        <artifactId>mpf-project</artifactId>
+        <version>0.9.0</version>
+	<relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <groupId>org.mitre.mpf</groupId>
+    <artifactId>mpf-protobuf</artifactId>
+    <packaging>jar</packaging>
+    <name>MPF Protocol Buffers</name>
+    <description>The MPF Protocol Buffers Implementation</description>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.rpm.prefix>/opt/mpf</maven.rpm.prefix>
+    </properties>
+
+    <dependencies>
+    </dependencies>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>protoc-plugin</id>
+            <url>http://dl.bintray.com/sergei-ivanov/maven/</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <build>
+        <resources>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.5.1</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.google.protobuf.tools</groupId>
+                <artifactId>maven-protoc-plugin</artifactId>
+                <version>0.3.2</version>
+                <configuration>
+                    <protocExecutable>/usr/local/bin/protoc</protocExecutable>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Build the protobuf RPM -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>rpm-maven-plugin</artifactId>
+                <version>${rpm.maven.plugin.version}</version>
+                <configuration>
+                    <artifactId>mpf-protobuf</artifactId>
+                    <name>mpf-protobuf</name>
+                    <release>${rpmReleasePrefix}.${maven.build.timestamp}_${gitBranch}_${jenkinsBuildNumber}</release>
+                    <defineStatements>
+                    </defineStatements>
+                    <repackJars>false</repackJars>
+                    <needarch>false</needarch>
+                    <vendor>The MITRE Corporation</vendor>
+                    <license>COPYRIGHT 2013,2014,2015,2016 MITRE CORPORATION, all rights reserved.</license>
+                    <distribution>MPF</distribution>
+                    <group>Application</group>
+                    <version>${project.version}</version>
+                    <prefixes>
+                        <prefix>${maven.rpm.prefix}</prefix>
+                    </prefixes>
+                    <mappings>
+                        <mapping>
+                            <directory>${maven.rpm.prefix}/jars</directory>
+                            <directoryIncluded>false</directoryIncluded>
+                            <filemode>440</filemode>
+                            <username>mpf</username>
+                            <groupname>mpf</groupname>
+                            <sources>
+                                <source>
+                                    <location>target</location>
+                                    <includes>
+                                        <include>mpf-protobuf-${project.version}.jar</include>
+                                    </includes>
+                                </source>
+                            </sources>
+                        </mapping>
+                    </mappings>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

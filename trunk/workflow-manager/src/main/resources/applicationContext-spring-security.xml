@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ NOTICE                                                                    ~
+  ~                                                                           ~
+  ~ This software (or technical data) was produced for the U.S. Government    ~
+  ~ under contract, and is subject to the Rights in Data-General Clause       ~
+  ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
+  ~                                                                           ~
+  ~ Copyright 2016 The MITRE Corporation. All Rights Reserved.                ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright 2016 The MITRE Corporation                                      ~
+  ~                                                                           ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
+  ~ you may not use this file except in compliance with the License.          ~
+  ~ You may obtain a copy of the License at                                   ~
+  ~                                                                           ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0                             ~
+  ~                                                                           ~
+  ~ Unless required by applicable law or agreed to in writing, software       ~
+  ~ distributed under the License is distributed on an "AS IS" BASIS,         ~
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  ~
+  ~ See the License for the specific language governing permissions and       ~
+  ~ limitations under the License.                                            ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:security="http://www.springframework.org/schema/security"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans
+	                       http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	                       http://www.springframework.org/schema/security
+	                       http://www.springframework.org/schema/security/spring-security-3.2.xsd">
+
+	<!-- Stateless RESTful services use BASIC authentication -->
+	<!-- base64 encoded username:password example usage: curl -v -H "Authorization: Basic <base64encoded>" url_to_rest_endpoint -->
+	<security:http create-session="stateless" pattern="/rest/**">
+		<!-- Use CATALINA_OPTS to set the argument -Dweb.rest.protocol="<value>" where <value> must be set to http or https. -->
+		<security:intercept-url pattern="/**" access="ROLE_USER,ROLE_ADMIN" requires-channel="${web.rest.protocol}"/> <!-- requires-channel="http"/> -->
+		<security:http-basic />
+	</security:http>
+	<!--  to Disable REST security and open up REST uncomment below and comment above -->
+	<!-- <http  pattern="/rest/**" security="none"> </http> -->
+
+	<!-- Forms Security -->
+	<security:http auto-config="true" entry-point-ref="authenticationEntryPoint">
+		<security:intercept-url pattern="/login/**"
+			access="ROLE_ANONYMOUS,ROLE_USER,ROLE_ADMIN" />
+		<security:intercept-url pattern="/resources/**"
+			access="ROLE_ANONYMOUS,ROLE_USER,ROLE_ADMIN" />
+		<security:intercept-url pattern="/timeout"
+			access="ROLE_ANONYMOUS,ROLE_USER,ROLE_ADMIN" />
+		<security:intercept-url pattern="/bootout"
+			access="ROLE_ANONYMOUS,ROLE_USER,ROLE_ADMIN" />
+		<security:intercept-url pattern="/**" access="ROLE_USER,ROLE_ADMIN" />
+
+		<security:form-login login-page="/login" authentication-failure-url="/login?error"
+			default-target-url="/" always-use-default-target="true"
+			username-parameter="username" password-parameter="password"
+			authentication-failure-handler-ref="authenticationFailureHandler" />
+
+		<security:logout invalidate-session="true" logout-url="/login?timeout"
+			logout-success-url="/login?logout" delete-cookies="JSESSIONID" />
+
+		<security:session-management>
+			<security:concurrency-control max-sessions="1"
+				expired-url="/bootout" />
+		</security:session-management>
+
+		<!-- enable csrf protection -->
+		<!-- <csrf/> -->
+	</security:http>
+
+	<security:authentication-manager>
+		<security:authentication-provider user-service-ref="mpfUserDetailsService">
+			<!-- salt and hash passwords -->
+			<security:password-encoder ref="encoder" />
+		</security:authentication-provider>
+	</security:authentication-manager>
+
+	<bean id="encoder"
+		class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder">
+		<!-- can configure the strength -->		
+		<constructor-arg name="strength" value="12" />
+	</bean>
+
+	<bean id="authenticationEntryPoint"
+		class="org.mitre.mpf.mvc.AjaxAwareLoginUrlAuthenticationEntryPoint" />
+
+	<bean id="authenticationFailureHandler"
+		class="org.mitre.mpf.mvc.AuthenticationFailureHandler" />
+
+</beans>

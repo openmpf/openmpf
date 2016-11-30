@@ -1,0 +1,191 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2016 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+---
+#file: roles/master/tasks/activemq.yml
+
+#Manual process should we do away with RPM
+ - name: Check if ActiveMQ is installed
+   stat: path=/opt/apache-activemq-{{ activemq_version }}/activemq-all-{{ activemq_version }}.jar
+   register: amqst
+
+ - name: Download ActiveMQ
+   get_url:
+     url=http://{{ repo_host }}/repo/tars/apache-activemq-{{ activemq_version }}-bin.tar.gz
+     dest={{ tmp }}
+     use_proxy=no
+    timeout=30
+   when: not amqst.stat.exists
+
+ - name: Unpack ActiveMQ
+   unarchive: 
+     src={{ tmp }}/apache-activemq-{{ activemq_version }}-bin.tar.gz
+     dest=/opt
+     copy=no
+   when: not amqst.stat.exists
+
+ - name: Create a non-privileged group activemq
+   group:
+     name=activemq
+     state=present
+     system=yes
+
+ - name: Create a non-privileged user activemq
+   user:
+     name=activemq
+     group=activemq
+     shell=/bin/bash
+     system=yes
+     state=present
+
+ - name: Set ACTIVEMQ_HOME
+   lineinfile: >
+    dest=/opt/apache-activemq-{{ activemq_version }}/bin/env
+    regexp="# ACTIVEMQ_HOME="
+    line="ACTIVEMQ_HOME=/opt/apache-activemq-{{ activemq_version }}"
+    state=present
+
+ - name: Set ACTIVEMQ_BASE
+   lineinfile: >
+    dest=/opt/apache-activemq-{{ activemq_version }}/bin/env
+    regexp="# ACTIVEMQ_BASE="
+    line="ACTIVEMQ_BASE="$ACTIVEMQ_HOME""
+    state=present
+
+ - name: Set ACTIVEMQ_CONF
+   lineinfile: >
+    dest=/opt/apache-activemq-{{ activemq_version }}/bin/env
+    regexp="# ACTIVEMQ_CONF="
+    line="ACTIVEMQ_CONF=$ACTIVEMQ_BASE/conf"
+    state=present
+   
+ - name: Set ACTIVEMQ_DATA
+   lineinfile: >
+    dest=/opt/apache-activemq-{{ activemq_version }}/bin/env
+    regexp="# ACTIVEMQ_DATA="
+    line="ACTIVEMQ_DATA=$ACTIVEMQ_BASE/data"
+    state=present
+
+ - name: Set ACTIVEMQ_TMP
+   lineinfile: >
+    dest=/opt/apache-activemq-{{ activemq_version }}/bin/env
+    regexp="# ACTIVEMQ_TMP="
+    line="ACTIVEMQ_TMP=$ACTIVEMQ_BASE/tmp"
+    state=present
+
+ - name: Set ACTIVEMQ_USER
+   lineinfile: >
+    dest=/opt/apache-activemq-{{ activemq_version }}/bin/env
+    regexp="ACTIVEMQ_USER="
+    line="ACTIVEMQ_USER=activemq"
+    state=present
+
+ - name: Remove ActiveMQ tarball
+   file:
+     path={{ tmp }}/apache-activemq-{{ activemq_version }}-bin.tar.gz
+     state=absent
+
+ - name: Copy ActiveMQ systemd service file
+   copy:
+     src=../files/activemq.service
+     dest=/usr/lib/systemd/system/activemq.service
+     
+ - name: Allow ActiveMQ JVM to use more system memory
+   lineinfile: >
+    dest=/opt/apache-activemq-{{activemq_version}}/bin/env
+    regexp="ACTIVEMQ_OPTS_MEMORY=\"-Xms[0-9]*[M|G]\s-Xmx[0-9]*[M|G]\""
+    line="#ACTIVEMQ_OPTS_MEMORY=\"-Xms1G -Xmx1G\""
+    state=present
+
+ - name: Enable JMX in ActiveMQ
+   lineinfile: >
+     dest=/opt/apache-activemq-{{ activemq_version }}/conf/activemq.xml
+     regexp="<managementContext createConnector"
+     line="<managementContext createConnector=\"true\"/>"
+
+ - name: Disable AMQ Persistence
+   lineinfile: >
+     dest=/opt/apache-activemq-{{ activemq_version }}/conf/activemq.xml
+     regexp="<broker xmlns"
+     line="<broker xmlns=\"http://activemq.apache.org/schema/core\" brokerName=\"localhost\" dataDirectory=\"${activemq.data}\" persistent=\"false\">"
+
+ - name: Change ActiveMQ log conversion pattern
+   lineinfile: >
+    dest=/opt/apache-activemq-{{activemq_version}}/conf/log4j.properties
+    regexp="^log4j.appender.logfile.layout.ConversionPattern=\%d | \%-5p | \%m | \%c | \%t\%n"
+    line="log4j.appender.logfile.layout.ConversionPattern=\%d \%p \[\%t\] \%c \- \%m\%n"
+
+ - name: Make AMQ respect priorities
+   lineinfile: >        
+    dest=/opt/apache-activemq-{{activemq_version}}/conf/activemq.xml
+    insertafter="<policyEntries>" 
+    line="<policyEntry queue=">" prioritizedMessages="true" useCache="false" expireMessagesPeriod="0" queuePrefetch="1" />"
+    state=present
+
+ - name: Check for existing activemq.log link
+   stat:
+    path=/opt/mpf/share/logs/{{master_host}}/log/activemq.log
+   register: amqlog
+
+ - name: Remove existing activemq.log link
+   file:
+    path=/opt/mpf/share/logs/{{master_host}}/log/activemq.log
+    state=absent
+   when: amqlog.stat.exists
+  
+ - name: Add ActiveMQ log to Web UI Viewer
+   file:
+    src=/opt/apache-activemq-{{activemq_version}}/data/activemq.log
+    dest=/opt/mpf/share/logs/{{master_host}}/log/activemq.log
+    state=link
+    force=yes
+
+ - name: Change owner of ActiveMQ install to ActiveMQ user and group
+   file:
+     path=/opt/apache-activemq-{{ activemq_version }}
+     recurse=yes
+     owner=activemq
+     group=activemq
+
+ - name: Create Symlink /opt/activemq -> /opt/apache-activemq-{{ activemq_version }}
+   file:
+    src="/opt/apache-activemq-{{ activemq_version }}"
+    dest="/opt/activemq"
+    state=link
+    force=yes
+    owner=mpf
+    group=mpf
+    mode=0775
+
+ - name: Reload systemd
+   become: yes
+   become_method: sudo
+   command: systemctl daemon-reload
+   
+ - name: Enable ActiveMQ on system startup and start ActiveMQ
+   service:
+     name=activemq
+     enabled=yes
+     state=restarted

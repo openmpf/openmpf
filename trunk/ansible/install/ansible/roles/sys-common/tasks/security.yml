@@ -1,0 +1,104 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2016 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+---
+
+#TODO: Have this task not depend on a specific RPM name.
+- name: Setup SE Linux Bindings
+  get_url:
+    url="http://{{ hostvars[groups['mpf-master'][0]]['inventory_hostname'] }}/repo/rpms/management/libselinux-python-2.2.2-6.el7.x86_64.rpm"
+    dest="/tmp/"
+    use_proxy=no
+    timeout=30
+  when: "'mpf-master' not in group_names and 'localhost' not in inventory_hostname"
+
+#TODO: Have this task not depend on specific RPM names.
+- name: Install Security Packages
+  yum:
+    name="{{ item }}"
+    disable_gpg_check=yes
+    disablerepo=*
+    state=present
+    validate_certs=no
+  with_items:
+    - "/tmp/libselinux-python-2.2.2-6.el7.x86_64.rpm"
+  when: "'mpf-master' not in group_names and 'localhost' not in inventory_hostname" 
+
+#TODO: Have this task not depend on specific RPM names.
+- name: Copy Security Packages
+  copy:
+    src="{{ item }}"
+    dest="/tmp/" 
+  with_items:
+    - "/opt/mpf/manage/repo/rpms/management/libselinux-python-2.2.2-6.el7.x86_64.rpm"
+    - "/opt/mpf/manage/repo/rpms/management/python-backports-ssl_match_hostname-3.4.0.2-4.el7.noarch.rpm"
+    - "/opt/mpf/manage/repo/rpms/management/python-backports-1.0-8.el7.x86_64.rpm"
+    - "/opt/mpf/manage/repo/rpms/management/libselinux-python-2.2.2-6.el7.x86_64.rpm"
+    - "/opt/mpf/manage/repo/rpms/management/python-slip-0.4.0-2.el7.noarch.rpm"
+    - "/opt/mpf/manage/repo/rpms/management/python-slip-dbus-0.4.0-2.el7.noarch.rpm"
+    - "/opt/mpf/manage/repo/rpms/management/firewalld-0.3.9-14.el7.noarch.rpm"
+    - "/opt/mpf/manage/repo/rpms/management/ebtables-2.0.10-13.el7.x86_64.rpm"
+
+#TODO: Have this task not depend on specific RPM names.
+- name: Install Security Packages
+  yum:
+    name="{{ item }}"
+    disable_gpg_check=yes
+    disablerepo=*
+    state=present
+    validate_certs=no
+  with_items:
+    - "/tmp/libselinux-python-2.2.2-6.el7.x86_64.rpm"
+    - "/tmp/python-backports-ssl_match_hostname-3.4.0.2-4.el7.noarch.rpm"
+    - "/tmp/python-backports-1.0-8.el7.x86_64.rpm"
+    - "/tmp/libselinux-python-2.2.2-6.el7.x86_64.rpm"
+    - "/tmp/python-slip-0.4.0-2.el7.noarch.rpm"
+    - "/tmp/python-slip-dbus-0.4.0-2.el7.noarch.rpm"
+    - "/tmp/firewalld-0.3.9-14.el7.noarch.rpm"
+    - "/tmp/ebtables-2.0.10-13.el7.x86_64.rpm"
+
+#TODO: Have this task not depend on specific RPM names.
+- name: Cleanup Security Packages
+  file:
+    path="{{ item }}"
+    state=absent
+  with_items:
+    - "/tmp/libselinux-python-2.2.2-6.el7.x86_64.rpm"
+    - "/tmp/python-backports-ssl_match_hostname-3.4.0.2-4.el7.noarch.rpm"
+    - "/tmp/python-backports-1.0-8.el7.x86_64.rpm"
+    - "/tmp/libselinux-python-2.2.2-6.el7.x86_64.rpm"
+    - "/tmp/python-slip-0.4.0-2.el7.noarch.rpm"
+    - "/tmp/python-slip-dbus-0.4.0-2.el7.noarch.rpm"
+    - "/tmp/firewalld-0.3.9-14.el7.noarch.rpm"
+    - "/tmp/ebtables-2.0.10-13.el7.x86_64.rpm"
+
+#Configure security controls
+- name: Disable SE Linux
+  selinux: state=disabled
+
+- name: Disabling firewalld
+  service: name=firewalld enabled=no state=stopped
+
+

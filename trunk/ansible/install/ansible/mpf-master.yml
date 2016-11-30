@@ -1,0 +1,180 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2016 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+---
+- hosts: mpf-master
+  roles:
+    - master
+  remote_user: mpf
+  become: yes
+  vars:
+    - deployment_config: "{{ lookup('file', '/opt/mpf/share/deployment_config.json') | from_json }}"
+  pre_tasks:
+    - name: Set default password values
+      set_fact:
+        mpf_wfm_pw: "mpf123"
+        admin_wfm_pw: "mpfadm"
+        root_mysql_pw: "password"
+        mpf_mysql_pw: "mpf"
+        vault_pw: "mpf"
+      when: pwcfg != "y"
+      no_log: True
+
+
+    - name: Remove existing ansible vault
+      file:
+        path="{{ mpf_home }}/manage/ansible/roles/master/vars/vault.yml"
+        state=absent
+
+    - name: Create new ansible vault
+      file:
+        path="{{ mpf_home }}/manage/ansible/roles/master/vars/vault.yml"
+        state=touch
+        mode=0600
+        owner=mpf
+        group=mpf
+
+    - name: Remove existing vault credentials
+      file:
+        path="/home/mpf/.vault"
+        state=absent
+
+    - name: Create new ansible vault credentials
+      file:
+        path="/home/mpf/.vault"
+        state=touch
+
+    - name: Add ansible vault credentials
+      lineinfile:
+        'dest="/home/mpf/.vault"
+        line="{{ vault_pw }}"
+        state=present
+        insertafter=EOF'
+      no_log: True
+
+    - name: Add passwords to ansible vault
+      lineinfile: >
+        dest="{{ mpf_home }}/manage/ansible/roles/master/vars/vault.yml"
+        line="{{ item.0 }}: {{ item.1 }}"
+        state=present
+        insertafter=EOF
+      with_together:
+        - ["mpf_wfm_pw", "admin_wfm_pw",  "mpf_mysql_pw", "root_mysql_pw",]
+        - ["{{ mpf_wfm_pw }}", "{{ admin_wfm_pw }}", "{{ mpf_mysql_pw }}", "{{ root_mysql_pw }}"]
+      no_log: True
+
+    - name: Set permissions on ansible vault
+      file:
+        path="{{ mpf_home }}/manage/ansible/roles/master/vars/vault.yml"
+        mode=0600
+        owner=mpf
+        group=mpf
+
+    - name: Encrypt ansible vault
+      shell: "ansible-vault encrypt --vault-password-file=/home/mpf/.vault {{ mpf_home }}/manage/ansible/roles/master/vars/vault.yml"
+      ignore_errors: yes
+
+    - name: Validate Number of MPF Master hosts
+      fail: msg="The number of Master hosts must be exactly 1!"
+      when: num_master_hosts | int != 1
+
+    - name: Add localhost to repo inventory
+      add_host: name={{ inventory_hostname }} groups=mpf-repo
+
+  post_tasks:
+    - name: Start ActiveMQ
+      service:
+        name=activemq
+        state=started
+
+    - name: Start workflow-manager
+      service:
+        name=tomcat7
+        state=restarted
+        sleep=15
+    
+    - name: Set mpf as owner of catalina.out
+      file:
+        path=/opt/apache-tomcat/logs/catalina.out
+        owner=mpf
+        group=mpf
+        mode=0775
+
+    - name: Start workflow-manager
+      service:
+        name=tomcat7
+        state=restarted
+        sleep=15
+
+    - name: Generate workflow manager mpf user password hash
+      shell: >
+        python -c 'from passlib.hash import bcrypt; print bcrypt.encrypt("{{ mpf_wfm_pw }}");'
+      register: mpf_wfm_enc_pw
+      no_log: True
+
+    - name: Generate workflow manager admin user password hash
+      shell: >
+        python -c 'from passlib.hash import bcrypt; print bcrypt.encrypt("{{ admin_wfm_pw }}");'
+      register: admin_wfm_enc_pw
+      no_log: True
+
+    - name: Delete workflow manager password update SQL file
+      file:
+        path="/tmp/update_wfm_pw.sql"
+        state=absent
+
+    - name: Generate workflow manager password update SQL file
+      lineinfile: >
+        dest="/tmp/update_wfm_pw.sql"
+        line="UPDATE user SET PASSWORD='{{ item.0 }}' where USERNAME='{{ item.1 }}';"
+        state=present
+        create=yes
+        insertafter=EOF
+      with_together:
+        - ["{{ mpf_wfm_enc_pw.stdout_lines[0] }}", "{{ admin_wfm_enc_pw.stdout_lines[0] }}"]
+        - ["mpf", "admin"]
+      no_log: True
+
+    - name: Set workflow-manager status options
+      set_fact:
+        protocol: "{% if deployment_config.https.install == 'y' %}https://{% else %}http://{% endif %}"
+        port: "{% if deployment_config.https.install == 'y' %}:8443{% else %}:8080{% endif %}"
+
+    - name: Waiting for workflow-manager to startup
+      command: "curl --noproxy {{ master_host }} {{ protocol }}{{ master_host }}{{ port }}/workflow-manager/login -L -k"
+      args:
+        warn: no
+      register: wfm_curl
+      until: wfm_curl.stdout.find("Login Page") != -1
+      retries: 20
+      delay: 10
+
+    - name: Set workflow manager passwords
+      shell: mysql mpf < /tmp/update_wfm_pw.sql
+
+    - name: Delete workflow manager password update SQL file
+      file:
+        path="/tmp/update_wfm_pw.sql"
+        state=absent

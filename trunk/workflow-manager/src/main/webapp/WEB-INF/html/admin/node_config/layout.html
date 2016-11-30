@@ -1,0 +1,245 @@
+<!--
+    NOTICE
+
+    This software (or technical data) was produced for the U.S. Government
+    under contract, and is subject to the Rights in Data-General Clause
+    52.227-14, Alt. IV (DEC 2007).
+
+    Copyright 2016 The MITRE Corporation. All Rights Reserved.
+-->
+
+<!--
+    Copyright 2016 The MITRE Corporation
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+
+<div>
+	<div class="row">
+		<div class="col-lg-12">
+			<h1 class="page-header">
+				<i class="fa fa-cube fa-fw"></i>Node Configuration
+			</h1>
+			<p ng-if="isAdmin">This page enables an admin to view and edit the configuration
+					for nodes in the system. You can add/remove/relocate services from
+					nodes by simply dragging the services to the desired node. You can
+					also add nodes.</p>
+			<p ng-if="!isAdmin">This page enables a user to view the configuration of services
+					for nodes in the system. Admins can also edit the configuration.</p>
+		</div>  <!-- /.col-lg-12 -->
+	</div>  <!-- row -->
+
+	<br />
+
+	<form name="allCarts">
+	<mpf-admin-only>
+
+		<div id="page-control-group">
+			<!-- The button that gets pressed when pressing the enter key is always the first button in the form.
+			 	 The .pull-right class makes the button appear all the way to the right even though it comes
+			 	 before the other buttons in the html.
+			 -->
+			<button class="pull-right" id="saveConfigButton" ng-click="saveConfigs()" ng-disabled="pageErrors>0"
+					confirm confirm-settings="{templateUrl: 'save-config-dialog.html'}"
+					uib-popover="There are {{numberoferrors(allCarts)}} error(s) on this page; please correct them before saving."
+						popover-is-open="numberoferrors(allCarts)>0" popover-append-to-body="true" popover-placement="auto top-left">
+				Save Config
+			</button>
+			 <span class="hspacer2em pull-right"></span>
+			<button class="pull-right" id="revertConfigButton" ng-click="getConfigs()"
+					confirm="Reverting the configuration will reload the most recently saved configuration from the server. You will lose all changes you've made on this page."
+					confirm-title="Revert configuration" confirm-ok="Revert" confirm-cancel="Cancel">Revert</button>
+
+			<button class="pull-left" id="newNodeButton" ng-click="addNode()">Add New Node</button>
+		</div>
+	</mpf-admin-only>
+
+	<div id="sortable-container">
+
+		<mpf-admin-only>
+			<div id="catalog-area" mpf-is-loading="!catalogReceived">
+				<dnd-cart name="Catalog"
+						  cartid="catalog"
+						  list="catalog"
+						  list-item-key="serviceName"
+						  width="3"
+						  containment="#sortable-container"
+						  allow-duplicates="false"
+						  show-item-count="false"
+						  page-errors="pageErrors"
+						  clone="true">
+				</dnd-cart>
+			</div>
+		</mpf-admin-only>
+
+		<div mpf-is-loading="!nodeConfigsReceived">
+			<div ng-repeat="cart in nodes">
+				<dnd-cart name="{{cart.host}}" class="service-item-cart"
+						  cart-collection="nodes"
+						  cart-index="$index"
+						  list="cart.services"
+						  list-item-key="serviceName"
+						  catalog="catalog"
+						  width="3"
+						  show-item-count="{{(isAdmin)?'editable':'read-only'}}"
+						  min-items="0"
+						  max-items="64"
+						  containment="#sortable-container"
+						  page-errors="pageErrors"
+						  highlight-drop-area>
+				</dnd-cart>
+			</div>
+		</div>
+	</div>
+
+	</form>
+</div>
+
+
+<!-- ng-template for cart and the special case of catalogs -->
+<script type="text/ng-template" id="cart.html">
+	<div class="out-cart">
+		<div class="column cart">
+			<div class="columnHeader">
+				<span class="cart-name">{{name}}</span>
+				<span ng-if="cartCollection&&showItemCount==='editable'">
+					<span class="pull-right remove-cart-icon glyphicon glyphicon-remove-sign"
+						  ng-click="removeCart()" confirm-title="Remove Node Configuration for {{name}}?"
+						  confirm="Are you sure you want to remove all the configuration for {{name}}? This action cannot be undone and will result in a node that does not run any services."
+						  confirm-ok="Remove {{name}}" confirm-cancel="Cancel"
+						  uib-tooltip="Remove {{name}} and all the services in it." tooltip-placement="left">
+					</span>
+				</span>
+			</div>
+			<div class="sortable-row" as-sortable="option" data-ng-model="list">
+				<div ng-repeat="item in list" as-sortable-item style="border-left-color: {{getServiceColor(item)}};" is-disabled="pageError>0">
+					<!-- ng-form is an angular hack to enable us to dynamically generate and validate inputs:  https://scotch.io/tutorials/building-dynamic-angular-forms-with-ngrepeat-and-ngform -->
+					<ng-form name="userFieldForm">
+					<span ng-if="showItemCount==='editable'">
+						<input name="inputname" class="dnd-item-count-input" type="number" min="{{minItems}}" max="{{maxItems}}" required ng-model="item.serviceCount"
+							   ng-keydown="onInstanceCounterKeydown($event,$index)" />
+						<!-- ToDo: P038:  the following div should be a directive -->
+						<div class="pull-right dnd-item-count-input-validation-message" ng-if="showItemCount==='editable'" ng-messages="userFieldForm.inputname.$error">
+							<span uib-popover-template="'error_popup_required.html'" popover-is-open="userFieldForm.inputname.$error.required" popover-append-to-body="true" popover-class="error-validation"></span>
+							<span uib-popover-template="'error_popup_number.html'" popover-is-open="userFieldForm.inputname.$error.number" popover-append-to-body="true" popover-class="error-validation"></span>
+							<span uib-popover-template="'error_popup_max.html'" popover-is-open="userFieldForm.inputname.$error.max" popover-append-to-body="true" popover-class="error-validation"></span>
+							<span uib-popover-template="'error_popup_min.html'" popover-is-open="userFieldForm.inputname.$error.min" popover-append-to-body="true" popover-class="error-validation"></span>
+						</div>
+					</span>
+					<span ng-if="showItemCount==='read-only'">
+						<span class="dnd-item-count-input" ng-hide="isAdmin">{{item.serviceCount}}</span>
+					</span>
+					<div ng-if="showItemCount==='read-only'">
+						<div as-sortable-item-handle class="dnd-item">
+							<div no-drag>
+								<span class="dnd-item-name" ng-class="{'strikethru': item.serviceCount===0 || item.serviceCount===null || item.serviceCount===''}">
+									{{item["serviceName"]}}	<help-description helptext="{{item.serviceDescription}}"></help-description>
+								</span>
+							</div>
+						</div>
+					</div>
+					<div ng-if="showItemCount!=='read-only'">
+						<div as-sortable-item-handle class="dnd-item">
+							<div ng-if="pageErrors<=0 || pageErrors===undefined">
+								<span class="dnd-item-name" ng-class="{'strikethru': item.serviceCount===0}">
+									{{item["serviceName"]}} <help-description helptext="{{item.serviceDescription}}"></help-description>
+								</span>
+							</div>
+							<div ng-if="pageErrors>0">
+								<span class="dnd-item-name" ng-class="{'strikethru': item.serviceCount===0}" no-drag>
+									{{item["serviceName"]}} <help-description helptext="{{item.serviceDescription}}"></help-description>
+								</span>
+							</div>
+						</div>
+					</div>
+					</ng-form>
+				</div>
+				<!-- Note that using <div> here for the add button seems to conflict with the as-sortable library; <span>'s are used as a work-around -->
+				<span ng-if="list.length===0" class="add-all-services-area">&nbsp;No services configured.</span>
+				<span class="add-all-services-area">
+					<span class="btn btn-default cart-add-all-services-button" ng-if="list.length===0 && catalog!==null && showItemCount!=='read-only'" ng-click="addAllServicesToCart(cartIndex)">Add All Services</span>
+				</span>
+			</div>
+		</div>
+	</div>
+</script>
+
+
+<script type="text/ng-template" id="help_description.html">
+	<span class="mpf-information-icon glyphicon glyphicon-question-sign"
+		  uib-popover="{{helptext}}" popover-placement="{{placement}}" popover-append-to-body popover-trigger="mouseenter"></span>
+</script>
+
+
+<!-- Save Config dialog box -->
+<script type="text/ng-template" id="save-config-dialog.html">
+	<div class="modal-header"><h3 class="modal-title">Save Configuration</h3></div>
+	<div class="modal-body">
+		{{data.text}}  Saving this configuration will change the configuration file on the MPF server. Please be aware of the following:
+		<ul>
+			<li>It may take a minute for the configuration to take effect on the server.</li>
+			<li>If you removed an existing service from a node, any job that service is processing will be stopped, and you will need to resubmit that job.</li>
+		</ul>
+	</div>
+	<div class="modal-footer">
+		<button class="btn btn-primary" ng-click="ok()">Save Configuration</button>
+		<button class="btn btn-default" ng-click="cancel()">Cancel</button>
+	</div>
+</script>
+
+
+<!-- Add New Node dialog box -->
+<script type="text/ng-template" id="add-new-node-dialog.html">
+	<div class="modal-header"><h3 class="modal-title">Add New Node</h3></div>
+	<div class="modal-body">
+		<div ng-if="data.hostnames.length === 0">
+			All available nodes have already been configured.
+		</div>
+		<div ng-if="data.hostnames.length > 0">
+			Select the hostname of the new node:
+			<br/>
+			<select ng-model="data.selected" ng-init="data.selected=data.hostnames[0]">
+				<option ng-repeat="item in data.hostnames" value="{{item}}"> {{item}} </option>
+			</select>
+			<br/>
+			<em>Nodes can only be added to the system once they have been configured into the MPF cluster. Please see the MPF Installation guide for instructions.</em>
+		</div>
+	</div>
+	<div class="modal-footer">
+		<button class="btn btn-primary" ng-disabled="data.selected===undefined" ng-click="ok(data.selected)">Add Node</button>
+		<button class="btn btn-default" ng-click="cancel()">Cancel</button>
+	</div>
+</script>
+
+
+<!-- error popups for instance counters -->
+
+<script type="text/ng-template" id="error_popup_required.html">
+	<div>Error:  You must enter a value</div>
+</script>
+
+
+<script type="text/ng-template" id="error_popup_number.html">
+	<div>Error: You must enter a numeric value</div>
+</script>
+
+
+<script type="text/ng-template" id="error_popup_min.html">
+	<div>Error: This value must be greater than or equal to {{minItems}}</div>
+</script>
+
+
+<script type="text/ng-template" id="error_popup_max.html">
+	<div>Error:  This value must be less than or equal to {{maxItems}}</div>
+</script>

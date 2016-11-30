@@ -1,0 +1,50 @@
+{
+    "media": [
+        {
+            "mimeType": "image/jpeg",
+            "overriddenProperties":{},"mediaMetadata": {
+                "EXIF_ORIENTATION": "5",
+                "HORIZONTAL_FLIP": "TRUE",
+                "ROTATION": "90"
+            },
+            "tracks": {
+                "+#AUTO_ORIENT_EXTRACTION_FACE_OCV_ACTION": [
+                    {
+                        "exemplar": {
+                            "x": 211,
+                            "y": 84,
+                            "height": 284,
+                            "width": 284,
+                            "offset": 0,
+                            "offsetFrame": 0,
+                            "offsetTime": 0,
+                            "confidence": 59.0,
+                            "detectionProperties": {
+                                "HORIZONTAL_FLIP": "TRUE",
+                                "ROTATION": "90"
+                            }
+                        },
+                        "detections": [
+                            {
+                                "x": 211,
+                                "y": 84,
+                                "height": 284,
+                                "width": 284,
+                                "offset": 0,
+                                "offsetFrame": 0,
+                                "offsetTime": 0,
+                                "confidence": 59.0,
+                                "detectionProperties": {
+                                    "HORIZONTAL_FLIP": "TRUE",
+                                    "ROTATION": "90"
+                                }
+                            }
+                        ],
+                        "startOffsetFrame": 0,
+                        "stopOffsetFrame": 1
+                    }
+                ]
+            }
+        }
+    ]
+}

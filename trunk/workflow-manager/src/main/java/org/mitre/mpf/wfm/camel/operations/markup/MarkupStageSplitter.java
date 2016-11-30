@@ -1,0 +1,248 @@
+/******************************************************************************
+ * NOTICE                                                                     *
+ *                                                                            *
+ * This software (or technical data) was produced for the U.S. Government     *
+ * under contract, and is subject to the Rights in Data-General Clause        *
+ * 52.227-14, Alt. IV (DEC 2007).                                             *
+ *                                                                            *
+ * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ ******************************************************************************/
+
+/******************************************************************************
+ * Copyright 2016 The MITRE Corporation                                       *
+ *                                                                            *
+ * Licensed under the Apache License, Version 2.0 (the "License");            *
+ * you may not use this file except in compliance with the License.           *
+ * You may obtain a copy of the License at                                    *
+ *                                                                            *
+ *    http://www.apache.org/licenses/LICENSE-2.0                              *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the License is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ ******************************************************************************/
+
+package org.mitre.mpf.wfm.camel.operations.markup;
+
+import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultMessage;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.tika.mime.MimeTypes;
+import org.mitre.mpf.videooverlay.BoundingBox;
+import org.mitre.mpf.videooverlay.BoundingBoxMap;
+import org.mitre.mpf.wfm.buffers.Markup;
+import org.mitre.mpf.wfm.camel.StageSplitter;
+import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.access.MarkupResultDao;
+import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfEndpoints;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+
+
+import java.io.File;
+import java.util.*;
+
+@Component(MarkupStageSplitter.REF)
+public class MarkupStageSplitter implements StageSplitter {
+	public static final String REF = "markupStageSplitter";
+	private static final Logger log = LoggerFactory.getLogger(MarkupStageSplitter.class);
+
+	@Autowired
+	@Qualifier(RedisImpl.REF)
+	private Redis redis;
+
+	@Autowired
+	private PropertiesUtil propertiesUtil;
+
+	@Autowired
+	private IoUtils ioUtils;
+
+	/**
+	 * Returns the last task in the pipeline containing a detection action. This effectively filters preprocessor
+	 * detections so that the output is not cluttered with motion detections.
+	 */
+	private int findLastDetectionStageIndex(TransientPipeline transientPipeline) {
+		int stageIndex = -1;
+		for(int i = 0; i < transientPipeline.getStages().size(); i++) {
+			TransientStage transientStage = transientPipeline.getStages().get(i);
+			if(transientStage.getActionType() == ActionType.DETECTION) {
+				stageIndex = i;
+			}
+		}
+
+		assert 0 <= stageIndex : String.format("The stage index of %d was expected to be greater than or equal to 0.", stageIndex);
+		return stageIndex;
+	}
+
+	/** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
+	private BoundingBoxMap createMap(long jobId, TransientMedia media, int stageIndex, TransientStage transientStaqe) {
+		BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
+		long mediaId = media.getId();
+		for(int actionIndex = 0; actionIndex < transientStaqe.getActions().size(); actionIndex++) {
+			SortedSet<Track> tracks = redis.getTracks(jobId, mediaId, stageIndex, actionIndex);
+			int samplingInterval = getSamplingInterval(transientStaqe.getActions().get(actionIndex).getProperties());
+
+			for (Track track : tracks) {
+				String objectType = track.getType();
+				Random random = new Random(track.hashCode());
+				int[] randomColor = new int[]{56 + random.nextInt(200), 56 + random.nextInt(200), 56 + random.nextInt(200)};
+
+				List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
+				Collections.sort(orderedDetections);
+				for(int i = 0; i < orderedDetections.size(); i++) {
+					Detection detection = orderedDetections.get(i);
+					int currentFrame = detection.getMediaOffsetFrame();
+
+					// Create a bounding box at the location.
+					BoundingBox boundingBox = new BoundingBox();
+					boundingBox.setWidth(detection.getWidth());
+					boundingBox.setHeight(detection.getHeight());
+					boundingBox.setX(detection.getX());
+					boundingBox.setY(detection.getY());
+					boundingBox.setColor(randomColor[0], randomColor[1], randomColor[2]);
+
+					if (StringUtils.equalsIgnoreCase(track.getType(), "SPEECH") || StringUtils.equalsIgnoreCase(track.getType(), "AUDIO")) {
+						// Special case: Speech doesn't populate object locations for each frame in the video, so you have to
+						// go by the track start and stop frames.
+						boundingBoxMap.putOnFrames(Math.round(track.getStartOffsetFrameInclusive()), Math.round(track.getEndOffsetFrameInclusive()), boundingBox);
+						break;
+					} else if (samplingInterval <= 1) {
+						// If frames were processed individually, all we need to do is draw this frame's box.
+						boundingBoxMap.putOnFrame(currentFrame, boundingBox);
+					} else if (i == (track.getDetections().size() - 1)) {
+						// Otherwise, frames were not processed individually. In this case, this result is
+						// the last result in the video/segment, so we can't (easily) calculate a trajectory.
+						// Therefore, we simply draw the bounding box in the same location on all frames in this interval.
+						boundingBoxMap.putOnFrames(currentFrame, track.getEndOffsetFrameInclusive(), boundingBox);
+					} else {
+						// Finally, since the interval is greater than 1 and we are not at the last result in the
+						// collection, we draw bounding boxes on each frame in the collection such that on the
+						// first frame, the bounding box is at the position given by the object location, and on the
+						// last frame in the interval, the bounding box is very close to the position given by the object
+						// location of the next result. Consequently, the original bounding box appears to resize
+						// and translate to the position and size of the next result's bounding box.
+						BoundingBox nextBoundingBox = new BoundingBox();
+						nextBoundingBox.setWidth(detection.getWidth());
+						nextBoundingBox.setHeight(detection.getHeight());
+						nextBoundingBox.setX(detection.getX());
+						nextBoundingBox.setY(detection.getY());
+						boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, orderedDetections.get(i + 1).getMediaOffsetFrame() - currentFrame);
+					}
+				} // end foreach ObjectLocation
+			} // end foreach Track
+		} // end foreach action key
+
+		return boundingBoxMap;
+	}
+
+	@Autowired
+	@Qualifier(HibernateMarkupResultDaoImpl.REF)
+	private MarkupResultDao hibernateMarkupResultDao;
+
+	@Override
+	public final List<Message> performSplit(TransientJob transientJob, TransientStage transientStage) throws Exception {
+		List<Message> messages = new ArrayList<>();
+
+		int lastDetectionStageIndex = findLastDetectionStageIndex(transientJob.getPipeline());
+
+		hibernateMarkupResultDao.deleteByJobId(transientJob.getId());
+
+		for(int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
+			int mediaIndex = 0;
+			TransientAction transientAction = transientStage.getActions().get(actionIndex);
+			for (TransientMedia transientMedia : transientJob.getMedia()) {
+				if (transientMedia.isFailed()) {
+					log.debug("Skipping '{}' - it is in an error state.", transientMedia.getId(), transientMedia.getLocalPath());
+					continue;
+				} else if(!StringUtils.startsWith(transientMedia.getType(), "image") && !StringUtils.startsWith(transientMedia.getType(), "video")) {
+					log.debug("Skipping Media {} - only image and video files are eligible for markup.", transientMedia.getId());
+				} else {
+					List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList = createMap(transientJob.getId(), transientMedia, lastDetectionStageIndex, transientJob.getPipeline().getStages().get(lastDetectionStageIndex)).toBoundingBoxMapEntryList();
+					Markup.MarkupRequest markupRequest = Markup.MarkupRequest.newBuilder()
+							.setMediaIndex(mediaIndex)
+							.setTaskIndex(transientJob.getCurrentStage())
+							.setActionIndex(actionIndex)
+							.setMediaId(transientMedia.getId())
+							.setMediaType(Markup.MediaType.valueOf(StringUtils.upperCase(transientMedia.getType().substring(0, transientMedia.getType().indexOf('/')))))
+							.setRequestId(redis.getNextSequenceValue())
+							.setSourceUri(new File(transientMedia.getLocalPath()).getAbsoluteFile().toURI().toString())
+							.setDestinationUri(boundingBoxMapEntryList.size() > 0 ?
+									propertiesUtil.createMarkupPath(transientJob.getId(), transientMedia.getId(), getMarkedUpMediaExtensionForMediaType(transientMedia.getMediaType())).toUri().toString() :
+									propertiesUtil.createMarkupPath(transientJob.getId(), transientMedia.getId(), getFileExtension(transientMedia.getType())).toUri().toString())
+							.addAllMapEntries(boundingBoxMapEntryList)
+							.build();
+
+					DefaultMessage message = new DefaultMessage(); // We will sort out the headers later.
+					message.setHeader(MpfHeaders.RECIPIENT_QUEUE, String.format("jms:MPF.%s_%s_REQUEST", transientStage.getActionType(), transientAction.getAlgorithm()));
+					message.setHeader(MpfHeaders.JMS_REPLY_TO, StringUtils.replace(MpfEndpoints.COMPLETED_MARKUP, "jms:", ""));
+					message.setBody(markupRequest);
+					messages.add(message);
+				}
+				mediaIndex++;
+			}
+		}
+
+		return messages;
+	}
+
+	/** Returns the appropriate markup extension for a given {@link org.mitre.mpf.wfm.enums.MediaType}. */
+	private String getMarkedUpMediaExtensionForMediaType(MediaType mediaType) {
+		switch(mediaType) {
+			case IMAGE:
+				return ".png";
+			case VIDEO:
+				return ".avi";
+
+			case AUDIO: // Falls through
+			case UNSUPPORTED: // Falls through
+			default:
+				return ".bin";
+		}
+	}
+
+	private String getFileExtension(String mimeType) {
+		try {
+			return MimeTypes.getDefaultMimeTypes().forName(mimeType).getExtension();
+		} catch (Exception exception) {
+			log.warn("Failed to map the MIME type '{}' to an extension. Defaulting to .bin.", mimeType);
+			return ".bin";
+		}
+	}
+
+	private int getSamplingInterval(Map<String, String> properties) {
+		if(properties != null) {
+			for (Map.Entry<String, String> property : properties.entrySet()) {
+				if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)) {
+					// Get the frame interval property.
+					String propertyValue = property.getValue();
+					try {
+						Integer parsedPropertyValue = Integer.parseInt(propertyValue);
+						return Math.max(parsedPropertyValue, 1); // Return at least 1.
+					} catch (NumberFormatException nfe) {
+						log.warn("The sampling interval property value of '{}' cannot be parsed as an integer. Defaulting to 1.", propertyValue); // Let this loop continue. Maybe we'll find the other property and it'll be a more appropriate value.
+					}
+				}
+			}
+		}
+
+		return 1; // If we couldn't find a suitable property, or if the properties couldn't be parsed to meaningful values, we return 1.
+	}
+
+
+}

@@ -1,0 +1,150 @@
+<?xml version="1.0"?>
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ NOTICE                                                                    ~
+  ~                                                                           ~
+  ~ This software (or technical data) was produced for the U.S. Government    ~
+  ~ under contract, and is subject to the Rights in Data-General Clause       ~
+  ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
+  ~                                                                           ~
+  ~ Copyright 2016 The MITRE Corporation. All Rights Reserved.                ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright 2016 The MITRE Corporation                                      ~
+  ~                                                                           ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
+  ~ you may not use this file except in compliance with the License.          ~
+  ~ You may obtain a copy of the License at                                   ~
+  ~                                                                           ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0                             ~
+  ~                                                                           ~
+  ~ Unless required by applicable law or agreed to in writing, software       ~
+  ~ distributed under the License is distributed on an "AS IS" BASIS,         ~
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  ~
+  ~ See the License for the specific language governing permissions and       ~
+  ~ limitations under the License.                                            ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<configuration>
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+    <if condition='isNull("workflowmanagerLogFile")' >
+        <then>
+            <property name="workflowmanagerLogFile" value="${MPF_LOG_PATH}/${THIS_MPF_NODE}/log/workflow-manager.log" />
+        </then>
+    </if>
+    <!-- Logging configuration -->
+    <appender name="STDOUT-INFO" class="ch.qos.logback.core.ConsoleAppender">
+        <Target>System.out</Target>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder>
+            <pattern>%d %p [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <appender name="STDOUT-DEBUG" class="ch.qos.logback.core.ConsoleAppender">
+        <Target>System.out</Target>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>DEBUG</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder>
+            <pattern>%d %p [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+        <Target>System.err</Target>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder>
+            <pattern>%d %p [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <appender name="STDERR-WARN" class="ch.qos.logback.core.ConsoleAppender">
+        <Target>System.err</Target>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>WARN</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder>
+            <pattern>%d %p [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <appender name="WFM_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">             
+        <file>${workflowmanagerLogFile}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${workflowmanagerLogFile}.%d{yyyy-MM-dd}.%i</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>50MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder>              
+            <pattern>%d %p [%thread] %logger{36} - %msg%n</pattern>                    
+        </encoder>            
+    </appender>
+
+
+    <logger name="com.atomikos" level="WARN"/>
+    <logger name="org.dstovall" level="WARN"/>
+    <logger name="org.springframework.context.annotation" level="WARN"/>
+    <logger name="org.springframework.beans.factory" level="WARN"/>
+    <logger name="org.springframework.web.servlet.mvc.method.annotation" level="WARN"/>
+    
+    <!-- hide INFO and below from springfox swagger 2 -->
+    <logger name="springfox.documentation" level="WARN"/>
+    <logger name="springfox.core" level="WARN"/>
+    <!-- atmosphere -->
+    <logger name="org.atmosphere" level="WARN"/>
+    <!-- hides 'ResourceManager : unable to find resource *.html', which isn't an ERROR, 
+    but simply a pass from the velocity resolver to the jsp resolver -->
+    <logger name="org.apache.velocity" level="OFF"/>
+    
+    <logger name="org.apache.xbean.spring" level="WARN"/>
+    <logger name="org.mitre" level="INFO"/>
+
+    <!-- To see DEBUG logging from mpf-system-tests (to better debug test failures), uncomment the next line -->
+    <!-- <logger name="org.mitre.mpf.mst" level="DEBUG"/> -->
+
+    <logger name="org.apache.camel" level="INFO"/>
+    <logger name="org.apache.camel.spring.SpringCamelContext" level="WARN"/>
+    <logger name="org.springframework.security.config" level="WARN"/>
+    <logger name="org.springframework.context.support" level="WARN" />
+    <logger name="org.springframework.scheduling.concurrent" level="WARN" />
+    <!--<logger name="org.apache.camel.spring.spi.JmsProducer" level="DEBUG"/>-->
+    <!--<logger name="org.apache.camel.component.jms.JmsConfiguration" level="DEBUG"/>-->
+
+    <!-- These are to cleanup junk logging on startup -->
+    <logger name="org.infinispan" level="INFO"/>
+    <logger name="org.apache.camel.processor.aggregate" level="WARN"/>
+    <logger name="org.hibernate.tool.hbm2ddl" level="WARN"/>
+    <logger name="org.hibernate.cache" level="WARN"/>
+    <logger name="org.hibernate.cfg" level="WARN"/>
+    <logger name="org.hibernate" level="WARN" />
+    <logger name="org.infinispan" level="WARN" />
+    <logger name="org.apache.camel.impl.DefaultShutdownStrategy" level="WARN"/>
+    <!--<logger name="org.apache.camel.spring.spi.TransactionErrorHandler" level="INFO"/>-->
+    <!--<logger name="org.apache.camel.management.DefaultManagementAgent" level="INFO"/>-->
+    <!--<logger name="org.springframework.orm.hibernate4.HibernateTransactionManager" level="DEBUG"/>-->
+    <!--<logger name="org.springframework.jms.connection.JmsTransactionManager" level="DEBUG"/>-->
+    <!--<logger name="org.springframework.data.transaction.ChainedTransactionManager" level="TRACE"/>-->
+
+
+    <!--<logger name="org.hibernate.cache" level="DEBUG"/>-->
+    <!--<logger name="org.jnbis" level="INFO" additivity="false" />-->
+    <!--<logger name="org.mitre.jetitor.util.JetitorUtils" level="INFO" additivity="false" />-->
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT-INFO"/>
+        <appender-ref ref="STDOUT-DEBUG"/>
+        <appender-ref ref="STDERR" />
+        <appender-ref ref="STDERR-WARN" />
+        <appender-ref ref="WFM_FILE"/>
+    </root>
+</configuration>

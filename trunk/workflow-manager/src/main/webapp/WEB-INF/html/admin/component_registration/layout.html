@@ -1,0 +1,96 @@
+<!--
+    NOTICE
+
+    This software (or technical data) was produced for the U.S. Government
+    under contract, and is subject to the Rights in Data-General Clause
+    52.227-14, Alt. IV (DEC 2007).
+
+    Copyright 2016 The MITRE Corporation. All Rights Reserved.
+-->
+
+<!--
+    Copyright 2016 The MITRE Corporation
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+<div class="row">
+    <div class="alert alert-danger" ng-show="error">{{errorMessage}}</div>
+</div>
+
+
+<h1 class="page-header">
+	<i class="fa fa-align-justify fa-fw"></i>
+	Component Upload and Registration
+</h1>
+
+<mpf-admin-only show-warning-message>
+	<div class="row">
+		<div class="col-md-5">
+			<h4>Upload a new component</h4>
+			<mpf-component-dropzone can-upload="canUploadPackage"></mpf-component-dropzone>
+		</div>
+	</div>
+
+	<h4> Current Components </h4>
+
+	<table class="table table-bordered table-hover">
+		<thead>
+            <tr>
+                <th>Package name</th>
+                <th>Component name</th>
+                <th>Date uploaded</th>
+                <th>Date registered</th>
+                <th>Status</th>
+				<th class="text-center" colspan="2"> Action </th>
+            </tr>
+		</thead>
+		<tbody >
+			<tr ng-repeat="component in components | orderBy:'-dateUploaded'">
+				<td>{{component.packageFileName}}</td>
+				<td>{{component.componentName}}</td>
+				<td>{{component.dateUploaded | date:'short'}}</td>
+				<td>{{component.dateRegistered | date:'short'}}</td>
+				<td>
+					{{stateToText(component.componentState)}}
+				</td>
+				<td>
+					<button ng-disabled="!canRegister(component) || isRegistering(component)"
+							ng-click="registerComponent(component)"
+							type="button"
+							class="btn btn-success btn-block btn-xs">
+
+						<i ng-if="isRegistering(component)" class="fa fa-refresh fa-spin fa-fw"></i>
+
+						<span ng-if="!isRegistering(component)"> Register </span>
+					</button>
+				</td>
+				<td>
+					<button ng-disabled="!canRemove(component) || isRemoving(component)"
+							ng-click="removeComponent(component)"
+							type="button"
+							class="btn btn-danger btn-block btn-xs">
+
+						<i ng-if="isRemoving(component)" class="fa fa-refresh fa-spin fa-fw"></i>
+
+						<span ng-if="!isRemoving(component)"> Remove </span>
+					</button>
+				</td>
+
+			</tr>
+		</tbody>
+	</table>
+</mpf-admin-only>
+
+
+

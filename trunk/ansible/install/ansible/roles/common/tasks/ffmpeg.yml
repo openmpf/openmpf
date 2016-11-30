@@ -1,0 +1,108 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2016 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+---
+#file: roles/master/tasks/ffmpeg.yml
+
+- name: Ensure ffmpeg directory exists
+  file: path={{ mpf_home }}/bin/ffmpeg/ state=directory
+
+- name: Unarchive ffmpeg
+  unarchive:
+    src=http://{{ repo_host }}/repo/tars/ffmpeg.tar.gz
+    dest={{mpf_home}}/bin/ffmpeg/
+    copy=no
+    list_files=yes
+  environment:
+    no_proxy: "{{ repo_host }}"
+
+- name: Get the ffmpeg top level directory
+  find:
+    paths="{{ mpf_home }}/bin/ffmpeg"
+    patterns="ffmpeg"
+    file_type=directory
+    recurse=no
+  register: ffmpeg_tld
+
+- name: "Set the ffmpeg version to {{ ffmpeg_tld.files[0].path | basename }}"
+  set_fact:
+    ffmpeg_version: "{{ ffmpeg_tld.files[0].path | basename }}"
+  when: ffmpeg_tld is defined
+
+- name: Remove existing link to ffprobe
+  file:
+    dest="/usr/bin/ffprobe"
+    state="absent"
+  when: ffmpeg_version is defined
+
+- name: Ensure link to ffprobe
+  file:
+    src="{{ mpf_home }}/bin/ffmpeg/{{ ffmpeg_version }}/ffprobe"
+    dest="/usr/bin/ffprobe"
+    state="link"
+    force="yes"
+  when: ffmpeg_version is defined
+
+- name: Remove existing link to ffmpeg
+  file:
+    dest="/usr/bin/ffmpeg"
+    state="absent"
+  when: ffmpeg_version is defined
+
+- name: Ensure link to ffmpeg
+  file:
+    src="{{ mpf_home }}/bin/ffmpeg/{{ ffmpeg_version }}/ffmpeg"
+    dest="/usr/bin/ffmpeg"
+    state="link"
+    force="yes"
+  when: ffmpeg_version is defined
+
+- name: Remove existing link to ffprobe-10bit
+  file:
+    dest="/usr/bin/ffmpeg-10bit"
+    state="absent"
+  when: ffmpeg_version is defined
+
+- name: Ensure link to ffprobe-10bit
+  file:
+    src="{{ mpf_home }}/bin/ffmpeg/{{ ffmpeg_version }}/ffmpeg-10bit"
+    dest="/usr/bin/ffmpeg-10bit"
+    state="link"
+    force="yes"
+  when: ffmpeg_version is defined
+
+- name: Remove existing link to ffserver
+  file:
+    dest="/usr/bin/ffserver"
+    state="absent"
+  when: ffmpeg_version is defined
+
+- name: Ensure link to ffserver
+  file:
+    src="{{ mpf_home }}/bin/ffmpeg/{{ ffmpeg_version }}/ffserver"
+    dest="/usr/bin/ffserver"
+    state="link"
+    force="yes"
+  when: ffmpeg_version is defined

@@ -1,0 +1,127 @@
+<!--
+    NOTICE
+
+    This software (or technical data) was produced for the U.S. Government
+    under contract, and is subject to the Rights in Data-General Clause
+    52.227-14, Alt. IV (DEC 2007).
+
+    Copyright 2016 The MITRE Corporation. All Rights Reserved.
+-->
+
+<!--
+    Copyright 2016 The MITRE Corporation
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+<div id="jobs" style="height:100%;">
+    <div class="row" id="header">
+        <div class="col-md-12 ">
+            <h2> Job Status </h2>
+            <p>The jobs table will be periodically updated and an alert message will appear when new jobs are COMPLETE.</p>
+        </div>
+    </div>
+        <div class="row" id="main">
+            <div class="panel panel-primary" id="table-panel" style="margin:0;">
+                <div class="panel-heading">
+                    <h3 class="panel-title" style="display:inline;">Jobs</h3>
+                </div>
+                <div class="panel-body" style="height: calc(100vh - 200px);">
+                    <table id="jobTable" width="100%" class="display row-border cell-border">
+                        <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Pipeline</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Progress</th>
+                            <th>Output Objects</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    <div id="outputObjectsModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Output Object Paths for Job {{currentJob.jobId}}</h4>
+                </div>
+                <div class="modal-body">
+                    <div>
+                        <ul>
+                            <li>Output object path: <a ng-href="jobs/output-object?id={{currentJob.jobId}}" target="_blank">{{currentJob.outputObjectPath}}</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="btn-group">
+                        <button id="btnRefreshOutputObjectsModal" type="button" class="btn btn-info" ng-click="fetchJob(currentJob.jobId,false,true)">Refresh</button>
+                        <button id="btnDismissOutputObjectModal" type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- end of outputObjectsModal -->
+
+    <div id="resubmitJobModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Resubmit job #{{currentJob.jobId}}</h4>
+                </div>
+                <div class="modal-body">
+                    <div>
+                        <h4>You are about to resubmit Job #{{currentJob.jobId}}.</h4>
+                        <pipeline-selection selected-priority="newJobPriority"></pipeline-selection>
+                    </div>
+                    <div class="modal-footer">
+                        <!-- no button group to keep spacing between buttons -->
+                        <button id="btnResubmitJobModalCancel" type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                        <button id="btnResubmitJobModalResubmit" type="button" class="btn btn-success" ng-click="resubmitJob()">Resubmit</button>
+                    </div>
+                </div>
+            </div>
+        </div> <!-- end of outputObjectsModal -->
+    </div>
+    <div id="cancelJobModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Cancel job #{{currentJob.jobId}}</h4>
+                </div>
+                <div class="modal-body">
+                    <div>
+                        <h4>Are you sure you want to cancel Job #{{currentJob.jobId}}?</h4>
+                    </div>
+                    <div class="modal-footer">
+                        <!-- no button group to keep spacing between buttons -->
+                        <button id="btnCancelJobModalCancel" type="button" class="btn btn-default" data-dismiss="modal">No</button>
+                        <button id="btnAcceptJobCancellation" type="button" class="btn btn-danger" ng-click="cancelJob()">Cancel Job</button>
+                    </div>
+                </div>
+            </div>
+        </div> <!-- end of outputObjectsModal -->
+    </div>
+
+</div> <!-- end of jobs div -->

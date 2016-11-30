@@ -1,0 +1,187 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2016 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+---
+#file: roles/master/tasks/tomcat.yml
+
+#Manual process instead of RPM
+ - name: Check if Tomcat is installed
+   stat:
+     path="{{ tomcat_home }}/lib/catalina.jar"
+   register: tmctst
+
+ - name: Download Tomcat
+   get_url:
+     url=http://{{ repo_host }}/repo/tars/apache-tomcat-{{ tomcat_version }}.tar.gz
+     dest={{ tmp }}
+     use_proxy=no
+     timeout=30
+   when: not tmctst.stat.exists
+
+ - name: Unpack Tomcat
+   unarchive:
+     src={{ tmp }}/apache-tomcat-{{ tomcat_version }}.tar.gz
+     dest=/usr/share
+     copy=no
+   when: not tmctst.stat.exists
+
+ - name: Remove Tomcat archive
+   file:
+     path={{ tmp }}/apache-tomcat-{{ tomcat_version }}.tar.gz
+     state=absent
+
+ - name: Symlink Tomcat /opt/apache-tomcat -> /usr/share/apache-tomcat-{{ tomcat_version }}
+   file:
+     src=/usr/share/apache-tomcat-{{ tomcat_version }}
+     dest="{{ tomcat_home }}"
+     state=link
+
+ - name: Remove everything under webapps
+   file:
+     path="{{ tomcat_home }}/webapps/{{ item }}"
+     state=absent
+   with_items:
+     - docs
+     - examples
+     - host-manager
+     - manager
+     - ROOT
+
+ - name: Increase maximum size of the cache
+   lineinfile: >
+     dest="{{ tomcat_home }}/conf/context.xml"
+     insertbefore="^</Context>"
+     line="    <Resources cachingAllowed=\"true\" cacheMaxSize=\"100000\" />"
+     state=present
+
+ - name: Copy log4j.properties file
+   copy: 
+    src="../files/log4j.properties"
+    dest="{{ tomcat_home }}/lib/log4j.properties"
+    force=yes
+
+ - name: Copy log4j jar file
+   copy:
+    src="../files/log4j-1.2.17.jar"
+    dest="{{ tomcat_home }}/lib/log4j-1.2.17.jar"
+    force=yes
+
+ - name: Copy tomcat-juli-adapters jar file
+   copy:
+    src="../files/tomcat-juli-adapters.jar"
+    dest="{{ tomcat_home }}/lib/tomcat-juli-adapters.jar"
+    force=yes
+
+ - name: Copy tomcat-juli jar file
+   copy:
+    src="../files/tomcat-juli.jar"
+    dest="{{ tomcat_home }}/bin/tomcat-juli.jar"
+    force=yes
+
+ - name: Remove existing Tomcat logging.properties file
+   file:
+    path="{{ tomcat_home }}/conf/logging.properties"
+    state=absent
+   
+ - name: Check for existing tomcat.log link
+   stat:
+    path={{ mpf_home }}/share/logs/{{ master_host }}/log/tomcat.log
+   register: tmctlog
+
+ - name: Remove tomcat.log link if it exists
+   file:
+    path="{{ mpf_home }}/share/logs/{{ master_host }}/log/tomcat.log"
+    state=absent
+   when: tmctlog.stat.exists
+
+ - name: Link catalina.out to shared log location
+   file:
+    src="{{ tomcat_home }}/logs/catalina.out"
+    dest="{{ mpf_home }}/share/logs/{{ master_host }}/log/tomcat.log"
+    state=link
+    force=yes
+    owner=mpf
+    group=mpf
+    mode=0775
+   
+ - name: Install Tomcat7 service file
+   copy:
+     src=../files/tomcat7
+     dest=/etc/init.d/tomcat7
+     
+ - name: Change permissions on Tomcat7 service file
+   file:
+     path=/etc/init.d/tomcat7
+     mode=0755
+
+ - name: Set Tomcat7 to run as mpf user
+   lineinfile: 
+     dest="/etc/init.d/tomcat7"
+     regexp="^RUN_SCRIPT="
+     line="RUN_SCRIPT=\"daemon --user=mpf ${CATALINA_HOME}/bin/catalina.sh\""
+     state=present
+
+ - name: Remove existing tomcat setenv.sh
+   file:
+    state=absent
+    path="{{ tomcat_home }}/bin/setenv.sh"
+
+ - name: Remove existing tomcat HTTPS configuration from {{ tomcat_home}}/conf/server.xml
+   lineinfile:
+     dest="{{ tomcat_home }}/conf/server.xml"
+     regexp="^<Connector\sSSLEnabled="true"\sacceptCount="100"\sclientAuth="false"\sdisableUploadTimeout="true"\senableLookups="false"\smaxThreads="25"\sport="8443""
+     state=absent
+
+ - name: Configure HTTPS
+   include: https.yml
+   when: deployment_config.https.install == "y"
+
+ - name: Configure tomcat without HTTPS
+   lineinfile:
+     dest="{{ tomcat_home }}/bin/setenv.sh"
+     create=yes
+     line="export CATALINA_OPTS=\"-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.port=7800 -Djava.library.path={{ mpf_home }}/lib -Djgroups.tcpping.initial_hosts='$ALL_MPF_NODES' -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'\""
+     state=present
+     insertafter=EOF
+   when: not deployment_config.https.install == "y"
+
+ - name: Set Tomcat7 owner to MPF
+   file: 
+     path="{{ tomcat_home }}"
+     state=directory
+     group=mpf
+     owner=mpf
+     recurse=yes
+     follow=yes
+
+ - name: Reload systemd
+   become: yes
+   become_method: sudo
+   command: systemctl daemon-reload
+   
+ - name: Enable Tomcat7 on startup
+   service: 
+     name=tomcat7
+     enabled=yes

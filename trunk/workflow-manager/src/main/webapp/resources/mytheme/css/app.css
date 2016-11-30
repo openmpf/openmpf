@@ -1,0 +1,184 @@
+/******************************************************************************
+ * NOTICE                                                                     *
+ *                                                                            *
+ * This software (or technical data) was produced for the U.S. Government     *
+ * under contract, and is subject to the Rights in Data-General Clause        *
+ * 52.227-14, Alt. IV (DEC 2007).                                             *
+ *                                                                            *
+ * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ ******************************************************************************/
+
+/******************************************************************************
+ * Copyright 2016 The MITRE Corporation                                       *
+ *                                                                            *
+ * Licensed under the Apache License, Version 2.0 (the "License");            *
+ * you may not use this file except in compliance with the License.           *
+ * You may obtain a copy of the License at                                    *
+ *                                                                            *
+ *    http://www.apache.org/licenses/LICENSE-2.0                              *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the License is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ ******************************************************************************/
+
+/* app css stylesheet */
+
+/* used by ng-cloak to be more compatible with Bootstrap; see http://stackoverflow.com/a/13276214/1274852 and http://stackoverflow.com/a/11258876/1274852 */
+/* also in the documentation: https://docs.angularjs.org/api/ng/directive/ngCloak.
+/* of note from the documentation:  ...for the best result, angular.js script must be loaded in the head section of the html file; alternatively, the css rule [below] must be included in the external stylesheet of the application. */
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+  display: none !important;
+}
+
+
+.centered-in-div {
+  padding-top: 2em;
+  text-align: center;
+  vertical-align: middle;
+}
+
+
+.mpf-information-icon {
+  margin-left: .2em;
+  font-size: .9em;
+  color: white;
+  cursor: pointer;
+}
+
+.dnd-item:hover .mpf-information-icon {
+  color: #8c8c8c;
+}
+
+#catalog-area .mpf-information-icon {  /* when it's in a catalog, always show the information icon */
+  color: #8c8c8c;
+}
+
+.popover {
+  max-width: 800px; /* optional max width */
+  width: intrinsic; /* Safari/WebKit uses a non-standard name */
+  width: -moz-max-content; /* Firefox/Gecko */
+  width: -webkit-max-content; /* Chrome */
+}
+
+/*------------------------- Upload page -------------------------------------------*/
+#uploadWorkPipelineDiv {
+  width: 300px;
+}
+
+/*------------------------- Admin log page -----------------------------------------*/
+
+#logText {
+  width: 100%;
+  height: calc( 100vh - 14em );  /* this works, but is overridden by AdminLogsCtrl.js */
+  cursor: text;
+  color: black;
+  font-size: .85em;
+  border: 1px solid lightgray;
+  margin-left: -15px;
+  overflow-y: auto;
+}
+
+/*------------------------- Admin nodes and processes page ------------------------*/
+
+#panel-refresh {
+  margin-bottom: -1em;
+  margin-left: 1em;
+}
+
+.nodes-and-processes-grid {
+  font-size: .9em;
+  /*height: 72vh;*/
+}
+
+.process-running { background-color: #d0e9c6 !important }
+.process-stopped { background-color: #f2dede !important }
+
+/*------------------------- Confirm dialog -----------------------------------------*/
+
+.confirm-bodytext {
+  font-size: 1.2em;
+  font-weight: bold;
+  padding-bottom: .5em;
+}
+
+/*-------------------------- System Notices ----------------------------------------*/
+
+#systemNotices {
+  min-width: 75%;
+  margin-top: .2em;
+  font-size: 1em;
+  z-index: 1000;
+  position: fixed;
+  background-color: white;
+}
+
+/* this is the easiest way to push the page content down when system notices are shown */
+#systemNoticesHidden {
+  margin-top: .2em;
+  font-size: 1em;
+  visibility: hidden;
+}
+
+.systemNotice-title {
+  font-size: 1.2em;
+  font-weight: 700;
+  padding-bottom: .4em !important;
+}
+
+.systemNotice, .systemNotice-info, .systemNotice-warning, .systemNotice-error {
+  margin: 1pt -1em 1pt -1em !important;
+  padding: .5em 1em !important;
+}
+
+.systemNotice-info {
+  color: blue;
+  background-color: #d9edf7;
+  border-color: blue !important;
+}
+
+.systemNotice-warning {
+  color: #ab5d05 !important;
+  background-color: #fcf8e3;
+  border-color: #ab5d05 !important;
+}
+
+.systemNotice-error {
+  color: darkred;
+  background-color: #f2dede;
+  border-color: darkred !important;
+}
+
+.systemNoticeJump:hover {
+  text-decoration: none;
+}
+
+.timeout-progressbar-text {
+  color: black;
+  white-space: nowrap;
+}
+
+.progress-bar {
+  padding: .2em;
+}
+
+/*----------------------- Input Validation Errors ----------------------------------*/
+
+.dnd-item-count-input-validation-message {
+  margin-top: 1em;
+}
+
+.error-validation {
+  border-color: red;
+  color: darkred;
+  padding: .25em;
+  width: auto;
+  margin-left: -1.25em;
+  margin-top: .75em;
+}
+
+.cursor-normal-arrow {
+  cursor: default;
+}

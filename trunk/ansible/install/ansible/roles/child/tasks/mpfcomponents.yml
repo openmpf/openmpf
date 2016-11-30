@@ -1,0 +1,157 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2016 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+---
+#file: roles/child/tasks/mpfcomponents.yml
+
+#Will fail if there are no .json files found or if more than one is found
+#Only runs on the master host
+
+- name: Check for component package descriptor
+  find:
+    paths="{{ mpf_home }}/manage/repo/files/"
+    pattern="mpf-*-package.json"
+  delegate_to: "{{ master_host }}"
+  register: mpf_package_descriptor
+  failed_when: mpf_package_descriptor.matched <= 0 or mpf_package_descriptor.matched > 1
+
+- name: Download component package descriptor
+  get_url:
+    url="http://{{ repo_host }}/repo/files/{{ mpf_package_descriptor.files[0].path | basename }}"
+    dest="{{ mpf_home }}/{{ mpf_package_descriptor.files[0].path | basename }}"
+    use_proxy=no
+    timeout=30
+
+- name: Load component package descriptor
+  include_vars: "{{ mpf_package_descriptor.files[0].path }}"
+
+- name: Download MPF Core Component Archives
+  get_url:
+    url="http://{{ repo_host }}/repo/tars/mpf/{{ item }}-{{ mpf_version }}.tar.gz"
+    dest="{{ tmp }}{{ item }}-{{ mpf_version }}.tar.gz"
+    use_proxy=no
+    timeout=30
+  with_items: "{{ MPF_Core_Tars }}"
+  when: "'mpf-master' not in group_names"
+
+- name: Extract MPF Core Component Archives
+  unarchive:
+    src="{{ tmp }}{{ item }}-{{ mpf_version }}.tar.gz"
+    dest="{{ mpf_home }}"
+    copy=no
+    mode=0755
+    owner=mpf
+    group=mpf
+  with_items: "{{ MPF_Core_Tars }}"
+  when: "'mpf-master' not in group_names"
+
+- name: Remove MPF Core Component archives
+  file:
+    path="{{ tmp }}{{ item }}-{{ mpf_version }}.tar.gz"
+    state=absent
+  with_items: "{{ MPF_Core_Tars }}"
+  when: "'mpf-master' not in group_names"
+
+- name: Download MPF Component Archives
+  get_url:
+    url="http://{{ repo_host }}/repo/tars/mpf/{{ item }}-{{ mpf_version }}.tar.gz"
+    dest="{{ tmp }}{{ item }}-{{ mpf_version }}.tar.gz"
+    use_proxy=no
+    timeout=30
+  with_items: "{{ MPF_Component_Tars }}"
+
+- name: Extract MPF Component Archives
+  unarchive:
+    src="{{ tmp }}{{ item }}-{{ mpf_version }}.tar.gz"
+    dest="{{ mpf_home }}/plugins/"
+    copy=no
+    mode=0755
+    owner=mpf
+    group=mpf
+    list_files=yes
+  with_items: "{{ MPF_Component_Tars }}"
+  register: mpf_component_unarchive
+
+- name: Get MPF component descriptors
+  set_fact:
+    mpf_descriptor_paths: "{% set temp_list = [] %}{% for i in mpf_component_unarchive.results %}{% if i.files is defined %}{% for j in i.files | map('match', component_descriptor_regex) | list %}{% if j %}{{ temp_list.append(i.files[loop.index0]) }}{% endif %}{% endfor %}{% endif %}{% endfor %}{{ temp_list }}"
+  delegate_to: "{{ master_host }}"
+
+- name: Remove MPF Component archives
+  file:
+    path="{{ tmp }}{{ item }}-{{ mpf_version }}.tar.gz"
+    state=absent
+  with_items: "{{ MPF_Component_Tars }}"
+
+# This assumes all external components are .tar.gz archives
+- name: Get external component file paths
+  find:
+    paths="{{ mpf_home }}/manage/repo/extComponents/"
+    patterns="(?i)({{ item }}.*\.tar\.gz)"
+    use_regex=yes
+  with_items:
+    - "{{ External_Component_Tars }}"
+  register: external_component_filepaths
+  delegate_to: "{{ master_host }}"
+
+- name: Download external component archives
+  get_url:
+    url="http://{{ repo_host }}/repo/extComponents/{{ item[0].files[0].path | basename }}"
+    dest="{{ tmp }}{{ item[0].files[0].path | basename }}"
+    use_proxy=no
+    timeout=30
+  with_nested:
+    - "{{ external_component_filepaths.results }}"
+    - "{{ deployment_config.external_component }}"
+  when: "'{{ item[1].register }}' == 'y' and '{{ item[1].componentName | lower}}' in '{{ item[0].files[0].path | basename | lower }}'"
+
+- name: Extract external component archives
+  unarchive:
+    src="{{ tmp }}{{ item[0].files[0].path | basename }}"
+    dest="{{ mpf_home }}/plugins/"
+    copy=no
+    mode=0755
+    owner=mpf
+    group=mpf
+    list_files=yes
+  with_nested:
+    - "{{ external_component_filepaths.results }}"
+    - "{{ deployment_config.external_component }}"
+  when: "'{{ item[1].register }}' == 'y' and '{{ item[1].componentName | lower}}' in '{{ item[0].files[0].path | basename | lower }}'"
+  register: ext_component_unarchive
+
+- name: Get external component descriptors
+  set_fact:
+    descriptor_paths: "{% set temp_list = [] %}{% for i in ext_component_unarchive.results %}{% if i.files is defined %}{% for j in i.files | map('match', component_descriptor_regex) | list %}{% if j %}{{ temp_list.append(i.files[loop.index0]) }}{% endif %}{% endfor %}{% endif %}{% endfor %}{{ temp_list }}"
+  delegate_to: "{{ master_host }}"
+
+- name: Remove external component archives
+  file:
+    path="{{ tmp }}{{ item[0].files[0].path | basename }}"
+    state=absent
+  with_nested:
+    - "{{ external_component_filepaths.results }}"
+    - "{{ deployment_config.external_component }}"
+  when: "'{{ item[1].register }}' == 'y' and '{{ item[1].componentName | lower}}' in '{{ item[0].files[0].path | basename | lower }}'"

@@ -1,0 +1,251 @@
+#!/bin/bash
+
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2016 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+
+# node-manager - startup script for the MPF NodeManager cluster service
+#
+# chkconfig: 345 75 25
+# description: 
+#	      
+# processname: java nodeManager
+# config: 
+# config: 
+# pidfile: /var/run/node-manager.pid
+
+### BEGIN INIT INFO
+# Provides: 
+# Required-Start: $local_fs $remote_fs $network $named
+# Required-Stop: $local_fs $remote_fs $network
+# Should-Start: 
+# Short-Description: start and stop MPF NodeManager
+# Description: 
+#  
+### END INIT INFO
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# Source MPF
+. /etc/profile.d/mpf.sh
+
+# Source log4bash
+echo "Checking important env vars..."
+echo "MPF_HOME: ${MPF_HOME}"
+echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}"
+. ${MPF_HOME}/bin/log4bash.sh
+
+javabin=${JAVA_HOME}/bin/java
+nodeManager=${MPF_HOME}/bin/start-nodemanager.sh
+errHandler=${MPF_HOME}/bin/handle-err.sh
+pidrunfile="/var/run/node-manager.pid"
+pidfile="${MPF_HOME}/data/node-manager.pid"
+lockfile="/var/lock/subsys/node-manager"
+logfile="${MPF_LOG_PATH}/${THIS_MPF_NODE}/log/node-manager-startup.log"
+prog=node-manager
+RETVAL=0
+
+root_check() {
+
+	if [ "$(id -u)" != "0" ]; then
+		log_error "Please run as the root user" "${logfile}" true
+    		return 1
+	fi
+
+	return 0
+}
+
+log_setup() {
+	# logging setup
+	if [ -z "${MPF_USER}" ]; then
+	    log_error "MPF_USER was not set" "${logfile}" true
+	    return 1
+	fi
+
+	if [ -z "$(getent passwd ${MPF_USER})" ]; then
+	    log_error "User ${MPF_USER} does not exist" "${logfile}" true
+	    return 1
+	fi
+
+	logdir=$(dirname "${logfile}")
+
+	su - ${MPF_USER} -c "mkdir -p ${logdir} 2> /dev/null"
+	RETVAL=$?
+
+	if ! [ $RETVAL -eq 0 ]; then
+		echo "Cannot create ${logdir}"
+		return 1
+	fi
+ 
+	su - ${MPF_USER} -c "touch ${logfile} 2> /dev/null"
+	RETVAL=$?
+
+	if ! [ $RETVAL -eq 0 ]; then
+		echo "Cannot create or write to ${logfile}"
+		return 1
+	fi
+
+	return 0
+}
+
+handle_success() {
+
+	local prefix="$1"
+	echo -n "${prefix} $prog: "
+	success
+	echo
+	log_info "${prefix} $prog: [  OK  ]" "${logfile}" false
+
+	return 0
+}
+
+handle_failure() {
+
+	local prefix="$1"
+	local writable="$2"
+	echo -n "${prefix} $prog: "
+	failure
+	echo
+	if ${writable} ; then 
+		log_info "${prefix} $prog: [FAILED]" "${logfile}" false
+	fi
+
+	return 0
+}
+
+start() {
+
+	if ! root_check ; then
+	   handle_failure "Starting" false
+	   return 1
+	fi
+
+	if ! log_setup ; then
+	   handle_failure "Starting" false
+	   return 1
+	fi
+
+	# start service if not running
+
+	if [ -f ${pidrunfile} ] ; then
+	   # check to see if it really is running or if this is stale
+	   if [[ -e /proc/`cat ${pidrunfile}` ]]; then
+	       echo "NodeManager already running"
+	       handle_success "Starting"
+	       return 0
+	   fi
+	   log_info "NodeManager pid file exists but it is not running; removing pid file" "${logfile}" true
+	   rm -f ${lockfile} ${pidrunfile}
+	fi
+
+	su - ${MPF_USER} -c "$nodeManager ${pidfile} ${logfile} 2> >($errHandler ${logfile})"
+    RETVAL=$?
+
+	if [ $RETVAL -eq 0 ]; then
+	    handle_success "Starting"
+		# copy pid to system location
+		cat  $pidfile > $pidrunfile
+		touch ${lockfile}
+	else
+	    handle_failure "Starting" true
+	    rm -f ${lockfile} ${pidrunfile} ${pidfile}
+	fi
+
+	return $RETVAL
+}
+
+# When stopping nodeManager, a delay (of default 10 second) is required
+# before SIGKILLing the nodeManager parent; this gives enough time for the
+# nodeManager parent to SIGKILL any errant children.
+stop() {
+
+	if ! root_check ; then
+	   handle_failure "Stopping" false
+	   return 1
+	fi
+
+	if ! log_setup ; then
+	   handle_failure "Stopping" false
+	   return 1
+	fi
+
+	# stop service if running
+
+	if [ -f ${pidrunfile} ] ; then
+	   # check to see if it really is running or if this is stale
+	   if ! [[ -e /proc/`cat ${pidrunfile}` ]]; then
+	      echo "NodeManager not running"
+	      handle_success "Stopping"
+          return 0
+	   fi
+	else
+	   log_warn "NodeManager pid file doesn't exist (service may not be running)" "${logfile}" true
+	   handle_success "Stopping"
+	   return 0
+	fi
+
+	col=$(($(tput cols) - 14))
+	kill `cat ${pidrunfile}`
+	RETVAL=$?
+
+	if [ $RETVAL -eq 0 ]; then
+	    handle_success "Stopping"
+	    rm -f ${lockfile} ${pidrunfile} ${pidfile}
+	    RETVAL=$?
+	else
+	    handle_failure "Stopping" true
+	fi
+
+	return $RETVAL
+}
+
+# See how we were called.
+case "$1" in
+  start)
+	start
+	RETVAL=$?
+	;;
+  stop)
+	stop
+	RETVAL=$?
+	;;
+  status)
+        status -p ${pidfile} $nodeManager
+	RETVAL=$?
+	;;
+  restart)
+	stop
+	start
+	RETVAL=$?
+	;;
+  help)
+	;;
+  *)
+	echo $"Usage: $prog {start|stop|restart|status|help}"
+	RETVAL=2
+esac
+
+exit $RETVAL

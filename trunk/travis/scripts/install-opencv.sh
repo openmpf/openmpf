@@ -7,8 +7,8 @@ sudo apt-get install -y cmake git libgtk2.0-dev pkg-config libavcodec-dev libavf
 sudo apt-get install -y python-dev python-numpy libtbb2 libtbb-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev libdc1394-22-dev
 
 # Download v3.0.0 .zip file and extract
-curl -sL http://downloads.sourceforge.net/project/opencvlibrary/opencv-unix/2.4.9/opencv-2.4.9.zip?r=http%3A%2F%2Fopencv.org%2Fdownloads.html&ts=1467141570&use_mirror=heanet > opencv.zip
-unzip opencv.zip
+wget -O opencv-2.4.9.zip "http://downloads.sourceforge.net/project/opencvlibrary/opencv-unix/2.4.9/opencv-2.4.9.zip?r=http%3A%2F%2Fopencv.org%2Fdownloads.html&ts=1467141570&use_mirror=heanet"
+unzip -o opencv-2.4.9.zip
 cd opencv-2.4.9
   
 # Create a new 'build' folder

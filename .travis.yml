@@ -1,3 +1,5 @@
 language: java
-script: 
+before_install
 - mvn -eX clean install -Dtest=none -Dit.test=none -DfailIfNoTests=false -DskipITs -Dmaven.tomcat.skip=true -DcppComponents=mogMotionComponent,subsenseMotionComponent,ocvFaceComponent,dlibFaceComponent,caffeComponent,oalprTextComponent,ocvPersonComponent
+script: 
+- mvn -eX test

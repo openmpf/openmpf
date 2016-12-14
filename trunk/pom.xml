@@ -95,7 +95,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>/usr/local/bin/cmake</executable>
+                            <executable>cmake</executable>
                             <arguments>
                                 <argument>-DCMAKE_RULE_MESSAGES=OFF</argument>
                                 <argument>-DCMAKE_VERBOSE_MAKEFILE=OFF</argument>

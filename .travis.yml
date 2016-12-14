@@ -3,6 +3,7 @@ sudo: required
 before_install:
 - ./trunk/travis/scripts/update-cmake.sh
 - ./trunk/travis/scripts/install-protobuf.sh
+- ./trunk/travis/scripts/install-opencv.sh
 - mvn clean install -e -X -Dtest=none -Dit.test=none -DfailIfNoTests=false -DskipITs -Dmaven.tomcat.skip=true -DcppComponents=mogMotionComponent,subsenseMotionComponent,ocvFaceComponent,dlibFaceComponent,caffeComponent,oalprTextComponent,ocvPersonComponent
 script: 
 - mvn test -e -X

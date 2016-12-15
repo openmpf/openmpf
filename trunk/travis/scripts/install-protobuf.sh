@@ -1,5 +1,28 @@
 #!/bin/sh
 set -ex
-wget https://github.com/google/protobuf/releases/download/v2.5.0/protobuf-2.5.0.tar.gz
-tar -xzvf protobuf-2.5.0.tar.gz
-cd protobuf-2.5.0 && ./configure --prefix=/usr && make && sudo make install
+
+NAME=protobuf-2.5.0
+
+if [ ! -d "$NAME" ]; then
+	echo "Download and build Google Protobuf"
+
+	# Download tar file and extract
+	wget "https://github.com/google/protobuf/releases/download/v2.5.0/$NAME.tar.gz"
+	tar -zxvf $NAME.tar.gz
+	cd $NAME
+  
+	# Configure
+	./configure --prefix=/usr/local
+  
+	# Run 'make' with four threads
+	make -j4
+else
+	echo "Using Google Protobuf cache"
+	cd $NAME
+fi
+
+# Install to OS
+sudo make install
+  
+sudo ldconfig
+echo "Google Protobuf installed"

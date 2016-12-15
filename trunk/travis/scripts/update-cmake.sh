@@ -6,3 +6,5 @@ sudo add-apt-repository --yes ppa:kalakris/cmake
 sudo apt-get update
 sudo apt-get install cmake
 cmake --version
+
+echo "cmake updated"

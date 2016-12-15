@@ -1,9 +1,12 @@
 language: java
 sudo: required
 before_install:
-- ./trunk/travis/scripts/update-cmake.sh
-- ./trunk/travis/scripts/install-protobuf.sh
-- ./trunk/travis/scripts/install-opencv.sh
-- mvn clean install -e -X -Dtest=none -Dit.test=none -DfailIfNoTests=false -DskipITs -Dmaven.tomcat.skip=true -DcppComponents=mogMotionComponent,subsenseMotionComponent,ocvFaceComponent,dlibFaceComponent,caffeComponent,oalprTextComponent,ocvPersonComponent
+ - ./trunk/travis/scripts/update-cmake.sh
+ - ./trunk/travis/scripts/install-protobuf.sh
+ - ./trunk/travis/scripts/install-apr.sh
+ - ./trunk/travis/scripts/install-apr-util.sh
+ - ./trunk/travis/scripts/install-activemqcpp.sh
+ - ./trunk/travis/scripts/install-opencv.sh
+ - mvn clean install -e -X -Dtest=none -Dit.test=none -DfailIfNoTests=false -DskipITs -Dmaven.tomcat.skip=true -DcppComponents=mogMotionComponent,subsenseMotionComponent,ocvFaceComponent,dlibFaceComponent,caffeComponent,oalprTextComponent,ocvPersonComponent
 script: 
-- mvn test -e -X
+ - mvn test -e -X

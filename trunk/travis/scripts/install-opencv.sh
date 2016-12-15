@@ -27,7 +27,7 @@ if [ ! "$(ls -A $NAME)" ]; then
 	# Run 'make' with four threads
 	make -j4
 else
-	echo "Using OpenCV cache"
+	echo "Using Travis CI cache for OpenCV"
 	cd $NAME
 fi
 

@@ -8,7 +8,7 @@ if [ ! "$(ls -A $NAME)" ]; then
 	echo "Download and build cmake"
 
 	# Download tar file and extract
-	wget "https://cmake.org/files/v2.8/cmake-2.8.12.2.tar.gz"
+	wget "https://cmake.org/files/v2.8/$NAME.tar.gz"
 	tar -zxvf $NAME.tar.gz
 	cd $NAME
   
@@ -19,7 +19,7 @@ if [ ! "$(ls -A $NAME)" ]; then
 	# Run 'make' with four threads
 	make -j4
 else
-	echo "Using cmake cache"
+	echo "Using Travis CI cache for cmake"
 	cd $NAME
 fi
 

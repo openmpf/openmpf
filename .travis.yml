@@ -2,6 +2,7 @@ language: java
 sudo: required
 cache:
   directories:
+    - $HOME/.m2
     - cmake-2.8.12.2
     - protobuf-2.5.0
     - apr-1.5.2
@@ -9,6 +10,7 @@ cache:
     - activemq-cpp-library-3.9.0
     - opencv-2.4.9
 before_install:
+  - mvn dependency:go-offline
   - ./trunk/travis/scripts/install-deps.sh
   - ./trunk/travis/scripts/install-cmake.sh
   - ./trunk/travis/scripts/install-protobuf.sh

@@ -18,7 +18,7 @@ if [ ! "$(ls -A $NAME)" ]; then
 	# Run 'make' with four threads
 	make -j4
 else
-	echo "Using Google Protobuf cache"
+	echo "Using Travis CI cache for Google Protobuf"
 	cd $NAME
 fi
 

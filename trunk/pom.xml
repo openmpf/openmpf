@@ -64,6 +64,8 @@
                 </configuration>
             </plugin>
             -->
+
+            <!-- DEBUG: Travis CI
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -168,6 +170,8 @@
                     </execution>
                 </executions>
             </plugin>
+            -->
+
         </plugins>
         <pluginManagement>
             <plugins>

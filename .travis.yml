@@ -10,14 +10,13 @@ cache:
     - activemq-cpp-library-3.9.0
     - opencv-2.4.9
 before_install:
-  - mvn dependency:go-offline
-  - ./trunk/travis/scripts/install-deps.sh
-  - ./trunk/travis/scripts/install-cmake.sh
-  - ./trunk/travis/scripts/install-protobuf.sh
-  - ./trunk/travis/scripts/install-apr.sh
-  - ./trunk/travis/scripts/install-apr-util.sh
-  - ./trunk/travis/scripts/install-activemqcpp.sh
-  - ./trunk/travis/scripts/install-opencv.sh
+#  - ./trunk/travis/scripts/install-deps.sh
+#  - ./trunk/travis/scripts/install-cmake.sh
+#  - ./trunk/travis/scripts/install-protobuf.sh
+#  - ./trunk/travis/scripts/install-apr.sh
+#  - ./trunk/travis/scripts/install-apr-util.sh
+#  - ./trunk/travis/scripts/install-activemqcpp.sh
+#  - ./trunk/travis/scripts/install-opencv.sh
   - mvn clean install -e -X -Dtest=none -Dit.test=none -DfailIfNoTests=false -DskipITs -Dmaven.tomcat.skip=true -DcppComponents=mogMotionComponent,subsenseMotionComponent,ocvFaceComponent,dlibFaceComponent,caffeComponent,oalprTextComponent,ocvPersonComponent
 script: 
   - mvn test -Dtest=none -Dit.test=none -DfailIfNoTests=false -DskipITs -Dmaven.tomcat.skip=true -DcppComponents=ocvFaceComponent

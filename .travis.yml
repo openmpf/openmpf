@@ -2,6 +2,7 @@ language: java
 sudo: required
 cache:
   directories:
+    - cmake-2.8.12.2
     - protobuf-2.5.0
     - apr-1.5.2
     - apr-util-1.5.4
@@ -9,7 +10,7 @@ cache:
     - opencv-2.4.9
 before_install:
   - ./trunk/travis/scripts/install-deps.sh
-  - ./trunk/travis/scripts/update-cmake.sh
+  - ./trunk/travis/scripts/install-cmake.sh
   - ./trunk/travis/scripts/install-protobuf.sh
   - ./trunk/travis/scripts/install-apr.sh
   - ./trunk/travis/scripts/install-apr-util.sh

@@ -3,7 +3,8 @@ set -ex
 
 NAME=activemq-cpp-library-3.9.0
 
-if [ ! -d "$NAME" ]; then
+if [ ! "$(ls -A $NAME)" ]; then
+	# Cached dir is empty
 	echo "Download and build ActiveMQ-CPP"
 
 	# Download tar file and extract

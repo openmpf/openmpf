@@ -8,7 +8,8 @@ sudo apt-get install -y python-dev python-numpy libtbb2 libtbb-dev libjpeg-dev l
 
 NAME=opencv-2.4.9
 
-if [ ! -d "$NAME" ]; then
+if [ ! "$(ls -A $NAME)" ]; then
+	# Cached dir is empty
 	echo "Download and build OpenCV"
 
 	# Download zip file and extract

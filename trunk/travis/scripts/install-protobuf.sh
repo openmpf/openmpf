@@ -3,7 +3,8 @@ set -ex
 
 NAME=protobuf-2.5.0
 
-if [ ! -d "$NAME" ]; then
+if [ ! "$(ls -A $NAME)" ]; then
+	# Cached dir is empty
 	echo "Download and build Google Protobuf"
 
 	# Download tar file and extract

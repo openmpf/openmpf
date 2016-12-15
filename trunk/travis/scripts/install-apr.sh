@@ -3,7 +3,8 @@ set -ex
 
 NAME=apr-1.5.2
 
-if [ ! -d "$NAME" ]; then
+if [ ! "$(ls -A $NAME)" ]; then
+	# Cached dir is empty
 	echo "Download and build APR"
 
 	# Download tar file and extract

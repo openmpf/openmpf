@@ -2,7 +2,7 @@
 set -ex
 
 # Download tar file and extract
-wget -O /apps/source/apache_sources/apr-util-1.5.4.tar.gz "http://archive.apache.org/dist/apr/apr-util-1.5.4.tar.gz"
+wget "http://archive.apache.org/dist/apr/apr-util-1.5.4.tar.gz"
 tar -zxvf apr-util-1.5.4.tar.gz
 cd apr-util-1.5.4
   

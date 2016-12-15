@@ -2,7 +2,7 @@
 set -ex
 
 # Download tar file and extract
-wget -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.gz "https://archive.apache.org/dist/activemq/activemq-cpp/3.9.0/activemq-cpp-library-3.9.0-src.tar.gz"
+wget "https://archive.apache.org/dist/activemq/activemq-cpp/3.9.0/activemq-cpp-library-3.9.0-src.tar.gz"
 tar -zxvf activemq-cpp-library-3.9.0-src.tar.gz
 cd activemq-cpp-library-3.9.0
   

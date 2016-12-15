@@ -2,4 +2,4 @@
 set -ex
 
 # OpenMPF dependencies
-sudo apt-get install -y log4cxx log4cxx-dev
+sudo apt-get install -y liblog4cxx10-dev

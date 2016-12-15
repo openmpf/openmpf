@@ -11,6 +11,7 @@ cache:
     - opencv-2.4.9
 before_install:
   - ./trunk/travis/scripts/install-deps.sh
+  - ./trunk/travis/scripts/update-gcc.sh
   - ./trunk/travis/scripts/install-cmake.sh
   - ./trunk/travis/scripts/install-protobuf.sh
   - ./trunk/travis/scripts/install-apr.sh

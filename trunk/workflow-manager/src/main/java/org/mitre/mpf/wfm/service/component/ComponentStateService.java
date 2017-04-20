@@ -51,7 +51,11 @@ public interface ComponentStateService {
 
     public void removePackage(String componentPackageFileName);
 
-    public void addEntryForUploadedPackage(Path pathToComponentPackage);
+    public void addEntryForUploadedPackage(Path componentPackagePath);
+
+    public void addEntryForDeployedPackage(Path componentPackagePath, Path descriptorPath);
 
     public void addUploadErrorEntry(String componentPackageFileName);
+
+    public void addRegistrationErrorEntry(Path pathToComponentPackage);
 }

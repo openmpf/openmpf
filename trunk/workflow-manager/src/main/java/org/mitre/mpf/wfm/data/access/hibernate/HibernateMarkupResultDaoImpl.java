@@ -60,7 +60,7 @@ public class HibernateMarkupResultDaoImpl extends AbstractHibernateDao<MarkupRes
 	public List<MarkupResult> findByJobId(long jobId) {
 		return getCurrentSession().createQuery("from " + MarkupResult.class.getSimpleName() + " where jobId = :jobId")
 				.setParameter("jobId", jobId)
-				.setMaxResults(1)
+				//.setMaxResults(1)
 				.list();
 	}
 

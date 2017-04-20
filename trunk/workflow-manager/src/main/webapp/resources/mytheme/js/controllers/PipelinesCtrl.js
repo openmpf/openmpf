@@ -30,7 +30,7 @@
  * PipelinesCtrl
  * @constructor
  */
-var PipelinesCtrl = function($scope, $http, $timeout, NotificationSvc) {
+var PipelinesCtrl = function($scope,$http, $timeout, NotificationSvc) {
 
 	$scope.selectedAction;
 	$scope.selectedTask;

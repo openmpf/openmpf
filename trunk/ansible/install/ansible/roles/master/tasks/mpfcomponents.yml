@@ -25,26 +25,17 @@
 #############################################################################
 ---
 #file: roles/master/tasks/mpfcomponents.yml
-
-#Will fail if there are no .json files found or if more than one is found
 #Only runs on the master host
-- name: Check for component package descriptor
-  find:
-    paths="{{ mpf_home }}/manage/repo/files/"
-    pattern="mpf-*-package.json"
-  delegate_to: "{{ master_host }}"
-  register: mpf_package_descriptor
-  failed_when: mpf_package_descriptor.matched <= 0 or mpf_package_descriptor.matched > 1
 
 - name: Download component package descriptor
   get_url:
-    url="http://{{ repo_host }}/repo/files/{{ mpf_package_descriptor.files[0].path | basename }}"
-    dest="{{ mpf_home }}/{{ mpf_package_descriptor.files[0].path | basename }}"
+    url="http://{{ repo_host }}/repo/files/{{ deployment_config.package_descriptor | basename }}"
+    dest="{{ mpf_home }}/{{ deployment_config.package_descriptor | basename }}"
     use_proxy=no
     timeout=30
 
 - name: Load component package descriptor
-  include_vars: "{{ mpf_package_descriptor.files[0].path }}"
+  include_vars: "{{ mpf_home }}/{{ deployment_config.package_descriptor | basename }}"
 
 - name: Download MPF Core Component Archives
   get_url:
@@ -69,5 +60,3 @@
     path="{{ tmp }}{{ item }}-{{ mpf_version }}.tar.gz"
     state=absent
   with_items: "{{ MPF_Core_Tars }}"
-
-

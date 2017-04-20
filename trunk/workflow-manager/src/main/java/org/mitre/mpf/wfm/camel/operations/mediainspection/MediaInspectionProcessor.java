@@ -34,6 +34,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.tika.Tika;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
+import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
@@ -213,12 +214,10 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
 		ParseContext context = new ParseContext();
 		String mimeType = null;
-		try (InputStream stream = Preconditions.checkNotNull(IOUtils.toBufferedInputStream(FileUtils.openInputStream(fileName)),
-				"Cannot open file '%s'", fileName)) {
-			mimeType = tika.detect(stream);
-			metadata.set(Metadata.CONTENT_TYPE, mimeType);
-		}
-		try (InputStream stream = Preconditions.checkNotNull(IOUtils.toBufferedInputStream(FileUtils.openInputStream(fileName)),
+		mimeType = tika.detect(fileName);
+		metadata.set(Metadata.CONTENT_TYPE, mimeType);
+
+		try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(fileName),
 				"Cannot open file '%s'", fileName)) {
 			parser.parse(stream, handler, metadata, context);
 		}

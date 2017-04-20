@@ -1,0 +1,79 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2016 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+---
+#file: roles/upgrade/handlers/main.yml
+
+#############################################################################
+# 8to9
+#############################################################################
+
+- name: Check for generated custom Algorithms, Actions, Tasks, and Pipelines files
+  find:
+    paths: "{{ mpf_home }}/data"
+    patterns: "custom*.xml"
+  notify: Stop workflow-manager
+  register: checkaatp_find
+  changed_when: "{{ checkaatp_find.matched|int }} > 0"
+  delegate_to: "{{ master_host }}"
+  run_once: true
+
+- name: Stop workflow-manager
+  service:
+    name: tomcat7
+    state: stopped
+  notify: Merge custom Algorithms, Actions, Tasks, and Pipelines
+  delegate_to: "{{ master_host }}"
+  run_once: true
+
+- name: Merge custom Algorithms, Actions, Tasks, and Pipelines
+  shell: "python -c \"from customPipelines import *; merge_aatp('{{ mpf_home }}/data/{{ item | basename | replace('custom','') }}', '{{ item }}', '{{ mpf_home }}/data/{{ item | basename | replace('custom','' )}}');\""
+  args:
+    chdir: "{{ mpf_home }}/manage/ansible/roles/upgrade/files/customPipelines"
+  with_fileglob:
+    - "{{ mpf_home }}/data/custom*.xml"
+  notify: Start workflow-manager
+  delegate_to: "{{ master_host }}"
+  run_once: true
+
+- name: Start workflow-manager
+  service:
+    name=tomcat7
+    state=restarted
+    sleep=15
+  notify: Waiting for workflow-manager to startup
+  delegate_to: "{{ master_host }}"
+  run_once: true
+
+- name: Waiting for workflow-manager to startup
+  command: "curl --noproxy {{ master_host }} {{ protocol }}{{ master_host }}{{ port }}/workflow-manager/login -L -k"
+  args:
+    warn: no
+  register: wfm_curl
+  until: wfm_curl.stdout.find("Login Page") != -1
+  retries: 20
+  delay: 10
+  delegate_to: "{{ master_host }}"
+  run_once: true

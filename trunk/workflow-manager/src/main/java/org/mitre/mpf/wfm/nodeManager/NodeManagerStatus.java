@@ -34,13 +34,16 @@ import org.mitre.mpf.mvc.model.AtmosphereChannel;
 import org.mitre.mpf.nms.*;
 import org.mitre.mpf.nms.ChannelReceiver.NodeTypes;
 import org.mitre.mpf.nms.NodeManagerConstants.States;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,8 +54,11 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 
 	private static final Logger log = LoggerFactory.getLogger(NodeManagerStatus.class);
 
-    @Value("${activemq.hostname}")
-    private String activeMqHostname;
+	@Value("${activemq.hostname}")
+	private String activeMqHostname;
+
+	@Autowired
+	private PropertiesUtil propertiesUtil;
 
 	private volatile boolean isRunning = false;
 	private MasterNode masterNode;
@@ -60,11 +66,11 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 
 	public NodeManagerStatus() {
 		String fHostName = System.getenv("THIS_MPF_NODE");
-        log.debug("Hostname is: '{}'.", fHostName);
-        
-        if(fHostName == null) {
-            log.error("Could not determine the hostname.");
-        }
+		log.debug("Hostname is: '{}'.", fHostName);
+
+		if(fHostName == null) {
+			log.error("Could not determine the hostname.");
+		}
 	}
 
 	public void init(boolean reloadConfig) {
@@ -77,18 +83,19 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 						NodeManagerConstants.DEFAULT_CHANNEL, "MPF-MasterNode");
 			}
 
-			log.debug("Trying to load: {}.", NodeManagerStatus.class.getClassLoader().getResource("nodeManagerConfig.xml"));
+			try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
+				if (masterNode.loadConfigFile(inStream, activeMqHostname)) {
+					masterNode.launchAllNodes();
+				}
+			}
 
-			nodeManagerConfig = NodeManagerStatus.class.getClassLoader().getResourceAsStream("nodeManagerConfig.xml");
-			if(masterNode.loadConfigFile(nodeManagerConfig, activeMqHostname)) {
-				masterNode.launchAllNodes();
-			}					
-			
 			if(!reloadConfig) {		
 				masterNode.setCallback(this);
 			}
 			
 			updateServiceDescriptors();
+		} catch (IOException ex) {
+			throw new UncheckedIOException(ex);
 		} finally {
 			if (tcpConfig != null) {
 				try {

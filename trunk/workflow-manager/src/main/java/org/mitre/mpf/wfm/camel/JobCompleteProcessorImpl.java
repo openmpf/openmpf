@@ -97,7 +97,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 	@Autowired
 	@Qualifier(RedisImpl.REF)
 	private Redis redis;
-	
+
 	@Autowired
 	private JobProgress jobProgressStore;
 
@@ -166,9 +166,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			log.info("Starting "+jsonCallbackMethod+" callback to "+jsonCallbackURL);
 			try {
 				JsonCallbackBody jsonBody =new JsonCallbackBody(jobId, redis.getExternalId(jobId));
-				new Thread(new CallbackThread(jsonCallbackURL,jsonCallbackMethod,jsonBody)).start();
+				new Thread(new CallbackThread(jsonCallbackURL, jsonCallbackMethod, jsonBody)).start();
 			} catch (IOException ioe) {
-				log.warn("Failed to issue {} callback to '{}' due to an I/O exception.",jsonCallbackMethod, jsonCallbackURL, ioe);
+				log.warn("Failed to issue {} callback to '{}' due to an I/O exception.", jsonCallbackMethod, jsonCallbackURL, ioe);
 			}
 		}
 	}
@@ -202,7 +202,14 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 				jobRequest.getTimeCompleted().toString(),
 				jobStatus.getValue().toString());
 
-		// Build detection output object....
+		if (transientJob.getOverriddenJobProperties() != null) {
+			jsonOutputObject.getJobProperties().putAll(transientJob.getOverriddenJobProperties());
+		}
+
+		if (transientJob.getOverriddenAlgorithmProperties() != null) {
+			jsonOutputObject.getAlgorithmProperties().putAll(transientJob.getOverriddenAlgorithmProperties());
+		}
+
 		int mediaIndex = 0;
 		for(TransientMedia transientMedia : transientJob.getMedia()) {
 			StringBuilder stateKeyBuilder = new StringBuilder("+");
@@ -212,7 +219,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 					transientMedia.isFailed() ? "ERROR" : "COMPLETE");
 
 			mediaOutputObject.getMediaMetadata().putAll(transientMedia.getMetadata());
-			mediaOutputObject.getOverriddenProperties().putAll(transientMedia.getMediaSpecificProperties());
+			mediaOutputObject.getMediaProperties().putAll(transientMedia.getMediaSpecificProperties());
 
 			MarkupResult markupResult = markupResultDao.findByJobIdAndMediaIndex(jobId, mediaIndex);
 			if(markupResult != null) {
@@ -243,27 +250,53 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 						Collection<Track> tracks = redis.getTracks(jobId, transientMedia.getId(), stageIndex, actionIndex);
 						if(tracks.size() == 0) {
 							// Always include detection actions in the output object, even if they do not generate any results.
-							if (!mediaOutputObject.getTracks().containsKey(stateKey)) {
-								mediaOutputObject.getTracks().put(stateKey, new TreeSet<JsonTrackOutputObject>());
+							if (!mediaOutputObject.getTypes().containsKey(JsonActionOutputObject.NO_TRACKS_TYPE)) {
+								mediaOutputObject.getTypes().put(JsonActionOutputObject.NO_TRACKS_TYPE, new TreeSet<>());
+							}
+
+							SortedSet<JsonActionOutputObject> trackSet = mediaOutputObject.getTypes().get(JsonActionOutputObject.NO_TRACKS_TYPE);
+							boolean stateFound = false;
+							for (JsonActionOutputObject action : trackSet) {
+								if (stateKey.equals(action.getSource())) {
+									stateFound = true;
+									break;
+								}
+							}
+							if (!stateFound) {
+								trackSet.add(new JsonActionOutputObject(stateKey));
 							}
 						} else {
 							for (Track track : tracks) {
 								JsonTrackOutputObject jsonTrackOutputObject = new JsonTrackOutputObject(
-											TextUtils.getTrackUuid(transientMedia.getSha256(), track.getExemplar().getMediaOffsetFrame(), track.getExemplar().getX(), track.getExemplar().getY(), track.getExemplar().getWidth(), track.getExemplar().getHeight(), track.getType()),
-											track.getStartOffsetFrameInclusive(), track.getEndOffsetFrameInclusive(),
-										    track.getStartOffsetTimeInclusive(), track.getEndOffsetTimeInclusive(), track.getType(), stateKey);
+										TextUtils.getTrackUuid(transientMedia.getSha256(), track.getExemplar().getMediaOffsetFrame(), track.getExemplar().getX(), track.getExemplar().getY(), track.getExemplar().getWidth(), track.getExemplar().getHeight(), track.getType()),
+										track.getStartOffsetFrameInclusive(), track.getEndOffsetFrameInclusive(),
+										track.getStartOffsetTimeInclusive(), track.getEndOffsetTimeInclusive(), track.getType(), stateKey);
 
 
 								jsonTrackOutputObject.setExemplar(new JsonDetectionOutputObject(track.getExemplar().getX(), track.getExemplar().getY(), track.getExemplar().getWidth(), track.getExemplar().getHeight(), track.getExemplar().getConfidence(), track.getExemplar().getDetectionProperties(), track.getExemplar().getMediaOffsetFrame(), track.getExemplar().getMediaOffsetTime(), track.getExemplar().getArtifactExtractionStatus().name(), track.getExemplar().getArtifactPath()));
 								for (Detection detection : track.getDetections()) {
 									jsonTrackOutputObject.getDetections().add(new JsonDetectionOutputObject(detection.getX(), detection.getY(), detection.getWidth(), detection.getHeight(), detection.getConfidence(), detection.getDetectionProperties(), detection.getMediaOffsetFrame(), detection.getMediaOffsetTime(), detection.getArtifactExtractionStatus().name(), detection.getArtifactPath()));
-
 								}
 
-								if (!mediaOutputObject.getTracks().containsKey(stateKey)) {
-									mediaOutputObject.getTracks().put(stateKey, new TreeSet<JsonTrackOutputObject>());
+								String type = jsonTrackOutputObject.getType();
+								if (!mediaOutputObject.getTypes().containsKey(type)) {
+									mediaOutputObject.getTypes().put(type, new TreeSet<JsonActionOutputObject>());
 								}
-								mediaOutputObject.getTracks().get(stateKey).add(jsonTrackOutputObject);
+
+								SortedSet<JsonActionOutputObject> actionSet = mediaOutputObject.getTypes().get(type);
+								boolean stateFound = false;
+								for (JsonActionOutputObject action : actionSet) {
+									if (stateKey.equals(action.getSource())) {
+										stateFound = true;
+										action.getTracks().add(jsonTrackOutputObject);
+										break;
+									}
+								}
+								if (!stateFound) {
+									JsonActionOutputObject action = new JsonActionOutputObject(stateKey);
+									actionSet.add(action);
+									action.getTracks().add(jsonTrackOutputObject);
+								}
 							}
 						}
 
@@ -281,6 +314,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			File outputFile = propertiesUtil.createDetectionOutputObjectFile(jobId);
 			jsonUtils.serialize(jsonOutputObject, outputFile);
 			jobRequest.setOutputObjectPath(outputFile.getAbsolutePath());
+			jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
 			jobRequestDao.persist(jobRequest);
 		} catch(IOException | WfmProcessingException wpe) {
 			log.error("Failed to create the JSON detection output object for '{}' due to an exception.", jobId, wpe);
@@ -347,7 +381,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 				req = new HttpGet(jsonCallbackURL2);
 			}else { // this is for a POST
 				HttpPost post = new HttpPost(callbackURL);
-				post.addHeader("Content-Type", "application/json");				;
+				post.addHeader("Content-Type", "application/json");
 				try {
 					post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(body)));
 					req = post;

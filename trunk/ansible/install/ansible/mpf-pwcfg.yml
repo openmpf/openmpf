@@ -32,35 +32,35 @@
       default: "mpf123"
       private: yes
       confirm: yes
-      when: "{{ pwcfg }} == 'y'"
+      when: pwcfg | bool
 
     - name: "admin_wfm_pw"
       prompt: "Enter the custom workflow manager admin user password or press enter for the default value"
       default: "mpfadm"
       private: yes
       confirm: yes
-      when: "{{ pwcfg }} == 'y'"
+      when: pwcfg | bool
 
     - name: "mpf_mysql_pw"
       prompt: "Enter the custom MySQL mpf user password or press enter for the default value"
       default: "mpf"
       private: yes
       confirm: yes
-      when: "{{ pwcfg }} == 'y'"
+      when: pwcfg | bool
 
     - name: "root_mysql_pw"
       prompt: "Enter the custom MySQL root user password or press enter for the default value"
       default: "password"
       private: yes
       confirm: yes
-      when: "{{ pwcfg }} == 'y'"
+      when: pwcfg | bool
 
     - name: "vault_pw"
       prompt: "Enter the custom Ansible vault password or press enter for the default value"
       default: "mpf"
       private: yes
       confirm: yes
-      when: "{{ pwcfg }} == 'y'"
+      when: pwcfg | bool
 
   tasks:
     - name: Set custom passwords

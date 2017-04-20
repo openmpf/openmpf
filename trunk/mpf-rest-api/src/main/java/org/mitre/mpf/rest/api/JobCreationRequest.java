@@ -26,11 +26,15 @@
 
 package org.mitre.mpf.rest.api;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public class JobCreationRequest {	
 	private List<JobCreationMediaData> media = new LinkedList<>();
+	private Map<String, String> jobProperties = new HashMap<>();
+	private Map<String, Map> algorithmProperties = new HashMap<>();
 	private String externalId = null;
 	private String pipelineName = null;
 	private Boolean buildOutput = null; //will use a server side property if null
@@ -38,13 +42,28 @@ public class JobCreationRequest {
 	private String callbackURL = null; // the URL to send a response after the job completes
 	private String callbackMethod = "POST"; // the method to send the response back after a job completes
 
+
 	public List<JobCreationMediaData> getMedia() {
 		return media;
 	}
 	public void setMedia(List<JobCreationMediaData> media) {
 		this.media = media;
 	}
-	
+
+	public Map<String, String> getJobProperties() {
+		return jobProperties;
+	}
+	public void setJobProperties(Map<String, String> jobProperties) {
+		this.jobProperties = jobProperties;
+	}
+
+	public Map<String, Map> getAlgorithmProperties() {
+		return algorithmProperties;
+	}
+	public void setAlgorithmProperties(Map<String, Map> algorithmProperties) {
+		this.algorithmProperties = algorithmProperties;
+	}
+
 	public String getExternalId() {
 		return externalId;
 	}

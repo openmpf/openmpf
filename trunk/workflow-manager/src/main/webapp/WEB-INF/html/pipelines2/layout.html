@@ -1,0 +1,208 @@
+<!--
+    NOTICE
+
+    This software (or technical data) was produced for the U.S. Government
+    under contract, and is subject to the Rights in Data-General Clause
+    52.227-14, Alt. IV (DEC 2007).
+
+    Copyright 2016 The MITRE Corporation. All Rights Reserved.
+-->
+
+<!--
+    Copyright 2016 The MITRE Corporation
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+<div>
+    <div class="row">
+        <div class="col-lg-12">
+            <h1 class="page-header"><i class="fa fa-bars fa-fw"></i><span id="pagename">Pipelines</span></h1>
+        </div>  <!-- /.col-lg-12 -->
+    </div>  <!-- row -->
+
+    <div class="row">
+        <div class="col-lg-12">
+            <form name="outerForm" class="form-horizontal">
+                <uib-tabset active="0">
+
+                    <!-- ----- Pipelines Tab ----- -->
+                    <uib-tab id="pipeline-tab" index="0" heading="Pipelines">
+                        <div id="pp_pipeline-pane">
+                            <div class="col-lg-2">
+                                <div class="row selection-area">
+                                    <div ng-repeat="pipeline in pipelines | orderBy: 'name'">
+                                        <div class="btn selection-button"
+                                             ng-click="selectPipeline(pipeline)"
+                                             ng-model="$parent.currentPipelineIndex"
+                                             uib-btn-radio="'{{$index}}'">{{pipeline.name}}</div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <button class="btn btn-default col-sm-6" id="newPipelineButton"
+                                        ng-click="pipes2.newPipeline()">New</button>
+                                    <button class="btn btn-default col-sm-6 pull-right" disabled="disabled">Copy</button>
+                                </div>
+                            </div>
+                            <div ng-include="'pipeline.pane.html'"></div>
+                        </div>
+                    </uib-tab>
+
+                    <!-- ----- Algorithms Tab -->
+                    <uib-tab index="1" id="algorithm-tab" class="pipeline-page-tab-content" heading="Algorithms">
+                        <div class="col-lg-2">
+                            <div class="row selection-area">
+                                <div ng-repeat="action in actions | orderBy: 'name'">
+                                    <div class="btn selection-button"
+                                         ng-click="selectAction(action.name)"
+                                         ng-model="$parent.currentActionIndex"
+                                         uib-btn-radio="'{{$index}}'">{{action.name}}</div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <button class="btn btn-default col-sm-6" id="newActionButton"
+                                        ng-click="newAction()">New</button>
+                                <!--<button class="btn btn-default col-sm-6 pull-right" id="editActionButton"-->
+                                        <!--disabled="disabled">Copy</button>-->
+                            </div>
+                        </div>
+                        <div ng-include="'algorithm.pane.html'"></div>
+                    </uib-tab>
+
+                </uib-tabset>
+            </form>
+            <!--<pre>$scope.currentPipeline: {{currentPipeline | json}}</pre>-->
+            <!--<pre>$scope.currentAction: {{currentAction | json}}</pre>-->
+        </div>
+    </div>
+</div>
+
+
+<script type="text/ng-template" id="algorithm.property-help.html">
+    <div>
+        <p>{{prop.name}}</p>
+        <p class="pp-popover-description">{{prop.description}}</p>
+        <p>[{{prop.type}}]</p>
+    </div>
+</script>
+
+
+<!-- Pipeline pane -->
+<script type="text/ng-template" id="pipeline.pane.html">
+    <div class="col-lg-10 pp-pipeline pp-pipeline-bg">
+        <ng-form name="nestedForm">
+            <div class="row">
+                <div class="form-group">
+                    <label class="control-label col-sm-1 pp-name" for="pipeline-name"><strong>Pipeline</strong>:</label>
+                    <input class="col-sm-9 pp-pipeline pp-name" type="text" id="pipeline-name"
+                           required ng-readonly="!editMode" ng-model="currentPipeline.name"
+                           ng-model-options="{ updateOn: 'blur' }"/>
+                    &nbsp;
+                    <button ng-if="editMode" class="btn btn-default" id="savePipelineButton"
+                            ng-click="pipes2.savePipeline( currentPipeline )">Save
+                    </button>
+                    <!--<button ng-if="!editMode" class="btn btn-default" id="deletePipelineButton"-->
+                            <!--ng-click="pipes2.deletePipeline( currentPipeline )">Delete-->
+                    <!--</button>-->
+                </div>
+                <div class="form-group pp-description-group">
+                    <label class="control-label col-sm-1" for="pipeline-description"></label>
+                    <textarea class="col-sm-9 pp-pipeline pp-description" id="pipeline-description"
+                              ng-readonly="!editMode" ng-model="currentPipeline.description"/>
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <task-sequence tasks="currentPipeline.vmTasks" op-obj="pipes2"></task-sequence>
+                </div>
+            </div>
+        </ng-form>
+    </div>
+</script>
+
+<!-- Algorithm pane -->
+<script type="text/ng-template" id="algorithm.pane.html">
+    <div class="col-lg-10 pp-action pp-action-bg">
+        <ng-form name="nestedForm">
+            <div class="row">
+                <div class="form-group">
+                    <label class="control-label col-sm-2 pp-name" for="action-name"><strong>Algorithm</strong>:</label>
+                    <input class="col-sm-8 pp-action pp-name" type="text" id="action-name"
+                           required ng-readonly="!editMode" ng-model="currentAction.name"
+                           ng-model-options="{ updateOn: 'blur' }"/>
+                    &nbsp;
+                    <button ng-if="editMode" class="btn btn-default" id="saveActionButton"
+                            ng-click="saveActionAndTask( currentAction )">Save
+                    </button>
+                    <!--<button ng-if="!editMode" class="btn btn-default" id="deleteActionButton"-->
+                            <!--ng-click="deleteAction()">Delete-->
+                    <!--</button>-->
+                </div>
+                <div class="form-group pp-description-group">
+                    <label class="control-label col-sm-2" for="action-description"></label>
+                    <textarea class="col-sm-8 pp-action pp-description" id="action-description"
+                              ng-readonly="!editMode" ng-model="currentAction.description"
+                              ng-model-options="{ updateOn: 'blur' }"/>
+                </div>
+                <div class="col-lg-2">
+                    <!--placeholder-->
+                </div>
+                <div class="col-lg-10">
+                    <div class="pp-content">
+                        <div class="row">
+                            <div class="col-lg-10 col-sm-10">
+                                <fieldset class="action-overridden-properties">
+                                    <div ng-if="editMode">
+                                            <span uib-dropdown on-toggle="toggled(open)">
+                                                <a href id="simple-dropdown" uib-dropdown-toggle>
+                                                    Select an algorithm base...
+                                                </a>
+                                                <ul class="dropdown-menu" uib-dropdown-menu>
+                                                    <li ng-repeat="algorithm in algorithms | orderBy: 'name'">
+                                                        <a href ng-click="setAlgorithmRef(algorithm.name)">{{algorithm.name}}</a>
+                                                    </li>
+                                                </ul>
+                                            </span>
+                                    </div>
+                                    <div ng-if="currentAction.viewProperties.length>0" class="action-all-properties pp-algorithm">
+                                        <span class="pp-algorithm-decoration">{{currentAction.algorithm.actionType}}</span>
+                                        <span class="pp-algorithm-decoration">{{currentAction.algorithmRef}}</span>
+                                        <span ng-if="!editMode" class="pp-algorithm">
+                                            <strong>{{currentAction.properties.length}}</strong> parameters overriding
+                                        </span>
+                                        <span ng-if="!editMode">
+                                            <strong>{{currentAction.viewProperties.length}}</strong> default parameters
+                                        </span>
+                                        <div class="pp-algorithm-panel">
+                                            <div ng-repeat="prop in currentAction.viewProperties">
+                                                <action-property prop="prop" edit-mode="editMode"></action-property>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div ng-if="currentAction.viewProperties.length<=0"
+                                         class="action-all-properties pp-algorithm">
+                                        <span class="pp-algorithm-decoration">{{currentAction.algorithmRef}}</span>
+                                        has no parameters
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>  <!-- row -->
+        </ng-form>
+    </div>
+</script>
+
+
+

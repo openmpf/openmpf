@@ -71,6 +71,48 @@
                 <inherited>false</inherited>
                 <executions>
                     <execution>
+                        <id>run-component-build-script</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>python</executable>
+                            <arguments>
+                                <argument>${components.build.script}</argument>
+                                <argument>--build-dir=${components.build.dir}</argument>
+                                <argument>--java-sdk-src=${components.build.sdks.java}</argument>
+                                <argument>--cpp-sdk-src=${components.build.sdks.cpp}</argument>
+                                <argument>--component-search-path=${components.build.search.paths}</argument>
+                                <argument>--components=${components.build.components}</argument>
+                                <argument>--parallel=${components.build.parallel.builds}</argument>
+                                <argument>--jobs=${components.build.make.jobs}</argument>
+                                <argument>--mpf-package-json=${components.build.package.json}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>run-component-build-script-clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>python</executable>
+                            <arguments>
+                                <argument>${components.build.script}</argument>
+                                <argument>--build-dir=${components.build.dir}</argument>
+                                <argument>--java-sdk-src=${components.build.sdks.java}</argument>
+                                <argument>--cpp-sdk-src=${components.build.sdks.cpp}</argument>
+                                <argument>--component-search-path=${components.build.search.paths}</argument>
+                                <argument>--components=${components.build.components}</argument>
+                                <argument>--parallel=${components.build.parallel.builds}</argument>
+                                <argument>--jobs=${components.build.make.jobs}</argument>
+                                <argument>--clean-only</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>cmake-initialize</id>
                         <phase>initialize</phase>
                         <goals>
@@ -89,13 +131,13 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>cmake-generate-sources</id>
-                        <phase>generate-sources</phase>
+                        <id>cmake-generate-makefiles</id>
+                        <phase>compile</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>/usr/local/bin/cmake</executable>
+                            <executable>cmake3</executable>
                             <arguments>
                                 <argument>-DCMAKE_RULE_MESSAGES=OFF</argument>
                                 <argument>-DCMAKE_VERBOSE_MAKEFILE=OFF</argument>
@@ -164,6 +206,53 @@
                                 <successCode>0</successCode>
                                 <successCode>1</successCode>
                             </successCodes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.0.2</version>
+                <executions>
+                    <execution>
+                        <id>copy-plugin-packages</id>
+                        <!-- Want this to run before verify phase so system tests have access
+                             to the plugin packages. -->
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${startup.auto.registration.skip}</skip>
+                            <outputDirectory>${env.MPF_HOME}/share/components</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${components.build.dir}/plugin-packages</directory>
+                                    <includes>
+                                        <include>*.tar.gz</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-component-dependency-finder</id>
+                        <!-- Want this to run before verify phase so system tests have access
+                             to the dependency finder script. -->
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${env.MPF_HOME}/bin</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/bin/mpf-component-dependency-finder</directory>
+                                    <includes>
+                                        <include>component_dependency_finder.py</include>
+                                    </includes>
+                                </resource>
+                            </resources>
                         </configuration>
                     </execution>
                 </executions>

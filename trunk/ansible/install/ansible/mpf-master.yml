@@ -39,9 +39,8 @@
         root_mysql_pw: "password"
         mpf_mysql_pw: "mpf"
         vault_pw: "mpf"
-      when: pwcfg != "y"
+      when: not pwcfg | bool
       no_log: True
-
 
     - name: Remove existing ansible vault
       file:
@@ -159,8 +158,8 @@
 
     - name: Set workflow-manager status options
       set_fact:
-        protocol: "{% if deployment_config.https.install == 'y' %}https://{% else %}http://{% endif %}"
-        port: "{% if deployment_config.https.install == 'y' %}:8443{% else %}:8080{% endif %}"
+        protocol: "{% if deployment_config.https.install %}https://{% else %}http://{% endif %}"
+        port: "{% if deployment_config.https.install %}:8443{% else %}:8080{% endif %}"
 
     - name: Waiting for workflow-manager to startup
       command: "curl --noproxy {{ master_host }} {{ protocol }}{{ master_host }}{{ port }}/workflow-manager/login -L -k"
@@ -170,6 +169,18 @@
       until: wfm_curl.stdout.find("Login Page") != -1
       retries: 20
       delay: 10
+
+    - name: Check for MPF components file
+      stat:
+        path="{{ mpf_home }}/data/components.json"
+      register: components_file_st
+
+    - name: Create empty MPF components file
+      copy:
+        content="[ ]"
+        dest="{{ mpf_home }}/data/components.json"
+      when: not components_file_st.stat.exists
+
 
     - name: Set workflow manager passwords
       shell: mysql mpf < /tmp/update_wfm_pw.sql

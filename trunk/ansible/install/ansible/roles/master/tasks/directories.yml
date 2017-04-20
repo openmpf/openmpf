@@ -25,10 +25,21 @@
 #############################################################################
 ---
 - name: Ensure MPF directory permissions
-  file: path={{ mpf_home }} state=directory owner=mpf group=mpf mode=0755
+  file:
+    path={{ mpf_home }}
+    state=directory
+    owner=mpf
+    group=mpf
+    mode=0755
 
 - name: Ensure MPF directory structure permissions
-  file: path={{ mpf_home }}/{{ item}} state=directory owner=mpf group=mpf mode=0755 recurse=yes
+  file:
+    path={{ mpf_home }}/{{ item }}
+    state=directory
+    owner=mpf
+    group=mpf
+    mode=0755
+    recurse=yes
   with_items:
      - bin
      - config

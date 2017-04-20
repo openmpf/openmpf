@@ -1,0 +1,47 @@
+{
+  "componentName" : "JavaTestDetection",
+  "componentVersion" : "0.9.0",
+  "middlewareVersion" :  "0.9.0",
+  "sourceLanguage" : "java",
+  "pathName" : "mpf-java-test-detection-component-0.9.0.jar",
+  "launchArgs" : [],
+  "environmentVariables" : [ {
+    "name" : "DUMMY_VAR",
+    "value" : "nothing",
+    "sep" : null
+    } ],
+  "algorithm" : {
+    "name" : "JavaTest",
+    "description" : "A dummy Java detection component.",
+    "actionType" : "DETECTION",
+    "requiresCollection" : {
+      "states" : []
+    },
+    "providesCollection" : {
+      "states" : [
+        "state1",
+        "state2"
+      ],
+      "properties" : [
+        {
+          "name" : "prop1",
+          "description" : "my prop 1",
+          "type" : "INT",
+          "defaultValue" : "2"
+        },
+        {
+          "name" : "prop2",
+          "description" : "my prop 2",
+          "type" : "BOOLEAN",
+          "defaultValue" : "true"
+        },
+        {
+          "name" : "prop3",
+          "description" : "my prop 3",
+          "type" : "STRING",
+          "defaultValue" : "string property"
+        }
+      ]
+    }
+  }
+}

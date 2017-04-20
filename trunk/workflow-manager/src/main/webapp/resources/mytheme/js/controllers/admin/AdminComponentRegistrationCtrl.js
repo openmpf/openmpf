@@ -33,12 +33,13 @@
 /**
  * AngularJS controller for the component  registration page
  */
-angular.module('WfmAngularSpringApp.controller.AdminComponentRegistrationCtrl', [
-    'WfmAngularSpringApp.services'
+angular.module('mpf.wfm.controller.AdminComponentRegistrationCtrl', [
+    'mpf.wfm.services',
+	'ui.bootstrap'
 ])
 .controller('AdminComponentRegistrationCtrl',
-['$scope', 'Components', 'NotificationSvc',
-function ($scope, Components, NotificationSvc) {
+['$scope', 'Components', 'NotificationSvc', '$uibModal',
+function ($scope, Components, NotificationSvc, $uibModal) {
 
 	$scope.components = Components.query();
 
@@ -46,28 +47,26 @@ function ($scope, Components, NotificationSvc) {
 	
 	
 	var refreshComponents = function () {
-		$scope.components = Components.query();
+		Components.query()
+			.$promise
+			.then(function (components) {
+				$scope.components = components;
+			});
 	};
 
-	var setComponentPackageState = function (packageName, newState) {
-		var component = _.findWhere($scope.components, {packageFileName: packageName});
-		if (component) {
-			component.componentState = newState;
-		}
-	};
 
 	var registerComponentPackage = function (packageName) {
-		setComponentPackageState(packageName, statesEnum.REGISTERING);
+		var component = _.findWhere($scope.components, {packageFileName: packageName});
 		NotificationSvc.info('The registration of component package ' + packageName + ' has started!');
-		Components.register(packageName)
-			.$promise
+		component.componentState = statesEnum.REGISTERING;
+
+		component.$register()
 			.then(function () {
 				NotificationSvc.success('The component package ' + packageName + ' has been registered!');
 			})
 			.catch(function (errorResponse) {
-				NotificationSvc.error(errorResponse.data.message);
-			})
-			.finally(refreshComponents);
+				handleRegistrationError(component, errorResponse);
+			});
 	};
 
 
@@ -81,18 +80,106 @@ function ($scope, Components, NotificationSvc) {
 		component.componentState = statesEnum.REMOVING;
 		Components.remove(component)
 			.then(function () {
-				if (component.componentName) {
-					NotificationSvc.info('The ' + component.componentName + ' component has been removed');
-				}
-				else {
-					NotificationSvc.info('The ' + component.packageFileName + ' component package has been removed.');
-				}
+				NotificationSvc.info('The ' + component.packageFileName + ' component package has been removed');
 				removeLocally(component);
 			})
 			.catch(function (errorResponse) {
-				NotificationSvc.error(errorResponse.data.message);
-				refreshComponents();
+				handleRegistrationError(component, errorResponse);
 			});
+	};
+
+
+	$scope.reRegisterClicked = function (component) {
+		var originalState = component.componentState;
+		component.componentState = statesEnum.RE_REGISTERING;
+		Components.getReRegisterOrder(component.packageFileName)
+			.$promise
+			.then(function (componentRegistrationOrder) {
+				if (componentRegistrationOrder.length === 1) {
+					reRegisterComponents(componentRegistrationOrder);
+				}
+				else {
+					confirmReRegistration(component, componentRegistrationOrder, originalState);
+				}
+			})
+			.catch(function (errorResponse) {
+				NotificationSvc.error(errorResponse.data.message);
+				component.componentState = originalState;
+				// Save for when we allow re-registration with errors.
+				// confirmReRegistration(component, null, originalState);
+			});
+	};
+
+	var confirmReRegistration = function (targetComponent, registrationOrder, originalState) {
+		var confirmClickedString = 'confirm clicked';
+		$uibModal.open({
+			templateUrl: 'reRegisterModal.html',
+			windowTopClass: 'component-registration-modal',
+			controller: [
+				'$scope',
+				function ($scope) {
+					$scope.targetComponent = targetComponent;
+					$scope.registrationOrder = registrationOrder;
+
+					$scope.isNotTargetComponent = function (value) {
+						return value !== targetComponent.packageFileName;
+					};
+
+					$scope.onReRegisterAllClick = function () {
+						reRegisterComponents(registrationOrder);
+						$scope.$close(confirmClickedString);
+					};
+					$scope.onReRegOnlyTargetClick = function () {
+						reRegisterComponents([targetComponent.packageFileName]);
+						$scope.$close(confirmClickedString);
+					};
+
+					$scope.$on('modal.closing', function (evt, description) {
+						if (description !== confirmClickedString) {
+							targetComponent.componentState = originalState;
+						}
+					});
+				}]
+		});
+	};
+
+
+	var reRegisterComponents = function (componentReRegOrder) {
+		var componentIndex = _.indexBy($scope.components, 'packageFileName');
+
+		componentReRegOrder.forEach(function (packageName) {
+			componentIndex[packageName].componentState = statesEnum.RE_REGISTERING;
+		});
+
+		var promise;
+		componentReRegOrder.forEach(function (packageName) {
+			var component = componentIndex[packageName];
+			if (promise) {
+				promise = promise.then(function () {
+					return createReRegPromise(component);
+				});
+			}
+			else {
+				promise = createReRegPromise(component);
+			}
+		});
+	};
+
+	var createReRegPromise = function (component) {
+		return component.$reRegister()
+			.then(function () {
+				NotificationSvc.info('The ' + component.componentName + ' component has been re-registered');
+			})
+			.catch(function (errorResponse) {
+				handleRegistrationError(component, errorResponse);
+			});
+	};
+
+
+	var handleRegistrationError = function (component, errorResponse) {
+		NotificationSvc.error(errorResponse.data.message);
+		component.componentState = statesEnum.REGISTER_ERROR;
+		refreshComponents();
 	};
 
 	
@@ -127,22 +214,30 @@ function ($scope, Components, NotificationSvc) {
 	};
 
 	$scope.canRegister = function (component) {
-		return isInState(component, statesEnum.UPLOADED, statesEnum.REGISTER_ERROR);
+		return isInState(component, statesEnum.UPLOADED, statesEnum.REGISTER_ERROR, statesEnum.DEPLOYED) &&
+			!isReRegisteringAny();
 	};
-	
+
 	$scope.isRegistering = function (component) {
 		return isInState(component, statesEnum.REGISTERING, statesEnum.UPLOADING);
 	};
 
 	$scope.canRemove = function (component) {
-		return isInState(component, statesEnum.UPLOADED, statesEnum.UPLOAD_ERROR,
-				statesEnum.REGISTERED, statesEnum.REGISTER_ERROR);
+		return isInState(component, statesEnum.UPLOADED, statesEnum.UPLOAD_ERROR, statesEnum.REGISTERED,
+				statesEnum.REGISTER_ERROR, statesEnum.DEPLOYED) && !isReRegisteringAny();
 	};
 	
 	$scope.isRemoving = function (component) {
 		return isInState(component, statesEnum.REMOVING);
 	};
-	
+
+	$scope.isReRegistering = function (component) {
+		return isInState(component, statesEnum.RE_REGISTERING);
+	};
+
+	var isReRegisteringAny = function () {
+		return _.some($scope.components, {componentState: statesEnum.RE_REGISTERING});
+	};
 
 	$scope.stateToText = function (state) {
 		switch (state) {
@@ -160,6 +255,10 @@ function ($scope, Components, NotificationSvc) {
 				return 'Registration Error';
 			case statesEnum.REMOVING:
 				return 'Removing';
+			case statesEnum.RE_REGISTERING:
+				return 'Re-registering';
+			case statesEnum.DEPLOYED:
+				return 'Deployed';
 			default:
 				return state.toLowerCase();
 		}
@@ -167,11 +266,11 @@ function ($scope, Components, NotificationSvc) {
 
 
 	$scope.$on('mpf.component.dropzone.sending', function (evt, file) {
-		$scope.components.push({
+		$scope.components.push(Components.newComponent({
 			packageFileName: file.name,
 			componentState: statesEnum.UPLOADING,
 			dateUploaded: new Date()
-		});
+		}));
 	});
 	
 	$scope.$on('mpf.component.dropzone.success', function (evt, file) {

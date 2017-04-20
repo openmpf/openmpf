@@ -24,12 +24,12 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Populate these values into $MPF_HOME/share/components/components.json
-#"packageFileName": <value>,
-#"componentName": <value>,
-#"componentState": "UPLOADED",
-#"fullUploadedFilePath": <value>,
-#"dateUploaded": <value>
+# Populate these values into $MPF_HOME/data/components.json
+# "packageFileName": <value>,
+# "componentName": <value>,
+# "componentState": "UPLOADED",
+# "fullUploadedFilePath": <value>,
+# "dateUploaded": <value>
 
 
 import sys
@@ -41,16 +41,17 @@ mpf_home = sys.argv[1]
 external_component_name = sys.argv[2]
 external_component_filepath = sys.argv[3]
 
-def setMinComponent(cname, cpath, cfname, cstate, cupdate):
 
+def setMinComponent(cname, cpath, cfname, cstate, cupdate):
     component_dict = {"componentName":cname,"fullUploadedFilePath":cpath,"packageFileName":cfname,"componentState":cstate,"dateUploaded":cupdate}
     return component_dict
 
+
 try:
-    with open(mpf_home + '/share/components/components.json', 'r') as component_file:
+    with open(mpf_home + '/data/components.json', 'r') as component_file:
         component_data = json.load(component_file)
 except:
-    print "Could not open " + mpf_home + "/share/components/components.json"
+    print u'Could not open {0}/data/components.json'.format(mpf_home)
 else:
     component_file.close()
 
@@ -61,26 +62,27 @@ if len(component_data) == 0:
     add_component = 1
 else:
     for n in range(0, len(component_data)):
-        if(component_data[n]["componentName"].lower() == external_component_name.lower()):
-             #Found a match for an existing component
-             break
+        if component_data[n]["componentName"].lower() == external_component_name.lower():
+            # Found a match for an existing component
+            break
     else:
-        #Did not find a match for an existing component
+        # Did not find a match for an existing component
         add_component = 1
 
 
-if(add_component == 1):
+if add_component == 1:
     component_data.append((setMinComponent(external_component_name,
-                                            external_component_filepath,
-                                            os.path.basename(external_component_filepath),
-                                            "UPLOADED",
-                                            int(time.time()*1000)))) #epoch time in milliseconds
+                                           external_component_filepath,
+                                           os.path.basename(external_component_filepath),
+                                           "UPLOADED",
+                                           # epoch time in milliseconds
+                                           int(time.time()*1000))))
 
 # Write component_data to components.json
 try:
-    component_file = open(mpf_home + "/share/components/components.json", "w")
-    json.dump(component_data, component_file)
+    component_file = open(mpf_home + "/data/components.json", "w")
+    json.dump(component_data, component_file, indent=4, separators=(',', ': '))
 except:
-    print "Could not open " + mpf_home + "/share/components/components.json for writing."
+    print u'Could not open {0}/data/components.json'.format(mpf_home)
 else:
     component_file.close()

@@ -28,14 +28,11 @@ package org.mitre.mpf.mvc.controller;
 
 import io.swagger.annotations.Api;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.comparator.LastModifiedFileComparator;
-import org.apache.commons.io.comparator.NameFileComparator;
-import org.apache.commons.lang3.tuple.Pair;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaFilteredListing;
 import org.mitre.mpf.mvc.model.ServerMediaListing;
-import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,20 +46,13 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import static java.util.stream.Collectors.toList;
+import java.net.URLConnection;
+import java.util.*;
 
 @Api(value = "Server Media",description = "Server media retrieval")
 @Controller
@@ -72,89 +62,54 @@ public class ServerMediaController {
 	
 	private static final Logger log = LoggerFactory.getLogger(ServerMediaController.class);
 
-	public static final String DEFAULT_ERROR_VIEW = "error";
-	public static final String SESSION_DIRECTORY_STRUCTURE = "DirectoryStructure";
-
 	@Autowired
 	private PropertiesUtil propertiesUtil;
 
 	@Autowired
-	private IoUtils ioUtils;
+	private ServerMediaService serverMediaService;
 
-	private List<String> customExtensions = null;
-	
-	@PostConstruct
-	public void postConstruct()  {
-		this.customExtensions = propertiesUtil.getServerMediaTreeCustomExtensions();
+	public class SortAlphabeticalCaseInsensitive implements Comparator<Object> {
+		public int compare(Object o1, Object o2) {
+			ServerMediaFile s1 = (ServerMediaFile)o1;
+			ServerMediaFile s2 = (ServerMediaFile)o2;
+			return s1.getName().toLowerCase().compareTo(s2.getName().toLowerCase());
+		}
 	}
 
-	public static DirectoryTreeNode getAllDirectories(String nodePath,HttpSession session,boolean useSession,String uploadDir){
-		if(session.getAttribute(SESSION_DIRECTORY_STRUCTURE) != null && useSession){
-			log.debug("Using session directory structure");
-			return (DirectoryTreeNode)session.getAttribute(SESSION_DIRECTORY_STRUCTURE);
+	public class SortAlphabeticalCaseSensitive implements Comparator<Object> {
+		public int compare(Object o1, Object o2) {
+			ServerMediaFile s1 = (ServerMediaFile)o1;
+			ServerMediaFile s2 = (ServerMediaFile)o2;
+			return s1.getName().compareTo(s2.getName());
 		}
-
-		DirectoryTreeNode node = null;
-		try {
-			node = DirectoryTreeNode.fillDirectoryTree(new DirectoryTreeNode(new File(nodePath)),uploadDir);
-			session.setAttribute(SESSION_DIRECTORY_STRUCTURE,node);
-		} catch (IOException e) {
-			log.error("getAllDirectories error: "+e.getMessage());
-		}
-
-		return node;
 	}
 
 	@RequestMapping(value = { "/server/get-all-directories" }, method = RequestMethod.GET)
 	@ResponseBody
-	public DirectoryTreeNode getAllDirectories(HttpServletRequest request,@RequestParam(required = false) Boolean useUploadRoot, @RequestParam(required = false,defaultValue = "true") boolean useCache){
-		HttpSession session = request.getSession();
+	public DirectoryTreeNode getAllDirectories(HttpServletRequest request, @RequestParam(required = false) Boolean useUploadRoot,
+											   @RequestParam(required = false, defaultValue = "true") boolean useCache){
 		String nodePath = propertiesUtil.getServerMediaTreeRoot();
 
-		//if useUploadRoot is set it will take precedence over nodeFullPath
-		DirectoryTreeNode node = getAllDirectories(nodePath,session,useCache,propertiesUtil.getRemoteMediaCacheDirectory().getAbsolutePath());
+		// if useUploadRoot is set it will take precedence over nodeFullPath
+		DirectoryTreeNode node = serverMediaService.getAllDirectories(nodePath, request.getServletContext(), useCache,
+				propertiesUtil.getRemoteMediaCacheDirectory().getAbsolutePath());
 		if(useUploadRoot != null && useUploadRoot){
-			node =  DirectoryTreeNode.find(node,propertiesUtil.getRemoteMediaCacheDirectory().getAbsolutePath());
+			node =  DirectoryTreeNode.find(node, propertiesUtil.getRemoteMediaCacheDirectory().getAbsolutePath());
 		}
+
 		return node;
 	}
 
 	@RequestMapping(value = { "/server/get-all-files" }, method = RequestMethod.GET)
 	@ResponseBody
-	public ServerMediaListing getAllFiles(@RequestParam(required = true) String fullPath,@RequestParam(required = false) boolean recurse) {
+	public ServerMediaListing getAllFiles(HttpServletRequest request, @RequestParam(required = true) String fullPath,
+										  @RequestParam(required = false, defaultValue = "true") boolean useCache) {
 		File dir = new File(fullPath);
-		if(!dir.isDirectory() && fullPath.startsWith(propertiesUtil.getServerMediaTreeRoot())) {
-            return null;
-        }
+		if(!dir.isDirectory() && fullPath.startsWith(propertiesUtil.getServerMediaTreeRoot())) return null; // security check
 
-        List<ServerMediaFile> mediaFiles = new ArrayList<>();
-		if(recurse){
-			mediaFiles = getRemoteMediaFilesRecursive(dir);
-		} else{
-			for(File file:dir.listFiles()){
-				if(file.isFile()) {
-					String mimeType = ioUtils.getMimeType(file.getAbsolutePath());
-					mediaFiles.add(new ServerMediaFile(file, mimeType));
-				}
-			}
-		}
-        return new ServerMediaListing(mediaFiles);
+		List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath, request.getServletContext(), useCache, true);
+		return new ServerMediaListing(mediaFiles);
 	}
-
-	private List<ServerMediaFile> getRemoteMediaFilesRecursive(File root) {
-        try {
-            return Files.walk(root.toPath())
-                    .filter(Files::isRegularFile)
-                    .map(Path::toFile)
-                    .map(f -> Pair.of(f, ioUtils.getMimeType(f.getAbsolutePath())))
-                    .filter(p -> p.getRight() != null)
-                    .map(p -> new ServerMediaFile(p.getLeft(), p.getRight()))
-                    .collect(toList());
-        }
-        catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
-    }
 
 	//https://datatables.net/manual/server-side#Sent-parameters
 	//draw is the counter of how many times it has called back
@@ -163,72 +118,40 @@ public class ServerMediaController {
 	//search is string to filter
 	@RequestMapping(value = { "/server/get-all-files-filtered" }, method = RequestMethod.POST)
 	@ResponseBody
-	public ServerMediaFilteredListing getAllFilesFiltered(@RequestParam(value="fullPath", required=true) String fullPath,
+	public ServerMediaFilteredListing getAllFilesFiltered(HttpServletRequest request, @RequestParam(value="fullPath", required=true) String fullPath,
+									  @RequestParam(required = false, defaultValue = "true") boolean useCache,
 									  @RequestParam(value="draw", required=false) int draw,
 									  @RequestParam(value="start", required=false) int start,
 									  @RequestParam(value="length", required=false) int length,
-									  @RequestParam(value="search", required=false) String search,
-									  @RequestParam(value="sort", required=false) String sort){
-		log.debug("Params fullPath:{} draw:{} start:{},length:{},search:{} ",fullPath,draw,start,length,search,sort);
+									  @RequestParam(value="search", required=false) String search){
+		log.debug("Params fullPath:{} draw:{} start:{} length:{} search:{} ",fullPath, draw, start, length, search);
 
 		File dir = new File(fullPath);
-		if(!dir.isDirectory() && fullPath.startsWith(propertiesUtil.getServerMediaTreeRoot())) return null;//security check
+		if(!dir.isDirectory() && fullPath.startsWith(propertiesUtil.getServerMediaTreeRoot())) return null; // security check
 
-		File[] files = dir.listFiles(File::isFile);
+		List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath, request.getServletContext(), useCache, false);
 
-		//sort it by filename modified date (most current first)
-		if(sort != null && sort == "lastModified") {
-			Arrays.sort(files, LastModifiedFileComparator.LASTMODIFIED_REVERSE);
-		}else{
-            Arrays.sort(files, NameFileComparator.NAME_INSENSITIVE_COMPARATOR
-					// Then make capital letters come before lowercase
-					.thenComparing(NameFileComparator.NAME_COMPARATOR));
-		}
+		// handle sort
+		Collections.sort(mediaFiles, (new SortAlphabeticalCaseInsensitive()). // make 'A' come before 'B'
+				thenComparing(new SortAlphabeticalCaseSensitive()) );         // make 'A' come before 'a'
 
-		//handle search
+		// handle search
 		if(search != null && search.length() > 0) {
-			List<File> search_results = new ArrayList<File>();
-			for (int i = 0; i < files.length; i++) {
-				File file = files[i];
-				if (files[i].getName().toLowerCase().contains(search.toLowerCase())) {
-					search_results.add(file);
+			List<ServerMediaFile> searchResults = new ArrayList<>();
+			for (ServerMediaFile mediaFile : mediaFiles) {
+				if (mediaFile.getName().toLowerCase().contains(search.toLowerCase())) {
+					searchResults.add(mediaFile);
 				}
 			}
-			files = new File[search_results.size()];
-			files=search_results.toArray(files);
+			mediaFiles = searchResults;
 		}
 
-		//filter by approved list of content type
-		List<File> contentFiltered = new ArrayList<File>();
-		for(int i =0;i<files.length;i++) {
-			File file = files[i];
-			if (ioUtils.isApprovedFile(file) ) {
-				contentFiltered.add(file);
-			}
-		}
-		files = new File[contentFiltered.size()];
-		files=contentFiltered.toArray(files);
+		// handle paging
+		int end = start + length;
+		end = (end > mediaFiles.size())? mediaFiles.size() : end;
+		start = (start <= end)? start : end;
 
-		int records_total = files.length;
-		int records_filtered = records_total;// Total records, after filtering (i.e. the total number of records after filtering has been applied - not just the number of records being returned for this page of data).
-
-
-		//handle paging
-		int end = start +length;
-		end = (end > files.length)? files.length : end;
-		start = (start<=end)? start : end;
-		File[] filtered = Arrays.copyOfRange(files,start,end);
-
-		List<ServerMediaFile> mediaFiles = new ArrayList<>();
-		//build output
-		for(int i =0;i<filtered.length;i++) {
-			File file = filtered[i];
-			if (ioUtils.isApprovedFile(file) ) {
-                mediaFiles.add(new ServerMediaFile(file, ioUtils.getMimeType(file.getAbsolutePath())));
-			}
-		}
-
-		return new ServerMediaFilteredListing(draw, records_filtered, records_total, mediaFiles);
+		return new ServerMediaFilteredListing(draw, mediaFiles.size(), mediaFiles.size(), mediaFiles.subList(start, end));
 	}
 
 	/***
@@ -249,11 +172,45 @@ public class ServerMediaController {
 		} else {
 			response.setStatus(404);
 		}
-		
-		//TODO: add an image to return that is file not available and error retrieving file 
+
+		//TODO: add an image to return that is file not available and error retrieving file
 		//to resources to use when there are issues
-		
+
 		//TODO: adjust the content type based on the image type
-		//response.setContentLength(MediaType.);		
+		//response.setContentLength(MediaType.);
+	}
+
+	/***
+	 * Downloads a file from the server as attachment
+	 * @param response
+	 * @param fullPath
+	 * @throws IOException
+	 * @throws URISyntaxException
+	 */
+	@RequestMapping(value = "/server/download", method = RequestMethod.GET)
+	@ResponseBody
+	public void download(HttpServletResponse response, @RequestParam(value = "fullPath", required = true) String fullPath) throws IOException, URISyntaxException {
+		File file = new File(fullPath);
+		if (file.exists() && file.canRead()) {
+			String mimeType = URLConnection.guessContentTypeFromName(file.getName());
+			if (mimeType == null) {
+				System.out.println("mimetype is not detectable, will take default");
+				mimeType = "application/octet-stream";
+			}
+			response.setContentType(mimeType);
+
+			// "Content-Disposition : attachment" will be directly download, may provide save as popup, based on your browser setting
+			response.setHeader("Content-Disposition", String.format("attachment; filename=\"%s\"", file.getName()));
+			//"Content-Disposition : inline" will show viewable types [like images/text/pdf/anything viewable by browser] right on browser while others(zip e.g) will be directly downloaded [may provide save as popup, based on your browser setting.]
+			//response.setHeader("Content-Disposition", String.format("inline; filename=\"" + file.getName() + "\""));
+
+			response.setContentLength((int) file.length());
+
+			FileUtils.copyFile(file, response.getOutputStream());
+			response.flushBuffer();
+		} else {
+			log.debug("server download file failed "+fullPath);
+			response.setStatus(404);
+		}
 	}
 }

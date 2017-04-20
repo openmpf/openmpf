@@ -25,7 +25,7 @@
 #############################################################################
 ---
 #file: roles/common/vars/main.yml
-mpf_home: "/opt/mpf"
+mpf_home: "{{ lookup('env','MPF_HOME') | default('/opt/mpf', true) }}"
 repo_host: "{{ hostvars[groups['mpf-repo'][0]]['inventory_hostname'] }}"
 num_master_hosts: "{{ groups['mpf-master'] | length }}"
-tmp: /tmp
+tmp: "/tmp"

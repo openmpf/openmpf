@@ -55,13 +55,13 @@
 		<form name='loginForm' action="<c:url value='j_spring_security_check' />" method='POST'>
 			<table>
 				<tr>
-					<td><input type='text' placeholder='Username' name='username' value=''></td>
+					<td><input id='username' type='text' placeholder='Username' name='username' value=''></td>
 				</tr>
 				<tr>
-					<td><input type='password' placeholder='Password' name='password' /></td>
+					<td><input id='password' type='password' placeholder='Password' name='password' /></td>
 				</tr>
 				<tr>
-					<td colspan='2'><input name="submit" type="submit" value="Sign in" /></td>
+					<td colspan='2'><input id='submit' name="submit" type="submit" value="Sign in" /></td>
 				</tr>
 			</table>
 		</form>

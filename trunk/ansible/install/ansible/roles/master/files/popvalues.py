@@ -24,56 +24,58 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Populate these values into $MPF_HOME/share/components/components.json
-#"dateUploaded":<value>,
-#"fullUploadedFilePath":<value>,
-#"packageFileName":<value>
+# Populate these values into $MPF_HOME/data/components.json
+# "dateUploaded":<value>,
+# "fullUploadedFilePath":<value>,
+# "packageFileName":<value>
 
 import sys
 import json
 import os
 
 mpf_home = sys.argv[1]
-external_component_name = sys.argv[2]
-external_component_filepath = sys.argv[3]
+mpf_component_name = sys.argv[2]
+mpf_component_filepath = sys.argv[3]
 
-# Load the component config file $MPF_HOME/share/components/components.json
+# Load the component config file $MPF_HOME/data/components.json
 try:
-    with open(mpf_home + '/share/components/components.json', 'r') as component_file:
+    with open(mpf_home + '/data/components.json', 'r') as component_file:
         component_data = json.load(component_file)
 except:
-    print 'Could not open ' + mpf_home + '/share/components/components.json'
+    print u'Could not open {0}/data/components.json'.format(mpf_home)
 else:
     component_file.close()
 
 # find the component in components.json
 for n in range(0, len(component_data)):
-    if(component_data[n]['componentName'].lower() == external_component_name.lower()):
-        #Found a match for an existing component
-
+    if mpf_component_name in component_data[n]['componentName']:
+        # Found a match for an existing component
         if not component_data[n]['dateUploaded'] and component_data[n]["componentState"] == 'REGISTERED':
+
             # Set upload date to registration date
             component_data[n]['dateUploaded'] = component_data[n]['dateRegistered']
 
             # Set packageFileName
-            component_data[n]['packageFileName'] = os.path.basename(external_component_filepath)
+            component_data[n]['packageFileName'] = os.path.basename(mpf_component_filepath)
 
             # Set fullUploadedFilePath
-            component_data[n]['fullUploadedFilePath'] = ''.join([mpf_home, '/share/components/', component_data[n]['packageFileName']])
+            component_data[n]['fullUploadedFilePath'] = mpf_component_filepath
 
             # Write component_data to components.json
             try:
-                component_file = open(mpf_home + '/share/components/components.json', 'w')
-                json.dump(component_data, component_file)
+                component_file = open(mpf_home + '/data/components.json', 'w')
+                json.dump(component_data, component_file,indent=4, separators=(',', ': '))
             except:
-                print 'Could not open ' + mpf_home + '/share/components/components.json for writing.'
+                print u'Could not open {0}/data/components.json'.format(mpf_home)
             else:
                 component_file.close()
             break
         else:
             print '\nCheck components.json file.'
-            print '\nComponent ' + component_data[n]['componentName'] + ' should be in state REGISTERED and is in state:', component_data[n]['componentState']
-            print '\nComponent ' + component_data[n]['componentName'] + ' should have no dateUploaded value and has a dateUploaded value of:', component_data[n]['dateUploaded']
+            print u'\nComponent {0} should be in state REGISTERED and is in state: {1}'.format(component_data[n]['componentName'],
+                                                                                               component_data[n]['componentState'])
+            print u'\nComponent {0} should have no dateUploaded value and has a dateUploaded value of: {1}'.format(component_data[n]['componentName'],
+                                                                                                                   component_data[n]['dateUploaded'])
             break
 
 else:

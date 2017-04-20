@@ -1,50 +1,94 @@
 {
-    "media": [
-        {
-            "mimeType": "image/jpeg",
-            "overriddenProperties":{},"mediaMetadata": {
-                "EXIF_ORIENTATION": "5",
-                "HORIZONTAL_FLIP": "TRUE",
-                "ROTATION": "90"
-            },
-            "tracks": {
-                "+#AUTO_ORIENT_EXTRACTION_FACE_OCV_ACTION": [
-                    {
-                        "exemplar": {
-                            "x": 211,
-                            "y": 84,
-                            "height": 284,
-                            "width": 284,
-                            "offset": 0,
-                            "offsetFrame": 0,
-                            "offsetTime": 0,
-                            "confidence": 59.0,
-                            "detectionProperties": {
-                                "HORIZONTAL_FLIP": "TRUE",
-                                "ROTATION": "90"
-                            }
-                        },
-                        "detections": [
-                            {
-                                "x": 211,
-                                "y": 84,
-                                "height": 284,
-                                "width": 284,
-                                "offset": 0,
-                                "offsetFrame": 0,
-                                "offsetTime": 0,
-                                "confidence": 59.0,
-                                "detectionProperties": {
-                                    "HORIZONTAL_FLIP": "TRUE",
-                                    "ROTATION": "90"
-                                }
-                            }
-                        ],
-                        "startOffsetFrame": 0,
-                        "stopOffsetFrame": 1
-                    }
-                ]
-            }
+  "jobId": 9,
+  "objectId": "f1963de7-7532-484e-b5a1-eb2b0a740800",
+  "pipeline": {
+    "name": "OCV FACE DETECTION WITH AUTO ORIENTATION PIPELINE",
+    "description": "Executes the OpenCV face detection algorithm and rotates and/or flips media based on EXIF data.",
+    "stages": [{
+      "actionType": "DETECTION",
+      "name": "OCV FACE DETECTION WITH AUTO ORIENTATION TASK",
+      "description": "Executes the OpenCV face detection algorithm and rotates and/or flips media based on EXIF data.",
+      "actions": [{
+        "algorithm": "FACECV",
+        "name": "OCV FACE DETECTION WITH AUTO ORIENTATION ACTION",
+        "description": "Executes the OpenCV face detection algorithm and rotates and/or flips media based on EXIF data.",
+        "properties": {
+          "AUTO_ROTATE": "true",
+          "AUTO_FLIP": "true"
         }
+      }
+      ]
+    }
     ]
+  },
+  "priority": 4,
+  "siteId": "mpf1",
+  "externalJobId": "288351c1-a8a2-4871-bdc0-c65cbd6fb57b",
+  "timeStart": "2017-04-11 10:48:09.0",
+  "timeStop": "2017-04-11 10:48:11.0",
+  "status": "COMPLETE",
+  "jobProperties": {},
+  "media": [{
+    "mediaId": 3,
+    "path": "file:/var/lib/jenkins/jobs/mpf-phabricator/workspace/trunk/mpf-system-tests/target/test-classes/samples/face/meds-aa-S001-01-exif-rotation.jpg",
+    "mimeType": "image/jpeg",
+    "length": 1,
+    "sha256": "c466433bd70e9b3d2b80081f39bfe910424ff23ced17241fa217d7b226d3a8ad",
+    "message": null,
+    "status": "COMPLETE",
+    "mediaMetadata": {
+      "EXIF_ORIENTATION": "5",
+      "HORIZONTAL_FLIP": "TRUE",
+      "ROTATION": "90"
+    },
+    "mediaProperties": {},
+    "markupResult": null,
+    "output": {
+      "FACE": [{
+        "source": "+#OCV FACE DETECTION WITH AUTO ORIENTATION ACTION",
+        "tracks": [{
+          "id": "5fc0da216b2cb12fbf9c13c9bcb347ba3015e36471387ffca51e7aafce37628d",
+          "startOffsetFrame": 0,
+          "stopOffsetFrame": 1,
+          "startOffsetTime": 0,
+          "stopOffsetTime": 0,
+          "type": "FACE",
+          "source": "+#OCV FACE DETECTION WITH AUTO ORIENTATION ACTION",
+          "exemplar": {
+            "x": 212,
+            "y": 84,
+            "width": 283,
+            "height": 283,
+            "confidence": 60.0,
+            "detectionProperties": {},
+            "offsetFrame": 0,
+            "offsetTime": 0,
+            "artifactExtractionStatus": "COMPLETED",
+            "artifactPath": "/var/lib/jenkins/jobs/mpf-phabricator/workspace/trunk/install/share/artifacts/9/3/0/meds-aa-S001-01-exif-rotation.jpg",
+            "offset": 0
+          },
+          "detections": [{
+            "x": 212,
+            "y": 84,
+            "width": 283,
+            "height": 283,
+            "confidence": 60.0,
+            "detectionProperties": {},
+            "offsetFrame": 0,
+            "offsetTime": 0,
+            "artifactExtractionStatus": "COMPLETED",
+            "artifactPath": "/var/lib/jenkins/jobs/mpf-phabricator/workspace/trunk/install/share/artifacts/9/3/0/meds-aa-S001-01-exif-rotation.jpg",
+            "offset": 0
+          }
+          ],
+          "stopOffset": 1,
+          "startOffset": 0
+        }
+        ]
+      }
+      ]
+    },
+    "detectionProcessingErrors": {}
+  }
+  ]
 }

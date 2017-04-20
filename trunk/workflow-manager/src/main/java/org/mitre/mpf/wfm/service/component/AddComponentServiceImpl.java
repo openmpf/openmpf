@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static java.util.stream.Collectors.*;
@@ -94,22 +95,38 @@ public class AddComponentServiceImpl implements AddComponentService {
     }
 
     @Override
-    public synchronized void registerComponent(String componentPackageFileName) throws ComponentRegistrationException {
-        ComponentState currentState = componentStateService.getByPackageFile(componentPackageFileName)
+    public synchronized RegisterComponentModel registerComponent(String componentPackageFileName) throws ComponentRegistrationException {
+        ComponentState initialState = componentStateService.getByPackageFile(componentPackageFileName)
                 .map(RegisterComponentModel::getComponentState)
                 .filter(Objects::nonNull)
                 .orElse(ComponentState.UNKNOWN);
 
-        if (currentState != ComponentState.UPLOADED && currentState != ComponentState.REGISTER_ERROR) {
+        if (initialState != ComponentState.UPLOADED && initialState != ComponentState.REGISTER_ERROR
+                && initialState != ComponentState.DEPLOYED) {
             componentStateService.replacePackageState(componentPackageFileName, ComponentState.REGISTER_ERROR);
-            throw new ComponentRegistrationStatusException(currentState);
+            throw new ComponentRegistrationStatusException(initialState);
         }
 
+        String descriptorPath;
         try {
             componentStateService.replacePackageState(componentPackageFileName, ComponentState.REGISTERING);
+            if (initialState == ComponentState.DEPLOYED) {
+                descriptorPath = componentStateService.getByPackageFile(componentPackageFileName)
+                        .map(RegisterComponentModel::getJsonDescriptorPath)
+		                .orElse(null);
+            }
+            else {
+                descriptorPath = deployService.deployComponent(componentPackageFileName);
+            }
+        }
+        catch (IllegalStateException | ComponentRegistrationException ex) {
+            componentStateService.replacePackageState(componentPackageFileName, ComponentState.REGISTER_ERROR);
+            throw ex;
+        }
 
-            String descriptorPath = deployService.deployComponent(componentPackageFileName);
-
+        // At this point the component package has been successfully extracted
+        // so if registration fails after this point the component must be undeployed
+        try {
             RegisterComponentModel currentModel = componentStateService.getByPackageFile(componentPackageFileName)
                     .orElseThrow(() -> new ComponentRegistrationStatusException(ComponentState.UNKNOWN));
             currentModel.setJsonDescriptorPath(descriptorPath);
@@ -123,9 +140,12 @@ public class AddComponentServiceImpl implements AddComponentService {
 
             String logMsg = "Successfully registered the component from package '" + componentPackageFileName + "'.";
             _log.info(logMsg);
+            return currentModel;
         }
         catch (IllegalStateException | ComponentRegistrationException ex) {
             componentStateService.replacePackageState(componentPackageFileName, ComponentState.REGISTER_ERROR);
+            String topLevelDirectory = Paths.get(descriptorPath).getParent().getParent().getFileName().toString();
+            deployService.undeployComponent(topLevelDirectory);
             throw ex;
         }
     }
@@ -165,8 +185,8 @@ public class AddComponentServiceImpl implements AddComponentService {
             algorithmDef = convertJsonAlgo(descriptor);
             algoName = saveAlgorithm(algorithmDef);
             model.setAlgorithmName(algoName);
-            model.setComponentName(descriptor.componentName);
         }
+        model.setComponentName(descriptor.componentName);
 
         try {
             Set<String> savedActions = saveActions(descriptor, algorithmDef);
@@ -321,7 +341,7 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     private void saveAction(String actionName, String description, String algoName, Map<String, String> algoProps)
             throws ComponentRegistrationSubsystemException {
-        Tuple<Boolean, String> result = pipelineService.addAndSaveAction(actionName, description, algoName, algoProps);
+        Tuple<Boolean, String> result = pipelineService.addAndSaveActionDeprecated(actionName, description, algoName, algoProps);
         if (result.getFirst()) {
             _log.info("Successfully added the {} action for the {} algorithm", actionName, algoName);
         }
@@ -363,7 +383,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         actionNames.stream()
                 .map(ActionDefinitionRef::new)
                 .forEach(adr -> task.getActions().add(adr));
-        Tuple<Boolean, String> result = pipelineService.addAndSaveTask(task);
+        Tuple<Boolean, String> result = pipelineService.addAndSaveTaskDeprecated(task);
         if (result.getFirst()) {
             _log.info("Successfully added the {} task", taskName);
         }
@@ -408,7 +428,7 @@ public class AddComponentServiceImpl implements AddComponentService {
                 .map(TaskDefinitionRef::new)
                 .forEach(tdr -> pipeline.getTaskRefs().add(tdr));
 
-        Tuple<Boolean, String> result = pipelineService.addAndSavePipeline(pipeline);
+        Tuple<Boolean, String> result = pipelineService.addAndSavePipelineDeprecated(pipeline);
         if (result.getFirst()) {
             _log.info("Successfully added the {} pipeline.", pipeline.getName());
         }
@@ -427,16 +447,18 @@ public class AddComponentServiceImpl implements AddComponentService {
                     "Couldn't add the %s service because another service already has that name", serviceName));
         }
         List<String> componentLaunchArguments = new ArrayList<>(descriptor.launchArgs);
+        String queueName = String.format("MPF.%s_%s_REQUEST", algorithmDef.getActionType(), algorithmDef.getName());
         Service algorithmService;
 
         if (descriptor.sourceLanguage == ComponentLanguage.JAVA) {
-            algorithmService = new Service(serviceName, "${MPF_HOME}/bin/start-service-java.sh");
-            algorithmService.addArg("-jar " + descriptor.pathName);
+            algorithmService = new Service(serviceName, "${MPF_HOME}/bin/start-java-component.sh");
+            algorithmService.addArg(descriptor.pathName);
+            algorithmService.addArg(queueName);
+            algorithmService.addArg(serviceName);
             algorithmService.setWorkingDirectory("${MPF_HOME}/jars");
         }
         else {
             algorithmService = new Service(serviceName, "${MPF_HOME}/bin/" + descriptor.pathName);
-            String queueName = String.format("MPF.%s_%s_REQUEST", algorithmDef.getActionType(), algorithmDef.getName());
             componentLaunchArguments.add(1, queueName);
             algorithmService.setLauncher("simple");
             String workingDirectory = "${MPF_HOME}/plugins/" + descriptor.componentName;

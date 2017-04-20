@@ -1,34 +1,52 @@
 {
-    "packageTag":"open-source",
+	"packageTag":"open-source",
 
-    "MPF_Core_RPMs": [
-	"markup",
-	"nodeManager",
-	"protobuf",
-	"video-overlay",
-	"workflowManager",
-	"java-component-api",
-	"java-component-executor"
-    ],
+	"MPF_Core_RPMs": [
+		"markup",
+		"nodeManager",
+		"protobuf",
+		"video-overlay",
+		"workflowManager",
+		"java-component-api",
+		"java-component-executor"
+	],
 
-    "MPF_Component_RPMs": [
-	"speech-detection"
-    ],
+	"MPF_Core_Tars": [
+		"mpf-install-dep"
+	],
 
-    "MPF_Core_Tars": [
-	"mpf-install-dep"
-    ],
-
-    "MPF_Component_Tars": [
-	"MogMotionDetection",
-	"SubsenseMotionDetection",
-	"OalprTextDetection",
-	"OcvFaceDetection",
-	"DlibFaceDetection",
-	"OcvPersonDetection"
-    ],
-
-    "External_Component_Tars": [
-	"CaffeDetection"
+    "MPF_Components": [
+        {
+            "name": "DlibFaceDetection",
+            "path": "/home/mpf/mpf/new-repos/openmpf-components/cpp/DlibFaceDetection"
+        },
+        {
+            "name": "OcvFaceDetection",
+            "path": "/home/mpf/mpf/new-repos/openmpf-components/cpp/OcvFaceDetection"
+        },
+        {
+            "name": "OcvPersonDetection",
+            "path": "/home/mpf/mpf/new-repos/openmpf-contrib-components/cpp/OcvPersonDetection"
+        },
+        {
+            "name": "OalprLicensePlateTextDetection",
+            "path": "/home/mpf/mpf/new-repos/openmpf-components/cpp/OalprLicensePlateTextDetection"
+        },
+        {
+            "name": "MogMotionDetection",
+            "path": "/home/mpf/mpf/new-repos/openmpf-contrib-components/cpp/motion/MogMotionDetection"
+        },
+        {
+            "name": "SubsenseMotionDetection",
+            "path": "/home/mpf/mpf/new-repos/openmpf-contrib-components/cpp/motion/SubsenseMotionDetection"
+        },
+        {
+            "name": "SphinxSpeechDetection",
+            "path": "/home/mpf/mpf/new-repos/openmpf-components/java/SphinxSpeechDetection"
+        },
+        {
+            "name": "CaffeDetection",
+            "path": "/home/mpf/mpf/new-repos/openmpf-components/cpp/CaffeDetection"
+        }
     ]
 }

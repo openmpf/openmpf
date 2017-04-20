@@ -44,14 +44,16 @@
     <fileSet>
       <directory>${basedir}/../install/config</directory>
       <excludes>
-	<exclude>mpf-profile.sh</exclude>
+        <exclude>mpf-profile.sh</exclude>
+        <exclude>mpf-custom.properties</exclude>
       </excludes>
       <outputDirectory>config</outputDirectory>
     </fileSet>
     <fileSet>
       <directory>${basedir}/../install/bin</directory>
       <includes>
-	<include>amq_detection_component</include>
+      	<include>amq_detection_component</include>
+        <include>component_dependency_finder.py</include>
       </includes>
       <outputDirectory>bin</outputDirectory>
       <fileMode>755</fileMode>

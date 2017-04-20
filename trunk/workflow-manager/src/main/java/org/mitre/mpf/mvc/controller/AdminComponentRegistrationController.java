@@ -54,6 +54,8 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
+import static java.util.stream.Collectors.toList;
+
 // swagger includes
 
 @Api(value = "Component Registrar",
@@ -73,6 +75,8 @@ public class AdminComponentRegistrationController {
 
     private final ComponentStateService _componentState;
 
+    private final ComponentReRegisterService _reRegisterService;
+
     private static final ReentrantReadWriteLock LOCK = new ReentrantReadWriteLock();
 
     @Inject
@@ -80,11 +84,13 @@ public class AdminComponentRegistrationController {
             PropertiesUtil propertiesUtil,
             AddComponentService addComponentService,
             RemoveComponentService removeComponentService,
-            ComponentStateService componentState) {
+            ComponentStateService componentState,
+            ComponentReRegisterService reRegisterService) {
         _propertiesUtil = propertiesUtil;
         _addComponentService = addComponentService;
         _removeComponentService = removeComponentService;
         _componentState = componentState;
+        _reRegisterService = reRegisterService;
     }
 
 
@@ -93,8 +99,7 @@ public class AdminComponentRegistrationController {
      */
     @RequestMapping(value = {"/components", "/rest/components"}, method = RequestMethod.GET)
     @ResponseBody
-	public List<RegisterComponentModel> getComponentsMapAsList() {
-    	//TODO: could sort by the date while streaming to the list
+	public List<RegisterComponentModel> getComponents() {
         return withReadLock(_componentState::get);
     }
     
@@ -123,7 +128,7 @@ public class AdminComponentRegistrationController {
             "/rest/components/{componentPackageFileName:.+}/register"},
             method = RequestMethod.POST)
     @ResponseBody
-    public ResponseEntity registerComponent(
+    public ResponseEntity<?> registerComponent(
             @PathVariable("componentPackageFileName") String componentPackageFileName) {
         return withWriteLock(() -> {
             try {
@@ -132,31 +137,43 @@ public class AdminComponentRegistrationController {
                         .map(ResponseEntity::ok)
                         .orElseGet(() -> new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR));
             }
-            catch (ComponentRegistrationStatusException ex) {
-                HttpStatus responseCode;
-                switch (ex.getComponentState()) {
-                    case REGISTERING:
-                    case REGISTERED:
-                        responseCode = HttpStatus.CONFLICT;
-                        break;
-                    default:
-                        responseCode = HttpStatus.INTERNAL_SERVER_ERROR;
-                }
-                return handleRegistrationErrorResponse(componentPackageFileName, ex.getMessage(), responseCode, ex);
-            }
-            catch (DuplicateComponentException | ComponentRegistrationSubsystemException ex) {
-                return handleRegistrationErrorResponse(componentPackageFileName, ex.getMessage(), HttpStatus.CONFLICT);
-            }
             catch (ComponentRegistrationException ex) {
-                return handleRegistrationErrorResponse(
-                        componentPackageFileName, ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, ex);
+            	return handleAddComponentExceptions(componentPackageFileName, ex);
             }
         });
     }
 
 
+    private static ResponseMessage handleAddComponentExceptions(
+            String componentPackage,
+            ComponentRegistrationException exception) {
+
+        if (exception instanceof ComponentRegistrationStatusException) {
+            ComponentRegistrationStatusException ex = (ComponentRegistrationStatusException) exception;
+            HttpStatus responseCode;
+            switch (ex.getComponentState()) {
+                case REGISTERING:
+                case REGISTERED:
+                    responseCode = HttpStatus.CONFLICT;
+                    break;
+                default:
+                    responseCode = HttpStatus.INTERNAL_SERVER_ERROR;
+            }
+            return handleRegistrationErrorResponse(componentPackage, ex.getMessage(), responseCode, ex);
+        }
+        else if (exception instanceof DuplicateComponentException
+                || exception instanceof ComponentRegistrationSubsystemException) {
+            return handleRegistrationErrorResponse(componentPackage, exception.getMessage(), HttpStatus.CONFLICT);
+        }
+        else {
+            return handleRegistrationErrorResponse(componentPackage, exception.getMessage(),
+                                                   HttpStatus.INTERNAL_SERVER_ERROR, exception);
+        }
+    }
+
+
     private static ResponseMessage handleRegistrationErrorResponse(
-            String componentPackageFileName, String reason, HttpStatus httpStatus, ComponentRegistrationException ex) {
+            String componentPackageFileName, String reason, HttpStatus httpStatus, Exception ex) {
 
         String errorMsg = String.format("Cannot register component: \"%s\": %s", componentPackageFileName, reason);
         log.error(errorMsg, ex);
@@ -177,7 +194,7 @@ public class AdminComponentRegistrationController {
 
     @RequestMapping(value = {"/components", "/rest/components"}, method = RequestMethod.POST)
     @ResponseBody
-    public ResponseEntity uploadComponent(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadComponent(@RequestParam("file") MultipartFile file) {
         return withWriteLock(() -> {
 
             String componentPackageName = file.getOriginalFilename();
@@ -211,7 +228,8 @@ public class AdminComponentRegistrationController {
             }
             catch (IOException ex) {
                 String errorMsg = "An error occurred while saving uploaded file";
-                return handleRegistrationErrorResponse(componentPackageName, errorMsg, HttpStatus.INTERNAL_SERVER_ERROR);
+                return handleRegistrationErrorResponse(componentPackageName, errorMsg,
+                                                       HttpStatus.INTERNAL_SERVER_ERROR, ex);
             }
         });
     }
@@ -265,14 +283,14 @@ public class AdminComponentRegistrationController {
     @RequestMapping(value = {"/components/{componentName}", "/rest/components/{componentName}"},
             method=RequestMethod.DELETE)
     @ResponseBody
-    public ResponseEntity removeComponent(@PathVariable("componentName") String componentName) {
+    public ResponseEntity<Void> removeComponent(@PathVariable("componentName") String componentName) {
         return withWriteLock(() -> {
             Optional<RegisterComponentModel> existingRegisterModel = _componentState.getByComponentName(componentName);
             if (!existingRegisterModel.isPresent()) {
-                return new ResponseEntity(HttpStatus.NOT_FOUND);
+            	return ResponseEntity.notFound().build();
             }
             _removeComponentService.removeComponent(componentName);
-            return new ResponseEntity(HttpStatus.NO_CONTENT);
+            return ResponseEntity.noContent().build();
         });
     }
 
@@ -287,6 +305,47 @@ public class AdminComponentRegistrationController {
         withWriteLock(() -> _removeComponentService.removePackage(componentPackageFileName));
     }
 
+
+    @RequestMapping(value = {"/components/{componentPackageFileName:.+}/reRegister",
+            "/rest/components/{componentPackageFileName:.+}/reRegister"},
+            method = RequestMethod.POST)
+    @ResponseBody
+    public ResponseEntity<?> reRegister(@PathVariable("componentPackageFileName") String componentPackageFileName) {
+    	return withWriteLock(() -> {
+            try {
+                RegisterComponentModel componentModel = _reRegisterService
+                        .reRegisterComponent(componentPackageFileName);
+                return ResponseEntity.ok(componentModel);
+            }
+            catch (ComponentRegistrationException e) {
+            	return handleAddComponentExceptions(componentPackageFileName, e);
+            }
+        });
+    }
+
+
+    @RequestMapping(value = {"/components/{componentPackageFileName:.+}/reRegisterOrder",
+            "/rest/components/{componentPackageFileName:.+}/reRegisterOrder"},
+            method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<?> getReRegisterOrder(
+            @PathVariable("componentPackageFileName") String componentPackageFileName) {
+
+        return withReadLock(() -> {
+            try {
+                List<String> registrationOrder = _reRegisterService.getReRegistrationOrder(componentPackageFileName)
+                        .stream()
+                        .map(p -> p.getFileName().toString())
+                        .collect(toList());
+                return ResponseEntity.ok(registrationOrder);
+            }
+            catch (IllegalStateException e) {
+                log.error("Error while trying to get component re-registration order.", e);
+                return new ResponseMessage("Error while trying to get component re-registration order. Check the Workflow Manager logs for details.",
+                                           HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        });
+    }
 
 
     private static <T> T withReadLock(Supplier<T> supplier) {

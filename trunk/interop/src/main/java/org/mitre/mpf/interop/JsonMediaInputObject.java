@@ -46,6 +46,10 @@ public class JsonMediaInputObject {
     @JsonPropertyDescription("A map of medium-specific properties that override algorithm properties.")
     private Map<String,String> properties;
     public Map<String,String> getProperties() { return properties; }
+    public void addProperty(String key, String value){
+        properties.put(key,value);
+    }
+
 
     public JsonMediaInputObject(String mediaUri) {
         this.mediaUri = mediaUri;

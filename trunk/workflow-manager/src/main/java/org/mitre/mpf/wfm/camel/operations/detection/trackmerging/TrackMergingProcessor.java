@@ -40,6 +40,7 @@ import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,54 +99,58 @@ public class TrackMergingProcessor extends WfmProcessor {
 		TransientStage transientStage = transientJob.getPipeline().getStages().get(trackMergingContext.getStageIndex());
 		for(int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
 			TransientAction transientAction = transientStage.getActions().get(actionIndex);
-			TrackMergingPlan trackMergingPlan = createTrackMergingPlan(transientAction.getProperties());
-			if(trackMergingPlan.isMergeTracks()) {
-				for (TransientMedia transientMedia : transientJob.getMedia()) {
-					if (!transientMedia.isFailed()) {
+
+			for (TransientMedia transientMedia : transientJob.getMedia()) {
+				if (!transientMedia.isFailed()) {
+					// If there exist media-specific properties for track merging, use them.
+					String samplingInterval = AggregateJobPropertiesUtil.calculateValue(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
+							transientAction.getProperties(), transientJob.getOverriddenJobProperties(),
+							transientAction, transientJob.getOverriddenAlgorithmProperties(),
+							transientMedia.getMediaSpecificProperties());
+					String mergeTracks = AggregateJobPropertiesUtil.calculateValue(MpfConstants.MERGE_TRACKS_PROPERTY,
+							transientAction.getProperties(), transientJob.getOverriddenJobProperties(),
+							transientAction, transientJob.getOverriddenAlgorithmProperties(),
+							transientMedia.getMediaSpecificProperties());
+					TrackMergingPlan trackMergingPlan = createTrackMergingPlan(samplingInterval, mergeTracks);
+
+					if(trackMergingPlan.isMergeTracks()) {
 						SortedSet<Track> tracks = redis.getTracks(trackMergingContext.getJobId(), transientMedia.getId(), trackMergingContext.getStageIndex(), actionIndex);
 						SortedSet<Track> newTracks = new TreeSet<Track>(combine(tracks, trackMergingPlan.getSamplingInterval(), propertiesUtil.getTrackOverlapThreshold()));
 						log.debug("[Job {}|{}|{}] Merging {} tracks down to {} in Media {}.", trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex, tracks.size(), newTracks.size(), transientMedia.getId());
 						redis.setTracks(trackMergingContext.getJobId(), transientMedia.getId(), trackMergingContext.getStageIndex(), actionIndex, newTracks);
 
 					} else {
-						log.debug("[Job {}|{}|{}] Media {} is in an error state and is not a candidate for merging.", trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex, transientMedia.getId());
+						log.debug("[Job {}|{}|{}] Track merging has not been requested for this action and media {}.", trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex, transientMedia.getId());
 					}
+				} else {
+					log.debug("[Job {}|{}|{}] Media {} is in an error state and is not a candidate for merging.", trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex, transientMedia.getId());
 				}
-			} else {
-				log.debug("[Job {}|{}|{}] Track merging has not been requested for this action.", trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex);
 			}
 		}
 
 		exchange.getOut().setBody(jsonUtils.serialize(trackMergingContext));
 	}
 
-	private TrackMergingPlan createTrackMergingPlan(Map<String, String> properties) {
+	private TrackMergingPlan createTrackMergingPlan(String samplingIntervalProperty, String mergeTracksProperty) {
 		int samplingInterval = 1;
 		boolean mergeTracks = false;
-		if (properties != null && properties.size() != 0) {
-			for (String key : properties.keySet()) {
-				if (StringUtils.equalsIgnoreCase(key, MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)) {
-					try {
-						samplingInterval = Integer.valueOf(properties.get(key));
-						if (samplingInterval < 1) {
-							throw new IllegalArgumentException(String.format("%s is not an acceptable "+MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY+" value", properties.get(key)));
-						}
-					} catch (Exception exception) {
-						log.warn("Attempted to parse "+MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY+" value of '{}' but encountered an exception. Defaulting to 1 and disabling track merging.", properties.get(key), exception);
-						samplingInterval = 1;
-						mergeTracks = false;
-						break;
-					}
-				} else if (StringUtils.equalsIgnoreCase(key, MpfConstants.MERGE_TRACKS_PROPERTY)) {
-					try {
-						mergeTracks = Boolean.valueOf(properties.get(key));
-					} catch (Exception exception) {
-						log.warn("Attempted to parse "+MpfConstants.MERGE_TRACKS_PROPERTY+" value of '{}' but encountered an exception. Defaulting to false.", properties.get(key), exception);
-						mergeTracks = false;
-						samplingInterval = 1;
-						break;
-					}
+		if (samplingIntervalProperty != null) {
+			try {
+				samplingInterval = Integer.valueOf(samplingIntervalProperty);
+				if (samplingInterval < 1) {
+					throw new IllegalArgumentException(String.format("%s is not an acceptable " + MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY + " value", samplingIntervalProperty));
 				}
+			} catch (Exception exception) {
+				log.warn("Attempted to parse " + MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY + " value of '{}' but encountered an exception. Defaulting to 1 and disabling track merging.", samplingIntervalProperty, exception);
+				return new TrackMergingPlan(1, false);
+			}
+		}
+		if (mergeTracksProperty != null) {
+			try {
+				mergeTracks = Boolean.valueOf(mergeTracksProperty);
+			} catch (Exception exception) {
+				log.warn("Attempted to parse "+MpfConstants.MERGE_TRACKS_PROPERTY+" value of '{}' but encountered an exception. Defaulting to false.", mergeTracksProperty, exception);
+				return new TrackMergingPlan(1, false);
 			}
 		}
 		return new TrackMergingPlan(samplingInterval, mergeTracks);

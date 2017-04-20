@@ -34,7 +34,9 @@ import org.json.XML;
 import org.mitre.mpf.interop.JsonAction;
 import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.interop.JsonStage;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.exceptions.*;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.TextUtils;
@@ -44,12 +46,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.InputStreamSource;
-import org.springframework.core.io.Resource;
+import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.io.*;
-import java.nio.file.Files;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -99,9 +103,10 @@ public class PipelineManager {
                     .forEach(pd -> pd.setDefaultValue(properties));
 
             for (AlgorithmDefinition algorithm : algorithms.getAlgorithms()) {
-                if (addAlgorithm(algorithm)) {
+                try {
+                    addAlgorithm(algorithm);
                     log.debug("added algorithm {}", algorithm);
-                } else {
+                } catch (WfmProcessingException ex) {
                     log.warn("failed to add algorithm {}", algorithm);
                 }
             }
@@ -111,9 +116,10 @@ public class PipelineManager {
                     ActionDefinitionCollection.class);
 
             for (ActionDefinition action : actions.getActionDefinitions()) {
-                if (addAction(action)) {
+                try {
+                    addAction(action);
                     log.debug("added action {}", action);
-                } else {
+                } catch (WfmProcessingException ex) {
                     log.warn("failed to add action {}", action);
                 }
             }
@@ -123,9 +129,10 @@ public class PipelineManager {
                     TaskDefinitionCollection.class);
 
             for (TaskDefinition task : tasks.getTasks()) {
-                if (addTask(task)) {
+                try {
+                    addTask(task);
                     log.debug("added task {}", task);
-                } else {
+                } catch (WfmProcessingException ex) {
                     log.warn("failed to add task {}", task);
                 }
             }
@@ -135,9 +142,10 @@ public class PipelineManager {
                     PipelineDefinitionCollection.class);
 
             for (PipelineDefinition pipeline : pipelines.getPipelines()) {
-                if (addPipeline(pipeline)) {
+                try {
+                    addPipeline(pipeline);
                     log.debug("added pipeline {}", pipeline);
-                } else {
+                } catch (WfmProcessingException ex) {
                     log.warn("failed to add pipeline {}", pipeline);
                 }
             }
@@ -228,9 +236,9 @@ public class PipelineManager {
         }
     }
 
-
-    public Tuple<Boolean,String> save(String type) {
-        Resource resource;
+    @Deprecated
+    public Tuple<Boolean, String> saveDeprecated(String type) {
+        WritableResource resource;
         AlgorithmDefinitionCollection algorithmDefinitionCollection = null;
         ActionDefinitionCollection actionDefinitionCollection = null;
         TaskDefinitionCollection taskDefinitionCollection = null;
@@ -270,19 +278,19 @@ public class PipelineManager {
                 return new Tuple<>(false, "Unable to save object type: " + type);
         }
 
-        try (Writer outputWriter = Files.newBufferedWriter(resource.getFile().toPath())) {
+        try (OutputStream outStream = resource.getOutputStream()) {
             switch (type) {
                 case "algorithm":
-                    xStream.toXML(algorithmDefinitionCollection, outputWriter);
+                    xStream.toXML(algorithmDefinitionCollection, outStream);
                     break;
                 case "action":
-                    xStream.toXML(actionDefinitionCollection, outputWriter);
+                    xStream.toXML(actionDefinitionCollection, outStream);
                     break;
                 case "task":
-                    xStream.toXML(taskDefinitionCollection, outputWriter);
+                    xStream.toXML(taskDefinitionCollection, outStream);
                     break;
                 case "pipeline":
-                    xStream.toXML(pipelineDefinitionCollection, outputWriter);
+                    xStream.toXML(pipelineDefinitionCollection, outStream);
                     break;
                 default:
                     return new Tuple<>(false, "Unable to save object type: " + type);
@@ -293,6 +301,70 @@ public class PipelineManager {
             log.error("Failed to write to xml with message: {}", e.getMessage());
         }
         return new Tuple<>(false, "error reading the xml file of type: " + type);
+    }
+
+    public void save(String type) throws WfmProcessingException {
+        WritableResource resource;
+        AlgorithmDefinitionCollection algorithmDefinitionCollection = null;
+        ActionDefinitionCollection actionDefinitionCollection = null;
+        TaskDefinitionCollection taskDefinitionCollection = null;
+        PipelineDefinitionCollection pipelineDefinitionCollection = null;
+
+        switch (type) {
+            case "algorithm":
+                algorithmDefinitionCollection = new AlgorithmDefinitionCollection();
+                for (Entry<String, AlgorithmDefinition> entry : algorithms.entrySet()) {
+                    algorithmDefinitionCollection.getAlgorithms().add(entry.getValue());
+                }
+                resource = propertiesUtil.getAlgorithmDefinitions();
+                break;
+            case "action":
+                actionDefinitionCollection = new ActionDefinitionCollection();
+                for (Entry<String, ActionDefinition> entry : actions.entrySet()) {
+                    actionDefinitionCollection.getActionDefinitions().add(entry.getValue());
+                }
+                resource = propertiesUtil.getActionDefinitions();
+                break;
+            case "task":
+                taskDefinitionCollection = new TaskDefinitionCollection();
+                for (Entry<String, TaskDefinition> entry : tasks.entrySet()) {
+                    taskDefinitionCollection.getTasks().add(entry.getValue());
+                }
+                resource = propertiesUtil.getTaskDefinitions();
+                break;
+            case "pipeline":
+                pipelineDefinitionCollection = new PipelineDefinitionCollection();
+                for (Entry<String, PipelineDefinition> entry : pipelines.entrySet()) {
+                    pipelineDefinitionCollection.getPipelines().add(entry.getValue());
+                }
+                resource = propertiesUtil.getPipelineDefinitions();
+                break;
+            default:
+                throw new WfmProcessingException("Unable to save object type: " + type);
+
+        }
+
+        try (OutputStream outStream = resource.getOutputStream()) {
+            switch (type) {
+                case "algorithm":
+                    xStream.toXML(algorithmDefinitionCollection, outStream);
+                    break;
+                case "action":
+                    xStream.toXML(actionDefinitionCollection, outStream);
+                    break;
+                case "task":
+                    xStream.toXML(taskDefinitionCollection, outStream);
+                    break;
+                case "pipeline":
+                    xStream.toXML(pipelineDefinitionCollection, outStream);
+                    break;
+                default:
+                    throw new WfmProcessingException("Unable to save object type: " + type);
+            }
+        }
+        catch (IOException e) {
+            log.error("Failed to write to xml with message: {}", e.getMessage());
+        }
     }
 
 
@@ -388,15 +460,11 @@ public class PipelineManager {
     }
 
     /** Adds an algorithm. This will return false if the algorithm could not be added. */
-    public boolean addAlgorithm(AlgorithmDefinition algorithm) {
-        if (isValidAlgorithm(algorithm)) {
-            log.debug("{}: Adding algorithm", StringUtils.upperCase(algorithm.getName()));
-            algorithms.put(StringUtils.upperCase(algorithm.getName()), algorithm);
-            return true;
-        } else {
-            log.warn("{}: This algorithm was not added.", algorithm);
-            return false;
-        }
+    public boolean addAlgorithm(AlgorithmDefinition algorithm) throws WfmProcessingException {
+        validateAlgorithm(algorithm);
+        log.debug("{}: Adding algorithm", StringUtils.upperCase(algorithm.getName()));
+        algorithms.put(StringUtils.upperCase(algorithm.getName()), algorithm);
+        return true;
     }
 
     public void removeAlgorithm(String algorithmName) {
@@ -406,15 +474,11 @@ public class PipelineManager {
     }
 
     /** Adds an action. This will return false if the action could not be added. */
-    public boolean addAction(ActionDefinition actionNode) {
-        if (isValidAction(actionNode)) {
-            log.debug("{}: Adding action", StringUtils.upperCase(actionNode.getName()));
-            actions.put(StringUtils.upperCase(actionNode.getName()), actionNode);
-            return true;
-        } else {
-            log.warn("{}: This action was not added.", actionNode);
-            return false;
-        }
+    public boolean addAction(ActionDefinition actionNode) throws WfmProcessingException {
+        validateAction(actionNode);
+        log.debug("{}: Adding action", StringUtils.upperCase(actionNode.getName()));
+        actions.put(StringUtils.upperCase(actionNode.getName()), actionNode);
+        return true;
     }
 
     public void removeAction(String actionName) {
@@ -424,11 +488,8 @@ public class PipelineManager {
     }
 
     /** Adds a task. This will return false if the task could not be added. */
-    public boolean addTask(TaskDefinition task) {
-        if (!isValidTask(task)) {
-            log.warn("{}: This task was not added.", task);
-            return false;
-        }
+    public boolean addTask(TaskDefinition task) throws WfmProcessingException {
+        validateTask(task);
 
         log.debug("{}: Adding task", StringUtils.upperCase(task.getName()));
         tasks.put(StringUtils.upperCase(task.getName()), task);
@@ -458,15 +519,11 @@ public class PipelineManager {
     }
 
     /** Adds a pipeline. This will return false if the pipeline could not be added. */
-    public boolean addPipeline(PipelineDefinition pipeline) {
-        if (isValidPipeline(pipeline)) {
-            log.debug("{}: Adding pipeline", StringUtils.upperCase(pipeline.getName()));
-            pipelines.put(StringUtils.upperCase(pipeline.getName()), pipeline);
-            return true;
-        } else {
-            log.warn("{}: This pipeline was not added.", pipeline);
-            return false;
-        }
+    public boolean addPipeline(PipelineDefinition pipeline) throws WfmProcessingException {
+        validatePipeline(pipeline);
+        log.debug("{}: Adding pipeline", StringUtils.upperCase(pipeline.getName()));
+        pipelines.put(StringUtils.upperCase(pipeline.getName()), pipeline);
+        return true;
     }
 
     public void removePipeline(String pipelineName) {
@@ -476,35 +533,26 @@ public class PipelineManager {
     }
 
     /** Check that the algorithm is not null, is valid, and has a name which has not already been added to the PipelineManager instance. Returns false if the algorithm is not valid.*/
-    private boolean isValidAlgorithm(AlgorithmDefinition algorithm) {
+    private void validateAlgorithm(AlgorithmDefinition algorithm) throws WfmProcessingException {
         if (algorithm == null) {
-            log.warn("algorithm cannot be null");
-            return false;
+            throw new CannotBeNullWfmProcessingException("Algorithm cannot be null.");
         } else if (!algorithm.isValid()) {
-            log.error("{}: algorithm is not valid", algorithm);
-            return false;
+            throw new InvalidPipelineObjectWfmProcessingException("Algorithm is not valid.");
         } else if (getAlgorithm(algorithm.getName()) != null) {
-            log.error("{}: algorithm name is already in use", StringUtils.upperCase(algorithm.getName()));
-            return false;
-        } else {
-            return true;
+            throw new DuplicateNameWfmProcessingException(StringUtils.upperCase(algorithm.getName()) + ": algorithm name is already in use.");
         }
     }
 
     /** Check that the task is not null, is valid, references an algorithm which already exists in the PipelineManager, has a name which has not already been added to the PipelineManager instance, and has properties associated with it which are valid for the referenced algorithm. Returns false if the action is invalid. */
-    private boolean isValidAction(ActionDefinition actionDefinition) {
+    private void validateAction(ActionDefinition actionDefinition) throws WfmProcessingException {
         if (actionDefinition == null) {
-            log.warn("action was null");
-            return false;
+            throw new CannotBeNullWfmProcessingException("Action cannot be null.");
         } else if (!actionDefinition.isValid()) {
-            log.error("{}: action is not valid", actionDefinition);
-            return false;
+            throw new InvalidPipelineObjectWfmProcessingException("Action is not valid.");
         } else if (getAlgorithm(actionDefinition) == null) {
-            log.error("{}: referenced algorithm {} does not exist", actionDefinition.getName(), StringUtils.upperCase(actionDefinition.getAlgorithmRef()));
-            return false;
+            throw new InvalidPropertyWfmProcessingException(StringUtils.upperCase(actionDefinition.getName()) + ": referenced algorithm " + actionDefinition.getAlgorithmRef() + " does not exist.");
         } else if (getAction(actionDefinition.getName()) != null) {
-            log.error("{}: action name is already in use", actionDefinition.getName());
-            return false;
+            throw new DuplicateNameWfmProcessingException(StringUtils.upperCase(actionDefinition.getName()) + ": action name is already in use.");
         } else {
             // If this action provided any properties...
             if (actionDefinition.getProperties() != null) {
@@ -519,7 +567,12 @@ public class PipelineManager {
                                 actionDefinition.getName(),
                                 actionDefinition.getAlgorithmRef(),
                                 propertyValue.getName());
-                        return false;
+                        throw new InvalidPropertyWfmProcessingException(new StringBuilder().append(actionDefinition.getName())
+                                .append(": The referenced algorithm (")
+                                .append(actionDefinition.getAlgorithmRef())
+                                .append(") does not expose the property ")
+                                .append(propertyValue.getName())
+                                .append(".").toString());
                     } else if (!isValidValueForType(propertyValue.getValue(), algorithm.getProvidesCollection().getAlgorithmProperty(propertyValue.getName()).getType())) {
                         // Otherwise, if the provided value for the property is not acceptable given the property's defined type...
                         log.error("{}.{}: The provided value of '{}' cannot be converted to type {}.",
@@ -527,28 +580,30 @@ public class PipelineManager {
                                 propertyValue.getName(),
                                 propertyValue.getValue(),
                                 algorithm.getProvidesCollection().getAlgorithmProperty(propertyValue.getName()).getType());
-                        return false;
+                        throw new InvalidPropertyWfmProcessingException(new StringBuilder().append(actionDefinition.getName())
+                                .append(".")
+                                .append(propertyValue.getName())
+                                .append(": The provided value of '")
+                                .append(propertyValue.getValue())
+                                .append("' cannot be converted to type ")
+                                .append(algorithm.getProvidesCollection().getAlgorithmProperty(propertyValue.getName()).getType())
+                                .append(".").toString());
                     }
                 }
             } else {
                 log.debug("{}: no properties were provided", actionDefinition.getName());
             }
         }
-
-        return true;
     }
 
     /** Check that the task is not null, is valid, has a name which has not already been added to the PipelineManager, references only actions which have already been added to the PipelineManager, and if more than one action is specified, check that all referenced actions are of the same Operation. Returns false if the task is invalid. */
-    private boolean isValidTask(TaskDefinition task) {
+    private void validateTask(TaskDefinition task) throws WfmProcessingException{
         if (task == null) {
-            log.warn("task must not be null");
-            return false;
+            throw new CannotBeNullWfmProcessingException("Task cannot be null.");
         } else if (!task.isValid()) {
-            log.error("{}: task is not valid", task);
-            return false;
+            throw new InvalidPipelineObjectWfmProcessingException("Task is not valid.");
         } else if (getTask(task.getName()) != null) {
-            log.error("{}: task name is already in use", StringUtils.upperCase(task.getName()));
-            return false;
+            throw new DuplicateNameWfmProcessingException(StringUtils.upperCase(task.getName()) + ": task name is already in use.");
         } else {
             ActionType actionType = null;
 
@@ -557,24 +612,33 @@ public class PipelineManager {
                     log.error("{}: The referenced action ({}) does not exist",
                             StringUtils.upperCase(task.getName()),
                             StringUtils.upperCase(actionRef.getName()));
-                    return false;
+                    throw new InvalidActionWfmProcessingException(new StringBuilder().append(task.getName())
+                            .append(": The referenced action (")
+                            .append(actionRef.getName())
+                            .append(") does not exist.").toString());
                 } else if (actionType == null) {
                     // First time through - set the action type. Remember, algorithms MUST have an ActionType associated with them, so this is okay.
-	                actionType = getAlgorithm(actionRef).getActionType();
+                    actionType = getAlgorithm(actionRef).getActionType();
                 } else {
                     // Not first time through - check that the current action uses the same action type as the first action in the task.
                     ActionType otherActionType = null;
                     if (actionType != (otherActionType = getAlgorithm(actionRef).getActionType())) {
                         log.error("{}: task cannot contain actions which have different ActionTypes. The first ActionType for this task was {}, but {} has an ActionType of {}.",
                                 task.getName(),
-		                        actionType,
+                                actionType,
                                 actionRef.getName(),
                                 otherActionType);
-                        return false;
+                        throw new InvalidActionWfmProcessingException(new StringBuilder().append(task.getName())
+                                .append(": task cannot contain actions which have different ActionTypes. The first ActionType for this task was ")
+                                .append(actionType)
+                                .append(", but ")
+                                .append(actionRef.getName())
+                                .append(" has an ActionType of ")
+                                .append(otherActionType)
+                                .append(".").toString());
                     }
                 }
             }
-            return true;
         }
     }
 
@@ -609,18 +673,15 @@ public class PipelineManager {
     }
 
     /** Check that the pipeline is not null, is valid, has a name which is unique in the PipelineManager, references valid tasks, and that the states (using provides/requires) are valid for the proposed sequence of tasks. Returns false if the pipeline. */
-    private boolean isValidPipeline(PipelineDefinition pipeline) {
+    private void validatePipeline(PipelineDefinition pipeline) throws WfmProcessingException {
         if (pipeline == null) {
-            log.warn("pipeline must not be null");
-            return false;
+            throw new CannotBeNullWfmProcessingException("Pipeline cannot be null.");
         } else if (!pipeline.isValid()) {
-            log.error("{}: pipeline is not valid");
-            return false;
+            throw new InvalidPipelineObjectWfmProcessingException("Pipeline is not valid.");
         } else if (getPipeline(pipeline.getName()) != null) {
-            log.error("{}: pipeline name is already in use", StringUtils.upperCase(pipeline.getName()));
-            return false;
+            throw new DuplicateNameWfmProcessingException(StringUtils.upperCase(pipeline.getName()) + ": pipeline name is already in use.");
         }
-        return areTasksValid(StringUtils.upperCase(pipeline.getName()), pipeline.getTaskRefs());
+        validateTasks(StringUtils.upperCase(pipeline.getName()), pipeline.getTaskRefs());
     }
 
     private ActionType getTaskType(TaskDefinition taskDefinition) {
@@ -631,31 +692,41 @@ public class PipelineManager {
         return taskDefinitionRef == null ? null : getTaskType(getTask(taskDefinitionRef));
     }
 
-    private boolean areTasksValid(String pipelineName, List<TaskDefinitionRef> taskRefs) {
+    private void validateTasks(String pipelineName, List<TaskDefinitionRef> taskRefs) throws WfmProcessingException {
         if(getTask(taskRefs.get(0)) == null) {
             log.error("{}: Task with name {} does not exist.",
                     pipelineName,
                     taskRefs.get(0).getName());
-            return false;
+
+            throw new InvalidTaskWfmProcessingException(new StringBuilder().append(pipelineName)
+                    .append(": Task with name ")
+                    .append(taskRefs.get(0).getName())
+                    .append(" does not exist.").toString());
         } else {
             switch (getTaskType(taskRefs.get(0))) {
                 case DETECTION:
-                    return isValidDetectionPipeline(pipelineName, taskRefs);
+                    validateDetectionPipeline(pipelineName, taskRefs);
+                    return;
                 default:
-                    log.error("{}: {} - pipelines may not start with tasks of the type {}",
+                    log.error("{}: {} - pipelines may not start with tasks of the type {}.",
                             pipelineName,
                             getTaskType(taskRefs.get(0)),
                             taskRefs.get(0).getName());
-                    return false;
+                    throw new InvalidTaskWfmProcessingException(new StringBuilder().append(pipelineName)
+                            .append(": ")
+                            .append(taskRefs.get(0).getName())
+                            .append(" - pipelines may not start with tasks of the type ")
+                            .append(getTaskType(taskRefs.get(0)))
+                            .append(".").toString());
             }
         }
     }
 
-    private boolean isValidDetectionPipeline(String pipelineName, List<TaskDefinitionRef> taskDefinitions) {
-        return isValidDetectionPipeline(pipelineName, taskDefinitions, new HashSet<StateDefinition>(10));
+    private void validateDetectionPipeline(String pipelineName, List<TaskDefinitionRef> taskDefinitions) throws WfmProcessingException {
+        validateDetectionPipeline(pipelineName, taskDefinitions, new HashSet<StateDefinition>(10));
     }
 
-    private boolean isValidDetectionPipeline(String pipelineName, List<TaskDefinitionRef> taskDefinitions, Set<StateDefinition> currentStates) {
+    private void validateDetectionPipeline(String pipelineName, List<TaskDefinitionRef> taskDefinitions, Set<StateDefinition> currentStates) throws WfmProcessingException {
         if (taskDefinitions.size() == 1) {
             // There's only one task in the pipeline, and we know it to be detection.
             boolean rValue = true;
@@ -666,37 +737,60 @@ public class PipelineManager {
                         taskDefinitions.get(0).getName(),
                         currentStates,
                         requiredStates);
-                rValue = false;
+                throw new InvalidTaskWfmProcessingException(new StringBuilder()
+                        .append(pipelineName)
+                        .append(": The states for ")
+                        .append(taskDefinitions.get(0).getName())
+                        .append(" are not satisfied. Current: ")
+                        .append(currentStates)
+                        .append(". Required: ")
+                        .append(requiredStates)
+                        .append(".").toString());
             }
-            return rValue;
         } else if (getTask(taskDefinitions.get(0)).getActions().size() > 1) {
             // There's more than one task, and the number of actions in the first task exceeds 1.
             log.error("{}: No tasks may follow the multi-detection task of {}.", pipelineName, taskDefinitions.get(0).getName());
-            return false;
+            throw new InvalidTaskWfmProcessingException(new StringBuilder()
+                    .append(pipelineName)
+                    .append(": No tasks may follow the multi-detection task of ")
+                    .append(taskDefinitions.get(0).getName())
+                    .append(".").toString());
         } else if(getTask(taskDefinitions.get(1)) == null) {
             // At this point, we've determined there's at least one more task. The next task name must exist.
             log.error("{}: Task with name {} does not exist.", pipelineName, taskDefinitions.get(1).getName());
-            return false;
+            throw new InvalidTaskWfmProcessingException(new StringBuilder()
+                    .append(pipelineName)
+                    .append(": Task with name ")
+                    .append(taskDefinitions.get(1).getName())
+                    .append(" does not exist.").toString());
         } else {
             currentStates.addAll(providedTaskStates.get(StringUtils.upperCase(taskDefinitions.get(0).getName())));
             ActionType nextTaskType = getTaskType(taskDefinitions.get(1));
             switch (nextTaskType) {
                 case DETECTION:
                     currentStates.clear(); // If the next task is detection-based, we should disregard the current states as we're downselecting.
-                    return isValidDetectionPipeline(pipelineName, taskDefinitions.subList(1, taskDefinitions.size()), currentStates);
+                    validateDetectionPipeline(pipelineName, taskDefinitions.subList(1, taskDefinitions.size()), currentStates);
+                    return;
                 case MARKUP:
-                    return isValidMarkupPipeline(pipelineName, taskDefinitions.subList(1, taskDefinitions.size()), currentStates);
+                    validateMarkupPipeline(pipelineName, taskDefinitions.subList(1, taskDefinitions.size()), currentStates);
+                    return;
                 default:
                     log.error("{}: {} is a detection task and may not be followed by {}.",
                             pipelineName,
                             taskDefinitions.get(0).getName(),
                             taskDefinitions.get(1).getName());
-                    return false;
+                    throw new InvalidTaskWfmProcessingException(new StringBuilder()
+                            .append(pipelineName)
+                            .append(": ")
+                            .append(taskDefinitions.get(0).getName())
+                            .append(" is a detection task and may not be followed by ")
+                            .append(taskDefinitions.get(1).getName())
+                            .append(".").toString());
             }
         }
     }
 
-    private boolean isValidMarkupPipeline(String pipelineName, List<TaskDefinitionRef> taskDefinitions, Set<StateDefinition> currentStates) {
+    private void validateMarkupPipeline(String pipelineName, List<TaskDefinitionRef> taskDefinitions, Set<StateDefinition> currentStates) throws WfmProcessingException {
         if (taskDefinitions.size() == 1) {
             // There's only one task in the pipeline, and we know it to be markup.
             boolean rValue = true;
@@ -707,12 +801,23 @@ public class PipelineManager {
                         taskDefinitions.get(0).getName(),
                         currentStates,
                         requiredStates);
-                rValue = false;
+                throw new InvalidTaskWfmProcessingException(new StringBuilder()
+                        .append(pipelineName)
+                        .append(": The states for ")
+                        .append(taskDefinitions.get(0).getName())
+                        .append(" are not satisfied. Current: ")
+                        .append(currentStates)
+                        .append(". Required: ")
+                        .append(requiredStates)
+                        .append(".").toString());
             }
-            return rValue;
         } else {
             log.error("{}: No tasks may follow a markup task of {}.", pipelineName, taskDefinitions.get(0).getName());
-            return false;
+            throw new InvalidTaskWfmProcessingException(new StringBuilder()
+                    .append(pipelineName)
+                    .append(": No tasks may follow a markup task of ")
+                    .append(taskDefinitions.get(0).getName())
+                    .append(".").toString());
         }
     }
 }

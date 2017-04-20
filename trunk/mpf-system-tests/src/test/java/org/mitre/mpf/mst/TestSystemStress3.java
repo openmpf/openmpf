@@ -46,7 +46,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestSystemStress3 extends TestSystem {
+public class TestSystemStress3 extends TestSystemWithDefaultConfig {
 
     protected static final Logger log = LoggerFactory.getLogger(TestSystemStress3.class);
 
@@ -106,7 +106,7 @@ public class TestSystemStress3 extends TestSystem {
                 while (!fQueue.isEmpty()) {
                     List<JsonMediaInputObject> media = new LinkedList<>();
                     media.add(new JsonMediaInputObject(fQueue.take().getAbsoluteFile().toURI().toString()));
-                    runPipelineOnMedia("DEFAULT_EXTRACTION_FACE_OCV_PIPELINE", media,
+                    runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
                             propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
                     manyJobsNumFilesProcessed++;
                 }

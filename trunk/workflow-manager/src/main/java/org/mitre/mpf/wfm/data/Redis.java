@@ -103,10 +103,13 @@ public interface Redis {
 	/**
 	 * Retrieves the job data structure with the specified id from the Redis data store.
 	 * @param jobId The MPF-assigned ID of the job.
+	 * @param mediaIds Optionally, a list of mediaIds to load.  If values are provided for media ids, the returned
+	 *                 TransientJob will contain only the TransientMedia objects which relate to those ids. If no
+	 *                 values are provided, the TransientJob will include all associated TransientMedia.
 	 * @return The job or {@literal null}.
 	 * @throws WfmProcessingException
 	 */
-	TransientJob getJob(long jobId) throws WfmProcessingException;
+	TransientJob getJob(long jobId, Long... mediaIds) throws WfmProcessingException;
 
 	/**
 	 * Generates and returns a new and unique sequence value. These IDs are used internally and are not meaningful

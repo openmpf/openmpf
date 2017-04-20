@@ -41,7 +41,7 @@ import java.net.URI;
 import java.util.*;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestSystemStress2 extends TestSystem {
+public class TestSystemStress2 extends TestSystemWithDefaultConfig {
 
     private static final Logger log = LoggerFactory.getLogger(TestSystemStress2.class);
 
@@ -66,7 +66,8 @@ public class TestSystemStress2 extends TestSystem {
             media.add(new JsonMediaInputObject(file.getAbsoluteFile().toURI().toString()));
             i++;
         }
-        long jobId = runPipelineOnMedia("DEFAULT_EXTRACTION_FACE_OCV_PIPELINE", media, propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
+        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
+                propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
         checkOutput(actualOutputPath, i);
         log.info("Finished test runFaceOcvDetectImage()");
@@ -89,7 +90,8 @@ public class TestSystemStress2 extends TestSystem {
         // rejects:
         //        mediaPaths.add(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/face/092515_VPOTUS_HD.mp4").toString();  // 1.25G, times out at 5 hours
 
-        long jobId = runPipelineOnMedia("DEFAULT_EXTRACTION_FACE_OCV_PIPELINE", media, propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
+        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
+                propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
         checkOutput(actualOutputPath, media.size());
         log.info("Finished test runFaceOcvDetectVideo()");
@@ -111,7 +113,8 @@ public class TestSystemStress2 extends TestSystem {
         media.add(new JsonMediaInputObject(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/6.mp4").toString())); // 341MG, 3 mins
         media.add(new JsonMediaInputObject(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/motion/malaysia-scaled.mp4").toString())); // 13MG, 1 min
 
-        long jobId = runPipelineOnMedia("DEFAULT_EXTRACTION_PERSON_OCV_PIPELINE", media, propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
+        long jobId = runPipelineOnMedia("OCV PERSON DETECTION PIPELINE", media, Collections.emptyMap(),
+                propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
         checkOutput(actualOutputPath, media.size());
         log.info("Finished test runPersonOcvDetectVideo()");

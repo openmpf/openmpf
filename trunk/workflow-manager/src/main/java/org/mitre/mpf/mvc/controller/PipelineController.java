@@ -31,29 +31,32 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.mitre.mpf.mvc.model.ActionModel;
-import org.mitre.mpf.mvc.model.AddToPipelineModel;
-import org.mitre.mpf.mvc.model.PipelinesModel;
+import org.mitre.mpf.mvc.model.*;
 import org.mitre.mpf.mvc.util.JsonView;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.exceptions.DuplicateNameWfmProcessingException;
+import org.mitre.mpf.wfm.exceptions.NotFoundWfmProcessingException;
+import org.mitre.mpf.wfm.pipeline.PipelineManager;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.PipelineService;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 @Api( value = "Pipelines",
@@ -71,18 +74,14 @@ public class PipelineController {
     private PipelineService pipelineService;
 
     @Autowired
-    @Qualifier(PropertiesUtil.REF)
-    private PropertiesUtil propertiesUtil;
+    private PipelineManager pipelineManager;
 
-    private List<String> getAvailablePipelinesVersionOne() {
-    	return pipelineService.getPipelineNames();
-    }
-    
     /*
      *	/pipelines
      */
     //EXTERNAL
-    //1. REST API - Gets the available pipelines that can be used to process media URIs
+    //1. REST API - Gets the available pipeline names that can be used to process media URIs
+    // pipelines: todo: the final /rest/pipelines REST API should be identical to what /pipelines is doing
     @RequestMapping(value = {"/rest/pipelines"}, method = RequestMethod.GET)
 	@ApiOperation(value="Retrieves list of available pipelines.",
 		notes="The response will be a JSON array of strings with each item being a pipeline.",
@@ -91,13 +90,31 @@ public class PipelineController {
     		@ApiResponse(code = 200, message = "Successful response"), 
     		@ApiResponse(code = 401, message = "Bad credentials") })
     @ResponseBody
-    public List<String> getAvailablePipelinesRest(/*@ApiParam(required=false,
-			value="The version of this request - NOT IMPLEMENTED")    		
-    		@RequestParam(value = "v", required = false) String v*/) {
-    	return getAvailablePipelinesVersionOne();
+    public List<String> getAvailablePipelinesRest() {
+        return pipelineService.getPipelineNames();
     }
 
 
+    //INTERNAL
+    /**
+     * Returns the name (pipeline key) and description of all pipelines.
+     * @return A Set of all pipelines in the system.
+     */
+    @RequestMapping( value = {"/pipelines"},
+            method = RequestMethod.GET,
+            produces = "application/json")
+    @ResponseBody
+    public Set<PipelineComponentBasicInfo> getPipelines() {
+        return pipelineManager.getPipelines()
+                .stream()
+                .map(c -> new PipelineComponentBasicInfo(c.getName(), c.getDescription()))
+                .collect(Collectors.toSet());
+    }
+
+    //INTERNAL - deprecated
+    //  pipelines2: todo: should remove this after removing usage in
+    //      AppServices.service('PipelinesService'... in client code
+    @Deprecated
     @RequestMapping(value = {"/pipelines/details"}, method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public String getAvailablePipelinesDetails() {
@@ -105,20 +122,32 @@ public class PipelineController {
     }
 
 
-    //INTERNAL
-    @RequestMapping(value = {"/pipelines"}, method = RequestMethod.GET)
+    //INTERNAL - deprecated
+    // pipelines2: todo: should be refactored to do /pipeline/{name}
+    // but since all data is stored as XML files, there is no benefit for now
+    /** returns the details of all pipelines */
+    @Deprecated
+    @RequestMapping( value = {"/pipeline/all"},
+            method = RequestMethod.GET,
+            produces = "application/json")
     @ResponseBody
-    public List<String> getAvailablePipelinesSession() {
-    	return getAvailablePipelinesVersionOne();
+    public Set<PipelineDefinition> getAllAvailablePipelines() {
+        return pipelineManager.getPipelines();
     }
-        
+
+
+    //INTERNAL - deprecated
+    // todo: remove when custom pipeline page (version 1) no longer needed
+    @Deprecated
     @RequestMapping(value = "/pipelines/model", method = RequestMethod.GET)
     @ResponseBody
     public PipelinesModel getPipelinesModel() {
-    	return new PipelinesModel(pipelineService.getAlgorithmNames(), pipelineService.getActionNames(),
+        return new PipelinesModel(pipelineService.getAlgorithmNames(), pipelineService.getActionNames(),
                 pipelineService.getTaskNames(), pipelineService.getPipelineNames());
-    }    
-    
+    }
+
+    //INTERNAL - deprecated
+    @Deprecated
     @RequestMapping(value = "/pipelines/algorithm-properties", method = RequestMethod.GET)
     @ResponseBody
     public List<PropertyDefinition> getAlgorithmPropertiesJson(
@@ -127,6 +156,289 @@ public class PipelineController {
         return pipelineService.getAlgorithmProperties(algName);
     }
 
+    //INTERNAL
+
+    /** Returns the details of a specified pipeline.
+     *
+     * @param pipelineName  The name of the pipeline to retrieve.
+     * @return  The specified pipeline.
+     * @throws WfmProcessingException
+     */
+    @RequestMapping( value = {"/pipelines/{pipelineName}"},
+            method = RequestMethod.GET,
+            produces = "application/json")
+    @ResponseBody
+    public PipelineDefinition getPipeline(
+            @PathVariable("pipelineName") String pipelineName) throws WfmProcessingException{
+        PipelineDefinition pipelineDefinition = pipelineManager.getPipeline(pipelineName);
+        if (pipelineDefinition==null) {
+            throw new NotFoundWfmProcessingException("Pipeline not found: " + pipelineName + ".");
+        }
+        return pipelineDefinition;
+    }
+
+    //INTERNAL
+    /**
+     * Creates a new pipeline
+     * @param pipelineModel The pipeline specifications
+     * @param response      The HttpServletResponse
+     * @throws WfmProcessingException
+     */
+    @RequestMapping(value = "/pipelines", method = RequestMethod.POST)
+    @ResponseBody
+    public void addPipeline(@RequestBody PipelineModel pipelineModel, HttpServletResponse response) throws WfmProcessingException {
+        if(pipelineModel == null)
+            throw new WfmProcessingException("Empty pipeline description.");
+        else if (pipelineModel.getTasksToAdd().isEmpty())
+            throw new WfmProcessingException("Pipelines must contain at least one task.");
+
+        String description = pipelineModel.getDescription();
+        //force uppercase
+        String name = pipelineModel.getName().toUpperCase();
+
+        PipelineDefinition pipelineDefinition = new PipelineDefinition(name, description);
+        for (String taskName : pipelineModel.getTasksToAdd()) {
+            pipelineDefinition.getTaskRefs().add(new TaskDefinitionRef(taskName));
+        }
+        pipelineService.addAndSavePipeline(pipelineDefinition);
+    }
+
+    //INTERNAL
+    /** Deletes a specified pipeline.
+     *
+     * @param pipelineName  The pipeline to delete.
+     * @throws WfmProcessingException
+     */
+    @RequestMapping( value = {"/pipelines/{pipelineName}"},
+            method = RequestMethod.DELETE,
+            produces = "application/json")
+    @ResponseBody
+    public void deletePipeline(
+            @PathVariable("pipelineName") String pipelineName) throws WfmProcessingException{
+        pipelineService.removeAndDeletePipeline(pipelineName);
+    }
+
+    //INTERNAL
+    /** Returns the name (task key) and description of all tasks.
+     *
+     * @return A set of all tasks in the system.
+     */
+    @RequestMapping( value = {"/pipeline-tasks"},
+            method = RequestMethod.GET,
+            produces = "application/json")
+    @ResponseBody
+    public Set<PipelineComponentBasicInfo> getPipelineTasks() {
+         return pipelineManager.getTasks()
+                .stream()
+                .map(c -> new PipelineComponentBasicInfo(c.getName(), c.getDescription()))
+                .collect(Collectors.toSet());
+    }
+
+    //INTERNAL
+    /** Returns the details of a specified task.
+     *
+     * @param taskName  The name of the task to get.
+     * @return  The task being retrieved.
+     * @throws WfmProcessingException
+     */
+    @RequestMapping( value = {"/pipeline-tasks/{taskName}"},
+            method = RequestMethod.GET,
+            produces = "application/json")
+    @ResponseBody
+    public TaskDefinition getPipelineTask(
+            @PathVariable("taskName") String taskName) throws WfmProcessingException {
+        TaskDefinition task = pipelineManager.getTask(taskName);
+        if (task == null) {
+            throw new NotFoundWfmProcessingException("Task not found: " + taskName + ".");
+        }
+        return task;
+    }
+
+    //INTERNAL
+    /**
+     * Adds a task with an associated collection of actions.
+     * @param taskModel  The task to add.
+     * @param response   HttpServletResponse
+     *
+     * @throws WfmProcessingException  Indicates an error has occurred in processing.
+     */
+    @RequestMapping(value = "/pipeline-tasks", method = RequestMethod.POST)
+    @ResponseBody
+    public void addTask(@RequestBody TaskModel taskModel, HttpServletResponse response) throws WfmProcessingException {
+        if(taskModel == null)
+            throw new WfmProcessingException("Empty task description.");
+        else if (taskModel.getActionsToAdd().isEmpty())
+            throw new WfmProcessingException("Tasks must contain at least one action.");
+
+        String description = taskModel.getDescription();
+        //force uppercase
+        String name = taskModel.getName().toUpperCase();
+
+        TaskDefinition taskDefinition = new TaskDefinition(name, description);
+        for (String actionName : taskModel.getActionsToAdd()) {
+            taskDefinition.getActions().add(new ActionDefinitionRef(actionName));
+        }
+        pipelineService.addAndSaveTask(taskDefinition);
+    }
+
+    //INTERNAL
+    /** Deletes the specified task.
+     *
+     * @param taskName  The name of the task to delete
+     * @throws WfmProcessingException
+     */
+    @RequestMapping( value = {"/pipeline-tasks/{taskName}"},
+            method = RequestMethod.DELETE,
+            produces = "application/json")
+    @ResponseBody
+    public void deletePipelineTask(
+            @PathVariable("taskName") String taskName) throws WfmProcessingException {
+        pipelineService.removeAndDeleteTask(taskName);
+    }
+
+    //INTERNAL
+    /** Returns the name (action key) and description of all actions.
+     *
+     * @return  The set of all actions in the system.
+     */
+    @RequestMapping( value = {"/pipeline-actions"},
+            method = RequestMethod.GET,
+            produces = "application/json")
+    @ResponseBody
+    public Set<PipelineComponentBasicInfo> getPipelineActions() {
+        return pipelineManager.getActions()
+                .stream()
+                .map(c -> new PipelineComponentBasicInfo(c.getName(), c.getDescription()))
+                .collect(Collectors.toSet());
+    }
+
+    //INTERNAL
+    /** Returns the details of a specified action.
+     *
+     * @param actionName  The name of the action to retrieve.
+     * @return  The specified action.
+     * @throws WfmProcessingException
+     */
+    @RequestMapping( value = {"/pipeline-actions/{actionName}"},
+            method = RequestMethod.GET,
+            produces = "application/json")
+    @ResponseBody
+    public ActionDefinition getPipelineAction(
+            @PathVariable("actionName") String actionName) throws WfmProcessingException {
+        ActionDefinition action = pipelineManager.getAction(actionName);
+        if (action == null) {
+            throw new NotFoundWfmProcessingException("Action not found: " + actionName + ".");
+        }
+        return action;
+    }
+
+    //INTERNAL
+    /**
+     * Adds an action with an associated action and properties.
+     *
+     * @param actionModel  The action to add.
+     * @param response   HttpServletResponse
+     *
+     * @throws WfmProcessingException  Indicates an error has occurred in processing.
+     */
+
+    @RequestMapping(value = "/pipeline-actions",
+            method = RequestMethod.POST,
+            produces = "application/json" )
+    @ResponseBody
+    public void createActionJson2(@RequestBody ActionModel actionModel, HttpServletResponse response) throws WfmProcessingException {
+        Map<String, String> modifiedProperties;
+        try {
+            modifiedProperties = new ObjectMapper().readValue(actionModel.getProperties(), HashMap.class);
+        } catch (Exception e) {
+            log.error("error getting properties with message: {}", e.getMessage());
+            throw new WfmProcessingException("Invalid properties value: " + actionModel.getProperties() + ".", e);
+        }
+
+        pipelineService.addAndSaveAction(actionModel.getActionName().toUpperCase(),
+                actionModel.getActionDescription(), actionModel.getAlgorithmName(), modifiedProperties);
+    }
+
+    //INTERNAL
+    /** Deletes a specified action.
+     *
+     * @param actionName  The name of the action to delete.
+     * @throws WfmProcessingException
+     */
+    @RequestMapping( value = {"/pipeline-actions/{actionName}"},
+            method = RequestMethod.DELETE,
+            produces = "application/json")
+    @ResponseBody
+    public void deletePipelineAction(
+            @PathVariable("actionName") String actionName) throws WfmProcessingException {
+        pipelineService.removeAndDeleteAction(actionName);
+    }
+
+    //INTERNAL
+    /** Returns the name (algorithm key) and description of all algorithms.
+     *
+     * @return  The set of all algorithms in the system.
+     */
+    @RequestMapping( value = {"/pipeline-algorithms"},
+            method = RequestMethod.GET,
+            produces = "application/json")
+    @ResponseBody
+    public Set<PipelineComponentBasicInfo> getPipelineAlgorithms() {
+        return pipelineManager.getAlgorithms()
+                .stream()
+                .map(c -> new PipelineComponentBasicInfo(c.getName(), c.getDescription()))
+                .collect(Collectors.toSet());
+    }
+
+
+    //INTERNAL
+    /** Returns the details of a specified algorithm.
+     *
+     * @param algorithmName  The name of the algorithm to retrieve.
+     * @return  The specified algorithm
+     * @throws WfmProcessingException
+     */
+    @RequestMapping( value = {"/pipeline-algorithms/{algorithmName}"},
+            method = RequestMethod.GET,
+            produces = "application/json")
+    @ResponseBody
+    public AlgorithmDefinition getPipelineAlgorithm(
+            @PathVariable("algorithmName") String algorithmName) throws WfmProcessingException {
+        AlgorithmDefinition algorithmDefinition = pipelineManager.getAlgorithm(algorithmName);
+        if (algorithmDefinition == null) {
+            throw new NotFoundWfmProcessingException("Algorithm not found: " + algorithmName + ".");
+        }
+        return algorithmDefinition;
+    }
+
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @ExceptionHandler(DuplicateNameWfmProcessingException.class)
+    @ResponseBody
+    public String handleDuplicateNameWfmProcessingException(HttpServletRequest req, Exception ex) {
+        return ex.getMessage();
+    }
+
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler(NotFoundWfmProcessingException.class)
+    @ResponseBody
+    public String handleNotFoundWfmProcessingException(HttpServletRequest req, Exception ex) {
+        return ex.getMessage();
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(WfmProcessingException.class)
+    @ResponseBody
+    public String handleWfmProcessingException(HttpServletRequest req, Exception ex) {
+        return ex.getMessage();
+    }
+
+    // ---------------------------------------------------------------
+    // --- old web services that have not been updated for pipelines 2 page
+    //      and are still being used by piplines 1 page
+    // old?    @RequestMapping(value = "/pipelines/algorithm-properties", method = RequestMethod.GET)
+
+    //TODO: Remove when Pipelines1 page is phased out.
+    @Deprecated
     @RequestMapping(value = "/pipelines/create-action", method = RequestMethod.POST)
     @ResponseBody
     public Object createActionJson(@RequestBody ActionModel actionModel, HttpServletResponse response) throws WfmProcessingException {
@@ -143,7 +455,7 @@ public class PipelineController {
         }
 
         //unlike "/addToPipelineController" - an action, is added and save is done at the same time, did not want to change existing logic
-        Tuple<Boolean,String> saveTuple = pipelineService.addAndSaveAction(actionModel.getActionName().toUpperCase(),
+        Tuple<Boolean,String> saveTuple = pipelineService.addAndSaveActionDeprecated(actionModel.getActionName().toUpperCase(),
                 actionModel.getActionDescription(), actionModel.getAlgorithmName(), modifiedProperties);
         if (!saveTuple.getFirst()) {
         	log.error("new action creation failed and nothing was saved to xml");
@@ -154,6 +466,8 @@ public class PipelineController {
         return JsonView.Render(responseTuple, response);
     }
 
+    //TODO: Remove when Pipelines1 page is phased out.
+    @Deprecated
     @RequestMapping(value = "/pipelines/add-task-or-pipeline", method = RequestMethod.POST)
     @ResponseBody
     public Object addToPipelineControllerJson(@RequestBody AddToPipelineModel addToPipelineModel, HttpServletResponse response) throws WfmProcessingException {
@@ -173,7 +487,7 @@ public class PipelineController {
                 for(String actionName : addToPipelineModel.getItemsToAdd()) {
                     taskDefinition.getActions().add( new ActionDefinitionRef(actionName) );
                 }
-                successfulAdd = pipelineService.addTask(taskDefinition);
+                successfulAdd = pipelineService.addTaskDeprecated(taskDefinition);
             }
             else if(type.equals("pipeline")) {
                 PipelineDefinition pipelineDefinition = new PipelineDefinition(name, description);

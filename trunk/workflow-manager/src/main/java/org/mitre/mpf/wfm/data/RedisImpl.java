@@ -31,7 +31,6 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +81,8 @@ public class RedisImpl implements Redis {
 			OUTPUT_ENABLED = "OUTPUT_ENABLED",
 			PIPELINE = "PIPELINE",
 			PRIORITY = "PRIORITY",
+			OVERRIDDEN_ALGORITHM_PROPERTIES = "OVERRIDDEN_ALGORITHM_PROPERTIES",
+			OVERRIDDEN_JOB_PROPERTIES = "OVERRIDDEN_JOB_PROPERTIES",
 			CALLBACK_URL = "CALLBACK_URL",
 			CALLBACK_METHOD = "CALLBACK_METHOD",
 			TASK = "TASK",
@@ -254,7 +255,7 @@ public class RedisImpl implements Redis {
 	}
 
 	@SuppressWarnings("unchecked")
-	public synchronized TransientJob getJob(long jobId) throws WfmProcessingException {
+	public synchronized TransientJob getJob(long jobId, Long... mediaIds) throws WfmProcessingException {
 		if(!redisTemplate.boundSetOps(JOB).members().contains(Long.toString(jobId))) {
 			// The job is not known to the system.
 			return null;
@@ -274,12 +275,25 @@ public class RedisImpl implements Redis {
 					(String) (jobHash.get(CALLBACK_METHOD))
 			);
 
-			List<Long> mediaIds = (List<Long>) (jobHash.get(MEDIA));
-			List<TransientMedia> transientMediaList = new ArrayList<>(mediaIds.size());
-			for (Long mediaId : mediaIds) {
-				transientMediaList.add(jsonUtils.deserialize((byte[]) (redisTemplate.boundValueOps(key(JOB, jobId, MEDIA, mediaId)).get()), TransientMedia.class));
-			}
+			transientJob.getOverriddenJobProperties().putAll(jsonUtils.deserialize((byte[])jobHash.get(OVERRIDDEN_JOB_PROPERTIES), HashMap.class));
+			transientJob.getOverriddenAlgorithmProperties().putAll(jsonUtils.deserialize((byte[])jobHash.get(OVERRIDDEN_ALGORITHM_PROPERTIES), HashMap.class));
 
+			Long[] mediaToRetrieve;
+			if (mediaIds == null || mediaIds.length == 0) {
+				List<Long> mediaIdList = (List<Long>) (jobHash.get(MEDIA));
+				mediaToRetrieve = mediaIdList.toArray(new Long[mediaIdList.size()]);
+			} else {
+				mediaToRetrieve = mediaIds;
+			}
+			List<TransientMedia> transientMediaList = new ArrayList<>(1);
+			for (Long mediaId : mediaToRetrieve) {
+				TransientMedia media = jsonUtils.deserialize((byte[]) (redisTemplate.boundValueOps(key(JOB, jobId, MEDIA, mediaId)).get()), TransientMedia.class);
+				if (media != null) {
+					transientMediaList.add(media);
+				} else {
+					log.warn("Specified media object with id {} not found for job {}.  Skipping.", mediaId, jobId);
+				}
+			}
 			transientJob.getMedia().addAll(transientMediaList);
 			return transientJob;
 		}
@@ -354,7 +368,10 @@ public class RedisImpl implements Redis {
 		jobHash.put(MEDIA, mediaIds);
 
 		// Copy the remaining properties from the java object to the job hash...
+		// Note: need to convert from ByteArray (using JsonUtils.serialize) from REDIS to Java
 		jobHash.put(PIPELINE, jsonUtils.serialize(transientJob.getPipeline())); // Serialized to conserve space.
+		jobHash.put(OVERRIDDEN_JOB_PROPERTIES, jsonUtils.serialize(transientJob.getOverriddenJobProperties()));
+		jobHash.put(OVERRIDDEN_ALGORITHM_PROPERTIES, jsonUtils.serialize(transientJob.getOverriddenAlgorithmProperties()));
 		jobHash.put(TASK, transientJob.getCurrentStage());
 		jobHash.put(TASK_COUNT, transientJob.getPipeline() == null ? 0 : transientJob.getPipeline().getStages().size());
 		jobHash.put(EXTERNAL_ID, transientJob.getExternalId());
@@ -363,6 +380,7 @@ public class RedisImpl implements Redis {
 		jobHash.put(CALLBACK_METHOD, transientJob.getCallbackMethod());
 		jobHash.put(OUTPUT_ENABLED, transientJob.isOutputEnabled());
 		jobHash.put(CANCELLED, transientJob.isCancelled());
+
 
 		// Finally, persist the data to Redis.
 		redisTemplate

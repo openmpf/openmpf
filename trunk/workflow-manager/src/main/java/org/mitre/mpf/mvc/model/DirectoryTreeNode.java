@@ -31,10 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -83,49 +80,90 @@ public class DirectoryTreeNode {
         this.canUpload = canUpload;
     }
 
-    public static DirectoryStream.Filter<Path> DirectoryFilter = new DirectoryStream.Filter<Path>() {
-        @Override
-        public boolean accept(Path entry) throws IOException {
-            return (Files.isDirectory(entry));// && !Files.isSymbolicLink(entry));
-        }
-    };
+    public static DirectoryStream.Filter<Path> DirectoryFilter = entry -> (Files.isDirectory(entry));
 
-    public static DirectoryTreeNode fillDirectoryTree(DirectoryTreeNode node,String uploadDir ) throws IOException {
-        Path folder = Paths.get(node.getFullPath());
+    public static DirectoryTreeNode fillDirectoryTree(DirectoryTreeNode node, List<DirectoryTreeNode> seenNodes, String uploadDir) {
+
         List<Path> dirs = new ArrayList<Path>();
+        Path folder = Paths.get(node.getFullPath());
 
-        DirectoryStream<Path> stream = Files.newDirectoryStream(folder, DirectoryFilter);
-        for (Path entry : stream) {
-            dirs.add(entry);
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(folder, DirectoryFilter)) {
+            for (Path entry : stream) {
+                dirs.add(entry);
+            }
+        } catch (IOException e) {
+            log.error("Error detecting directories: " + e.getMessage());
+            return node;
         }
-        stream.close();
 
         if(dirs.size() > 0) {
             node.nodes = new ArrayList<DirectoryTreeNode>();
             for (Path child : dirs) {
-                if(Files.isSymbolicLink(child)) log.info("adding symbolic link to directory structure:"+child.toAbsolutePath());//just FYI incase things get hairy on server
-                node.addNode(fillDirectoryTree(new DirectoryTreeNode(child.toFile()),uploadDir)); //recursion takes too long on large filesystems with thousands of files
+                Path realPath = null;
+                try {
+                    realPath = child.toRealPath();
+                } catch (IOException e) {
+                    log.error("Error determining real path: " + e.getMessage());
+                }
+                if (realPath != null) {
+                    DirectoryTreeNode realChildNode = new DirectoryTreeNode(realPath.toFile()); // resolve symbolic link to real path
+
+                    if (Files.isSymbolicLink(child)) {
+                        if (seenNodes.contains(realChildNode)) {
+                            log.warn("Omitting duplicate symbolically linked directory in this branch: " + child.toAbsolutePath() + " --> " + realPath);
+                            continue; // prevent symlink loop
+                        }
+                        log.info("Adding symbolically linked directory: " + child.toAbsolutePath() + " --> " + realPath);
+                    }
+
+                    // only keep track of the nodes we've seen in this branch of the file tree;
+                    // it's okay for two separate branches to have the same symbolic links as long as there are no cycles
+                    List<DirectoryTreeNode> seenNodesCopy = new ArrayList<DirectoryTreeNode>();
+                    seenNodesCopy.addAll(seenNodes);
+                    seenNodesCopy.add(realChildNode);
+
+                    node.addNode(fillDirectoryTree(new DirectoryTreeNode(child.toFile()), seenNodesCopy, uploadDir)); // use absolute path
+                }
             }
-            Comparator<String> stableCaseInsensitive = String.CASE_INSENSITIVE_ORDER
-                    .thenComparing(Comparator.naturalOrder());
-            node.nodes.sort(Comparator.comparing(DirectoryTreeNode::getText, stableCaseInsensitive));
+            if (node.nodes.isEmpty()) {
+                node.nodes = null; // don't show a + for this node in the directory tree if it has no children
+            } else {
+                Comparator<String> stableCaseInsensitive = String.CASE_INSENSITIVE_ORDER
+                        .thenComparing(Comparator.naturalOrder());
+                node.nodes.sort(Comparator.comparing(DirectoryTreeNode::getText, stableCaseInsensitive));
+            }
         }
+
         if (node.getFullPath().startsWith(uploadDir)) {
             node.canUpload = true;
         }
+
         return node;
     }
 
     public static DirectoryTreeNode find(DirectoryTreeNode node,String fullPath) {
         if (node.getFullPath().equals(fullPath)) return node;
         if (node.nodes != null) {
+            DirectoryTreeNode found = null;
             for (DirectoryTreeNode child : node.nodes) {
-                if (find(child, fullPath) != null)
-                    return child;
+                if ((found = find(child, fullPath)) != null)
+                    return found;
             }
         }
         return null;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof  DirectoryTreeNode) {
+            DirectoryTreeNode other = (DirectoryTreeNode)obj;
+            return fullPath.equals(other.getFullPath());
+        }
+        return false;
+    }
 
+    @Override
+    public int hashCode() {
+        return fullPath.hashCode();
+    }
 }	

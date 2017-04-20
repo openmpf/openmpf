@@ -38,9 +38,12 @@ import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.core.io.WritableResource;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
@@ -48,10 +51,7 @@ import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toList;
 import static org.mitre.mpf.test.TestUtil.whereArg;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class TestComponentStateService {
 
@@ -64,9 +64,8 @@ public class TestComponentStateService {
     @Mock
     private ObjectMapper _mockObjectMapper;
 
-    private String _testPackageName = "TestComponent.tar.gz";
-    private String _testComponentName = "TestComponent";
-    private File _componentInfoFile = new File("/tmp/whatever/components.json");
+    private static final String _testPackageName = "TestComponent.tar.gz";
+    private static final String _testComponentName = "TestComponent";
 
     private RegisterComponentModel _testRegisterModel;
 
@@ -87,13 +86,11 @@ public class TestComponentStateService {
         RegisterComponentModel otherRcm2 = new RegisterComponentModel();
         otherRcm2.setPackageFileName("Whatever.tar.gz");
 
-        when(_mockObjectMapper.readValue(eq(_componentInfoFile), any(TypeReference.class)))
+        when(_mockObjectMapper.readValue(any(InputStream.class), any(TypeReference.class)))
                 .thenReturn(Lists.newArrayList(otherRcm, _testRegisterModel, otherRcm2));
 
-
-        when(_mockProperties.getComponentInfoJsonFile())
-                .thenReturn(_componentInfoFile);
-
+        when(_mockProperties.getComponentInfoFile())
+                .thenReturn(mock(WritableResource.class));
     }
 
 
@@ -131,7 +128,7 @@ public class TestComponentStateService {
     }
 
 
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "OptionalGetWithoutIsPresent"})
     private void assertCorrectModel(Optional<RegisterComponentModel> rcm) {
         Assert.assertTrue(rcm.isPresent());
         Assert.assertEquals(_testRegisterModel.getComponentName(), rcm.get().getComponentName());
@@ -158,7 +155,7 @@ public class TestComponentStateService {
         verifySavedModelList(ms -> ms.size() == 3
                 && getTargetModel(ms).getComponentState() == ComponentState.REGISTER_ERROR);
 
-        Assert.assertEquals(oldState, ComponentState.REGISTERED);
+        Assert.assertEquals(ComponentState.REGISTERED, oldState);
     }
 
 
@@ -200,6 +197,20 @@ public class TestComponentStateService {
     }
 
     @Test
+    public void canAddRegistrationErrorEntryForUploadedPackage() throws IOException {
+        String newPackage = "NewComponent.tar.gz";
+        Path newPackagePath = Paths.get(newPackage);
+        _componentStateService.addRegistrationErrorEntry(newPackagePath);
+
+        verifySavedModelList(ms -> {
+            RegisterComponentModel rcm = getModel(newPackage, ms);
+            return ms.size() == 4
+                    && rcm.getComponentState() == ComponentState.REGISTER_ERROR
+                    && rcm.getFullUploadedFilePath().equals(newPackagePath.toAbsolutePath().toString());
+        });
+    }
+
+    @Test
     public void canAddUploadErrorEntry() throws IOException {
         String newPackage = "NewComponent.tar.gz";
         _componentStateService.addUploadErrorEntry(newPackage);
@@ -213,13 +224,13 @@ public class TestComponentStateService {
     private void verifySavedModelList(Predicate<List<RegisterComponentModel>> predicate) throws IOException {
         //noinspection unchecked
         verify(_mockObjectMapper)
-                .writeValue(eq(_componentInfoFile),
+                .writeValue(any(OutputStream.class),
                         whereArg(objs -> predicate.test((List<RegisterComponentModel>) objs)));
     }
 
 
 
-    private RegisterComponentModel getTargetModel(List<RegisterComponentModel> models) {
+    private static RegisterComponentModel getTargetModel(List<RegisterComponentModel> models) {
         List<RegisterComponentModel> matchingModels = models
                 .stream()
                 .filter(rcm -> _testComponentName.equals(rcm.getComponentName()))

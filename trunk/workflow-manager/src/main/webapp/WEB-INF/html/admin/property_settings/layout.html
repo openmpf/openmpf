@@ -24,90 +24,77 @@
     limitations under the License.
 -->
 
-<div>	
-	<div class="row">
-	    <div class="col-lg-12">
-	        <div id="adminPropertiesPanel" class="panel">
-	        	
-	        	<div class="panel-body">
-					<div class="row">
-						<h1 class="page-header"><i class="fa fa-sliders fa-fw"></i>Edit MPF Properties</h1>
-						<div class="alert alert-danger" role="alert" ng-show="contentLoaded && errorMessage.length > 0" ng-cloak>
-							<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-							<span class="sr-only">Error:</span>
-							{{errorMessage}}
-						</div>
-						<p ng-show="isAdmin">This view allows an admin user to modify MPF properties. There are buttons to reset and save the properties below the
-							 table. It is recommended that properties only be changed and saved when there are no jobs being processed.  An administrator will need to
-							restart the web application for modified properties to take effect.</p>
-						<p ng-show="!isAdmin"> This view shows the values of MPF properties.</p>
-						<p>In the table below, the properties can take on several states:
-							<ul>
-								<li>
-									Properties in black are values currently running on MPF.
-								</li>
-								<li ng-show="isAdmin">
-									<span class="formlabelChanged">Properties in orange</span> marked with <span class="glyphicon glyphicon-edit valueChangedIcon"></span>
-									have been modified but have not been saved to the server.  Each "Reset" button
-									and the "Reset All Properties" button will only reset these properties to the last saved value on the server.
-								</li>
-								<li>
-									<span class="labelNeedsServerRestart">Properties in blue</span> and/or marked with <span class="glyphicon-retweet serverNeedsRestartIcon"></span>
-									have been saved to the server, but will only take effect after the server is restarted.
-								</li>
-							</ul>
-						</p>
-						<div id="adminPropertiesMainCol" class="col-md-12" ng-if="contentLoaded" ng-cloak>
-							<div style="overflow: auto; padding-top: 10px;">
-								<table id="mpfPropertiesTable" class="table-hover admin-properties-table">
-									<col class="labelCol">
-									<col class="valueCol">
-									<col class="resetCol" ng-show="isAdmin">
-									<thead>
-										<tr>
-											<th>Name</th>
-											<th>Value</th>
-											<th ng-show="isAdmin">Reset</th>
-										</tr>
-									</thead>
-						
-									<tbody>
-										<tr ng-repeat="(key, value) in readPropertiesMap">
-											<!-- if the property has already modified (exists in modifiedPropertiesMap) change the style -->
-											<td id="propertiesCellName_{{key}}" class="formlabel smart-wrap">
-												<span ng-class="{'labelNeedsServerRestart': serverNeedsRestart(key)===true, 'formlabelChanged': valueChanged(key)===true}">
-													{{key}}</span>
-												<span class="glyphicon glyphicon-retweet serverNeedsRestartIcon" ng-show="serverNeedsRestart(key)===true"></span>
-												<span class="glyphicon-edit valueChangedIcon" ng-show="isAdmin && valueChanged(key)===true"></span>
-											</td>
-											<td>
-												<input ng-model="readPropertiesMapCopy[key]" type="text" width="100%"
-													   id="propertiesCellValue_{{key}}"
-													   value="{{value}}" ng-change="changed(key)"
-													   ng-readonly="!isAdmin" ng-disabled="!isAdmin"
-													   ng-class="{'forminput': true, 'valueNeedsServerRestart': serverNeedsRestart(key)===true, 'valuechanged': valueChanged(key)===true}">
-											</td>
-											<td>
-												<button id="btnResetProperty_{{key}}" class="btn btn-block btn-xs btn-warning actionbutton"
-														ng-show="isAdmin && valueChanged(key)" ng-click="resetProperty(key)" ng-disabled="!(isAdmin)">
-													<span class="glyphicon glyphicon-repeat"></span>&nbsp; Reset </button>
-											</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-							<br/>
-							<div ng-show="isAdmin" class="btn-group pull-right" role="group">
-								<button id="btnResetMpfProperties" type="button" class="btn btn-default btn-warning" ng-click="resetAllProperties()" ng-disabled="!(unsavedPropertiesCount > 0)">
-									<strong><span class="glyphicon glyphicon-repeat"></span>&nbsp; Reset All Properties ({{unsavedPropertiesCount}})</strong></button>
-							  	<button id="btnSaveMpfProperties" type="button" class="btn btn-default btn-success" ng-click="saveProperties()" ng-disabled="!(unsavedPropertiesCount > 0)">
-									<strong><span class="glyphicon glyphicon-send"></span>&nbsp; Save Properties ({{unsavedPropertiesCount}})</strong></button>
-							</div>
-	                   
-				       </div> <!-- /#adminPropertiesMainCol -->
-				   </div> <!-- /.row (nested) -->
-				</div> <!-- panel-body -->
-	        </div> <!-- /.panel -->
-	    </div> <!-- /.col-lg-12 -->
-	</div> <!-- /.row -->
+<div class="page-header text-center">
+    <h3>Edit MPF Properties</h3>
+    <page-info ng-show="isAdmin">This view allows an admin user to modify MPF properties. There are buttons to reset and save the properties below the table. It is recommended that properties only be changed and saved when there are no jobs being processed. An administrator will need to restart the web application for modified properties to take effect.</page-info>
+    <page-info ng-show="!isAdmin">This view shows the values of MPF properties.</page-info>
+    <div class="text-left">
+        <p>In the table below, the properties can take on several states:
+        <ul>
+            <li>
+                Properties in black are values currently running on MPF.
+            </li>
+            <li ng-show="isAdmin">
+                <span class="formlabelChanged">Properties in orange</span> marked with <span class="glyphicon glyphicon-edit valueChangedIcon"></span>
+                have been modified but have not been saved to the server. Each "Reset" button
+                and the "Reset All Properties" button will only reset these properties to the last saved value on the server.
+            </li>
+            <li>
+                <span class="labelNeedsServerRestart">Properties in blue</span> and/or marked with <span class="glyphicon-retweet serverNeedsRestartIcon"></span>
+                have been saved to the server, but will only take effect after the server is restarted.
+            </li>
+        </ul>
+    </div>
+</div>
+<div class="row">
+    <div id="adminPropertiesMainCol" class="col-md-12" ng-cloak>
+        <div style="overflow: auto; padding-top: 10px;">
+            <table id="mpfPropertiesTable" class="table-hover admin-properties-table">
+                <col class="labelCol">
+                <col class="valueCol">
+                <col class="resetCol" ng-show="isAdmin">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Value</th>
+                    <th ng-show="isAdmin">Reset</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr ng-repeat="prop in properties | orderBy:'key'">
+                    <!-- if the property has already modified (exists in modifiedPropertiesMap) change the style -->
+                    <td id="propertiesCellName_{{prop.key}}" class="formlabel smart-wrap">
+												<span ng-class="{labelNeedsServerRestart: prop.needsRestart, formlabelChanged: prop.valueChanged()}">
+													{{prop.key}}
+												</span>
+                        <span class="glyphicon glyphicon-retweet serverNeedsRestartIcon" ng-show="prop.needsRestart"></span>
+                        <span class="glyphicon-edit valueChangedIcon" ng-show="isAdmin && prop.valueChanged()"></span>
+                    </td>
+                    <td>
+                        <input ng-model="prop.value" type="text" width="100%"
+                               id="propertiesCellValue_{{prop.key}}"
+                               value="{{prop.value}}"
+                               ng-readonly="!isAdmin" ng-disabled="!isAdmin"
+                               class="forminput"
+                               ng-class="{valueNeedsServerRestart: prop.needsRestart, valuechanged: prop.valueChanged()}">
+                    </td>
+                    <td>
+                        <button id="btnResetProperty_{{prop.key}}" class="btn btn-block btn-xs btn-warning actionbutton"
+                                ng-show="isAdmin && prop.valueChanged()" ng-click="prop.resetProperty()" ng-disabled="!(isAdmin)">
+                            <span class="glyphicon glyphicon-repeat"></span>&nbsp; Reset
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <br/>
+        <div ng-show="isAdmin" class="btn-group pull-right" role="group" style="padding:10px;">
+            <button id="btnResetMpfProperties" type="button" class="btn btn-warning" ng-click="resetAllProperties()" ng-disabled="!hasUnsavedProperties()">
+                <span class="glyphicon glyphicon-repeat"></span>&nbsp; Reset All Properties ({{unsavedPropertiesCount()}})</button>
+            <button id="btnSaveMpfProperties" type="button" class="btn btn-success" ng-click="saveProperties()" ng-disabled="!hasUnsavedProperties()">
+                <span class="glyphicon glyphicon-send"></span>&nbsp; Save Properties ({{unsavedPropertiesCount()}})</button>
+        </div>
+    </div>
 </div>

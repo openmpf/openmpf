@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.service.component;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.pipeline.PipelineManager;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
@@ -88,7 +89,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
                     .orElseThrow(() -> new IllegalStateException(String.format(
                             "Couldn't remove %s because it is not registered as a component", componentName)));
 
-            removeComponent(registerModel);
+            removeComponent(registerModel, true);
         }
         catch (Exception ex) {
             componentStateService.replaceComponentState(componentName, ComponentState.REGISTER_ERROR);
@@ -96,7 +97,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
         }
     }
 
-    private void removeComponent(RegisterComponentModel registerModel) {
+    private void removeComponent(RegisterComponentModel registerModel, boolean deletePackage) {
         recursivelyDeleteCustomPipelines(registerModel);
 
         if (registerModel.getJsonDescriptorPath() == null) {
@@ -111,7 +112,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
         if (registerModel.getFullUploadedFilePath() == null) {
             _log.warn("No component package found while removing the {} component", registerModel.getComponentName());
         }
-        else {
+        else if (deletePackage) {
             Path componentPackage = Paths.get(registerModel.getFullUploadedFilePath());
             try {
                 Files.deleteIfExists(componentPackage);
@@ -141,7 +142,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
         if (optRegisterModel.isPresent()) {
             try {
-                removeComponent(optRegisterModel.get());
+                removeComponent(optRegisterModel.get(), true);
             }
             catch (Exception ex) {
                componentStateService.replaceComponentState(
@@ -161,7 +162,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
                 componentStateService.getByPackageFile(componentPackageFileName);
 
         if (optRegisterModel.isPresent()) {
-            removeComponent(optRegisterModel.get());
+            removeComponent(optRegisterModel.get(), true);
             return;
         }
 
@@ -178,6 +179,18 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
                     "Couldn't delete the component package at: " + componentPackage.toAbsolutePath(), ex);
         }
     }
+
+
+    @Override
+    public void unregisterRetainPackage(String componentPackageFileName) {
+		componentStateService.getByPackageFile(componentPackageFileName)
+                .ifPresent(rcm -> {
+                    Path pathToPackage = Paths.get(rcm.getFullUploadedFilePath());
+                    removeComponent(rcm, false);
+                    componentStateService.addEntryForUploadedPackage(pathToPackage);
+                });
+    }
+
 
     @Override
     public void recursivelyDeleteCustomPipelines(RegisterComponentModel registrationModel) {
@@ -219,7 +232,11 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
                 .map(TaskDefinition::getName)
                 .forEach(this::removeTask);
 
-        pipelineService.removeAndDeleteAction(actionName.toUpperCase());
+        try {
+            pipelineService.removeAndDeleteAction(actionName.toUpperCase());
+        } catch (WfmProcessingException e) {
+            _log.error("Cannot delete action " + actionName.toUpperCase(), e);
+        }
     }
 
     private void removeAlgorithm(String algorithmName) {

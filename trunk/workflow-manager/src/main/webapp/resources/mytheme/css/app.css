@@ -77,7 +77,6 @@
   color: black;
   font-size: .85em;
   border: 1px solid lightgray;
-  margin-left: -15px;
   overflow-y: auto;
 }
 
@@ -111,7 +110,6 @@
   margin-top: .2em;
   font-size: 1em;
   z-index: 1000;
-  position: fixed;
   background-color: white;
 }
 

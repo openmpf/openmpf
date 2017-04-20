@@ -51,6 +51,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -112,24 +113,59 @@ public class TestDetectionSplitter {
     }
 
     @Test
-    public void testMediaSpecificPropertiesOverride() throws Exception {
-        HashMap<String,String> mediaProperties = new HashMap<>();
+    public void testJobPropertiesOverride() throws Exception {
+        HashMap<String, String> jobProperties = new HashMap<>();
         String propertyName = "TEST";
         String propertyValue = "VALUE";
-        mediaProperties.put(propertyName, propertyValue);
-        mediaProperties.put(MpfConstants.MERGE_TRACKS_PROPERTY, "FALSE");
-        Map<String, String> jobProps = new HashMap<>();
-        jobProps.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
-        jobProps.put(MpfConstants.MERGE_TRACKS_PROPERTY, "TRUE");
-        jobProps.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
-        jobProps.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
-        TransientJob testJob = createSimpleJobForTest(jobProps, "/samples/new_face_video.avi","VIDEO",mediaProperties);
+        jobProperties.put(propertyName, propertyValue);
+        jobProperties.put(MpfConstants.MERGE_TRACKS_PROPERTY, "FALSE");
+        Map<String, String> actionProperties = new HashMap<>();
+        actionProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
+        actionProperties.put(MpfConstants.MERGE_TRACKS_PROPERTY, "TRUE");
+        actionProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
+        actionProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
+        TransientJob testJob = createSimpleJobForTest(actionProperties, "/samples/new_face_video.avi", "VIDEO");
+        testJob.getOverriddenJobProperties().putAll(jobProperties);
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
 
         Assert.assertEquals(12, responseList.size());
         Message message = responseList.get(0);
         Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
 
+
+        DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
+        boolean propertyExists = false;
+        for (AlgorithmPropertyProtocolBuffer.AlgorithmProperty prop : request.getAlgorithmPropertyList()) {
+            if (propertyName.equals(prop.getPropertyName())) {
+                Assert.assertEquals(propertyValue, prop.getPropertyValue());
+                propertyExists = true;
+            }
+            else if (MpfConstants.MERGE_TRACKS_PROPERTY.equals(prop.getPropertyName())) {
+                Assert.assertEquals("FALSE", prop.getPropertyValue());
+            }
+        }
+        Assert.assertTrue(propertyExists);
+    }
+
+    @Test
+    public void testMediaSpecificPropertiesOverride() throws Exception {
+        HashMap<String, String> mediaProperties = new HashMap<>();
+        String propertyName = "TEST";
+        String propertyValue = "VALUE";
+        mediaProperties.put(propertyName, propertyValue);
+        mediaProperties.put(MpfConstants.MERGE_TRACKS_PROPERTY, "FALSE");
+        Map<String, String> jobProperties = new HashMap<>();
+        jobProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
+        jobProperties.put(MpfConstants.MERGE_TRACKS_PROPERTY, "TRUE");
+        jobProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
+        jobProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
+        TransientJob testJob = createSimpleJobForTest(jobProperties, "/samples/new_face_video.avi", "VIDEO");
+        testJob.getMedia().get(0).getMediaSpecificProperties().putAll(mediaProperties);
+        List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
+
+        Assert.assertEquals(12, responseList.size());
+        Message message = responseList.get(0);
+        Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
 
         DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
         boolean propertyExists = false;
@@ -147,7 +183,7 @@ public class TestDetectionSplitter {
 
     /**
      * Tests to be sure that a media-specific property for rotation, flip, or any ROI property disables
-     * auto-rotate and auto-flip, and others leave them alone.
+     * auto-rotate and auto-flip on the action, and others leave them alone.
      *
      * @throws Exception
      */
@@ -161,58 +197,145 @@ public class TestDetectionSplitter {
         testExifWithSpecificProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1",true);
         testExifWithSpecificProperty(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE",true);
         testExifWithSpecificProperty(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE",true);
-        testExifWithSpecificProperty(MpfConstants.MERGE_TRACKS_PROPERTY,"FALSE", false);
-        testExifWithSpecificProperty(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY,"100",false);
+        testExifWithSpecificProperty(MpfConstants.MERGE_TRACKS_PROPERTY, "FALSE", false);
+        testExifWithSpecificProperty(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100",false);
     }
 
-    private void testExifWithSpecificProperty(String propertyName, String propertyValue, boolean shouldOverride) throws Exception {
-        HashMap<String,String> mediaProperties = new HashMap<>();
-        mediaProperties.put(propertyName,propertyValue);
-        Map<String, String> jobProps = new HashMap<>();
-        jobProps.put(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
-        jobProps.put(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
-        jobProps.put(MpfConstants.ROTATION_PROPERTY,"270");
-        jobProps.put(MpfConstants.HORIZONTAL_FLIP_PROPERTY,"TRUE");
-        jobProps.put(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY,"20");
-        jobProps.put(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY,"20");
-        jobProps.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY,"20");
-        jobProps.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY,"20");
-        TransientJob testJob = createSimpleJobForTest(jobProps, "/samples/meds-aa-S001-01-exif-rotation.jpg","IMAGE",mediaProperties);
+    /**
+     * Tests to be sure that a media-specific property for rotation, flip, or any ROI property disables
+     * auto-rotate and auto-flip on job properties, and others leave them alone.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testMediaSpecificPropertiesOverrideJobProperties() throws Exception {
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE", true);
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.ROTATION_PROPERTY, "90", true);
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1", true);
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1", true);
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1", true);
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1", true);
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE",true);
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE", true);
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.MERGE_TRACKS_PROPERTY, "FALSE", false);
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100", false);
+    }
+
+    /**
+     * Tests to be sure that a media-specific property for rotation, flip, or any ROI property disables
+     * auto-rotate and auto-flip on the action, and others leave them alone.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testMediaSpecificPropertiesOverrideAlgorithmProperties() throws Exception {
+        testJobPropertiesResettingActionProperties(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE", true);
+        testJobPropertiesResettingActionProperties(MpfConstants.ROTATION_PROPERTY, "90", true);
+        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1", true);
+        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1", true);
+        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1", true);
+        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1", true);
+        testJobPropertiesResettingActionProperties(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE", true);
+        testJobPropertiesResettingActionProperties(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE", true);
+        testJobPropertiesResettingActionProperties(MpfConstants.MERGE_TRACKS_PROPERTY, "FALSE", false);
+        testJobPropertiesResettingActionProperties(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100",false);
+    }
+
+    private void testMediaSpecificPropertiesResettingJobProperty(String propertyName, String propertyValue, boolean shouldOverride) throws Exception {
+        HashMap<String, String> mediaProperties = new HashMap<>();
+        mediaProperties.put(propertyName, propertyValue);
+        Map<String, String> jobProperties = new HashMap<>();
+        jobProperties.put(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
+        jobProperties.put(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
+        jobProperties.put(MpfConstants.ROTATION_PROPERTY, "270");
+        jobProperties.put(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE");
+        jobProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "20");
+        jobProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "20");
+        jobProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
+        jobProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
+        TransientJob testJob = createSimpleJobForTest(Collections.emptyMap(), "/samples/meds-aa-S001-01-exif-rotation.jpg", "IMAGE");
+        testJob.getOverriddenJobProperties().putAll(jobProperties);
+        testJob.getMedia().get(0).getMediaSpecificProperties().putAll(mediaProperties);
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
         Assert.assertEquals(1, responseList.size());
         Message message = responseList.get(0);
         Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
 
         DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
-        boolean rotatePropertyExists = false;
-        boolean flipPropertyExists = false;
-        String expectedAutoValue = shouldOverride ? "FALSE" : "TRUE";
         for (AlgorithmPropertyProtocolBuffer.AlgorithmProperty prop : request.getAlgorithmPropertyList()) {
             if (!propertyName.equals(prop.getPropertyName())) {
-                if (MpfConstants.AUTO_ROTATE_PROPERTY.equals(prop.getPropertyName())) {
-                    Assert.assertEquals(expectedAutoValue, prop.getPropertyValue());
-                } else if (MpfConstants.AUTO_FLIP_PROPERTY.equals(prop.getPropertyName())) {
-                    Assert.assertEquals(expectedAutoValue, prop.getPropertyValue());
-                } else if (MpfConstants.ROTATION_PROPERTY.equals(prop.getPropertyName())) {
-                    Assert.assertEquals(shouldOverride ? "0" : "270", prop.getPropertyValue());
-                } else if (MpfConstants.HORIZONTAL_FLIP_PROPERTY.equals(prop.getPropertyName())) {
-                    Assert.assertEquals(shouldOverride ? "FALSE" : "TRUE", prop.getPropertyValue());
-                } else if (MpfConstants.SEARCH_REGION_ENABLE_DETECTION_PROPERTY.equals(prop.getPropertyName())) {
-                    Assert.assertEquals(shouldOverride ? "FALSE" : "TRUE", prop.getPropertyValue());
-                } else if (MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY.equals(prop.getPropertyName())) {
-                    Assert.assertEquals(shouldOverride ? "-1" : "20", prop.getPropertyValue());
-                } else if (MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY.equals(prop.getPropertyName())) {
-                    Assert.assertEquals(shouldOverride ? "-1" : "20", prop.getPropertyValue());
-                } else if (MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY.equals(prop.getPropertyName())) {
-                    Assert.assertEquals(shouldOverride ? "-1" : "20", prop.getPropertyValue());
-                } else if (MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY.equals(prop.getPropertyName())) {
-                    Assert.assertEquals(shouldOverride ? "-1" : "20", prop.getPropertyValue());
+                if (shouldOverride) {
+                    Assert.fail("Property " + prop.getPropertyName() + " should be cleared.");
+                } else {
+                    Assert.assertEquals(jobProperties.get(prop.getPropertyName()), prop.getPropertyValue());
                 }
             }
         }
     }
 
-    private TransientJob createSimpleJobForTest(Map<String,String> jobProperties, String mediaUri, String mediaType, Map<String,String> mediaSpecificProperties) throws WfmProcessingException {
+    private void testJobPropertiesResettingActionProperties(String propertyName, String propertyValue, boolean shouldOverride) throws Exception {
+        HashMap<String, String> jobProperties = new HashMap<>();
+        jobProperties.put(propertyName, propertyValue);
+        Map<String, String> actionProperties = new HashMap<>();
+        actionProperties.put(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
+        actionProperties.put(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
+        actionProperties.put(MpfConstants.ROTATION_PROPERTY, "270");
+        actionProperties.put(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE");
+        actionProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "20");
+        actionProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "20");
+        actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
+        actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
+        TransientJob testJob = createSimpleJobForTest(actionProperties, "/samples/meds-aa-S001-01-exif-rotation.jpg", "IMAGE");
+        testJob.getOverriddenJobProperties().putAll(jobProperties);
+        List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
+        Assert.assertEquals(1, responseList.size());
+        Message message = responseList.get(0);
+        Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
+
+        DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
+        for (AlgorithmPropertyProtocolBuffer.AlgorithmProperty prop : request.getAlgorithmPropertyList()) {
+            if (!propertyName.equals(prop.getPropertyName())) {
+                if (shouldOverride) {
+                    Assert.fail("Property " + prop.getPropertyName() + " should be cleared.");
+                } else {
+                    Assert.assertEquals(actionProperties.get(prop.getPropertyName()), prop.getPropertyValue());
+                }
+            }
+        }
+    }
+
+    private void testExifWithSpecificProperty(String propertyName, String propertyValue, boolean shouldOverride) throws Exception {
+        HashMap<String, String> mediaProperties = new HashMap<>();
+        mediaProperties.put(propertyName, propertyValue);
+        Map<String, String> actionProperties = new HashMap<>();
+        actionProperties.put(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
+        actionProperties.put(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
+        actionProperties.put(MpfConstants.ROTATION_PROPERTY, "270");
+        actionProperties.put(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE");
+        actionProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "20");
+        actionProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "20");
+        actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
+        actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
+        TransientJob testJob = createSimpleJobForTest(actionProperties, "/samples/meds-aa-S001-01-exif-rotation.jpg", "IMAGE");
+        testJob.getMedia().get(0).getMediaSpecificProperties().putAll(mediaProperties);
+        List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
+        Assert.assertEquals(1, responseList.size());
+        Message message = responseList.get(0);
+        Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
+
+        DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
+        for (AlgorithmPropertyProtocolBuffer.AlgorithmProperty prop : request.getAlgorithmPropertyList()) {
+            if (!propertyName.equals(prop.getPropertyName())) {
+                if (shouldOverride) {
+                    Assert.fail("Property " + prop.getPropertyName() + " should be cleared.");
+                } else {
+                    Assert.assertEquals(actionProperties.get(prop.getPropertyName()), prop.getPropertyValue());
+                }
+            }
+        }
+    }
+
+    private TransientJob createSimpleJobForTest(Map<String, String> actionProperties, String mediaUri, String mediaType) throws WfmProcessingException {
         final long testId = 12345;
         final String testExternalId = "externID";
         final TransientPipeline testPipe = new TransientPipeline("testPipe", "testDescr");
@@ -223,7 +346,6 @@ public class TestDetectionSplitter {
         TransientMedia testMedia = new TransientMedia(next(), ioUtils.findFile(mediaUri).toString());
         testMedia.setLength(300);
         testMedia.setType(mediaType);
-        testMedia.getMediaSpecificProperties().putAll(mediaSpecificProperties);
 
         List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
         testJob.setMedia(listMedia);
@@ -231,7 +353,7 @@ public class TestDetectionSplitter {
         testPipe.getStages().add(testTransientStage);
 
         TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo");
-        detectionAction.setProperties(jobProperties);
+        detectionAction.setProperties(actionProperties);
         testTransientStage.getActions().add(detectionAction);
         return testJob;
     }

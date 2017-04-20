@@ -266,14 +266,45 @@ public class TestDescriptorValidator {
         JsonComponentDescriptor.AlgoProvidesProp property = new JsonComponentDescriptor.AlgoProvidesProp();
         property.name = "";
         property.defaultValue = "";
+        property.propertiesKey = null;
 
         descriptor.algorithm.providesCollection.properties.add(property);
 
         assertFieldValid(descriptor, propertyPath + ".defaultValue");
+        assertFieldValid(descriptor, propertyPath + ".propertiesKey");
         assertValidationErrors(descriptor,
                 isEmpty(propertyPath + ".description"),
                 isEmpty(propertyPath + ".name"),
                 isNull(propertyPath + ".type"));
+
+
+        property.defaultValue = null;
+        property.propertiesKey = "\t\n      ";
+        assertFieldValid(descriptor, propertyPath + ".defaultValue");
+        assertValidationErrors(descriptor,
+                isEmpty(propertyPath + ".propertiesKey"));
+
+        property.defaultValue = null;
+        property.propertiesKey = "asdf";
+        assertFieldValid(descriptor, propertyPath + ".defaultValue");
+        assertFieldValid(descriptor, propertyPath + ".propertiesKey");
+        assertValidationErrors(descriptor,
+                isEmpty(propertyPath + ".description"),
+                isEmpty(propertyPath + ".name"),
+                isNull(propertyPath + ".type"));
+
+        property.defaultValue = "";
+        property.propertiesKey = "";
+        assertValidationErrors(descriptor,
+                hasInvalidProvidesProp(propertyPath + ".defaultValue"),
+                hasInvalidProvidesProp(propertyPath + ".propertiesKey"));
+
+
+        property.defaultValue = null;
+        property.propertiesKey = null;
+        assertValidationErrors(descriptor,
+                hasInvalidProvidesProp(propertyPath + ".defaultValue"),
+                hasInvalidProvidesProp(propertyPath + ".propertiesKey"));
     }
 
 
@@ -348,5 +379,9 @@ public class TestDescriptorValidator {
 
     private static String isNull(String field) {
         return field + " may not be null" ;
+    }
+
+    private static String hasInvalidProvidesProp(String field) {
+        return field + " must provide either a defaultValue or propertiesKey, but not both.";
     }
 }

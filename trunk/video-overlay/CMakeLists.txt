@@ -27,13 +27,13 @@
 project(VideoOverlay)
 aux_source_directory(./src/main/cpp SRC)
 
-include_directories(${JNI_INCLUDE_DIRS} ${LOG4CXX_LIBS})
+include_directories(${JNI_INCLUDE_DIRS} ${LOG4CXX_LIBS} ${OpenCV_INCLUDE_DIRS})
 add_library(mpfopencvjni SHARED ${SRC})
 
 set(JNI_LIBRARIES_WITHOUT_AWT ${JNI_LIBRARIES})
 list(REMOVE_AT JNI_LIBRARIES_WITHOUT_AWT 0)
 
-target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${JNI_LIBRARIES_WITHOUT_AWT} ${Log_LIBS})
+target_link_libraries(mpfopencvjni ${OpenCV_CORE_LIBS} ${MediaFiles_LINK} ${JNI_LIBRARIES_WITHOUT_AWT} ${Log_LIBS})
 
 install(TARGETS mpfopencvjni
         RUNTIME DESTINATION bin

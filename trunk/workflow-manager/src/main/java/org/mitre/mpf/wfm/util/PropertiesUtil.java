@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.util;
 
+import org.apache.commons.io.IOUtils;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
@@ -33,21 +34,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
-import java.util.stream.Stream;
 
 @Component(PropertiesUtil.REF)
 @Monitored
@@ -56,13 +55,13 @@ public class PropertiesUtil {
 	public static final String REF = "propertiesUtil";
 
 	@PostConstruct
-	private void init() throws Exception {
+	private void init() throws IOException, WfmProcessingException {
 		//java 8 to clean up any empty extensions - if there are no custom extensions present, the list has one empty string element
 		//and that must be removed
 		//I would like to do this in the @Value expression, but I could not find a good solution
 		serverMediaTreeCustomExtensions.removeIf(item -> item == null || item.trim().isEmpty());
 		log.info("Server media tree custom extensions are '{}'.", serverMediaTreeCustomExtensions.toString());
-		createMpfCustomPropertiesFile();
+		createConfigFiles();
 
 		Set<PosixFilePermission> permissions = new HashSet<>();
 		permissions.add(PosixFilePermission.OWNER_READ);
@@ -75,17 +74,28 @@ public class PropertiesUtil {
 		}
 
 		if(!Files.exists(share) || !Files.isDirectory(share)) {
-			throw new WfmProcessingException(String.format("Failed to create the path '%s'. It does not exist or it is not a directory.", share.toString()));
+			throw new WfmProcessingException(String.format(
+					"Failed to create the path '%s'. It does not exist or it is not a directory.",
+					share.toString()));
 		}
 
-		shareDirectory = share.toFile();
 		artifactsDirectory = createOrFail(share, "artifacts", permissions);
 		markupDirectory = createOrFail(share, "markup", permissions);
 		outputObjectsDirectory = createOrFail(share, "output-objects", permissions);
 		remoteMediaCacheDirectory = createOrFail(share, "remote-media", permissions);
 		uploadedComponentsDirectory = createOrFail(share, componentUploadDirName, permissions);
+		createOrFail(pluginDeploymentPath.toPath(), "",
+				EnumSet.of(
+						PosixFilePermission.OWNER_READ,
+						PosixFilePermission.OWNER_WRITE,
+						PosixFilePermission.OWNER_EXECUTE,
+						PosixFilePermission.GROUP_READ,
+						PosixFilePermission.GROUP_EXECUTE,
+						PosixFilePermission.OTHERS_READ,
+						PosixFilePermission.OTHERS_EXECUTE
+				));
 
-		log.info("All file resources are stored within the shared directory '{}'.", shareDirectory);
+		log.info("All file resources are stored within the shared directory '{}'.", share);
 		log.debug("Artifacts Directory = {}", artifactsDirectory);
 		log.debug("Markup Directory = {}", markupDirectory);
 		log.debug("Output Objects Directory = {}", outputObjectsDirectory);
@@ -93,7 +103,9 @@ public class PropertiesUtil {
 		log.debug("Uploaded Components Directory = {}", uploadedComponentsDirectory);
 	}
 
-	private File createOrFail(Path parent, String subdirectory, Set<PosixFilePermission> permissions) throws Exception {
+
+	private static File createOrFail(Path parent, String subdirectory, Set<PosixFilePermission> permissions)
+				throws IOException, WfmProcessingException {
 		Path child = parent.resolve(subdirectory);
 		if(!Files.exists(child)) {
 			child = Files.createDirectories(child, PosixFilePermissions.asFileAttribute(permissions));
@@ -103,42 +115,9 @@ public class PropertiesUtil {
 			throw new WfmProcessingException(String.format("Failed to create the path '%s'. It does not exist or it is not a directory.", child));
 		}
 
-		//create json components file (component.info.file.name) if it doesn't exist
-		if(subdirectory.equals(componentUploadDirName)) {
-			Path componentsJsonPath = Paths.get(child.toAbsolutePath().toString(), componentInfoFileName);
-			if(!Files.exists(componentsJsonPath)) {
-				Files.createFile(componentsJsonPath);
-				String empty = "[]"; //the file can now be read by jackson without issue
-		        Files.write(componentsJsonPath, empty.getBytes());
-			}
-			componentInfoJsonFile = componentsJsonPath.toFile();
-
-			//make sure the componentInfoFileName does exist
-			if(!Files.exists(componentsJsonPath) || !Files.isRegularFile(componentsJsonPath)) {
-				throw new WfmProcessingException(String.format("Failed to create the path '%s'. It does not exist or is not a file.", componentsJsonPath));
-			}
-		}
-
 		return child.toAbsolutePath().toFile();
 	}
 
-	private static void createMpfCustomPropertiesFile() {
-		try {
-			URL customPropsUrl = PropertiesUtil.class.getClassLoader().getResource("properties/mpf-custom.properties");
-			if (customPropsUrl != null) {
-				log.info("mpf-custom.properties already exists.");
-				return;
-			}
-
-			URL propsDir = PropertiesUtil.class.getClassLoader().getResource("properties");
-			Path customPropsPath = Paths.get(propsDir.toURI()).resolve("mpf-custom.properties");
-			Files.createFile(customPropsPath);
-			log.info("Created mpf-custom.properties");
-		}
-		catch (URISyntaxException | IOException ex) {
-			throw new IllegalStateException("Failed to create mpf-custom.properties", ex);
-		}
-	}
 
 	//
 	// JMX Configuration
@@ -187,10 +166,7 @@ public class PropertiesUtil {
 
 	@Value("${mpf.share.path}")
 	private String sharePath;
-	public String getSharePath() { return sharePath; }
 
-	private File shareDirectory;
-	private File getShareDirectory() { return shareDirectory; }
 
 	private File artifactsDirectory;
 	public File getArtifactsDirectory() { return artifactsDirectory; }
@@ -238,6 +214,10 @@ public class PropertiesUtil {
 	private ArtifactExtractionPolicy artifactExtractionPolicy;
 	public ArtifactExtractionPolicy getArtifactExtractionPolicy() { return artifactExtractionPolicy; }
 
+	@Value("${detection.confidence.threshold}")
+	private double confidenceThreshold;
+	public double getConfidenceThreshold() { return confidenceThreshold; }
+
 	@Value("${detection.sampling.interval}")
 	private int samplingInterval;
 	public int getSamplingInterval() { return samplingInterval; }
@@ -271,91 +251,122 @@ public class PropertiesUtil {
 	public int getJmsPriority() { return jmsPriority; }
 
 
-    //
-    // Pipeline Configuration
-    //
+	//
+	// Pipeline Configuration
+	//
 
-	@Value("${definitions.algorithms.web}")
-	private Resource algorithmDefinitionsFileWeb;
+	@Value("${data.algorithms.file}")
+	private FileSystemResource algorithmsData;
 
-	@Value("${definitions.algorithms}")
-	private FileSystemResource algorithmDefinitionsFile;
+	@Value("${data.algorithms.template}")
+	private Resource algorithmsTemplate;
 
-	public Resource getAlgorithmDefinitions() {
-		return pickResource(algorithmDefinitionsFileWeb, algorithmDefinitionsFile);
+	public WritableResource getAlgorithmDefinitions() {
+		return getDataResource(algorithmsData, algorithmsTemplate);
 	}
 
 
+	@Value("${data.actions.file}")
+	private FileSystemResource actionsData;
 
-	@Value("${definitions.actions.web}")
-	private Resource actionDefinitionsFileWeb;
+	@Value("${data.actions.template}")
+	private Resource actionsTemplate;
 
-	@Value("${definitions.actions}")
-	private FileSystemResource actionDefinitionsFile;
+	public WritableResource getActionDefinitions() {
+		return getDataResource(actionsData, actionsTemplate);
+	}
 
-	public Resource getActionDefinitions() {
-		return pickResource(actionDefinitionsFileWeb, actionDefinitionsFile);
+	@Value("${data.tasks.file}")
+	private FileSystemResource tasksData;
+
+	@Value("${data.tasks.template}")
+	private Resource tasksTemplate;
+
+	public WritableResource getTaskDefinitions() {
+		return getDataResource(tasksData, tasksTemplate);
 	}
 
 
-	@Value("${definitions.tasks.web}")
-	private Resource taskDefinitionsFileWeb;
+	@Value("${data.pipelines.file}")
+	private FileSystemResource pipelinesData;
 
-	@Value("${definitions.tasks}")
-	private FileSystemResource taskDefinitionsFile;
+	@Value("${data.pipelines.template}")
+	private Resource pipelinesTemplate;
 
-	public Resource getTaskDefinitions() {
-		return pickResource(taskDefinitionsFileWeb, taskDefinitionsFile);
+	public WritableResource getPipelineDefinitions() {
+		return getDataResource(pipelinesData, pipelinesTemplate);
 	}
 
 
+	@Value("${data.nodemanagerpalette.file}")
+	private FileSystemResource nodeManagerPaletteData;
 
-	@Value("${definitions.pipelines.web}")
-	private Resource pipelineDefinitionsFileWeb;
+	@Value("${data.nodemanagerpalette.template}")
+	private Resource nodeManagerPaletteTemplate;
 
-	@Value("${definitions.pipelines}")
-	private FileSystemResource pipelineDefinitionsFile;
-
-	public Resource getPipelineDefinitions() {
-		return pickResource(pipelineDefinitionsFileWeb, pipelineDefinitionsFile);
+	public WritableResource getNodeManagerPalette() {
+		return getDataResource(nodeManagerPaletteData, nodeManagerPaletteTemplate);
 	}
 
+	@Value("${data.nodemanagerconfig.file}")
+	private FileSystemResource nodeManagerConfigData;
 
-
-    @Value("${definitions.nodemanagerpalette.web}")
-    private Resource nodeManagerPaletteFileWeb;
-
-    @Value("${definitions.nodemanagerpalette}")
-    private FileSystemResource nodeManagerPaletteFile;
-
-	public Resource getNodeManagerPalette() {
-		return pickResource(nodeManagerPaletteFileWeb, nodeManagerPaletteFile);
+	@Value("${data.nodemanagerconfig.template}")
+	private Resource nodeManagerConfigTemplate;
+	public WritableResource getNodeManagerConfigResource() {
+		return getDataResource(nodeManagerConfigData, nodeManagerConfigTemplate);
 	}
 
+	//
+	// Component upload and registration properties
+	//
 
-	@Value("${definitions.nodemanager.config}")
-    private Resource nodeManagerConfigResource;
-	public Resource getNodeManagerConfigResource() {
-		return nodeManagerConfigResource;
+	@Value("${data.component.info.file}")
+	private FileSystemResource componentInfo;
+
+	@Value("${data.component.info.template}")
+	private Resource componentInfoTemplate;
+
+	public WritableResource getComponentInfoFile() {
+		return getDataResource(componentInfo, componentInfoTemplate);
 	}
 
-    //
-    // Component upload and registration properties
-    //
-
-    private File uploadedComponentsDirectory;
+	private File uploadedComponentsDirectory;
 	public File getUploadedComponentsDirectory() { return uploadedComponentsDirectory; }
 
-    private File componentInfoJsonFile;
-	public File getComponentInfoJsonFile () { return componentInfoJsonFile; }
 
+	//should not need these outside of this file
     @Value("${component.upload.dir.name}")
 	private String componentUploadDirName;
-    //should not need these outside of this file
 
-	@Value("${component.info.file.name}")
-	private String componentInfoFileName;
-	//should not need these outside of this file
+	@Value("${mpf.component.dependency.finder.script}")
+	private File componentDependencyFinderScript;
+	public File getComponentDependencyFinderScript() {
+		return componentDependencyFinderScript;
+	}
+
+	@Value("${mpf.plugins.path}")
+	private File pluginDeploymentPath;
+	public File getPluginDeploymentPath() {
+		return pluginDeploymentPath;
+	}
+
+	// Defaults to zero if property not set.
+	@Value("${startup.num.services.per.component:0}")
+	private int numStartUpServices;
+	public int getNumStartUpServices() {
+		return numStartUpServices;
+	}
+
+	@Value("${startup.auto.registration.skip.spring}")
+	private boolean startupAutoRegistrationSkipped;
+	public boolean isStartupAutoRegistrationSkipped() {
+		return startupAutoRegistrationSkipped;
+	}
+
+	public String getThisMpfNodeHostName() {
+		return System.getenv("THIS_MPF_NODE");
+	}
 
 	//
 	// Web Settings
@@ -419,28 +430,70 @@ public class PropertiesUtil {
 		return buildNum;
 	}
 
+	@Value("${mpf.version.json.output.object.schema}")
+	private String outputObjectVersion;
+	public String getOutputObjectVersion() {
+		return outputObjectVersion;
+	}
 
 
-	private final Map<Resource, Resource> pickedResourcesCache = new HashMap<>();
+	@Value("${config.mediaTypes.file}")
+	private FileSystemResource mediaTypesFile;
+
+	@Value("${config.mediaTypes.template}")
+	private Resource mediaTypesTemplate;
+
+	@Value("${config.custom.properties.file}")
+	private FileSystemResource customPropertiesFile;
+	public FileSystemResource getCustomPropertiesFile() {
+		return customPropertiesFile;
+	}
 
 
-	private Resource pickResource(Resource primary, Resource... fallBacks) {
-		return pickedResourcesCache.computeIfAbsent(primary, p -> selectResource(p, fallBacks));
-    }
-
-	private static Resource selectResource(Resource primary, Resource... fallBacks) {
-		if (primary.exists() || fallBacks.length == 0) {
-			return primary;
+	private void createConfigFiles() throws IOException {
+		if (!mediaTypesFile.exists()) {
+			copyResource(mediaTypesFile, mediaTypesTemplate);
 		}
 
-		Resource selectedFallBack = Stream.of(fallBacks)
-				.filter(Resource::exists)
-				.findFirst()
-				.orElse(fallBacks[fallBacks.length - 1]);
-
-		log.warn("Primary resource: {} does not exist. Falling back to: {}",
-				primary.getDescription(), selectedFallBack.getDescription());
-		return selectedFallBack;
+		if (!customPropertiesFile.exists()) {
+			createParentDir(customPropertiesFile);
+			customPropertiesFile.getFile().createNewFile();
+		}
 	}
+
+
+	private static WritableResource getDataResource(WritableResource dataResource, InputStreamSource templateResource) {
+		if (dataResource.exists()) {
+			return dataResource;
+		}
+
+		try {
+			log.info("{} doesn't exist. Copying from {}", dataResource, templateResource);
+			copyResource(dataResource, templateResource);
+			return dataResource;
+		}
+		catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+
+	private static void copyResource(WritableResource target, InputStreamSource source) throws IOException {
+		createParentDir(target);
+		try (InputStream inStream = source.getInputStream(); OutputStream outStream = target.getOutputStream()) {
+			IOUtils.copy(inStream, outStream);
+		}
+	}
+
+
+	private static void createParentDir(Resource resource) throws IOException {
+		Path resourcePath = Paths.get(resource.getURI());
+		Path resourceDir = resourcePath.getParent();
+		if (Files.notExists(resourceDir)) {
+			log.info("Directory {} doesn't exist. Creating it now.", resourceDir);
+			Files.createDirectories(resourceDir);
+		}
+	}
+
 }
 

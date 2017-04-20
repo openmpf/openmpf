@@ -30,14 +30,16 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.ResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
-import org.mitre.mpf.wfm.data.entities.transients.Detection;
-import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.pipeline.PipelineManager;
 import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinitionRef;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +60,9 @@ public class DetectionResponseProcessor
 	@Qualifier(PipelineManager.REF)
 	private PipelineManager pipelineManager;
 
+	@Autowired
+	private PropertiesUtil propertiesUtil;
+
 	public DetectionResponseProcessor() {
 		clazz = DetectionProtobuf.DetectionResponse.class;
 	}
@@ -67,8 +72,8 @@ public class DetectionResponseProcessor
 		String logLabel = String.format("Job %d|%d|%d", jobId, detectionResponse.getStageIndex(), detectionResponse.getActionIndex());
 
 		Float fps = null;
+		TransientMedia media = loadMedia(jobId, detectionResponse.getMediaId());
 		if (DetectionProtobuf.DetectionResponse.DataType.VIDEO.equals(detectionResponse.getDataType())) {
-			TransientMedia media = loadMedia(jobId,detectionResponse.getMediaId());
 			if (media.getMetadata("FPS") != null) {
 				fps = Float.valueOf(media.getMetadata("FPS"));
 				log.debug("FPS of {}", fps);
@@ -114,20 +119,9 @@ public class DetectionResponseProcessor
 		} else {
 			// Look for a confidence threshold.  If confidence threshold is defined, only return detections above the threshold.
 			ActionDefinition action = pipelineManager.getAction(detectionResponse.getActionName());
+			TransientJob job = redis.getJob(jobId, detectionResponse.getMediaId());
 
-			double confidenceThreshold = -2;
-			for (PropertyDefinitionRef prop: action.getProperties()) {
-				if ("CONFIDENCE_THRESHOLD".equals(prop.getName())) {
-					String val = prop.getValue();
-					try {
-						double d = Double.valueOf(val);
-						confidenceThreshold = d;
-					} catch (NumberFormatException nfe) {
-						log.warn("Invalid search threshold specified: value should be numeric.  Provided value was: " + val);
-					}
-
-				}
-			}
+			double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
 
 			// Process each type of response individually.
 			processVideoResponses(jobId, detectionResponse, fps, confidenceThreshold);
@@ -139,9 +133,33 @@ public class DetectionResponseProcessor
 		return jsonUtils.serialize(new TrackMergingContext(jobId, detectionResponse.getStageIndex()));
 	}
 
+		// transientJob coming from REDIS
+	private double calculateConfidenceThreshold(ActionDefinition action, TransientJob job, TransientMedia media) {
+		double confidenceThreshold = propertiesUtil.getConfidenceThreshold();
+		String confidenceThresholdProperty = AggregateJobPropertiesUtil.calculateValue(MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY,
+				action.getProperties(), job.getOverriddenJobProperties(), action, job.getOverriddenAlgorithmProperties(),
+				media.getMediaSpecificProperties());
+
+		if (confidenceThresholdProperty == null) {
+			AlgorithmDefinition algorithm = pipelineManager.getAlgorithm(action);
+			PropertyDefinition confidenceAlgorithmDef = algorithm.getProvidesCollection().getAlgorithmProperty(MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY);
+			if (confidenceAlgorithmDef != null) {
+				confidenceThresholdProperty = confidenceAlgorithmDef.getDefaultValue();
+			}
+		}
+		if (confidenceThresholdProperty != null) {
+			try {
+				confidenceThreshold = Double.valueOf(confidenceThresholdProperty);
+			} catch (NumberFormatException nfe) {
+				log.warn("Invalid search threshold specified: value should be numeric.  Provided value was: " + confidenceThresholdProperty);
+			}
+		}
+		return confidenceThreshold;
+	}
+
 
 	private TransientMedia loadMedia(long jobId, long mediaId) throws WfmProcessingException {
-		List<TransientMedia> mediaList = redis.getJob(jobId).getMedia();
+		List<TransientMedia> mediaList = redis.getJob(jobId, mediaId).getMedia();
 		for (TransientMedia item : mediaList) {
 			if (item.getId() == mediaId) {
 				return item;
@@ -156,8 +174,8 @@ public class DetectionResponseProcessor
 			// Begin iterating through the tracks that were found by the detector.
 			for (DetectionProtobuf.DetectionResponse.VideoResponse.VideoTrack objectTrack : videoResponse.getVideoTracksList()) {
 
-				int startOffsetTime = (fps==null ? 0 : Math.round(objectTrack.getStartFrame() * 1000 / fps));
-				int stopOffsetTime  = (fps==null ? 0 : Math.round(objectTrack.getStopFrame()  * 1000 / fps));
+				int startOffsetTime = (fps == null ? 0 : Math.round(objectTrack.getStartFrame() * 1000 / fps));
+				int stopOffsetTime  = (fps == null ? 0 : Math.round(objectTrack.getStopFrame()  * 1000 / fps));
 
 				// Create a new Track object.
 				Track track = new Track(
@@ -178,7 +196,7 @@ public class DetectionResponseProcessor
 
 					if (location.getConfidence() >= confidenceThreshold) {
 
-						int offsetTime = (fps==null ? 0 : Math.round(locationMap.getFrame() * 1000 / fps));
+						int offsetTime = (fps == null ? 0 : Math.round(locationMap.getFrame() * 1000 / fps));
 
 						track.getDetections().add(
 								generateTrack(location, locationMap.getFrame(), offsetTime));
@@ -201,8 +219,8 @@ public class DetectionResponseProcessor
 			// Begin iterating through the tracks that were found by the detector.
 			for (DetectionProtobuf.DetectionResponse.AudioResponse.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
 
-				int startOffsetFrame = (fps==null ? 0 : Math.round(objectTrack.getStartTime() * fps / 1000));
-				int stopOffsetFrame  = (fps==null ? 0 : Math.round(objectTrack.getStopTime()  * fps / 1000));
+				int startOffsetFrame = (fps == null ? 0 : Math.round(objectTrack.getStartTime() * fps / 1000));
+				int stopOffsetFrame  = (fps == null ? 0 : Math.round(objectTrack.getStopTime()  * fps / 1000));
 
 				// Create a new Track object.
 				Track track = new Track(
@@ -217,10 +235,10 @@ public class DetectionResponseProcessor
 						audioResponse.getDetectionType());
 
 
-					if (objectTrack.getConfidence()>confidenceThreshold) {
-						TreeMap<String,String> detectionProperties = new TreeMap<>();
+					if (objectTrack.getConfidence() >= confidenceThreshold) {
+						TreeMap<String, String> detectionProperties = new TreeMap<>();
 						for (DetectionProtobuf.PropertyMap item : objectTrack.getDetectionPropertiesList()) {
-							detectionProperties.put(item.getKey(),item.getValue());
+							detectionProperties.put(item.getKey(), item.getValue());
 						}
 						track.getDetections().add(
 								new Detection(
@@ -264,7 +282,7 @@ public class DetectionResponseProcessor
 								1,
 								imageResponse.getDetectionType());
 						track.getDetections().add(
-								generateTrack(location,0, 0));
+								generateTrack(location, 0, 0));
 						if (!track.getDetections().isEmpty()) {
 							track.setExemplar(findExemplar(track));
 							if(!redis.addTrack(track)) {
@@ -294,9 +312,9 @@ public class DetectionResponseProcessor
 	}
 
 	private Detection generateTrack(DetectionProtobuf.DetectionResponse.ImageLocation location, int frameNumber, int time) {
-		TreeMap<String,String> detectionProperties = new TreeMap<>();
+		TreeMap<String, String> detectionProperties = new TreeMap<>();
 		for (DetectionProtobuf.PropertyMap item : location.getDetectionPropertiesList()) {
-			detectionProperties.put(item.getKey(),item.getValue());
+			detectionProperties.put(item.getKey(), item.getValue());
 		}
 		return new Detection(
 				location.getXLeftUpper(),

@@ -101,7 +101,7 @@ public class ControllerUncaughtExceptionHandler {
         }
 
         public String getMessage() {
-            return "An unknown error has occurred. Check the logs for details.";
+            return "An unknown error has occurred. Check the Workflow Manager log for details.";
         }
     }
 }

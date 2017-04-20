@@ -1,0 +1,80 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2016 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+---
+#file: roles/upgrade/tasks/8to9/customPipelines.yml
+
+  - name: Install Dependencies
+    yum:
+      name="{{ item }}"
+      state=latest
+      update_cache=yes
+      disablerepo=*
+      enablerepo=mpf-repo
+    environment:
+      no_proxy: "{{ repo_host }}"
+    with_items:
+      - python-lxml
+    delegate_to: "{{ master_host }}"
+    run_once: true
+
+  - name: Check for custom Algorithms, Actions, Tasks, and Pipelines files
+    stat:
+      path: "{{ mpf_home }}/data/custom{{ item }}.xml"
+    with_items:
+      - Algorithms
+      - Actions
+      - Tasks
+      - Pipelines
+    register: custom_files_check_st
+    delegate_to: "{{ master_host }}"
+    run_once: true
+
+  - name: Check for Algorithms, Actions, Tasks, and Pipelines files
+    stat:
+      path: "{{ tomcat_home }}/webapps/workflow-manager/WEB-INF/classes/{{ item.item }}.xml"
+    with_items: "{{ custom_files_check_st.results }}"
+    register: files_check_st
+    when: "not {{ item.stat.exists }}"
+    delegate_to: "{{ master_host }}"
+    run_once: true
+
+  - name: Identify custom Algorithms, Actions, Tasks, and Pipelines
+    shell: "python -c \"from customPipelines import *; get_custom_aatp(get_reference_aatp(), '{{ item.stat.path }}', '/opt/mpf/data/custom{{ item.stat.path | basename }}');\""
+    args:
+      chdir: "{{ mpf_home }}/manage/ansible/roles/upgrade/files/customPipelines"
+    with_items: "{{ files_check_st.results }}"
+    when: "files_check_st is defined and {{ item.stat.exists | default(false) }}"
+    delegate_to: "{{ master_host }}"
+    run_once: true
+
+  - name: Backup existing Algorithms, Actions, Tasks, and Pipelines files
+    copy:
+      src: "{{ item.stat.path }}"
+      dest: "/opt/mpf/data/{{ item.stat.path | basename }}.bak"
+    with_items: "{{ files_check_st.results }}"
+    when: "files_check_st is defined and {{ item.stat.exists | default(false)}}"
+    delegate_to: "{{ master_host }}"
+    run_once: true

@@ -172,8 +172,6 @@ public class TestNodeService {
         int removedServiceModelCount = serviceModel.getServiceCount();
 
         Assert.assertTrue(removedServiceModelCount == origServiceModelCount);
-
-        Assert.assertNull(serviceDescriptorMap.get(serviceDescriptorName));
     }
 
     @Test

@@ -35,18 +35,19 @@ import java.util.List;
 import java.util.Map;
 
 public interface JobRequestBo {
+
 	/**
 	 * Convenience method: Creates a new JSON-compatible request using the provided inputs, but no record of the
 	 * newly-created request is made in the persistent database.
 	 */
-	JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, boolean buildOutput, int priority);
+	JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String,Map> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority);
 
 	/**
 	 * Convenience method: Creates a new JSON-compatible request using the provided inputs, but no record of the
 	 * newly-created request is made in the persistent database; this method also exposes functionality for making
 	 * a callback when the job completes.
 	 */
-	JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, boolean buildOutput, int priority, String callback, String method);
+	JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String,Map> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority, String callback, String method);
 
 	/**
 	 * Validates and begins executing the specified jobRequest.

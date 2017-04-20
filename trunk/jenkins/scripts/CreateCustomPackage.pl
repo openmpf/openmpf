@@ -32,6 +32,7 @@ use MPF::Jenkins;
 
 use utf8;
 use JSON;
+use File::Basename;
 
 my $mpfVersion = "0.9.0";
 my $ansibleRepoPath = "/mpfdata/ansible/install/repo";
@@ -45,16 +46,11 @@ my %mpfCoreRPMs = ('markup' => "trunk/markup/target/rpm/mpf-markup/RPMS/noarch",
 		   'protobuf' => "trunk/protobuf/target/rpm/mpf-protobuf/RPMS/noarch",
 		   'video-overlay' => "trunk/video-overlay/target/rpm/mpf-video-overlay/RPMS/noarch",
 		   'workflowManager' => "trunk/workflow-manager/target/rpm/mpf-workflowManager/RPMS/noarch",
-		   'java-component-api' => "mpf_components/Java/componentApi/target/rpm/mpf-java-component-api/RPMS/noarch",
-		   'java-component-executor' => "mpf_components/Java/componentExecutor/target/rpm/mpf-java-component-executor/RPMS/noarch");
-
-# TODO: Handle Java components generically, like we handle CPP components
-my %mpfComponentRPMs = ('speech-detection' => "mpf_components/Java/detection/sphinxSpeechDetection/target/rpm/mpf-speech-detection/RPMS/noarch");
+		   'java-component-api' => "new-repos/openmpf-java-component-sdk/java-component-api/target/rpm/mpf-java-component-api/RPMS/noarch",
+		   'java-component-executor' => "trunk/detection/executor/java/target/rpm/mpf-java-component-executor/RPMS/noarch");
 
 my %mpfCoreTars = ('mpf-install-dep' => "trunk/mpf-install/target");
 
-# TODO: Treat all components the same way
-my %externalComponentTars = ('CaffeDetection' => "trunk/install/plugins");
 
 ####################################
 # Start processing here.
@@ -207,15 +203,7 @@ foreach $elem ( @{ $data->{'MPF_Core_RPMs'} }) {
     system "cp $mpfPath/$path/mpf-$elem*.rpm $rpmDest";
 }
 
-# Process the MPF Component RPMs
-foreach $elem ( @{ $data->{'MPF_Component_RPMs'} }) {
-    print "MPF Component RPM = $elem\n";
-    my $path = $mpfComponentRPMs{$elem};
-    system "cp $mpfPath/$path/mpf-$elem*.rpm $rpmDest";
-}
-
 # Process the MPF Core Tars
-
 foreach $elem ( @{ $data->{'MPF_Core_Tars'} }) {
     print "MPF Core tar = $elem\n";
     my $path = $mpfCoreTars{$elem};
@@ -223,22 +211,13 @@ foreach $elem ( @{ $data->{'MPF_Core_Tars'} }) {
 }
 
 # Process the MPF Component Tars
-
-foreach $elem ( @{ $data->{'MPF_Component_Tars'} }) {
-    print "MPF Component tar = $elem\n";
-    system "tar -C $mpfPath/trunk/install/plugins -czvf $tarDest/$elem-$mpfVersion.tar.gz $elem"
+MPF::Jenkins::printInfo("Copying plugin packages from $mpfPath/mpf-component-build/plugin-packages.\n");
+my @plugins = glob("$mpfPath/mpf-component-build/plugin-packages/*.tar.gz");
+foreach my $plugin (@plugins) {
+    my($filename, $dirs, $suffix) = fileparse($plugin, ".tar.gz");
+    system "cp $dirs$filename.tar.gz $tarDest/$filename-$mpfVersion.tar.gz";
 }
 
-# TODO: Treat all components the same way
-# Process the external components
-
-system "mkdir -p $workspace/install/repo/extComponents";
-foreach $elem ( @{ $data->{'External_Component_Tars'} }) {
-    print "External Component tar = $elem\n";
-    my $path = $externalComponentTars{$elem};
-    system "tar -C $mpfPath/$path -czvf $workspace/install/repo/extComponents/$elem-$mpfVersion.tar.gz $elem"
-}
-	
 # Tar everything up!
 MPF::Jenkins::printInfo("Tarballing the Ansible workspace and placing in the releases folder.\n");
 

@@ -36,19 +36,23 @@ enum DetectionError {
     INVALID_DATAFILE_URI           = 4;
     COULD_NOT_OPEN_DATAFILE        = 5;
     COULD_NOT_READ_DATAFILE        = 6;
-    IMAGE_READ_ERROR               = 7;
-    BAD_FRAME_SIZE                 = 8;
-    BOUNDING_BOX_SIZE_ERROR        = 9;
-    INVALID_FRAME_INTERVAL         = 10;
-    INVALID_START_FRAME            = 11;
-    INVALID_STOP_FRAME             = 12;
-    DETECTION_FAILED               = 13;
-    DETECTION_TRACKING_FAILED      = 14;
-    MEDIA_PROCESSING_BOUNDS_ERROR  = 15;
-    REQUEST_BUFFER_UNPACKING_ERROR = 16;
-    UNRECOGNIZED_DETECTION_ERROR   = 17;
-    REQUEST_CANCELLED              = 18; // The detection request was cancelled by the user.
-
+    FILE_WRITE_ERROR               = 7;
+    IMAGE_READ_ERROR               = 8;
+    BAD_FRAME_SIZE                 = 9;
+    BOUNDING_BOX_SIZE_ERROR        = 10;
+    INVALID_FRAME_INTERVAL         = 11;
+    INVALID_START_FRAME            = 12;
+    INVALID_STOP_FRAME             = 13;
+    DETECTION_FAILED               = 14;
+    DETECTION_TRACKING_FAILED      = 15;
+    MISSING_PROPERTY               = 16;
+    INVALID_PROPERTY               = 17;
+    PROPERTY_IS_NOT_INT            = 18;
+    PROPERTY_IS_NOT_FLOAT          = 19;
+    INVALID_ROTATION               = 20;
+    MEMORY_ALLOCATION_FAILED       = 21;
+    UNRECOGNIZED_DETECTION_ERROR   = 22;
+    REQUEST_CANCELLED              = 23; // The detection request was cancelled by the user.
 }
 
 message PropertyMap {

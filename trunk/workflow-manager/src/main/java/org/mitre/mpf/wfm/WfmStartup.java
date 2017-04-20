@@ -32,14 +32,20 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import org.mitre.mpf.wfm.service.MpfService;
+import org.mitre.mpf.wfm.service.component.StartupComponentRegistrationService;
+import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.WebApplicationContext;
 
 import javax.management.MBeanServerConnection;
 import javax.management.MBeanServerInvocationHandler;
@@ -47,13 +53,16 @@ import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
+import javax.servlet.ServletContext;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Component
-public class WfmStartup implements ApplicationListener<ContextRefreshedEvent> {
+public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	private static final Logger log = LoggerFactory.getLogger(WfmStartup.class);
 
 	@Autowired
@@ -66,33 +75,67 @@ public class WfmStartup implements ApplicationListener<ContextRefreshedEvent> {
 	@Autowired
 	private PropertiesUtil propertiesUtil;
 
+	@Autowired
+	private StartupComponentRegistrationService startupRegistrationService;
+
+	@Autowired
+	private ServerMediaService serverMediaService;
+
 	// used to prevent the initialization behaviors from being executed more than once
 	private static boolean applicationRefreshed = false;
 
-	// this callback will be invoked at least twice: once for the root /workflow-manager, and
-	// once for /workflow-manager/appServlet
-	public void onApplicationEvent(ContextRefreshedEvent event) {
-		if (!applicationRefreshed) {
-			log.info("onApplicationEvent: " + event.getApplicationContext().getDisplayName() +
-					" " + event.getApplicationContext().getId()); // DEBUG
+	private ExecutorService executorService = null;
 
-			log.info("Marking any remaining running jobs as CANCELLED.");
-			jobRequestDao.cancelJobsInNonTerminalState();
+	@Override
+	public void onApplicationEvent(ApplicationEvent event) {
 
-			if (propertiesUtil.isAmqBrokerEnabled()) {
-				try {
-					log.info("Purging MPF-owned ActiveMQ queues...");
-					purgeQueues();
-				} catch (Exception exception) {
-					throw new RuntimeException("Failed to purge the MPF ActiveMQ queues.", exception);
+		if (event instanceof ContextRefreshedEvent) {
+			// this callback will be invoked at least twice: once for the root /workflow-manager, and
+			// once for /workflow-manager/appServlet
+
+			ContextRefreshedEvent contextRefreshedEvent = (ContextRefreshedEvent) event;
+			ApplicationContext appContext = contextRefreshedEvent.getApplicationContext();
+
+			if (!applicationRefreshed) {
+				log.info("onApplicationEvent: " + appContext.getDisplayName() + " " + appContext.getId()); // DEBUG
+
+				log.info("Marking any remaining running jobs as CANCELLED.");
+				jobRequestDao.cancelJobsInNonTerminalState();
+
+				if (propertiesUtil.isAmqBrokerEnabled()) {
+					try {
+						log.info("Purging MPF-owned ActiveMQ queues...");
+						purgeQueues();
+					} catch (Exception exception) {
+						throw new RuntimeException("Failed to purge the MPF ActiveMQ queues.", exception);
+					}
 				}
-			}
 
-			purgeServerStartupSystemMessages();
-			applicationRefreshed = true;
+				purgeServerStartupSystemMessages();
+				startFileIndexing(appContext);
+				startupRegistrationService.registerUnregisteredComponents();
+				applicationRefreshed = true;
+			}
+		} else if (event instanceof ContextClosedEvent) {
+			stopFileIndexing();
 		}
 	}
 
+	private void startFileIndexing(ApplicationContext appContext)  {
+		if (appContext instanceof WebApplicationContext) {
+			WebApplicationContext webContext = (WebApplicationContext) appContext;
+			ServletContext servletContext = webContext.getServletContext();
+			executorService = Executors.newSingleThreadExecutor();
+			executorService.execute(() -> serverMediaService.getFiles(propertiesUtil.getServerMediaTreeRoot(), servletContext, true, true));
+			executorService.shutdown(); // will run all tasks before shutdown
+		}
+	}
+
+	private void stopFileIndexing() {
+		if (executorService != null) {
+			executorService.shutdownNow();
+		}
+	}
 
 	/** purge system messages that are set to be removed on server startup */
 	private void purgeServerStartupSystemMessages() {

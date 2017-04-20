@@ -36,6 +36,7 @@ import org.springframework.stereotype.Service;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -90,6 +91,9 @@ public class AnsibleDeploymentService implements ComponentDeploymentService {
         }
     }
 
+    private static final Pattern COMPONENT_TOP_LEVEL_DIRECTORY_REGEX =
+            Pattern.compile("\"COMPONENT_TOP_LEVEL_DIRECTORY_PATH=([^\"]+)\"");
+
     private static final Pattern COMPONENT_DESCRIPTOR_PATH_REGEX =
             Pattern.compile("\"COMPONENT_DESCRIPTOR_PATH=([^\"]+)\"");
 
@@ -103,6 +107,7 @@ public class AnsibleDeploymentService implements ComponentDeploymentService {
         String uploadedComponentArg = "uploaded_component=" + componentPackageFileName;
         Process ansibleProc = createAnsibleProc(_compDeployPath, uploadedComponentArg);
 
+        String topLevelDirectoryPath = null;
         String descriptorPath = null;
         boolean failedDueToDuplicateError = false;
         boolean failedDueToHostUnreachable = false;
@@ -112,13 +117,26 @@ public class AnsibleDeploymentService implements ComponentDeploymentService {
 
             String line;
             while ((line = procOutputReader.readLine()) != null) {
-                _log.info(line);
+                if (line.startsWith("skipping") && line.contains("=> (item=")) {
+                	// The "Get the component top level directory" Ansible task prints out each
+                    // file in the component package which pollutes the log.
+                    _log.debug(line);
+                }
+                else {
+                    _log.info(line);
+                }
 
                 if (!failedDueToDuplicateError) {
                     failedDueToDuplicateError = line.contains(DUPLICATE_ERROR_IDENTIFIER);
                 }
                 if (!failedDueToHostUnreachable) {
                     failedDueToHostUnreachable = line.contains(UNREACHABLE_ERROR_IDENTIFIER);
+                }
+                if (topLevelDirectoryPath == null) {
+                    Matcher matcher = COMPONENT_TOP_LEVEL_DIRECTORY_REGEX.matcher(line);
+                    if (matcher.find()) {
+                        topLevelDirectoryPath = matcher.group(1);
+                    }
                 }
                 if (descriptorPath == null) {
                     Matcher matcher = COMPONENT_DESCRIPTOR_PATH_REGEX.matcher(line);
@@ -132,21 +150,39 @@ public class AnsibleDeploymentService implements ComponentDeploymentService {
         int exitCode = ansibleProc.waitFor();
         if (exitCode == 0) {
             if (descriptorPath == null) {
+            	undeployIfSuccessfullyExtracted(topLevelDirectoryPath);
                 throw new IllegalStateException("Couldn't find the descriptor path in ansible output");
             }
             return descriptorPath;
         }
         else if (failedDueToDuplicateError) {
+        	// We do not undeploy the component because an existing component is using
+            // that top level directory and we don't want to unregister the existing component.
             throw new DuplicateComponentException(componentPackageFileName);
         }
         else if (failedDueToHostUnreachable) {
+        	// The component archive was never extracted, so we don't undeploy the component.
             throw new IllegalStateException(UNREACHABLE_ERROR_TEXT);
         }
         else {
+            undeployIfSuccessfullyExtracted(topLevelDirectoryPath);
             throw new IllegalStateException(
                     String.format("Ansible process did not return success exit code: %s", exitCode));
         }
     }
+
+
+    // If registration fails after successfully extracting the component,
+    // we need to undeploy the component. If we don't we will get
+    // duplicate top level directory errors when we try to register again.
+    private void undeployIfSuccessfullyExtracted(String topLevelDirectoryPath) {
+        if (topLevelDirectoryPath != null)  {
+        	String componentTld = Paths.get(topLevelDirectoryPath).getFileName().toString();
+            undeployComponent(componentTld);
+        }
+    }
+
+
 
     // Regex match example:
     // fatal: [localhost.localdomain]: FAILED! => {"changed": false, "failed": true, "msg": "FAILED_COMPONENT_NOT_FOUND_ERROR PATH=/home/mpf/mpf/trunk/install/plugins/TestComponent"}

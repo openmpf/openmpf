@@ -30,44 +30,59 @@ package org.mitre.mpf.mst;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Rule;
+import org.junit.rules.ErrorCollector;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
+import org.mitre.mpf.wfm.pipeline.xml.ActionDefinitionRef;
+import org.mitre.mpf.wfm.pipeline.xml.PipelineDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.TaskDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.TaskDefinitionRef;
 import org.mitre.mpf.wfm.service.MpfService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.config.TypedStringValue;
+import org.springframework.beans.factory.support.BeanDefinitionReader;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URL;
 import java.util.*;
 
-@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
-@ComponentScan({"org.mitre.mpf"})
-@Configuration
 @RunWith(SpringJUnit4ClassRunner.class)
 @ActiveProfiles("jenkins")
 public abstract class TestSystem {
-    protected static final Logger log = LoggerFactory.getLogger(TestSystem.class);
-    protected static int testCtr = 0;
+
+	protected static final Logger log = LoggerFactory.getLogger(TestSystem.class);
+	protected static int testCtr = 0;
 	protected static Set<Long> completedJobs = new HashSet<>();
 	protected static Object lock = new Object();
 
@@ -80,9 +95,6 @@ public abstract class TestSystem {
     @Qualifier(PropertiesUtil.REF)
     protected PropertiesUtil propertiesUtil;
 
-    @Autowired
-    @Qualifier(OutputChecker.REF)
-    protected OutputChecker outputChecker;
 
 	@Autowired
 	@Qualifier(JobRequestBoImpl.REF)
@@ -92,13 +104,56 @@ public abstract class TestSystem {
     private MpfService mpfService;
 
     @Autowired
+    protected PipelineService pipelineService;
+
+    @Autowired
 	@Qualifier(JobCompleteProcessorImpl.REF)
 	private JobCompleteProcessor jobCompleteProcessor;
 
 	@Rule
 	public TestName testName = new TestName();
 
-    protected static boolean HAS_INITIALIZED = false;
+	@Rule
+	public ErrorCollector errorCollector = new ErrorCollector() {
+		private final List<Throwable> _errors = new ArrayList<>();
+
+		/**
+		 * This is overridden so that Jenkins doesn't treat each failed assertion as a separate failed test.
+		 */
+		@Override
+		protected void verify() throws Throwable {
+			if (_errors.isEmpty()) {
+				return;
+			}
+			if (_errors.size() == 1) {
+				throw _errors.get(0);
+			}
+			Assert.fail(combineErrorMessages());
+		}
+
+
+		private String combineErrorMessages() {
+			StringWriter stringWriter = new StringWriter();
+			try (PrintWriter errorMsgWriter = new PrintWriter(stringWriter)) {
+				errorMsgWriter.printf("The were %s errors:\n", _errors.size());
+				for (Throwable error : _errors) {
+					error.printStackTrace(errorMsgWriter);
+					errorMsgWriter.println("------");
+				}
+			}
+			return stringWriter.toString();
+		}
+
+		@Override
+		public void addError(Throwable error) {
+			_errors.add(error);
+		}
+	};
+
+
+	protected OutputChecker outputChecker = new OutputChecker(errorCollector);
+
+	protected static boolean HAS_INITIALIZED = false;
 	protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
@@ -134,6 +189,33 @@ public abstract class TestSystem {
 		}
 	}
 
+
+	protected void addAction(String actionName, String algorithmName, Map<String, String> propertySettings) throws WfmProcessingException {
+		if (!pipelineService.getActionNames().contains(actionName)) {
+			pipelineService.addAndSaveAction(actionName, actionName, algorithmName, propertySettings);
+		}
+	}
+
+	protected void addTask(String taskName, String... actions) throws WfmProcessingException {
+		if (!pipelineService.getTaskNames().contains(taskName)) {
+			TaskDefinition taskDef = new TaskDefinition(taskName, taskName);
+			for (String actionName : actions) {
+				taskDef.getActions().add(new ActionDefinitionRef(actionName));
+			}
+			pipelineService.addAndSaveTask(taskDef);
+		}
+	}
+
+	protected void addPipeline(String pipelineName, String... tasks) throws WfmProcessingException {
+		if (!pipelineService.getPipelineNames().contains(pipelineName)) {
+			PipelineDefinition pipelineDef = new PipelineDefinition(pipelineName, pipelineName);
+			for (String taskName : tasks) {
+				pipelineDef.getTaskRefs().add(new TaskDefinitionRef(taskName));
+			}
+			pipelineService.addAndSavePipeline(pipelineDef);
+		}
+	}
+
     /*
      * This method simply checks that the number of media in the input matches the number of media in the output
      *
@@ -158,7 +240,11 @@ public abstract class TestSystem {
 	}
 
 	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, boolean buildOutput, int priority) throws Exception {
-		JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media,
+		return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), buildOutput, priority);
+	}
+
+	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, Map<String, String> jobProperties, boolean buildOutput, int priority) throws Exception {
+		JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media, Collections.emptyMap(), jobProperties,
                 buildOutput, priority);
         long jobRequestId = mpfService.submitJob(jsonJobRequest);
         Assert.assertTrue(waitFor(jobRequestId));
@@ -190,7 +276,7 @@ public abstract class TestSystem {
 			mediaPaths.add(new JsonMediaInputObject(ioUtils.findFile(filePath).toString()));
 		}
 
-		long jobId = runPipelineOnMedia(pipelineName, mediaPaths, propertiesUtil.isOutputObjectsEnabled(),
+		long jobId = runPipelineOnMedia(pipelineName, mediaPaths, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(),
 				propertiesUtil.getJmsPriority());
 		if (jenkins) {
 			URL expectedOutputPath = getClass().getClassLoader().getResource(expectedOutputJsonPath);
@@ -200,8 +286,59 @@ public abstract class TestSystem {
 			JsonOutputObject expectedOutputJson = OBJECT_MAPPER.readValue(expectedOutputPath, JsonOutputObject.class);
 			JsonOutputObject actualOutputJson = OBJECT_MAPPER.readValue(actualOutputPath.toURL(), JsonOutputObject.class);
 
-			outputChecker.compareOutputs(expectedOutputJson, actualOutputJson, pipelineName);
+			outputChecker.compareJsonOutputObjects(expectedOutputJson, actualOutputJson, pipelineName);
 		}
 		log.info("Finished test {}()", testName.getMethodName());
 	}
+
+
+
+	/**
+	 * This class loads the workflow manager's applicationContext.xml and adds an additional properties file
+	 * to the application context.
+	 *
+	 * Note that the {@link ContextConfiguration#locations()} annotation parameter allows you to
+	 * specify an XML file through the annotation, but there is no way to specify that file should be loaded
+	 * from a different class's class path. Thus, we don't use that annotation.
+	 *
+	 * Subclasses of this class must provide a no-arg constructor since they will be used in
+	 * {@link ContextConfiguration#initializers()}, which doesn't allow constructor parameters.
+	 */
+	protected static class BaseAppCtxInit implements ApplicationContextInitializer<GenericApplicationContext> {
+
+		private final String _additionalPropertiesFile;
+
+
+		protected BaseAppCtxInit(String additionalPropertiesFile) {
+			_additionalPropertiesFile = additionalPropertiesFile;
+		}
+
+		@Override
+		public final void initialize(GenericApplicationContext applicationContext) {
+			addWfmAppCtx(applicationContext);
+			addPropertiesFile(applicationContext, _additionalPropertiesFile);
+		}
+
+
+		private static void addWfmAppCtx(GenericApplicationContext applicationCtx) {
+			Resource wfmAppCtx = new ClassPathResource(
+					"/applicationContext.xml",
+					// Passes reference to a workflow manager class to ensure the that workflow manager's
+					// applicationContext.xml is used.
+					// Any class that is part of the workflow manager project will work.
+					WfmStartup.class);
+			BeanDefinitionReader xmlReader = new XmlBeanDefinitionReader(applicationCtx);
+			xmlReader.loadBeanDefinitions(wfmAppCtx);
+		}
+
+
+		private static void addPropertiesFile(GenericApplicationContext applicationCtx, String additionalPropsFile) {
+			BeanDefinition propFilesDef = applicationCtx.getBeanDefinition("propFiles");
+			MutablePropertyValues propertyValues = propFilesDef.getPropertyValues();
+			Collection<TypedStringValue> sourceList = (Collection<TypedStringValue>) propertyValues.get("sourceList");
+			sourceList.add(new TypedStringValue(additionalPropsFile));
+		}
+	}
 }
+
+

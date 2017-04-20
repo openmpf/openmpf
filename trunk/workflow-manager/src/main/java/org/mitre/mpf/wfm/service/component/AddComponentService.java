@@ -26,8 +26,10 @@
 
 package org.mitre.mpf.wfm.service.component;
 
+import org.mitre.mpf.rest.api.component.RegisterComponentModel;
+
 public interface AddComponentService {
-    public void registerComponent(String componentPackageFileName) throws ComponentRegistrationException;
+    public RegisterComponentModel registerComponent(String componentPackageFileName) throws ComponentRegistrationException;
 
     public void registerDeployedComponent(String descriptorPath) throws ComponentRegistrationException;
 }

@@ -103,6 +103,12 @@
      <fileMode>755</fileMode>
      <filtered>true</filtered>
     </file>
+    <file>
+     <source>${basedir}/../bin/mpf-component-dependency-finder/component_dependency_finder.py</source>
+     <outputDirectory>bin</outputDirectory>
+     <fileMode>755</fileMode>
+     <filtered>true</filtered>
+    </file>
   </files>
 
 </assembly>

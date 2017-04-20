@@ -26,13 +26,26 @@
 
 'use strict';
 
-var WfmAngularSpringApp = {};
 
 //'ngAnimate',
-var App = angular.module('WfmAngularSpringApp',
-							['ui.router', 'ui.bootstrap', 'ngSanitize', 'ui.select', 'ngMessages',
-								'as.sortable', 'angular-confirm', 'ui.grid', 'WfmAngularSpringApp.controller.ServerMediaCtrl', 'WfmAngularSpringApp.controller.AdminComponentRegistrationCtrl',
-								'WfmAngularSpringApp.filters', 'WfmAngularSpringApp.services', 'WfmAngularSpringApp.directives']);
+var App = angular.module('mpf.wfm', [
+	'ui.router',
+	'ui.bootstrap',
+	'ui.select',
+	'ui.grid',
+	'ngSanitize',
+	'ngMessages',
+	'ngResource',
+	'as.sortable',
+	'angular-confirm',
+	'mpf.wfm.controller.ServerMediaCtrl',
+	'mpf.wfm.controller.AdminComponentRegistrationCtrl',
+	'mpf.wfm.pipeline2',
+	'mpf.wfm.filters',
+	'mpf.wfm.services',
+	'mpf.wfm.directives',
+	'mpf.wfm.property.settings'
+]);
 
 // Declare app level module which depends on filters, and services
 App.config(['$stateProvider', '$urlRouterProvider','$httpProvider' ,function ($stateProvider, $urlRouterProvider,$httpProvider) {
@@ -64,40 +77,29 @@ App.config(['$stateProvider', '$urlRouterProvider','$httpProvider' ,function ($s
 		  controller: PipelinesCtrl
 	  });
 
+	  $stateProvider.state('/pipelines2', {
+		  url: '/pipelines2',
+		  templateUrl: 'pipelines2/layout.html',
+          controller: 'Pipelines2Ctrl',
+		  controllerAs: 'pipes2'
+	  });
+
 	  $stateProvider.state('/jobs', {
 		  url: '/jobs',
 		  templateUrl: 'jobs/layout.html',
 		  controller: JobsCtrl
 	  });
 
-	  $stateProvider.state('/markup', {
-		  url: '/markup',
-		  templateUrl: 'markup/layout',
-		  controller: MarkupCtrl
-	  });
-	  
-	  $stateProvider.state('/adminDashboard', {
-		  url: '/adminDashboard',
-		  templateUrl: 'admin/dashboard/layout.html',
-		  controller: AdminDashboardCtrl
-	  });
-
-	  $stateProvider.state('/adminNodesAndProcesses', {
-		  url: '/adminNodesAndProcesses',
-		  templateUrl: 'admin/nodes_and_processes/layout',
-		  controller: AdminNodesAndProcessesCtrl
-	  });
-
-	  $stateProvider.state('/adminNodeConfiguration', {
-		  url: '/adminNodeConfiguration',
-		  templateUrl: 'admin/node_config/layout',
-		  controller: AdminNodeConfigCtrl
+	  $stateProvider.state('/adminNodes', {
+		  url: '/adminNodes',
+		  templateUrl: 'admin/nodes/layout',
+		  controller: AdminNodesCtrl
 	  });
 
 	  $stateProvider.state('/admin/propertySettings', {
 		  url: '/admin/propertySettings',
 		  templateUrl: 'admin/property_settings/layout',
-		  controller: AdminPropertySettingsCtrl
+		  controller: 'AdminPropertySettingsCtrl'
 	  });
 	  
 	  $stateProvider.state('/admin/componentRegistration', {
@@ -161,9 +163,31 @@ App.config(function($logProvider){
 //    });
 //});
 
-//run startup code to redirect to the adminDashboard if this is an admin logic
-App.run( function( $rootScope, $state, $log, $timeout, RoleService, MetadataService, ServerSidePush, SystemStatus ) {
+//run startup code to redirect to the start page if this is an admin logic
+App.run( function( $rootScope, $state, $log, $interval, RoleService, MetadataService, ServerSidePush, SystemStatus,ClientState ,NodeService) {
 	$log.debug('WfmAngularSpringApp starting.');
+
+
+	// panel state css "enums"
+	var eOkState = "";
+	var eGoodState = "bg-success";
+	var eWarningState = "bg-warning";
+	var eErrorState = "bg-danger";
+
+	///////////////////////////////////////////////
+	// widget models
+	///////////////////////////////////////////////
+
+	$rootScope.widgetSystemHealth = {
+		icon: "fa fa-check",// fa-4x",
+		css : eGoodState };
+
+	$rootScope.widgetNodes = { hostnames : [] };
+
+	$rootScope.widgetServices = {
+		services : [],
+		numRunning : 0,
+		css : eOkState };
 
 	/* this is the data structure that the system-notice directive uses to store system notices */
 	$rootScope.systemNotices = [];
@@ -174,6 +198,58 @@ App.run( function( $rootScope, $state, $log, $timeout, RoleService, MetadataServ
 	 */
 	$rootScope.lastServerExchangeTimestamp = moment();	// initialize to current time because we must have just gotten this file
 
+	// collects system health data and presents it to UI
+	$rootScope.calcSystemHealth = function() {
+		if ( ClientState.isConnectionActive() ) {
+			$rootScope.widgetSystemHealth.css = eGoodState;
+			$rootScope.widgetSystemHealth.icon = "fa fa-check"
+		}
+		else {
+			$rootScope.widgetSystemHealth.css = eErrorState;
+			$rootScope.widgetSystemHealth.icon = "fa fa-times-circle"
+		}
+	};
+
+	$rootScope.calNodesWidget = function() {
+		NodeService.getNodeManagerHostnames().then(
+			function(payload) {
+				$rootScope.widgetNodes.hostnames = payload;
+			},
+			function(error) {
+				$rootScope.widgetNodes.hostnames = [];
+			});
+	};
+
+	$rootScope.calcServicesWidget = function() {
+		NodeService.getServices().then(
+			function(payload) {
+//					console.log("payload==>"+JSON.stringify(payload.nodeModels));
+				$rootScope.widgetServices.services = payload.nodeModels;
+				var num = $rootScope.widgetServices.services.length;
+				if ( num <= 0 )
+				{
+					$rootScope.widgetServices.css = eErrorState;
+				}
+				else
+				{
+					for ( var i = 0; i < $rootScope.widgetServices.services.length; i++ ) {
+						if ( $rootScope.widgetServices.services[i].lastKnownState !== "Running" ) {
+							$rootScope.widgetServices.css = eWarningState;
+							num--;
+						}
+					}
+					if ( num === $rootScope.widgetServices.services.length ) // we've gone through all of them, and they're all running
+					{
+						$rootScope.widgetServices.css = eGoodState;
+					}
+					$rootScope.widgetServices.numRunning = num;
+				}
+			},
+			function(error) {
+				$rootScope.widgetServices = { services : [], numRunning : 0, css : eErrorState };
+			});
+	};
+
 	RoleService.getRoleInfo().then(function(roleInfo) {
 		//TODO: extra work - can set the isAdmin field in HomeUtils
 		HomeUtilsFull.isAdmin = roleInfo.admin;
@@ -182,9 +258,9 @@ App.run( function( $rootScope, $state, $log, $timeout, RoleService, MetadataServ
 		//also attach to rootScope, HomeUtilsFull will hopefully not be needed in the future
 		$rootScope.roleInfo = roleInfo;
 		
-		//only direct to the dashboard on first admin login - not on hard refresh with an active session
+		//only direct to the jobs on first admin login - not on hard refresh with an active session
 		if(roleInfo['admin'] && roleInfo['firstLogin']) {
-			$state.go('/adminDashboard');
+			$state.go('/jobs');
 		}
 	});
 	
@@ -199,6 +275,40 @@ App.run( function( $rootScope, $state, $log, $timeout, RoleService, MetadataServ
 	});
 
 
+	///////////////////////////////////////////////
+	// event handlers
+	///////////////////////////////////////////////
+
+	$rootScope.$on('SSPC_ATMOSPHERE', function(event, msg ) {
+		console.log("SSPC_ATMOSPHERE message (received in dashboard):  " + JSON.stringify(msg,2,null));
+		$rootScope.calcSystemHealth();
+	});
+
+	$rootScope.$on('SSPC_HEARTBEAT', function(event, msg ) {
+		//console.log( "SSPC_HEARTBEAT: " + JSON.stringify(msg) );
+		$rootScope.calcSystemHealth();
+	});
+
+	$rootScope.$on('CS_CONNECTION_STATE_CHANGED', function(event, args) {
+		console.log("CS_CONNECTION_STATE_CHANGED message (received in dashboard)");
+		$rootScope.calcSystemHealth();
+	});
+
+	$rootScope.$on('SSPC_NODE', function(event, msg ) {
+		console.log( "SSPC_NODE: " + JSON.stringify(msg) );
+		if ( msg.event==='OnNodeConfigurationChanged' ) {
+			// TODO: P038: this event is not sent from server yet
+			$rootScope.calNodesWidget();
+		}
+	});
+
+	$rootScope.$on('SSPC_SERVICE', function(event, msg ) {
+//		console.log( "SSPC_SERVICE: " + JSON.stringify(msg) );
+		// all events affect this services widget
+		$rootScope.calcServicesWidget();
+	});
+
+
 	/* get initial System Messages */
 	$rootScope.$watch('$viewContentLoaded', function(){
 		//$log.debug("app.run: about to show all system messages");
@@ -207,11 +317,15 @@ App.run( function( $rootScope, $state, $log, $timeout, RoleService, MetadataServ
 
 	//check every 2 seconds to see if the user should be booted out
 	//using get metadata as the polling target
-	var poll = function() {
-		$timeout(function() {
-			MetadataService.getMetadata(true);
-			poll();
-		}, 2000);
-	};     
-	poll();
+	// replaced $timeout since it interferes with protractor, and this is equivalent
+	//	however, this should be replaced by something more elegant, perhaps with server side push
+	$interval( function() {
+		MetadataService.getMetadata(true)
+	}, 2000);
+
+	//init
+	$rootScope.calcSystemHealth();
+	$rootScope.calNodesWidget();
+	$rootScope.calcServicesWidget();
+
 } );

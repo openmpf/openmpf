@@ -46,6 +46,7 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -91,12 +92,19 @@ public class MarkupStageSplitter implements StageSplitter {
 	}
 
 	/** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
-	private BoundingBoxMap createMap(long jobId, TransientMedia media, int stageIndex, TransientStage transientStaqe) {
+	private BoundingBoxMap createMap(TransientJob job, TransientMedia media, int stageIndex, TransientStage transientStaqe) {
 		BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
 		long mediaId = media.getId();
 		for(int actionIndex = 0; actionIndex < transientStaqe.getActions().size(); actionIndex++) {
-			SortedSet<Track> tracks = redis.getTracks(jobId, mediaId, stageIndex, actionIndex);
-			int samplingInterval = getSamplingInterval(transientStaqe.getActions().get(actionIndex).getProperties());
+			SortedSet<Track> tracks = redis.getTracks(job.getId(), mediaId, stageIndex, actionIndex);
+			String samplingIntervalProperty = AggregateJobPropertiesUtil.calculateValue(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
+					transientStaqe.getActions().get(actionIndex).getProperties(), job.getOverriddenJobProperties(),
+					transientStaqe.getActions().get(actionIndex),
+					job.getOverriddenAlgorithmProperties(),
+					media.getMediaSpecificProperties());
+			int samplingInterval = getSamplingInterval(samplingIntervalProperty);
+
+
 
 			for (Track track : tracks) {
 				String objectType = track.getType();
@@ -173,7 +181,7 @@ public class MarkupStageSplitter implements StageSplitter {
 				} else if(!StringUtils.startsWith(transientMedia.getType(), "image") && !StringUtils.startsWith(transientMedia.getType(), "video")) {
 					log.debug("Skipping Media {} - only image and video files are eligible for markup.", transientMedia.getId());
 				} else {
-					List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList = createMap(transientJob.getId(), transientMedia, lastDetectionStageIndex, transientJob.getPipeline().getStages().get(lastDetectionStageIndex)).toBoundingBoxMapEntryList();
+					List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList = createMap(transientJob, transientMedia, lastDetectionStageIndex, transientJob.getPipeline().getStages().get(lastDetectionStageIndex)).toBoundingBoxMapEntryList();
 					Markup.MarkupRequest markupRequest = Markup.MarkupRequest.newBuilder()
 							.setMediaIndex(mediaIndex)
 							.setTaskIndex(transientJob.getCurrentStage())
@@ -225,19 +233,13 @@ public class MarkupStageSplitter implements StageSplitter {
 		}
 	}
 
-	private int getSamplingInterval(Map<String, String> properties) {
-		if(properties != null) {
-			for (Map.Entry<String, String> property : properties.entrySet()) {
-				if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)) {
-					// Get the frame interval property.
-					String propertyValue = property.getValue();
-					try {
-						Integer parsedPropertyValue = Integer.parseInt(propertyValue);
-						return Math.max(parsedPropertyValue, 1); // Return at least 1.
-					} catch (NumberFormatException nfe) {
-						log.warn("The sampling interval property value of '{}' cannot be parsed as an integer. Defaulting to 1.", propertyValue); // Let this loop continue. Maybe we'll find the other property and it'll be a more appropriate value.
-					}
-				}
+	private int getSamplingInterval(String samplingIntervalProperty) {
+		if (samplingIntervalProperty != null) {
+			try {
+				Integer parsedPropertyValue = Integer.parseInt(samplingIntervalProperty);
+				return Math.max(parsedPropertyValue, 1); // Return at least 1.
+			} catch (NumberFormatException nfe) {
+				log.warn("The sampling interval property value of '{}' cannot be parsed as an integer. Defaulting to 1.", samplingIntervalProperty); // Let this loop continue. Maybe we'll find the other property and it'll be a more appropriate value.
 			}
 		}
 

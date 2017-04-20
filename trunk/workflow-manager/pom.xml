@@ -45,9 +45,9 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.rpm.prefix>/opt/apache-tomcat/webapps</maven.rpm.prefix>
-        <num.services.per.component>1</num.services.per.component>
         <node.manager.hostname>localhost.localdomain</node.manager.hostname>
         <tomcat.port>8080</tomcat.port>
+        <json.output.object.schema.version>2.0</json.output.object.schema.version>
     </properties>
 
     <repositories>
@@ -117,10 +117,9 @@
             <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- need to generate components.lst -->
         <dependency>
             <groupId>org.mitre.mpf</groupId>
-            <artifactId>mpf-cpp-components</artifactId>
+            <artifactId>mpf-java-test-components</artifactId>
             <version>${project.parent.version}</version>
             <type>pom</type>
         </dependency>
@@ -601,9 +600,21 @@
             <version>${spring.framework.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-all</artifactId>
+            <version>1.3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.imgscalr</groupId>
             <artifactId>imgscalr-lib</artifactId>
             <version>${imgscalr.lib.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.jayway.jsonpath</groupId>
+            <artifactId>json-path</artifactId>
+            <version>2.2.0</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -742,13 +753,6 @@
     <!-- NOTE: profile tags override non-profile tags -->
     <profiles>
         <profile>
-            <id>create-tar</id>
-            <properties>
-                <!-- don't update nodeManagerConfig.xml -->
-                <num.services.per.component>-1</num.services.per.component>
-            </properties>
-        </profile>
-        <profile>
             <id>xvfb</id>
             <build>
                 <plugins>
@@ -825,7 +829,6 @@
         <profile>
             <id>jenkins</id>
             <properties>
-                <num.services.per.component>6</num.services.per.component>
                 <node.manager.hostname>jenkins-mpf-1.mitre.org</node.manager.hostname>
                 <tomcat.port>8181</tomcat.port>
             </properties>
@@ -1059,32 +1062,20 @@
                         <configuration>
                             <target name="clean-component-config-files">
                                 <delete>
-                                    <fileset dir="${basedir}/src/main/resources">
+                                    <fileset dir="${env.MPF_HOME}/data" erroronmissingdir="false">
                                         <include name="nodeManagerConfig.xml"/>
                                         <include name="nodeServicesPalette.json"/>
                                         <include name="Algorithms.xml"/>
                                         <include name="Actions.xml"/>
                                         <include name="Tasks.xml"/>
                                         <include name="Pipelines.xml"/>
+                                        <include name="components.json"/>
+                                    </fileset>
+                                    <fileset dir="${env.MPF_HOME}/config" erroronmissingdir="false">
+                                        <include name="mediaType.properties"/>
+                                        <include name="mpf-custom.properties"/>
                                     </fileset>
                                 </delete>
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-component-config-files</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target name="copy-component-config-files">
-                                <copy todir="${basedir}/src/main/resources"
-                                      overwrite="true">
-                                    <fileset dir="${basedir}/src/main/resources/templates">
-                                        <include name="*"/>
-                                    </fileset>
-                                </copy>
                             </target>
                         </configuration>
                     </execution>
@@ -1096,44 +1087,9 @@
                         </goals>
                         <configuration>
                             <target name="copy-resources-from-cpp-hello-world">
-                                <copy file="${basedir}/../../mpf_components/CPP/detection/hello/descriptor.json"
-                                      tofile="${basedir}/src/test/resources/helloComponent.json"
+                                <copy file="${basedir}/../detection/test-components/cpp/CplusplusHelloWorld/plugin-files/descriptor/descriptor.json"
+                                      tofile="${basedir}/src/test/resources/CplusplusHelloWorldComponent.json"
                                       overwrite="true">
-                                </copy>
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>register-cpp-components</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target name="register-cpp-components">
-                                <java fork="true"
-                                      dir="${basedir}"
-                                      classname="org.mitre.mpf.app.ComponentRegistrationApp"
-                                      failonerror="true">
-                                    <classpath refid="maven.compile.classpath" />
-                                    <arg line="${basedir}/../../mpf_components/CPP/detection/components.lst"/>
-                                    <arg line="${num.services.per.component}"/>
-                                    <arg line="${node.manager.hostname}"/>
-                                    <arg line="${cppComponents}"/>
-                                </java>
-                                <copy todir="${basedir}/target/classes">
-                                    <fileset dir="${basedir}/src/main/resources">
-                                        <include name="nodeServicesPalette.json"/>
-                                        <include name="Algorithms.xml"/>
-                                        <include name="Actions.xml"/>
-                                        <include name="Tasks.xml"/>
-                                        <include name="Pipelines.xml"/>
-                                    </fileset>
-                                </copy>
-                                <copy todir="${basedir}/src/main/resources">
-                                    <fileset dir="${basedir}/target/classes">
-                                        <include name="nodeManagerConfig.xml"/>
-                                    </fileset>
                                 </copy>
                             </target>
                         </configuration>
@@ -1177,7 +1133,7 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>copy-resources-from-java-hello-world</id>
+                        <id>copy-resources-from-java-test-detection</id>
                         <phase>validate</phase>
                         <goals>
                             <goal>copy-resources</goal>
@@ -1187,9 +1143,28 @@
                             <outputDirectory>${project.basedir}/src/test/resources</outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>../java-hello-world/src/main/resources</directory>
+                                    <directory>../detection/test-components/java/JavaTestDetection/plugin-files/descriptor</directory>
                                     <includes>
-                                        <include>HelloWorldComponent.json</include>
+                                        <include>JavaTestDetection.json</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-tar-from-java-test-detection</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <escapeString>\</escapeString>
+                            <outputDirectory>${project.basedir}/src/test/resources</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>../detection/test-components/java/JavaTestDetection/target/plugin-packages</directory>
+                                    <includes>
+                                        <include>JavaTestDetection.tar.gz</include>
                                     </includes>
                                 </resource>
                             </resources>
@@ -1238,7 +1213,7 @@
                             <goal>single</goal>
                         </goals>
                         <configuration>
-                            <finalName>MPFTextDetectionComponent</finalName>
+                            <finalName>OalprLicensePlateTextDetection</finalName>
                             <descriptor>src/main/assembly/oalpr.xml</descriptor>
                             <outputDirectory>src/main/webapp/resources/mytheme/downloads</outputDirectory>
                             <tarLongFileMode>gnu</tarLongFileMode>

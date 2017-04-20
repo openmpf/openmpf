@@ -31,6 +31,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -83,6 +85,16 @@ public class JsonOutputObject {
 	public String getStatus() { return status; }
 	public void setStatus(String status) { this.status = status; }
 
+	@JsonProperty("algorithmProperties")
+	@JsonPropertyDescription("A map which may be used to override the parameters associated with the pipeline or underlying action for a particular algorithm.")
+	private Map<String, Map> algorithmProperties;
+	public Map<String, Map> getAlgorithmProperties() { return algorithmProperties; }
+
+	@JsonProperty("jobProperties")
+	@JsonPropertyDescription("A map which may be used to override the parameters associated with the pipeline or underlying action.")
+	private Map<String, String> jobProperties;
+	public Map<String, String> getJobProperties() { return jobProperties; }
+
 	@JsonProperty("media")
 	@JsonPropertyDescription("The collection of media processed by this job.")
 	private SortedSet<JsonMediaOutputObject> media;
@@ -101,6 +113,8 @@ public class JsonOutputObject {
 		this.timeStop = timeStop;
 		this.status = status;
 		this.media = new TreeSet<>();
+		this.jobProperties = new HashMap<String, String>();
+		this.algorithmProperties = new HashMap<String, Map>();
 	}
 
 	@JsonCreator
@@ -113,10 +127,18 @@ public class JsonOutputObject {
 	                                       @JsonProperty("timeStart") String timeStart,
 	                                       @JsonProperty("timeStop") String timeStop,
 	                                       @JsonProperty("status") String status,
+										   @JsonProperty("algorithmProperties") Map<String, Map> algorithmProperties,
+										   @JsonProperty("jobProperties") Map<String, String> jobProperties,
 	                                       @JsonProperty("media") SortedSet<JsonMediaOutputObject> media) {
 		JsonOutputObject outputObject = new JsonOutputObject(jobId, objectId, pipeline, priority, siteId, externalJobId, timeStart, timeStop, status);
 		if(media != null) {
 			outputObject.media.addAll(media);
+		}
+		if (algorithmProperties != null) {
+			outputObject.algorithmProperties.putAll(algorithmProperties);
+		}
+		if (jobProperties != null) {
+			outputObject.jobProperties.putAll(jobProperties);
 		}
 		return outputObject;
 	}

@@ -26,14 +26,14 @@
 ---
 #file: roles/master/tasks/https.yml
 
-- name: Configure tomcat with HTTPS
+- name: Configure HTTPS in tomcat server.xml file
   lineinfile:
     dest="{{ tomcat_home }}/conf/server.xml"
     insertbefore=yes
     regexp="\s<!-- Define an AJP 1.3 Connector on port 8009 -->"
     line="<Connector SSLEnabled=\"true\" acceptCount=\"100\" clientAuth=\"false\" disableUploadTimeout=\"true\" enableLookups=\"false\" maxThreads=\"25\" port=\"8443\" keystoreFile=\"{{ deployment_config.https.keystore_file }}\" keystorePass=\"{{ deployment_config.https.keystore_pw }}\" protocol=\"org.apache.coyote.http11.Http11NioProtocol\" scheme=\"https\" secure=\"true\" sslProtocol=\"TLS\" />\n    <!-- Define an AJP 1.3 Connector on port 8009 -->"
 
-- name: Configure tomcat with HTTPS
+- name: Configure HTTPS in tomcat setenv.sh file
   lineinfile:
     dest="{{ tomcat_home }}/bin/setenv.sh"
     create=yes
@@ -57,6 +57,6 @@
     dest="/home/mpf/mpfkeystoreupdate.txt"
     owner=mpf
     group=mpf
-  when: deployment_config.https.install == 'y' and not ksfile_st.stat.exists
+  when: deployment_config.https.install and not ksfile_st.stat.exists
 
 

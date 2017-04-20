@@ -89,5 +89,10 @@ public class JobRequest {
 	public String getPipeline() { return pipeline; }
 	public void setPipeline(String pipeline) { this.pipeline = pipeline; }
 
+	/** The version of the output object. */
+	@Column
+	private String outputObjectVersion;
+	public void setOutputObjectVersion(String outputObjectVersion) { this.outputObjectVersion = outputObjectVersion; }
+
 	public String toString() { return String.format("%s#<id='%d'>", this.getClass().getSimpleName(), getId()); }
 }

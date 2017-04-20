@@ -43,13 +43,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.io.Resource;
+import org.springframework.core.io.WritableResource;
 
-import java.io.*;
-import java.nio.file.Files;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.util.*;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toCollection;
 
 @org.springframework.stereotype.Service
 public class NodeManagerServiceImpl implements NodeManagerService {
@@ -84,8 +86,7 @@ public class NodeManagerServiceImpl implements NodeManagerService {
         xStream.processAnnotations(Service.class);
         xStream.processAnnotations(EnvironmentVariable.class);
 
-        try (OutputStream outputStream
-                     = new FileOutputStream(propertiesUtil.getNodeManagerConfigResource().getFile())) {
+        try (OutputStream outputStream = propertiesUtil.getNodeManagerConfigResource().getOutputStream()) {
             xStream.toXML(managers, outputStream);
         }
 
@@ -159,13 +160,13 @@ public class NodeManagerServiceImpl implements NodeManagerService {
         try (InputStream inputStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
             NodeManagers managers = NodeManagers.fromXml(inputStream);
             if (managers.managers() == null) {
-                return Collections.emptyList();
+                return new ArrayList<>();
             }
 
             return managers.managers()
                     .stream()
                     .map(NodeManagerServiceImpl::convertToModel)
-                    .collect(toList());
+                    .collect(toCollection(ArrayList::new));
         }
         catch (IOException ex) {
             throw new UncheckedIOException("Unable to load node manager models", ex);
@@ -250,10 +251,10 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
     @Override
     public boolean setServiceModels(Map<String, ServiceModel> nodeManagerFilePaletteMap) {
-        Resource paletteResource = propertiesUtil.getNodeManagerPalette();
-        try (Writer outputWriter = Files.newBufferedWriter(paletteResource.getFile().toPath())) {
+        WritableResource paletteResource = propertiesUtil.getNodeManagerPalette();
+        try (OutputStream outStream = paletteResource.getOutputStream()) {
             objectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValue(outputWriter, nodeManagerFilePaletteMap);
+                    .writeValue(outStream, nodeManagerFilePaletteMap);
             return true;
         }
         catch (IOException ex) {

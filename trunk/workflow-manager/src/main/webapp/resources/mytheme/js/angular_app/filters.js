@@ -27,7 +27,7 @@
 'use strict';
 
 /* Angular Filters */
-var AppFilters = angular.module('WfmAngularSpringApp.filters', []);
+var AppFilters = angular.module('mpf.wfm.filters', []);
 
 AppFilters.filter('interpolate', ['version', function (version) {
 	return function (text) {
@@ -116,3 +116,18 @@ App.filter('propsFilter', function() {
     return out;
   }
 });
+
+App.filter('range', function() {
+	return function(input, min, max) {
+		min = parseInt(min); //Make string input int
+		max = parseInt(max);
+		for (var i=min; i<=max; i++)
+			input.push(i);
+		return input;
+	};
+});
+
+
+
+
+

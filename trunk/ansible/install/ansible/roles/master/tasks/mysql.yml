@@ -87,6 +87,10 @@
     host="{{ master_host }}"
     state="absent"
   tags: common
+  with_items:
+    - "{{ master_host }}"
+    - "{{ ansible_nodename }}"
+    - "%"
 
 - name: MySQL | Delete anonymous MySQL server user for localhost
   mysql_user:

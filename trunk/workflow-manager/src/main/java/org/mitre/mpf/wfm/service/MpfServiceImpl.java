@@ -71,15 +71,15 @@ public class MpfServiceImpl implements MpfService {
 	private SystemMessageDao systemMessageDao;
 
 	@Override
-	public JsonJobRequest createJob(List<JsonMediaInputObject> media, String pipelineName, String externalId, boolean buildOutput, int priority) {
+	public JsonJobRequest createJob(List<JsonMediaInputObject> media, Map<String,Map> algorithmProperties, Map<String,String> jobProperties, String pipelineName, String externalId, boolean buildOutput, int priority) {
 		log.debug("createJob: MediaUris: {}. Pipeline: {}. Build Output: {}. Priority: {}.", (media == null) ? null : media.size(), pipelineName, buildOutput, priority);
-		return jobRequestBo.createRequest(externalId, pipelineName, media, buildOutput, priority);
+		return jobRequestBo.createRequest(externalId, pipelineName, media, algorithmProperties, jobProperties, buildOutput, priority);
 	}
 
 	@Override
-	public JsonJobRequest createJob(List<JsonMediaInputObject> media, String pipelineName, String externalId, boolean buildOutput, int priority, String callbackUrl, String method) {
+	public JsonJobRequest createJob(List<JsonMediaInputObject> media, Map<String,Map> algorithmProperties, Map<String,String> jobProperties, String pipelineName, String externalId, boolean buildOutput, int priority, String callbackUrl, String method) {
 		log.debug("createJob: MediaUris: {}. Pipeline: {}. Build Output: {}. Priority: {}. Callback: {}. Method: {}.", (media == null) ? null : media.size(), pipelineName, buildOutput, priority, callbackUrl, method);
-		return jobRequestBo.createRequest(externalId, pipelineName, media, buildOutput, priority, callbackUrl, method);
+		return jobRequestBo.createRequest(externalId, pipelineName, media, algorithmProperties, jobProperties, buildOutput, priority, callbackUrl, method);
 	}
 
 

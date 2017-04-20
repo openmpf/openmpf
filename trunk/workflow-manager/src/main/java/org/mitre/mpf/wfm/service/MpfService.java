@@ -43,18 +43,24 @@ public interface MpfService {
 
 	/**
 	 * Create a new job which will execute the specified pipeline on the provided list of provided URIs.
-	 * @param mediaUris The list of URIs (e.g., file or http(s) URLs) to process in this job.
+	 * @param media A List of <code>JsonMediaInputObject</code> entries, each representing a medium to be processed
+	 *              and an optional set of media properties.
+	 * @param algorithmProperties A map of properties which will override the job properties on this job for a particular algorithm.
+	 * @param jobProperties A map of properties which will override the default and pipeline properties on this job.
 	 * @param pipelineName The name of the pipeline to execute.
 	 * @param externalId A user-defined and optional external identifier for the job.
 	 * @param buildOutput {@literal true} to build output objects, {@literal false} to suppress output objects.
 	 * @param priority The priority to assign to this job.
 	 * @return A {@link org.mitre.mpf.interop.JsonJobRequest} which summarizes this request.
 	 */
-	public JsonJobRequest createJob(List<JsonMediaInputObject> media, String pipelineName, String externalId, boolean buildOutput, int priority);
+	public JsonJobRequest createJob(List<JsonMediaInputObject> media, Map<String,Map> algorithmProperties, Map<String,String> jobProperties, String pipelineName, String externalId, boolean buildOutput, int priority);
 
 	/**
 	 * Create a new job which will execute the specified pipeline on the provided list of provided URIs.
-	 * @param mediaUris The list of URIs (e.g., file or http(s) URLs) to process in this job.
+	 * @param media A List of <code>JsonMediaInputObject</code> entries, each representing a medium to be processed
+	 *              and an optional set of media properties.
+	 * @param algorithmProperties A map of properties which will override the job properties on this job for a particular algorithm.
+	 * @param jobProperties A map of properties which will override the default and pipeline properties on this job.
 	 * @param pipelineName The name of the pipeline to execute.
 	 * @param externalId A user-defined and optional external identifier for the job.
 	 * @param buildOutput {@literal true} to build output objects, {@literal false} to suppress output objects.
@@ -63,7 +69,7 @@ public interface MpfService {
 	 * @param method The method to communicate the response body to the callback URL.
 	 * @return A {@link org.mitre.mpf.interop.JsonJobRequest} which summarizes this request.
 	 */
-	public JsonJobRequest createJob(List<JsonMediaInputObject> media, String pipelineName, String externalId, boolean buildOutput, int priority, String callback, String method);
+	public JsonJobRequest createJob(List<JsonMediaInputObject> media, Map<String,Map> algorithmProperties, Map<String,String> jobProperties, String pipelineName, String externalId, boolean buildOutput, int priority, String callback, String method);
 
 	/**
 	 * Asynchronously submits a JSON-based job request and returns the identifier associated with the persistent job request which was created.

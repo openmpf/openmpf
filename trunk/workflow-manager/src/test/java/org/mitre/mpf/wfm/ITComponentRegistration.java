@@ -46,7 +46,7 @@ public class ITComponentRegistration {
     private HttpHeaders _headers;
 
 
-    private static final String _javaComponentName = "JavaHelloWorldComponent";
+    private static final String _javaComponentName = "JavaTestDetection";
     private static final String _javaComponentPackage = _javaComponentName + ".tar.gz";
 
     private static final String _cppComponentName = "CplusplusHelloComponent";
@@ -96,19 +96,19 @@ public class ITComponentRegistration {
         canRegisterAndUnRegisterComponent(_customPipelinesComponentName, _customPipelinesComponentPackage);
     }
 
+    @Test
+    public void canReRegisterComponents() {
+    	uploadFile(_customPipelinesComponentPackage);
+    	canRegisterComponent(_customPipelinesComponentPackage);
+
+    	canReRegisterComponent(_customPipelinesComponentPackage);
+    }
+
 
     private void canRegisterAndUnRegisterComponent(String componentName, String componentPackage) {
         uploadFile(componentPackage);
 
-        ResponseEntity<String> registerResponse = _restClient.exchange(
-                getUrl(String.format("components/%s/register", componentPackage)),
-                HttpMethod.POST,
-                new HttpEntity<>(_headers),
-                String.class);
-        assertOk(registerResponse);
-
-        // Get it to verify added
-        assertOk(getComponent(componentPackage));
+        canRegisterComponent(componentPackage);
 
         // remove
         assertEquals(HttpStatus.NO_CONTENT, removeComponent(componentName).getStatusCode());
@@ -122,6 +122,32 @@ public class ITComponentRegistration {
             assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
         }
 
+    }
+
+
+    private void canRegisterComponent(String componentPackage) {
+        ResponseEntity<String> registerResponse = _restClient.exchange(
+                getUrl(String.format("components/%s/register", componentPackage)),
+                HttpMethod.POST,
+                new HttpEntity<>(_headers),
+                String.class);
+        assertOk(registerResponse);
+
+        // Get it to verify added
+        assertOk(getComponent(componentPackage));
+    }
+
+
+    private void canReRegisterComponent(String componentPackage) {
+        ResponseEntity<String> registerResponse = _restClient.exchange(
+                getUrl(String.format("components/%s/reRegister", componentPackage)),
+                HttpMethod.POST,
+                new HttpEntity<>(_headers),
+                String.class);
+        assertOk(registerResponse);
+
+        // Get it to verify added
+        assertOk(getComponent(componentPackage));
     }
 
 

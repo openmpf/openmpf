@@ -42,7 +42,7 @@ var Utils = new function (){ //singleton for page
 	this.ERROR_LEVEL = true;
 	
 	this.debug = function(msg,obj){
-		var param = this.getParameterByName("debug");//http://localhost:8080/workflow-manager/?debug=true#/adminNodesAndProcesses
+		var param = this.getParameterByName("debug");//http://localhost:8080/workflow-manager/?debug=true#/adminNodes
 		if(this.DEBUG_LEVEL && param){
 			if(console)console.log(" DEBUG:"+msg,obj);
 			$("#log_msgs").append("<br/>"+msg);

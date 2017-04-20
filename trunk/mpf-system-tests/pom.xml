@@ -42,6 +42,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-all</artifactId>
+            <version>1.3</version>
+        </dependency>
+        <dependency>
             <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-workflowManager</artifactId>
             <version>${project.parent.version}</version>
@@ -94,52 +99,16 @@
 
     <build>
         <plugins>
-
             <plugin>
                 <artifactId>maven-clean-plugin</artifactId>
                 <version>2.6.1</version>
                 <configuration>
                     <filesets>
                         <fileset>
-                            <directory>${project.basedir}/src/main/resources</directory>
+                            <directory>${env.MPF_HOME}/data/test</directory>
                         </fileset>
                     </filesets>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>2.7</version>
-                <executions>
-                    <execution>
-                        <id>copy-resources</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <escapeString>\</escapeString>
-                            <outputDirectory>${project.basedir}/src/main/resources</outputDirectory>
-                            <resources>
-                                <!-- copy selected workflow-manager resources into the mpf-system-tests resources dir -->
-                                <resource>
-                                    <directory>../workflow-manager/src/main/resources</directory>
-                                    <includes>
-                                        <include>applicationContext*.xml</include>
-                                    </includes>
-                                </resource>
-                                <!-- Get rid of the escapeString in nodeManagerConfig.xml -->
-                                <resource>
-                                    <directory>../workflow-manager/src/main/resources</directory>
-                                    <filtering>true</filtering>
-                                    <includes>
-                                        <include>nodeManagerConfig.xml</include>
-                                    </includes>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>

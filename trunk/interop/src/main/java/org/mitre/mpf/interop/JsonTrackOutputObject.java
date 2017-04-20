@@ -133,13 +133,7 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 			return false;
 		} else {
 			JsonTrackOutputObject casted = (JsonTrackOutputObject)other;
-			return id == casted.id &&
-					startOffsetFrame == casted.startOffsetFrame &&
-					stopOffsetFrame == casted.stopOffsetFrame &&
-					startOffsetTime == casted.startOffsetTime &&
-					stopOffsetTime == casted.stopOffsetTime &&
-					StringUtils.equals(type, casted.type) &&
-					StringUtils.equals(source, casted.source);
+			return compareTo(casted) == 0;
 		}
 	}
 
@@ -153,7 +147,8 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 				|| (result = Integer.compare(startOffsetTime, other.startOffsetTime)) != 0
 				|| (result = Integer.compare(stopOffsetTime, other.stopOffsetTime)) != 0
 				|| (result = ObjectUtils.compare(type, other.type, false)) != 0
-				|| (result = ObjectUtils.compare(source, other.source, false)) != 0
+			    || (result = ObjectUtils.compare(source, other.source, false)) != 0
+				|| (result = ObjectUtils.compare(exemplar, other.getExemplar(), false)) != 0
 				|| (result = ObjectUtils.compare(id, other.id, false)) != 0) {
 			return result;
 		} else {

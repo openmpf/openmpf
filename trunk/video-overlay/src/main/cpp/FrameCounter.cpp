@@ -26,7 +26,8 @@
 
 #include <jni.h>
 #include <stdlib.h>
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/videoio.hpp>
 
 #ifndef _Included_org_mitre_mpf_framecounter_FrameCounter
 #define _Included_org_mitre_mpf_framecounter_FrameCounter
@@ -54,19 +55,23 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
         // Set up the video...
         const char *inChars = env->GetStringUTFChars(sourceVideoPath, NULL);
         if (inChars != NULL) {
-            VideoCapture src(inChars);
-            if(!src.isOpened())
-            {
-                // Cleanup...
+            try {
+                VideoCapture src(inChars);
+                if(!src.isOpened())
+                {
+                    // Cleanup...
+                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+
+                    return -8700;
+                }
+
+                count = static_cast<int>(src.get(cv::CAP_PROP_FRAME_COUNT));
+
+                src.release();
                 env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-
-                return -8700;
+            } catch (cv::Exception) {
+                return -8701;
             }
-
-            count = static_cast<int>(src.get(CV_CAP_PROP_FRAME_COUNT));
-
-            src.release();
-            env->ReleaseStringUTFChars(sourceVideoPath, inChars);
         } else {
             return -8701;
         }

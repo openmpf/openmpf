@@ -25,4 +25,6 @@
 #############################################################################
 ---
 dependencies:
+  - { role: upgrade, when: deployment_config.upgrade | bool }
   - { role: common }
+

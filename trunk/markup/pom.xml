@@ -187,17 +187,7 @@
 
         <dependency>
             <groupId>org.mitre.mpf</groupId>
-            <artifactId>mpf-protobuf</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-video-overlay</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mitre.mpf</groupId>
-            <artifactId>mpf-nodemanager</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
     </dependencies>

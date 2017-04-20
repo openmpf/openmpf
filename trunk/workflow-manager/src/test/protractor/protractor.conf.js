@@ -26,10 +26,8 @@
 
 var env = require('./environment.js');
 
-// conf.js
 exports.config = {
     framework: 'jasmine',
-    //seleniumAddress: env.seleniumAddress,  without, it will start its own local server http://192.168.196.157:59504/wd/hub
     specs: [
         'spec/**/*_spec.js'
     ],
@@ -42,28 +40,51 @@ exports.config = {
 
     params: {
         login: {
-            user: 'mpf',
-            password: 'mpf123'
+            mpf: {
+                username: 'mpf',
+                password: 'mpf123'
+            },
+            admin: {
+                username: 'admin',
+                password: 'mpfadm'
+            }
         }
     },
 
     onPrepare: function() {
-        console.log("Base URL:"+browser.baseUrl);
-        //console.log("Protractor environment:",process.env);
+        // ----- set up plug-ins -----
 
-        // ----- set browser size to "minimum desktop" that we're supporting -----
+        // --- set up jasmine spec reporter for better output ---
+        var SpecReporter = require('jasmine-spec-reporter');
+        jasmine.getEnv().addReporter(new SpecReporter({
+            displayStacktrace: 'all'
+        }));
+
+        // ----- set up end-to-end test -----
+        console.log("Base URL:"+browser.baseUrl);
+        console.log("Protractor environment:",process.env);
+
+        // --- set browser size to "minimum desktop" that we're supporting ---
         browser.driver.manage().window().setSize(1280, 800);
 
-        // ----- login to workflow-manager as a user would -----
+        // --- login to workflow-manager as a user would ---
         //  code based on protractor sample code: https://github.com/angular/protractor/blob/master/spec/withLoginConf.js
         //  recommended in the protractor FAQ:  https://github.com/angular/protractor/blob/master/docs/faq.md
-        browser.driver.get(browser.baseUrl);
-        browser.driver.findElement(by.name('username')).sendKeys(browser.params.login.user);
-        browser.driver.findElement(by.name('password')).sendKeys(browser.params.login.password);
+
+        browser.ignoreSynchronization = true;   // this seems to improve false positives a little when doing non-angular pages
+        //browser.debugger();
+        browser.driver.get(browser.baseUrl)
+        browser.driver.findElement(by.name('username')).sendKeys(browser.params.login.mpf.username);
+        browser.driver.findElement(by.name('password')).sendKeys(browser.params.login.mpf.password);
         browser.driver.findElement(by.name('submit')).click();
 
-        console.log("Login complete");
-        return;
+        //console.log("Login complete");
 
+        browser.ignoreSynchronization = false;  // set it back for angular pages
+        return;
+    },
+
+    jasmineNodeOpts: {
+        print: function() {}  // disable protractor's default reporter in favor of jasmine-spec-reporter
     }
 };

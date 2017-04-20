@@ -62,7 +62,7 @@ import java.util.concurrent.TimeUnit;
  * about output checking
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestSystemNightly extends TestSystem {
+public class TestSystemNightly extends TestSystemWithDefaultConfig {
     private static final Logger log = LoggerFactory.getLogger(TestSystemNightly.class);
 
 
@@ -77,7 +77,7 @@ public class TestSystemNightly extends TestSystem {
 
     @Test(timeout = 20*MINUTES)
     public void runDetectMarkupMultipleMediaTypes() throws Exception {
-        runSystemTest("DEFAULT_EXTRACTION_FACE_OCV_WITH_MARKUP_PIPELINE",
+        runSystemTest("OCV FACE DETECTION (WITH MARKUP) PIPELINE",
                 "output/face/runDetectMarkupMultipleMediaTypes.json",
                 "/samples/motion/five-second-marathon-clip.mkv",
                 "/samples/person/video_02.mp4",
@@ -88,24 +88,40 @@ public class TestSystemNightly extends TestSystem {
     
     @Test(timeout = 5*MINUTES)
     public void runFaceCombinedDetectImage() throws Exception {
-        runSystemTest("DEFAULT_EXTRACTION_FACE_COMBINED_PIPELINE", "output/face/runFaceCombinedDetectImage.json",
+    	String taskName = "TEST CVFACE DLIB COMBINED TASK";
+    	addTask(taskName, "OCV FACE DETECTION ACTION", "DLIB FACE DETECTION ACTION");
+
+    	String pipelineName = "TEST CVFACE DLIB COMBINED PIPELINE";
+    	addPipeline(pipelineName, taskName);
+
+        runSystemTest(pipelineName, "output/face/runFaceCombinedDetectImage.json",
                 "/samples/face/meds-aa-S001-01.jpg",
                 "/samples/face/meds-aa-S029-01.jpg",
                 "/samples/face/meds-af-S419-01.jpg");
     }
 
+
     @Test(timeout = 6*MINUTES)
-    public void runMotionPreprocessing() throws Exception {
-        runSystemTest("PREPROCESSING_MOTION_EXTRACTION_MOTION_MOG_PIPELINE",
-                "output/motion/runMotionPreprocessing.json",
+    public void runMogMotionPreprocessing() throws Exception {
+        String actionName = "TEST PREPROCESSOR MOTION ACTION";
+        addAction(actionName, "MOG", Collections.singletonMap("USE_PREPROCESSOR", "1"));
+
+        String taskName = "TEST PREPROCESSING MOTION EXTRACTION MOTION MOG TASK";
+        addTask(taskName, actionName);
+
+        String pipelineName = "TEST PREPROCESSING MOTION EXTRACTION MOTION MOG TASK";
+        addPipeline(pipelineName, taskName);
+
+        runSystemTest(pipelineName,
+                "output/motion/runMogMotionPreprocessing.json",
                 "/samples/motion/five-second-marathon-clip.mkv",
                 "/samples/person/video_02.mp4");
     }
 
     @Test(timeout = 5*MINUTES)
-    public void runMotionPreprocessingFaceDetectionMarkup() throws Exception {
-        runSystemTest("DEFAULT_EXTRACTION_FACE_OCV_WITH_MOTION_PREPROCESSOR_AND_MARKUP_PIPELINE",
-                "output/motion/runMotionPreprocessingFaceDetectionMarkup.json",
+    public void runMogMotionPreprocessingFaceDetectionMarkup() throws Exception {
+        runSystemTest("OCV FACE DETECTION (WITH MOG MOTION PREPROCESSOR AND MARKUP) PIPELINE",
+                "output/motion/runMogMotionPreprocessingFaceDetectionMarkup.json",
                 "/samples/person/video_02.mp4");
     }
 
@@ -119,14 +135,14 @@ public class TestSystemNightly extends TestSystem {
                 ioUtils.findFile("/samples/motion/five-second-marathon-clip.mkv"),
                 ioUtils.findFile("/samples/person/video_02.mp4"));
 
-        long jobId = runPipelineOnMedia("TRACKING_EXTRACTION_MOTION_MOG_PIPELINE", media,
+        long jobId = runPipelineOnMedia("MOG MOTION DETECTION (WITH TRACKING) PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         log.info("Finished test runMotionTracking1()");
     }
 
     @Test(timeout = 5*MINUTES)
     public void runMotionTracking2() throws Exception {
-        runSystemTest("TRACKING_EXTRACTION_MOTION_MOG_PIPELINE", "output/motion/runMotionTracking.json",
+        runSystemTest("MOG MOTION DETECTION (WITH TRACKING) PIPELINE", "output/motion/runMotionTracking.json",
                 "/samples/motion/STRUCK_Test_720p.mov");
     }
 
@@ -136,7 +152,7 @@ public class TestSystemNightly extends TestSystem {
         log.info("Beginning test #{} testBadPipeline()", testCtr);
         List<JsonMediaInputObject> media = new LinkedList<>();
         media.add(new JsonMediaInputObject("http://somehost-mpf-4.mitre.org/rsrc/datasets/samples/motion/five-second-marathon-clip.mkv"));
-        long jobId = runPipelineOnMedia("X", media, propertiesUtil.isOutputObjectsEnabled(),
+        long jobId = runPipelineOnMedia("X", media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(),
                 propertiesUtil.getJmsPriority());
         log.info("Finished test testBadPipeline()");
     }
@@ -148,7 +164,7 @@ public class TestSystemNightly extends TestSystem {
         List<JsonMediaInputObject> media = toMediaObjectList(
                 ioUtils.findFile("/samples/face/meds-aa-S001-01.jpg"),
                 ioUtils.findFile("/samples/motion/ocv_motion_video.avi"));
-        long jobId = runPipelineOnMedia("DEFAULT_DETECTION_PERSON_WITH_MARKUP_PIPELINE", media,
+        long jobId = runPipelineOnMedia("OCV PERSON DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI outputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
 //        JsonOutputObject outputObject = OBJECT_MAPPER.readValue(Files.readAllBytes(Paths.get(outputPath)), JsonOutputObject.class);
@@ -168,7 +184,7 @@ public class TestSystemNightly extends TestSystem {
         log.info("Beginning test #{} testNonUri()", testCtr);
         List<JsonMediaInputObject> media = new LinkedList<>();
         media.add(new JsonMediaInputObject("/not/a/file.txt"));
-        long jobRequestId = runPipelineOnMedia("DEFAULT_EXTRACTION_PERSON_OCV_PIPELINE", media,
+        long jobRequestId = runPipelineOnMedia("OCV PERSON DETECTION PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         log.info("Finished test testNonUri()");
     }
@@ -178,7 +194,7 @@ public class TestSystemNightly extends TestSystem {
         testCtr++;
         log.info("Beginning test #{} testTiffImageMarkup()", testCtr);
         List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-aa-S001-01.tif"));
-        long jobId = runPipelineOnMedia("DEFAULT_EXTRACTION_FACE_OCV_WITH_MARKUP_PIPELINE", media,
+        long jobId = runPipelineOnMedia("OCV FACE DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI outputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
 //        JsonOutputObject outputObject = OBJECT_MAPPER.readValue(Files.readAllBytes(Paths.get(outputPath)), JsonOutputObject.class)
@@ -200,9 +216,19 @@ public class TestSystemNightly extends TestSystem {
     public void runFaceOcvCustomDetectVideo() throws Exception {
         testCtr++;
         log.info("Beginning test #{} runFaceOcvCustomDetectVideo()", testCtr);
+
+        String actionName = "TEST X OCV FACE MIN FACE SIZE 100";
+        addAction(actionName, "FACECV", Collections.singletonMap("MIN_FACE_SIZE", "100"));
+
+        String taskName = "TEST OCV FACE MIN FACE SIZE 100 TASK";
+        addTask(taskName, actionName);
+
+        String pipelineName = "TEST OCV FACE MIN FACE SIZE 100 PIPELINE";
+        addPipeline(pipelineName, taskName);
+
         List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/person/video_02.mp4"));
-        long jobId = runPipelineOnMedia("CUSTOM_OCV_FACE_MIN_FACE_SIZE_100_PIPELINE", media,
-//        long jobId = runPipelineOnMedia("DEFAULT_EXTRACTION_FACE_OCV_PIPELINE", mediaPaths,  // to generate default output
+        long jobId = runPipelineOnMedia(pipelineName, media, Collections.emptyMap(),
+//        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", mediaPaths,  // to generate default output
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         // Compare the normal Ocv pipeline output with this output.  The custom pipeline output should have fewer track sets
         // on this video (requires a video with some small faces)
@@ -234,22 +260,34 @@ public class TestSystemNightly extends TestSystem {
      * @param customMedia
      */
     private void compareMedia(JsonMediaOutputObject defaultMedia, JsonMediaOutputObject customMedia) {
-        Map<String, SortedSet<JsonTrackOutputObject>> defaultTracks = defaultMedia.getTracks();
-        Map<String, SortedSet<JsonTrackOutputObject>> customTracks = customMedia.getTracks();
-        Iterator<Map.Entry<String, SortedSet<JsonTrackOutputObject>>> defaultEntries = defaultTracks.entrySet().iterator();
-        Iterator<Map.Entry<String, SortedSet<JsonTrackOutputObject>>> customEntries = customTracks.entrySet().iterator();
 
-        Assert.assertEquals(String.format("Default track entries size=%d doesn't match custom track entries size=%d",
-                defaultTracks.size(), customTracks.size()), defaultTracks.size(), customTracks.size());
-        while (customEntries.hasNext()) {
-            SortedSet<JsonTrackOutputObject> cusTrackSet = customEntries.next().getValue();
-            SortedSet<JsonTrackOutputObject> defTrackSet = defaultEntries.next().getValue();
-            int cusTrackSetSize = cusTrackSet.size();
-            int defTrackSetSize = defTrackSet.size();
-            log.debug("custom number of tracks={}", cusTrackSetSize);
-            log.debug("default number of tracks={}", defTrackSetSize);
-            Assert.assertTrue(String.format("Custom number of tracks=%d is not less than default number of tracks=%d",
-                    cusTrackSetSize, defTrackSetSize), cusTrackSetSize < defTrackSetSize);
+        Iterator<Map.Entry<String,SortedSet<JsonActionOutputObject>>> defaultEntries = defaultMedia.getTypes().entrySet().iterator();
+        Iterator<Map.Entry<String,SortedSet<JsonActionOutputObject>>> customEntries = customMedia.getTypes().entrySet().iterator();
+
+        while (defaultEntries.hasNext()) {
+
+            Map.Entry<String, SortedSet<JsonActionOutputObject>> defaultAction = defaultEntries.next();
+            Map.Entry<String, SortedSet<JsonActionOutputObject>> customAction = customEntries.next();
+            Assert.assertEquals(String.format("Default action type %s does not match custom action type %s", defaultAction.getKey(), customAction.getKey()),
+                    defaultAction.getKey(),
+                    customAction.getKey());
+
+            Iterator<JsonActionOutputObject> defaultTracks = defaultAction.getValue().iterator();
+            Iterator<JsonActionOutputObject> customTracks = defaultAction.getValue().iterator();
+
+            Assert.assertEquals(String.format("Default track entries size=%d doesn't match custom track entries size=%d",
+                    defaultAction.getValue().size(), defaultAction.getValue().size()),
+                    defaultAction.getValue().size(), defaultAction.getValue().size());
+            while (customEntries.hasNext()) {
+                SortedSet<JsonTrackOutputObject> cusTrackSet = customTracks.next().getTracks();
+                SortedSet<JsonTrackOutputObject> defTrackSet = defaultTracks.next().getTracks();
+                int cusTrackSetSize = cusTrackSet.size();
+                int defTrackSetSize = defTrackSet.size();
+                log.debug("custom number of tracks={}", cusTrackSetSize);
+                log.debug("default number of tracks={}", defTrackSetSize);
+                Assert.assertTrue(String.format("Custom number of tracks=%d is not less than default number of tracks=%d",
+                        cusTrackSetSize, defTrackSetSize), cusTrackSetSize < defTrackSetSize);
+            }
         }
     }
 
@@ -333,7 +371,7 @@ public class TestSystemNightly extends TestSystem {
                 }
 
                 JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(),
-                        "DEFAULT_EXTRACTION_FACE_OCV_PIPELINE", media, false, priority);
+                        "OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(), Collections.emptyMap(), false, priority);
                 jobRequestId = mpfService.submitJob(jsonJobRequest);
                 completed = waitFor(jobRequestId); // blocking
             } catch (Exception exception) {

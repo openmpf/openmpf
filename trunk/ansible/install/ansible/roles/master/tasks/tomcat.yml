@@ -26,7 +26,6 @@
 ---
 #file: roles/master/tasks/tomcat.yml
 
-#Manual process instead of RPM
  - name: Check if Tomcat is installed
    stat:
      path="{{ tomcat_home }}/lib/catalina.jar"
@@ -58,23 +57,11 @@
      dest="{{ tomcat_home }}"
      state=link
 
- - name: Remove everything under webapps
+ - name: Remove existing Tomcat webapps
    file:
      path="{{ tomcat_home }}/webapps/{{ item }}"
      state=absent
-   with_items:
-     - docs
-     - examples
-     - host-manager
-     - manager
-     - ROOT
-
- - name: Increase maximum size of the cache
-   lineinfile: >
-     dest="{{ tomcat_home }}/conf/context.xml"
-     insertbefore="^</Context>"
-     line="    <Resources cachingAllowed=\"true\" cacheMaxSize=\"100000\" />"
-     state=present
+   with_items: "{{ webapps_delete }}"
 
  - name: Copy log4j.properties file
    copy: 
@@ -156,7 +143,7 @@
 
  - name: Configure HTTPS
    include: https.yml
-   when: deployment_config.https.install == "y"
+   when: deployment_config.https.install
 
  - name: Configure tomcat without HTTPS
    lineinfile:
@@ -165,7 +152,7 @@
      line="export CATALINA_OPTS=\"-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.port=7800 -Djava.library.path={{ mpf_home }}/lib -Djgroups.tcpping.initial_hosts='$ALL_MPF_NODES' -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'\""
      state=present
      insertafter=EOF
-   when: not deployment_config.https.install == "y"
+   when: not deployment_config.https.install
 
  - name: Set Tomcat7 owner to MPF
    file: 

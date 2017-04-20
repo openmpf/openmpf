@@ -26,13 +26,6 @@
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <algorithms>
-    <!--
-
-    ##########
-    # MARKUP #
-    ##########
-
-    -->
 
     <algorithm name="MARKUPCV" actionType="MARKUP">
         <description>Marks up any objects which were detected in the last detection task of a pipeline. Does not support audio files (e.g., MP3, WAV, etc.).</description>
@@ -41,45 +34,6 @@
                 <state-ref name="DETECTION" />
             </state-refs>
         </requires>
-    </algorithm>
-
-    <!--
-
-    #############
-    # DETECTION #
-    #############
-
-    -->
-
-    <algorithm name="SPHINX" actionType="DETECTION">
-        <description>Detects and transcribes English language speech in audio and video files.</description>
-        <provides>
-            <states>
-                <state name="DETECTION" />
-                <state name="DETECTION_SPEECH" />
-                <state name="DETECTION_SPEECH_SPHINX" />
-            </states>
-            <properties>
-                <property type="INT" name="TARGET_SEGMENT_LENGTH" propertiesKey="detection.segment.target.length">
-                    <description>In the context of videos, the preferred length of segments which are to be processed by this algorithm. Value is expected to be greater than 10. Default value is defined by the MPF properties file.</description>
-                </property>
-                <property type="INT" name="MIN_SEGMENT_LENGTH" propertiesKey="detection.segment.minimum.length">
-                    <description>In the context of videos, the minimum length of a segment which will be processed by this algorithm. Value must be greater than 0. Default value is defined by the MPF properties file.</description>
-                </property>
-                <property type="INT" name="MIN_GAP_BETWEEN_SEGMENTS" propertiesKey="detection.segment.minimum.gap">
-                    <description>In the context of videos, the minimum number of frames or time between segments which are not adjacent. Value must be greater than or equal to 1. Default value is defined by the MPF properties file.</description>
-                </property>
-                <property type="INT" name="FRAME_INTERVAL" defaultValue="1">
-                    <description>Instructs the algorithm skip (FRAME_INTERVAL - 1) frames in videos. Has no effect for images. Value must be greater than or equal to 1.</description>
-                </property>
-                <property type="BOOLEAN" name="EXTRACT_TRACK_DATA_FROM_MEDIA" defaultValue="true">
-                    <description>When set to true, track frames will be extracted from images and videos.</description>
-                </property>
-                <property type="BOOLEAN" name="MERGE_TRACKS" defaultValue="false">
-                    <description>When set to true, the detection response handler will merge tracks spanning segment boundaries.</description>
-                </property>
-            </properties>
-        </provides>
     </algorithm>
 
 </algorithms>

@@ -35,7 +35,9 @@ import org.mitre.mpf.wfm.util.IoUtils;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 public class TestUtil {
@@ -50,16 +52,25 @@ public class TestUtil {
 
 
     public static String nonBlank() {
-        return CustomMatcher.of(s -> s != null && !s.trim().isEmpty(), "Non-blank String");
+        return CustomMatcher.of("Non-blank String", s -> s != null && !s.trim().isEmpty());
     }
 
 
     public static <T> T anyNonNull() {
-        return CustomMatcher.of(o -> o != null, "any not null");
+        return CustomMatcher.of("Any not null", Objects::nonNull);
     }
 
     public static String eqIgnoreCase(String expected) {
-        return CustomMatcher.of(s -> s.equalsIgnoreCase(expected), expected + " (case insensitive)");
+        return CustomMatcher.of(expected + " (case insensitive)", s -> s.equalsIgnoreCase(expected));
+    }
+
+
+    public static <T, C extends Collection<T>> C collectionContaining(Predicate<T> matchPredicate) {
+        return CustomMatcher.of("Collection containing", c -> c.stream().anyMatch(matchPredicate));
+    }
+
+    public static <T, C extends Collection<T>> C nonEmptyCollection() {
+        return CustomMatcher.of("Non-empty Collection", c -> !c.isEmpty());
     }
 
 
@@ -90,10 +101,10 @@ public class TestUtil {
         }
 
         public static <T> T of(Predicate<T> matchPred)  {
-            return of(matchPred, null);
+            return of(null, matchPred);
         }
 
-        public static <T> T of(Predicate<T> matchPred, String description) {
+        public static <T> T of(String description, Predicate<T> matchPred) {
             return Mockito.argThat(new CustomMatcher<>(matchPred, description));
         }
     }

@@ -83,12 +83,14 @@ public class HomePage {
 	    }
 		
 		//Hopefully it is impossible for a noty notification to pop up between these operations
-		
+
 		// click the dropdown
-		Utils.safeClickByCss(driver, "a.dropdown-toggle");
+		log.info("Click #user_dropdown");
+		Utils.safeClickById(driver, "user_dropdown");
 	
 		// click the logout link
-		Utils.safeClickByLinkText(driver, "Logout");
+		log.info("Click #logout");
+		Utils.safeClickById(driver, "logout");
 
 		// Wait for the login page to load, timeout after 10 seconds
 		(new WebDriverWait(driver, 10)).until(new ExpectedCondition<Boolean>() {

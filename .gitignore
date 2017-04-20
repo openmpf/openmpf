@@ -22,7 +22,6 @@
 # Generated and Copied Files
 
 target/
-mpf_components/target/
 trunk/target/
 trunk/protobuf/target/
 trunk/workflow-manager/target/
@@ -37,40 +36,30 @@ trunk/build/
 trunk/detection/Java/target/
 trunk/install/
 trunk/interop/target/
-trunk/java-hello-world/target/
 trunk/mpf-system-tests/target/
-trunk/mpf-system-tests/src/main/resources/
 
-trunk/workflow-manager/src/test/resources/HelloWorldComponent.json
+trunk/workflow-manager/node/
+trunk/workflow-manager/src/main/webapp/resources/mytheme/downloads/OalprLicensePlateTextDetection.tar.gz
+
+trunk/workflow-manager/src/test/node/
+trunk/workflow-manager/src/test/npm
+trunk/workflow-manager/src/test/output/
+trunk/workflow-manager/src/test/resources/JavaTestDetection.json
+trunk/workflow-manager/src/test/resources/JavaTestDetection.tar.gz
 trunk/workflow-manager/src/test/resources/helloComponent.json
-
-trunk/workflow-manager/src/main/resources/Actions.xml
-trunk/workflow-manager/src/main/resources/Algorithms.xml
-trunk/workflow-manager/src/main/resources/Pipelines.xml
-trunk/workflow-manager/src/main/resources/Tasks.xml
-trunk/workflow-manager/src/main/resources/nodeServicesPalette.json
-trunk/workflow-manager/src/main/resources/nodeManagerConfig.xml
-
-trunk/workflow-manager/src/main/webapp/resources/mytheme/downloads/MPFTextDetectionComponent.tar.gz
+trunk/workflow-manager/src/test/resources/CplusplusHelloWorldComponent.json
 
 trunk/audio-video-utils/target/
 trunk/audio-video-utils/target/
 trunk/bin/mpf-scripts/dist/
 trunk/bin/mpf-scripts/mpf.egg-info/
 
-mpf_components/CPP/build/
-mpf_components/CPP/target/
-
-mpf_components/CPP/detection/CMakeLists.txt
-mpf_components/CPP/detection/components.lst
-
-mpf_components/Java/componentApi/target/
-mpf_components/Java/componentExecutor/target/
-mpf_components/Java/detection/sphinxSpeechDetection/target/
 
 
-# Java and Eclipse Files
+# IDE Files
 
+cmake-build-debug
+cmake-build-release
 .classpath
 .project
 *.core.prefs
@@ -85,9 +74,13 @@ wfmwebapp.sh
 integrationtest.sh
 
 
+# npm generated
+npm-debug.log
+node_modules/
+
+
 # Other Files
 
 trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
 trunk/ansible/**/tasks/*.retry
 
-node_modules

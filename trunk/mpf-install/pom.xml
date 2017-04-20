@@ -192,17 +192,7 @@
         </dependency>
         <dependency>
             <groupId>org.mitre.mpf</groupId>
-            <artifactId>mpf-speech-detection</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-java-component-executor</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mitre.mpf</groupId>
-            <artifactId>mpf-hello-component</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

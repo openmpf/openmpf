@@ -31,8 +31,8 @@
      * ServerMediaCtrl
      * @constructor
      */
-    angular.module('WfmAngularSpringApp.controller.ServerMediaCtrl', []).controller('ServerMediaCtrl', ['$scope', '$rootScope', '$http', '$location', '$timeout', '$log', '$compile', 'MediaService', 'JobsService', 'NotificationSvc',
-        function ($scope, $rootScope, $http, $location, $timeout, $log, $compile, MediaService, JobsService, NotificationSvc) {
+    angular.module('mpf.wfm.controller.ServerMediaCtrl', []).controller('ServerMediaCtrl', ['$scope',  '$http', '$location', '$timeout', '$log', '$compile', 'MediaService', 'JobsService', 'NotificationSvc',
+        function ($scope, $http, $location, $timeout, $log, $compile, MediaService, JobsService, NotificationSvc) {
 
             var fileTable = null;//bootstrap datatable
             var fileList = [];//current list of files for the selected folder
@@ -54,13 +54,21 @@
             var serverDirs = [];//the directory structure
             var treeDirs = [];
             $scope.selectedJobPriorityServer = {selected: {priority: '4', type: '(default)'}}; //default
-            var filesToSubmit = [];//files going back to server
-            $scope.filesToSubmitCount = filesToSubmit.length;
             $scope.selectedPipelineServer = {};//selected pipeline
             $scope.urls = null;
 
-            var init = function (funct) {//reset
+            var filesToSubmit = [];//files going back to server
+            $scope.filesToSubmitCount = filesToSubmit.length;
+            var checkedSingleFileInModal = null;
+            var checkedFilesInModal = [];
+
+            var init = function (useCache, funct) {//reset
                 $("#loading_url").hide();
+                $("#fileListWrap").css('visibility','hidden');
+                $("#directoryTreeview").html("Loading. Please wait...");
+                $("#breadcrumb").html("");
+
+                $scope.media_props = getNewMediaProps();
                 $scope.selectedJobPriorityServer = {selected: {priority: '4', type: '(default)'}}; //default
                 filesToSubmit = [];//files going back to server
                 $scope.filesToSubmitCount = filesToSubmit.length;
@@ -68,17 +76,17 @@
                 fileList = [];//current list of files for the selected folder
                 $scope.useUploadView = false;
                 $scope.disableBtns = true;
-                $("#directoryTreeview").html("Loading...");
                 if (!$scope.$$phase) $scope.$apply();
 
                 MediaService.getMaxFileUploadCnt().then(function (max) {
-                    MediaService.getAllDirectories(false).then(function (dirs) {
+
+                    MediaService.getAllDirectories(false, useCache).then(function (dirs) {
                         serverDirs = [];
                         serverDirs.push(dirs);
                         treeDirs = serverDirs;
                         selectedNode = {text: "None", nodeId: 0};
 
-                        //need to map all the nodes
+                        // need to map all the directories
                         directoryMap = {};
                         traverseNode(dirs, function (anode) {
                             directoryMap[anode.fullPath] = {
@@ -88,17 +96,34 @@
                                 "checkable": false
                             };
                         });
+
                         maxFileUploadCnt = max;
                         buildDropzone();
-                        renderTree();
-                        if (funct) funct();
+
+                        MediaService.getAllFiles(dirs.fullPath, useCache).then(function (nodeData) {
+                            $.each(nodeData.data, function (idx, anode) {
+                                // need to update counts
+                                if (anode.directory) {
+                                    directoryMap[anode.directory].total += 1;
+                                }
+                            });
+
+                            renderTree();
+                            if (funct) funct();
+                            $("#fileListWrap").css('visibility','show');
+                        });
                     });
                 });
 
                 waitModal = $("#waitModal").modal({show: false});
                 progressModal = $("#progressModal").modal({show: false});
                 $('#viewNodeModal').on('hidden.bs.modal', function () {
+                    checkedFilesInModal = [];
                     renderFileList();
+                });
+
+                $("#newFolderModal").on('shown.bs.modal', function(event) {//focus on input
+                    $(this).find('[autofocus]').focus();
                 });
             };
 
@@ -117,12 +142,12 @@
             };
 
             $scope.refreshRequest = function () {//refresh button for updating directory tree
-                init();
+                init(false);
             };
 
             //pull data from the server
             var reloadTree = function (funct) {
-                init(funct);
+                init(true, funct);
             };
 
             var renderTree = function () {
@@ -140,7 +165,7 @@
                         $log.debug("Adding files in directory", node);
                         waitModal.modal('show');
                         //get all the files from the server recursively
-                        MediaService.getAllFiles(node.fullPath, true).then(function (nodeData) {
+                        MediaService.getAllFiles(node.fullPath).then(function (nodeData) {
                             addFilesToSubmit(nodeData.data);
 
                             //ugly hack because we get all the files recursively for the top directory as one list, need to map them
@@ -177,7 +202,7 @@
                         $log.debug("Removing files in directory", node);
                         waitModal.modal('show');
                         //get all the files from the server
-                        MediaService.getAllFiles(node.fullPath, true).then(function (nodeData) {
+                        MediaService.getAllFiles(node.fullPath).then(function (nodeData) {
                             removeFilesToSubmit(nodeData.data);
 
                             //ugly hack because we get all the files recursively for the top directory as one list, need to unmap them
@@ -248,9 +273,10 @@
 
             var updateDirectoryMap = function (node, amt) {
                 directoryMap[node.fullPath].selected += amt; //update selected count
+                directoryMap[node.fullPath].checkable = true;
                 updateTreeChecksRecurse($("#directoryTreeview").treeview('getNode', 0));
                 updateTreeChecks();
-            }
+            };
 
             var updateTreeChecksRecurse = function (node) {
                 var childrenFull = true;
@@ -263,10 +289,17 @@
                 }
 
                 if ((directoryMap[node.fullPath].total == directoryMap[node.fullPath].selected) && childrenFull) {//check the node
-                    if (directoryMap[node.fullPath].checkable) directoryMap[node.fullPath].checked = true;
-                    // if(directoryMap[node.fullPath].total > 0) directoryMap[node.fullPath].checked = true;
+                    if (directoryMap[node.fullPath].checkable) {
+                        directoryMap[node.fullPath].checked = true;
+                        // force parent to be checkable to ensure that the full file tree branch is updated
+                        if (node.parentId != undefined) {
+                            var parentnode = $('#directoryTreeview').treeview('getNode', node.parentId);
+                            directoryMap[parentnode.fullPath].checkable = true;
+                        }
+                    }
                     return true;
                 }
+
                 directoryMap[node.fullPath].checked = false;
                 return false;
             };
@@ -279,14 +312,17 @@
                 } else {
                     fileTable = $('#file_list_server').DataTable({
                         destroy: true,
-                        data: fileList,
+                        // data: fileList,
                         stateSave: false,
                         serverSide: true,
                         processing: false,
-                        scrollY:'45vh',
+                        scrollY: '53vh',
                         scrollCollapse: false,
+                        language: {
+                            emptyTable: "No files in folder"
+                        },
                         lengthMenu: [[5, 10, 25, 50, 100], [5, 10, 25, 50, 100]],
-                        //pageLength:5,//set default value
+                        pageLength: 25,//set default value
                         ordering: false,
                         ajax: {
                             url: "server/get-all-files-filtered",
@@ -302,7 +338,7 @@
                         },
                         columns: [
                             {
-                                "data": "null", "defaultContent": '', width: "10%",
+                                "data": "null", "defaultContent": '', width: "5%",
                                 render: function (data, type, obj) {
                                     if (type === 'display') {
                                         var checked = "";
@@ -315,16 +351,16 @@
                                 }
                             },
                             {
-                                data: "fullPath", targets: [2], width: "10%",
+                                data: "fullPath",  width: "10%",
                                 render: function (data, type, obj) {
                                     return getImgTag(obj);
                                 }
                             },
                             {
-                                data: 'name'
+                                data: 'name', width: "80%",
                             }
                         ],
-                        dom: '<"top"lf>rt<"bottom"<"dt_foot1"i><"dt_foot2"p>><"clear">',//https://datatables.net/reference/option/dom
+                        dom: '<"top"lf>rt<"bottom"ip><"clear">',//https://datatables.net/reference/option/dom
                         initComplete: function (settings, json) {
                             if (!$scope.$$phase) $scope.$apply();
                             $log.debug('DataTables has finished its initialization.');
@@ -354,60 +390,267 @@
             };
 
             var renderSelectedFileList = function () {
+                // sort is in place; make 'A' come before 'B'; make 'A' come before 'a'
+                filesToSubmit.sort(function (a, b) {
+                    return a.fullPath.localeCompare(b.fullPath, undefined, { caseFirst: "upper" } )
+                });
                 if (selectedFileTable != null) {
                     selectedFileTable.clear();
-                    selectedFileTable.rows.add(filesToSubmit);
+                    // selectedFileTable.rows.add(filesToSubmit);
                     selectedFileTable.draw();
                 } else {
+                    $scope.media_props_file_info = "Loading. Please wait...";
                     selectedFileTable = $('#selected_file_list').DataTable({
                         destroy: true,
-                        data: filesToSubmit,
-                        scrollY: '30vh',
+                        // data: filesToSubmit,
+                        stateSave: false,
+                        scrollY: '50vh',
+                        serverSide: true,
                         scrollCollapse: true,
+                        fixedColumns: true, // set widths
+                        autoWidth: false, // set widths
+                        ajax: function (data, callback, settings) {
+                            var files = filesToSubmit;
+                            if (data.search.value) {
+                                files = files.filter(function (el) {
+                                    return el.fullPath.toLowerCase().includes(data.search.value.toLowerCase());
+                                });
+                            }
+                            var json = {
+                                data: files.slice(data.start, data.start+data.length),
+                                recordsFiltered: files.length,
+                                recordsTotal: files.length
+                            };
+                            callback(json);
+                        },
                         columns: [
                             {
-                                data: "fullPath", targets: [2],
+                                "data": "null", "defaultContent": '',width: "2%",
                                 render: function (data, type, obj) {
-                                    return '<button type="button" class="btn btn-danger btn-xs removebtn"><span class="glyphicon glyphicon-remove"></span></button>';
+                                    if (checkedFilesInModal.indexOf(obj) != -1) {
+                                        return '<input type="checkbox" class="node-checked" ng-model="" checked>';
+                                    } else {
+                                        return '<input type="checkbox" class="node-checked" ng-model="" >';
+                                    }
                                 }
                             },
                             {
-                                data: "fullPath", targets: [2],
+                                data: "fullPath",width: "5%",
                                 render: function (data, type, obj) {
                                     return getImgTag(obj);
                                 }
                             },
-                            {data: "fullPath"}
+                            {data: "fullPath",width: "75%",},
+                            {
+                                data: "null",width: "5%",
+                                render: function (data, type, obj) {
+                                    var retval = '<button type="button" class="btn btn-primary btn-xs set-properties-btn" title="Set Media Properties"><span class="fa fa-list"></span></button> ';
+                                    if (obj.properties) {
+                                        return retval + '<span class="fa fa-check-circle properties-set-mark"></span> ';
+                                    }
+                                    return retval + '<span class="fa fa-check-circle properties-set-mark" style="display:none;"></span> ';
+                                }
+                            },
+                            {
+                                data: "fullPath",width: "5%",
+                                render: function (data, type, obj) {
+                                    return '<button type="button" class="btn btn-danger btn-xs remove-btn" title="Remove"><span class="glyphicon glyphicon-remove"></span></button>';
+                                }
+                            }
                         ],
                         ordering: false,
                         select: false,
-                        dom: 'Blfrtip',//https://datatables.net/reference/option/dom
+                        dom: '<"top"Blf>rt<"bottom"<"dt_foot1"i><"dt_foot2"p>><"clear">',//https://datatables.net/reference/option/dom
+
                         buttons: [
                             {
-                                text: 'Remove All',
+                                text: '<span class="fa fa-list"></span> Set Properties For Checked',
+                                className: 'media-propertied-dt-button',
                                 action: function () {
-                                    var s = selectedFileTable.rows().select();
-                                    var selected = s.data();// table.api().rows( { selected: true } );
-                                    var arr = [];
-                                    for (var i = 0; i < selected.length; i++) {
-                                        arr.push(selected[i]);
+                                    var nodes = getCheckedFilesInModal();
+                                    if (nodes.length > 0) {
+                                        clearMediaPropsUI();
+                                        $("#viewMediaPropertiesModal").modal({show: true});
+                                        $scope.media_props_file_info = "";
+                                        $.each(nodes, function () {
+                                            var node = $(this)[0];
+                                            // TODO: Handle network resource issues when displaying a large number of imgTags
+                                            $scope.media_props_file_info += /*getImgTag(node) + " " +*/ node.fullPath + "<br/>";
+                                        });
                                     }
-                                    $('#directoryTreeview').treeview('uncheckAll', {silent: true});
-                                    removeFilesToSubmit(arr);
-                                    traverseNode($("#directoryTreeview").treeview('getNode', 0), function (anode) {
-                                        directoryMap[anode.fullPath].selected = 0;//reset the selected counter
-                                        $("#directoryTreeview").treeview('uncheckNode', [anode.nodeId, {silent: true}])
-                                    });
-                                    renderSelectedFileList();
+                                }
+                            },
+                            {
+                                text: "<span class='glyphicon glyphicon-remove'></span> Remove Checked",
+                                className: 'remove-dt-button',
+                                action: function () {
+                                    var nodes = getCheckedFilesInModal();
+                                    if (nodes.length > 0) {
+                                        $('#directoryTreeview').treeview('uncheckAll', {silent: true});
+                                        removeFilesToSubmit(nodes);
+                                        $("#checkAll").prop("checked", false);
+                                        traverseNode($("#directoryTreeview").treeview('getNode', 0), function (anode) {
+                                            directoryMap[anode.fullPath].selected = 0;//reset the selected counter
+                                            $("#directoryTreeview").treeview('uncheckNode', [anode.nodeId, {silent: true}])
+                                        });
+                                        renderSelectedFileList();
+                                    }
+                                    updateModifiedFilesChecks();
                                 }
                             }
-                        ]
+                        ],
+                        initComplete: function () {
+                            $(".dt-buttons").prepend("<div  style='padding-right:10px;display:inline-block;'><input type='checkbox' id='checkAll''> Check All</div> ");
+                            $("#checkAll").click(function () {//check all button
+                                checkAllFiles($(this).prop('checked'));
+                            });
+                        }
                     });
-                    $('#selected_file_list').on('click', '.removebtn', function () {
+
+                    $('#selected_file_list').on('click', '.node-checked', function () {
+                        var idx = selectedFileTable.row($(this).closest('tr')[0]).index();
+                        var node = selectedFileTable.rows(idx).data()[0];
+                        if(!$(this).prop('checked')){
+                            $("#checkAll").prop("checked", false);
+                            checkedFilesInModal = checkedFilesInModal.filter(function(item) {
+                                return item !== node; // remove from array
+                            });
+                        } else {
+                            checkedFilesInModal.push(node);
+                        }
+                        if (filesToSubmit.length == checkedFilesInModal.length) {
+                            $("#checkAll").prop("checked", true);
+                        }
+                    });
+
+                    $('#selected_file_list').on('click', '.remove-btn', function () {
                         var data = selectedFileTable.row(this.parentNode).data();
                         removeFilesToSubmit([data]);
+                        $("#checkAll").prop("checked", false);
                         updateDirectoryMap({"fullPath": data.directory}, -1);
+                        updateModifiedFilesChecks();
                     });
+
+                    $('#selected_file_list').on('click', '.set-properties-btn', function () {
+                        var idx = selectedFileTable.row($(this).closest('tr')[0]).index();
+                        var node = selectedFileTable.rows(idx).data()[0];
+                        $scope.media_props = (typeof node.properties !== "undefined") ? $.extend(true, {}, node.properties) : getNewMediaProps();
+                        // TODO: Handle network resource issues when displaying a large number of imgTags
+                        $scope.media_props_file_info = /*getImgTag(node) + " " +*/ node.fullPath;
+                        checkedSingleFileInModal = node;
+                        $("#viewMediaPropertiesModal").modal({show: true});
+                    });
+                }
+            };
+
+            var clearMediaPropsUI = function(){
+                $scope.media_props = getNewMediaProps();
+                $scope.media_props_file_info = "Loading. Please wait...";
+                checkedSingleFileInModal = null;
+            }
+
+            $scope.closeSelectedFileList = function () {
+                $("#checkAll").prop("checked", false);
+                checkAllFiles(false);
+                clearMediaPropsUI();
+            };
+
+            //new blank media properties
+            var getNewMediaProps = function () {
+                return {
+                    AUTO_ROTATE: false,
+                    ROTATION: "0",
+                    AUTO_FLIP: false,
+                    HORIZONTAL_FLIP: false,
+                    SEARCH_REGION_ENABLE_DETECTION: false,
+                    SEARCH_REGION_TOP_LEFT_X_DETECTION: -1,
+                    SEARCH_REGION_TOP_LEFT_Y_DETECTION: -1,
+                    SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION: -1,
+                    SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION: -1
+                };
+            };
+
+            //mark every checkbox in the table checked or not
+            var checkAllFiles = function (checked) {
+                if (checked) {
+                    checkedFilesInModal = filesToSubmit;
+                } else {
+                    checkedFilesInModal = [];
+                }
+                selectedFileTable.rows().every(function (rowIdx, tableLoop, rowLoop) {
+                    $(this.node().cells[0].childNodes[0]).prop('checked', checked);//the checkbox
+                });
+            };
+
+            //return a list of nodes that have the checkmark checked
+            var getCheckedFilesInModal = function () {
+                if (checkedSingleFileInModal != null) {
+                    var retval = [];
+                    retval.push(checkedSingleFileInModal);
+                    return retval;
+                }
+                return checkedFilesInModal;
+            };
+
+            //go through each datatble row and show set mark if they are set
+            var updateModifiedFilesChecks = function () {
+                selectedFileTable.rows().every(function (rowIdx, tableLoop, rowLoop) {
+                    if (typeof this.data().properties !== "undefined") {
+                        $(this.node().cells[3]).find('.properties-set-mark').show();
+                    } else {
+                        $(this.node().cells[3]).find('.properties-set-mark').hide();
+                    }
+                });
+            };
+
+            $scope.setMediaProperties = function () {
+                var checkedFilesInModal = getCheckedFilesInModal();
+                //add to sending data
+                for (var i = 0; i < filesToSubmit.length; i++) {
+                    for (var j = 0; j < checkedFilesInModal.length; j++) {
+                        if (filesToSubmit[i].fullPath == checkedFilesInModal[j].fullPath) {
+                            filesToSubmit[i].properties = $.extend(true, {}, $scope.media_props);
+                            break;
+                        }
+                    }
+                }
+                //clean up
+                clearMediaPropsUI();
+                updateModifiedFilesChecks();
+            };
+
+            $scope.clearMediaProperties = function () {
+                clearMediaPropsUI();
+                if (!$scope.$$phase) $scope.$apply();
+                var checkedFilesInModal = getCheckedFilesInModal();
+                for (var i = 0; i < filesToSubmit.length; i++) {
+                    var node = filesToSubmit[i];
+                    for (var j = 0; j < checkedFilesInModal.length; j++) {
+                        if (node.fullPath == checkedFilesInModal[j].fullPath) {
+                            delete filesToSubmit[i].properties;
+                            break;
+                        }
+                    }
+                }
+                updateModifiedFilesChecks();
+            };
+
+            $scope.cancelMediaProperties = function () {
+                clearMediaPropsUI();
+            };
+
+            $scope.setChecks = function () {
+                if ($scope.media_props.AUTO_FLIP) {
+                    $scope.media_props.HORIZONTAL_FLIP = false;
+                }
+                if ($scope.media_props.AUTO_ROTATE) {
+                    $scope.media_props.ROTATION = "0";
+                }
+                if (!$scope.media_props.SEARCH_REGION_ENABLE_DETECTION) {
+                    $scope.media_props.SEARCH_REGION_TOP_LEFT_X_DETECTION = -1;
+                    $scope.media_props.SEARCH_REGION_TOP_LEFT_Y_DETECTION = -1;
+                    $scope.media_props.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION = -1;
+                    $scope.media_props.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION = -1;
                 }
             };
 
@@ -416,30 +659,24 @@
                 var t = obj.contentType.split("/")[0].toLowerCase();
                 if (t == "image" && obj.contentType.indexOf("tif") == -1) {
                     var imgUrl = "server/node-image?" + $.param({nodeFullPath: obj.fullPath});
-                    return $("<img>")
-                        .addClass('img-rounded')
-                        .addClass('media-thumb')
-                        .attr('src', imgUrl)
-                        .get(0)
-                        .outerHTML;
+                    return $("<img>").addClass('img-rounded').addClass('media-thumb').attr('src', imgUrl).get(0).outerHTML;
                 } else if (t == "audio") {
-                    return "<span class='glyphicon glyphicon-music'></span>";
+                    return "<span class='glyphicon glyphicon-music media-thumb'></span>";
                 }
                 else if (t == "video") {
-                    return "<span class='glyphicon glyphicon-film'></span>";
+                    return "<span class='glyphicon glyphicon-film media-thumb'></span>";
                 }
                 else {
-                    return "<span class='glyphicon glyphicon-file'></span>";
+                    return "<span class='glyphicon glyphicon-file media-thumb'></span>";
                 }
-            }
+            };
 
             var addFilesToSubmit = function (arr) {
                 for (var i = 0; i < arr.length; i++) {
-                    var fullpath = arr[i].fullPath;
                     var idx = -1;
                     for (var j = 0; j < filesToSubmit.length; j++) {
                         var node = filesToSubmit[j];
-                        if (node.fullPath == fullpath) {
+                        if (node.fullPath == arr[i].fullPath) {
                             idx = j;
                             break;
                         }
@@ -455,14 +692,9 @@
 
             var removeFilesToSubmit = function (arr) {
                 for (var i = 0; i < arr.length; i++) {
-                    var fullpath = arr[i].fullPath;
-                    for (var j = 0; j < filesToSubmit.length; j++) {
-                        var node = filesToSubmit[j];
-                        if (node.fullPath == fullpath) {
-                            filesToSubmit.splice(j, 1);
-                            break;
-                        }
-                    }
+                    filesToSubmit = filesToSubmit.filter(function(item) {
+                        return item.fullPath !== arr[i].fullPath; // remove from array
+                    });
                 }
                 $scope.filesToSubmitCount = filesToSubmit.length;
                 if (!$scope.$$phase) $scope.$apply();
@@ -471,8 +703,7 @@
 
             var hasFilesToSubmit = function (node) {
                 for (var j = 0; j < filesToSubmit.length; j++) {
-                    var subnode = filesToSubmit[j];
-                    if (subnode.fullPath == node.fullPath) {
+                    if (filesToSubmit[j].fullPath == node.fullPath) {
                         return true;
                     }
                 }
@@ -486,17 +717,20 @@
                 }
 
                 //build media uri array from filesToSubmit map
-                var fileUris = [];
+                var files = [];
 
                 for (var i = 0; i < filesToSubmit.length; i++) {
-                    var node = {};
-                    node.mediaUri = filesToSubmit[i].uri;
-                    fileUris.push(node);
+                    var node = {mediaUri: filesToSubmit[i].uri,properties:{}};
+                    if(typeof filesToSubmit[i].properties !== "undefined") {
+                        node.properties = filesToSubmit[i].properties;
+                        node.properties['ROTATION'] = parseInt(node.properties['ROTATION']);//convert to int
+                    }
+                    files.push(node);
                 }
 
-                if (fileUris.length > 0) {
+                if (files.length > 0) {
                     var jobCreationRequest = {
-                        media: fileUris,
+                        media: files,
                         externalId: 'from_mpf_web_app', //hack to get jobs to session jobs
                         pipelineName: $scope.selectedPipelineServer.selected,
                         priority: $scope.selectedJobPriorityServer.selected.priority
@@ -595,12 +829,12 @@
                                 });
                                 self.on("error", function (file, resp) {
                                     var err = resp;
-                                    if(resp.error){
+                                    if (resp.error) {
                                         err = resp.error;
-                                    }else if(resp == "You can't upload files of this type."){
-                                        err += " Please add a whitelist."+file.type+" entry to the mediaType.properties file."
+                                    } else if (resp == "You can't upload files of this type.") {
+                                        err += " Please add a whitelist." + file.type + " entry to the mediaType.properties file."
                                     }
-                                    $log.error(err,file);
+                                    $log.error(err, file);
                                     $(file.previewElement).find('.dz-error-message').text(err);
                                 });
                             }
@@ -746,51 +980,53 @@
                 }
                 var splitUrls = $scope.urls.split('\n');
                 if (splitUrls) {
-                    //clean empty lines
-                    for (var i = 0; i < splitUrls.length; i++) {
-                        if (splitUrls[i].trim() == "") {
-                            splitUrls.splice(i, 1);
-                            i--;
-                        }
-                    }
+                    splitUrls = splitUrls.filter(function(item) {
+                        return item.trim() != ""; // remove from array
+                    });
                 }
 
-                var dataToSend = splitUrls;
-                if (splitUrls && splitUrls.length > 0) {
+                //filter out duplicates
+                var uniqueUrls = [];
+                $.each(splitUrls, function(i, e) {
+                    if ($.inArray(e, uniqueUrls) == -1) uniqueUrls.push(e);
+                });
+
+                if (uniqueUrls && uniqueUrls.length > 0) {
                     $("#loading_url").show();
                     $("#submitURLs").prop("disabled", true);
 
-                    var params = {urls:dataToSend,desiredpath:selectedNode.fullPath};
+                    var params = {urls: uniqueUrls, desiredpath: selectedNode.fullPath};
                     $http({
                         url: 'saveURL',
                         method: "POST",
                         params: params
                     }).then(
                         function (response) {
-                            console.log( response.data);
+                            console.log(response.data);
                             $("#loading_url").hide();
                             var fileResultsMap = response.data;
                             var successCnt = 0;
                             for (var key in fileResultsMap) {
                                 if (fileResultsMap.hasOwnProperty(key)) {
                                     if (fileResultsMap[key].startsWith("successful write to")) {
+                                        var filename = fileResultsMap[key].replace(/^.*[\\\/]/, '');
                                         ++successCnt;
-                                        $(".localName").append("<p>Uploaded: " + key + "</p>");
+                                        $(".localName").append("<p>Uploaded: " + key + " to " + filename+"</p>");
                                     } else {
                                         NotificationSvc.error('Error uploading: ' + key + ' ' + fileResultsMap[key]);
                                     }
                                 }
                             }
-                            if (successCnt == splitUrls.length) {
+                            if (successCnt == uniqueUrls.length) {
                                 NotificationSvc.success(successCnt + " files uploaded.");
                             } else {
-                                NotificationSvc.error('Error uploading files. Uploaded ' + successCnt + ' out of ' + splitUrls.length + ' files. Please check the Workflow Manager server status and logs.');
+                                NotificationSvc.error('Error uploading files. Uploaded ' + successCnt + ' out of ' + uniqueUrls.length + ' files. Please check the Workflow Manager server status and logs.');
                                 console.log('Error loading image:', status);
                             }
 
                             var nodeid = selectedNode.nodeId;
                             reloadTree(function () {
-                                $("#directoryTreeview").treeview('selectNode',nodeid );
+                                $("#directoryTreeview").treeview('selectNode', nodeid);
                                 $("#directoryTreeview").treeview('revealNode', [nodeid, {silent: true}]);
                                 $("#loading_url").hide();
                                 $("#submitURLs").prop("disabled", false);
@@ -807,6 +1043,6 @@
                 }
             };
 
-            init();//get this party started
+            init(true);//get this party started
         }]);
 })();

@@ -33,8 +33,8 @@
     <fileSets>
         <!-- Include everything -->
         <fileSet>
-            <directory>${basedir}/../../mpf_components/CPP/detection/oalprTextComponent</directory>
-            <outputDirectory>text</outputDirectory>
+            <directory>${basedir}/../../../openmpf-components/cpp/OalprLicensePlateTextDetection</directory>
+            <outputDirectory>OalprLicensePlateTextDetection</outputDirectory>
         </fileSet>
     </fileSets>
 </assembly>

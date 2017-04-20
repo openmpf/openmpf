@@ -123,7 +123,7 @@ public class JobCreationProcessor extends WfmProcessor {
 		// Finally, iterate through all of the properties in this action and copy them to the protocol buffer.
 		for(Map.Entry<String, String> property : action.getProperties().entrySet()) {
 			if(StringUtils.isNotBlank(property.getKey()) && StringUtils.isNotBlank(property.getValue())) {
-				transientAction.getProperties().put(property.getKey(), property.getValue());
+				transientAction.getProperties().put(property.getKey().toUpperCase(), property.getValue());
 			}
 		}
 
@@ -153,6 +153,12 @@ public class JobCreationProcessor extends WfmProcessor {
 			TransientPipeline transientPipeline = buildPipeline(jobRequest.getPipeline());
 
 			TransientJob transientJob = new TransientJob(jobRequestEntity.getId(), jobRequest.getExternalId(), transientPipeline, 0, jobRequest.getPriority(), jobRequest.isOutputObjectEnabled(), false,jobRequest.getCallbackURL(),jobRequest.getCallbackMethod());
+
+			transientJob.getOverriddenJobProperties().putAll(jobRequest.getJobProperties());
+
+			// algorithm properties should override any previously set properties (note: priority scheme enforced in DetectionSplitter)
+			transientJob.getOverriddenAlgorithmProperties().putAll(jobRequest.getAlgorithmProperties());
+
 			transientJob.getMedia().addAll(buildMedia(jobRequest.getMedia()));
 			redis.persistJob(transientJob);
 

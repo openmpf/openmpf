@@ -1,0 +1,52 @@
+{
+  "jobId": 12,
+  "objectId": "caa69bd0-0cac-43fc-81df-1f6e9e8f50fa",
+  "pipeline": {
+    "name": "OCV FACE DETECTION PIPELINE",
+    "description": "Performs OpenCV face detection.",
+    "stages": [{
+      "actionType": "DETECTION",
+      "name": "OCV FACE DETECTION TASK",
+      "description": "Performs OpenCV face detection.",
+      "actions": [{
+        "algorithm": "FACECV",
+        "name": "OCV FACE DETECTION ACTION",
+        "description": "Executes the OpenCV face detection algorithm using the default parameters.",
+        "properties": {}
+      }
+      ]
+    }
+    ]
+  },
+  "priority": 4,
+  "siteId": "mpf1",
+  "externalJobId": "f83ebc04-bf26-4ec0-9653-3e4d502c4c3f",
+  "timeStart": "2017-04-11 10:48:50.0",
+  "timeStop": "2017-04-11 10:48:56.0",
+  "status": "COMPLETE",
+  "jobProperties": {},
+  "media": [{
+    "mediaId": 8,
+    "path": "file:/var/lib/jenkins/jobs/mpf-phabricator/workspace/trunk/mpf-system-tests/target/test-classes/samples/speech/green.mov",
+    "mimeType": "video/quicktime",
+    "length": 54,
+    "sha256": "97a643d5228d20b83eeaa12728bb24ebf18098f8dba67aac6a3ce2b6b23d453d",
+    "message": null,
+    "status": "COMPLETE",
+    "mediaMetadata": {
+      "DURATION": "2025",
+      "FPS": "24"
+    },
+    "mediaProperties": {},
+    "markupResult": null,
+    "output": {
+      "NO TRACKS": [{
+        "source": "+#OCV FACE DETECTION ACTION",
+        "tracks": []
+      }
+      ]
+    },
+    "detectionProcessingErrors": {}
+  }
+  ]
+}

@@ -46,6 +46,16 @@ public class JsonJobRequest {
 	private List<JsonMediaInputObject> media;
 	public List<JsonMediaInputObject> getMedia() { return media; }
 
+	@JsonProperty("algorithmProperties")
+	@JsonPropertyDescription("Properties to apply to this job's algorithms overriding default, job and pipeline properties.")
+	private Map<String, Map> algorithmProperties;
+	public Map<String, Map> getAlgorithmProperties() { return algorithmProperties; }
+
+	@JsonProperty("jobProperties")
+	@JsonPropertyDescription("Properties to apply to this job, overriding default and pipeline properties.")
+	private Map<String, String> jobProperties;
+	public Map<String, String> getJobProperties() { return jobProperties; }
+
 	@JsonProperty("outputObjectEnabled")
 	@JsonPropertyDescription("A boolean flag indicating if output objects should be created for this job.")
 	private boolean outputObjectEnabled;
@@ -83,6 +93,8 @@ public class JsonJobRequest {
 		this.callbackURL = callbackURL;
 		this.callbackMethod = callbackMethod;
 		this.media = new ArrayList<>();
+		this.algorithmProperties = new HashMap<>();
+		this.jobProperties = new HashMap<>();
 	}
 
 	@JsonCreator
@@ -92,10 +104,22 @@ public class JsonJobRequest {
 	                                     @JsonProperty("priority") int priority,
 										 @JsonProperty("callbackURL") String callbackURL,
 										 @JsonProperty("callbackMethod") String callbackMethod,
-	                                     @JsonProperty("media") List<JsonMediaInputObject> media) {
+	                                     @JsonProperty("media") List<JsonMediaInputObject> media,
+										 @JsonProperty("algorithmProperties") Map<String, Map> algorithmProperties,
+										 @JsonProperty("jobProperties") Map<String, String> jobProperties) {
 		JsonJobRequest jsonJobRequest = new JsonJobRequest(externalId, outputObjectEnabled, pipeline, priority,callbackURL,callbackMethod);
 		if(media != null) {
 			jsonJobRequest.media.addAll(media);
+		}
+
+		// update to support the priority scheme (from lowest to highest):
+		// action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
+		if(algorithmProperties != null) {
+			jsonJobRequest.algorithmProperties.putAll(algorithmProperties);
+		}
+
+		if(jobProperties != null) {
+			jsonJobRequest.jobProperties.putAll(jobProperties);
 		}
 		return jsonJobRequest;
 	}

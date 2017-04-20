@@ -27,4 +27,6 @@
 #file: roles/common/vars/main.yml
 mpf_user: mpf
 mpf_password: $6$GMUMJujuG12lE5L7$pV6fSezDimnqt.RACZ4iQI2mwi9rJXP9fYTtxqI.iF9hvzY.xIsGC7OWbqvzJas.czcSq57WohB3nafKi7h9j0
-mpf_home: /opt/mpf
+mpf_home: "{{ lookup('env','MPF_HOME') | default('/opt/mpf', true) }}"
+security_packages: ["libselinux", "libselinux-python", "python-backports", "python-backports-ssl_match_hostname",
+"ebtables"]

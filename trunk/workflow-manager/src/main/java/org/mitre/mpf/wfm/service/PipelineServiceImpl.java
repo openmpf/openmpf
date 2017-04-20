@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.service;
 
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.PipelineManagementBo;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PipelineDefinition;
@@ -89,18 +90,28 @@ public class PipelineServiceImpl implements PipelineService {
 	}
 
 	@Override
-	public Tuple<Boolean,String> addAndSaveAction(String actionName, String actionDescription, String algorithmName, Map<String, String> propertySettings) {
-		return pipelineManagementBo.addAndSaveAction(actionName, actionDescription, algorithmName, propertySettings);
+	public void addAndSaveAction(String actionName, String actionDescription, String algorithmName, Map<String, String> propertySettings) throws WfmProcessingException {
+		pipelineManagementBo.addAndSaveAction(actionName, actionDescription, algorithmName, propertySettings);
+	}
+
+	@Override
+	public Tuple<Boolean,String> addAndSaveActionDeprecated(String actionName, String actionDescription, String algorithmName, Map<String, String> propertySettings) {
+		return pipelineManagementBo.addAndSaveActionDeprecated(actionName, actionDescription, algorithmName, propertySettings);
 	}
 	
 	@Override
-	public boolean addTask(TaskDefinition task) {
+	public boolean addTaskDeprecated(TaskDefinition task) {
 		return pipelineManagementBo.addTask(task);
 	}
 	
 	@Override
-	public Tuple<Boolean, String> addAndSaveTask(TaskDefinition task) {
-		return pipelineManagementBo.addAndSaveTask(task);
+	public Tuple<Boolean, String> addAndSaveTaskDeprecated(TaskDefinition task) {
+		return pipelineManagementBo.addAndSaveTaskDeprecated(task);
+	}
+
+	@Override
+	public void addAndSaveTask(TaskDefinition task) throws WfmProcessingException {
+		pipelineManagementBo.addAndSaveTask(task);
 	}
 
 	@Override
@@ -109,8 +120,13 @@ public class PipelineServiceImpl implements PipelineService {
 	}
 
 	@Override
-	public Tuple<Boolean, String> addAndSavePipeline(PipelineDefinition pipeline) {
-		return pipelineManagementBo.addAndSavePipeline(pipeline);
+	public Tuple<Boolean, String> addAndSavePipelineDeprecated(PipelineDefinition pipeline) {
+		return pipelineManagementBo.addAndSavePipelineDeprecated(pipeline);
+	}
+
+	@Override
+	public void addAndSavePipeline(PipelineDefinition pipeline) throws WfmProcessingException {
+		pipelineManagementBo.addAndSavePipeline(pipeline);
 	}
 
 	@Override
@@ -119,7 +135,7 @@ public class PipelineServiceImpl implements PipelineService {
 	}
 
 	@Override
-	public void removeAndDeleteAction(String actionName) {
+	public void removeAndDeleteAction(String actionName) throws WfmProcessingException {
 		pipelineManagementBo.removeAndDeleteAction(actionName);
 	}
 

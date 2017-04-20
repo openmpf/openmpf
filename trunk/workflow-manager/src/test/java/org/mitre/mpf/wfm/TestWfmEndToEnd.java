@@ -174,17 +174,17 @@ public class TestWfmEndToEnd {
 		}
 	}
 
-	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, boolean buildOutput, int priority) throws Exception {
+	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, Map<String,String> jobProperties, boolean buildOutput, int priority) throws Exception {
 		JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media,
-				buildOutput, priority);
+				Collections.emptyMap(), jobProperties, buildOutput, priority);
 		long jobRequestId = mpfService.submitJob(jsonJobRequest);
 		Assert.assertTrue(waitFor(jobRequestId));
 		return jobRequestId;
 	}
 
-	protected long runPipelineOnMediaAndCancelAfter(String pipelineName, List<JsonMediaInputObject> media, boolean buildOutput, int priority, int timeout) throws Exception {
+	protected long runPipelineOnMediaAndCancelAfter(String pipelineName, List<JsonMediaInputObject> media, Map<String,String> jobProperties, boolean buildOutput, int priority, int timeout) throws Exception {
 		JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media,
-				buildOutput, priority);
+				Collections.emptyMap(), jobProperties, buildOutput, priority);
 		long jobRequestId = mpfService.submitJob(jsonJobRequest);
 		Thread.sleep(timeout);
 		mpfService.cancel(jobRequestId);
@@ -198,7 +198,7 @@ public class TestWfmEndToEnd {
 		log.info("Beginning test #{} testResubmission()", testCtr);
 		List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/meds/aa/S001-01-t10_01.jpg"));
 
-		long jobId = runPipelineOnMedia("OCV FACE DETECTION (WITH MARKUP) PIPELINE", media, true, 5);
+		long jobId = runPipelineOnMedia("OCV FACE DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(), true, 5);
 
 		JobRequest jobRequest = mpfService.getJobRequest(jobId);
 

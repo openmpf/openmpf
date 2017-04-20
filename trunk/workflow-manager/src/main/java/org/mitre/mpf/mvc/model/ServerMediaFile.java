@@ -42,11 +42,11 @@ public class ServerMediaFile {
     private final String _directory;
 
 
-    public ServerMediaFile(File file, String contentType) {
+    public ServerMediaFile(File file, File parent, String contentType) {
         _name = file.getName();
         _fullPath = file.getAbsolutePath();
         _uri = file.toURI();
-        _directory = file.getParentFile().getAbsolutePath();
+        _directory = parent.getAbsolutePath();
         _contentType = contentType;
     }
 

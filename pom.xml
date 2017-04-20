@@ -35,22 +35,41 @@
 
     <!-- poms in the following subdirectories -->
     <modules>
-	<module>trunk</module>
+    	<module>trunk</module>
         <module>trunk/protobuf</module>
         <module>trunk/interop</module>
         <module>trunk/markup</module>
-        <module>trunk/audio-video-utils</module>
         <module>trunk/video-overlay</module>
-        <module>trunk/java-hello-world</module>
         <module>trunk/node-manager</module>
         <module>trunk/mpf-rest-api</module>
         <module>trunk/mpf-rest-client</module>
         <module>trunk/workflow-manager</module>
         <module>trunk/mpf-system-tests</module>
         <module>trunk/mpf-install</module>
-        <module>mpf_components/CPP</module>
-        <module>mpf_components/Java</module>
+        <module>trunk/detection/executor/java</module>
+        <module>trunk/detection/test-components/java</module>
     </modules>
+
+    <profiles>
+        <profile>
+            <id>jenkins</id>
+            <properties>
+                <components.build.dir>${env.WORKSPACE}/mpf-component-build</components.build.dir>
+                <components.build.parallel.builds>2</components.build.parallel.builds>
+                <components.build.make.jobs>8</components.build.make.jobs>
+                <startup.auto.registration.skip>false</startup.auto.registration.skip>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>create-tar</id>
+            <properties>
+                <components.build.parallel.builds>2</components.build.parallel.builds>
+                <components.build.make.jobs>8</components.build.make.jobs>
+                <components.build.components />
+            </properties>
+        </profile>
+    </profiles>
 
     <properties>
         <org.springframework.integration.spring-integration-core.version>2.0.5.RELEASE</org.springframework.integration.spring-integration-core.version>
@@ -95,7 +114,7 @@
 		<jaxws.rt.version>2.2.10</jaxws.rt.version>
 		<jaxws.spring.version>1.9</jaxws.spring.version>
 		<cglib.version>3.1</cglib.version>
-		<tika.core.version>1.10</tika.core.version>
+		<tika.core.version>1.14</tika.core.version>
         <apache.httpclient.version>4.5.2</apache.httpclient.version>
 		<stax2.api.version>4.0.0</stax2.api.version>
 		<servlet.api.version>3.1.0</servlet.api.version>
@@ -139,8 +158,6 @@
 		<!-- added props mpf-markup -->
 		<junit.version>4.12</junit.version>
 
-        <apache.tika.version>1.13</apache.tika.version>
-				
         <!-- added props for REST web service -->
         <g00dnatur3.http-rest-client-version>1.0.21</g00dnatur3.http-rest-client-version>
         <com.googlecode.json-simple.json-simple.version>1.1</com.googlecode.json-simple.json-simple.version>
@@ -156,12 +173,18 @@
         <jenkinsBuildNumber>0</jenkinsBuildNumber>
         <rpmReleasePrefix>0</rpmReleasePrefix>
 
-        <!-- Set the following property on the mvn command line to build specific components. For example: -->
-        <!-- mvn clean install -DcppComponents=mogMotionComponent,caffeComponent,dlibFaceComponent,ocvPersonComponent -->
-        <!-- If not provided, then all of the available components on the source code tree will be built. -->
-        <!-- Order is important. If the algorithm for component A (or an associated action or task) appears in -->
-        <!-- component B's descriptor file, then component A needs to appear before component B in the list. -->
-        <cppComponents></cppComponents>
+        <!-- The C++ SDK install location can be changed by setting the MPF_SDK_INSTALL_PATH environment variable.  -->
+        <components.build.script>${project.basedir}/../../openmpf-build-tools/build-openmpf-components/build_components.py</components.build.script>
+        <components.build.dir>${user.home}/mpf-component-build</components.build.dir>
+        <components.build.sdks.java>${project.basedir}/../../openmpf-java-component-sdk</components.build.sdks.java>
+        <components.build.sdks.cpp>${project.basedir}/../../openmpf-cpp-component-sdk</components.build.sdks.cpp>
+        <components.build.search.paths>${project.basedir}/../..</components.build.search.paths>
+        <components.build.components>openmpf-components:openmpf-contrib-components</components.build.components>
+        <components.build.parallel.builds>1</components.build.parallel.builds>
+        <components.build.make.jobs>4</components.build.make.jobs>
+        <components.build.package.json />
+
+        <startup.auto.registration.skip>true</startup.auto.registration.skip>
     </properties>
 
     <build>

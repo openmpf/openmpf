@@ -26,33 +26,9 @@
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <actions>
-    <!--
-
-    ##########
-    # MARKUP #
-    ##########
-
-    -->
 
     <action name="OCV GENERIC MARKUP ACTION" algorithm-ref="MARKUPCV">
         <description>Marks up all of the objects detected in the given video.</description>
-    </action>
-
-    <!--
-
-    #############
-    # DETECTION #
-    #############
-
-    -->
-
-    <action name="SPHINX SPEECH DETECTION ACTION"      algorithm-ref="SPHINX">
-        <description>Executes the Sphinx speech detection algorithm using the default parameters.</description>
-        <property-refs>
-            <property-ref name="EXTRACT_TRACK_DATA_FROM_MEDIA">
-                <value>false</value>
-            </property-ref>
-        </property-refs>
     </action>
 
 </actions>

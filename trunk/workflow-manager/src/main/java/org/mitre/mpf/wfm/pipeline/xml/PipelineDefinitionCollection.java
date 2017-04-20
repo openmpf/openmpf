@@ -28,12 +28,8 @@ package org.mitre.mpf.wfm.pipeline.xml;
 
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
-import com.thoughtworks.xstream.annotations.XStreamOmitField;
-import org.mitre.mpf.wfm.util.TextUtils;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 @XStreamAlias("pipelines")
@@ -55,5 +51,9 @@ public class PipelineDefinitionCollection {
 			pipelines = new HashSet<PipelineDefinition>();
 		}
 		return this;
+	}
+
+	public void add(PipelineDefinition p){
+		pipelines.add(p);
 	}
 }

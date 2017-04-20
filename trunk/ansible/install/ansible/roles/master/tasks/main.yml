@@ -39,17 +39,7 @@
     enablerepo=mpf-repo
   environment:
     no_proxy: "{{ repo_host }}"
-  with_items:
-    - py-bcrypt
-    - python-pip
-    - python-ptyprocess
-    - python-cffi
-    - libffi-devel
-    - gcc
-    - python-devel
-    - python-pycparser
-    - SDL
-    - python-passlib
+  with_items: "{{ master_deps }}"
 
 - include: validate-share.yml
 - include: directories.yml

@@ -31,6 +31,7 @@ import org.hibernate.validator.constraints.NotEmpty;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.pipeline.xml.ValueType;
 import org.mitre.mpf.wfm.util.AllNotBlank;
+import org.mitre.mpf.wfm.util.ValidAlgoPropValue;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -132,6 +133,7 @@ public class JsonComponentDescriptor {
         public List<AlgoProvidesProp> properties;
     }
 
+    @ValidAlgoPropValue
     public static class AlgoProvidesProp {
         @NotBlank
         public String description;

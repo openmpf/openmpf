@@ -43,6 +43,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * A series of test cases for RedisImpl functionality.  These all assume Redis itself works properly, and verify that
  * assignment and retrieval of values are correctly matched.
@@ -72,5 +75,28 @@ public class TestRedisImpl extends TestCase {
         exchange.getIn().setBody(jsonUtils.serialize(job));
         redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_WARNINGS);
         Assert.assertEquals(JobStatus.IN_PROGRESS_WARNINGS, redis.getJobStatus(jobId));
+    }
+
+    @Test
+    public void testAlgorithmJobProperties() throws Exception {
+        final long jobId = 112236;
+        Exchange exchange = new DefaultExchange(camelContext);
+        TransientJob job = TestUtil.setupJob(jobId, redis, ioUtils);
+
+        HashMap<String, Map> overriddenAlgorithmProperties = new HashMap<>();
+        HashMap<String, String> props = new HashMap<>();
+        props.put("DUMMY_PROPERTY", "VALUE");
+
+        overriddenAlgorithmProperties.put("ALGORITHM", props);
+
+        job.setOverriddenAlgorithmProperties(overriddenAlgorithmProperties);
+        redis.persistJob(job);
+
+        TransientJob retrievedJob = redis.getJob(jobId);
+        assertNotNull(retrievedJob.getOverriddenAlgorithmProperties());
+        assertFalse(retrievedJob.getOverriddenAlgorithmProperties().isEmpty());
+        assertNotNull(retrievedJob.getOverriddenAlgorithmProperties().get("ALGORITHM"));
+        assertFalse(retrievedJob.getOverriddenAlgorithmProperties().get("ALGORITHM").isEmpty());
+        assertEquals("VALUE", retrievedJob.getOverriddenAlgorithmProperties().get("ALGORITHM").get("DUMMY_PROPERTY"));
     }
 }

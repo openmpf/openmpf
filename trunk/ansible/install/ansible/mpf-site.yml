@@ -26,6 +26,6 @@
 ---
 # file: mpf-site.yml
 - include: mpf-pwcfg.yml
-  when: pwcfg == 'y'
+  when: pwcfg|bool
 - include: mpf-master.yml
 - include: mpf-child.yml

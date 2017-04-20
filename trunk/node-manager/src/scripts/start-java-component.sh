@@ -26,6 +26,11 @@
 # limitations under the License.                                            #
 #############################################################################
 
+# The arguments passed into this script should be 
+# 1. The component jar filename
+# 2. The activemq queue name
+# 3. The service name
+
 # Source log4bash
 . ${MPF_HOME}/bin/log4bash.sh
 
@@ -55,7 +60,8 @@ else
 fi  
 
 # MPF_JAVA_FLAGS is usually set in the service definition in a  nodeManagerConfig.xml
+
 set -x
-exec ${JAVA_HOME}/bin/java ${JAVA_FLAGS} -cp ${MPF_HOME}/jars/mpf-java-component-executor-0.9.0.jar:${MPF_HOME}/jars/$1 ${MPF_JAVA_FLAGS} ${JGROUPS_FLAGS} ${QUEUE_FLAGS} org.mitre.mpf.component.executor.detection.MPFDetectionMain $2
+exec ${JAVA_HOME}/bin/java ${JAVA_FLAGS} -cp ${MPF_HOME}/jars/mpf-java-component-executor-0.9.0.jar:${MPF_HOME}/plugins/$3/$1 -Dlogback.configurationFile=${MPF_HOME}/plugins/$3/logback.xml ${MPF_JAVA_FLAGS} ${JGROUPS_FLAGS} ${QUEUE_FLAGS} org.mitre.mpf.component.executor.detection.MPFDetectionMain $2
 set +x
 

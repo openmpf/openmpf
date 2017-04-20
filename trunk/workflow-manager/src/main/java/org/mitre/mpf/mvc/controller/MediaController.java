@@ -30,6 +30,7 @@ import io.swagger.annotations.Api;
 import org.apache.commons.io.FileUtils;
 import org.mitre.mpf.mvc.MpfServiceException;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -64,13 +65,14 @@ import java.util.*;
 public class MediaController {
 	private static final Logger log = LoggerFactory.getLogger(MediaController.class);
 
-	public static final String DEFAULT_ERROR_VIEW = "error";
-
 	@Autowired
 	private PropertiesUtil propertiesUtil;
 
 	@Autowired
 	private IoUtils ioUtils;
+
+	@Autowired
+	private ServerMediaService serverMediaService;
 
 	@RequestMapping(value = "/upload/max-file-upload-cnt", method = RequestMethod.GET)
 	@ResponseBody
@@ -80,7 +82,9 @@ public class MediaController {
 	
 	@RequestMapping(value = "/saveURL", method = RequestMethod.POST)
 	@ResponseBody
-	public Map<String, String> saveMedia(@RequestParam(value="urls", required=true) String[] urls,@RequestParam(value="desiredpath", required=true) String desiredpath,  HttpServletResponse response) throws WfmProcessingException, MpfServiceException {
+	public Map<String, String> saveMedia(HttpServletRequest request, @RequestParam(value="urls", required=true) String[] urls,
+										 @RequestParam(value="desiredpath", required=true) String desiredpath,
+										 HttpServletResponse response) throws WfmProcessingException, MpfServiceException {
 		log.debug("URL Upload to Directory:"+desiredpath+" urls:"+urls.length);
 
 		String err = "Illegal or missing desiredpath";
@@ -90,16 +94,18 @@ public class MediaController {
 		};
 		String webTmpDirectory = propertiesUtil.getRemoteMediaCacheDirectory().getAbsolutePath();
 		//verify the desired path
-			File desiredPath = new File(desiredpath);
-			if (!desiredPath.exists() || !desiredPath.getAbsolutePath().startsWith(webTmpDirectory)) {//make sure it is valid and within the remote-media directory
-				log.error(err);
-				throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, err);
-			}
+		File desiredPath = new File(desiredpath);
+		if (!desiredPath.exists() || !desiredPath.getAbsolutePath().startsWith(webTmpDirectory)) {//make sure it is valid and within the remote-media directory
+			log.error(err);
+			throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, err);
+		}
 
 		//passing in urls as a list of Strings
 		//download the media to the server
 		//build a map of success or failure for each file with a custom response object
-		Map<String, String> urlResultMap = new HashMap<String, String>();
+		Map<String, String> urlResultMap = new HashMap<>();
+		List<File> successFiles = new ArrayList<>();
+
 		for(String enteredURL : urls) {
 			enteredURL = enteredURL.trim();
 			URI uri;
@@ -151,13 +157,14 @@ public class MediaController {
 				localName = localName.substring(1);//remove the leading '/'
 				localName = localName.replace("/", "-");//replace the rest of the path with -
 
-				//get a new unique filename incase the name currently exists
+				//get a new unique filename in case the name currently exists
 				newFile = ioUtils.getNewFileName(desiredpath,localName);
 
 				//save the file
 				FileUtils.copyURLToFile(url, newFile);
 				log.info("Completed write of {} to {}", uri.getPath(), newFile.getAbsolutePath());
 				urlResultMap.put(enteredURL, "successful write to: " + newFile.getAbsolutePath());
+				successFiles.add(newFile);
 			} catch (MalformedURLException badUrl) {
 				log.error("URI {} could not be converted. ", uri, badUrl);
 				urlResultMap.put(enteredURL, "Unable to locate media at the provided address.");
@@ -173,6 +180,9 @@ public class MediaController {
 				urlResultMap.put(enteredURL, "Error while saving media from this url. Please view the server logs for more information.");
 			}
 		}
+
+		serverMediaService.addFilesToCache(desiredpath, successFiles, request.getServletContext());
+
 		return urlResultMap;
 	}
 
@@ -227,6 +237,9 @@ public class MediaController {
 				stream.write(bytes);
 				stream.close();
 				log.info("Completed upload and write of {} to {} ContentType:{}", newFile.getPath(), newFile.getAbsolutePath(),contentType);
+
+				serverMediaService.addFileToCache(desiredPathParam, newFile, request.getServletContext());
+
 				return new ResponseEntity<>(filename, HttpStatus.OK);
 			}
 		} catch (IOException badWrite) {
@@ -257,7 +270,7 @@ public class MediaController {
 			if(!dir.exists()){
 				if(dir.mkdir()){
 					log.debug("Directory added:"+dir.getAbsolutePath());
-					ServerMediaController.getAllDirectories(propertiesUtil.getServerMediaTreeRoot(),request.getSession(),false,uploadPath);//reload the directories
+					serverMediaService.getAllDirectories(propertiesUtil.getServerMediaTreeRoot(), request.getServletContext(),false, uploadPath);//reload the directories
 					return new ResponseEntity<>("{\"dir\":\""+dir.getAbsolutePath()+"\"}", HttpStatus.OK);
 				}else{
 					return new ResponseEntity<>("{\"error\":\"Cannot Create Folder\"}", HttpStatus.INTERNAL_SERVER_ERROR);

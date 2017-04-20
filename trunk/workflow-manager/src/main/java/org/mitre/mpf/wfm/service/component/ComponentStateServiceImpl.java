@@ -35,6 +35,8 @@ import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
@@ -122,12 +124,18 @@ public class ComponentStateServiceImpl implements ComponentStateService {
     }
 
     @Override
-    public void addEntryForUploadedPackage(Path pathToComponentPackage) {
+    public void addEntryForUploadedPackage(Path componentPackagePath) {
+        addNewEntryForUploadedPackage(componentPackagePath, ComponentState.UPLOADED);
+    }
+
+    @Override
+    public void addEntryForDeployedPackage(Path componentPackagePath, Path descriptorPath) {
         RegisterComponentModel newModel = new RegisterComponentModel();
-        newModel.setFullUploadedFilePath(pathToComponentPackage.toAbsolutePath().toString());
-        newModel.setPackageFileName(pathToComponentPackage.getFileName().toString());
+        newModel.setFullUploadedFilePath(componentPackagePath.toAbsolutePath().toString());
+        newModel.setPackageFileName(componentPackagePath.getFileName().toString());
         newModel.setDateUploaded(new Date());
-        newModel.setComponentState(ComponentState.UPLOADED);
+        newModel.setComponentState(ComponentState.DEPLOYED);
+        newModel.setJsonDescriptorPath(descriptorPath.toString());
         addEntry(newModel);
     }
 
@@ -138,6 +146,23 @@ public class ComponentStateServiceImpl implements ComponentStateService {
         model.setPackageFileName(componentPackageFileName);
         addEntry(model);
     }
+
+
+    @Override
+    public void addRegistrationErrorEntry(Path pathToComponentPackage) {
+        addNewEntryForUploadedPackage(pathToComponentPackage, ComponentState.REGISTER_ERROR);
+    }
+
+
+    private void addNewEntryForUploadedPackage(Path pathToComponentPackage, ComponentState componentState) {
+        RegisterComponentModel newModel = new RegisterComponentModel();
+        newModel.setFullUploadedFilePath(pathToComponentPackage.toAbsolutePath().toString());
+        newModel.setPackageFileName(pathToComponentPackage.getFileName().toString());
+        newModel.setDateUploaded(new Date());
+        newModel.setComponentState(componentState);
+        addEntry(newModel);
+    }
+
 
     private void addEntry(RegisterComponentModel newModel) {
         List<RegisterComponentModel> models = loadComponentModelList();
@@ -170,8 +195,8 @@ public class ComponentStateServiceImpl implements ComponentStateService {
             = new TypeReference<List<RegisterComponentModel>>() {};
 
     private List<RegisterComponentModel> loadComponentModelList() {
-        try {
-            return objectMapper.readValue(propertiesUtil.getComponentInfoJsonFile(), _registerModelListTypeRef);
+        try  (InputStream inputStream = propertiesUtil.getComponentInfoFile().getInputStream()) {
+            return objectMapper.readValue(inputStream, _registerModelListTypeRef);
         }
         catch (IOException ex) {
             throw new IllegalStateException("An exception occurred while trying to load component info JSON file.", ex);
@@ -179,8 +204,8 @@ public class ComponentStateServiceImpl implements ComponentStateService {
     }
 
     private void save(List<RegisterComponentModel> modelList) {
-        try {
-            objectMapper.writeValue(propertiesUtil.getComponentInfoJsonFile(), modelList);
+        try (OutputStream outputStream = propertiesUtil.getComponentInfoFile().getOutputStream()) {
+            objectMapper.writeValue(outputStream, modelList);
         }
         catch (IOException ex) {
             throw new IllegalStateException("An exception occurred while trying to save component info JSON file.", ex);

@@ -29,30 +29,22 @@ package org.mitre.mpf.mvc;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.controller.TimeoutController;
 import org.mitre.mpf.mvc.model.AtmosphereChannel;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component( value="timeoutFilter" )
 public class TimeoutFilter implements Filter {
@@ -60,54 +52,30 @@ public class TimeoutFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(TimeoutFilter.class);
 
     // these calls do not require the user to be logged in; also, they do not count towards resetting the timeout countdown
-    private static Pattern excludeUrls =
+    private static final Pattern excludeUrls =
 			Pattern.compile("^.*(css|js|fonts|jpg|login|timeout|bootout|rest).*$",
             Pattern.CASE_INSENSITIVE);
 
     // these ajax calls are on timers and should not count towards resetting the timeout countdown
-    private static Pattern ajaxUrls =
+    private static final Pattern ajaxUrls =
     		Pattern.compile("^.*(adminLogsMap|adminLogsUpdate|info|stats|javasimon-console).*$",
             Pattern.CASE_INSENSITIVE);
 
     // map between session IDs and last action times
-    private Map<String, Long> lastActionMap = new HashMap<String, Long>();
+    private final Map<String, Long> lastActionMap = new HashMap<String, Long>();
 
     // session timeout in minutes
     private int webSessionTimeout;
     
-    //to store if the poperty was loaded from mpf-custom.properties
-    private boolean customTimeoutPropLoaded = false;
+    @Autowired
+    private PropertiesUtil propertiesUtil;
+
 
     @Override
     public void init(FilterConfig config) throws ServletException {
-        // log.debug("init");
-
-        try {
-            // Spring has trouble autowiring the DelegatingFilterProxy dependencies,
-            // so let's just get the properties we need the old fashioned way.
-        	
-        	Properties properties;
-    		//check to see if web.session.timeout exists in mpf-custom.properties
-        	Resource resource = new ClassPathResource("/properties/mpf-custom.properties");
-    		//the mpf-custom.properties resource should exist, but could be removed by a user 
-    		if(resource != null && resource.exists()) {
-    			properties = PropertiesLoaderUtils.loadProperties(resource);
-    			if(properties != null && properties.containsKey("web.session.timeout")) {
-    				webSessionTimeout = Integer.parseInt(properties.getProperty("web.session.timeout"));
-    				customTimeoutPropLoaded = true;
-    			}
-    		} 
-    		
-    		//mpf.properties should always exist and "web.session.timeout" should always exist in mpf.properties
-    		//not verifying the resources exists and performing other checks done with the mpf-custom.properties above
-    		if(!customTimeoutPropLoaded) {
-    			properties = PropertiesLoaderUtils.loadProperties(new ClassPathResource("properties/mpf.properties"));
-                webSessionTimeout = Integer.parseInt(properties.getProperty("web.session.timeout"));
-    		}
-        } catch (IOException e) {
-            throw new ServletException(e);
-        }
+        webSessionTimeout = propertiesUtil.getWebSessionTimeout();
     }
+
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException {

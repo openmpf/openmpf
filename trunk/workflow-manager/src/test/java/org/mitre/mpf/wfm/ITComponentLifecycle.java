@@ -39,10 +39,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.junit.After;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.rest.api.node.DeployedNodeManagerModel;
@@ -81,8 +78,8 @@ public class ITComponentLifecycle {
 //    private static String urlBase = "http://localhost:8181/workflow-manager/rest/";
 
     private ClassLoader classLoader = getClass().getClassLoader();
-    private String javaFilePath = classLoader.getResource("HelloWorldComponent.json").getPath();
-    private String cPlusPlusFilePath = classLoader.getResource("helloComponent.json").getPath();
+    private String javaFilePath = classLoader.getResource("JavaTestDetection.json").getPath();
+    private String cPlusPlusFilePath = classLoader.getResource("CplusplusHelloWorldComponent.json").getPath();
     private String mediaPath = classLoader.getResource("samples/new_face_video.avi").getPath();
     private boolean javaComponentRegistered = false;
     private boolean javaComponentDeployed = false;
@@ -264,9 +261,13 @@ public class ITComponentLifecycle {
             algorithmService.setWorkingDirectory(null);
             algorithmService.setEnvVars(componentEnvVars);
         } else {
-            algorithmService = new Service(serviceName, "${MPF_HOME}/bin/start-service-java.sh");
-            algorithmService.addArg("-jar " + pathName);
+            algorithmService = new Service(serviceName, "${MPF_HOME}/bin/start-java-component.sh");
+            algorithmService.addArg(pathName);
+            String queueName = "MPF." + algorithmActionType.toString() +  "_" + algName + "_REQUEST";
+            algorithmService.addArg(queueName);
+            algorithmService.addArg(serviceName);
             algorithmService.setWorkingDirectory("${MPF_HOME}/jars");
+
         }
         for (String componentLaunchArgument : componentLaunchArguments) {
             algorithmService.addArg(componentLaunchArgument);
@@ -309,7 +310,7 @@ public class ITComponentLifecycle {
         // give the service time to start up
         //TODO could replace with loop that checks whether service status is running
         try {
-            Thread.sleep(10000);
+            Thread.sleep(100000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -338,8 +339,8 @@ public class ITComponentLifecycle {
         }
         log.debug("SERVICE STATE = " + serviceState);
         log.debug("SERVICE COUNT = " + serviceCount);
-        assertEquals(serviceCount, 1);
-        assertEquals(serviceState.compareTo("Running"), 0);
+        assertEquals("Service count does not match.",1,serviceCount);
+        assertEquals("Running",serviceState);
 
     }
 
@@ -411,7 +412,7 @@ public class ITComponentLifecycle {
         
         log.debug("SERVICE STATE NOW = " + serviceState);
         log.debug("SERVICE COUNT NOW = " + serviceCount);
-        assertEquals(serviceState.compareTo("InactiveNoStart"), 0);
+        assertEquals("InactiveNoStart",serviceState);
 
         // get the current node config and remove service from it
         List<NodeManagerModel> nodeManagerModels = getNodeConfig();
@@ -633,10 +634,15 @@ public class ITComponentLifecycle {
     */
 
     // This test covers the same functionality as the above tests.
+    // TODO: move this basic fuctionality (deploy component and run job) into ITComponentRegistration.
+    // Ignoring for now -- do not have resources for java component registration.
+    @Ignore
     @Test(timeout = 20*MINUTES)
     public void testC_runJob() {
         registerAndDeployJavaComponent();
         registerAndDeployCplusPlusComponent();
+        assertTrue(javaComponentDeployed);
+        assertTrue(cPlusPlusComponentDeployed);
         if (javaComponentDeployed) {
             runJob(javaFilePath);
         }

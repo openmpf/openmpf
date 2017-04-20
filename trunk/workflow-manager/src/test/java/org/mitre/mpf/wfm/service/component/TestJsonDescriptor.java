@@ -40,7 +40,7 @@ public class TestJsonDescriptor {
 
     @Test
     public void canParseJsonDescriptorForCppComponent() throws IOException {
-        JsonComponentDescriptor descriptor = loadDescriptor("helloComponent.json");
+        JsonComponentDescriptor descriptor = loadDescriptor("CplusplusHelloWorldComponent.json");
 
         assertEquals("CplusplusHelloWorld", descriptor.componentName);
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
@@ -114,14 +114,14 @@ public class TestJsonDescriptor {
 
     @Test
     public void canParseJsonDescriptorForJavaComponent() throws IOException {
-        JsonComponentDescriptor descriptor = loadDescriptor("HelloWorldComponent.json");
+        JsonComponentDescriptor descriptor = loadDescriptor("JavaTestDetection.json");
 
         assertNull(descriptor.pipelines);
-        assertEquals("JavaHelloWorldComponent", descriptor.componentName);
+        assertEquals("JavaTestDetection", descriptor.componentName);
         assertEquals(ComponentLanguage.JAVA, descriptor.sourceLanguage);
         assertEquals("0.9.0", descriptor.componentVersion);
         assertEquals("0.9.0", descriptor.middlewareVersion);
-        assertEquals("mpf-hello-component-0.9.0.jar", descriptor.pathName);
+        assertEquals("mpf-java-test-detection-component-0.9.0.jar", descriptor.pathName);
         assertTrue(descriptor.launchArgs.isEmpty());
         assertEquals(1, descriptor.environmentVariables.size());
         JsonComponentDescriptor.EnvironmentVariable envVar = descriptor.environmentVariables.get(0);

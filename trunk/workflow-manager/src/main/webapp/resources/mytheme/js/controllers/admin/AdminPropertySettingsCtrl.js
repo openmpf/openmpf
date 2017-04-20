@@ -25,175 +25,135 @@
  ******************************************************************************/
 
 'use strict';
+/* globals angular */
 
-/**
- * AdminPropertySettingsCtrl
- * @constructor
- */
-var AdminPropertySettingsCtrl = function($scope, $rootScope, $log, $confirm, $state,
-										 PropertiesService, NotificationSvc, SystemNotices ) {
-		
-	//from the propertiesModel
-	$scope.propertiesModifiedServerSide = false;
-	$scope.errorMessage = "";
-	$scope.readPropertiesMap = {};
-	$scope.modifiedPropertiesMap = {};
-	
-	$scope.isAdmin = $rootScope.roleInfo.admin;
-	$scope.contentLoaded = false;
-	
-	//to use as the model for table in the view to allow for keeping readPropertiesMap
-	//to make a reset easy
-	$scope.readPropertiesMapCopy = {};
-	//store any modified props in the view
-	$scope.unsavedPropertiesMap = {};
-	//count of above
-	$scope.unsavedPropertiesCount = 0;
+(function () {
 
-	$scope.getReadPropertiesCopy = function() {
-		//shallow copy - http://stackoverflow.com/questions/8206988/clone-copy-a-javascript-map-variable
-		var newMap = {};
-		for (var key in $scope.readPropertiesMap) {
-			newMap[key] = $scope.readPropertiesMap[key];
-		}
-		return newMap;		
-	};
-	
-	$scope.getPropertiesModel = function(update) {
-		PropertiesService.getPropertiesModel().then(function(propertiesModel) {
-			
-			$scope.propertiesModifiedServerSide = propertiesModel.propertiesModified;
-			$scope.errorMessage = propertiesModel.errorMessage;
-			$scope.readPropertiesMap = propertiesModel.readPropertiesMap;
-			$scope.modifiedPropertiesMap = propertiesModel.modifiedPropertiesMap;
-			//$log.info("propertiesModifiedServerSide="+angular.toJson($scope.propertiesModifiedServerSide));
-
-			//create the copy
-			$scope.readPropertiesMapCopy = $scope.getReadPropertiesCopy();
-			$scope.contentLoaded = true;
-		});
-	};
-
-	$scope.valueChanged = function(key) {
-		return ($scope.unsavedPropertiesMap && $scope.unsavedPropertiesMap.hasOwnProperty(key));
-	};
-
-	$scope.serverNeedsRestart = function(key) {
-		return ($scope.modifiedPropertiesMap && $scope.modifiedPropertiesMap.hasOwnProperty(key));
-	};
+var propSettingsModule = angular.module('mpf.wfm.property.settings', [
+	'ngResource',
+	'angular-confirm'
+]);
 
 
-	$scope.resetProperty = function(key) {
-		$scope.readPropertiesMapCopy[key] = $scope.readPropertiesMap[key];
-		$scope.changed(key);
-	};
-	
-	$scope.changed = function(key) {
-		//the readPropertiesMapCopy is used as the model for the table in the view
-		if($scope.readPropertiesMapCopy[key] != $scope.readPropertiesMap[key]) {
-			//TODO: might want to save the original value if the value is empty
-			$scope.unsavedPropertiesMap[key] = $scope.readPropertiesMapCopy[key];  
-		} else {
-			//if the value is empty we still want to show it as modified
-			delete $scope.unsavedPropertiesMap[key];
-		}
-		$scope.getUnsavedPropertiesSize();
-	};
-	
-	$scope.getUnsavedPropertiesSize = function() {
-	    var size = 0, key;
-	    for (key in $scope.unsavedPropertiesMap) {
-	        if ($scope.unsavedPropertiesMap.hasOwnProperty(key)) size++;
-	    }
-	    $scope.unsavedPropertiesCount = size;
-	    return size;
-	};
-	
-	$scope.resetAllProperties = function() {
-		//TODO: could add a dialog to confirm
-		//only modifies the properties that have not been saved (lightgreen)
-		for (var key in $scope.unsavedPropertiesMap) {
-			$scope.resetProperty(key);
-		}
-	};
-	
-	$scope.saveProperties = function() {
-	   //convert the map to an array before sending to the server
-	   var modifiedProperties = [];
-	   for (var key in $scope.unsavedPropertiesMap) {
-		   if ($scope.unsavedPropertiesMap.hasOwnProperty(key)) {
-		       	modifiedProperties.push( {
-		     		name: key, 
-		    		value: $scope.unsavedPropertiesMap[key] 
-			    });
-	   	   }
-	   }
-	   
-	   if(modifiedProperties.length > 0) {
-		   //TODO: could make sure the service checks for admin credentials
-		   PropertiesService.save(modifiedProperties).then(function(response) {
-			   //response is
-			   /*boolean saveSuccess,
-			   String errorMessage*/
-			   
-			   if(response && response.saveSuccess) {
-				   //clear any modified properties
-				   $scope.unsavedPropertiesMap = {};
-				   $scope.getUnsavedPropertiesSize();
-				   //get the updated model
-				   //TODO: might want to think of a method to clear the existing model
-				   $scope.getPropertiesModel();
-				   NotificationSvc.success('Properties have been saved!'); 
-			   } else {
-				   NotificationSvc.error(response.errorMessage);
-			   }			  
-		   });
-	   } else {
-		   NotificationSvc.error('No properties have been modified!');
-	   }
-	};
-	
-	$scope.getPropertiesModel();
+propSettingsModule.factory('PropertiesSvc', [
+'$resource',
+function ($resource) {
 
-
-	///////////////////////////////////////////////
-	// event handlers (listed alphabetically by event name)
-	///////////////////////////////////////////////
-
-
-	//$scope.$on('$destroy', function () {
-	//	$log.info("$scope.$on('$destroy'...)")
-	//});
-
-	$scope.confirmed = false;	// need to remember if we've asked the user the confirm, or else we'll get in loop
-
-	$scope.$on('$stateChangeStart', function( event, toState ) {
-		// toState holds a map that contains the page the user clicked on
-		if ( !$scope.confirmed ) {
-			if ($scope.getUnsavedPropertiesSize() > 0) {
-				//var answer = confirm();
-				//if (!answer) {
-				event.preventDefault();	// stop the router right here, need to do this because of $confirm is asynchronous
-				//}
-				var myToState = toState;
-				$confirm({
-					title: "Unsaved changes",
-					text: "You have modified MPF properties, but have not saved them to the server.  If you continue to another page, you will lose the changes you have made.  Are you sure you want to leave this page?",
-					ok: "Yes", cancel: "No" })
-					.then(
-						function () {
-							//$log.info("OK" + angular.toJson(myToState));
-							$scope.confirmed = true;
-							$state.go(myToState.name);
-							//SystemNotices.warn( "You have modified values on the Property Settings page, but have not saved them to the server.",
-							//	"adminPropertySettingsPage", {	route:"/admin/propertySettings" } );
-						},
-						function () {
-							$log.info("Cancel");
-						}
-					);
-			}
+	var propertiesResource = $resource('properties', {}, {
+		update: {
+			method: 'PUT',
+			isArray: true
 		}
 	});
 
-};
+	propertiesResource.prototype.valueChanged = function () {
+		return this.value !== serverProperties[this.key];
+	};
+
+	propertiesResource.prototype.resetProperty = function () {
+		this.value = serverProperties[this.key];
+	};
+
+	var serverProperties;
+
+	return {
+		query: function () {
+			serverProperties = { };
+			var properties = propertiesResource.query();
+			properties
+				.$promise
+				.then(function () {
+					properties.forEach(function (prop) {
+						serverProperties[prop.key] = prop.value;
+					});
+				});
+			return properties;
+		},
+		update: function (properties) {
+			var modifiedProps = properties.filter(function (p) {
+				return p.valueChanged();
+			});
+
+			var saveResult = propertiesResource.update(modifiedProps);
+			saveResult.$promise.then(function () {
+				modifiedProps.forEach(function (prop) {
+					prop.needsRestart = true;
+					serverProperties[prop.key] = prop.value;
+				});
+			});
+			return saveResult;
+		},
+		resetAll: function (properties) {
+			properties.forEach(function (prop) {
+				prop.resetProperty();
+			});
+		},
+		unsavedPropertiesCount: function (properties) {
+			var count = 0;
+			properties.forEach(function (prop) {
+				if (prop.valueChanged()) {
+					count++;
+				}
+			});
+			return count;
+		},
+		hasUnsavedProperties: function (properties) {
+			return properties.some(function (prop) {
+				return prop.valueChanged();
+			});
+		}
+	};
+}
+]);
+
+
+propSettingsModule.controller('AdminPropertySettingsCtrl', [
+'$scope', '$rootScope', '$confirm', '$state', 'PropertiesSvc', 'NotificationSvc',
+function ($scope, $rootScope, $confirm, $state, PropertiesSvc, NotificationSvc) {
+
+	$scope.isAdmin = $rootScope.roleInfo.admin;
+
+	$scope.properties = PropertiesSvc.query();
+
+	$scope.resetAllProperties = function () {
+		PropertiesSvc.resetAll($scope.properties);
+	};
+
+	$scope.unsavedPropertiesCount = function () {
+		return PropertiesSvc.unsavedPropertiesCount($scope.properties);
+	};
+
+	$scope.hasUnsavedProperties = function () {
+		return PropertiesSvc.hasUnsavedProperties($scope.properties);
+	};
+
+	$scope.saveProperties = function () {
+		PropertiesSvc.update($scope.properties).$promise
+			.then(function () {
+				NotificationSvc.success('Properties have been saved!');
+			});
+	};
+
+
+	var confirmed = false;	// need to remember if we've asked the user the confirm, or else we'll get in loop
+	$scope.$on('$stateChangeStart', function (event, toState) {
+		if (confirmed || !$scope.hasUnsavedProperties()) {
+			return;
+		}
+
+		event.preventDefault();	// stop the router right here, need to do this because of $confirm is asynchronous
+
+		$confirm({
+			title: "Unsaved changes",
+			text: "You have modified MPF properties, but have not saved them to the server.  If you continue to another page, you will lose the changes you have made.  Are you sure you want to leave this page?",
+			ok: "Yes",
+			cancel: "No"
+		}).then(function () {
+			confirmed = true;
+			$state.go(toState.name);
+		});
+	});
+}
+]);
+
+}());

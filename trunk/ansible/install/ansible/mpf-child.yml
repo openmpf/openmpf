@@ -32,8 +32,9 @@
   remote_user: mpf
   become: yes
   vars:
-    - deployment_config: "{{ lookup('file', '/opt/mpf/share/deployment_config.json') | from_json }}"
+    - deployment_config: "{{ lookup('file', '{{ mpf_home }}/share/deployment_config.json') | from_json }}"
     - plugins_dir: "{{ mpf_home }}/plugins"
+    - mpf_component_dir: "{{ mpf_home }}/share/components"
   pre_tasks:
     - name: Validate Number of MPF Master hosts
       fail: msg="The number of Master hosts must be exactly 1!"
@@ -43,96 +44,37 @@
       add_host: name={{ inventory_hostname }} groups=mpf-repo
 
   post_tasks:
-
     - name: Get MPF component descriptors
       set_fact:
-          mpf_component_descriptors: "{{ mpf_component_descriptors|default([]) + [lookup('file', '{{ mpf_home }}/plugins/{{ item }}')|from_json] }}"
-      with_items: "{{ mpf_descriptor_paths | default([]) }}"
+        mpf_descriptor_paths: "{% set temp_list = [] %}{% for component in deployment_config.mpf_components %}{% if component.register %}{{ temp_list.append(component.componentDescriptorPath) }}{% endif %}{% endfor %}{{ temp_list }}"
       delegate_to: "{{ master_host }}"
-      run_once: true
-
-    - name: Get external component descriptors
-      set_fact:
-          ext_component_descriptors: "{{ ext_component_descriptors|default([]) + [lookup('file', '{{ mpf_home }}/plugins/{{ item }}')|from_json] }}"
-      with_items: "{{ descriptor_paths | default([]) }}"
-      delegate_to: "{{ master_host }}"
-      run_once: true
 
     - name: Check for existence of keystore file
       stat:
         path="{{ deployment_config.https.keystore_file }}"
-      when: deployment_config.https.install == "y"
+      when: deployment_config.https.install
       register: keystore_filest
       delegate_to: "{{ master_host }}"
       run_once: true
 
-    - name: Set external component registration information
+    - name: Set MPF component registration information
       set_fact:
-        register_components: "{% if deployment_config.https.install == 'y' and keystore_filest.stat.exists == False %}False{% else %}True{% endif %}"
-        component_uri: "{% if deployment_config.https.install == 'y' %}https://{{ master_host }}:8443/workflow-manager/rest/component/registerViaFile?filePath={% else %}http://{{ master_host }}:8080/workflow-manager/rest/component/registerViaFile?filePath={% endif %}"
+        can_register_components: "{% if deployment_config.https.install and keystore_filest.stat.exists == False %}False{% else %}True{% endif %}"
+        component_uri: "{% if deployment_config.https.install %}https://{{ master_host }}:8443/workflow-manager/rest/component/registerViaFile?filePath={% else %}http://{{ master_host }}:8080/workflow-manager/rest/component/registerViaFile?filePath={% endif %}"
       delegate_to: "{{ master_host }}"
       run_once: true
 
-    - name: Run external component setup
-      include: "{{ plugins_dir }}/{{ item.componentName }}/{{ item.setupFile }}"
-      with_items: "{{ ext_component_descriptors | default([]) }}"
-      when: item.setupFile is defined and ext_component_descriptors is defined and register_components == True
+    - name: Process MPF components
+      include: "{{ mpf_home }}/manage/ansible/roles/child/tasks/compregistration.yml"
+      with_items:
+        - "{{ deployment_config.mpf_components }}"
 
-    - name: Run mpf component setup
-      include: "{{ plugins_dir }}/{{ item.componentName }}/{{ item.setupFile }}"
-      with_items: "{{ mpf_component_descriptors | default([]) }}"
-      when: item.setupFile is defined and mpf_component_descriptors is defined
-
-    - name: Register external components
-      uri:
-        url: "{{ component_uri }}{{ mpf_home }}/plugins/{{ item }}"
-        method: GET
-        follow_redirects: all
-        force_basic_auth: yes
-        user: "admin"
-        password: "{{ admin_wfm_pw }}"
-        status_code: 200
-        return_content: yes
-        timeout: 150
-        validate_certs: no
-      environment:
-        no_proxy: "{{ master_host }}"
-      with_items: "{{ descriptor_paths | default([]) }}"
-      delegate_to: "{{ master_host }}"
-      run_once: true
-      when: register_components == True
-
-    - name: Populate components.json with registered external components
-      command: "python {{ mpf_home }}/manage/ansible/roles/master/files/popvalues.py {{ mpf_home }} {{ item[1].componentName }} {{ mpf_home }}/share/components/{{ item[0].files[0].path | basename }}"
-      args:
-        chdir: "{{ mpf_home }}/share/components"
-      with_nested:
-        - "{{ external_component_filepaths.results }}"
-        - "{{ deployment_config.external_component }}"
-      when: "'{{ item[1].register }}' == 'y' and '{{ item[1].componentName | lower}}' in '{{ item[0].files[0].path | basename | lower }}'"
+    - name: Run post-install upgrade steps
+      debug: msg="Running handler..."
+      notify: Check for generated custom Algorithms, Actions, Tasks, and Pipelines files
+      when: deployment_config.upgrade|bool
+      changed_when: true
       delegate_to: "{{ master_host }}"
       run_once: true
 
-    - name: Download unregistered external component archives to upload path
-      get_url:
-        url="http://{{ repo_host }}/repo/extComponents/{{ item[0].files[0].path | basename }}"
-        dest="{{ mpf_home }}/share/components/{{ item[0].files[0].path | basename }}"
-        use_proxy=no
-        timeout=30
-      with_nested:
-        - "{{ external_component_filepaths.results }}"
-        - "{{ deployment_config.external_component }}"
-      when: "'{{ item[1].register }}' == 'n' and '{{ item[1].componentName | lower }}' in '{{ item[0].files[0].path | basename | lower }}'"
-      delegate_to: "{{ master_host }}"
-      run_once: true
 
-    - name: Set unregistered external components to uploaded state
-      command: "python {{ mpf_home }}/manage/ansible/roles/master/files/extcomponentuploaded.py {{ mpf_home }} {{ item[1].componentName }} {{ mpf_home }}/share/components/{{ item[0].files[0].path | basename }}"
-      args:
-        chdir: "{{ mpf_home }}/share/components"
-      with_nested:
-        - "{{ external_component_filepaths.results }}"
-        - "{{ deployment_config.external_component }}"
-      when: "'{{ item[1].register }}' == 'n' and '{{ item[1].componentName | lower }}' in '{{ item[0].files[0].path | basename | lower }}' and '{{ item[1].componentState }}'!= 'REGISTERED'"
-      delegate_to: "{{ master_host }}"
-      run_once: true

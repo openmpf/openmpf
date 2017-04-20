@@ -39,6 +39,7 @@ import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -68,28 +69,21 @@ public class ArtifactExtractionSplitter extends WfmSplitter {
 	private PropertiesUtil propertiesUtil;
 
 	/**
-	 * Examines the properties provided to an algorithm for the value of the {@link org.mitre.mpf.wfm.enums.MpfConstants#ARTIFACT_EXTRACTION_POLICY_PROPERTY};
+	 * Uses a String value to look up the appropriate {@link org.mitre.mpf.wfm.enums.MpfConstants#ARTIFACT_EXTRACTION_POLICY_PROPERTY};
 	 * if the property is not found, or if the provided property value doesn't make sense, the {@link org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy#DEFAULT}
 	 * value is used.
 	 */
-	private ArtifactExtractionPolicy getDetectionExtractionPolicy(Map<String, String> properties) {
+	private ArtifactExtractionPolicy getDetectionExtractionPolicy(String extractionPolicyProperty) {
 		ArtifactExtractionPolicy artifactExtractionPolicy = propertiesUtil.getArtifactExtractionPolicy();
-
-		for(Map.Entry<String, String> property : properties.entrySet()) {
-			if(StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.ARTIFACT_EXTRACTION_POLICY_PROPERTY)) {
-				artifactExtractionPolicy = ArtifactExtractionPolicy.parse(property.getValue(), artifactExtractionPolicy);
-				break;
-			}
+		if (extractionPolicyProperty != null) {
+			artifactExtractionPolicy = ArtifactExtractionPolicy.parse(extractionPolicyProperty, artifactExtractionPolicy);
 		}
-
 		return artifactExtractionPolicy;
 	}
 
 	private boolean isNonVisualObjectType(String type) {
 		return StringUtils.equalsIgnoreCase(type, "MOTION") || StringUtils.equalsIgnoreCase(type, "SPEECH");
 	}
-
-
 
 	public List<Message> wfmSplit(Exchange exchange) throws Exception {
 		assert exchange.getIn().getBody() != null : "The body must not be null.";
@@ -98,7 +92,6 @@ public class ArtifactExtractionSplitter extends WfmSplitter {
 		List<Message> messages = new ArrayList<>();
 		TrackMergingContext trackMergingContext = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TrackMergingContext.class);
 		TransientJob transientJob = redis.getJob(trackMergingContext.getJobId());
-
 
 		if(!transientJob.isCancelled()) {
 			// Allocate at least enough room for each of the media in the job so we don't have to resize the list.
@@ -109,14 +102,19 @@ public class ArtifactExtractionSplitter extends WfmSplitter {
 
 			for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
 				TransientAction transientAction = transientStage.getActions().get(actionIndex);
-				ArtifactExtractionPolicy artifactExtractionPolicy = getDetectionExtractionPolicy(transientAction.getProperties());
-				log.debug("[{}:{}:{}] Detection policy is {}.", transientJob.getId(), trackMergingContext.getStageIndex(), actionIndex, artifactExtractionPolicy);
-				if (artifactExtractionPolicy != ArtifactExtractionPolicy.NONE) {
 
-					// The user either wants to extract all detections or the user wants to detect only the exemplar
-					// detections for a given track. Therefore, iterate through the media and build a collection of
-					// detection extraction requests.
-					for (TransientMedia transientMedia : transientJob.getMedia()) {
+				// Iterate through the media and process as indicated.
+				for (TransientMedia transientMedia : transientJob.getMedia()) {
+
+					String extractionPolicyProperty = AggregateJobPropertiesUtil.calculateValue(
+							MpfConstants.ARTIFACT_EXTRACTION_POLICY_PROPERTY, transientAction.getProperties(),
+							transientJob.getOverriddenJobProperties(), transientAction, transientJob.getOverriddenAlgorithmProperties(),
+							transientMedia.getMediaSpecificProperties());
+					ArtifactExtractionPolicy artifactExtractionPolicy = getDetectionExtractionPolicy(extractionPolicyProperty);
+
+					if (artifactExtractionPolicy != ArtifactExtractionPolicy.NONE) {
+						// The user either wants to extract all detections or the user wants to detect only the exemplar
+						// detections for a given track. Therefore, build a collection of detection extraction requests.
 
 						// If the Media is in an error condition, it can be safely skipped.
 						if (transientMedia.isFailed()) {

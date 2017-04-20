@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.businessrules.impl;
 
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.PipelineManagementBo;
 import org.mitre.mpf.wfm.pipeline.PipelineManager;
 import org.mitre.mpf.wfm.pipeline.xml.*;
@@ -35,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.InputStream;
 import java.util.*;
 
 @Component
@@ -96,9 +96,31 @@ public class PipelineManagementBoImpl implements PipelineManagementBo {
     }
 
     @Override
-    public Tuple<Boolean,String> addAndSaveAction(String actionName,
-                                                  String actionDescription, String algorithmName,
-                                                  Map<String, String> propertySettings) {
+    public Tuple<Boolean, String> addAndSaveActionDeprecated(String actionName,
+                                                            String actionDescription, String algorithmName,
+                                                            Map<String, String> propertySettings) {
+
+        ActionDefinition actionDef = new ActionDefinition(actionName, algorithmName, actionDescription);
+        Set<PropertyDefinitionRef> properties = new HashSet<PropertyDefinitionRef>();
+        Set<String> keys = propertySettings.keySet();
+        for (String key : keys) {
+            PropertyDefinitionRef property = new PropertyDefinitionRef(key, propertySettings.get(key));
+            properties.add(property);
+        }
+        actionDef.getProperties().addAll(properties);
+
+        try {
+            pipelineManager.addAction(actionDef);
+        } catch (WfmProcessingException wfmEx) {
+            return new Tuple<Boolean, String>(false, "Failed to add new action. Please check logs for more detail.");
+        }
+        return pipelineManager.saveDeprecated("action");
+    }
+
+    @Override
+    public void addAndSaveAction(String actionName,
+                                 String actionDescription, String algorithmName,
+                                 Map<String, String> propertySettings) throws WfmProcessingException {
 
         ActionDefinition actionDef = new ActionDefinition(actionName, algorithmName, actionDescription);
         Set<PropertyDefinitionRef> properties = new HashSet<PropertyDefinitionRef>();
@@ -111,35 +133,53 @@ public class PipelineManagementBoImpl implements PipelineManagementBo {
 
         if(!pipelineManager.addAction(actionDef))
         {
-            return new Tuple<Boolean, String>(false, "failed to add new action, please check logs for more detail");
+            throw new WfmProcessingException("Failed to add new action. Please check logs for more detail.");
         }
-        return pipelineManager.save("action");
+        pipelineManager.save("action");
     }
 
     @Override
-    public void removeAndDeleteAction(String actionName) {
+    public void removeAndDeleteAction(String actionName) throws WfmProcessingException {
         pipelineManager.removeAction(actionName);
         pipelineManager.save("action");
     }
 
     @Override
+    // TODO: Update to throw exception
     public boolean addTask(TaskDefinition task) {
-        return pipelineManager.addTask(task);
+        try {
+            return pipelineManager.addTask(task);
+        } catch (WfmProcessingException wfmEx) {
+            log.warn("Invalid task.", wfmEx);
+            return false;
+        }
     }
 
     @Override
+    // TODO: Update to throw exception
     public boolean addPipeline(PipelineDefinition pipeline) {
-        return pipelineManager.addPipeline(pipeline);
+        try {
+            return pipelineManager.addPipeline(pipeline);
+        } catch (WfmProcessingException wfmEx) {
+            log.warn("Invalid pipeline.", wfmEx);
+            return false;
+        }
     }
 
     @Override
-    public Tuple<Boolean,String> savePipelineChanges(String type) {
-        return pipelineManager.save(type);
+    public Tuple<Boolean, String> savePipelineChanges(String type) {
+        return pipelineManager.saveDeprecated(type);
     }
 
     @Override
+    // TODO: Update to throw exception
     public boolean addAlgorithm(AlgorithmDefinition algorithm) {
-        return pipelineManager.addAlgorithm(algorithm);
+        try {
+            return pipelineManager.addAlgorithm(algorithm);
+        } catch (WfmProcessingException wfmEx) {
+            log.warn("Invalid algorithm.", wfmEx);
+            return false;
+        }
     }
 
     @Override
@@ -147,41 +187,58 @@ public class PipelineManagementBoImpl implements PipelineManagementBo {
         if (!addAlgorithm(algorithm)) {
             return new Tuple<Boolean, String>(false, "failed to add new algorithm, please check logs for more detail");
         }
-        return pipelineManager.save("algorithm");
+        return pipelineManager.saveDeprecated("algorithm");
     }
 
     @Override
     public void removeAndDeleteAlgorithm(String algorithmName) {
         pipelineManager.removeAlgorithm(algorithmName);
-        pipelineManager.save("algorithm");
+        pipelineManager.saveDeprecated("algorithm");
     }
 
     @Override
-    public Tuple<Boolean, String> addAndSaveTask(TaskDefinition task) {
+    public Tuple<Boolean, String> addAndSaveTaskDeprecated(TaskDefinition task) {
         if (!addTask(task)) {
             return new Tuple<Boolean, String>(false, "failed to add new task, please check logs for more detail");
         }
-        return pipelineManager.save("task");
+        return pipelineManager.saveDeprecated("task");
+    }
+
+    @Override
+    public void addAndSaveTask(TaskDefinition task) throws WfmProcessingException {
+        if (!pipelineManager.addTask(task)) {
+            throw new WfmProcessingException("Failed to add new task. Please check logs for more detail.");
+        }
+        pipelineManager.save("task");
     }
 
     @Override
     public void removeAndDeleteTask(String taskName) {
         pipelineManager.removeTask(taskName);
-        pipelineManager.save("task");
+        pipelineManager.saveDeprecated("task");
     }
 
     @Override
-    public Tuple<Boolean, String> addAndSavePipeline(PipelineDefinition pipeline) {
+    public Tuple<Boolean, String> addAndSavePipelineDeprecated(PipelineDefinition pipeline) {
         if (!addPipeline(pipeline)) {
-            return new Tuple<Boolean, String>(false, "failed to add new pipeline, please check logs for more detail");
+            return new Tuple<Boolean, String>(false, "failed to add new pipeline. Please check logs for more detail.");
         }
-        return pipelineManager.save("pipeline");
+        return pipelineManager.saveDeprecated("pipeline");
     }
+
+    @Override
+    public void addAndSavePipeline(PipelineDefinition pipeline) throws WfmProcessingException {
+        if (!pipelineManager.addPipeline(pipeline)) {
+            throw new WfmProcessingException("Failed to add new pipeline. Please check logs for more detail.");
+        }
+        pipelineManager.save("pipeline");
+    }
+
 
     @Override
     public void removeAndDeletePipeline(String pipelineName) {
         pipelineManager.removePipeline(pipelineName);
-        pipelineManager.save("pipeline");
+        pipelineManager.saveDeprecated("pipeline");
     }
 
 }

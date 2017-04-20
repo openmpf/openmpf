@@ -26,9 +26,17 @@
 ---
 #file: roles/master/tasks/redis.yml
 - name: Install Redis
-  yum: name=redis state=latest update_cache=yes disablerepo=* enablerepo=mpf-repo
+  yum:
+    name=redis
+    state=latest
+    update_cache=yes
+    disablerepo=*
+    enablerepo=mpf-repo
   environment:
     no_proxy: "{{ repo_host }}"
 
 - name: Enable Redis on startup
-  service: name=redis enabled=yes state=started
+  service:
+    name=redis
+    enabled=yes
+    state=started

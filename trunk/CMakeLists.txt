@@ -25,11 +25,15 @@
 #############################################################################
 
 project(MPF)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.6)
 cmake_policy(SET CMP0015 NEW)
 
 #add_definitions(-Wno-cpp)
 ADD_DEFINITIONS("-std=c++0x")
+
+set(Protobuf_INCLUDE_DIR /apps/install/include)
+set(Protobuf_LIBRARY /apps/install/lib/libprotobuf.so)
+
 
 set(FIND_LIBRARY_USE_LIB64_PATHS true)
 
@@ -51,39 +55,9 @@ add_subdirectory(protobuf)
 # Tell cmake these will exist at build time
 set_source_files_properties(${MPF_PROTO_HEADERS} PROPERTIES GENERATED TRUE)
 
-find_package(OpenCV REQUIRED)
-
-# Use the following macro if the project being built needs to find and install
-# the OpenCV 2.4 libraries, and the ffmpeg that it depends on.  All of the
-# built-in C++ detection components use OpenCV, at a minimum for opening
-# video files and grabbing frames. The component_install_dir tells cmake where
-# to install things, which may be different for each component.
-
-macro(install_opencv component_install_dir)
-
-   foreach(module
-	 opencv_calib3d opencv_contrib opencv_core opencv_features2d opencv_ffmpeg
-	 opencv_flann opencv_gpu opencv_highgui opencv_imgproc opencv_legacy opencv_ml
-	 opencv_nonfree opencv_objdetect opencv_ocl opencv_photo opencv_stitching
-	 opencv_superres opencv_video opencv_videostab)
-
-            file(GLOB_RECURSE MATCHING_FILES ${OpenCV_DIR}/../../lib/*${module}*)
-            install(FILES ${MATCHING_FILES} DESTINATION ${component_install_dir})
-
-   endforeach(module)
-
-# OpenCV uses ffmpeg for codecs and containers
-
-   foreach(lib
-         avcodec avdevice avfilter avformat postproc avutil mp3lame ogg opencore-amrnb opencore-amrwb swscale
-	 swresample theora theoraenc theoradec vorbis vorbisenc vorbisfile x264)
-
-            find_library(FF${lib} ${lib} PATHS ENV)
-            file(GLOB FFLIBFILES ${FF${lib}}*)
-            install(FILES ${FFLIBFILES} DESTINATION ${component_install_dir})
-
-   endforeach(lib)
-endmacro(install_opencv)
+# Include the following file to find and install the core set of OpenCV libraries
+# and their media processing library dependencies
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/dependent_libraries_lists.cmake)
 
 # The qmake program needs to be on the path in order for find_package to work for
 # the Qt package.
@@ -116,14 +90,14 @@ macro(install_log4cxx component_install_dir)
    install(FILES ${MATCHING_FILES} DESTINATION  ${component_install_dir})
 endmacro(install_log4cxx)
 
+install_qt("lib")
+install_opencv("lib" "${OpenCV_CORE_LIBS}")
+install_log4cxx("lib")
+
 # Build the common detection component executable amq_detection_component
-add_subdirectory(detection)
+add_subdirectory(detection/executor/cpp)
 
 # Build the video overlay utility
 add_subdirectory(video-overlay)
-
-install_qt("lib")
-install_opencv("lib")
-install_log4cxx("lib")
 
 

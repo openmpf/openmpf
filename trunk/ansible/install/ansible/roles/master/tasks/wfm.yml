@@ -26,8 +26,20 @@
 ---
 #file: roles/master/tasks/wfm.yml
 
-- name: Install WFM
-  yum: name=mpf-workflowManager state=latest update_cache=yes disablerepo=* enablerepo=mpf-repo
+- name: Uninstall any existing workflow-manager
+  yum:
+    name=mpf-workflowManager
+    state=absent
+    disablerepo=*
+    enablerepo=mpf-repo
+
+- name: Install workflow-manager
+  yum:
+    name=mpf-workflowManager
+    state=latest
+    update_cache=yes
+    disablerepo=*
+    enablerepo=mpf-repo
   register: wfm
 
 - name: Install MPF Video Overlay
@@ -41,23 +53,16 @@
 
 - name: Run ldconfig
   command: ldconfig
-  #  when: wfm.changed or overlay.changed
 
-#TODO: Next two operations are to help handle versioning of wfm.war when we add it back in
-# - name: See if WFM war exists with versioning
-#   stat: path={{ tomcat_home }}/webapps/{{ wfm_war }}
-#   register: versioned_wfm
-#
-# - name: Rename WFM to workflow-manager.war
-#   command: mv {{ tomcat_home }}/webapps/{{ wfm_war }} {{ tomcat_home }}/webapps/workflow-manager.war
-#   when: versioned_wfm.stat.exists
-
-- name: Check if WFM exists
+- name: Check if workflow-manager exists
   stat: path={{ tomcat_home }}/webapps/workflow-manager.war
   register: wfm_war
 
-- name: Unpack WFM
-  unarchive: src={{ tomcat_home }}/webapps/workflow-manager.war dest={{ tomcat_home }}/webapps/workflow-manager copy=no
+- name: Unpack workflow-manager
+  unarchive:
+    src={{ tomcat_home }}/webapps/workflow-manager.war
+    dest={{ tomcat_home }}/webapps/workflow-manager
+    copy=no
   register: wfm_unpack
   when: wfm_war.stat.exists
 
@@ -69,17 +74,22 @@
   command: mv {{tomcat_home}}/webapps/workflow-manager/WEB-INF/lib/javasimon-core-4.1.1.jar {{tomcat_home}}/lib/
   when: wfm_unpack.changed
 
-- name: Set mpf-custom.properties
+- name: Template out mpf-custom.properties
   template:
     src="mpf-custom.properties.j2"
     dest="{{ mpf_custom_properties }}"
     backup=yes
+    force=no
+  register: mpf_properties_st
 
-- name: Create link to mpf-custom.properties
-  file:
-    src="{{ mpf_custom_properties}}"
-    dest="{{ mpf_home }}/config/mpf-custom.properties"
-    state="link"
+- name: Update JDBC password in existing mpf-custom.properties
+  lineinfile: >
+    dest="{{ mpf_custom_properties }}"
+    regexp="^jdbc\.password=.+"
+    line="jdbc.password={{ mpf_mysql_pw }}"
+  no_log: True
+  when: not mpf_properties_st.changed
+
 
 #TODO: Need to make sure the logs directory exists first when this is added back in
 # - name: Create a link to catalina.out
@@ -89,33 +99,41 @@
 #     state="link"
 #     force="yes"
 
-- name: Validate existence of node manager configuration file
-  stat: path={{ tomcat_home }}/webapps/workflow-manager/WEB-INF/classes/nodeManagerConfig.xml
+- name: Validate existence of node-manager configuration file
+  stat: path={{ mpf_home }}/data/nodeManagerConfig.xml
   register: nm_config
 
-- name: Copy in empty node manager configuration if it doesn't exist
+- name: Copy in empty node-manager configuration if it doesn't exist
   copy: >
     src=nodeManagerConfig.xml
-    dest={{ tomcat_home }}/webapps/workflow-manager/WEB-INF/classes/nodeManagerConfig.xml
+    dest={{ mpf_home }}/data/nodeManagerConfig.xml
     owner=mpf
     group=mpf
     force=no
   when: not nm_config.stat.exists
 
 - name: Check whether child hosts exist in node-manager config.
-  command: awk /target=\\\"{{item}}\\\"/ /opt/apache-tomcat/webapps/workflow-manager/WEB-INF/classes/nodeManagerConfig.xml
+  command: awk /target=\\\"{{item}}\\\"/ {{ mpf_home }}/data/nodeManagerConfig.xml
   register: checkmyconf
   changed_when: False
   with_items: "{{ groups['mpf-child'] }}"
 
-- name: Add new child nodes to Node Manager configuration.
-  lineinfile: dest=/opt/apache-tomcat/webapps/workflow-manager/WEB-INF/classes/nodeManagerConfig.xml insertbefore="</(tns:)?nodeManagers>" line="<nodeManager target=\"{{ item.1 }}\"></nodeManager>"
+- name: Add new child nodes to node-manager configuration.
+  lineinfile:
+    dest={{ mpf_home }}/data/nodeManagerConfig.xml
+    insertbefore="</(tns:)?nodeManagers>"
+    line="<nodeManager target=\"{{ item.1 }}\"></nodeManager>"
   when: not item.0.stdout
   with_together:
     - "{{ checkmyconf.results }}"
     - "{{ groups['mpf-child'] }}"
 
 - name: Ensure MPF directory structure permissions
-  file: path={{ tomcat_home }}/webapps/workflow-manager owner=mpf group=mpf mode=0755 recurse=yes
+  file:
+    path={{ tomcat_home }}/webapps/workflow-manager
+    owner=mpf
+    group=mpf
+    mode=0755
+    recurse=yes
 
 - command: ldconfig

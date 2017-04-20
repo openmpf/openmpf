@@ -29,6 +29,7 @@ package org.mitre.mpf.rest.api;
 import java.util.HashMap;
 import java.util.Map;
 
+
 public class JobCreationMediaData {
 
     public JobCreationMediaData() {}
@@ -56,4 +57,5 @@ public class JobCreationMediaData {
     }
 
     private Map<String,String> properties = new HashMap<>();
+
 }

@@ -27,7 +27,7 @@
 'use strict';
 
 /* Angular Services */
-var AppServices = angular.module('WfmAngularSpringApp.services', ['ngResource']);
+var AppServices = angular.module('mpf.wfm.services', ['ngResource']);
 
 AppServices.value('version', '0.1');
 
@@ -36,12 +36,7 @@ AppServices.service('MetadataService', function ($http, ClientState) {
         // $http returns a promise, which has a then function, which also returns a promise
         var promise = $http.get('info').then(
             function (response) {
-                // The then function here is an opportunity to modify the response
-                //if (!noLogging) {
-                //	console.log('/info: ', response);
-                //	console.log('       data=', response.data);
-                //}
-                ClientState.setConnectionState(ClientState.ConnectionState.CONNECTED_SERVER);
+               ClientState.setConnectionState(ClientState.ConnectionState.CONNECTED_SERVER);
                 // The return value gets picked up by the then in the controller.
                 return response.data;
             },
@@ -95,7 +90,7 @@ AppServices.config(['$resourceProvider', function ($resourceProvider) {
 AppServices.factory('Components',
     ['$resource',
         function ($resource) {
-            var componentsResource = $resource('components/:packageFileName/', {}, {
+            var componentsResource = $resource('components/:packageFileName/', { packageFileName: '@packageFileName'}, {
                 register: {
                     method: 'POST',
                     url: 'components/:packageFileName/register',
@@ -117,11 +112,25 @@ AppServices.factory('Components',
                     params: {
                         packageFileName: '@packageFileName'
                     }
-
+                },
+                reRegister: {
+                    method: 'POST',
+                    url: 'components/:packageFileName/reRegister',
+                    params: {
+	                    packageFileName: '@packageFileName'
+                    }
+                },
+                getReRegisterOrder: {
+                    method: 'GET',
+	                url: 'components/:packageFileName/reRegisterOrder',
+                    isArray: true
                 }
             });
 
             return {
+            	newComponent: function (obj) {
+                    return new componentsResource(obj);
+                },
                 query: function () {
                     return componentsResource.query();
                 },
@@ -136,6 +145,9 @@ AppServices.factory('Components',
                         return component.$removePackage();
                     }
                 },
+                getReRegisterOrder: function (packageFileName) {
+            		return componentsResource.getReRegisterOrder({packageFileName: packageFileName});
+                },
                 statesEnum: {
                     UPLOADING: 'UPLOADING',
                     UPLOADED: 'UPLOADED',
@@ -143,19 +155,15 @@ AppServices.factory('Components',
                     REGISTERING: 'REGISTERING',
                     REGISTERED: 'REGISTERED',
                     REGISTER_ERROR: 'REGISTER_ERROR',
-                    REMOVING: 'REMOVING'
+                    REMOVING: 'REMOVING',
+                    RE_REGISTERING: 'RE_REGISTERING',
+                    DEPLOYED: 'DEPLOYED'
                 }
             };
         }]
 );
 
 AppServices.service('MediaService', function ($http) {
-    //transformResponse: [function (data) { return data; }] is a trick to avoid processing as JSON and
-    //allows for directly processing a string return form the server side
-//	var promise = $http({url: '',
-//		method: 'GET',
-//		transformResponse: [function (data) { return data; }]
-//	})
 
     this.getMaxFileUploadCnt = function () {
         var promise = $http.get('upload/max-file-upload-cnt').then(function (response) {
@@ -166,7 +174,7 @@ AppServices.service('MediaService', function ($http) {
 
     this.getAllDirectories = function (useUploadRoot, useCache) {
         var useUploadRoot = useUploadRoot ? useUploadRoot : false;
-        var useCache = useCache ? useCache : false;
+        var useCache = (useCache !== undefined) ? useCache : true;
         var promise = $http({
             url: 'server/get-all-directories',
             method: 'GET',
@@ -176,11 +184,12 @@ AppServices.service('MediaService', function ($http) {
         });
         return promise;
     };
-    this.getAllFiles = function (fullPath, recurse) {
+    this.getAllFiles = function (fullPath, useCache) {
+        var useCache = (useCache !== undefined) ? useCache : true;
         var promise = $http({
             url: 'server/get-all-files',
             method: 'GET',
-            params: {'fullPath': fullPath, 'recurse': recurse}
+            params: {'fullPath': fullPath, 'useCache': useCache}
         }).then(function (response) {
             return response.data;
         });
@@ -211,7 +220,6 @@ AppServices.service('MediaService', function ($http) {
         return promise;
     };
 
-
     this.createJobFromMedia = function (jobCreationRequest) {
         var promise = $http({
             url: 'jobs',
@@ -224,26 +232,7 @@ AppServices.service('MediaService', function ($http) {
     };
 });
 
-AppServices.service('PropertiesService', function ($http) {
-    this.getPropertiesModel = function () {
-        var promise = $http.get('properties/model').then(function (response) {
-            return response.data;
-        });
-        return promise;
-    };
-
-    //TODO: should add a timeout to this
-    this.save = function (modifiedProperties) {
-        var promise = $http({
-            url: 'properties/save',
-            method: "POST",
-            data: modifiedProperties
-        }).then(function (response) {
-            return response.data;
-        });
-        return promise;
-    };
-
+AppServices.service('JobPriorityService', function ($http) {
     this.getDefaultJobPriority = function () {
         //need transformResponse because an int as JSON is returned
         var promise = $http({
@@ -258,18 +247,6 @@ AppServices.service('PropertiesService', function ($http) {
 });
 
 AppServices.service('JobsService', function ($http) {
-    //TODO: bring back once the JobProgress code is completely updated and working
-    /*	this.getDetailedProgress = function(id) {
-     var promise = $http({
-     url: 'jobs/detailed-progress',
-     method: "GET",
-     params: {'id': id}
-     }).then(function (response) {
-     return response.data;
-     });
-
-     return promise;
-     };*/
 
     this.getJobsList = function (isSession) {
         var promise = $http({
@@ -289,13 +266,18 @@ AppServices.service('JobsService', function ($http) {
         return url;
     }
 
-    this.getJob = function (id) {
+    this.getJob = function (id, isSession) {
+        if (isSession === undefined) {
+            isSession = false;
+        }
+
         // jobs
         var url = this.resolveUrlWithId('jobs', id);
 
         var promise = $http({
             url: url,
-            method: "GET"
+            method: "GET",
+            params: {'useSession': isSession}
         }).then(function (response) {
             //returns one job info object
             return response.data;
@@ -319,10 +301,8 @@ AppServices.service('JobsService', function ($http) {
 
     this.cancelJob = function (jobId) {
         // jobs/{id}/cancel
-        var url = 'jobs/' + jobId + '/cancel';
-
         var promise = $http({
-            url: url,
+            url: 'jobs/' + jobId + '/cancel',
             method: "POST"
         }).then(function (response) {
             return response.data;
@@ -341,10 +321,70 @@ AppServices.service('JobsService', function ($http) {
         });
         return promise;
     };
+
+    this.getOutputObject = function (jobId) {
+        var promise = $http({
+            url: 'jobs/output-object?id='+jobId,
+            method: "GET",
+        }).then(function (response) {
+            return response.data;
+        });
+        return promise;
+    };
 });
 
+AppServices.service('NodeService', function ($http, $timeout, $log,$filter) {
 
-AppServices.service('NodeManagerService', function ($http) {
+    //reload the data via ajax
+    this.refreshData = function () {
+        var promise = $http.get("nodes/info").then(function (response) {
+            return response.data;
+        });
+        return promise;
+    };
+
+    //http saves json to server
+    //@param json - the data to be saved in JSON format
+    this.saveNodeConfigs= function(json){
+        var promise = $http.post("nodes/config", json);
+        return promise;
+    };
+
+    //http gets the configuration of services for all nodes
+    this.getNodeConfigs= function(){
+        var promise = $http.get("nodes/config").then(function (response) {
+            return response.data;
+        });
+        return promise;
+    };
+
+    /** http gets the hostnames of all nodes
+     * @param refetch - boolean to specify if this should drop the cached value and get the catalog afresh from the server
+     * @param debugging - boolean to specify adding some additional elements for debugging purposes
+     * @returns {*}
+     */
+    this.getAllNodesHostnames= function () {
+        var promise = $http.get("nodes/all-mpf-nodes").then(function (response) {
+                // The then function here is an opportunity to modify the response
+                //$log.debug('using $http to fetch : ', "nodes/all-mpf-nodes");
+                //$log.debug('  returned data=', response.data);
+                var nodesList = [];
+                angular.forEach(response.data, function (obj) {
+                    // deduplicate entries: ALL_MPF_NODES needs to specify the master node host twice
+                    //  because the configure script requires you to enter the hostname for the parent node
+                    //  to have a nodemanager.  the following removes the duplicate
+                    if (nodesList.indexOf(obj) == -1) {
+                        nodesList.push(obj);
+                    }
+                });
+
+                // sort entries
+                nodesList = $filter('orderBy')(nodesList);
+                return nodesList;
+            });
+        return promise;
+    };
+
     /** async call returns array of NodeManager hostnames */
     this.getNodeManagerHostnames = function () {
         var promise = $http({
@@ -352,7 +392,7 @@ AppServices.service('NodeManagerService', function ($http) {
             method: "GET"
         }).then(
             function (response) {
-//				console.log("getNodeManagerHosts->"+JSON.stringify(response.data));
+                //console.log("getNodeManagerHosts->"+JSON.stringify(response.data));
                 return Object.keys(response.data);
             },
             function (httpError) {
@@ -387,7 +427,7 @@ AppServices.service('NodeManagerService', function ($http) {
             method: "GET"
         }).then(
             function (response) {
-//				console.log("getNodeManagerInfo->"+JSON.stringify(response.data));
+                //console.log("getNodeManagerInfo->"+JSON.stringify(response.data));
                 return response.data;
             },
             function (httpError) {
@@ -395,12 +435,54 @@ AppServices.service('NodeManagerService', function ($http) {
             });
         return promise;
     };
+
+    // service/start and service/stop return MpfResponse
+    /* {
+     "message": "string",
+     "responseCode": 0 (success) or 1 (error)
+     } */
+    //errorMessage will be populated if saveNodeConfigSuccess is not true
+    this.checkMpfResponse = function (mpfResponse) {
+        if (mpfResponse && mpfResponse.hasOwnProperty("responseCode") &&
+            mpfResponse.hasOwnProperty("message")) {
+            if (mpfResponse.responseCode != 0) {
+                alert("Error completing service status change request with message: " +
+                    mpfResponse.message);
+                return false;
+            }
+            return true;
+        } else {
+            alert("Error getting a response from changing the service status.");
+            return false;
+        }
+    };
+
+    //ajax call to start a service
+    this.startService = function (servicename) {
+        var promise = $http.post("nodes/services/" + servicename + "/start");
+        return promise;
+    };
+
+    //ajax call to shutdown a service
+    this.shutdownService = function ( servicename) {
+        var promise = $http.post("nodes/services/" + servicename + "/stop");
+        return promise;
+    };
+
+    //ajax call to restart a service
+    this.restartService = function (servicename) {
+        var self = this;
+        var promise = $http.post("nodes/services/" + servicename + "/stop").then(function (response) {
+            self.startService(servicename);
+        });
+        return promise;
+    };
+
 });
 
-
 AppServices.factory('ServerSidePush',
-    ['$rootScope', '$log', 'Components', 'NotificationSvc', 'TimeoutSvc', 'SystemNotices', 'SystemStatus', 'ClientState',
-        function ($rootScope, $log, Components, NotificationSvc, TimeoutSvc, SystemNotices, SystemStatus, ClientState) {
+    ['$rootScope', '$log', 'Components', 'JobsService', 'NotificationSvc', 'TimeoutSvc', 'SystemNotices', 'SystemStatus', 'ClientState',
+        function ($rootScope, $log, Components, JobsService, NotificationSvc, TimeoutSvc, SystemNotices, SystemStatus, ClientState) {
             var request;
             var serviceInstance = null;
             var lastSystemHealthTimestamp = null;	// timestamp from SSPC_HEARTBEAT/SSPC_ATMOSPHERE messages
@@ -480,21 +562,33 @@ AppServices.factory('ServerSidePush',
                             $rootScope.$broadcast('SSPC_HEARTBEAT', json);
                             break;
                         case 'SSPC_JOBSTATUS':
-                            //still broadcast for cancellations
+                            // still broadcast for cancellations
                             $rootScope.$broadcast('SSPC_JOBSTATUS', json);
 
                             if (json) {
                                 var msg = json.content;
                                 if (msg && msg.id != -1 && msg.progress != -1) {
-                                    if (msg.jobStatus == 'COMPLETE') {
-                                        console.log('job complete for id: ' + msg.id);
-                                        NotificationSvc.success('Job ' + msg.id + ' is now complete!');
-                                    } else if (msg.jobStatus == 'COMPLETE_WITH_ERRORS') {
-                                        console.log('job complete (with errors) for id: ' + msg.id);
-                                        NotificationSvc.success('Job ' + msg.id + ' is now complete (with errors).');
-                                    } else if (msg.jobStatus == 'COMPLETE_WITH_WARNINGS') {
-                                        console.log('job complete (with warnings) for id: ' + msg.id);
-                                        NotificationSvc.success('Job ' + msg.id + ' is now complete (with warnings).');
+
+                                    // if in terminal state
+                                    if (msg.jobStatus == 'COMPLETE' ||
+                                        msg.jobStatus == 'COMPLETE_WITH_ERRORS' ||
+                                        msg.jobStatus == 'COMPLETE_WITH_WARNINGS') {
+
+                                        // ensure job is part of session
+                                        JobsService.getJob(msg.id, true).then(function (job) {
+                                            if (job) {
+                                                if (msg.jobStatus == 'COMPLETE') {
+                                                    console.log('job complete for id: ' + msg.id);
+                                                    NotificationSvc.success('Job ' + msg.id + ' is now complete!');
+                                                } else if (msg.jobStatus == 'COMPLETE_WITH_ERRORS') {
+                                                    console.log('job complete (with errors) for id: ' + msg.id);
+                                                    NotificationSvc.success('Job ' + msg.id + ' is now complete (with errors).');
+                                                } else if (msg.jobStatus == 'COMPLETE_WITH_WARNINGS') {
+                                                    console.log('job complete (with warnings) for id: ' + msg.id);
+                                                    NotificationSvc.success('Job ' + msg.id + ' is now complete (with warnings).');
+                                                }
+                                            }
+                                        });
                                     }
                                 }
                             }
@@ -640,124 +734,6 @@ AppServices.factory('TimerService', ['$interval', function ($interval) {
 }]);
 
 
-AppServices.service('NodesAndProcessService', function ($http, $timeout, $log) {
-
-    //reload the data via ajax
-    this.refreshData = function () {
-        var promise = $http.get("nodes/info").then(function (response) {
-            return response.data;
-        });
-        return promise;
-    };
-
-    // service/start and service/stop return MpfResponse
-    /* {
-     "message": "string",
-     "responseCode": 0 (success) or 1 (error)
-     } */
-    //errorMessage will be populated if saveNodeConfigSuccess is not true
-    this.checkMpfResponse = function (mpfResponse) {
-        if (mpfResponse && mpfResponse.hasOwnProperty("responseCode") &&
-            mpfResponse.hasOwnProperty("message")) {
-            if (mpfResponse.responseCode != 0) {
-                alert("Error completing service status change request with message: " +
-                    mpfResponse.message);
-                return false;
-            }
-            return true;
-        } else {
-            alert("Error getting a response from changing the service status.");
-            return false;
-        }
-    };
-
-    //ajax call to start a service
-    this.startService = function (name, servicename, funct) {
-        var self = this;
-        var promise = $http.post("nodes/services/" + servicename + "/start").then(function (response) {
-            var success = self.checkMpfResponse(response.data);
-            if (success) {
-                $timeout(function () {
-                    self.statusCheckTimer(name, 0, 'Running', funct);
-                }, 1000);
-            }
-            return success; //response.data;
-        });
-        return promise;
-    };
-
-    //ajax call to shutdown a service
-    this.shutdownService = function (name, servicename, funct) {
-        var self = this;
-        //$log.debug("name=%s servicename=%s", name, servicename );
-        var promise = $http.post("nodes/services/" + servicename + "/stop").then(function (response) {
-            var success = self.checkMpfResponse(response.data);
-            if (success) {
-                $timeout(function () {
-                    self.statusCheckTimer(name, 0, 'InactiveNoStart', funct);
-                }, 1000);
-            }
-            return success; //response.data;
-        });
-        return promise;
-    };
-
-    //ajax call to restart a service
-    this.restartService = function (name, servicename, funct) {
-        var self = this;
-        var promise = $http.post("nodes/services/" + servicename + "/stop").then(function (response) {
-            var success = self.checkMpfResponse(response.data);
-            if (success) {
-                $timeout(function () {
-                    funct('stop');//refresh view
-                    self.statusCheckTimer(name, 0, 'Restart', funct);
-                }, 1000);
-            }
-            return success; //response.data;
-        });
-        return promise;
-    };
-
-    //timer handeler to check on the status and update text of a stop/start event
-    this.statusCheckTimer = function (name, count, desiredstate, funct) {
-        var self = this;
-        Utils.debug("statusCheckTimer started for " + name + "  DesiredState:" + desiredstate);
-        count++;
-        if (count > 4) {
-            Utils.debug("statusCheckTimer timeout for " + name + "  " + desiredstate);
-            return;
-        }
-
-        //get the data and recheck the status
-        this.refreshData().then(function (data) {
-            Utils.debug("statusCheckTimer nodestatus", data);
-            if (data && data.nodeModels) { //should be array
-                var found = false;
-                $(data.nodeModels).each(function (idx, ele) {
-                    var elename = Utils.handleSpecialChars(ele.name);
-                    //special case for restarts ( need to fire up a start service on the one we just shutdown)
-                    if (elename == name && (ele.lastKnownState == 'Inactive' || ele.lastKnownState == 'InactiveNoStart') && desiredstate == 'Restart') {
-                        self.startService(name, ele.name, funct);
-                        found = true;
-                    } else if (elename == name && ele.lastKnownState == desiredstate) {
-                        Utils.debug("statusCheckTimer found ele", ele);
-                        funct();//notify the caller
-                        found = true;
-                    }
-                });
-
-                if (!found) {
-                    Utils.error("statusCheckTimer not found: " + name, data);
-                    setTimeout(function () {
-                        self.statusCheckTimer(name, count, desiredstate);
-                    }, 1000);
-                }
-            } else {
-                Utils.error("statusCheckTimer data error");
-            }
-        });
-    }
-});
 
 AppServices.service('LogService', function ($http) {
     //globals
@@ -818,7 +794,6 @@ function ($q, NotificationSvc) {
     };
 }]);
 
-
 /** service for working with the catalog of services used when configuration a node (e.g., in the admin node config page) */
 AppServices.factory('ServicesCatalogService', function ($http, $log, $filter) {
     // constants
@@ -826,23 +801,6 @@ AppServices.factory('ServicesCatalogService', function ($http, $log, $filter) {
 
     // cached promise objects containing data from the server
     var _catalogPromise;
-    var catalogItemColors = {};
-    var _colors = [	// array of colors whose index matches the items in the catalog
-        "blue",
-        "cyan",
-        "purple",
-        "#8080ff",
-        "orange",
-        "orangeRed",
-        "#e5e600",
-        "#007f80",
-        "#0eaefe",
-        "lime",
-        "brown",
-        "#aa0",
-        "#a0f",
-        "pink",
-        "#ae9"];
 
     return {
         /** http gets the services catalog from the server
@@ -862,103 +820,18 @@ AppServices.factory('ServicesCatalogService', function ($http, $log, $filter) {
                     for (var key in inputCatalog) {
                         catalog.push(inputCatalog[key]);
                     }
-
                     // sort entries
                     catalog = $filter('orderBy')(catalog, 'serviceName');
-
-                    // assign each catalog item a color
-                    angular.forEach(catalog, function (val, index) {
-                        catalogItemColors[val.serviceName] = _colors[index];
-                    });
 
                     return catalog;
                 });
             }
             // Return the promise to the controller
             return _catalogPromise;
-        },
-        /** returns a color based on index of serviceName in catalog */
-        getServiceColor: function (serviceName) {
-            return catalogItemColors[serviceName];
         }
     }
 });
 
-
-AppServices.factory('NodeConfigService', function ($http, $log, $filter) {
-    // constants
-    var _getNodeConfigsUrl = "nodes/config";
-    var _saveNodeConfigsUrl = "nodes/config";
-    var _allNodesHostnamesUrl = "nodes/all-mpf-nodes";
-
-    // cached promise objects containing data from the server
-    var _nodeConfigs;
-    var _allNodesHostnames;
-
-    return {
-        /** http gets the configuration of services for all nodes
-         * @param refetch - boolean to specify if this should drop the cached value and get the catalog afresh from the server
-         * @returns {*}
-         */
-        getNodeConfigs: function (refetch) {
-            if (refetch || !_nodeConfigs) {
-                _nodeConfigs = $http.get(_getNodeConfigsUrl).then(function (response) {
-                    // The then function here is an opportunity to modify the response
-                    //$log.debug('using $http to fetch : ', _getNodeConfigsUrl);
-                    //$log.debug('  returned data=', response.data);
-                    return response.data;
-                });
-            }
-            // Return the promise to the controller
-            return _nodeConfigs;
-        },
-        /** http saves json to server
-         * @param json - the data to be saved in JSON format
-         * @returns {HttpPromise}
-         */
-        saveNodeConfigs: function (json) {
-            var promise = $http.post(_saveNodeConfigsUrl, json);
-            return promise;
-        },
-        /** http gets the hostnames of all nodes
-         * @param refetch - boolean to specify if this should drop the cached value and get the catalog afresh from the server
-         * @param debugging - boolean to specify adding some additional elements for debugging purposes
-         * @returns {*}
-         */
-        getAllNodesHostnames: function (refetch, debugging) {
-            if (!_allNodesHostnames || refetch) {
-                _allNodesHostnames = $http.get(_allNodesHostnamesUrl).then(function (response) {
-                    // The then function here is an opportunity to modify the response
-                    //$log.debug('using $http to fetch : ', _allNodesHostnamesUrl);
-                    //$log.debug('  returned data=', response.data);
-                    var nodesList = [];
-                    if (debugging) {
-                        nodesList.push("Debug_1");
-                        nodesList.push("Debug_2.domain.com");
-                        nodesList.push("Debug.3");
-                        nodesList.push("Debug.4");
-                        nodesList.push("abc");
-                        nodesList.push("a-very-very-very-long-name.domain.com");
-                    }
-                    angular.forEach(response.data, function (obj) {
-                        // deduplicate entries: ALL_MPF_NODES needs to specify the master node host twice
-                        //  because the configure script requires you to enter the hostname for the parent node
-                        //  to have a nodemanager.  the following removes the duplicate
-                        if (nodesList.indexOf(obj) == -1) {
-                            nodesList.push(obj);
-                        }
-                    });
-
-                    // sort entries
-                    nodesList = $filter('orderBy')(nodesList);
-                    return nodesList;
-                });
-            }
-            // Return the promise to the controller
-            return _allNodesHostnames;
-        }
-    };
-});
 
 
 AppServices.factory('NotificationSvc', [
@@ -994,7 +867,7 @@ AppServices.factory('NotificationSvc', [
                         addClass: 'btn btn-warning',
                         text: 'Close All',
                         onClick: function () {
-                            $.noty.closeVisible();
+                            $.noty.closeAll();
                         }
                     }
                 ]
@@ -1014,7 +887,6 @@ AppServices.factory('NotificationSvc', [
         }
     }
 ]);
-
 
 AppServices.factory('TimeoutSvc', ['$confirm', '$rootScope', '$log', '$http',
     function ($confirm, $rootScope, $log, $http) {
@@ -1051,7 +923,6 @@ AppServices.factory('TimeoutSvc', ['$confirm', '$rootScope', '$log', '$http',
         }
     }
 ]);
-
 
 /** Manages System level notices, such as disconnected from server, notices from the server about its state, etc.
  *  Note: do not confuse this SystemNotices service, (which lets you add/remove system messages from the $rootScope.systemNotices queue)
@@ -1219,7 +1090,6 @@ AppServices.factory('SystemNotices', ['$rootScope', '$log', 'ClientState',
         };
     }
 ]);
-
 
 // this has a single method, calculateSystemNotices(), that can be called to generate system notices
 //	all actual work is done by the private methods

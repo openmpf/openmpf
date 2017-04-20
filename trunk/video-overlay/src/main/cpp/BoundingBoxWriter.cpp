@@ -26,7 +26,10 @@
 
 #include <jni.h>
 #include <stdlib.h>
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 #ifndef _Included_org_mitre_mpf_videooverlay_BoundingBoxWriter
 #define _Included_org_mitre_mpf_videooverlay_BoundingBoxWriter
@@ -136,242 +139,247 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
         // Set up the videos...
         const char *inChars = env->GetStringUTFChars(sourceVideoPath, NULL);
         if (inChars != NULL) {
-            VideoCapture src(inChars);
-            if(!src.isOpened())
-            {
-                // Cleanup...
-                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
 
-                return 8700;
-            }
-
-            Size cvSize = Size(static_cast<int>(src.get(CV_CAP_PROP_FRAME_WIDTH)),
-                static_cast<int>(src.get(CV_CAP_PROP_FRAME_HEIGHT)));
-            double fps = src.get(CV_CAP_PROP_FPS);
-            const char *outChars = env->GetStringUTFChars(destinationVideoPath, NULL);
-            if (outChars != NULL) {
-                VideoWriter dest(outChars, CV_FOURCC('M','J','P','G'), fps, cvSize, true);
-                if (!dest.isOpened())
+            try {
+                VideoCapture src(inChars);
+                if(!src.isOpened())
                 {
                     // Cleanup...
                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+
+                    return 8700;
+                }
+
+                Size cvSize = Size(static_cast<int>(src.get(cv::CAP_PROP_FRAME_WIDTH)),
+                                   static_cast<int>(src.get(cv::CAP_PROP_FRAME_HEIGHT)));
+                double fps = src.get(cv::CAP_PROP_FPS);
+                const char *outChars = env->GetStringUTFChars(destinationVideoPath, NULL);
+                if (outChars != NULL) {
+                    VideoWriter dest(outChars, VideoWriter::fourcc('M','J','P','G'), fps, cvSize, true);
+                    if (!dest.isOpened())
+                    {
+                        // Cleanup...
+                        env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                        env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+
+                        return 8710;
+                    }
+
+                    Mat frame;
+                    int a = 0, r = 0, g = 0, b = 0;
+
+                    jint currentFrame = 0;
+                    while(true)
+                    {
+                        jobject boxed = env->CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, currentFrame);
+                        if (env->ExceptionCheck()) {
+                            env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                            env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                            env->ExceptionClear();
+                            return 8701;
+                        }
+
+                        // Get the next frame.
+                        src >> frame;
+
+                        // if that frame is empty, we've reached the end of the video.
+                        if(frame.empty()) { break; }
+
+                        int fWidth = frame.cols;
+                        int fHeight = frame.rows;
+
+                        // Otherwise, get the list of boxes that need to be drawn on this frame. This is the union of the boxes
+                        // found in keys ALL_FRAMES and currentFrame.
+                        jboolean success = env->CallBooleanMethod(boundingBoxMap, clzBoundingBoxMap_fnContainsKey, boxed);
+                        if (env->ExceptionCheck()) {
+                            env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                            env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                            env->ExceptionClear();
+                            return 8701;
+                        }
+                        if(success == JNI_TRUE) {
+                            // Map has elements which are to be drawn on every frame.
+                            jobject allFramesElements = env->CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet, boxed);
+                            if (env->ExceptionCheck()) {
+                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                env->ExceptionClear();
+                                return 8701;
+                            }
+
+                            // Iterate through this list, drawing the box on the frame.
+                            jint size = env->CallIntMethod(allFramesElements, clzList_fnSize);
+                            if (env->ExceptionCheck()) {
+                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                env->ExceptionClear();
+                                return 8701;
+                            }
+                            for(jint i = 0; i < size; i++) {
+                                jobject box = env->CallObjectMethod(allFramesElements, clzList_fnGet, i);
+                                if (env->ExceptionCheck()) {
+                                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                    env->ExceptionClear();
+                                    return 8701;
+                                }
+                                jint x = env->CallIntMethod(box, clzBoundingBox_fnGetX);
+                                if (env->ExceptionCheck()) {
+                                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                    env->ExceptionClear();
+                                    return 8701;
+                                }
+                                jint y = env->CallIntMethod(box, clzBoundingBox_fnGetY);
+                                if (env->ExceptionCheck()) {
+                                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                    env->ExceptionClear();
+                                    return 8701;
+                                }
+                                jint height = env->CallIntMethod(box, clzBoundingBox_fnGetHeight);
+                                if (env->ExceptionCheck()) {
+                                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                    env->ExceptionClear();
+                                    return 8701;
+                                }
+                                if(height == 0) {
+                                    height = cvSize.height;
+                                }
+                                jint width = env->CallIntMethod(box, clzBoundingBox_fnGetWidth);
+                                if (env->ExceptionCheck()) {
+                                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                    env->ExceptionClear();
+                                    return 8701;
+                                }
+                                if(width == 0) {
+                                    width = cvSize.width;
+                                }
+                                jint color = env->CallIntMethod(box, clzBoundingBox_fnGetColor);
+                                if (env->ExceptionCheck()) {
+                                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                    env->ExceptionClear();
+                                    return 8701;
+                                }
+
+                                a = (((int)color) & 0xFF000000) >> 24;
+                                b = (((int)color) & 0x00FF0000) >> 16;
+                                g = (((int)color) & 0x0000FF00) >> 8;
+                                r = (((int)color) & 0x000000FF) >> 0;
+
+                                rectangle(frame, Rect((int)x, (int)y, (int)width, (int)height), Scalar(r, g, b, a),
+                                          (int)(std::max(.0018 * (fHeight < fWidth ? fWidth : fHeight), 1.0)));
+                            }
+                        }
+
+                        boxed = env->CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, allFramesKey);
+                        if (env->ExceptionCheck()) {
+                            env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                            env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                            env->ExceptionClear();
+                            return 8701;
+                        }
+
+                        success = env->CallBooleanMethod(boundingBoxMap, clzBoundingBoxMap_fnContainsKey, boxed);
+                        if (env->ExceptionCheck()) {
+                            env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                            env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                            env->ExceptionClear();
+                            return 8701;
+                        }
+                        if(success == JNI_TRUE) {
+                            // Map has elements which are to be drawn on every frame.
+                            jobject allFramesElements = env->CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet, boxed);
+                            if (env->ExceptionCheck()) {
+                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                env->ExceptionClear();
+                                return 8701;
+                            }
+
+                            // Iterate through this list, drawing the box on the frame.
+                            jint size = env->CallIntMethod(allFramesElements, clzList_fnSize);
+                            if (env->ExceptionCheck()) {
+                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                env->ExceptionClear();
+                                return 8701;
+                            }
+                            for(jint i = 0; i < size; i++) {
+                                jobject box = env->CallObjectMethod(allFramesElements, clzList_fnGet, i);
+                                if (env->ExceptionCheck()) {
+                                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                    env->ExceptionClear();
+                                    return 8701;
+                                }
+                                jint x = env->CallIntMethod(box, clzBoundingBox_fnGetX);
+                                if (env->ExceptionCheck()) {
+                                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                    env->ExceptionClear();
+                                    return 8701;
+                                }
+                                jint y = env->CallIntMethod(box, clzBoundingBox_fnGetY);
+                                if (env->ExceptionCheck()) {
+                                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                    env->ExceptionClear();
+                                    return 8701;
+                                }
+                                jint height = env->CallIntMethod(box, clzBoundingBox_fnGetHeight);
+                                if (env->ExceptionCheck()) {
+                                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                    env->ExceptionClear();
+                                    return 8701;
+                                }
+                                if(height == 0) {
+                                    height = cvSize.height;
+                                }
+                                jint width = env->CallIntMethod(box, clzBoundingBox_fnGetWidth);
+                                if (env->ExceptionCheck()) {
+                                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                    env->ExceptionClear();
+                                    return 8701;
+                                }
+                                if(width == 0) {
+                                    width = cvSize.width;
+                                }
+                                jint color = env->CallIntMethod(box, clzBoundingBox_fnGetColor);
+                                if (env->ExceptionCheck()) {
+                                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                    env->ExceptionClear();
+                                    return 8701;
+                                }
+                                a = (((int)color) & 0xFF000000) >> 24;
+                                b = (((int)color) & 0x00FF0000) >> 16;
+                                g = (((int)color) & 0x0000FF00) >> 8;
+                                r = (((int)color) & 0x000000FF) >> 0;
+
+                                rectangle(frame, Rect((int)x, (int)y, (int)width, (int)height), Scalar(r, g, b, a),
+                                          (int)(std::max(.0018 * (fHeight < fWidth ? fWidth : fHeight), 1.0)));
+                            }
+                        }
+
+                        dest << frame;
+                        currentFrame++;
+                    }
+
+                    src.release();
+                    dest.release();
+
+                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                     env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-
-                    return 8710;
+                } else {
+                    return 8701;
                 }
-
-                Mat frame;
-                int a = 0, r = 0, g = 0, b = 0;
-
-                jint currentFrame = 0;
-                while(true)
-                {
-                    jobject boxed = env->CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, currentFrame);
-                    if (env->ExceptionCheck()) {
-                        env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                        env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                        env->ExceptionClear();
-                        return 8701;
-                    }
-
-                    // Get the next frame.
-                    src >> frame;
-
-                    // if that frame is empty, we've reached the end of the video.
-                    if(frame.empty()) { break; }
-
-                    int fWidth = frame.cols;
-                    int fHeight = frame.rows;
-
-                    // Otherwise, get the list of boxes that need to be drawn on this frame. This is the union of the boxes
-                    // found in keys ALL_FRAMES and currentFrame.
-                    jboolean success = env->CallBooleanMethod(boundingBoxMap, clzBoundingBoxMap_fnContainsKey, boxed);
-                    if (env->ExceptionCheck()) {
-                        env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                        env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                        env->ExceptionClear();
-                        return 8701;
-                    }
-                    if(success == JNI_TRUE) {
-                        // Map has elements which are to be drawn on every frame.
-                        jobject allFramesElements = env->CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet, boxed);
-                        if (env->ExceptionCheck()) {
-                            env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                            env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                            env->ExceptionClear();
-                            return 8701;
-                        }
-
-                        // Iterate through this list, drawing the box on the frame.
-                        jint size = env->CallIntMethod(allFramesElements, clzList_fnSize);
-                        if (env->ExceptionCheck()) {
-                            env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                            env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                            env->ExceptionClear();
-                            return 8701;
-                        }
-                        for(jint i = 0; i < size; i++) {
-                            jobject box = env->CallObjectMethod(allFramesElements, clzList_fnGet, i);
-                            if (env->ExceptionCheck()) {
-                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                                env->ExceptionClear();
-                                return 8701;
-                            }
-                            jint x = env->CallIntMethod(box, clzBoundingBox_fnGetX);
-                            if (env->ExceptionCheck()) {
-                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                                env->ExceptionClear();
-                                return 8701;
-                            }
-                            jint y = env->CallIntMethod(box, clzBoundingBox_fnGetY);
-                            if (env->ExceptionCheck()) {
-                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                                env->ExceptionClear();
-                                return 8701;
-                            }
-                            jint height = env->CallIntMethod(box, clzBoundingBox_fnGetHeight);
-                            if (env->ExceptionCheck()) {
-                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                                env->ExceptionClear();
-                                return 8701;
-                            }
-                            if(height == 0) {
-                                height = cvSize.height;
-                            }
-                            jint width = env->CallIntMethod(box, clzBoundingBox_fnGetWidth);
-                            if (env->ExceptionCheck()) {
-                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                                env->ExceptionClear();
-                                return 8701;
-                            }
-                            if(width == 0) {
-                                width = cvSize.width;
-                            }
-                            jint color = env->CallIntMethod(box, clzBoundingBox_fnGetColor);
-                            if (env->ExceptionCheck()) {
-                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                                env->ExceptionClear();
-                                return 8701;
-                            }
-
-                            a = (((int)color) & 0xFF000000) >> 24;
-                            b = (((int)color) & 0x00FF0000) >> 16;
-                            g = (((int)color) & 0x0000FF00) >> 8;
-                            r = (((int)color) & 0x000000FF) >> 0;
-
-                            rectangle(frame, Rect((int)x, (int)y, (int)width, (int)height), Scalar(r, g, b, a),
-                               (int)(std::max(.0018 * (fHeight < fWidth ? fWidth : fHeight), 1.0)));
-                        }
-                    }
-
-                    boxed = env->CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, allFramesKey);
-                    if (env->ExceptionCheck()) {
-                        env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                        env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                        env->ExceptionClear();
-                        return 8701;
-                    }
-
-                    success = env->CallBooleanMethod(boundingBoxMap, clzBoundingBoxMap_fnContainsKey, boxed);
-                    if (env->ExceptionCheck()) {
-                        env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                        env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                        env->ExceptionClear();
-                        return 8701;
-                    }
-                    if(success == JNI_TRUE) {
-                        // Map has elements which are to be drawn on every frame.
-                        jobject allFramesElements = env->CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet, boxed);
-                        if (env->ExceptionCheck()) {
-                            env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                            env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                            env->ExceptionClear();
-                            return 8701;
-                        }
-
-                        // Iterate through this list, drawing the box on the frame.
-                        jint size = env->CallIntMethod(allFramesElements, clzList_fnSize);
-                        if (env->ExceptionCheck()) {
-                            env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                            env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                            env->ExceptionClear();
-                            return 8701;
-                        }
-                        for(jint i = 0; i < size; i++) {
-                            jobject box = env->CallObjectMethod(allFramesElements, clzList_fnGet, i);
-                            if (env->ExceptionCheck()) {
-                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                                env->ExceptionClear();
-                                return 8701;
-                            }
-                            jint x = env->CallIntMethod(box, clzBoundingBox_fnGetX);
-                            if (env->ExceptionCheck()) {
-                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                                env->ExceptionClear();
-                                return 8701;
-                            }
-                            jint y = env->CallIntMethod(box, clzBoundingBox_fnGetY);
-                            if (env->ExceptionCheck()) {
-                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                                env->ExceptionClear();
-                                return 8701;
-                            }
-                            jint height = env->CallIntMethod(box, clzBoundingBox_fnGetHeight);
-                            if (env->ExceptionCheck()) {
-                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                                env->ExceptionClear();
-                                return 8701;
-                            }
-                            if(height == 0) {
-                                height = cvSize.height;
-                            }
-                            jint width = env->CallIntMethod(box, clzBoundingBox_fnGetWidth);
-                            if (env->ExceptionCheck()) {
-                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                                env->ExceptionClear();
-                                return 8701;
-                            }
-                            if(width == 0) {
-                                width = cvSize.width;
-                            }
-                            jint color = env->CallIntMethod(box, clzBoundingBox_fnGetColor);
-                            if (env->ExceptionCheck()) {
-                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                                env->ExceptionClear();
-                                return 8701;
-                            }
-                            a = (((int)color) & 0xFF000000) >> 24;
-                            b = (((int)color) & 0x00FF0000) >> 16;
-                            g = (((int)color) & 0x0000FF00) >> 8;
-                            r = (((int)color) & 0x000000FF) >> 0;
-
-                            rectangle(frame, Rect((int)x, (int)y, (int)width, (int)height), Scalar(r, g, b, a),
-                                (int)(std::max(.0018 * (fHeight < fWidth ? fWidth : fHeight), 1.0)));
-                        }
-                    }
-
-                    dest << frame;
-                    currentFrame++;
-                }
-
-                src.release();
-                dest.release();
-
-                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-            } else {
+            } catch (cv::Exception) {
                 return 8701;
             }
         } else {
@@ -484,45 +492,31 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
         const char *inChars = env->GetStringUTFChars(sourceVideoPath, NULL);
         if (inChars != NULL) {
 
-            Mat image;
-            image = imread(inChars, CV_LOAD_IMAGE_COLOR);
+            try {
+                // TODO: Revert this after upgrading to OpenCV 3.2
+                Mat image;
+                cv::VideoCapture cap(inChars);
+                cap.read(image);
 
-            if (!image.data) {
-                // Cleanup...
-                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-
-                return 8700;
-            }
-
-            // Get the size of the image.
-            Size cvSize = Size(image.cols, image.rows);
-
-            // The output image path.
-            const char *outChars = env->GetStringUTFChars(destinationVideoPath, NULL);
-            if (outChars != NULL) {
-
-                // Alpha, red, green, and blue value declarations...
-                int a = 0, r = 0, g = 0, b = 0;
-
-                // Box 0 into an Integer.
-                jobject boxed = env->CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, 0);
-                if (env->ExceptionCheck()) {
+                if (!image.data) {
+                    // Cleanup...
                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                    env->ExceptionClear();
-                    return 8701;
+
+                    return 8700;
                 }
 
-                // Get the elements for Frame 0.
-                jboolean success = env->CallBooleanMethod(boundingBoxMap, clzBoundingBoxMap_fnContainsKey, boxed);
-                if (env->ExceptionCheck()) {
-                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                    env->ExceptionClear();
-                    return 8701;
-                }
-                if(success == JNI_TRUE) {
-                    jobject elements = env->CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet, boxed);
+                // Get the size of the image.
+                Size cvSize = Size(image.cols, image.rows);
+
+                // The output image path.
+                const char *outChars = env->GetStringUTFChars(destinationVideoPath, NULL);
+                if (outChars != NULL) {
+
+                    // Alpha, red, green, and blue value declarations...
+                    int a = 0, r = 0, g = 0, b = 0;
+
+                    // Box 0 into an Integer.
+                    jobject boxed = env->CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, 0);
                     if (env->ExceptionCheck()) {
                         env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                         env->ReleaseStringUTFChars(destinationVideoPath, outChars);
@@ -530,57 +524,16 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
                         return 8701;
                     }
 
-                    // Iterate through this list, drawing the box on the frame.
-                    jint size = env->CallIntMethod(elements, clzList_fnSize);
+                    // Get the elements for Frame 0.
+                    jboolean success = env->CallBooleanMethod(boundingBoxMap, clzBoundingBoxMap_fnContainsKey, boxed);
                     if (env->ExceptionCheck()) {
                         env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                         env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                         env->ExceptionClear();
                         return 8701;
                     }
-                    for(jint i = 0; i < size; i++) {
-                        jobject box = env->CallObjectMethod(elements, clzList_fnGet, i);
-                        if (env->ExceptionCheck()) {
-                            env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                            env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                            env->ExceptionClear();
-                            return 8701;
-                        }
-                        jint x = env->CallIntMethod(box, clzBoundingBox_fnGetX);
-                        if (env->ExceptionCheck()) {
-                            env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                            env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                            env->ExceptionClear();
-                            return 8701;
-                        }
-                        jint y = env->CallIntMethod(box, clzBoundingBox_fnGetY);
-                        if (env->ExceptionCheck()) {
-                            env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                            env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                            env->ExceptionClear();
-                            return 8701;
-                        }
-                        jint height = env->CallIntMethod(box, clzBoundingBox_fnGetHeight);
-                        if (env->ExceptionCheck()) {
-                            env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                            env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                            env->ExceptionClear();
-                            return 8701;
-                        }
-                        if(height == 0) {
-                            height = cvSize.height;
-                        }
-                        jint width = env->CallIntMethod(box, clzBoundingBox_fnGetWidth);
-                        if (env->ExceptionCheck()) {
-                            env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                            env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-                            env->ExceptionClear();
-                            return 8701;
-                        }
-                        if(width == 0) {
-                            width = cvSize.width;
-                        }
-                        jint color = env->CallIntMethod(box, clzBoundingBox_fnGetColor);
+                    if(success == JNI_TRUE) {
+                        jobject elements = env->CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet, boxed);
                         if (env->ExceptionCheck()) {
                             env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                             env->ReleaseStringUTFChars(destinationVideoPath, outChars);
@@ -588,33 +541,94 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
                             return 8701;
                         }
 
-                        a = (((int)color) & 0xFF000000) >> 24;
-                        b = (((int)color) & 0x00FF0000) >> 16;
-                        g = (((int)color) & 0x0000FF00) >> 8;
-                        r = (((int)color) & 0x000000FF) >> 0;
+                        // Iterate through this list, drawing the box on the frame.
+                        jint size = env->CallIntMethod(elements, clzList_fnSize);
+                        if (env->ExceptionCheck()) {
+                            env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                            env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                            env->ExceptionClear();
+                            return 8701;
+                        }
+                        for(jint i = 0; i < size; i++) {
+                            jobject box = env->CallObjectMethod(elements, clzList_fnGet, i);
+                            if (env->ExceptionCheck()) {
+                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                env->ExceptionClear();
+                                return 8701;
+                            }
+                            jint x = env->CallIntMethod(box, clzBoundingBox_fnGetX);
+                            if (env->ExceptionCheck()) {
+                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                env->ExceptionClear();
+                                return 8701;
+                            }
+                            jint y = env->CallIntMethod(box, clzBoundingBox_fnGetY);
+                            if (env->ExceptionCheck()) {
+                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                env->ExceptionClear();
+                                return 8701;
+                            }
+                            jint height = env->CallIntMethod(box, clzBoundingBox_fnGetHeight);
+                            if (env->ExceptionCheck()) {
+                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                env->ExceptionClear();
+                                return 8701;
+                            }
+                            if(height == 0) {
+                                height = cvSize.height;
+                            }
+                            jint width = env->CallIntMethod(box, clzBoundingBox_fnGetWidth);
+                            if (env->ExceptionCheck()) {
+                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                env->ExceptionClear();
+                                return 8701;
+                            }
+                            if(width == 0) {
+                                width = cvSize.width;
+                            }
+                            jint color = env->CallIntMethod(box, clzBoundingBox_fnGetColor);
+                            if (env->ExceptionCheck()) {
+                                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                                env->ExceptionClear();
+                                return 8701;
+                            }
 
-                        rectangle(image, Rect((int)x, (int)y, (int)width, (int)height), Scalar(r, g, b, a),
-                            (int)(std::max(.0018 * (image.rows < image.cols ? image.cols : image.rows), 1.0)));
+                            a = (((int)color) & 0xFF000000) >> 24;
+                            b = (((int)color) & 0x00FF0000) >> 16;
+                            g = (((int)color) & 0x0000FF00) >> 8;
+                            r = (((int)color) & 0x000000FF) >> 0;
+
+                            rectangle(image, Rect((int)x, (int)y, (int)width, (int)height), Scalar(r, g, b, a),
+                                      (int)(std::max(.0018 * (image.rows < image.cols ? image.cols : image.rows), 1.0)));
+                        }
                     }
-                }
 
-                vector<int> compression_params;
-                compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
-                compression_params.push_back(9);
+                    std::vector<int> compression_params;
+                    compression_params.push_back(cv::IMWRITE_PNG_COMPRESSION);
+                    compression_params.push_back(9);
 
-                if(!imwrite(outChars, image, compression_params)) {
-                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                    if(!imwrite(outChars, image, compression_params)) {
+                        env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                        env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                        image.release();
+                        return 8710;
+                    }
+
                     image.release();
-                    return 8710;
+
+                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                    env->ReleaseStringUTFChars(destinationVideoPath, outChars);
+                } else {
+                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                    return 8701;
                 }
-
-                image.release();
-
-                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                env->ReleaseStringUTFChars(destinationVideoPath, outChars);
-            } else {
-                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+            } catch (cv::Exception) {
                 return 8701;
             }
         } else {

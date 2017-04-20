@@ -32,6 +32,7 @@ import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.pipeline.PipelineManager;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
@@ -81,7 +82,7 @@ public class TestRemoveComponentService {
     }
 
     @Test
-    public void testRemoveComponentHappyPath() throws IOException {
+    public void testRemoveComponentHappyPath() throws IOException, WfmProcessingException {
         // Arrange
         JsonComponentDescriptor descriptor = TestDescriptorFactory.get();
         String serviceName = descriptor.algorithm.name;
@@ -170,7 +171,7 @@ public class TestRemoveComponentService {
 
 
     @Test
-    public void testRecursiveDelete() {
+    public void testRecursiveDelete() throws WfmProcessingException {
         // Arrange
         String componentAlgoName = "Component Algo Name";
 

@@ -51,49 +51,68 @@
 - name: Ensure MPF data directory exists
   file: path={{ mpf_home }}/data state=directory owner=mpf group=mpf
 
-- name: Check for component package descriptor
-  find:
-    paths="{{ mpf_home }}/manage/repo/files/"
-    pattern="mpf-*-package.json"
-  delegate_to: "{{ master_host }}"
-  register: mpf_package_descriptor
-  failed_when: mpf_package_descriptor.matched <= 0 or mpf_package_descriptor.matched > 1
+- name: Download component package descriptor
+  get_url:
+    url="http://{{ repo_host }}/repo/files/{{ deployment_config.package_descriptor | basename }}"
+    dest="{{ mpf_home }}/{{ deployment_config.package_descriptor | basename }}"
+    use_proxy=no
+    timeout=30
 
 - name: Load component package descriptor
-  include_vars: "{{ mpf_package_descriptor.files[0].path }}"
-  delegate_to: "{{ master_host }}"
+  include_vars: "{{ mpf_home }}/{{ deployment_config.package_descriptor | basename }}"
 
 - name: Install MPF Node Manager
-  yum: name=mpf-nodeManager state=latest update_cache=yes disablerepo=* enablerepo=mpf-repo
+  yum:
+    name=mpf-nodeManager
+    state=latest
+    update_cache=yes
+    disablerepo=*
+    enablerepo=mpf-repo
   register: nm
   environment:
     no_proxy: "{{repo_host}}"
 
 - name: Install MPF Media Markup Component
-  yum: name=mpf-markup state=latest update_cache=yes disablerepo=* enablerepo=mpf-repo
+  yum:
+    name=mpf-markup
+    state=latest
+    update_cache=yes
+    disablerepo=*
+    enablerepo=mpf-repo
   register: markup
 
 - name: Install MPF Protocol Buffers
-  yum: name=mpf-protobuf state=latest update_cache=yes disablerepo=* enablerepo=mpf-repo
+  yum:
+    name=mpf-protobuf
+    state=latest
+    update_cache=yes
+    disablerepo=*
+    enablerepo=mpf-repo
   register: protobuf
 
 - name: Ensure MPF directory structure
   include: directories.yml
   
-- name: Install MPF Components
+- name: Process MPF Components
   include: mpfcomponents.yml
 
 - name: Install MPF Java Component API
-  yum: name=mpf-java-component-api state=latest update_cache=yes disablerepo=* enablerepo=mpf-repo
+  yum:
+    name=mpf-java-component-api
+    state=latest
+    update_cache=yes
+    disablerepo=*
+    enablerepo=mpf-repo
   register: java_component_api
 
 - name: Install MPF Java Component Executor
-  yum: name=mpf-java-component-executor state=latest update_cache=yes disablerepo=* enablerepo=mpf-repo
+  yum:
+    name=mpf-java-component-executor
+    state=latest
+    update_cache=yes
+    disablerepo=*
+    enablerepo=mpf-repo
   register: java_component_executor
-
-- name: Install MPF Speech Detection Component
-  yum: name=mpf-speech-detection state=latest update_cache=yes disablerepo=* enablerepo=mpf-repo
-  register: speech
 
 - name: Install MPF Video Overlay
   yum: >
@@ -108,4 +127,7 @@
   command: ldconfig
 
 - name: Start Node Manager and enable on startup
-  service: name=node-manager enabled=yes state=started
+  service:
+    name=node-manager
+    enabled=yes
+    state=started

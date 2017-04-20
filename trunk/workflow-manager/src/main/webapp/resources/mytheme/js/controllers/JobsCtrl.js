@@ -25,37 +25,23 @@
  ******************************************************************************/
 
 'use strict';
-
 /**
  * JobsCtrl
  * @constructor
  */
-var JobsCtrl = function ($scope, $log, ServerSidePush, JobsService, NotificationSvc) {
-    $scope.isSession = true;
-    //the latest default job priority is retrieved in init
-    $scope.newJobPriority = 4;
+var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, NotificationSvc) {
+
+    $scope.selectedJob = {};
     var jobTable = null;
-    var resizeTimer;
+    var markupTable = null;
+    var markupTableData = [];
 
     var init = function () {
-        $(window).on('resize', function (e) {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(function () {
-                resizeViews();
-            }, 750);
-        });
-        resizeViews();
         buildJobTable();
     };
 
-    var resizeViews = function () {
-        var maxheight = $("body").height() - $("#navbarMain").height() - $("#header").height() ;
-        $("#main").height(maxheight);
-        buildJobTable();
-    }
-
     var buildJobTable = function () {
-        if (jobTable) {
+        if (jobTable != null) {
             jobTable.clear();
             jobTable.draw();
         } else {
@@ -69,225 +55,309 @@ var JobsCtrl = function ($scope, $log, ServerSidePush, JobsService, Notification
                     url: "jobs-paged",
                     type: "POST",
                     data: function (d) {//extra params
-                        d.useSession = $scope.isSession;
-                        d.search = d.search.value;//pull out because spring is a pain to pass params
+                        d.useSession = false;
+                        d.search = d.search.value;
                     }
+                },
+                language: {
+                    emptyTable: 'No jobs available'
                 },
                 drawCallback: function (settings) {
                     bindButtons();
                 },
-                scrollY: '45vh',
-                scrollCollapse: false,
+                scrollCollapse: true,
+                scrollY:'65vh',
                 lengthMenu: [[5, 10, 25, 50, 100], [5, 10, 25, 50, 100]],
                 pageLength: 25,
                 ordering: false,
+                searchHighlight: true,
+                renderer: "bootstrap",
                 columns: [
-                    {data: "jobId", width: "3%"},
-                    {data: "pipelineName", width: "37%"},
                     {
-                        data: "startDate", width: "10%",
-                        render: function (data, type, obj) {
-                            return (moment(data).format("MM/DD/YYYY hh:mm A"));
+                        data: "jobId"
+                    },
+                    {
+                        data: "pipelineName"
+                    },
+                    {
+                        data: "startDate",
+                        render: function (data, type, job) {
+                            return (moment(job.startDate).format("MM/DD/YYYY hh:mm A"));
                         }
                     },
                     {
-                        data: "endDate", width: "10%",
+                        data: "endDate",
                         render: function (data, type, job) {
-                            //keep the endDate from displaying when not COMPLETE after a job re-submission
-                            if (data != null && job.jobStatus.startsWith('COMPLETE'))
-                                return (moment(data).format("MM/DD/YYYY hh:mm A"));
+                            if (job.endDate && job.jobStatus.startsWith('COMPLETE'))
+                                return (moment(job.endDate).format("MM/DD/YYYY hh:mm A"));
                             return "";
                         }
                     },
                     {
-                        data: "jobStatus", width: "10%",
-                        render: function (data, type, job) {
-                            return '<div class="jobStatusCell" id="jobStatusCell' + job.jobId + '">' + job.jobStatus + '</div>';
+                        data: "jobStatus",
+                        render: function (data, atype, job) {
+                            var type = "label-default";
+                            if (job.jobStatus.toLowerCase().indexOf("error") > 0) {
+                                type = "label-danger";
+                            } else if (job.jobStatus.toLowerCase().indexOf("warnings") > 0) {
+                                type = "label-warning";
+                            } else if (job.jobStatus.toLowerCase().indexOf("unknown") > 0) {
+                                type = "label-primary";
+                            }
+                            var hideProgress = 'style="display:none;"';
+                            if (job.jobProgress > 0 && job.jobProgress < 100) hideProgress = "";
+                            var progress = job.jobProgress.toFixed();
+                            var progressDiv = '<div class="progress" ' + hideProgress + '><div class="progress-bar progress-bar-success" role="progressbar"  id="jobProgress' + job.jobId + '" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="min-width: 4em;width:' + progress + '%">' + progress + '%</div></div>';
+                            return '<span class="job-status label ' + type + '" id="jobStatusCell' + job.jobId + '">' + job.jobStatus + '</span>' + progressDiv;
                         }
                     },
                     {
-                        data: "jobPriority", width: "5%",
+                        data: "jobPriority",
                         render: function (data, type, job) {
                             return '<div class="jobPriorityCell" id="jobPriorityCell' + job.jobId + '">' + job.jobPriority + '</div>';
                         }
                     },
-                    {
-                        data: "jobProgress", width: "5%",
+                    {//actions
+                        data: "null", "defaultContent": '', orderable: false,
                         render: function (data, type, job) {
-                            var progressVal = job.jobProgress.toFixed(2);
-                            //keep the job progress val at 99% until it is complete or cancelled
-                            if (progressVal > 99 && !(job.jobStatus.startsWith('COMPLETE') || job.jobStatus.startsWith('CANCELLED'))) {
-                                progressVal = 99;
-                            } else if (job.jobStatus.startsWith('COMPLETE') || job.jobStatus.startsWith('CANCELLED')) {
-                                progressVal = 100;
-                            }
-                            return '<div class="jobProgressPctCell" id="jobProgress' + job.jobId + '">' + progressVal + '%</div>';
-                        }
-                    },
-                    {
-                        "data": "null", "defaultContent": '', width: "10%", orderable: false,
-                        render: function (data, type, job) {
-                            return '<button class="btn btn-xs btn-info outputObjectBtn" id="outputObjectBtn' + job.jobId + '" >Output Object</button>';
-                        }
-                    },
-                    {
-                        "data": "null", "defaultContent": '', orderable: false, width: "10%",
-                        render: function (data, type, job) {
-                            var isdisabled = "";
-                            if (job.terminal || job.jobStatus == 'CANCELLING') isdisabled = "disabled=true";
+                            var cancel_disabled = "";
+                            if (job.terminal || job.jobStatus == 'CANCELLING' || job.jobStatus == 'COMPLETE') cancel_disabled = "disabled=disabled";
                             var isterminal = "";
-                            if (!job.terminal) isterminal = "disabled=true";
-                            return '<div class="btn-group"><button class="btnDisplayCancelJobModal btn btn-xs btn-danger cancelBtn" id="cancelBtn' + job.jobId + '" ' + isdisabled + '>Cancel</button><button class="btnDisplayResubmitJobModal btn btn-xs btn-success resubmitBtn" id="resubmitBtn' + job.jobId + '"' + isterminal + ' >Resubmit</button></div>'
+                            if (!job.terminal) isterminal = "disabled=disabled";
+                            var hasMarkup = "";
+                            var hasOutput = "disabled=disabled";
+                            var output_link = "";
+                            if (job.outputFileExists) {
+                                hasOutput = "";
+                            }
+                            return '<div class="btn-group btn-group-sm" role="group" >' +
+                                '<button type="button" class="btn btn-default cancelBtn" id="cancelBtn' + job.jobId + '"  ' + cancel_disabled + ' ><i class="fa fa-stop"  title="Stop"></i></button>' +
+                                '<button type="button" class="btn btn-default resubmitBtn"  id="resubmitBtn' + job.jobId + '"' + isterminal + '><i class="fa fa-refresh"  title="Resubmit"></i></button>' +
+                                '<button type="button" class="btn btn-default markupBtn" ' + hasMarkup + ' id="markupBtn' + job.jobId + '" title="' + job.markupCount + ' media" ><i class="fa fa-picture-o" title="Media"></i></button>' +
+                                '<a type="button" href="jobs/output-object?id=' + job.jobId + '" class="btn btn-default jsonBtn" target="_blank"  ' + hasOutput + ' title="JSON ouput">{ }</a></div>';
                         }
                     }
                 ],
-                dom: '<"top"Blf>rt<"bottom"<"dt_foot1"i><"dt_foot2"p>><"clear">',//'lftip',//'lfrtip',//https://datatables.net/reference/option/dom
-
-                buttons: [
-                    {
-                        text: 'Session',
-                        className:'btn btn-session btn-success active',
-                        action: function (e, dt, node, config) {
-                            $scope.isSession = true;
-                            $scope.fetchJobsList(true);
-                        }
-                    }, {
-                        text: 'All',
-                        className:'btn btn-all btn-default',
-                        action: function (e, dt, node, config) {
-                            $scope.isSession = false;
-                            $scope.fetchJobsList(true);
-
-                        }
-                    }],
                 initComplete: function (settings, json) {
-                    $log.debug('DataTables has finished its initialization.');
+                    $log.debug('jobsTables has finished its initialization.');
                 }
             });
         }
-        //button highlights
-        if(!$scope.isSession) {
-            $(".btn-session").removeClass("active").removeClass("btn-success").addClass("btn-default");
-            $(".btn-all").addClass("active").addClass("btn-success").removeClass("btn-default");
-        }else {
-            $(".btn-all").removeClass("active").removeClass("btn-success").addClass("btn-default");
-            $(".btn-session").addClass("active").addClass("btn-success").removeClass("btn-default");
-        }
+    };
+
+    var getJobFromTableEle = function (ele) {
+        var idx = jobTable.row($(ele).closest('tr')[0]).index();
+        return jobTable.rows(idx).data()[0];
     };
 
     var bindButtons = function () {
-        //  $(".dataTables_scrollBody thead tr").addClass('hidden');//bug
-        $(".outputObjectBtn").click(function () {
-            var jobid = $(this).attr("id").replace("outputObjectBtn", "");
-            $scope.fetchJob(jobid, false, true, '#outputObjectsModal');
+        $(".markupBtn").click(function () {
+            showMarkup(getJobFromTableEle(this));
         });
         $(".cancelBtn").click(function () {
-            //var jobid = $(this).attr("id").replace("cancelBtn","");
-            var idx = jobTable.row($(this).closest('tr')[0]).index();
-            var job = jobTable.rows(idx).data()[0];
-            $scope.currentJob = job;
-            $("#cancelJobModal").modal('toggle');
+            cancelJob(getJobFromTableEle(this));
         });
         $(".resubmitBtn").click(function () {
-            //var jobid = $(this).attr("id").replace("resubmitBtn","");
-            var idx = jobTable.row($(this).closest('tr')[0]).index();
-            var job = jobTable.rows(idx).data()[0];
-            $scope.currentJob = job;
-            $("#resubmitJobModal").modal('toggle');
+            resubmitJob(getJobFromTableEle(this));
         });
-    }
-    //if modalTargetSelector is not null it should be the selection string for a modal that should be displayed
-    //the reason for passing it is to solve the async issue and display the modal after the update has been done
-    $scope.fetchJob = function (id, update, setAsCurrentJob, modalTargetSelector) {
-        JobsService.getJob(id).then(function (job) {
-            //update the map
-            if (setAsCurrentJob) {
-                $scope.currentJob = job;
-            }
-            //force refresh to reload the main table
-            if (update) {
-                buildJobTable();
-            }
-
-            if (modalTargetSelector) {
-                $(modalTargetSelector).modal('toggle');
-            }
-            if (!$scope.$$phase) $scope.$apply();
+        $("#infoModalBtn").click(function () {
+            $("#infoModal").modal('show');
         });
     };
 
-    $scope.fetchJobsList = function (update) {
-        buildJobTable();
-    }
-
-    //todo need to just update the current
+    //listen for updates from the server
     $scope.$on('SSPC_JOBSTATUS', function (event, msg) {
-//		console.log( "SSPC_JOBSTATUS: " + JSON.stringify(msg) );
-        var json = msg.content;
+        $log.debug("SSPC_JOBSTATUS: " + JSON.stringify(msg));
+        var job = msg.content;
 
         //send -1 and -1 on connect
-        if (json.id != -1 && json.progress != -1) {
-            var jobId = json.id;
-            var newJobProgress = json.progress.toFixed(2);
-            var newJobStatus = json.jobStatus;
+        if (job.id != -1 && job.progress != -1) {
+            if (!$("#jobStatusCell" + job.id).length) {//missing the new job
+                jobTable.ajax.reload(null, false);
+            }
+            var progress = job.progress.toFixed();
+            $("#jobStatusCell" + job.id).html(job.jobStatus);
 
-            //sticking with jquery here until mastering ng-animate
-            //stopping the effect first, because these can really stack up with push progress updates
-            $("#jobProgress" + jobId).stop(true, true);//stop highhlighting
-            $("#jobProgress" + jobId).effect("highlight",
-                {color: '#33cc00'}, 700, function () {
-                    $("#jobProgress" + jobId).stop(true, true);
-                });
-            $("#jobProgress" + jobId).html(newJobProgress + "%");
-
-            if (newJobStatus == 'CANCELLED') {
-                console.log('job cancellation complete for id: ' + jobId);
-                NotificationSvc.info('Job cancellation of job ' + jobId + ' is now complete.');
+            //keep the job progress val at 99% until it is complete or cancelled
+            if (progress > 99 && !(job.jobStatus.startsWith('COMPLETE') || job.jobStatus.startsWith('CANCELLED'))) {
+                progress = 99;
+            } else if (job.jobStatus.startsWith('COMPLETE') || job.jobStatus.startsWith('CANCELLED')) {
+                jobTable.ajax.reload(null, false);
+            }
+            if (progress < 100) {
+                $("#jobProgress" + job.id).parent().show();
+                $("#jobProgress" + job.id).html(progress + "%");
+                $("#jobProgress" + job.id).css("width", progress + "%");
+                //disable buttons if necessary
+                if (job.jobStatus.startsWith('CANCELLING')) {
+                    $("#cancelBtn" + job.id).attr("disabled", "disabled");
+                } else {
+                    $("#cancelBtn" + job.id).removeAttr("disabled");
+                }
+                $("#resubmitBtn" + job.id).attr("disabled", "disabled");
+                $("#markupBtn" + job.id).attr("disabled", "disabled");
+                $("#jsonBtn" + job.id).attr("disabled", "disabled");
             }
 
-            buildJobTable();
+            if (job.jobStatus == 'CANCELLED') {
+                console.log('job cancellation complete for id: ' + job.id);
+                NotificationSvc.info('Job cancellation of job ' + job.id + ' is now complete.');
+            }
         }
     });
 
-    $scope.resubmitJob = function () {
-        var currentId = $scope.currentJob.jobId;
-        $("#jobStatusCell"+currentId).html("RESUBMITTING");
-        JobsService.resubmitJob($scope.currentJob.jobId, $scope.newJobPriority.selected.priority).then(function (jobCreationResponse) {
-            if (jobCreationResponse && jobCreationResponse.hasOwnProperty("mpfResponse") &&
-                jobCreationResponse.hasOwnProperty("jobId")) {
-                if (jobCreationResponse.mpfResponse.responseCode != 0) {
+    var resubmitJob = function (job) {
+        $log.debug("resubmitJob:", job);
+        $("#jobStatusCell" + job.jobId).html("RESUBMITTING");
+        $("#resubmitBtn" + job.jobId).attr("disabled", "disabled");
+        JobsService.resubmitJob(job.jobId, job.jobPriority).then(function (resp) {
+            if (resp && resp.hasOwnProperty("mpfResponse") &&
+                resp.hasOwnProperty("jobId")) {
+                if (resp.mpfResponse.responseCode != 0) {
                     NotificationSvc.error(
-                        'Error with resubmit request with message: ' + jobCreationResponse.mpfResponse.message);
+                        'Error with resubmit request with message: ' + resp.mpfResponse.message);
                 } else {
-                    NotificationSvc.success('Job ' + $scope.currentJob.jobId + ' has been resubmitted!');
-                    buildJobTable();
+                    NotificationSvc.success('Job ' + job.jobId + ' has been resubmitted!');
                 }
             } else {
                 NotificationSvc.error('Failed to send a resubmit request');
             }
         });
-        //temporary jquery solution to dismiss modal
-        $('#resubmitJobModal').modal('toggle');
     };
 
-    $scope.cancelJob = function () {
-        var currentId = $scope.currentJob.jobId;
-        $("#jobStatusCell"+currentId).html("CANCELLING");
-        JobsService.cancelJob(currentId).then(function (mpfResponse) {
-            if (mpfResponse && mpfResponse.hasOwnProperty("responseCode") &&
-                mpfResponse.hasOwnProperty("message")) {
-                if (mpfResponse.responseCode != 0) {
+    var cancelJob = function (job) {
+        $("#jobStatusCell" + job.jobId).html("CANCELLING");
+        JobsService.cancelJob(job.jobId).then(function (resp) {
+            if (resp && resp.hasOwnProperty("responseCode") &&
+                resp.hasOwnProperty("message")) {
+                if (resp.responseCode != 0) {
                     NotificationSvc.error('Error with cancellation request with message: ' + mpfResponse.message);
                 } else {
-                    NotificationSvc.info('A job cancellation request for job ' + currentId + ' has been sent.');
-                    buildJobTable();
+                    NotificationSvc.success('A job cancellation request for job ' + job.jobId + ' has been sent.');
                 }
             } else {
                 NotificationSvc.error('Failed to send a cancellation request');
             }
         });
-        //temporary jquery solution to dismiss modal
-        $('#cancelJobModal').modal('toggle');
+    };
+
+    var showMarkup = function (job) {
+        $scope.selectedJob = job;
+        renderMarkupTable();
+        $("#mediaModal").modal('show');
+    };
+
+    //markupTable - paged for efficiency
+    var renderMarkupTable = function () {
+        markupTable = $('#markupsTable').DataTable({
+            destroy: true,
+            data: markupTableData,
+            stateSave: false,
+            serverSide: true,
+            processing: true,
+            scrollCollapse: false,
+            lengthMenu: [[5, 10, 25, 50, 100, 250], [5, 10, 25, 50, 100, 250]],
+            pageLength: 25,
+            ordering: false,
+            searchHighlight: true,
+            ajax: {
+                url: "markup/get-markup-results-filtered",
+                type: "POST",
+                data: function (d) {//extra params
+                    d.search = d.search.value;//pull out because spring is a pain to pass params
+                    d.jobId = $scope.selectedJob.jobId;
+                }
+            },
+            renderer: "bootstrap",
+            columns: [
+                {
+                    data: "sourceImg",
+                    render: function (data, type, obj) {
+                        if (obj.sourceUri && obj.sourceUri.length > 0 && obj.sourceFileAvailable) {
+                            obj.sourceImg = "server/node-image?nodeFullPath=" + obj.sourceUri.replace("file:", "");
+                            obj.sourceDownload = "server/download?fullPath=" + obj.sourceUri.replace("file:", "");
+                            obj.sourceType = getMarkupType(obj.sourceUriContentType);
+                            if (obj.sourceType == 'image') {
+                                return '<img src="' + obj.sourceImg + '" alt="" class="img-btn" data-download="' + obj.sourceDownload + '" data-file="' + obj.sourceUri + '" >';
+                            }
+                            else if (obj.sourceType == 'audio') {
+                                return '<span class="glyphicon glyphicon-music"></span>';
+                            }
+                            else if (obj.sourceType == 'video') {
+                                return '<span class="glyphicon glyphicon-film"></span>';
+                            }
+                            else {
+                                return '<span class="glyphicon glyphicon-file"></span>';
+                            }
+                        }
+                        return '<span class="glyphicon glyphicon-ban-circle" title="Not Available"></span>';
+                    }
+                },
+                {data: "sourceUri"},
+                {
+                    data: "sourceDownload",
+                    render: function (data, type, obj) {
+                        var disabled = "disabled=disabled";
+                        if (obj.sourceDownload) disabled = "";
+                        return '<a href="' + obj.sourceDownload + '" download="' + obj.sourceUri + '" class="btn btn-default" ' + disabled + ' role="button"><i class="fa fa-download" title="Download"></i></a>';
+                    }
+                },
+                {
+                    data: "markupImg",
+                    render: function (data, type, obj) {
+                        if (obj.markupUri && obj.markupUri.length > 0 && obj.markupFileAvailable) {
+                            obj.markupImg = "markup/content?id=" + obj.id;
+                            obj.markupDownload = "markup/download?id=" + obj.id;
+                            obj.markupType = getMarkupType(obj.markupUriContentType);
+                            if (obj.markupType == 'image') {
+                                return '<img src="' + obj.markupImg + '" alt="" class="img-btn" data-download="' + obj.markupDownload + '" data-file="' + obj.markupUri + '" >';
+                            }
+                            else if (obj.markupType == 'audio') {
+                                return '<span class="glyphicon glyphicon-music"></span>';
+                            }
+                            else if (obj.markupType == 'video') {
+                                return '<span class="glyphicon glyphicon-film"></span>';
+                            } else {
+                                return '<span class="glyphicon glyphicon-file"></span>';
+                            }
+                        }
+                        return '<span class="glyphicon glyphicon-ban-circle" title="Not Available"></span>';
+                    }
+                },
+                {data: "markupUri"},
+                {
+                    data: "markupDownload",
+                    render: function (data, type, obj) {
+                        var disabled = "disabled=disabled";
+                        if (obj.markupDownload) disabled = "";
+                        return '<a href="' + obj.markupDownload + '" download="' + obj.markupUri + '" class="btn btn-default" ' + disabled + ' role="button"><i class="fa fa-download" title="Download"></i></a>';
+                    }
+                }
+            ],
+            initComplete: function (settings, json) {
+                $log.debug("MediaTable complete");
+            },
+            drawCallback: function (settings) {
+                $('.img-btn').on('click', function () {
+                    $('#imageModalTitle').text($(this).data('file'));
+                    $('#imageModal .modal-body img').attr("src", $(this).prop('src'));
+                    $('#imageModalDownloadBtn').attr("href", $(this).data('download'));
+                    $('#imageModalDownloadBtn').attr("download", $(this).data('file'));
+                    $('#imageModal').modal('show');
+                });
+            }
+        });
+    };
+
+    var getMarkupType = function (content_type) {
+        if (content_type != null) {
+            var type = content_type.split("/")[0].toLowerCase();
+            if ((type == "image" && content_type.indexOf("tif") == -1) || type == "audio" || type == "video") {
+                return type;
+            }
+            return "file";
+        }
+        return null;
     };
 
     init();

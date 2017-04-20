@@ -1,5 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
-    pageEncoding="UTF-8"%>
+         pageEncoding="UTF-8"%>
 
 <%--
     NOTICE
@@ -30,16 +30,16 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Output Object View</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Output Object View</title>
 </head>
 <body style="white-space: pre; font-family: monospace;">
-<script>	
-	(function() {
-		var obj = ${jsonObj};
-		document.body.innerHTML = "";
-		document.body.appendChild(document.createTextNode(JSON.stringify(obj, null, 3)));
-	})();
+<script>
+    (function() {
+        var obj = ${jsonObj};
+        document.body.innerHTML = "";
+        document.body.appendChild(document.createTextNode(JSON.stringify(obj, null, 3)));
+    })();
 </script>
 </body>
 </html>

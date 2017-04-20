@@ -24,236 +24,235 @@
     limitations under the License.
 -->
 
-<div>	
-  	<!-- actions -->
-	<div class="row">
-		<h2>Pipeline Creation</h2>
-	
-		<p>This view allows for the creation of custom actions, tasks, and
-		pipelines. A Custom action is based on an existing algorithm. A custom
-		action will appear in the action selection dropdown once created.
-		Existing and custom actions are used to create a new task. Once a
-		custom task is created it will appear in the task selection dropdown
-		and can be added to a new pipeline along with existing tasks. If an error
-		      is received when creating a custom action, task, or pipeline without a complete
-		description, please check the tomcat log.</p>
-	</div>	
-	
-	<div class="row">
-	  	<h3>Available Actions</h3>
-		<div style="max-height: 250px; overflow: auto;">
-			<table id="actionsTable" class="table table-bordered">
-				<thead>
-					<tr>
-						<th>Action ID</th>
-						<th>Action Name</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr ng-repeat="action in actions | orderBy:'action'">
-						<td>{{$index}}</td>
-						<td>{{action}}</td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
-	</div>
-  
-	<div class="row">
-	 	<label>Create A New Action</label>
-		<p>Select an algorithm from the dropdown list and enter values in
-			the resulting properties table</p>
-		<div id="actionCreationOpts">
-			<div>
-				<label>Select an Algorithm:</label> 
-			    <select id="selectAlgorithm" ng-model="selectedAlgorithm" ng-options="algorithm for algorithm in algorithms" ng-change="getAlgModel();">
-		     			<option value="">-- choose algorithm --</option>
-		     		</select>
-			</div>
-		</div>
-	</div>
-  
-	<div class="row">
-	 	<div id="algorithmsDiv" style="max-height: 250px; overflow: auto;" ng-show="algModel != null && selectedAlgorithm">
-			<table id="algorithmTable" class="table table-bordered algorithmTable">
-				<thead>
-					<tr>
-						<th>Property Name</th>
-						<th>Property Description</th>
-						<th>Property Data Type</th>
-						<th>Default Value</th>
-						<th>Property Value</th>
-					</tr>
-				</thead>
-				
-				<!-- ng-init="modifiedAlgValuesMap='{}'" -->
-				<tbody>
-				<tr ng-repeat="prop in algModel">
-					<td>{{prop.name}}</td>
-					<td>{{prop.description}}</td>
-					<td>{{prop.type}}</td>
-					<td>{{prop.defaultValue}}</td>
-					<!-- make the sure the map is reset on algorithm change -->
-					<td><input type="text" name=value ng-model="modifiedAlgValuesMap[prop.name]"></td>
-				</tr>
-				</tbody>
-		   	</table>
-		</div>	
+<div class="page-header text-center">
+    <h3>Pipeline Creation</h3>
+    <page-info>This view allows for the creation of custom actions, tasks, and pipelines. A Custom action is based on an existing algorithm. A custom action will appear in the action selection dropdown once created. Existing and custom actions are used to create a new task. Once a custom task is created it will appear in the task selection dropdown and can be added to a new pipeline along with existing tasks. If an error	is received when creating a custom action, task, or pipeline without a complete	description, please check the tomcat log.</page-info>
+</div>
+<div class="row">
+    <h3>Available Actions</h3>
+    <div style="max-height: 250px; overflow: auto;">
+        <table id="actionsTable" class="table table-bordered">
+            <thead>
+            <tr>
+                <th>Action ID</th>
+                <th>Action Name</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="action in actions | orderBy:'action'">
+                <td>{{$index}}</td>
+                <td>{{action}}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-		<div>
-			<button id="btnCreateAction" type="button" class="btn btn-success btn-md" data-toggle="modal" data-target="#addModal" ng-disabled="!selectedAlgorithm"
-				ng-click="modalName=''; modalDescription=''; modalTitle='Create Action'; modalType='action';">Create Action</button>	
-		</div>	
-	</div>
+<div class="row">
+    <label>Create A New Action</label>
+    <p>Select an algorithm from the dropdown list and enter values in
+        the resulting properties table</p>
+    <div id="actionCreationOpts">
+        <div>
+            <label>Select an Algorithm:</label>
+            <select id="selectAlgorithm" ng-model="selectedAlgorithm" ng-options="algorithm for algorithm in algorithms" ng-change="getAlgModel();">
+                <option value="">-- choose algorithm --</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div id="algorithmsDiv" style="max-height: 250px; overflow: auto;" ng-show="algModel != null && selectedAlgorithm">
+        <table id="algorithmTable" class="table table-bordered algorithmTable">
+            <thead>
+            <tr>
+                <th>Property Name</th>
+                <th>Property Description</th>
+                <th>Property Data Type</th>
+                <th>Default Value</th>
+                <th>Property Value</th>
+            </tr>
+            </thead>
+
+            <!-- ng-init="modifiedAlgValuesMap='{}'" -->
+            <tbody>
+            <tr ng-repeat="prop in algModel">
+                <td>{{prop.name}}</td>
+                <td>{{prop.description}}</td>
+                <td>{{prop.type}}</td>
+                <td>{{prop.defaultValue}}</td>
+                <!-- make the sure the map is reset on algorithm change -->
+                <td><input type="text" name=value ng-model="modifiedAlgValuesMap[prop.name]"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div>
+        <button id="btnCreateAction" type="button" class="btn btn-success btn-md" data-toggle="modal" data-target="#addModal" ng-disabled="!selectedAlgorithm"
+                ng-click="modalName=''; modalDescription=''; modalTitle='Create Action'; modalType='action';">Create Action
+        </button>
+    </div>
+</div>
 
 
-	<!-- tasks -->
-	<div class="row">
-	 	<h3>Available Tasks</h3>
-		<div style="max-height: 250px; overflow: auto;">
-			<table id="tasksTable" class="table table-bordered">
-				<thead>
-					<tr>
-						<th>Task ID</th>
-						<th>Task Name</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr ng-repeat="task in tasks">
-						<td>{{$index}}</td>
-						<td>{{task}}</td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
-	</div>
-  
-	<div class="row">
-		<label>Create A New Task</label>
-		<div id="taskCreationOpts">
-			<label>Select an Action:</label> 
-		    <select ng-model="selectedAction" ng-options="action for action in actions">
-		 			<option value="">-- choose action --</option></select>
-		</div>
-		
-		<div>
-			<button id="addAction" type="button" ng-disabled="!selectedAction" ng-click="actionsToAdd.push(selectedAction)"
-				class="btn btn-success btn-default">Add Action to Task</button>
-			<button id="btnCreateTask" type="button" class="btn btn-success btn-md" data-toggle="modal" data-target="#addModal" ng-disabled="actionsToAdd.length == 0"
-				ng-click="modalName=''; modalDescription=''; modalTitle='Create Task'; modalType='task';">Create Task</button>	
-		</div>
-	</div>
-  	  
-	<div class="row">
-		<div style="max-height: 250px; overflow: auto;">
-			<table id="actionsToAddTable" class="table table-bordered table-striped" ng-show="actionsToAdd.length > 0">
-			    <thead>
-			        <tr>
-			            <th style="text-align: center; width: 25px;">Action</th>
-			            <th style="text-align: center;">Action</th>
-			        </tr>
-			    </thead>
-			    <tbody>
-			        <tr ng-repeat="actionToAdd in actionsToAdd">
-			            <td  style="width:70px;text-align:center;"><button class="btn btn-mini btn-danger" ng-click="removeAction($index);">Remove</button></td>
-			            <td>{{actionToAdd}}</td>
-			        </tr>
-			    </tbody>
-			</table>
-			<button class="btn btn-danger" ng-show="actionsToAdd.length > 1" ng-click="actionsToAdd = [];">Remove All Actions</button>
-		</div>
-	</div>
-  
-  
-	<!-- pipelines -->
-	<div class="row">
-		<h3>Available Pipelines</h3>
-		<div style="max-height: 250px; overflow: auto;">
-			<table id="pipelinesTable" class="table table-bordered">
-				<thead>
-					<tr>
-						<th>Pipeline ID</th>
-						<th>Pipeline Name</th>
-					</tr>
-				</thead>
-	
-				<tbody>					
-					<tr ng-repeat="pipeline in pipelines">
-						<td>{{$index}}</td>
-						<td>{{pipeline}}</td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
-	</div>
-	
-	<div class="row">
-		<label>Create A New Pipeline</label>
-		<div id="pipelineCreationOpts">
-			<div>
-				<label>Select a Task:</label>
-			    <select id="selectTask" ng-model="selectedTask" ng-options="task for task in tasks">
-	      			<option value="">-- choose task --</option>
-	      		</select>
-			</div>
-		</div>
-	
-		<div>
-			<button id="addTask" type="button" ng-disabled="!selectedTask" ng-click="tasksToAdd.push(selectedTask)"
-				class="btn btn-success btn-default">Add Task to Pipeline</button>
-			<button id="btnCreatePipeline" type="button" class="btn btn-success btn-md" data-toggle="modal" data-target="#addModal" ng-disabled="tasksToAdd.length == 0"
-				ng-click="modalName=''; modalDescription=''; modalTitle='Create Pipeline'; modalType='pipeline';">Create Pipeline</button>
-		</div>
-	</div>
-	
-	<div class="row">
-		<div style="max-height: 250px; overflow: auto;">
-			<table id="tasksToAddTable" class="table table-bordered table-striped" ng-show="tasksToAdd.length > 0">
-			    <thead>
-			        <tr>
-			            <th style="text-align: center; width: 25px;">Action</th>
-			            <th style="text-align: center;">Task</th>
-			        </tr>
-			    </thead>
-			    <tbody>
-			        <tr ng-repeat="taskToAdd in tasksToAdd">
-			            <td  style="width:70px;text-align:center;"><button class="btn btn-mini btn-danger" ng-click="removeTask($index);">Remove</button></td>
-			            <td>{{taskToAdd}}</td>
-			        </tr>
-			    </tbody>
-			</table>
-			<button id="btnRemoveAllTasks" class="btn btn-danger" ng-show="tasksToAdd.length > 1" ng-click="tasksToAdd = [];">Remove All Tasks</button>
-		</div>
-	</div>
-		
-		
-	<!-- addModal -->
-	<div id="addModal" class="modal fade" role="dialog">
-	  <div class="modal-dialog">
-	    <!-- Modal content-->
-		<div class="modal-content">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal">&times;</button>
-				<h4 class="modal-title">{{ modalTitle }}</h4>
-			</div>
-			<div class="modal-body">
-				<div class="input-group">
-					<span class="input-group-addon">Name: </span> <input ng-model="modalName" type="text" 
-						class="form-control" placeholder="Name">
-				</div>
-				<div class="input-group">
-					<span class="input-group-addon">Description: </span> <input ng-model="modalDescription" 
-						type="text" class="form-control" placeholder="Description">
-				</div>
-			</div>
-			<div class="modal-footer">
-				<div class="btn-group">
-					<!-- need an angular solution for attrib data-dismiss="modal" -->
-					<button id="createActual" type="button" ng-click="create();"
-						class="btn btn-success btn-default">Create</button>
-				</div>
-			</div>
-		</div> 
-	  </div>
-	</div> <!-- end of addModal -->
+<!-- tasks -->
+<div class="row">
+    <h3>Available Tasks</h3>
+    <div style="max-height: 250px; overflow: auto;">
+        <table id="tasksTable" class="table table-bordered">
+            <thead>
+            <tr>
+                <th>Task ID</th>
+                <th>Task Name</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="task in tasks">
+                <td>{{$index}}</td>
+                <td>{{task}}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row">
+    <label>Create A New Task</label>
+    <div id="taskCreationOpts">
+        <label>Select an Action:</label>
+        <select ng-model="selectedAction" ng-options="action for action in actions">
+            <option value="">-- choose action --</option>
+        </select>
+    </div>
+
+    <div>
+        <button id="addAction" type="button" ng-disabled="!selectedAction" ng-click="actionsToAdd.push(selectedAction)"
+                class="btn btn-success btn-default">Add Action to Task
+        </button>
+        <button id="btnCreateTask" type="button" class="btn btn-success btn-md" data-toggle="modal" data-target="#addModal" ng-disabled="actionsToAdd.length == 0"
+                ng-click="modalName=''; modalDescription=''; modalTitle='Create Task'; modalType='task';">Create Task
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div style="max-height: 250px; overflow: auto;">
+        <table id="actionsToAddTable" class="table table-bordered table-striped" ng-show="actionsToAdd.length > 0">
+            <thead>
+            <tr>
+                <th style="text-align: center; width: 25px;">Action</th>
+                <th style="text-align: center;">Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="actionToAdd in actionsToAdd">
+                <td style="width:70px;text-align:center;">
+                    <button class="btn btn-mini btn-danger" ng-click="removeAction($index);">Remove</button>
+                </td>
+                <td>{{actionToAdd}}</td>
+            </tr>
+            </tbody>
+        </table>
+        <button class="btn btn-danger" ng-show="actionsToAdd.length > 1" ng-click="actionsToAdd = [];">Remove All Actions</button>
+    </div>
+</div>
+
+
+<!-- pipelines -->
+<div class="row">
+    <h3>Available Pipelines</h3>
+    <div style="max-height: 250px; overflow: auto;">
+        <table id="pipelinesTable" class="table table-bordered">
+            <thead>
+            <tr>
+                <th>Pipeline ID</th>
+                <th>Pipeline Name</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr ng-repeat="pipeline in pipelines">
+                <td>{{$index}}</td>
+                <td>{{pipeline}}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row" style="padding-bottom:5px;">
+    <label>Create A New Pipeline</label>
+    <div id="pipelineCreationOpts">
+        <div>
+            <label>Select a Task:</label>
+            <select id="selectTask" ng-model="selectedTask" ng-options="task for task in tasks">
+                <option value="">-- choose task --</option>
+            </select>
+        </div>
+    </div>
+
+    <div>
+        <button id="addTask" type="button" ng-disabled="!selectedTask" ng-click="tasksToAdd.push(selectedTask)"
+                class="btn btn-success btn-default">Add Task to Pipeline
+        </button>
+        <button id="btnCreatePipeline" type="button" class="btn btn-success btn-md" data-toggle="modal" data-target="#addModal" ng-disabled="tasksToAdd.length == 0"
+                ng-click="modalName=''; modalDescription=''; modalTitle='Create Pipeline'; modalType='pipeline';">Create Pipeline
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div style="max-height: 250px; overflow: auto;">
+        <table id="tasksToAddTable" class="table table-bordered table-striped" ng-show="tasksToAdd.length > 0">
+            <thead>
+            <tr>
+                <th style="text-align: center; width: 25px;">Action</th>
+                <th style="text-align: center;">Task</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="taskToAdd in tasksToAdd">
+                <td style="width:70px;text-align:center;">
+                    <button class="btn btn-mini btn-danger" ng-click="removeTask($index);">Remove</button>
+                </td>
+                <td>{{taskToAdd}}</td>
+            </tr>
+            </tbody>
+        </table>
+        <button id="btnRemoveAllTasks" class="btn btn-danger" ng-show="tasksToAdd.length > 1" ng-click="tasksToAdd = [];">Remove All Tasks</button>
+    </div>
+</div>
+
+
+<!-- addModal -->
+<div id="addModal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">{{ modalTitle }}</h4>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <span class="input-group-addon">Name: </span> <input ng-model="modalName" type="text"
+                                                                         class="form-control" placeholder="Name">
+                </div>
+                <div class="input-group">
+                    <span class="input-group-addon">Description: </span> <input ng-model="modalDescription"
+                                                                                type="text" class="form-control" placeholder="Description">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="btn-group">
+                    <!-- need an angular solution for attrib data-dismiss="modal" -->
+                    <button id="createActual" type="button" ng-click="create();"
+                            class="btn btn-success btn-default">Create
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

@@ -87,15 +87,15 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	private SortedMap<String, String> mediaMetadata;
 	public SortedMap<String, String> getMediaMetadata() { return mediaMetadata; }
 
-	@JsonProperty("overriddenProperties")
+	@JsonProperty("mediaProperties")
 	@JsonPropertyDescription("A map of medium-specific properties that override algorithm properties.")
-	private SortedMap<String, String> overriddenProperties;
-	public SortedMap<String, String> getOverriddenProperties() { return overriddenProperties; }
+	private SortedMap<String, String> mediaProperties;
+	public SortedMap<String, String> getMediaProperties() { return mediaProperties; }
 
-	@JsonProperty("tracks")
-	@JsonPropertyDescription("The mapping of action state keys to object detection tracks produced in that action for the given medium.")
-	private SortedMap<String, SortedSet<JsonTrackOutputObject>> tracks;
-	public SortedMap<String, SortedSet<JsonTrackOutputObject>> getTracks() { return tracks; }
+	@JsonProperty("output")
+	@JsonPropertyDescription("The mapping of action type keys to a set of actions performed on the given medium.")
+	private SortedMap<String, SortedSet<JsonActionOutputObject>> types;
+	public SortedMap<String, SortedSet<JsonActionOutputObject>> getTypes() { return types; }
 
 	@JsonProperty("detectionProcessingErrors")
 	@JsonPropertyDescription("The mapping of action state keys to detection errors produced in that action for the given medium.")
@@ -111,27 +111,27 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 		this.sha256 = sha256;
 		this.message = message;
 		this.status = status;
-		this.tracks = new TreeMap<>();
+		this.types = new TreeMap<>();
 		this.detectionProcessingErrors = new TreeMap<>();
 		this.mediaMetadata = new TreeMap<>();
-		this.overriddenProperties = new TreeMap<>();
+		this.mediaProperties = new TreeMap<>();
 	}
 
-    public JsonMediaOutputObject(){}
+	public JsonMediaOutputObject(){}
 
 	@JsonCreator
 	public static JsonMediaOutputObject factory(@JsonProperty("mediaId") long mediaId,
-	                                            @JsonProperty("path") String path,
-	                                            @JsonProperty("mimeType") String mimeType,
-	                                            @JsonProperty("length") int length,
-	                                            @JsonProperty("sha256") String sha256,
-	                                            @JsonProperty("message") String message,
-	                                            @JsonProperty("status") String status,
+												@JsonProperty("path") String path,
+												@JsonProperty("mimeType") String mimeType,
+												@JsonProperty("length") int length,
+												@JsonProperty("sha256") String sha256,
+												@JsonProperty("message") String message,
+												@JsonProperty("status") String status,
 												@JsonProperty("mediaMetadata") SortedMap<String, String> mediaMetadata,
-												@JsonProperty("overriddenProperties") SortedMap<String, String> overriddenProperties,
-	                                            @JsonProperty("markupResult") JsonMarkupOutputObject markupResult,
-	                                            @JsonProperty("tracks") SortedMap<String, SortedSet<JsonTrackOutputObject>> tracks,
-	                                            @JsonProperty("detectionProcessingErrors") SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors) {
+												@JsonProperty("mediaProperties") SortedMap<String, String> mediaProperties,
+												@JsonProperty("markupResult") JsonMarkupOutputObject markupResult,
+												@JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> types,
+												@JsonProperty("detectionProcessingErrors") SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors) {
 		JsonMediaOutputObject jsonMediaOutputObject = new JsonMediaOutputObject(mediaId, path, mimeType, length, sha256, message, status);
 		jsonMediaOutputObject.markupResult = markupResult;
 
@@ -139,12 +139,12 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 			jsonMediaOutputObject.mediaMetadata.putAll(mediaMetadata);
 		}
 
-		if(overriddenProperties != null) {
-			jsonMediaOutputObject.overriddenProperties.putAll(overriddenProperties);
+		if(mediaProperties != null) {
+			jsonMediaOutputObject.mediaProperties.putAll(mediaProperties);
 		}
 
-		if(tracks != null) {
-			jsonMediaOutputObject.tracks.putAll(tracks);
+		if(types != null) {
+			jsonMediaOutputObject.types.putAll(types);
 		}
 
 		if(detectionProcessingErrors != null) {

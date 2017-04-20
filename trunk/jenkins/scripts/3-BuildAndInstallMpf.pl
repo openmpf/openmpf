@@ -30,22 +30,20 @@ use strict;
 use warnings;
 use MPF::Jenkins;
 
-if ((@ARGV) != 4) {
+if ((@ARGV) != 3) {
 	MPF::Jenkins::printFatal("This script was not invoked with the correct number of command line arguments.\n");
-	MPF::Jenkins::printFatal("perl $0 <mpf-path> <mpf-log-path> <hostname> <cpp-components>\n");
+	MPF::Jenkins::printFatal("perl $0 <mpf-path> <mpf-log-path> <hostname>\n");
 	MPF::Jenkins::printFatal("Got: ".((@ARGV))." arguments.\n");
 	MPF::Jenkins::fatalExit();
 }
 
-my $mpfPath	      = $ARGV[0];
-my $mpfLogPath    = $ARGV[1];
-my $hostname      = $ARGV[2];
-my $cppComponents = $ARGV[3];
+my $mpfPath	   = $ARGV[0];
+my $mpfLogPath = $ARGV[1];
+my $hostname   = $ARGV[2];
 
 MPF::Jenkins::printDebug("The MPF path supplied as: $mpfPath\n");
 MPF::Jenkins::printDebug("The log path supplied as: $mpfLogPath\n");
 MPF::Jenkins::printDebug("The hostname supplied as: $hostname\n");
-MPF::Jenkins::printDebug("The CPP components supplied as: $cppComponents\n");
 
 if ($hostname eq "master") {
 	MPF::Jenkins::printInfo("The hostname was returned as 'master' by jenkins, using jenkins-mpf-1.mitre.org instead.\n");
@@ -53,7 +51,7 @@ if ($hostname eq "master") {
 }
 
 MPF::Jenkins::printDebug("Building MPF from source.\n");
-MPF::Jenkins::mavenCompile($mpfPath, $cppComponents);
+MPF::Jenkins::mavenCompile($mpfPath);
 
 MPF::Jenkins::printDebug("Installing the MPF runtime environment profile.\n");
 MPF::Jenkins::installProfile($mpfPath, $mpfLogPath, $hostname);

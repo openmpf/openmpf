@@ -29,7 +29,7 @@
 
 var AboutCtrl = function($scope, $location, $interpolate, MetadataService) {
 
-	$scope.text_detection_filepath ="resources/downloads/MPFTextDetectionComponent.tar.gz";
+	$scope.text_detection_filepath = "resources/downloads/OalprLicensePlateTextDetection.tar.gz";
 
 	var initView = function() {
 		fetchMetadata();

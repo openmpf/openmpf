@@ -122,6 +122,10 @@
         msg="FAILED_EXTRACTION_ERROR SOURCE={{ component_archives.files[0].path }} DEST={{ plugins_dir }}/{{ component_tld }}"
       when: component_paths is undefined
 
+    - name: Send the top level directory path to stdout
+      debug:
+        msg="COMPONENT_TOP_LEVEL_DIRECTORY_PATH={{ plugins_dir }}/{{ component_tld }}"
+
     - name: Get component descriptor path
       find:
         paths="{{ plugins_dir }}/{{ component_tld }}/descriptor"

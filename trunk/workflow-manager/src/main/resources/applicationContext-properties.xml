@@ -36,26 +36,28 @@
     <beans profile="default">
         <util:list id="propFiles">
             <value>classpath:properties/mpf.properties</value>
-            <value>classpath:properties/mpf-custom.properties</value>
             <value>classpath:properties/mpf-private.properties</value>
+            <value type="org.springframework.core.io.FileSystemResource">#{systemEnvironment['MPF_HOME']}/config/mpf-custom.properties</value>
         </util:list>
     </beans>
 
     <beans profile="jenkins">
         <util:list id="propFiles">
             <value>classpath:properties/mpf.properties</value>
-            <value>classpath:properties/mpf-custom.properties</value>
             <value>classpath:properties/mpf-jenkins.properties</value>
             <value>classpath:properties/mpf-private.properties</value>
+            <value type="org.springframework.core.io.FileSystemResource">#{systemEnvironment['MPF_HOME']}/config/mpf-custom.properties</value>
         </util:list>
     </beans>
 
     <beans>
         <bean id="mediaTypeProperties"
               class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+            <property name="ignoreResourceNotFound" value="true"/>
             <property name="locations">
                 <list>
                     <value>classpath:properties/mediaType.properties</value>
+                    <value type="org.springframework.core.io.FileSystemResource">${config.mediaTypes.file}</value>
                 </list>
             </property>
         </bean>

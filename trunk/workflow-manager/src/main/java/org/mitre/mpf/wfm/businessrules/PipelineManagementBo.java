@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.businessrules;
 
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PipelineDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
@@ -67,27 +68,40 @@ public interface PipelineManagementBo {
     public Tuple<Boolean, String> addAndSaveAlgorithm(AlgorithmDefinition algorithm);
 
     /** Adds a new action and saves it to XML */
-    public Tuple<Boolean, String> addAndSaveAction(String actionName,
-                                                   String actionDescription, String algorithmName,
-                                                   Map<String, String> propertySettings);
+    @Deprecated
+    public Tuple<Boolean, String> addAndSaveActionDeprecated(String actionName,
+                                                             String actionDescription, String algorithmName,
+                                                             Map<String, String> propertySettings);
+
+    public void addAndSaveAction(String actionName,
+                                 String actionDescription, String algorithmName,
+                                 Map<String, String> propertySettings) throws WfmProcessingException;
 
     /** Adds a new task */
 	public boolean addTask(TaskDefinition task);
 
     /** Adds a new task and saves it to XML */
-    public Tuple<Boolean, String> addAndSaveTask(TaskDefinition task);
+    @Deprecated
+    public Tuple<Boolean, String> addAndSaveTaskDeprecated(TaskDefinition task);
+
+    /** Adds a new task and saves it to XML */
+    public void addAndSaveTask(TaskDefinition task) throws WfmProcessingException;
 
     /** Adds a new pipeline */
     public boolean addPipeline(PipelineDefinition pipeline);
 
     /** Adds a new pipeline and saves it to XML */
-    public Tuple<Boolean, String> addAndSavePipeline(PipelineDefinition pipeline);
+    @Deprecated
+    public Tuple<Boolean, String> addAndSavePipelineDeprecated(PipelineDefinition pipeline);
+
+    /** Creates a new pipeline based on the provided pipeline definition and saves it to XML */
+    public void addAndSavePipeline(PipelineDefinition pipeline) throws WfmProcessingException;
 
     /** Removes an algorithm from memory and XML */
     public void removeAndDeleteAlgorithm(String algorithmName);
 
     /** Removes an action from memory and XML */
-    public void removeAndDeleteAction(String actionName);
+    public void removeAndDeleteAction(String actionName) throws WfmProcessingException;
 
     /** Removes a task from memory and XML */
     public void removeAndDeleteTask(String taskName);

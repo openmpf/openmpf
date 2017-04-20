@@ -319,7 +319,7 @@ sub cleanMaven {
 	printWarn("\t\tTake a stretch break.\n");
 	
 	chdir "$mpfPath";
-	open PIPE, "mvn clean |";
+	open PIPE, "mvn clean -Pjenkins |";
 	while(<PIPE>) {
 		printMaven($_);
 	}
@@ -334,19 +334,20 @@ sub cleanMaven {
 
 
 sub mavenCompile {
-	if ((@_) != 2) {
-		printFatal("Needed 2 arguments: mpfPath and cppComponents.\n");
+	if ((@_) != 1) {
+		printFatal("Needed 1 argument: mpfPath.\n");
 		fatalExit();
 	}
 	my $mpfPath = $_[0];
-	my $cppComponents = $_[1];
 	my $pwd = `pwd`;
 	
-	printInfo("Building MPF with cppComponents \"$cppComponents\"...\n");
+	printInfo("Building MPF\n");
 	printWarn("\t\tThis may take a few minutes.\n");
 	printWarn("\t\tTake a stretch break.\n");
 
-    my $buildCommand = "mvn install -DskipTests -Dmaven.test.skip=true -DskipITs -Dmaven.tomcat.skip=true -DcppComponents=".$cppComponents." |";
+    # This maven run is mainly to build and install the node manager.
+    # Components will be built through Jenkins' call to Maven or through PackageRPMS.pl.
+    my $buildCommand = "mvn install -Pjenkins -DskipTests -Dmaven.test.skip=true -DskipITs -Dmaven.tomcat.skip=true -Dcomponents.build.components='' |";
 
 	chdir "$mpfPath";
     open PIPE, $buildCommand;
@@ -362,14 +363,14 @@ sub mavenCompile {
 
 sub mavenRPM {
 	if ((@_) != 5) {
-		printFatal("Arguments: mpfPath gitBranch gitCommit buildNum cppComponents.\n");
+		printFatal("Arguments: mpfPath gitBranch gitCommit buildNum jsonPackagePath.\n");
 		fatalExit();
 	}
-	my $mpfPath       = $_[0];
-	my $gitBranch     = $_[1];
-	my $gitCommit     = $_[2];
-	my $buildNum      = $_[3];
-	my $cppComponents = $_[4];
+	my $mpfPath         = $_[0];
+	my $gitBranch       = $_[1];
+	my $gitCommit       = $_[2];
+	my $buildNum      	= $_[3];
+	my $jsonPackagePath = $_[4];
 
 	my $rpmReleasePrefix = ($gitBranch eq "origin/master") ? "1" : "0";
 	my $pwd = `pwd`;
@@ -379,7 +380,8 @@ sub mavenRPM {
 
     my $buildCommand = "mvn package -Pcreate-tar rpm:rpm -DskipTests -Dmaven.test.skip=true -DskipITs -Dmaven.tomcat.skip=true ".
         "-DgitBranch=$gitBranch -DgitShortId=$gitCommit -DjenkinsBuildNumber=$buildNum -DrpmReleasePrefix=$rpmReleasePrefix ".
-        "-DcppComponents=$cppComponents |";
+        "-Dcomponents.build.dir=$mpfPath/mpf-component-build ".
+        "-Dcomponents.build.package.json=$jsonPackagePath |";
 
 	printDebug("Packaging command: $buildCommand");
 	printInfo("Packaging MPF RPMs...\n");
@@ -392,6 +394,14 @@ sub mavenRPM {
 		printMaven($_);
 	}
 	close PIPE;
+
+	chdir "$mpfPath/new-repos/openmpf-java-component-sdk";
+	open PIPE, $buildCommand;
+	while(<PIPE>) {
+		printMaven($_);
+	}
+	close PIPE;
+
 	printInfo("Packaging completed.\n");
 	
 	chdir $pwd;
@@ -639,12 +649,12 @@ sub runGTests {
 	my $pwd = `pwd`;
 	my $rc = 0;
 
-    my $detectionPath = File::Spec->catfile($mpfPath,'mpf_components/CPP/build/detection');
+    my $detectionPath = File::Spec->catfile($mpfPath,'mpf-component-build');
 
-    my @gtestPaths = File::Find::Rule->directory->name('gtest')->in($detectionPath);
+    my @gtestPaths = File::Find::Rule->directory->name('test')->in($detectionPath);
     # printDebug("gtestPaths:\n", join("\n", @gtestPaths), "\n");
 
-    my @tests = File::Find::Rule->file->name('*Test')->in(@gtestPaths);
+    my @tests = File::Find::Rule->file->executable->name('*Test')->in(@gtestPaths);
     # printDebug("tests:\n", join("\n", @tests), "\n");
 
     foreach my $test (@tests) {

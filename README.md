@@ -11,5 +11,3 @@ The mpf_components subdirectory contains submodule repositories.
 The trunk subdirectory is divided into various maven modules. Of note are the
 node manager, which controls the OpenMPF services running on a given node, and the
 workflow manager, which is the web application server.
-
-For questions, contact the OpenMPF Dev Team @ [openmpf@googlegroups.com](https://groups.google.com/forum/#!forum/openmpf).

@@ -26,43 +26,5 @@
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <pipelines>
-    <!--
-
-    #############
-    # DETECTION #
-    #############
-
-    -->
-
-    <pipeline name="SPHINX SPEECH DETECTION PIPELINE">
-        <description>Performs SPHINX SPEECH detection.</description>
-        <task-refs>
-            <task-ref name="SPHINX SPEECH DETECTION TASK" />
-        </task-refs>
-    </pipeline>
-    <!--
-    <pipeline name="SPHINX SPEECH DETECTION (WITH MOTION PREPROCESSOR AND MARKUP) PIPELINE">
-        <description>Performs motion preprocessing, SPHINX SPEECH detection, and markup.</description>
-        <task-refs>
-            <task-ref name="MOG MOTION DETECTION PREPROCESSOR TASK" />
-            <task-ref name="SPHINX SPEECH DETECTION TASK" />
-            <task-ref name="OCV GENERIC MARKUP TASK" />
-        </task-refs>
-    </pipeline>
-    <pipeline name="SPHINX SPEECH DETECTION (WITH MOTION PREPROCESSOR) PIPELINE">
-        <description>Performs motion preprocessing and SPHINX SPEECH detection.</description>
-        <task-refs>
-            <task-ref name="MOG MOTION DETECTION PREPROCESSOR TASK" />
-            <task-ref name="SPHINX SPEECH DETECTION TASK" />
-        </task-refs>
-    </pipeline>
-    -->
-    <pipeline name="SPHINX SPEECH DETECTION (WITH MARKUP) PIPELINE">
-        <description>Performs SPHINX SPEECH detection and marks up the results.</description>
-        <task-refs>
-            <task-ref name="SPHINX SPEECH DETECTION TASK" />
-            <task-ref name="OCV GENERIC MARKUP TASK" />
-        </task-refs>
-    </pipeline>
 
 </pipelines>

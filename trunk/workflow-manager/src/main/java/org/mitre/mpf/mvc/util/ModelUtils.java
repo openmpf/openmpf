@@ -27,16 +27,20 @@
 package org.mitre.mpf.mvc.util;
 
 import java.io.File;
+import java.net.URI;
 import java.nio.file.Paths;
 
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.InfoModel;
 import org.mitre.mpf.rest.api.MarkupResultModel;
+import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
 import org.mitre.mpf.rest.api.SingleJobInfo;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
@@ -45,6 +49,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope("singleton")
 public class ModelUtils {
+	private static final Logger log = LoggerFactory.getLogger(ModelUtils.class);
 
 	@Autowired
 	@Qualifier(PropertiesUtil.REF)
@@ -70,6 +75,43 @@ public class ModelUtils {
 		return new MarkupResultModel(markupResult.getId(), markupResult.getJobId(),
 				  markupResult.getPipeline(), markupResult.getMarkupUri(), 
 				  markupResult.getSourceUri(), isImage, fileExists);
+	}
+
+	public static MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult) {
+		String markupUriContentType = "";
+		String markupImgUrl = "";
+		String markupDownloadUrl ="";
+		String sourceUriContentType="";
+		String sourceImgUrl = "";
+		String sourceDownloadUrl ="";
+		boolean markupFileAvailable = false;
+		boolean sourceFileAvailable = false;
+
+		if(markupResult.getMarkupUri() != null) {
+			String nonUrlPath = markupResult.getMarkupUri();
+			markupUriContentType = NIOUtils.getPathContentType(Paths.get(URI.create(nonUrlPath)));
+			File f = new File(URI.create(nonUrlPath));
+			if(f != null && f.exists()) {
+				markupFileAvailable = true;
+				markupImgUrl="markup/content?id="+markupResult.getId();
+				markupDownloadUrl = "markup/download?id=" + markupResult.getId();
+			}
+		}
+
+		if(markupResult.getSourceUri() != null) {
+			String nonUrlPath = markupResult.getSourceUri();
+			sourceUriContentType = NIOUtils.getPathContentType(Paths.get(URI.create(nonUrlPath)));
+			File f = new File(URI.create(nonUrlPath));
+			if (f != null && f.exists()){
+				sourceFileAvailable = true;
+				sourceImgUrl = "server/node-image?nodeFullPath=" + Paths.get(URI.create(nonUrlPath));
+				sourceDownloadUrl = "server/download?fullPath=" + Paths.get(URI.create(nonUrlPath));
+			}
+		}
+
+		return new MarkupResultConvertedModel(markupResult.getId(), markupResult.getJobId(),markupResult.getPipeline(),
+				markupResult.getMarkupUri(),markupUriContentType,markupImgUrl,markupDownloadUrl,markupFileAvailable,
+				markupResult.getSourceUri(),sourceUriContentType,sourceImgUrl,sourceDownloadUrl,sourceFileAvailable);
 	}
 	
 	//this method is created for the same reason as converMarkupResult

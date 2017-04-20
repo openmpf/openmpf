@@ -28,7 +28,7 @@
 'use strict';
 
 /* Angular Directives */
-var AppDirectives = angular.module('WfmAngularSpringApp.directives', []);
+var AppDirectives = angular.module('mpf.wfm.directives', []);
 
 AppDirectives.directive('appVersion', ['version', function (version) {
     return function (scope, elm, attrs) {
@@ -40,7 +40,7 @@ AppDirectives.directive('appVersion', ['version', function (version) {
  *  based on https://gist.github.com/chrisjordanme/8668864
  *  To use the directive, use it as an attribute to an HMTL element, (e.g., <div broadcast-resize-event>)
  *  and then in a controller, use $scope.$on('UI_WINDOW_RESIZE', function(event, msg ) {} to handle the event
- */
+ *
 AppDirectives.directive('broadcastResizeEvent', function ($window, $rootScope) {
     return {
         link: function (scope, el, attrs) {
@@ -54,239 +54,7 @@ AppDirectives.directive('broadcastResizeEvent', function ($window, $rootScope) {
             });
         }
     };
-});
-
-AppDirectives.directive('dndCart', function ($log,$filter,ServicesCatalogService) {
-    return {
-        templateUrl: 'cart.html',
-        restrict: 'E',
-        replace: false,
-        link: function(scope, element, attrs) {
-            if ( attrs["highlightDropArea"] !== undefined )	// in other words, if it is defined
-            {
-                var cart = angular.element(element[0].getElementsByClassName('cart'));
-                cart
-                    .bind( 'mouseenter', function($event) {
-                        var element = $event.currentTarget;
-                        element.style['border'] = '1px solid #ff9933';	// ToDo: P038:  hardcoded
-                    })
-                    .bind( 'mouseleave', function($event) {
-                        var element = $event.currentTarget;
-                        element.style['border'] = '1px solid black';
-                    });
-            }
-
-            // set defaults //////////////////////////////////////////////////
-
-            // ----- set default values for attrs, if they are not specified
-            if ( !attrs.name ) {
-                scope.name='Cart';
-            }
-            scope.minItems = ( attrs.minItems ) ? parseInt( attrs.minItems ) : 0;
-            scope.maxItems = ( attrs.maxItems ) ? parseInt( attrs.maxItems ) : 99;
-
-            // ----- set default, these properties will be overridden if attrs are set
-            scope.option = {
-                containment: attrs.containment,
-                isDuplicate: function( item, listToCheckAgainst ) {	// needed for the patched version of ng-sortable for allowDuplicates to work correctly
-                    // returns the first index in listToCheckAgainst that equals item, or -1 if not found
-                    var index = listToCheckAgainst.findIndex(function(currentValue) {
-                        return currentValue[attrs.listItemKey] === item[attrs.listItemKey];
-                    });
-                    if ( index >= 0 ) {
-                        //$log.debug("  is a duplicate in list:  " + item[attrs.listItemKey] );
-                        if ( !scope.allowDuplicates )
-                        {
-                            //$log.debug("    incrementing dest:  " + item[attrs.listItemKey] );
-                            if ( listToCheckAgainst[index]['serviceCount'] < scope.maxItems ) {
-                                listToCheckAgainst[index]['serviceCount'] += item['serviceCount'];
-                            }
-                        }
-                        return true;
-                    }
-                    else{
-                        //$log.debug("  is not a duplicate in list:  " + item[attrs.listItemKey] );
-                        //if ( !listToCheckAgainst[index]['serviceCount'] ) {
-                        //    listToCheckAgainst[index]['serviceCount'] = 0;
-                        //}
-                        return false;
-                    }
-                },
-                //unbindDrag();
-                allowDuplicates: false,	// works only with patch
-                clone: false//,
-                //dragStart: function( obj ) {// triggered on drag start.
-                    //$log.error("dragStart(obj="+angular.toJson(obj));
-                    //// obj.source.index is the index of the item that is being dragged in the source cart
-                    //$log.error("  item value="+scope.list[obj.source.index].serviceCount);
-                    //scope.forceCounterWithinRange( null, obj.source.index );
-                    ////scope.$apply();   // don't use this because we're always in the middle of $apply
-                //},
-                //dragEnd: function( obj ) {// triggered on drag end.
-                    //$log.error("dragEnd(obj="+angular.toJson(obj));
-                    //// obj.dest.index is the index of the item that is being dragged in the dest cart
-                    //$log.error("  item value="+scope.list[obj.dest.index].serviceCount);
-                    //scope.forceCounterWithinRange( null, obj.dest.index );
-                    ////scope.$apply();   // don't use this because we're always in the middle of $apply
-                //}
-            };
-
-            // ----- update defaults with attributes, if any
-
-            if ( attrs.allowDuplicates ) {
-                scope.option.allowDuplicates = attrs.allowDuplicates;
-            }
-            if ( attrs.clone ) {
-                scope.option.clone = attrs.clone;
-            }
-        },
-        scope: {
-            name: '@',
-            containment: '@?',
-            cartid: '@',
-            list: '=',
-            cartCollection: '=',	// the array of carts from which this is ng-repeated, needed for delete cart button to work; if not defined, delete button does not show
-            cartIndex: '=',	// the index of this cart in the array of carts from which this is ng-repeated; or undefined if it is not defined
-            listItemKey: '@',
-            catalog: '=',
-            width: '@?',
-            showItemCount: "@",	// can take on one of the following:  "false" - don't show, "read-only" - don't let change instance values, "editable" - allow instance changes to the model
-            // note that while this is defined at the cart level, it is passed to the dnd-cart-item level directly, and is used there, even though it's not defined
-            // in its scope; setting it in its own scope in dnd-cart-item causes its value to not work
-            maxItems: '@?',
-            minItems: '@?',
-            option: '=?',
-            allowDuplicates: '@?',
-            clone: '@?',
-            pageErrors: '=?',
-            highlightDropArea: "@?"
-        },
-        controller: function( $scope, $element, $attrs, $log /*, $transclude*/ ) {
-
-            // ---------------------------------------------------------------
-            // directive actions
-            // ---------------------------------------------------------------
-
-
-            $scope.getServiceColor = function( item ) {
-                return ServicesCatalogService.getServiceColor( item['serviceName'] );
-            };
-
-            /** helper function to have an ID (also name attribute) for each item in a cat */
-            $scope.getCartItemId = function( item ) {
-                return $scope.name + "_" + item[$scope.listItemKey];
-            };
-            $scope.getItemId = function( item ) {
-                return item[$scope.listItemKey];
-            };
-            $scope.getCartItemErrorId = function( item ) {
-                return $scope.getCartItemId( item ) + '.' + $scope.listItemKey + '.$error';
-            };
-
-
-            $scope.addAllServicesToCart = function( cartIndex ) {
-                //  todo:  P038:  this should really be in the controller since it is specialized business logic
-                angular.copy( $scope.catalog, $scope.list );
-            };
-
-            $scope.removeCart = function() {
-                //$log.warn("removeCart(): cartIndex = " + $scope.cartIndex + " name = "+$scope.name);
-                if ( $scope.cartIndex >= 0 ) {
-                    $scope.cartCollection.splice($scope.cartIndex, 1);
-                    $log.debug("$scope.cartCollection="+$scope.cartCollection);
-                }
-            };
-
-            /* -------------------- number spinner handlers --------------------------------- */
-
-            /** verifies the value of event.currentTarget (the counter), and force it to min or max if out of range
-             *      NOTE: no using in current version, using validation instead
-             *      NOTE: that either event or index are valid specifiers, event is used when available from the UI
-             *          whereas index is used for the model.  If both are specified, the UI is given preference
-             *          because that is likely where the change started
-             *      TODO:  P038:  might need to add a flag to specfiy which one takes precedence since there will
-             *          be times when the model change should take precedence
-             */
-            $scope.forceCounterWithinRange = function( event, index ) {
-                $log.debug("forceCounterWithinRange("+angular.toJson(event)+",index="+index+","+$scope.minItems+","+$scope.maxItems);
-                var value = null;
-                var item =  $scope.list[index];
-                if ( event ) {
-                    value = event.currentTarget.value;
-                }
-                else {
-                    value = item['serviceCount'];
-                }
-                $log.debug("  value="+value);
-                $log.debug("  type="+typeof(value) );
-
-                // value can be used to find out about state of validation
-                //  e.g., value = undefined:  max validation triggered
-                //                NaN:  user dragged a service with a validation error to another node
-                //                null:
-                //                '':
-                //set 0 case
-                item['serviceCount'] = 0;
-                //update if meets these
-                if(value && !isNaN(value)) {
-                    if (value < $scope.minItems ) {
-                        item['serviceCount'] = parseInt( $scope.minItems );
-                    }
-                    else if ( value > $scope.maxItems ) {
-                        item['serviceCount'] = parseInt( $scope.maxItems );
-                    }
-                }
-
-                // put value back in UI
-                if (event) {
-                    // need the parseInt because otherwise, we might have "01" instead of "1"
-                    event.currentTarget.value = parseInt( item['serviceCount'] );
-                }
-                $scope.logCartToConsole();
-            };
-
-            /* event handler for ng-keydown; this serves to only limit the keys that are recognized, and leaves business logic to the key up event */
-            $scope.onInstanceCounterKeydown = function( evt, index ) {
-                //$log.debug("onInstanceCounterKeydown( ... index="+index);
-                var keyboardControlKeycodes = [ 8, 9, 13, 37, 38, 39, 40 ];    // keycodes for backspace, tab, carriage return (enter) and arrows
-                if( keyboardControlKeycodes.indexOf( evt.which ) >= 0 ) { // to allow keyboard control keycodes
-                    //$scope.forceCounterWithinRange( evt, index );
-                }
-                else if (evt.which < 48 || evt.which > 57)   // prevent anything but digits from being typed
-                {
-                    evt.preventDefault();
-                }
-            };
-
-            /* event handler for ng-keyup */
-            $scope.onInstanceCounterKeyup = function( event, index ) {
-                $log.debug("onInstanceCounterKeyup");
-                //$scope.forceCounterWithinRange( event, index );
-            };
-
-            /* event handler for ng-change (when value of input changes)
-                NOTE:  event is passed in, but it appears to always be undefined, use index instead
-             */
-            $scope.onInstanceCounterChanged = function( event, index ) {
-                $log.debug("onInstanceCounterChanged( event="+angular.toJson(event));
-                $scope.forceCounterWithinRange( event, index );
-            };
-
-            /* event handler for ng-blur */
-            $scope.onInstanceCounterExit = function( event, index ) {
-                $log.debug("onInstanceCounterExit");
-                $scope.forceCounterWithinRange( event, index );
-            };
-
-            /** debugging method, shows the content of the cart to the console */
-            $scope.logCartToConsole = function() {
-                //angular.forEach( $scope.list, function(v,k) {
-                //    $log.warn( " " + k + " " + v['serviceName'] + " = " + v['serviceCount'] );
-                //});
-            }
-        }
-    };
-});
+});*/
 
 // puts a help icon and when user hovers over it (or other trigger as defined by the trigger attribute), it shows
 //  the help text as a popover
@@ -308,6 +76,14 @@ AppDirectives.directive('helpDescription', function() {
     }
 });
 
+AppDirectives.directive('pageInfo', function() {
+    return {
+        transclude:true,
+
+        templateUrl: 'resources/js/angular_app/directive_templates/page_info.html'
+    }
+});
+
 
 // directive that shows a UI with a pipeline selection drop-down menu with
 //  typeahead, and a job priority drop-down menu
@@ -315,7 +91,7 @@ AppDirectives.directive('helpDescription', function() {
 //  while in Javascript, it is selectedPipeline, selectedPriority
 // Note that if you do not need the pipeline (ironic, isn't it?) then just simply don't
 //  define a selected-pipeline attribute.
-AppDirectives.directive('pipelineSelection', function ($log,PipelinesService,PropertiesService) {
+AppDirectives.directive('pipelineSelection', function ($log, PipelinesService, JobPriorityService) {
     return {
         templateUrl: 'resources/js/angular_app/directive_templates/pipeline_selection.html',
         restrict: 'E',
@@ -365,7 +141,7 @@ AppDirectives.directive('pipelineSelection', function ($log,PipelinesService,Pro
                 {priority: '9', type: '(highest)'}];
 
             // set default job priority
-            PropertiesService.getDefaultJobPriority().then(function (defaultJobPriorityResponse) {
+            JobPriorityService.getDefaultJobPriority().then(function (defaultJobPriorityResponse) {
                 var defaultJobPriority;
                 if (defaultJobPriorityResponse && defaultJobPriorityResponse.data) {
                     defaultJobPriority = parseInt(defaultJobPriorityResponse.data);
@@ -567,3 +343,19 @@ function () {
     };
 }
 ]);
+
+AppDirectives.directive('mpfInteger',
+    [
+        function () {
+            return {
+                restrict: 'A',
+                require: 'ngModel',
+                link: function ($scope, $el, $attrs, ngModelCtrl) {
+                    ngModelCtrl.$validators.mpfInteger = function (modelValue) {
+                        return ngModelCtrl.$isEmpty(modelValue) || Number.isInteger(modelValue);
+                    };
+
+                }
+            };
+        }
+    ]);

@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
@@ -61,6 +62,8 @@ public class NIOUtils {
 			} catch (IOException e) {
 				log.error("Error determining the content type of file '{}'", path.toAbsolutePath().toString());
 			}
+		}else{
+			log.debug("Error determining the content type of file");
 		}
 		return contentType;
 	}

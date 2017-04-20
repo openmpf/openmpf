@@ -36,5 +36,7 @@ public interface RemoveComponentService {
 
     public void removePackage(String componentPackageFileName);
 
+    public void unregisterRetainPackage(String componentPackageFileName);
+
     public void recursivelyDeleteCustomPipelines(RegisterComponentModel rcm);
 }

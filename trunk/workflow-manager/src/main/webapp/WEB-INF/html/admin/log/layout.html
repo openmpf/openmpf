@@ -24,25 +24,24 @@
     limitations under the License.
 -->
 
-<div>
-    <!-- No header for screen space div class="row">
-        <div class="col-lg-12">
-            <h1 class="page-header">
-                <i class="fa fa-tasks fa-fw"></i>Logs
-            </h1>
-            <p>Please select a log and level using the drop down menus. <br/>Log entries that are more severe than, or equal to, the selected log level will also be displayed: FATAL > ERROR > WARN > INFO > DEBUG > TRACE > ALL.</p>
-        </div>
-    </div -->
+<!-- No header for screen space div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">
+            <i class="fa fa-tasks fa-fw"></i>Logs
+        </h1>
+        <p>Please select a log and level using the drop down menus. <br/>Log entries that are more severe than, or equal to, the selected log level will also be displayed: FATAL > ERROR > WARN > INFO > DEBUG > TRACE > ALL.</p>
+    </div>
+</div -->
 
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="row">
-                <div class="alert {{alertType}}" ng-show="alertShow">
-                    <span>{{alertMessage}}</span>
-                </div>
+<div class="row">
+    <div class="col-lg-12">
+        <div class="row">
+            <div class="alert {{alertType}}" ng-show="alertShow">
+                <span>{{alertMessage}}</span>
             </div>
-            <div id="logButtonsRow" class="row" style="margin-bottom: 5px;">
-                <div class="form-inline">
+        </div>
+        <div id="logButtonsRow" class="row" style="margin-bottom: 5px;">
+            <div class="form-inline">
                     <span class="btn-group">
                         <button type="button" class="btn btn-default dropdown-toggle"
                                 data-toggle="dropdown"><span>{{nodeTitle}}</span> <span class="caret"></span>
@@ -54,7 +53,7 @@
                                 </li>
                             </ul>
                     </span>
-                    &nbsp;
+                &nbsp;
                     <span class="btn-group">
                         <button id="logSelection" type="button" class="btn btn-default dropdown-toggle"
                                 data-toggle="dropdown" disabled><span>{{logTitle}}</span> <span class="caret"></span>
@@ -64,7 +63,7 @@
                             </li>
                         </ul>
                     </span>
-                    &nbsp;
+                &nbsp;
                     <span class="btn-group">
                         <button type="button" id="logLevelSelection" class="btn btn-default dropdown-toggle"
                                 data-toggle="dropdown">
@@ -75,7 +74,7 @@
                             </li>
                         </ul>
                     </span>
-                    &nbsp;
+                &nbsp;
                     <span id="panel-selectedLogComment" class="panel-selectedLogComment ">
                         <span>
                             <label class="checkbox-inline"><input type="checkbox" id="logScrollLock"
@@ -83,26 +82,20 @@
                         </span>
                         &nbsp;
                         <span>
-                            <span id="selectedLogCommentText">{{logTime}}</span>
+                            <span id="selectedLogCommentText" style="vertical-align:middle;">{{logTime}}</span>
                         </span>
-
-
                     </span>
-                </div>
             </div>
-
-
-            <div id="panel-contentTruncatedAlert" class="row" ng-show="truncModeEnabled" style="margin-bottom: 5px;">
-                <span aria-hidden="true" class="glyphicon glyphicon-info-sign"></span>
-                <span id="contentTruncatedAlertText">Log history exceeds viewing limit. Some older content may not be displayed.</span>
-            </div>
+        </div>
+        <div id="panel-contentTruncatedAlert" class="row" ng-show="truncModeEnabled" style="margin-bottom: 5px;">
+            <span aria-hidden="true" class="glyphicon glyphicon-info-sign"></span>
+            <span id="contentTruncatedAlertText">Log history exceeds viewing limit. Some older content may not be displayed.</span>
         </div>
     </div>
-    <div class="row">
-        <div class="col-lg-12">
+</div>
+<div class="row">
+    <div class="col-lg-12">
                 <textarea id="logText" class="form-control" readonly
                           placeholder="{{logPlaceholder}}"></textarea>
-
-        </div>
     </div>
 </div>

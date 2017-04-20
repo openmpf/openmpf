@@ -113,6 +113,8 @@ public class TestAddComponentService {
 
         verify(_mockStateService, never())
                 .update(any());
+
+        assertNeverUndeployed();
     }
 
 
@@ -136,6 +138,7 @@ public class TestAddComponentService {
 
         verify(_mockStateService, never())
                 .update(any());
+        assertNeverUndeployed();
     }
 
 
@@ -160,6 +163,7 @@ public class TestAddComponentService {
                 .replacePackageState(_testPackageName, ComponentState.REGISTER_ERROR);
         verify(_mockStateService, never())
                 .update(any());
+        assertNeverUndeployed();
     }
 
     @Test
@@ -181,10 +185,10 @@ public class TestAddComponentService {
         propertyMap.put(ALGO_PROP_NAMES.get(0), "100");
         propertyMap.put(ALGO_PROP_NAMES.get(1), "property2-value");
 
-        when(_mockPipelineService.addAndSaveAction(contains(algoDef.getName()), anyString(), eq(algoDef.getName()), eq(propertyMap)))
+        when(_mockPipelineService.addAndSaveActionDeprecated(contains(algoDef.getName()), anyString(), eq(algoDef.getName()), eq(propertyMap)))
                 .thenReturn(_successTuple);
 
-        when(_mockPipelineService.addAndSaveTask(whereArg(td -> td.getName().contains(algoDef.getName()))))
+        when(_mockPipelineService.addAndSaveTaskDeprecated(whereArg(td -> td.getName().contains(algoDef.getName()))))
                 .thenReturn(_successTuple);
 
         when(_mockStateService.getByPackageFile(_testPackageName))
@@ -223,13 +227,15 @@ public class TestAddComponentService {
                 .addAndSaveAlgorithm(algoDef);
 
         verify(_mockPipelineService)
-                .addAndSaveAction(contains(algoDef.getName()), anyString(), anyString(), eq(propertyMap));
+                .addAndSaveActionDeprecated(contains(algoDef.getName()), anyString(), anyString(), eq(propertyMap));
 
         verify(_mockDeploymentService)
                 .deployComponent(_testPackageName);
 
         verify(_mockNodeManager)
                 .addService(whereArg(s -> s.getName().equals(COMPONENT_NAME)));
+
+        assertNeverUndeployed();
     }
 
 
@@ -266,6 +272,8 @@ public class TestAddComponentService {
 
         verify(_mockStateService)
                 .replacePackageState(_testPackageName, ComponentState.REGISTER_ERROR);
+
+        assertUndeployed(COMPONENT_NAME);
     }
 
 
@@ -281,14 +289,14 @@ public class TestAddComponentService {
         when(_mockPipelineService.addAndSaveAlgorithm(algoDef))
                 .thenReturn(_successTuple);
 
-        when(_mockPipelineService.addAndSaveAction(nonBlank(), nonBlank(), eq(REFERENCED_ALGO_NAME),
-                                              anyNonNull()))
+        when(_mockPipelineService.addAndSaveActionDeprecated(nonBlank(), nonBlank(), eq(REFERENCED_ALGO_NAME),
+                anyNonNull()))
                 .thenReturn(_successTuple);
 
-        when(_mockPipelineService.addAndSaveTask(anyNonNull()))
+        when(_mockPipelineService.addAndSaveTaskDeprecated(anyNonNull()))
                 .thenReturn(_successTuple);
 
-        when(_mockPipelineService.addAndSavePipeline(anyNonNull()))
+        when(_mockPipelineService.addAndSavePipelineDeprecated(anyNonNull()))
                 .thenReturn(_successTuple);
 
         when(_mockNodeManager.getServiceModels())
@@ -311,10 +319,10 @@ public class TestAddComponentService {
                                 && rcm.getPipelines().contains(PIPELINE_NAME)));
 
         verify(_mockPipelineService, times(3))
-                .addAndSaveAction(nonBlank(), nonBlank(), eq(REFERENCED_ALGO_NAME), anyNonNull());
+                .addAndSaveActionDeprecated(nonBlank(), nonBlank(), eq(REFERENCED_ALGO_NAME), anyNonNull());
 
         verify(_mockPipelineService)
-                .addAndSaveAction(
+                .addAndSaveActionDeprecated(
                         eq(ACTION_NAMES.get(0)),
                         nonBlank(),
                         nonBlank(),
@@ -322,25 +330,26 @@ public class TestAddComponentService {
                                 .equals(ACTION1_PROP_VALUES.get(0))));
 
         verify(_mockPipelineService)
-                .addAndSaveTask(whereArg(t ->
+                .addAndSaveTaskDeprecated(whereArg(t ->
                         t.getName().equals(TASK_NAMES.get(0))
-                        && t.getDescription().equals(TASK_NAMES.get(0) + " description")
-                        && t.getActions().size() == 1));
+                                && t.getDescription().equals(TASK_NAMES.get(0) + " description")
+                                && t.getActions().size() == 1));
 
         verify(_mockPipelineService)
-                .addAndSaveTask(whereArg(t ->
+                .addAndSaveTaskDeprecated(whereArg(t ->
                         t.getName().equals(TASK_NAMES.get(1))
                                 && t.getDescription().equals(TASK_NAMES.get(1) + " description")
                                 && t.getActions().size() == 2));
 
         verify(_mockPipelineService)
-                .addAndSavePipeline(whereArg(p ->
-                    p.getName().equals(PIPELINE_NAME)
-                    && p.getDescription().contains("description")
-                    && p.getTaskRefs().size() == 2));
+                .addAndSavePipelineDeprecated(whereArg(p ->
+                        p.getName().equals(PIPELINE_NAME)
+                                && p.getDescription().contains("description")
+                                && p.getTaskRefs().size() == 2));
 
         verify(_mockNodeManager)
                 .addService(whereArg(s -> s.getName().equals(COMPONENT_NAME)));
+        assertNeverUndeployed();
     }
 
 
@@ -365,6 +374,7 @@ public class TestAddComponentService {
         // Assert
         verify(_mockRemoveComponentService, never())
                 .recursivelyDeleteCustomPipelines(any());
+        assertUndeployed(COMPONENT_NAME);
     }
 
     @Test
@@ -386,7 +396,8 @@ public class TestAddComponentService {
                 .addAndSaveAlgorithm(any());
 
         verify(_mockPipelineService, never())
-                .addAndSaveAction(any(), any(), any(), any());
+                .addAndSaveActionDeprecated(any(), any(), any(), any());
+        assertUndeployed(COMPONENT_NAME);
     }
 
     @Test
@@ -408,7 +419,8 @@ public class TestAddComponentService {
                 .addAndSaveAlgorithm(any());
 
         verify(_mockPipelineService, never())
-                .addAndSaveAction(any(), any(), any(), any());
+                .addAndSaveActionDeprecated(any(), any(), any(), any());
+        assertUndeployed(COMPONENT_NAME);
     }
 
     private void setUpMocksForDescriptor(JsonComponentDescriptor descriptor) throws DuplicateComponentException, IOException {
@@ -424,6 +436,17 @@ public class TestAddComponentService {
 
         when(_mockObjectMapper.readValue(new File(DESCRIPTOR_PATH), JsonComponentDescriptor.class))
                 .thenReturn(descriptor);
+    }
+
+
+    private void assertUndeployed(String componentTld) {
+        verify(_mockDeploymentService)
+                .undeployComponent(componentTld);
+    }
+
+    private void assertNeverUndeployed() {
+        verify(_mockDeploymentService, never())
+                .undeployComponent(any());
     }
 }
 

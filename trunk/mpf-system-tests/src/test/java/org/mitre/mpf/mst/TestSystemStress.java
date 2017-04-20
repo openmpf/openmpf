@@ -37,7 +37,7 @@ import java.net.URI;
 import java.util.*;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestSystemStress extends TestSystem {
+public class TestSystemStress extends TestSystemWithDefaultConfig {
 
     private static final Logger log = LoggerFactory.getLogger(TestSystemStress.class);
 
@@ -58,7 +58,8 @@ public class TestSystemStress extends TestSystem {
         // rejects
         //        mediaPaths.add(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/face/092515_VPOTUS_HD.mp4").toString());  // 1.25G
 
-        long jobId = runPipelineOnMedia("DEFAULT_EXTRACTION_MOTION_MOG_PIPELINE", media, propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
+        String pipelineName = addDefaultMotionMogPipeline();
+        long jobId = runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
         checkOutput(actualOutputPath, media.size());
         log.info("Finished test runMotionMogDetectVideo()");
@@ -72,7 +73,8 @@ public class TestSystemStress extends TestSystem {
 
         // 28MG
         List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/speech/obamastateoftheunion2015.mp3"));
-        long jobId = runPipelineOnMedia("DEFAULT_EXTRACTION_SPEECH_SPHINX_PIPELINE", media, propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
+        String pipelineName = addDefaultSphinxSpeechExtractionPipeline();
+        long jobId = runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
         checkOutput(actualOutputPath, 1);
         log.info("Finished test runSpeechSphinxDetectAudio()");

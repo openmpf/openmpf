@@ -23,6 +23,9 @@
  * See the License for the specific language governing permissions and        *
  * limitations under the License.                                             *
  ******************************************************************************/
+html, body{
+    height:100%;
+}
 .arrow-up-col {
     float: left;
 }
@@ -86,23 +89,46 @@
     cursor: inherit;
     display: block;
 }
+.navbar{
+    margin-bottom: 0px;
+    background: #525965;
+}
+.navbar-default .navbar-nav>li>a {
+    color:#FFF;
+}
+.navbar-default .navbar-nav > li > a:hover,
+.navbar-default .navbar-nav > li > a:focus {
+    color: #fff;
+    background-color: transparent;
+}
+.navbar-default .navbar-brand{
+    color:#FFF;
+    font-size: 1.5em;
+    font-weight: 700;
+}
+.navbar-brand{
+    padding: 10px 0 0 10px;
+}
+.navbar-brand img{
+    width:40px;
+    position: relative;
+    top:-5px;
+}
+.nav .dropdown{
+    cursor: pointer;
+}
 
-.navbar-header  {
+.container-fluid {
+    padding-right: 15px;
     padding-left: 15px;
+    margin-right: 15px;
+    margin-left: 15px;
+    height:90%
 }
 
-.navbar-brand  {
-    font-weight: bold;
-}
-
-.sidebar {
-  margin-top: 0px;
-}
-
-#content {
-    padding-top: 50px;
-    padding-left: 280px;
-    padding-right: 25px;
+.page-header {
+    padding-bottom: 5px;
+    margin: 10px 0px 20px;
 }
 
 .table thead>tr>th, .table tbody>tr>th, .table tfoot>tr>th, .table thead>tr>td, .table tbody>tr>td, .table tfoot>tr>td {
@@ -153,7 +179,6 @@ h1 {
   background-color: #915608;
 }
 
-
 .ng-modal-overlay {
   /* A dark translucent div that covers the whole screen */
   position:absolute;
@@ -198,7 +223,9 @@ h1 {
 }
 
 .media-thumb{
-    height:60px;
+    height:50px;
+    font-size:50px;
+    margin-right: 5px;
 }
 
 .server-media-panel{
@@ -216,15 +243,6 @@ div.server-media .panel-body{
 
 #viewNodeModal{
     height:100%;
-}
-
-html, body {
-    height: 100%;
-    margin: 0px;
-}
-.container {
-    height: 100%;
-    padding:0px;
 }
 
 
@@ -353,6 +371,7 @@ div.dataTables_scrollBody thead td{
     height:0px;
 }
 
+
 div.dt-buttons{
     position: relative;
     display: inline-block;
@@ -382,59 +401,6 @@ table.dataTable thead > tr > th{
     padding:2px;
 }
 
-#jobTable_wrapper a{
-    display: inline-block;
-    padding: 6px 12px;
-    margin-bottom: 0;
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 1.42857143;
-    text-align: center;
-    white-space: nowrap;
-    vertical-align: middle;
-    -ms-touch-action: manipulation;
-    touch-action: manipulation;
-    cursor: pointer;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    background-image: none;
-    border-radius: 4px;
-}
-
-#jobTable_wrapper button.dt-button, div.dt-button, a.dt-button{
-    color: #333;
-    background-color: #FFF;
-    border-color: #CCC;
-}
-#jobTable_wrapper button.dt-button:active:not(.disabled), button.dt-button.active:not(.disabled), div.dt-button:active:not(.disabled), div.dt-button.active:not(.disabled), a.dt-button:active:not(.disabled), a.dt-button.active:not(.disabled){
-    background-color: #5cb85c;
-    border-color: #4cae4c;
-}
-#jobTable_wrapper div.dt-buttons{
-    position: relative;
-    display: inline-block;
-    vertical-align: middle;
-    margin-right: 20px;
-}
-
-#jobTable_wrapper div.dt-buttons a{
-    margin-right: 0px;
-}
-
-#jobTable_wrapper a:first-child{
-    border-top-right-radius: 0px;
-    border-bottom-right-radius: 0px;
-}
-#jobTable_wrapper a:last-child {
-    border-bottom-left-radius: 0px;
-    border-top-left-radius: 0px;
-}
-#jobTable_wrapper button.dt-button, div.dt-button, a.dt-button{
-    margin-right:0;
-}
-
 .license {
     margin-bottom: 5em;
 }
@@ -454,9 +420,43 @@ table.dataTable thead > tr > th{
         height:auto;
     }
 }
-
+#file_list_server_wrapper {
+    height:100%;
+}
+#file_list_server_wrapper table {
+    width:100%;
+}
+#file_list_server_wrapper .dataTables_scrollHead{
+    display:none;
+}
+#file_list_server_wrapper .bottom{
+    position: absolute;
+    bottom:0;
+    width:100%;
+}
 #selected_file_list_wrapper div.dt-buttons {
     margin-right: 5px;
+}
+#selected_file_list_filter{
+    padding-left:15px;
+}
+
+div.dt-buttons .remove-dt-button,div.dt-buttons .remove-dt-button:hover,div.dt-buttons .remove-dt-button:visited,div.dt-buttons .remove-dt-button:focus {
+    color: #FFF;
+    background-color: #D2322D;
+    border-color: #AC2925;
+    background-image: none;
+}
+div.dt-buttons .media-propertied-dt-button,div.dt-buttons .media-propertied-dt-button:hover,div.dt-buttons .media-propertied-dt-button:visited,div.dt-buttons .media-propertied-dt-button:focus {
+    color: #FFF;
+    background-color: #3276B1;
+    border-color: #285E8E;
+    background-image: none;
+}
+
+#selectedFilesForProperties{
+    max-height: 100px;
+    overflow-y: auto;
 }
 
 .treeview .list-group-item {
@@ -469,24 +469,24 @@ table.dataTable thead > tr > th{
     background-color: #47a447;
     border-color: #398439;
 }
-
-#markupsTable_wrapper button.dt-button, #markupsTable_wrapper div.dt-button, #markupsTable_wrapper a.dt-button{
-    color: #FFF;
-    background-color: #ED9C28;
-    border-color: #D58512;
+#jobTable_filter input {
+    width: 90%;
 }
-#markupsTable_wrapper button.dt-button:active:not(.disabled), #markupsTable_wrapper button.dt-button.active:not(.disabled), #markupsTable_wrapper div.dt-button:active:not(.disabled), #markupsTable_wrapper div.dt-button.active:not(.disabled), #markupsTable_wrapper a.dt-button:active:not(.disabled), #markupsTable_wrapper a.dt-button.active:not(.disabled){
-    background-color: #ED9C28;
-    border-color: #D58512;
+.img-btn {
+    height:50px;
+    cursor:pointer;
 }
-#markupsTable_wrapper button.dt-button, #markupsTable_wrapper div.dt-button, #markupsTable_wrapper a.dt-button{
-    margin-right:15px;
+.job-status{
+    display:block;
 }
-#markupsTable_wrapper div.dt-buttons{
-    position: relative;
-    display: inline-block;
-    vertical-align: middle;
-    margin-right:5px;
+#markupsTable .glyphicon{
+    font-size:50px;
+}
+#markupsTable_filter input {
+    width: 90%;
+}
+#jobInputTable_filter input {
+    width: 90%;
 }
 
 #breadcrumb{
@@ -511,13 +511,28 @@ table.dataTable thead > tr > th{
     overflow:auto;
 }
 
+#directoryListDivBtns{
+    padding-top: 8px;
+}
+
 #directoryTreeview ul{
     display:inline-block;
+    width:95%;
+    box-shadow: none;
 }
 #directoryTreeview ul li{
     white-space:nowrap;
 }
 
+#directoryTreeview .list-group-item:first-child {
+    border-top-right-radius: 0;
+    border-top-left-radius: 0;
+}
+
+#directoryTreeview .list-group-item:last-child {
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+}
 .dropzone .dz-preview .dz-details,
 .dropzone-previews .dz-preview .dz-details {
     height:auto;
@@ -538,5 +553,65 @@ table.dataTable thead > tr > th{
     padding: 5px 15px;
 }
 
+.modal-lg{
+    width:80%;
+}
+
+table.dataTable span.highlight {
+    background-color: #FFFF88;
+    color:#000;
+}
+.node-service-list{
+    padding: 4px 15px;
+}
+
+.modal-header{
+    word-break: break-all;
+}
+.text-stopped {
+    color: #808080;
+}
+
+.label-frame {
+    color: #808080;
+    background-color:transparent;
+    /*white circle
+    border: 1px solid #808080;
+    background-color: #fff;*/
+
+}
+
+.label-frame-danger {
+    color: #FFF;
+    border: 1px solid #D9534F;
+    background-color: #D9534F;
+}
+
+.btn-group-sm > .btn {
+    padding: 2px 4px;
+}
+
+.node-service-panel, .node-panel {
+    margin-bottom: 0;
+}
+.count-label{
+    display:inline-block;
+    width:15%;
+}
 
 
+.page-header h3{
+    display:inline;
+}
+.component-registration-modal .modal-dialog {
+    width: auto;
+    display: inline-block;
+}
+
+.component-registration-modal.modal.in{
+    text-align: center;
+}
+
+.component-registration-modal .modal-dialog .modal-content {
+    text-align: left;
+}

@@ -26,11 +26,9 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import javax.validation.ConstraintViolation;
-import java.util.List;
 import java.util.Set;
 
 import static java.util.stream.Collectors.joining;
@@ -39,37 +37,23 @@ public class InvalidComponentDescriptorException extends ComponentRegistrationEx
 
     private final Set<ConstraintViolation<JsonComponentDescriptor>> _validationErrors;
 
-    private final List<String> _customMessages;
 
-    public InvalidComponentDescriptorException(Set<ConstraintViolation<JsonComponentDescriptor>> validationErrors, List<String> messages) {
-        super(createMessage(validationErrors, messages));
+    public InvalidComponentDescriptorException(Set<ConstraintViolation<JsonComponentDescriptor>> validationErrors) {
+        super(createMessage(validationErrors));
         _validationErrors = ImmutableSet.copyOf(validationErrors);
-        _customMessages = ImmutableList.copyOf(messages);
     }
 
-    private static String createMessage(Set<ConstraintViolation<JsonComponentDescriptor>> validationErrors, List<String> customMessages) {
-        StringBuffer buffer = new StringBuffer();
 
-        if (!validationErrors.isEmpty()) {
-            buffer.append(validationErrors.stream()
-                    .map(cv -> cv.getPropertyPath() + " " + cv.getMessage())
-                    .sorted()
-                    .collect(joining("\n", "The following fields have errors:\n", "\n")));
-        }
-
-        if (!customMessages.isEmpty()) {
-            buffer.append(customMessages.stream()
-                    .collect(joining("\n")));
-        }
-
-        return buffer.toString().trim();
+    private static String createMessage(Set<ConstraintViolation<JsonComponentDescriptor>> validationErrors) {
+        return validationErrors.stream()
+                .map(cv -> cv.getPropertyPath() + " " + cv.getMessage())
+                .sorted()
+                .collect(joining("\n", "The following fields have errors:\n", "\n"));
     }
+
 
     public Set<ConstraintViolation<JsonComponentDescriptor>> getValidationErrors() {
         return _validationErrors;
     }
 
-    public List<String> getCustomMessages() {
-        return _customMessages;
-    }
 }

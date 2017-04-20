@@ -26,33 +26,11 @@
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <tasks>
-    <!--
-
-    ##########
-    # MARKUP #
-    ##########
-
-    -->
 
     <task name="OCV GENERIC MARKUP TASK">
         <description>Performs object markup in images and videos.</description>
         <action-refs>
             <action-ref name="OCV GENERIC MARKUP ACTION" />
-        </action-refs>
-    </task>
-
-    <!--
-
-    #############
-    # DETECTION #
-    #############
-
-    -->
-
-    <task name="SPHINX SPEECH DETECTION TASK">
-        <description>Performs speech detection.</description>
-        <action-refs>
-            <action-ref name="SPHINX SPEECH DETECTION ACTION" />
         </action-refs>
     </task>
 

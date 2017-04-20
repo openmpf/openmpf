@@ -26,7 +26,10 @@
 
 #include <jni.h>
 #include <stdlib.h>
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/imgcodecs.hpp>
+
 /* Header for class org_mitre_mpf_frameextractor_FrameExtractor */
 
 #ifndef _Included_org_mitre_mpf_frameextractor_FrameExtractor
@@ -124,96 +127,99 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
         // Set up the videos...
         const char *inChars = env->GetStringUTFChars(video, NULL);
         if (inChars != NULL) {
-            VideoCapture src(inChars);
-            if (!src.isOpened()) {
+            try {
+                VideoCapture src(inChars);
+                if (!src.isOpened()) {
 
-                // Cleanup...
-                env->ReleaseStringUTFChars(video, inChars);
+                    // Cleanup...
+                    env->ReleaseStringUTFChars(video, inChars);
 
-                return 8700;
-            }
+                    return 8700;
+                }
 
-            Mat frame;
-            int a = 0, r = 0, g = 0, b = 0;
+                Mat frame;
+                int a = 0, r = 0, g = 0, b = 0;
 
-            jobject iterator = env->CallObjectMethod(framesSet, clzSet_fnIterator);
-            if (env->ExceptionCheck()) {
-                env->ReleaseStringUTFChars(video, inChars);
-                env->ExceptionClear();
-                return 8701;
-            }
-
-            // While there are more frames in the set...
-            while (env->CallBooleanMethod(iterator, clzIterator_fnHasNext) == JNI_TRUE) {
-            if (env->ExceptionCheck()) {
-                env->ReleaseStringUTFChars(video, inChars);
-                env->ExceptionClear();
-                return 8701;
-            }
-                // Get the next frame index from the set...
-                jobject boxed = env->CallObjectMethod(iterator, clzIterator_fnNext);
+                jobject iterator = env->CallObjectMethod(framesSet, clzSet_fnIterator);
                 if (env->ExceptionCheck()) {
                     env->ReleaseStringUTFChars(video, inChars);
                     env->ExceptionClear();
                     return 8701;
                 }
 
-                // Unbox it because Java...
-                jint unboxed = env->CallIntMethod(boxed, clzInteger_fnIntValue);
-                if (env->ExceptionCheck()) {
-                    env->ReleaseStringUTFChars(video, inChars);
-                    env->ExceptionClear();
-                    return 8701;
-                }
-
-                // Cast it to something OpenCV can use...
-                int nextFrameIndex = (int)unboxed;
-
-                // Tell OpenCV to go to that frame next...
-                src.set(CV_CAP_PROP_POS_FRAMES, nextFrameIndex);
-
-                // Get the frame...
-                src >> frame;
-
-                // If that frame is empty, we've reached the end of the video.
-                if (frame.empty()) { break; }
-
-                // Otherwise, extract that frame.
-                jstring filename = (jstring)env->CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnMakeFilename, destinationPath, unboxed);
-                if (env->ExceptionCheck()) {
-                    env->ReleaseStringUTFChars(video, inChars);
-                    env->ExceptionClear();
-                    return 8701;
-                }
-                env->CallObjectMethod(map, clzMap_fnPut, boxed, filename);
+                // While there are more frames in the set...
+                while (env->CallBooleanMethod(iterator, clzIterator_fnHasNext) == JNI_TRUE) {
+                    if (env->ExceptionCheck()) {
+                        env->ReleaseStringUTFChars(video, inChars);
+                        env->ExceptionClear();
+                        return 8701;
+                    }
+                    // Get the next frame index from the set...
+                    jobject boxed = env->CallObjectMethod(iterator, clzIterator_fnNext);
                     if (env->ExceptionCheck()) {
                         env->ReleaseStringUTFChars(video, inChars);
                         env->ExceptionClear();
                         return 8701;
                     }
 
-                if (filename != NULL) {
-                    const char *destChars = env->GetStringUTFChars(filename, NULL);
-                    if (destChars != NULL) {
-                        imwrite(destChars, frame);
-                        env->CallObjectMethod(map, clzMap_fnPut, boxed, filename);
-                        if (env->ExceptionCheck()) {
-                            env->ReleaseStringUTFChars(filename, destChars);
-                            env->ReleaseStringUTFChars(video, inChars);
-                            env->ExceptionClear();
-                            return 8701;
-                        }
-                        env->ReleaseStringUTFChars(filename, destChars);
-                    } else {
+                    // Unbox it because Java...
+                    jint unboxed = env->CallIntMethod(boxed, clzInteger_fnIntValue);
+                    if (env->ExceptionCheck()) {
                         env->ReleaseStringUTFChars(video, inChars);
+                        env->ExceptionClear();
                         return 8701;
                     }
+
+                    // Cast it to something OpenCV can use...
+                    int nextFrameIndex = (int)unboxed;
+
+                    // Tell OpenCV to go to that frame next...
+                    src.set(cv::CAP_PROP_POS_FRAMES, nextFrameIndex);
+
+                    // Get the frame...
+                    src >> frame;
+
+                    // If that frame is empty, we've reached the end of the video.
+                    if (frame.empty()) { break; }
+
+                    // Otherwise, extract that frame.
+                    jstring filename = (jstring)env->CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnMakeFilename, destinationPath, unboxed);
+                    if (env->ExceptionCheck()) {
+                        env->ReleaseStringUTFChars(video, inChars);
+                        env->ExceptionClear();
+                        return 8701;
+                    }
+                    env->CallObjectMethod(map, clzMap_fnPut, boxed, filename);
+                    if (env->ExceptionCheck()) {
+                        env->ReleaseStringUTFChars(video, inChars);
+                        env->ExceptionClear();
+                        return 8701;
+                    }
+
+                    if (filename != NULL) {
+                        const char *destChars = env->GetStringUTFChars(filename, NULL);
+                        if (destChars != NULL) {
+                            imwrite(destChars, frame);
+                            env->CallObjectMethod(map, clzMap_fnPut, boxed, filename);
+                            if (env->ExceptionCheck()) {
+                                env->ReleaseStringUTFChars(filename, destChars);
+                                env->ReleaseStringUTFChars(video, inChars);
+                                env->ExceptionClear();
+                                return 8701;
+                            }
+                            env->ReleaseStringUTFChars(filename, destChars);
+                        } else {
+                            env->ReleaseStringUTFChars(video, inChars);
+                            return 8701;
+                        }
+                    }
                 }
+                src.release();
+
+                env->ReleaseStringUTFChars(video, inChars);
+            } catch (cv::Exception) {
+                return 8701;
             }
-            src.release();
-
-            env->ReleaseStringUTFChars(video, inChars);
-
         } else {
             return 8701;
         }

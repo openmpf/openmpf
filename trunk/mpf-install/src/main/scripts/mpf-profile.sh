@@ -38,7 +38,7 @@
 # values for the given runtime environment.  Then copy this file to /etc/profile.d/mpf.sh
 export no_proxy=localhost
 export MPF_USER=mpf
-export MPF_HOME=/home/mpf/mpf/trunk/install
+export MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 export MPF_LOG_PATH=$MPF_HOME/logs
 export JAVA_HOME=/usr/java/latest
 export THIS_MPF_NODE=$HOSTNAME

@@ -17,6 +17,14 @@
 
     "MPF_Components": [
         {
+            "name": "MogMotionDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/motion/MogMotionDetection"
+        },
+        {
+            "name": "SubsenseMotionDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/motion/SubsenseMotionDetection"
+        },
+        {
             "name": "DlibFaceDetection",
             "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/DlibFaceDetection"
         },
@@ -31,14 +39,6 @@
         {
             "name": "OalprLicensePlateTextDetection",
             "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/OalprLicensePlateTextDetection"
-        },
-        {
-            "name": "MogMotionDetection",
-            "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/motion/MogMotionDetection"
-        },
-        {
-            "name": "SubsenseMotionDetection",
-            "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/motion/SubsenseMotionDetection"
         },
         {
             "name": "SphinxSpeechDetection",

@@ -40,26 +40,18 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.*;
-import org.apache.commons.io.IOUtils;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.mvc.model.SessionModel;
-import org.mitre.mpf.mvc.util.NIOUtils;
-import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.mvc.util.ModelUtils;
-import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,14 +64,16 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.File;
-import java.io.FileInputStream;
-import java.net.URI;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.joining;
 
 // swagger includes
 
@@ -90,8 +84,6 @@ import java.util.*;
 @Profile("website")
 public class JobController {
     private static final Logger log = LoggerFactory.getLogger(JobController.class);
-
-    public static final String DEFAULT_ERROR_VIEW = "error";
 
     @Autowired
     private PropertiesUtil propertiesUtil;
@@ -104,12 +96,6 @@ public class JobController {
 
     @Autowired
     private JobProgress jobProgress;
-
-    @Autowired
-    private IoUtils ioUtils;
-
-    @Autowired
-    private JsonUtils jsonUtils;
 
     /*
      *	POST /jobs
@@ -260,40 +246,38 @@ public class JobController {
     @RequestMapping(value = "/rest/jobs/{id}/output/detection", method = RequestMethod.GET)
     @ApiOperation(value = "Gets the JSON detection output object of a specific job using the job id as a required path variable.",
             produces = "application/json", response = JsonOutputObject.class)
-    @ApiResponses(value = {
+    @ApiResponses({
             @ApiResponse(code = 200, message = "Successful response"),
-            @ApiResponse(code = 400, message = "Invalid id"),
-            @ApiResponse(code = 401, message = "Bad credentials")})
+            @ApiResponse(code = 401, message = "Bad credentials"),
+            @ApiResponse(code = 404, message = "Invalid id")})
     @ResponseBody
-    public ResponseEntity<JsonOutputObject> getSerializedDetectionOutputRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long idPathVar) {
-        JsonOutputObject jsonOutputObject = null;
-        JobRequest jobRequest = mpfService.getJobRequest(idPathVar);
-        if (jobRequest != null) {
-            jsonOutputObject = jsonPathToJsonNode(jobRequest.getOutputObjectPath(), "detection", JsonOutputObject.class);
-        }
-
-        //return 200 for successful GET and object, 401 for bad credentials, 400 for bad id
-        return new ResponseEntity<>(jsonOutputObject, (jsonOutputObject != null) ? HttpStatus.OK : HttpStatus.BAD_REQUEST);
+    public ResponseEntity<?> getSerializedDetectionOutputRest(
+            @ApiParam(required = true, value = "Job id") @PathVariable("id") long idPathVar) throws IOException {
+        //return 200 for successful GET and object, 401 for bad credentials, 404 for bad id
+        return getJobOutputObjectAsString(idPathVar)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
+
 
     @RequestMapping(value = "/jobs/output-object", method = RequestMethod.GET)
-    public ModelAndView getOutputObject(@RequestParam(value = "id", required = true) long idParam, HttpServletRequest httpServletRequest) throws JsonProcessingException {
-        ModelAndView mav = new ModelAndView("output_object");
-
-        Object jsonOutputObject = null;
-
-        JobRequest jobRequest = mpfService.getJobRequest(idParam);
-        if(jobRequest != null) {
-            jsonOutputObject = (JsonOutputObject) jsonPathToJsonNode(jobRequest.getOutputObjectPath(), "output", JsonOutputObject.class);
-        }
-
-        ObjectMapper mapper = new ObjectMapper();
-        //convert to a json string
-        String jsonStr = mapper.writeValueAsString(jsonOutputObject);
-
-        mav.addObject("jsonObj", jsonStr);
-        return mav;
+    public ModelAndView getOutputObject(@RequestParam(value = "id", required = true) long idParam) throws IOException {
+        return getJobOutputObjectAsString(idParam)
+                .map(jsonStr -> new ModelAndView("output_object", "jsonObj", jsonStr))
+                .orElseThrow(() -> new IllegalStateException(idParam + " does not appear to be a valid Job Id."));
     }
+
+
+    private Optional<String> getJobOutputObjectAsString(long jobId) throws IOException {
+        JobRequest jobRequest = mpfService.getJobRequest(jobId);
+        if (jobRequest == null) {
+            return Optional.empty();
+        }
+        try (Stream<String> lines = Files.lines(Paths.get(jobRequest.getOutputObjectPath()))) {
+            return Optional.of(lines.collect(joining()));
+        }
+    }
+
 
     /*
      * /jobs/{id}/resubmit
@@ -470,62 +454,6 @@ public class JobController {
         }
 
         return jobInfoList;
-    }
-
-    private String getSerializedOutputObjectPathVersionOne(long jobId) {
-        JobRequest jobRequest = mpfService.getJobRequest(jobId);
-        if (jobRequest != null) {
-            return jobRequest.getOutputObjectPath();
-        } else {
-            // TODO: What happens if output object creation hasn't been performed?
-            return null;
-        }
-    }
-
-    private <T> T jsonPathToJsonNode(String jsonFilePath, String type, Class<T> returnTypeClass) {
-        T jsonOutputObject = null;
-        JsonNode jsonNode = null;
-        //this just means that the file was read, not that it is valid
-        boolean successfulRead = false;
-        ObjectMapper mapper = new ObjectMapper();
-
-        if (jsonFilePath != null) {
-            try {
-                FileInputStream inputStream = new FileInputStream(jsonFilePath);
-                if (inputStream != null) {
-                    String allText = IOUtils.toString(inputStream);
-                    if (allText != null && !allText.isEmpty()) {
-                        jsonNode = mapper.readTree(allText);
-                        successfulRead = true;
-                    }
-                    inputStream.close();
-
-                    //now try to map it to the object
-                    if (jsonNode != null) {
-                        try {
-                            jsonOutputObject = mapper.treeToValue(jsonNode, returnTypeClass);
-                        } catch (JsonProcessingException e) {
-                            log.error("Failed to map json output object file at '{}' to a JsonOutputObject.", jsonFilePath, e);
-                        }
-                    }
-                }
-            } catch (Exception ex) {
-                log.error("Failed to read the json file at path '{}' in order to produce a json node, raised exception: ", jsonFilePath, ex);
-            }
-        } else {
-            //types can be - output
-            log.error("Cannot create a json node without a '{}' output object file path.", type);
-        }
-
-        //making sure to log for null inputStream, null or empty read text, and a null jsonNode (though this should throw an
-        //	exception from readTree and any issues mapping from a non null jsonNode should throw an exception when mapping to the output object
-        //This will like produce multiple log statements when there is an error, but that is better than none and the extra
-        //	statement will be helpful!
-        if (!successfulRead || jsonNode == null) {
-            log.error("Failed to properly read json from the object file at '{}'.", jsonFilePath);
-        }
-
-        return jsonOutputObject;
     }
 
     private JobCreationResponse resubmitJobVersionOne(long jobIdParam, Integer jobPriorityParam) {

@@ -46,7 +46,7 @@ my %mpfCoreRPMs = ('markup' => "trunk/markup/target/rpm/mpf-markup/RPMS/noarch",
 		   'protobuf' => "trunk/protobuf/target/rpm/mpf-protobuf/RPMS/noarch",
 		   'video-overlay' => "trunk/video-overlay/target/rpm/mpf-video-overlay/RPMS/noarch",
 		   'workflowManager' => "trunk/workflow-manager/target/rpm/mpf-workflowManager/RPMS/noarch",
-		   'java-component-api' => "new-repos/openmpf-java-component-sdk/java-component-api/target/rpm/mpf-java-component-api/RPMS/noarch",
+		   'java-component-api' => "../openmpf-java-component-sdk/java-component-api/target/rpm/mpf-java-component-api/RPMS/noarch",
 		   'java-component-executor' => "trunk/detection/executor/java/target/rpm/mpf-java-component-executor/RPMS/noarch");
 
 my %mpfCoreTars = ('mpf-install-dep' => "trunk/mpf-install/target");

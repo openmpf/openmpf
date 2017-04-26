@@ -395,7 +395,7 @@ sub mavenRPM {
 	}
 	close PIPE;
 
-	chdir "$mpfPath/new-repos/openmpf-java-component-sdk";
+	chdir "$mpfPath/../openmpf-java-component-sdk";
 	open PIPE, $buildCommand;
 	while(<PIPE>) {
 		printMaven($_);

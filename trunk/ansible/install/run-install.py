@@ -263,13 +263,14 @@ else:
     mpf_home = '/opt/mpf'
 
 # Get the package configuration file(s)
-package_config_file = glob.glob(''.join([mpf_home, '/manage/repo/files/mpf-*-package.json']))
+package_config_files = sorted(glob.glob(''.join([mpf_home, '/manage/repo/files/mpf-*-package.json'])),
+                              key=os.path.getmtime,
+                              reverse=True)
 
 MPFComponentFiles = namedtuple('mpf_component_files', ['NewComponentFile', 'OldComponentFile'])
 
 mpf_component_files = MPFComponentFiles(NewComponentFile=''.join([mpf_home, '/data/components.json']),
                                         OldComponentFile=''.join([mpf_home, '/share/components/components.json']))
-
 
 # Move back the previous components.json file from the backup if it exists
 if os.path.isfile(''.join([mpf_home, '/data/components.json.bak'])):
@@ -285,22 +286,22 @@ mpf_components = []
 upgrade_choice = yes_or_no_prompt('Is this an upgrade to an existing MPF install?', False)
 
 # Prompt user to select config file if more than one is found
-if len(package_config_file) > 1:
+if len(package_config_files) > 1:
     print 'More than one package config file was found.'
-    for idx, config_file in enumerate(package_config_file):
+    for idx, config_file in enumerate(package_config_files):
         print '{0}- {1}'.format(idx+1, basename(config_file))
     package_config_file_idx = 0
-    while package_config_file_idx not in range(1, len(package_config_file)+1):
+    while package_config_file_idx not in range(1, len(package_config_files)+1):
         print 'Which package config file to use?'
-        package_config_file_idx = int(raw_input('(' + (', '.join(str(x) for x in xrange(1, len(package_config_file) + 1))) + ') [Default: 1]: ') or 1)
-        package_config_file = package_config_file[package_config_file_idx - 1]
+        package_config_file_idx = int(raw_input('(' + (', '.join(str(x) for x in xrange(1, len(package_config_files) + 1))) + ') [Default: 1]: ') or 1)
+        package_config_files = package_config_files[package_config_file_idx - 1]
 
 else:
     # Only one package configuration file was found
-    package_config_file = package_config_file[0]
+    package_config_files = package_config_files[0]
 
 # Load the package configuration file
-package_data = load_json_from_file(package_config_file)
+package_data = load_json_from_file(package_config_files)
 
 
 # Prompt to register components listed in the package configuration file.
@@ -385,29 +386,35 @@ if upgrade_choice and os.path.isdir(''.join([mpf_home, '/plugins'])):
         if not any(component['componentName'] == descriptor_data['componentName'] for component in mpf_components):
             # Set the component archive file based on information from the descriptor.
 
-            component_archive_file = ''.join([mpf_home,
-                                              '/manage/repo/tars/mpf/',
-                                              descriptor_data['componentName'],
-                                              '-',
-                                              descriptor_data['componentVersion'],
-                                              '.tar.gz'])
+            component_archive_files = [''.join([mpf_home,
+                                                '/manage/repo/tars/mpf/',
+                                                descriptor_data['componentName'],
+                                                '*',
+                                                '.tar.gz']),
+                                       ''.join([mpf_home, '/share/components/',
+                                                descriptor_data['componentName'],
+                                                '*',
+                                               '.tar.gz'])]
+
             # Check for the original component archive file
-            if os.path.isfile(component_archive_file):
-                # Prompt to upgrade and register the component
-                register_component = yes_or_no_prompt('Attempt to register existing component {0}{1}{2}?'.format(text_format.bold, descriptor_data['componentName'], text_format.end), False)
-                component_archive_info = get_component_info(component_archive_file)
-                # Append component information the components dict for the deployment config
-                if register_component:
-                    mpf_components.append(
-                        set_component(
-                            component_archive_info.componentName,
-                            register_component,
-                            component_archive_info.componentState,
-                            component_archive_info.componentDescriptorPath,
-                            component_archive_file,
-                            component_archive_info.componentTLD,
-                            component_archive_info.componentSetupFile,
-                            component_archive_info.componentInstructionsFile))
+            for component_archive_file in component_archive_files:
+                existing_component_archive = glob.glob(component_archive_file)
+                for archive in existing_component_archive:
+                    # Prompt to upgrade and register the component
+                    register_component = yes_or_no_prompt('Attempt to register existing component {0}{1}{2}?'.format(text_format.bold, descriptor_data['componentName'], text_format.end), False)
+                    component_archive_info = get_component_info(archive)
+                    # Append component information to the mpf_components dict for the deployment config
+                    if register_component:
+                        mpf_components.append(
+                            set_component(
+                                component_archive_info.componentName,
+                                register_component,
+                                component_archive_info.componentState,
+                                component_archive_info.componentDescriptorPath,
+                                archive,
+                                component_archive_info.componentTLD,
+                                component_archive_info.componentSetupFile,
+                                component_archive_info.componentInstructionsFile))
 
 
 # Prompt for HTTPS support
@@ -446,7 +453,7 @@ pwcfg = {'change': pwcfg_choice}
 
 # Add choices to deployment configuration
 deployment_configuration['upgrade'] = upgrade_choice
-deployment_configuration['package_descriptor'] = package_config_file
+deployment_configuration['package_descriptor'] = package_config_files
 deployment_configuration['mpf_components'] = mpf_components
 deployment_configuration['https'] = https
 deployment_configuration['pwcfg'] = pwcfg

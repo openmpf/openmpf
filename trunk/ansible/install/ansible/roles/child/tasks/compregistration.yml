@@ -74,6 +74,6 @@
   command: "python \"{{ mpf_home }}/manage/ansible/roles/master/files/extcomponentuploaded.py\" \"{{ mpf_home }}\" \"{{ item.componentName }}\" \"{{ mpf_component_dir }}/{{ item.packageFilePath | basename }}\""
   args:
     chdir: "{{ mpf_home }}/share/components"
-  when: "not item.register and '{{ item.componentState }}'!= 'REGISTERED' and item.packageFilePath and registration_results.status == 200"
+  when: "not item.register and '{{ item.componentState }}'!= 'REGISTERED' and item.packageFilePath and registration_results.status is not defined"
   run_once: true
   delegate_to: "{{ master_host }}"

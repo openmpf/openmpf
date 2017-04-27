@@ -129,7 +129,7 @@
 
     <div>
         <button id="addAction" type="button" ng-disabled="!selectedAction" ng-click="actionsToAdd.push(selectedAction)"
-                class="btn btn-success btn-default">Add Action to Task
+                class="btn btn-success">Add Action to Task
         </button>
         <button id="btnCreateTask" type="button" class="btn btn-success btn-md" data-toggle="modal" data-target="#addModal" ng-disabled="actionsToAdd.length == 0"
                 ng-click="modalName=''; modalDescription=''; modalTitle='Create Task'; modalType='task';">Create Task
@@ -195,7 +195,7 @@
 
     <div>
         <button id="addTask" type="button" ng-disabled="!selectedTask" ng-click="tasksToAdd.push(selectedTask)"
-                class="btn btn-success btn-default">Add Task to Pipeline
+                class="btn btn-success">Add Task to Pipeline
         </button>
         <button id="btnCreatePipeline" type="button" class="btn btn-success btn-md" data-toggle="modal" data-target="#addModal" ng-disabled="tasksToAdd.length == 0"
                 ng-click="modalName=''; modalDescription=''; modalTitle='Create Pipeline'; modalType='pipeline';">Create Pipeline
@@ -249,7 +249,7 @@
                 <div class="btn-group">
                     <!-- need an angular solution for attrib data-dismiss="modal" -->
                     <button id="createActual" type="button" ng-click="create();"
-                            class="btn btn-success btn-default">Create
+                            class="btn btn-success">Create
                     </button>
                 </div>
             </div>

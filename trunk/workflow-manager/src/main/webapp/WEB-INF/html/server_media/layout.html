@@ -113,12 +113,12 @@
                 <form name="mediaPropertiesForm" class="mediaPropertiesForm form-horizontal" novalidate style="padding-left:20px;">
                     <div class="form-group">
                         <div class="checkbox">
-                            <label><input type="checkbox" id="AUTO_ROTATE" ng-model="media_props.AUTO_ROTATE" ng-click="setChecks()"> AUTO_ROTATE </label><span class="fa fa-question-circle" title="Specifies whether not to rotate media based on EXIF data."></span>
+                            <label><input type="checkbox" id="AUTO_ROTATE" ng-model="media_props.AUTO_ROTATE" ng-click="setChecks()"> AUTO_ROTATE </label><a class="helper-icon" data-title="Specifies whether not to rotate media based on EXIF data." data-toggle="modal" data-target="#detailsModal" ><i class="fa fa-info-circle "></i></a>
                         </div>
                     </div>
                     <div class="form-group">
                         <div class="col-sm-2 ">
-                            <label for="ROTATION" class="control-label" style="font-weight: normal;"> ROTATION </label><span style="padding-left:4px;" class="fa fa-question-circle" title="Specifies the number of degrees in the clockwise direction that the media will be rotated. Only 90, 180 and 270 degrees are supported."></span>
+                            <label for="ROTATION" class="control-label" style="font-weight: normal;padding-right:4px;"> ROTATION </label><a class="helper-icon" data-toggle="modal" data-target="#detailsModal" data-title="Specifies the number of degrees in the clockwise direction that the media will be rotated. Only 90, 180 and 270 degrees are supported."><i class="fa fa-info-circle "></i></a>
                         </div>
                         <div class="col-sm-2">
                             <select class="form-control" id="ROTATION" ng-model="media_props.ROTATION" ng-disabled="media_props.AUTO_ROTATE" style="">
@@ -131,22 +131,22 @@
                     </div>
                     <div class="form-group">
                         <div class="checkbox">
-                            <label><input type="checkbox" id="AUTO_FLIP" ng-model="media_props.AUTO_FLIP" ng-click="setChecks()"> AUTO_FLIP </label><span class="fa fa-question-circle" title="Specifies whether or not to flip media based on EXIF data."></span>
+                            <label><input type="checkbox" id="AUTO_FLIP" ng-model="media_props.AUTO_FLIP" ng-click="setChecks()"> AUTO_FLIP </label><a class="helper-icon" data-toggle="modal" data-target="#detailsModal" data-title="Specifies whether or not to flip media based on EXIF data."><i class="fa fa-info-circle "></i></a>
                         </div>
                     </div>
                     <div class="form-group">
                         <div class="checkbox">
-                            <label><input type="checkbox" id="HORIZONTAL_FLIP" ng-model="media_props.HORIZONTAL_FLIP" ng-disabled="media_props.AUTO_FLIP"> HORIZONTAL_FLIP </label><span class="fa fa-question-circle" title="Specifies whether or not the original media is flipped. Rotation occurs before flipping."></span>
+                            <label><input type="checkbox" id="HORIZONTAL_FLIP" ng-model="media_props.HORIZONTAL_FLIP" ng-disabled="media_props.AUTO_FLIP"> HORIZONTAL_FLIP </label><a class="helper-icon" data-toggle="modal" data-target="#detailsModal" data-title="Specifies whether or not the original media is flipped. Rotation occurs before flipping."><i class="fa fa-info-circle "></i></a>
                         </div>
                     </div>
                     <div class="form-group">
                         <div class="checkbox">
-                            <label for="SEARCH_REGION_ENABLE_DETECTION" style="font-weight: normal;"><input type="checkbox" id="SEARCH_REGION_ENABLE_DETECTION" ng-model="media_props.SEARCH_REGION_ENABLE_DETECTION" ng-click="setChecks()"> SEARCH_REGION_ENABLE_DETECTION </label><span class="fa fa-question-circle" title="Enable cropping."></span>
+                            <label for="SEARCH_REGION_ENABLE_DETECTION" style="font-weight: normal;"><input type="checkbox" id="SEARCH_REGION_ENABLE_DETECTION" ng-model="media_props.SEARCH_REGION_ENABLE_DETECTION" ng-click="setChecks()"> SEARCH_REGION_ENABLE_DETECTION </label><a class="helper-icon" data-toggle="modal" data-target="#detailsModal"data-title="Enable cropping."><i class="fa fa-info-circle "></i></a>
                         </div>
                     </div>
                     <div class="form-group" ng-show="media_props.SEARCH_REGION_ENABLE_DETECTION">
                         <div class="col-sm-5">
-                            <label for="SEARCH_REGION_TOP_LEFT_X_DETECTION" style="font-weight: normal;"> SEARCH_REGION_TOP_LEFT_X_DETECTION </label> <span class="fa fa-question-circle" title="X coordinate for top left corner of cropped frame. If negative, 0 will be used."></span>
+                            <label for="SEARCH_REGION_TOP_LEFT_X_DETECTION" style="font-weight: normal;"> SEARCH_REGION_TOP_LEFT_X_DETECTION </label> <a class="helper-icon" data-toggle="modal" data-target="#detailsModal" data-title="X coordinate for top left corner of cropped frame. If negative, 0 will be used."><i class="fa fa-info-circle "></i></a>
                         </div>
                         <div class="col-sm-2">
                             <input type="number" required class="form-control" id="SEARCH_REGION_TOP_LEFT_X_DETECTION" name="SEARCH_REGION_TOP_LEFT_X_DETECTION" ng-model="media_props.SEARCH_REGION_TOP_LEFT_X_DETECTION" placeholder="SEARCH_REGION_TOP_LEFT_X_DETECTION" ng-disabled="!media_props.SEARCH_REGION_ENABLE_DETECTION" mpf-integer value="-1">
@@ -159,7 +159,7 @@
                     </div>
                     <div class="form-group" ng-show="media_props.SEARCH_REGION_ENABLE_DETECTION">
                         <div class="col-sm-5">
-                            <label for="SEARCH_REGION_TOP_LEFT_Y_DETECTION" style="font-weight: normal;"> SEARCH_REGION_TOP_LEFT_Y_DETECTION </label> <span class="fa fa-question-circle" title="Y coordinate for top left corner of cropped frame. If negative, 0 will be used."></span>
+                            <label for="SEARCH_REGION_TOP_LEFT_Y_DETECTION" style="font-weight: normal;"> SEARCH_REGION_TOP_LEFT_Y_DETECTION </label> <a class="helper-icon" data-toggle="modal" data-target="#detailsModal" data-title="Y coordinate for top left corner of cropped frame. If negative, 0 will be used."><i class="fa fa-info-circle "></i></a>
                         </div>
                         <div class="col-sm-2">
                             <input type="number" required class="form-control" id="SEARCH_REGION_TOP_LEFT_Y_DETECTION" name="SEARCH_REGION_TOP_LEFT_Y_DETECTION" ng-model="media_props.SEARCH_REGION_TOP_LEFT_Y_DETECTION" placeholder="SEARCH_REGION_TOP_LEFT_Y_DETECTION" ng-disabled="!media_props.SEARCH_REGION_ENABLE_DETECTION" mpf-integer value="-1">
@@ -172,7 +172,7 @@
                     </div>
                     <div class="form-group" ng-show="media_props.SEARCH_REGION_ENABLE_DETECTION">
                         <div class="col-sm-5">
-                            <label for="SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION" style="font-weight: normal;"> SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION </label> <span class="fa fa-question-circle" title="X coordinate for bottom right corner of cropped frame. If negative, bottom right X of input media will be used."></span>
+                            <label for="SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION" style="font-weight: normal;"> SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION </label> <a class="helper-icon" data-toggle="modal" data-target="#detailsModal" data-title="X coordinate for bottom right corner of cropped frame. If negative, bottom right X of input media will be used."><i class="fa fa-info-circle "></i></a>
                         </div>
                         <div class="col-sm-2">
                             <input type="number" required class="form-control" id="SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION" name="SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION" ng-model="media_props.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION" placeholder="SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION" ng-disabled="!media_props.SEARCH_REGION_ENABLE_DETECTION" mpf-integer value="-1">
@@ -185,7 +185,7 @@
                     </div>
                     <div class="form-group" ng-show="media_props.SEARCH_REGION_ENABLE_DETECTION">
                         <div class="col-sm-5">
-                            <label for="SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION" style="font-weight: normal;"> SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION </label> <span class="fa fa-question-circle" title="Y coordinate for bottom right corner of cropped frame. If negative, bottom right Y of input media. will be used."></span>
+                            <label for="SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION" style="font-weight: normal;"> SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION </label> <a class="helper-icon" data-toggle="modal" data-target="#detailsModal" data-title="Y coordinate for bottom right corner of cropped frame. If negative, bottom right Y of input media. will be used."><i class="fa fa-info-circle "></i></a>
                         </div>
                         <div class="col-sm-2">
                             <input type="number" required class="form-control" id="SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION" name="SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION" ng-model="media_props.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION" placeholder="SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION" ng-disabled="!media_props.SEARCH_REGION_ENABLE_DETECTION" mpf-integer value="-1">
@@ -236,7 +236,7 @@
                     <div class="localName"></div>
                 </div>
                 <div class="modal-footer">
-                    <button id="submitURLs" type="submit" class="btn btn-success btn-default"><span class="fa fa-cloud-upload"></span> Upload</button>
+                    <button id="submitURLs" type="submit" class="btn btn-success"><span class="fa fa-cloud-upload"></span> Upload</button>
                     <button id="cancelURLUpload" type="button" class="btn btn-default" data-dismiss="modal" aria-label="Close">Done</button>
                 </div>
             </div>
@@ -310,3 +310,19 @@
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
+
+
+<div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-labelledby="detailsModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title text-center" id="detailsModalLabel">Help</h4>
+            </div>
+            <div class="modal-body"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

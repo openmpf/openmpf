@@ -125,6 +125,13 @@
                 $("#newFolderModal").on('shown.bs.modal', function(event) {//focus on input
                     $(this).find('[autofocus]').focus();
                 });
+
+                $('#detailsModal').on('show.bs.modal', function (event) {
+                    var target = $(event.relatedTarget);
+                    var text = target.data('title');// Extract info from data-* attributes
+                    var modal = $(this);
+                    modal.find('.modal-body').html(text);
+                })
             };
 
             //need to retrieve child files and folders on expansions if no children exist

@@ -615,3 +615,8 @@ table.dataTable span.highlight {
 .component-registration-modal .modal-dialog .modal-content {
     text-align: left;
 }
+
+.helper-icon {
+    cursor:pointer;
+    color:#428bca;
+}

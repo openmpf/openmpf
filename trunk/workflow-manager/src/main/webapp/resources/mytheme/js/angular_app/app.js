@@ -40,7 +40,7 @@ var App = angular.module('mpf.wfm', [
 	'angular-confirm',
 	'mpf.wfm.controller.ServerMediaCtrl',
 	'mpf.wfm.controller.AdminComponentRegistrationCtrl',
-	'mpf.wfm.pipeline2',
+	// 'mpf.wfm.pipeline2',
 	'mpf.wfm.filters',
 	'mpf.wfm.services',
 	'mpf.wfm.directives',
@@ -77,12 +77,14 @@ App.config(['$stateProvider', '$urlRouterProvider','$httpProvider' ,function ($s
 		  controller: PipelinesCtrl
 	  });
 
+	  /*
 	  $stateProvider.state('/pipelines2', {
 		  url: '/pipelines2',
 		  templateUrl: 'pipelines2/layout.html',
           controller: 'Pipelines2Ctrl',
 		  controllerAs: 'pipes2'
 	  });
+	  */
 
 	  $stateProvider.state('/jobs', {
 		  url: '/jobs',

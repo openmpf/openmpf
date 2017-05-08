@@ -142,9 +142,9 @@
                 <div class="form-group">
                     <label class="control-label col-sm-1 pp-name" for="pipeline-name"><strong>Pipeline</strong>:</label>
                     <input class="col-sm-9 pp-pipeline pp-name" type="text" id="pipeline-name"
-                           required ng-readonly="!pipes2.inEditMode()" ng-model="currentPipeline.name"
+                           ng-readonly="!pipes2.inEditMode()" ng-model="currentPipeline.name"
                            ng-model-options="{ updateOn: 'blur' }"
-                           tabindex="1" placeholder="Pipeline name"/>
+                           tabindex="1" placeholder="Pipeline name (required)"/>
                     &nbsp;
                     <button ng-if="pipes2.inEditMode()" class="btn btn-default" id="savePipelineButton"
                             ng-click="pipes2.savePipeline( currentPipeline )" tabindex="3">
@@ -159,7 +159,7 @@
                     <textarea class="col-sm-9 pp-pipeline pp-description" id="pipeline-description"
                               ng-readonly="!pipes2.inEditMode()" ng-model="currentPipeline.description"
                               tabindex="2"
-                              placeholder="Pipeline description"/>
+                              placeholder="Pipeline description (required)"/>
                 </div>
             </div>
             <div class="row">
@@ -179,9 +179,9 @@
                 <div class="form-group">
                     <label class="control-label col-sm-2 pp-name" for="action-name"><strong>Action</strong>:</label>
                     <input class="col-sm-8 pp-action pp-name" type="text" id="action-name"
-                           required ng-readonly="!actions2.inEditMode()" ng-model="currentAction.name"
+                           ng-readonly="!actions2.inEditMode()" ng-model="currentAction.name"
                            ng-model-options="{ updateOn: 'blur' }" tabindex="1"
-                           placeholder="Action name"/>
+                           placeholder="Action name (required)"/>
                     &nbsp;
                     <button ng-if="actions2.inEditMode()" class="btn btn-default" id="saveActionButton"
                             ng-click="saveActionAndTask( currentAction )" tabindex="4">Save
@@ -195,7 +195,7 @@
                     <textarea class="col-sm-8 pp-action pp-description" id="action-description"
                               ng-readonly="!actions2.inEditMode()" ng-model="currentAction.description"
                               ng-model-options="{ updateOn: 'blur' }" tabindex="2"
-                              placeholder="Action description"/>
+                              placeholder="Action description (required)"/>
                 </div>
                 <div class="col-lg-2">
                     <!--placeholder-->

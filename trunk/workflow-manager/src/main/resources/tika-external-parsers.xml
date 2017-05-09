@@ -28,6 +28,7 @@
         <mime-types>
             <mime-type>video/avi</mime-type>
             <mime-type>video/mpeg</mime-type>
+            <mime-type>video/mp4</mime-type>
             <mime-type>video/x-msvideo</mime-type>
         </mime-types>
         <metadata>
@@ -41,6 +42,7 @@
             <match key="xmpDM:videoFrameRate">\s*Stream.*:\s+Video:.*,\s+([0-9\.]+)\s+fps,.*</match>
             <match key="encoder">\s*encoder\s*\:\s*(\w+).*</match>
             <match key="videoResolution">\s*Stream.*:\s+Video:.*,\s+([0-9x]+),.*</match>
+            <match key="rotation">rotate\s*:\s*(\d+)</match>
         </metadata>
     </parser>
     <!-- TODO: Consider parsing EXIF for video files using Tika.

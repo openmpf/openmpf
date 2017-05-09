@@ -238,7 +238,7 @@ system "sudo rm -rf $workspace";
 chdir $pwd;
 	
 if(-f "/mpfdata/releases/openmpf-$packageTag-$mpfVersion+$gitBranch-$buildNum.tar.gz") {
-    MPF::Jenkins::printInfo("Successfully generated /mpfdata/releases/mpf-$data->{'packageTag'}-$mpfVersion+$gitBranch-$buildNum.tar.gz.\n");
+    MPF::Jenkins::printInfo("Successfully generated /mpfdata/releases/openmpf-$data->{'packageTag'}-$mpfVersion+$gitBranch-$buildNum.tar.gz.\n");
 } else {
     MPF::Jenkins::printFatal("\n\nFailed to generate /mpfdata/releases/openmpf-$packageTag-$mpfVersion+$gitBranch-$buildNum.tar.gz.\n\n\n");
     MPF::Jenkins::fatalExit();

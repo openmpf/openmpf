@@ -2,15 +2,15 @@
   "jobId": 9,
   "objectId": "f1963de7-7532-484e-b5a1-eb2b0a740800",
   "pipeline": {
-    "name": "OCV FACE DETECTION WITH AUTO ORIENTATION PIPELINE",
+    "name": "OCV FACE DETECTION (WITH AUTO-ORIENTATION) PIPELINE",
     "description": "Executes the OpenCV face detection algorithm and rotates and/or flips media based on EXIF data.",
     "stages": [{
       "actionType": "DETECTION",
-      "name": "OCV FACE DETECTION WITH AUTO ORIENTATION TASK",
+      "name": "OCV FACE DETECTION (WITH AUTO-ORIENTATION) TASK",
       "description": "Executes the OpenCV face detection algorithm and rotates and/or flips media based on EXIF data.",
       "actions": [{
         "algorithm": "FACECV",
-        "name": "OCV FACE DETECTION WITH AUTO ORIENTATION ACTION",
+        "name": "OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
         "description": "Executes the OpenCV face detection algorithm and rotates and/or flips media based on EXIF data.",
         "properties": {
           "AUTO_ROTATE": "true",
@@ -45,7 +45,7 @@
     "markupResult": null,
     "output": {
       "FACE": [{
-        "source": "+#OCV FACE DETECTION WITH AUTO ORIENTATION ACTION",
+        "source": "+#OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
         "tracks": [{
           "id": "5fc0da216b2cb12fbf9c13c9bcb347ba3015e36471387ffca51e7aafce37628d",
           "startOffsetFrame": 0,
@@ -53,7 +53,7 @@
           "startOffsetTime": 0,
           "stopOffsetTime": 0,
           "type": "FACE",
-          "source": "+#OCV FACE DETECTION WITH AUTO ORIENTATION ACTION",
+          "source": "+#OCV FACE DETECTION WITH (AUTO-ORIENTATION) ACTION",
           "exemplar": {
             "x": 212,
             "y": 84,

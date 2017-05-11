@@ -263,7 +263,7 @@ else:
     mpf_home = '/opt/mpf'
 
 # Get the package configuration file(s)
-package_config_files = sorted(glob.glob(''.join([mpf_home, '/manage/repo/files/mpf-*-package.json'])),
+package_config_files = sorted(glob.glob(''.join([mpf_home, '/manage/repo/files/openmpf-*-package.json'])),
                               key=os.path.getmtime,
                               reverse=True)
 

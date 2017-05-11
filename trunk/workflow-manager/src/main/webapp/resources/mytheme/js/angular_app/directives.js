@@ -359,3 +359,19 @@ AppDirectives.directive('mpfInteger',
             };
         }
     ]);
+
+AppDirectives.directive('uiSelectOpened', function() {
+    return {
+        restrict: 'A',
+        require: 'uiSelect',
+        link: function (scope, element, attrs, uiSelect) {
+            uiSelect.open = true;
+            uiSelect.active = true;
+            uiSelect.skipFocusser = false;
+            uiSelect.close = function (skipFocusser) {
+                if (!uiSelect.open) return;
+                // if (uiSelect.ngModel && uiSelect.ngModel.$setTouched) uiSelect.ngModel.$setTouched();
+            }
+        }
+    };
+});

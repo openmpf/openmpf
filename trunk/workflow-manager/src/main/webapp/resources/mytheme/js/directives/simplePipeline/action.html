@@ -24,17 +24,19 @@
     limitations under the License.
 -->
 <div class="pipelineAction">
-    <div ng-if="arrowIn" class="pipelineArrowIn"></div>
-    <span uib-dropdown on-toggle="toggled(open)" ng-click="updateAvailableTasks()">
+    <div ng-if="arrowIn && canEdit() && !inParallelTask()" class="pipelineArrowIn"></div>
+    <span ng-if="canEdit()&&!inParallelTask()" uib-dropdown on-toggle="toggled(open)" ng-click="updateAvailableTasks()">
         <a href id="simple-dropdown" uib-dropdown-toggle>
-            <div ng-if="arrowIn" class="pipelineAddTask glyphicon glyphicon-plus-sign"></div>
+            <div ng-if="arrowIn" class="pipeline-add-task glyphicon glyphicon-plus-sign"
+                 uib-tooltip="Click to add a task" tooltip-is-open="opObj&&opObj.getNumTasks()===0"
+                 tooltip-class="pipeline-add-task-tooltip"></div>
         </a>
         <ul class="dropdown-menu" uib-dropdown-menu>
             <li ng-repeat="task in availableTasks | orderBy: 'name'">
                 <a href ng-click="addTaskToPipeline(task)">{{task.name}}</a>
             </li>
-            <li class="divider"></li>
-            <li><a href ng-click="addTaskToPipeline(null)">Create new Task...</a></li>
+            <!--<li class="divider"></li>-->
+            <!--<li><a href ng-click="addTaskToPipeline(null)">Create new Task...</a></li>-->
         </ul>
     </span>
 
@@ -48,7 +50,7 @@
          uib-popover-template="'algorithm.popover.html'" popover-class="pp-action"
          popover-placement="auto bottom" popover-trigger="click">
             {{actionObj.name}}
-        <a href ng-click="removeTaskFromPipeline( $event )">
+        <a ng-if="canEdit()&&!inParallelTask()" href ng-click="removeTaskFromPipeline( $event )">
             <div class="pp-remove-task glyphicon glyphicon-minus-sign"></div>
         </a>
         <ng-transclude/>

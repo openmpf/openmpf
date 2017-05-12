@@ -31,7 +31,8 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.WfmSplitterInterface;
@@ -52,13 +53,17 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
+import java.net.URI;
+import java.util.List;
+import java.util.UUID;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
 public class TestRemoteMediaProcessor {
 	private static final Logger log = LoggerFactory.getLogger(TestRemoteMediaProcessor.class);
 	private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
+	private static final String EXT_IMG = "https://raw.githubusercontent.com/openmpf/openmpf/develop/trunk/mpf-system-tests/src/test/resources/samples/face/meds-aa-S001-01.jpg";
+
 
 	@Autowired
 	private ApplicationContext context;
@@ -96,17 +101,42 @@ public class TestRemoteMediaProcessor {
 
 	@PostConstruct
 	public void init() throws Exception {
+		setHttpProxies();
 		transientJob = new TransientJob(next(), null, null, 0, 0, false, false) {{
 			getMedia().add(new TransientMedia(next(), ioUtils.findFile("/samples/meds1.jpg").toString()));
-			getMedia().add(new TransientMedia(next(), "http://info.mitre.org/it_services/images/cit_logo.png"));
+			getMedia().add(new TransientMedia(next(), EXT_IMG));
 		}};
 	}
+
+
+	private static void setHttpProxies() {
+		// When running the tests through Maven, the system properties set in the "JAVA_OPTS" environment variable
+		// appear to be ignored.
+		for (String protocol : new String[] { "http", "https" }) {
+			boolean proxyAlreadySet = System.getProperty(protocol + ".proxyHost") != null;
+			if (proxyAlreadySet) {
+				continue;
+			}
+			String envHttpProxy = System.getenv(protocol + "_proxy");
+			if (envHttpProxy != null) {
+				URI proxyUri = URI.create(envHttpProxy);
+				System.setProperty(protocol + ".proxyHost", proxyUri.getHost());
+				System.setProperty(protocol + ".proxyPort", String.valueOf(proxyUri.getPort()));
+			}
+
+			String noProxyHosts = System.getenv("no_proxy");
+			if (noProxyHosts != null) {
+				System.setProperty(protocol + ".nonProxyHosts", noProxyHosts);
+			}
+		}
+	}
+
 
 	@Test(timeout = 5 * MINUTES)
 	public void testValidRetrieveRequest() throws Exception {
 		log.info("Starting valid image retrieval request.");
 
-		TransientMedia transientMedia = new TransientMedia(next(), "http://info.mitre.org/it_services/images/cit_logo.png");
+		TransientMedia transientMedia = new TransientMedia(next(), EXT_IMG );
 		transientMedia.setLocalPath(ioUtils.createTemporaryFile().getAbsolutePath());
 
 		Exchange exchange = new DefaultExchange(camelContext);

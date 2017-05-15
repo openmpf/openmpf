@@ -150,8 +150,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     public void testBadPipeline() throws Exception {
         testCtr++;
         log.info("Beginning test #{} testBadPipeline()", testCtr);
-        List<JsonMediaInputObject> media = new LinkedList<>();
-        media.add(new JsonMediaInputObject("http://somehost-mpf-4.mitre.org/rsrc/datasets/samples/motion/five-second-marathon-clip.mkv"));
+        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-aa-S001-01.jpg"));
         long jobId = runPipelineOnMedia("X", media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(),
                 propertiesUtil.getJmsPriority());
         log.info("Finished test testBadPipeline()");

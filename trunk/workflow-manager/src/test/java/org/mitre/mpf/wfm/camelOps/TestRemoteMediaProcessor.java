@@ -62,7 +62,7 @@ import java.util.UUID;
 public class TestRemoteMediaProcessor {
 	private static final Logger log = LoggerFactory.getLogger(TestRemoteMediaProcessor.class);
 	private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
-	private static final String EXT_IMG = "https://raw.githubusercontent.com/openmpf/openmpf/develop/trunk/mpf-system-tests/src/test/resources/samples/face/meds-aa-S001-01.jpg";
+	private static final String EXT_IMG = "https://raw.githubusercontent.com/openmpf/openmpf/master/trunk/mpf-system-tests/src/test/resources/samples/face/meds-aa-S001-01.jpg";
 
 
 	@Autowired
@@ -136,7 +136,7 @@ public class TestRemoteMediaProcessor {
 	public void testValidRetrieveRequest() throws Exception {
 		log.info("Starting valid image retrieval request.");
 
-		TransientMedia transientMedia = new TransientMedia(next(), EXT_IMG );
+		TransientMedia transientMedia = new TransientMedia(next(), EXT_IMG);
 		transientMedia.setLocalPath(ioUtils.createTemporaryFile().getAbsolutePath());
 
 		Exchange exchange = new DefaultExchange(camelContext);

@@ -33,7 +33,7 @@ var JobsPage = function() {
 
     this.pageName = "Job Status";
     this.currentJob = null;
-    this.video_uri = "https://github.com/openmpf/openmpf/blob/master/trunk/mpf-system-tests/src/test/resources/samples/face/new_face_video.avi?raw=true";
+    this.video_uri = "https://raw.githubusercontent.com/openmpf/openmpf/master/trunk/mpf-system-tests/src/test/resources/samples/face/new_face_video.avi";
 
     this.getFirstJobRow = function(){
         expect(browser.driver.getCurrentUrl()).toBe(this.URL);

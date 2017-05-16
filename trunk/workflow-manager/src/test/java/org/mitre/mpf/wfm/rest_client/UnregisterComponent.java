@@ -55,10 +55,6 @@ public class UnregisterComponent {
 
         System.out.println("Starting rest-client!");
 
-        //not necessary for localhost
-        //System.setProperty("http.proxyHost","gatekeeper.mitre.org");
-        //System.setProperty("http.proxyPort","80");
-
         RequestInterceptor authorize = new RequestInterceptor() {
             @Override
             public void intercept(HttpRequestBase request) {

@@ -27,17 +27,35 @@
 package org.mitre.mpf.wfm.camel.operations.detection.trackmerging;
 
 public class TrackMergingPlan {
-	/** Indicates whether track merging is to be performed. */
+	/**
+	 * Indicates whether to merge tracks. If track merging is turned off, minGapBetweenTracks is invalid,
+	 * but minTrackLength is still respected. */
 	private final boolean mergeTracks;
+	/** Indicates the shortest track length to keep. */
+	private final int minTrackLength;
+	/** The allowable distance between similar tracks without merging. */
+	private final int minGapBetweenTracks;
+
 	public boolean isMergeTracks() { return mergeTracks; }
+
+	public int getMinTrackLength() {
+		return minTrackLength;
+	}
+
+	public int getMinGapBetweenTracks() {
+		return minGapBetweenTracks;
+	}
 
 	/** For images and videos, the number of frames at which the input medium was sampled. For audio, the number seconds between samples. */
 	private final int samplingInterval;
 	public int getSamplingInterval() { return samplingInterval; }
 
-	public TrackMergingPlan(int samplingInterval, boolean mergeTracks) {
+
+	public TrackMergingPlan(int samplingInterval, int minTrackLength, boolean mergeTracks, int minGapBetweenTracks) {
 		this.samplingInterval = samplingInterval;
+		this.minTrackLength = minTrackLength;
 		this.mergeTracks = mergeTracks;
+		this.minGapBetweenTracks = minGapBetweenTracks;
 	}
 
 	@Override

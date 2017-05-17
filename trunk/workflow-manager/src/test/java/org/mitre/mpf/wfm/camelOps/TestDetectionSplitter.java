@@ -102,7 +102,7 @@ public class TestDetectionSplitter {
 
         Map<String, String> mergeProp = new HashMap<>();
         mergeProp.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
-        mergeProp.put(MpfConstants.MERGE_TRACKS_PROPERTY, "TRUE");
+        mergeProp.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
         mergeProp.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
         mergeProp.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
         TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo");
@@ -118,10 +118,10 @@ public class TestDetectionSplitter {
         String propertyName = "TEST";
         String propertyValue = "VALUE";
         jobProperties.put(propertyName, propertyValue);
-        jobProperties.put(MpfConstants.MERGE_TRACKS_PROPERTY, "FALSE");
+        jobProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0");
         Map<String, String> actionProperties = new HashMap<>();
         actionProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
-        actionProperties.put(MpfConstants.MERGE_TRACKS_PROPERTY, "TRUE");
+        actionProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
         actionProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
         actionProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
         TransientJob testJob = createSimpleJobForTest(actionProperties, "/samples/new_face_video.avi", "VIDEO");
@@ -140,8 +140,8 @@ public class TestDetectionSplitter {
                 Assert.assertEquals(propertyValue, prop.getPropertyValue());
                 propertyExists = true;
             }
-            else if (MpfConstants.MERGE_TRACKS_PROPERTY.equals(prop.getPropertyName())) {
-                Assert.assertEquals("FALSE", prop.getPropertyValue());
+            else if (MpfConstants.MIN_GAP_BETWEEN_TRACKS.equals(prop.getPropertyName())) {
+                Assert.assertEquals("1", prop.getPropertyValue());
             }
         }
         Assert.assertTrue(propertyExists);
@@ -153,10 +153,10 @@ public class TestDetectionSplitter {
         String propertyName = "TEST";
         String propertyValue = "VALUE";
         mediaProperties.put(propertyName, propertyValue);
-        mediaProperties.put(MpfConstants.MERGE_TRACKS_PROPERTY, "FALSE");
+        mediaProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0");
         Map<String, String> jobProperties = new HashMap<>();
         jobProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
-        jobProperties.put(MpfConstants.MERGE_TRACKS_PROPERTY, "TRUE");
+        jobProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
         jobProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
         jobProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
         TransientJob testJob = createSimpleJobForTest(jobProperties, "/samples/new_face_video.avi", "VIDEO");
@@ -174,8 +174,8 @@ public class TestDetectionSplitter {
                 Assert.assertEquals(propertyValue,prop.getPropertyValue());
                 propertyExists = true;
             }
-            else if (MpfConstants.MERGE_TRACKS_PROPERTY.equals(prop.getPropertyName())) {
-                Assert.assertEquals("FALSE",prop.getPropertyValue());
+            else if (MpfConstants.MIN_GAP_BETWEEN_TRACKS.equals(prop.getPropertyName())) {
+                Assert.assertEquals("0",prop.getPropertyValue());
             }
         }
         Assert.assertTrue(propertyExists);
@@ -197,7 +197,7 @@ public class TestDetectionSplitter {
         testExifWithSpecificProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1",true);
         testExifWithSpecificProperty(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE",true);
         testExifWithSpecificProperty(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE",true);
-        testExifWithSpecificProperty(MpfConstants.MERGE_TRACKS_PROPERTY, "FALSE", false);
+        testExifWithSpecificProperty(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0", false);
         testExifWithSpecificProperty(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100",false);
     }
 
@@ -217,7 +217,7 @@ public class TestDetectionSplitter {
         testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1", true);
         testMediaSpecificPropertiesResettingJobProperty(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE",true);
         testMediaSpecificPropertiesResettingJobProperty(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE", true);
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.MERGE_TRACKS_PROPERTY, "FALSE", false);
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0", false);
         testMediaSpecificPropertiesResettingJobProperty(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100", false);
     }
 
@@ -237,7 +237,7 @@ public class TestDetectionSplitter {
         testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1", true);
         testJobPropertiesResettingActionProperties(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE", true);
         testJobPropertiesResettingActionProperties(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE", true);
-        testJobPropertiesResettingActionProperties(MpfConstants.MERGE_TRACKS_PROPERTY, "FALSE", false);
+        testJobPropertiesResettingActionProperties(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0", false);
         testJobPropertiesResettingActionProperties(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100",false);
     }
 

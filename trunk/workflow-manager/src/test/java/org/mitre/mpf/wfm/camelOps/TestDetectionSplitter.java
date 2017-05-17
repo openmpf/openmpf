@@ -141,7 +141,7 @@ public class TestDetectionSplitter {
                 propertyExists = true;
             }
             else if (MpfConstants.MIN_GAP_BETWEEN_TRACKS.equals(prop.getPropertyName())) {
-                Assert.assertEquals("1", prop.getPropertyValue());
+                Assert.assertEquals("0", prop.getPropertyValue());
             }
         }
         Assert.assertTrue(propertyExists);

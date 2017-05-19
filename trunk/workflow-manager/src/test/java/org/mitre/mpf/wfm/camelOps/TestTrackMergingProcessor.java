@@ -78,52 +78,54 @@ public class TestTrackMergingProcessor {
     @Autowired
     private Redis redis;
 
-    private static final MutableInt SEQUENCE = new MutableInt();
-
-    public int next() {
-        synchronized (SEQUENCE) {
-            int next = SEQUENCE.getValue();
-            SEQUENCE.increment();
-            return next;
-        }
-    }
-
     @Test(timeout = 5 * MINUTES)
     public void testTrackMergingOn() throws Exception {
-        generateAndRunMerge("1", "TRUE", null, null, 4);
-    }
-
-    @Test(timeout = 5 * MINUTES)
-    public void testTrackMergingOnGap2() throws Exception {
-        generateAndRunMerge("1", "TRUE", "3", null, 4);
+        generateAndRunMerge("1", "TRUE", null, null, 4); // Merges tracks 1 & 2
     }
 
     @Test(timeout = 5 * MINUTES)
     public void testTrackMergingOnGap3() throws Exception {
-        generateAndRunMerge("1", "TRUE", "4", null, 3);
+        generateAndRunMerge("1", "TRUE", "3", null, 4); // Merges tracks 1 & 2: 3 frame gap still does not merge 3 & 4
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void testTrackMergingOnGap4() throws Exception {
+        generateAndRunMerge("1", "TRUE", "4", null, 3); // Merges tracks 1 & 2; merges tracks 3 & 4
     }
 
     @Test(timeout = 5 * MINUTES)
     public void testTrackMergingOff() throws Exception {
-        generateAndRunMerge("1", "FALSE", null, null, 5);
-        generateAndRunMerge("1", "FALSE", "200", null, 5);
+        generateAndRunMerge("1", "FALSE", null, null, 5); // No merging
+        generateAndRunMerge("1", "FALSE", "200", null, 5); // No merging even with gap set high
     }
 
     @Test(timeout = 5 * MINUTES)
     public void testMinTrackSizeNoMerge() throws Exception {
-        generateAndRunMerge("1", "FALSE", null, "100", 3);
-        generateAndRunMerge("1", "FALSE", null, "200", 2);
-        generateAndRunMerge("1", "FALSE", null, "201", 0);
+        generateAndRunMerge("1", "FALSE", null, "100", 3); // Drops tracks 3 & 5
+        generateAndRunMerge("1", "FALSE", null, "200", 2); // Drops tracks 3, 4, & 5
+        generateAndRunMerge("1", "FALSE", null, "201", 0); // Drops all tracks
     }
 
     @Test(timeout = 5 * MINUTES)
     public void testMinTrackSizeWithMerge() throws Exception {
-        generateAndRunMerge("1", "TRUE", null, "100", 2);
-        generateAndRunMerge("1", "TRUE", null, "300", 1);
-        generateAndRunMerge("1", "TRUE", "3", "130", 1);
-        generateAndRunMerge("1", "TRUE", "4", "130", 2);
+        generateAndRunMerge("1", "TRUE", null, "100", 2); // Merges tracks 1 & 2, drops tracks 3 & 5
+        generateAndRunMerge("1", "TRUE", null, "300", 1); // Merges tracks 1 & 2 (new track 400 frames), drops tracks 3, 4, & 5
+        generateAndRunMerge("1", "TRUE", "3", "130", 1); // Merges tracks 1 & 2, drops tracks 3, 4, & 5
+        generateAndRunMerge("1", "TRUE", "4", "130", 2); // Merges tracks 1 & 2, 3 & 4 (new track 130 frames) drops track 5
     }
 
+    /**
+     * This method tests merging under a variety of conditions defined by incoming property values.
+     *
+     * Five tracks are created and used for merging in 2 locations:
+     * 1. Location 1, frames 0-199
+     * 2. Location 1, frames 200-399
+     * 3. Location 1, frames 470-477
+     * 4. Location 1, frames 480-599
+     * 5. Location 2, frames 600-610.
+     *
+     * Track 5 should never merge.  The other tracks may merge or be dropped based on properties.
+     */
     private void generateAndRunMerge(String samplingInterval, String mergeTracks, String minGap, String minTrackSize, int expectedTracks) throws Exception {
         final long jobId = 999999;
         final long mediaId = 123456;
@@ -137,14 +139,18 @@ public class TestTrackMergingProcessor {
         TransientStage trackMergeStageDet = new TransientStage("trackMergeDetection", "trackMergeDescription", ActionType.DETECTION);
 
         Map<String, String> mergeProp = new HashMap<>();
-        if (samplingInterval != null)
+        if (samplingInterval != null) {
             mergeProp.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, samplingInterval);
-        if (mergeTracks != null)
+        }
+        if (mergeTracks != null) {
             mergeProp.put(MpfConstants.MERGE_TRACKS_PROPERTY, mergeTracks);
-        if (minGap != null)
+        }
+        if (minGap != null) {
             mergeProp.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, minGap);
-        if (minTrackSize != null)
+        }
+        if (minTrackSize != null) {
             mergeProp.put(MpfConstants.MIN_TRACK_LENGTH, minTrackSize);
+        }
         TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo");
         detectionAction.setProperties(mergeProp);
         trackMergeStageDet.getActions().add(detectionAction);
@@ -200,7 +206,7 @@ public class TestTrackMergingProcessor {
         TrackMergingContext contextResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
         Assert.assertTrue(contextResponse.getStageIndex() == stageIndex);
         Assert.assertTrue(contextResponse.getJobId() == jobId);
-        Assert.assertEquals(expectedTracks, redis.getTracks(jobId,mediaId,0,0).size());
+        Assert.assertEquals(expectedTracks, redis.getTracks(jobId, mediaId, 0, 0).size());
     }
 
     @Test(timeout = 5 * MINUTES)

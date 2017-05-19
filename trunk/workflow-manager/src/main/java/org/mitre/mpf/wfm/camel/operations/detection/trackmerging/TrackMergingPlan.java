@@ -35,6 +35,8 @@ public class TrackMergingPlan {
 	private final int minTrackLength;
 	/** The allowable distance between similar tracks without merging. */
 	private final int minGapBetweenTracks;
+	/** For videos, the number of frames at which the input medium was sampled. */
+	private final int samplingInterval;
 
 	public boolean isMergeTracks() { return mergeTracks; }
 
@@ -46,9 +48,9 @@ public class TrackMergingPlan {
 		return minGapBetweenTracks;
 	}
 
-	/** For images and videos, the number of frames at which the input medium was sampled. For audio, the number seconds between samples. */
-	private final int samplingInterval;
-	public int getSamplingInterval() { return samplingInterval; }
+	public int getSamplingInterval() {
+		return samplingInterval;
+	}
 
 
 	public TrackMergingPlan(int samplingInterval, int minTrackLength, boolean mergeTracks, int minGapBetweenTracks) {

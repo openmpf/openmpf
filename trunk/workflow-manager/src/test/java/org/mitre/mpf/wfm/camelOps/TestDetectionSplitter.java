@@ -175,7 +175,7 @@ public class TestDetectionSplitter {
                 propertyExists = true;
             }
             else if (MpfConstants.MIN_GAP_BETWEEN_TRACKS.equals(prop.getPropertyName())) {
-                Assert.assertEquals("0",prop.getPropertyValue());
+                Assert.assertEquals("0", prop.getPropertyValue());
             }
         }
         Assert.assertTrue(propertyExists);
@@ -189,16 +189,16 @@ public class TestDetectionSplitter {
      */
     @Test
     public void testMediaSpecificPropertiesOverrideWithExif() throws Exception {
-        testExifWithSpecificProperty(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE", true);
-        testExifWithSpecificProperty(MpfConstants.ROTATION_PROPERTY, "90", true);
-        testExifWithSpecificProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1", true);
-        testExifWithSpecificProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1", true);
-        testExifWithSpecificProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1", true);
-        testExifWithSpecificProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1",true);
-        testExifWithSpecificProperty(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE",true);
-        testExifWithSpecificProperty(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE",true);
-        testExifWithSpecificProperty(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0", false);
-        testExifWithSpecificProperty(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100",false);
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE", true);
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.ROTATION_PROPERTY, "90", true);
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1", true);
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1", true);
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1", true);
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1",true);
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE",true);
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE",true);
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0", false);
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100",false);
     }
 
     /**
@@ -304,7 +304,7 @@ public class TestDetectionSplitter {
         }
     }
 
-    private void testExifWithSpecificProperty(String propertyName, String propertyValue, boolean shouldOverride) throws Exception {
+    private void testMediaSpecificPropertiesOverrideWithFrameTransforms(String propertyName, String propertyValue, boolean shouldOverride) throws Exception {
         HashMap<String, String> mediaProperties = new HashMap<>();
         mediaProperties.put(propertyName, propertyValue);
         Map<String, String> actionProperties = new HashMap<>();

@@ -94,7 +94,7 @@ print "\nCreating Custom package: Package Tag = " . $packageTag . "\n";
 my @tokens = split /\//, $gitBranch;
 $gitBranch = $tokens[$#tokens];
 	
-my $workspace = "/mpfdata/mpf-$packageTag-package/mpf-release";
+my $workspace = "/mpfdata/openmpf-$packageTag-package/mpf-release";
 my $rpmDest = "$workspace/install/repo/rpms/mpf";
 my $tarDest = "$workspace/install/repo/tars/mpf";
 
@@ -230,17 +230,17 @@ if (!(-d "mpf-release")) {
 my $release_tree = `tree mpf-release`;
 MPF::Jenkins::printDebug("Ansible release directory structure:'\n$release_tree\n");
 
-system "sudo tar -pczf /mpfdata/releases/mpf-$packageTag-$mpfVersion+$gitBranch-$buildNum.tar.gz mpf-release";	
+system "sudo tar -pczf /mpfdata/releases/openmpf-$packageTag-$mpfVersion+$gitBranch-$buildNum.tar.gz mpf-release";	
 	
 # Remove the workspace.
 MPF::Jenkins::printInfo("Removing the workspace.\n");
 system "sudo rm -rf $workspace";
 chdir $pwd;
 	
-if(-f "/mpfdata/releases/mpf-$packageTag-$mpfVersion+$gitBranch-$buildNum.tar.gz") {
-    MPF::Jenkins::printInfo("Successfully generated /mpfdata/releases/mpf-$data->{'packageTag'}-$mpfVersion+$gitBranch-$buildNum.tar.gz.\n");
+if(-f "/mpfdata/releases/openmpf-$packageTag-$mpfVersion+$gitBranch-$buildNum.tar.gz") {
+    MPF::Jenkins::printInfo("Successfully generated /mpfdata/releases/openmpf-$data->{'packageTag'}-$mpfVersion+$gitBranch-$buildNum.tar.gz.\n");
 } else {
-    MPF::Jenkins::printFatal("\n\nFailed to generate /mpfdata/releases/mpf-$packageTag-$mpfVersion+$gitBranch-$buildNum.tar.gz.\n\n\n");
+    MPF::Jenkins::printFatal("\n\nFailed to generate /mpfdata/releases/openmpf-$packageTag-$mpfVersion+$gitBranch-$buildNum.tar.gz.\n\n\n");
     MPF::Jenkins::fatalExit();
 }
 

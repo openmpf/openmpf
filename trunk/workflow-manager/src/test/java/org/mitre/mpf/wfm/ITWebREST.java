@@ -764,7 +764,6 @@ public class ITWebREST {
 		String mediaPathUrl = getClass().getClassLoader().getResource("samples/new_face_video.avi").toURI().toURL().toExternalForm();
 
 		JobCreationRequest jobCreationRequest = new JobCreationRequest();
-		//jobCreationRequest.getMediaUris().add("http://info.mitre.org/it_services/images/cit_logo.png");
 		jobCreationRequest.getMedia().add(new JobCreationMediaData(mediaPathUrl));
 		jobCreationRequest.setPipelineName("OCV FACE DETECTION PIPELINE");
 		//jobCreationRequest.setPriority(priority);

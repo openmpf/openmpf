@@ -83,7 +83,7 @@ public class TestDescriptorFactory {
         property2.name = ALGO_PROP_NAMES.get(1);
         property2.type = ValueType.STRING;
         property2.description = "test property2 description";
-        property2.defaultValue = "property2-value";
+        property2.propertiesKey = "my.test.key";
         descriptor.algorithm.providesCollection.properties = Arrays.asList(property1, property2);
         return descriptor;
     }

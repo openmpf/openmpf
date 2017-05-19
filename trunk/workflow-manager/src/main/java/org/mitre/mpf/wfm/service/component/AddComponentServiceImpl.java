@@ -39,6 +39,7 @@ import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -69,6 +70,8 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     private final RemoveComponentService removeComponentService;
 
+    private final Properties loadedProperties;
+
     private final ObjectMapper objectMapper;
 
     @Inject
@@ -81,6 +84,7 @@ public class AddComponentServiceImpl implements AddComponentService {
             ExtrasDescriptorValidator extrasDescriptorValidator,
             CustomPipelineValidator customPipelineValidator,
             RemoveComponentService removeComponentService,
+            @Qualifier("loadedProperties") Properties loadedProperties,
             ObjectMapper objectMapper)
     {
         this.pipelineService = pipelineService;
@@ -91,6 +95,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         this.extrasDescriptorValidator = extrasDescriptorValidator;
         this.customPipelineValidator = customPipelineValidator;
         this.removeComponentService = removeComponentService;
+        this.loadedProperties = loadedProperties;
         this.objectMapper = objectMapper;
     }
 
@@ -270,13 +275,16 @@ public class AddComponentServiceImpl implements AddComponentService {
         return algoDef;
     }
 
-    private static Map<String, String> convertJsonAlgoProps(JsonComponentDescriptor descriptor) {
+    private Map<String, String> convertJsonAlgoProps(JsonComponentDescriptor descriptor) {
         return descriptor
                 .algorithm
                 .providesCollection
                 .properties
                 .stream()
-                .collect(toMap(p -> p.name, p -> p.defaultValue));
+                .collect(toMap(p -> p.name,
+                               p -> p.defaultValue != null
+                                       ? p.defaultValue
+                                       : loadedProperties.getProperty(p.propertiesKey)));
     }
 
     private static List<EnvironmentVariable> convertJsonEnvVars(JsonComponentDescriptor descriptor) {

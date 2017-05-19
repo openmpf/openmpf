@@ -85,7 +85,7 @@ public class TestTrackMergingProcessor {
 
     @Test(timeout = 5 * MINUTES)
     public void testTrackMergingOnGap3() throws Exception {
-        generateAndRunMerge("1", "TRUE", "3", null, 4); // Merges tracks 1 & 2: 3 frame gap still does not merge 3 & 4
+        generateAndRunMerge("1", "TRUE", "3", null, 4); // Merges tracks 1 & 2; 3 frame gap still does not merge 3 & 4
     }
 
     @Test(timeout = 5 * MINUTES)

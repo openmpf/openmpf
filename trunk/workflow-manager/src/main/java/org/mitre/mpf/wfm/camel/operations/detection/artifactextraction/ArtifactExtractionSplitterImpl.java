@@ -50,9 +50,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-@Component(ArtifactExtractionSplitter.REF)
-public class ArtifactExtractionSplitter extends WfmSplitter {
-	private static final Logger log = LoggerFactory.getLogger(ArtifactExtractionSplitter.class);
+@Component(ArtifactExtractionSplitterImpl.REF)
+public class ArtifactExtractionSplitterImpl extends WfmSplitter {
+	private static final Logger log = LoggerFactory.getLogger(ArtifactExtractionSplitterImpl.class);
 	public static final String REF = "detectionExtractionSplitter";
 
 	@Autowired

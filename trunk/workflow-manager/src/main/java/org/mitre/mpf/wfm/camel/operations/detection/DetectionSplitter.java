@@ -30,19 +30,13 @@ import org.apache.camel.Message;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.camel.StageSplitter;
-import org.mitre.mpf.wfm.data.RedisImpl;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
-import org.mitre.mpf.wfm.enums.MediaType;
-import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.enums.*;
+import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.segmenting.*;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.TimePair;
 import org.slf4j.Logger;
@@ -52,6 +46,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+
+import static java.util.stream.Collectors.toMap;
 
 // DetectionSplitter will take in Job and Stage(Action), breaking them into managable work units for the Components
 
@@ -82,6 +78,9 @@ public class DetectionSplitter implements StageSplitter {
 	@Autowired
 	@Qualifier(DefaultMediaSegmenter.REF)
 	private MediaSegmenter defaultMediaSegmenter;
+
+	@Autowired
+	private PipelineService pipelineService;
 
 	private static final String[] transformProperties = new String[]{
 			MpfConstants.ROTATION_PROPERTY,
@@ -142,8 +141,9 @@ public class DetectionSplitter implements StageSplitter {
 				// starting setting of priorities here:  getting action property defaults
 				TransientAction transientAction = transientStage.getActions().get(actionIndex);
 
-				// continue setting of priorities here:  applying action properties to the modifying map
-				Map<String,String> modifiedMap = new HashMap<>(transientAction.getProperties());
+				Map<String, String> modifiedMap = new HashMap<>(getAlgorithmProperties(transientAction.getAlgorithm()));
+
+				modifiedMap.putAll(transientAction.getProperties());
 
 				// If the job is overriding properties related to flip, rotation, or ROI, we should reset all related
 				// action properties to default.  We assume that when the user overrides one rotation/flip/roi
@@ -298,5 +298,10 @@ public class DetectionSplitter implements StageSplitter {
 		}
 		Collections.sort(timePairs);
 		return timePairs;
+	}
+
+	private Map<String, String> getAlgorithmProperties(String algorithmName) {
+	 	return pipelineService.getAlgorithmProperties(algorithmName).stream()
+			    .collect(toMap(PropertyDefinition::getName, PropertyDefinition::getDefaultValue));
 	}
 }

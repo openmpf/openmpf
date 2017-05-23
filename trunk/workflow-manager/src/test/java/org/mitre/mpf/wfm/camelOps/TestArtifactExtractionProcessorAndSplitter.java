@@ -34,23 +34,24 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
+import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.interop.JsonAction;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.interop.JsonStage;
-import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.WfmSplitterInterface;
-import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessor;
+import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessorImpl;
+import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
-import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionSplitter;
+import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionSplitterImpl;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,14 +60,15 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
 @RunListener.ThreadSafe
-public class TestArtifactExtractionPS {
-    private static final Logger log = LoggerFactory.getLogger(TestArtifactExtractionPS.class);
+public class TestArtifactExtractionProcessorAndSplitter {
+    private static final Logger log = LoggerFactory.getLogger(TestArtifactExtractionProcessorAndSplitter.class);
     private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
     @Autowired
@@ -81,17 +83,16 @@ public class TestArtifactExtractionPS {
     @Autowired
     private JsonUtils jsonUtils;
 
-    @Autowired
-    @Qualifier(ArtifactExtractionProcessor.REF)
-    private WfmProcessorInterface artifactExtractionProcessor;
+    @Mock
+    private FrameExtractor mockFrameExtractor;
 
     @Autowired
-    @Qualifier(ArtifactExtractionSplitter.REF)
+    @Qualifier(ArtifactExtractionProcessorImpl.REF)
+    private ArtifactExtractionProcessorInterface artifactExtractionProcessor;
+
+    @Autowired
+    @Qualifier(ArtifactExtractionSplitterImpl.REF)
     private WfmSplitterInterface artifactExtractionSplitter;
-
-    @Autowired
-    @Qualifier(RedisImpl.REF)
-    private Redis redis;
 
     final int mediaId = 12345;
 
@@ -104,8 +105,13 @@ public class TestArtifactExtractionPS {
         }
     }
 
+    @Before
+    public void init() {
+        MockitoAnnotations.initMocks(this);
+    }
+
     @Test(timeout = 5 * MINUTES)
-    public void testAEP_Video() throws Exception {
+    public void testArtifactExtractionProcessorHeader() throws Exception {
         final long jobId = next();
         final String path = "/samples/five-second-marathon-clip.mkv";
         final int stageIndex = 1;
@@ -117,8 +123,50 @@ public class TestArtifactExtractionPS {
         Assert.assertTrue("JOB_ID header did not match", exchange.getIn().getHeader(MpfHeaders.JOB_ID).equals(jobId));
     }
 
+    @Test(timeout = 5 * MINUTES)
+    public void testArtifactExtractionProcessorError() throws Exception {
+        final long jobId = next();
+        final String path = "/samples/five-second-marathon-clip.mkv";
+        final int stageIndex = 1;
+        ArtifactExtractionRequest request = new ArtifactExtractionRequest(jobId, mediaId, path, MediaType.VIDEO, stageIndex);
+
+        HashSet<Integer> extractableMediaIndexes = new HashSet<>();
+        extractableMediaIndexes.add(0);
+        extractableMediaIndexes.add(1);
+        extractableMediaIndexes.add(2);
+        extractableMediaIndexes.add(3);
+
+        Map<Integer, Set<Integer>> actionIndexToMediaIndexes = new HashMap<>();
+        actionIndexToMediaIndexes.put(0, new HashSet<>());
+        actionIndexToMediaIndexes.get(0).addAll(extractableMediaIndexes);
+        actionIndexToMediaIndexes.get(0).add(4); // unextractable
+
+        request.setActionIndexToMediaIndexes(actionIndexToMediaIndexes);
+
+        Map<Integer, String> mockResults = new HashMap<>();
+        mockResults.put(0, "/dummy/path/0");
+        mockResults.put(1, "/dummy/path/1");
+        mockResults.put(2, "/dummy/path/2");
+        mockResults.put(3, "/dummy/path/3");
+        // 4th extraction is missing
+
+        when(mockFrameExtractor.execute())
+                .thenReturn(mockResults);
+
+        Map<Integer, String> results = artifactExtractionProcessor.processVideoRequest(request, mockFrameExtractor);
+
+        Assert.assertTrue("Could not extract media indexes.", results.keySet().containsAll(extractableMediaIndexes));
+
+        for (Integer mediaIndex : mockResults.keySet()) {
+            Assert.assertEquals("Wrong extraction path:", mockResults.get(mediaIndex), results.get(mediaIndex));
+        }
+
+        Assert.assertEquals("No error for bad media index:", ArtifactExtractionProcessorImpl.ERROR_PATH, results.get(4));
+    }
+
+    // TODO: Fix me!
     //@Test(timeout = 5 * MINUTES)
-    public void testAES_split() throws Exception{
+    public void testArtifactExtractionSplitter() throws Exception{
         final long jobId = next();
         Exchange exchange = new DefaultExchange(camelContext);
         final int stageIndex = 1;

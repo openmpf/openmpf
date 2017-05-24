@@ -91,7 +91,12 @@
                         </goals>
                         <configuration>
                             <target name="fix permissions because ant copy can't do this">
-                                <chmod perm="755" verbose="true">
+                                <!-- Need to set maxparallel or else stress tests fail due to
+                                the argument list being too long. 
+                                maxparallel is the max number of arguments to chmod,
+                                not the number of chmod processes.
+                                See https://ant.apache.org/manual/Tasks/chmod.html -->
+                                <chmod perm="755" verbose="true" maxparallel="100">
                                     <fileset dir="${basedir}/../install" includes="**/*"/>
                                 </chmod>
                             </target>

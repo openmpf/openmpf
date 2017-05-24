@@ -90,7 +90,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 5 * MINUTES)
     public void runFaceOcvDetectImageWithAutoOrientation() throws Exception {
-        runSystemTest("OCV FACE DETECTION WITH AUTO ORIENTATION PIPELINE",
+        runSystemTest("OCV FACE DETECTION (WITH AUTO-ORIENTATION) PIPELINE",
                 "output/face/runFaceOcvDetectImageWithAutoOrientation.json",
                 "/samples/face/meds-aa-S001-01-exif-rotation.jpg");
     }

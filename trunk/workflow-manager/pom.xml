@@ -741,13 +741,6 @@
             <scope>test</scope>
         </dependency>
         <!-- / for testing HTTP callback -->
-
-        <dependency>
-            <groupId>com.github.greengerong</groupId>
-            <artifactId>maven-ng-protractor</artifactId>
-            <version>0.0.2</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <!-- NOTE: profile tags override non-profile tags -->

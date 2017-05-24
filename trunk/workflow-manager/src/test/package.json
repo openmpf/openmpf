@@ -18,7 +18,7 @@
     "pretest": "npm install",
     "test": "karma start karma/karma.conf.js",
     "preupdate-webdriver": "npm install",
-    "update-webdriver": "webdriver-manager update --ignore_ssl=true",
+    "update-webdriver": "webdriver-manager update",
     "preprotractor": "npm run update-webdriver",
     "protractor": "protractor-flake --max-attempts=4 -- protractor/protractor.conf.js"
   }

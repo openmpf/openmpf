@@ -29,7 +29,7 @@ var ServerMediaPage = function() {
     // ----- Constants -----
     this.URL = browser.baseUrl + '#/server_media';
     this.TEST_PIPELINE_NAME = "OCV FACE DETECTION PIPELINE";
-    this.TEST_PIPELINE_LONG_NAME = "OCV PERSON DETECTION (WITH MOTION PREPROCESSOR) PIPELINE";// "UNIVERSAL DETECTION PIPELINE";
+    this.TEST_PIPELINE_LONG_NAME = "OCV PERSON DETECTION (WITH MOTION PREPROCESSOR) PIPELINE";
     this.pageName = "Create Job";
 
     // ----- Page Objects -----
@@ -62,7 +62,7 @@ var ServerMediaPage = function() {
         browser.ignoreSynchronization = true;
         return browser.wait(function() {
             return element(by.css('.localName p')).isPresent();
-        },30000,'file Upload wait').then(function(){
+        },60000,'file Upload wait').then(function(){
             element(by.css('.localName p')).getText().then(function(text){
                 var isValid = (text.replace("Uploaded : ","").indexOf(media_url) > -1);
                 expect(isValid);

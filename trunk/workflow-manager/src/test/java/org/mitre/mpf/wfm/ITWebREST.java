@@ -112,9 +112,8 @@ public class ITWebREST {
 			"OCV PERSON DETECTION (WITH SUBSENSE MOTION PREPROCESSOR) PIPELINE",
 			"OCV PERSON DETECTION (WITH SUBSENSE MOTION PREPROCESSOR AND MARKUP) PIPELINE",
 			"SPHINX SPEECH DETECTION PIPELINE",
-			"SPHINX SPEECH DETECTION (WITH MARKUP) PIPELINE",
-			"UNIVERSAL FACE DETECTION PIPELINE",
-			"UNIVERSAL DETECTION PIPELINE" };
+			"SPHINX SPEECH DETECTION (WITH MARKUP) PIPELINE"
+	};
 
 	// based on the registered components, this may not be a complete list of services
 	protected static String[] test_services = { "Markup",
@@ -765,7 +764,6 @@ public class ITWebREST {
 		String mediaPathUrl = getClass().getClassLoader().getResource("samples/new_face_video.avi").toURI().toURL().toExternalForm();
 
 		JobCreationRequest jobCreationRequest = new JobCreationRequest();
-		//jobCreationRequest.getMediaUris().add("http://info.mitre.org/it_services/images/cit_logo.png");
 		jobCreationRequest.getMedia().add(new JobCreationMediaData(mediaPathUrl));
 		jobCreationRequest.setPipelineName("OCV FACE DETECTION PIPELINE");
 		//jobCreationRequest.setPriority(priority);

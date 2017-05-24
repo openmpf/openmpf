@@ -43,10 +43,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -81,6 +78,9 @@ public class TestAddComponentService {
     private RemoveComponentService _mockRemoveComponentService;
 
     @Mock
+    private Properties _mockProperties;
+
+    @Mock
     private ObjectMapper _mockObjectMapper;
 
     private static final String _testPackageName = "test-package.tar.gz";
@@ -93,6 +93,8 @@ public class TestAddComponentService {
     @Before
     public void init() {
         MockitoAnnotations.initMocks(this);
+        when(_mockProperties.getProperty("my.test.key"))
+                .thenReturn("my.test.value");
     }
 
     @Test
@@ -183,7 +185,7 @@ public class TestAddComponentService {
 
         Map<String, String> propertyMap = new HashMap<>();
         propertyMap.put(ALGO_PROP_NAMES.get(0), "100");
-        propertyMap.put(ALGO_PROP_NAMES.get(1), "property2-value");
+        propertyMap.put(ALGO_PROP_NAMES.get(1), "my.test.value");
 
         when(_mockPipelineService.addAndSaveActionDeprecated(contains(algoDef.getName()), anyString(), eq(algoDef.getName()), eq(propertyMap)))
                 .thenReturn(_successTuple);

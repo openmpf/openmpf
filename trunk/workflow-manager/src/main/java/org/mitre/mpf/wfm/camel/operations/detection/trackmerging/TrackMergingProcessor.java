@@ -203,7 +203,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 		return new TrackMergingPlan(samplingInterval, minTrackLength, mergeTracks, minGapBetweenTracks);
 	}
 
-	private Set<Track> combine(Set<Track> sourceTracks, TrackMergingPlan plan, double segMinOverlap) {
+	private Set<Track> combine(Set<Track> sourceTracks, TrackMergingPlan plan, double minOverlap) {
 		// Do not attempt to merge an empty or null set.
 		if (CollectionUtils.isEmpty(sourceTracks)) {
 			return sourceTracks;
@@ -222,10 +222,10 @@ public class TrackMergingProcessor extends WfmProcessor {
 			Track trackToRemove = null;
 
 			for (Track candidate : tracks) {
-				// Iterate through the remaining tracks until a track is found which has a starting time exactly samplingInterval units after the stop frame of the current track AND sufficient overlap.
+				// Iterate through the remaining tracks until a track is found which has sufficient frame and region overlap.
 				boolean track1BeforeTrack2 = merged.getEndOffsetFrameInclusive() < candidate.getStartOffsetFrameInclusive();
 				boolean trackGapWithinLimit = merged.getEndOffsetFrameInclusive() >= candidate.getStartOffsetFrameInclusive() - minGap + 1;
-				if (track1BeforeTrack2 && trackGapWithinLimit && intersects(merged, candidate, segMinOverlap)) {
+				if (track1BeforeTrack2 && trackGapWithinLimit && intersects(merged, candidate, minOverlap)) {
 					// If one is found, merge them and then push this track back to the beginning of the collection.
 					tracks.add(0, merge(merged, candidate));
 					performedMerge = true;
@@ -251,7 +251,10 @@ public class TrackMergingProcessor extends WfmProcessor {
 
 	/** Combines two tracks. This is a destructive method. The contents of track1 reflect the merged track. */
 	private Track merge(Track track1, Track track2){
-		Track merged = new Track(track1.getJobId(), track1.getMediaId(), track1.getStageIndex(), track1.getActionIndex(), track1.getStartOffsetFrameInclusive(), track2.getEndOffsetFrameInclusive(), track1.getType());
+		Track merged = new Track(track1.getJobId(), track1.getMediaId(), track1.getStageIndex(), track1.getActionIndex(),
+				track1.getStartOffsetFrameInclusive(), track2.getEndOffsetFrameInclusive(),
+				track1.getStartOffsetTimeInclusive(), track2.getEndOffsetTimeInclusive(), track1.getType());
+
 		merged.getDetections().addAll(track1.getDetections());
 		merged.getDetections().addAll(track2.getDetections());
 
@@ -267,7 +270,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 		return merged;
 	}
 
-	private boolean intersects(Track track1, Track track2, double segMinOverlap) {
+	private boolean intersects(Track track1, Track track2, double minOverlap) {
 		if (!StringUtils.equalsIgnoreCase(track1.getType(), track2.getType())) {
 			// Tracks of different types should not be candidates for merger. Ex: It would make no sense to merge a motion and speech track.
 			return false;
@@ -277,10 +280,10 @@ public class TrackMergingProcessor extends WfmProcessor {
 		}
 
 		Detection track1End = track1.getDetections().last();
-		Detection track2End = track2.getDetections().first();
+		Detection track2Start = track2.getDetections().first();
 
-		Detection first = (track1End.getMediaOffsetFrame() < track2End.getMediaOffsetFrame()) ? track1End : track2End;
-		Detection second = (first == track1End) ? track2End : track1End;
+		Detection first = (track1End.getMediaOffsetFrame() < track2Start.getMediaOffsetFrame()) ? track1End : track2Start;
+		Detection second = (first == track1End) ? track2Start : track1End;
 
 		Rectangle rectangle1 = new Rectangle(first.getX(), first.getY(), first.getWidth(), first.getHeight());
 		Rectangle rectangle2 = new Rectangle(second.getX(), second.getY(), second.getWidth(), second.getHeight());
@@ -290,14 +293,15 @@ public class TrackMergingProcessor extends WfmProcessor {
 		}
 
 		Rectangle intersection = rectangle1.intersection(rectangle2);
+
 		if (intersection.isEmpty()) {
-			return false;
+			return 0 >= minOverlap;
 		}
 
 		double intersectArea = intersection.getHeight() * intersection.getWidth();
 		double unionArea = (rectangle2.getHeight() * rectangle2.getWidth()) + (rectangle1.getHeight() * rectangle1.getWidth()) - intersectArea;
 		double percentOverlap = intersectArea / unionArea;
 
-		return percentOverlap > segMinOverlap;
+		return percentOverlap >= minOverlap;
 	}
 }

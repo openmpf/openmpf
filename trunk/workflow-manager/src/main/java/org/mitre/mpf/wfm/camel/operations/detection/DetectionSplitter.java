@@ -251,23 +251,41 @@ public class DetectionSplitter implements StageSplitter {
 		int samplingInterval = propertiesUtil.getSamplingInterval();
 		int minGapBetweenSegments = propertiesUtil.getMinAllowableSegmentGap();
 
+		// TODO: Better to use direct map access rather than a loop, but that requires knowing the case of the keys in the map.
+		// Enforce case-sensitivity throughout the WFM.
 		if (properties != null) {
 			for (Map.Entry<String, String> property : properties.entrySet()) {
-				try {
-					if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY)) {
-						targetSegmentLength = Integer.parseInt(property.getValue());
-					} else if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY)) {
-						minSegmentLength = Integer.parseInt(property.getValue());
-					} else if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)) {
-						samplingInterval = Integer.parseInt(property.getValue());
-					} else if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.MINIMUM_GAP_BETWEEN_SEGMENTS)) {
-						minGapBetweenSegments = Integer.parseInt(property.getValue());
+				if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY)) {
+					try {
+						targetSegmentLength = Integer.valueOf(property.getValue());
+					} catch (NumberFormatException exception) {
+						log.warn("Attempted to parse " + MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY + " value of '{}' but encountered an exception. Defaulting to '{}'.", property.getValue(), targetSegmentLength, exception);
 					}
-				} catch (NumberFormatException numberFormatException) {
-					// Failed to parse the preferred split size. At this point, we use the default split and minimum split size parameters from the properties.
-					log.warn("Failed to parse the contents of '{}' with value '{}' as an integer. Assuming target segment length of '{}' AND minimum segment length of '{}'.",
-							property.getKey(), property.getValue(), propertiesUtil.getTargetSegmentLength(), propertiesUtil.getMinSegmentLength());
-					return new SegmentingPlan(propertiesUtil.getTargetSegmentLength(), propertiesUtil.getMinSegmentLength(), propertiesUtil.getSamplingInterval(), propertiesUtil.getMinAllowableSegmentGap());
+				}
+				if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY)) {
+					try {
+						minSegmentLength = Integer.valueOf(property.getValue());
+					} catch (NumberFormatException exception) {
+						log.warn("Attempted to parse " + MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY + " value of '{}' but encountered an exception. Defaulting to '{}'.", property.getValue(), minSegmentLength, exception);
+					}
+				}
+				if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)) {
+					try {
+						samplingInterval = Integer.valueOf(property.getValue());
+						if (samplingInterval < 1) {
+							samplingInterval = propertiesUtil.getSamplingInterval();
+							log.warn("'{}' is not an acceptable " + MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY + " value. Defaulting to '{}'.", property.getValue(), samplingInterval);
+						}
+					} catch (NumberFormatException exception) {
+						log.warn("Attempted to parse " + MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY + " value of '{}' but encountered an exception. Defaulting to '{}'.", property.getValue(), samplingInterval, exception);
+					}
+				}
+				if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.MINIMUM_GAP_BETWEEN_SEGMENTS)) {
+					try {
+						minGapBetweenSegments = Integer.valueOf(property.getValue());
+					} catch (NumberFormatException exception) {
+						log.warn("Attempted to parse " + MpfConstants.MINIMUM_GAP_BETWEEN_SEGMENTS + " value of '{}' but encountered an exception. Defaulting to '{}'.", property.getValue(), minGapBetweenSegments, exception);
+					}
 				}
 			}
 		}

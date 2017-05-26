@@ -174,38 +174,35 @@ public class TrackMergingProcessor extends WfmProcessor {
 			try {
 				samplingInterval = Integer.valueOf(samplingIntervalProperty);
 				if (samplingInterval < 1) {
-					throw new IllegalArgumentException(String.format("%s is not an acceptable " + MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY + " value", samplingIntervalProperty));
+					samplingInterval = propertiesUtil.getSamplingInterval();
+					log.warn("'{}' is not an acceptable " + MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY + " value. Defaulting to '{}'.", samplingIntervalProperty, samplingInterval);
 				}
-			} catch (Exception exception) {
-				log.warn("Attempted to parse " + MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY + " value of '{}' but encountered an exception. Defaulting to `{}`.", samplingIntervalProperty, samplingInterval, exception);
+			} catch (NumberFormatException exception) {
+				log.warn("Attempted to parse " + MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY + " value of '{}' but encountered an exception. Defaulting to '{}'.", samplingIntervalProperty, samplingInterval, exception);
 			}
 		}
 		if (mergeTracksProperty != null) {
-			try {
-				mergeTracks = Boolean.valueOf(mergeTracksProperty);
-			} catch (Exception exception) {
-				log.warn("Attempted to parse " + MpfConstants.MERGE_TRACKS_PROPERTY + " value of '{}' but encountered an exception. Defaulting to `{}`.", mergeTracksProperty, mergeTracks, exception);
-			}
+			mergeTracks = Boolean.valueOf(mergeTracksProperty);
 		}
 		if (minGapBetweenTracksProperty != null) {
 			try {
 				minGapBetweenTracks = Integer.valueOf(minGapBetweenTracksProperty);
-			} catch (Exception exception) {
-				log.warn("Attempted to parse " + MpfConstants.MIN_GAP_BETWEEN_TRACKS + " value of '{}' but encountered an exception. Defaulting to `{}`.", minGapBetweenTracksProperty, minGapBetweenTracks, exception);
+			} catch (NumberFormatException exception) {
+				log.warn("Attempted to parse " + MpfConstants.MIN_GAP_BETWEEN_TRACKS + " value of '{}' but encountered an exception. Defaulting to '{}'.", minGapBetweenTracksProperty, minGapBetweenTracks, exception);
 			}
 		}
 		if (minTrackLengthProperty != null) {
 			try {
 				minTrackLength = Integer.valueOf(minTrackLengthProperty);
-			} catch (Exception exception) {
-				log.warn("Attempted to parse " + MpfConstants.MIN_TRACK_LENGTH + " value of '{}' but encountered an exception. Defaulting to `{}`.", minTrackLengthProperty, minTrackLength, exception);
+			} catch (NumberFormatException exception) {
+				log.warn("Attempted to parse " + MpfConstants.MIN_TRACK_LENGTH + " value of '{}' but encountered an exception. Defaulting to '{}'.", minTrackLengthProperty, minTrackLength, exception);
 			}
 		}
 		if (minTrackOverlapProperty != null) {
 			try {
 				minTrackOverlap = Double.valueOf(minTrackOverlapProperty);
-			} catch (Exception exception) {
-				log.warn("Attempted to parse " + MpfConstants.MIN_TRACK_OVERLAP + " value of '{}' but encountered an exception. Defaulting to `{}`.", minTrackOverlapProperty, minTrackOverlap, exception);
+			} catch (NumberFormatException exception) {
+				log.warn("Attempted to parse " + MpfConstants.MIN_TRACK_OVERLAP + " value of '{}' but encountered an exception. Defaulting to '{}'.", minTrackOverlapProperty, minTrackOverlap, exception);
 			}
 		}
 

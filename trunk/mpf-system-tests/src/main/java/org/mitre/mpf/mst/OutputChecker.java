@@ -38,7 +38,7 @@ import java.util.SortedSet;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.closeTo;
-import static org.hamcrest.Matchers.either;
+import static org.hamcrest.Matchers.greaterThan;
 
 public class OutputChecker {
 
@@ -241,8 +241,7 @@ public class OutputChecker {
                 double overlap = calculateOverlap(expObjLocation.getX(), expObjLocation.getY(),
                         expObjLocation.getWidth(), expObjLocation.getHeight(), actObjLocation.getX(),
                         actObjLocation.getY(), actObjLocation.getWidth(), actObjLocation.getHeight());
-                _errorCollector.checkThat("Overlap", overlap, either(closeTo(100, comparison_delta))
-                                                                .or(closeTo(30, 10)));
+                _errorCollector.checkThat("Overlap", overlap, greaterThan(0.0));
 
 
                 _errorCollector.checkThat("Confidence", (double) actObjLocation.getConfidence(),

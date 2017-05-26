@@ -208,6 +208,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 				log.warn("Attempted to parse " + MpfConstants.MIN_TRACK_OVERLAP + " value of '{}' but encountered an exception. Defaulting to `{}`.", minTrackOverlapProperty, minTrackOverlap, exception);
 			}
 		}
+
 		return new TrackMergingPlan(samplingInterval, mergeTracks, minGapBetweenTracks, minTrackLength, minTrackOverlap);
 	}
 
@@ -217,7 +218,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 			return sourceTracks;
 		}
 
-		int minGap = plan.getMinGapBetweenTracks();
+		int minGapBetweenTracks = plan.getMinGapBetweenTracks();
 		List<Track> tracks = new LinkedList<Track>(sourceTracks);
 		Collections.sort(tracks);
 
@@ -230,10 +231,8 @@ public class TrackMergingProcessor extends WfmProcessor {
 			Track trackToRemove = null;
 
 			for (Track candidate : tracks) {
-				// Iterate through the remaining tracks until a track is found which has sufficient frame and region overlap.
-				boolean track1BeforeTrack2 = merged.getEndOffsetFrameInclusive() < candidate.getStartOffsetFrameInclusive();
-				boolean trackGapWithinLimit = merged.getEndOffsetFrameInclusive() >= candidate.getStartOffsetFrameInclusive() - minGap + 1;
-				if (track1BeforeTrack2 && trackGapWithinLimit && intersects(merged, candidate, plan.getMinTrackOverlap())) {
+				// Iterate through the remaining tracks until a track is found which is within the frame gap and has sufficient region overlap.
+				if (isWithinGap(merged, candidate, plan.getMinGapBetweenTracks()) && intersects(merged, candidate, plan.getMinTrackOverlap())) {
 					// If one is found, merge them and then push this track back to the beginning of the collection.
 					tracks.add(0, merge(merged, candidate));
 					performedMerge = true;
@@ -278,7 +277,15 @@ public class TrackMergingProcessor extends WfmProcessor {
 		return merged;
 	}
 
-	private boolean intersects(Track track1, Track track2, double minOverlap) {
+	private boolean isWithinGap(Track track1, Track track2, double minGapBetweenTracks) {
+		if (track1.getEndOffsetFrameInclusive() + 1 == track2.getStartOffsetFrameInclusive()) {
+			return true; // tracks are adjacent
+		}
+		return (track1.getEndOffsetFrameInclusive() < track2.getStartOffsetFrameInclusive()) &&
+				(minGapBetweenTracks - 1 >= track2.getStartOffsetFrameInclusive() - track1.getEndOffsetFrameInclusive());
+	}
+
+	private boolean intersects(Track track1, Track track2, double minTrackOverlap) {
 		if (!StringUtils.equalsIgnoreCase(track1.getType(), track2.getType())) {
 			// Tracks of different types should not be candidates for merger. Ex: It would make no sense to merge a motion and speech track.
 			return false;
@@ -300,13 +307,13 @@ public class TrackMergingProcessor extends WfmProcessor {
 		Rectangle intersection = rectangle1.intersection(rectangle2);
 
 		if (intersection.isEmpty()) {
-			return 0 >= minOverlap;
+			return 0 >= minTrackOverlap;
 		}
 
 		double intersectArea = intersection.getHeight() * intersection.getWidth();
 		double unionArea = (rectangle2.getHeight() * rectangle2.getWidth()) + (rectangle1.getHeight() * rectangle1.getWidth()) - intersectArea;
 		double percentOverlap = intersectArea / unionArea;
 
-		return percentOverlap >= minOverlap;
+		return percentOverlap >= minTrackOverlap;
 	}
 }

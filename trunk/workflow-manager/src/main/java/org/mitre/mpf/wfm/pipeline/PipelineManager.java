@@ -97,11 +97,6 @@ public class PipelineManager {
             AlgorithmDefinitionCollection algorithms = fromXStream(propertiesUtil.getAlgorithmDefinitions(),
                     AlgorithmDefinitionCollection.class);
 
-            algorithms.getAlgorithms()
-                    .stream()
-                    .flatMap(ad -> ad.getProvidesCollection().getAlgorithmProperties().stream())
-                    .forEach(pd -> pd.setDefaultValue(properties));
-
             for (AlgorithmDefinition algorithm : algorithms.getAlgorithms()) {
                 try {
                     addAlgorithm(algorithm);
@@ -461,6 +456,9 @@ public class PipelineManager {
 
     /** Adds an algorithm. This will return false if the algorithm could not be added. */
     public boolean addAlgorithm(AlgorithmDefinition algorithm) throws WfmProcessingException {
+        algorithm.getProvidesCollection().getAlgorithmProperties()
+		        .forEach(pd -> pd.setDefaultValue(properties));
+
         validateAlgorithm(algorithm);
         log.debug("{}: Adding algorithm", StringUtils.upperCase(algorithm.getName()));
         algorithms.put(StringUtils.upperCase(algorithm.getName()), algorithm);

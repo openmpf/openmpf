@@ -73,8 +73,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
 
         // 28MG
         List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/speech/obamastateoftheunion2015.mp3"));
-        String pipelineName = addDefaultSphinxSpeechExtractionPipeline();
-        long jobId = runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
+        long jobId = runPipelineOnMedia("SPHINX SPEECH DETECTION PIPELINE", media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
         checkOutput(actualOutputPath, 1);
         log.info("Finished test runSpeechSphinxDetectAudio()");

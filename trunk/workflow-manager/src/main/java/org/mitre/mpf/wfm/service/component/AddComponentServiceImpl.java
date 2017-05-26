@@ -70,8 +70,6 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     private final RemoveComponentService removeComponentService;
 
-    private final Properties loadedProperties;
-
     private final ObjectMapper objectMapper;
 
     @Inject
@@ -95,7 +93,6 @@ public class AddComponentServiceImpl implements AddComponentService {
         this.extrasDescriptorValidator = extrasDescriptorValidator;
         this.customPipelineValidator = customPipelineValidator;
         this.removeComponentService = removeComponentService;
-        this.loadedProperties = loadedProperties;
         this.objectMapper = objectMapper;
     }
 
@@ -275,18 +272,6 @@ public class AddComponentServiceImpl implements AddComponentService {
         return algoDef;
     }
 
-    private Map<String, String> convertJsonAlgoProps(JsonComponentDescriptor descriptor) {
-        return descriptor
-                .algorithm
-                .providesCollection
-                .properties
-                .stream()
-                .collect(toMap(p -> p.name,
-                               p -> p.defaultValue != null
-                                       ? p.defaultValue
-                                       : loadedProperties.getProperty(p.propertiesKey)));
-    }
-
     private static List<EnvironmentVariable> convertJsonEnvVars(JsonComponentDescriptor descriptor) {
         return descriptor
                 .environmentVariables
@@ -328,9 +313,8 @@ public class AddComponentServiceImpl implements AddComponentService {
 
             // add a default action associated with the algorithm
             String actionDescription = "Default action for the " + algorithmDef.getName() + " algorithm.";
-            Map<String, String> algoProps = convertJsonAlgoProps(descriptor);
             String actionName = getDefaultActionName(algorithmDef);
-            saveAction(actionName, actionDescription, algorithmDef.getName(), algoProps);
+            saveAction(actionName, actionDescription, algorithmDef.getName(), Collections.emptyMap());
             return Collections.singleton(actionName);
         }
 

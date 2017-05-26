@@ -93,8 +93,6 @@ public class TestAddComponentService {
     @Before
     public void init() {
         MockitoAnnotations.initMocks(this);
-        when(_mockProperties.getProperty("my.test.key"))
-                .thenReturn("my.test.value");
     }
 
     @Test
@@ -183,11 +181,8 @@ public class TestAddComponentService {
         when(_mockPipelineService.addAndSaveAlgorithm(algoDef))
                 .thenReturn(_successTuple);
 
-        Map<String, String> propertyMap = new HashMap<>();
-        propertyMap.put(ALGO_PROP_NAMES.get(0), "100");
-        propertyMap.put(ALGO_PROP_NAMES.get(1), "my.test.value");
-
-        when(_mockPipelineService.addAndSaveActionDeprecated(contains(algoDef.getName()), anyString(), eq(algoDef.getName()), eq(propertyMap)))
+        when(_mockPipelineService.addAndSaveActionDeprecated(
+					contains(algoDef.getName()), anyString(), eq(algoDef.getName()), eq(Collections.emptyMap())))
                 .thenReturn(_successTuple);
 
         when(_mockPipelineService.addAndSaveTaskDeprecated(whereArg(td -> td.getName().contains(algoDef.getName()))))
@@ -229,7 +224,8 @@ public class TestAddComponentService {
                 .addAndSaveAlgorithm(algoDef);
 
         verify(_mockPipelineService)
-                .addAndSaveActionDeprecated(contains(algoDef.getName()), anyString(), anyString(), eq(propertyMap));
+                .addAndSaveActionDeprecated(contains(algoDef.getName()), anyString(), anyString(),
+                                            eq(Collections.emptyMap()));
 
         verify(_mockDeploymentService)
                 .deployComponent(_testPackageName);

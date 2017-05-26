@@ -73,7 +73,7 @@ public class PropertyDefinition {
 	}
 
 	public void setDefaultValue(Properties properties) {
-		if (defaultValue == null && propertiesKey != null) {
+		if (propertiesKey != null) {
 			defaultValue = properties.getProperty(propertiesKey);
 		}
 	}

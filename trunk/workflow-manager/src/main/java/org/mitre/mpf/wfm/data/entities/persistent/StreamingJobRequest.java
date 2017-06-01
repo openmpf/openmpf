@@ -32,13 +32,13 @@ import javax.persistence.*;
 import java.util.Date;
 
 /**
- * This class includes the essential information which describes a batch job. Instances of this class are stored in a
+ * This class includes the essential information which describes a streaming job. Instances of this class are stored in a
  * persistent data store (as opposed to a transient data store).
  */
 @Entity
-public class JobRequest {
+public class StreamingJobRequest {
 
-	public JobRequest() { }
+	public StreamingJobRequest() { }
 
 	/** The unique numeric identifier for this job. */
 	@Id
@@ -46,27 +46,27 @@ public class JobRequest {
 	private long id;
 	public long getId() { return id; }
 
-	/** The timestamp indicating when the server received this job. */
+	/** The timestamp indicating when the server received this streaming job. */
 	@Column
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date timeReceived;
 	public Date getTimeReceived() { return timeReceived; }
 	public void setTimeReceived(Date timeReceived) { this.timeReceived = timeReceived; }
 
-	/** The timestamp indicating when the server completed this job.*/
+	/** The timestamp indicating when the server completed this streaming job.*/
 	@Column
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date timeCompleted;
 	public Date getTimeCompleted() { return timeCompleted; }
 	public void setTimeCompleted(Date timeCompleted) { this.timeCompleted = timeCompleted; }
 	
-	/** The priority of the job set when creating the job.*/
+	/** The priority of the job set when creating the streaming job.*/
 	@Column	
 	private int priority;
 	public int getPriority() { return  priority; }
 	public void setPriority(int priority) { this.priority = priority; }
 
-	/** The current status of this job. */
+	/** The current status of this streaming job. */
 	@Column
 	@Enumerated(EnumType.STRING)
 	private JobStatus status;

@@ -71,6 +71,8 @@ public class RedisImpl implements Redis {
 	//
 
 	// The following constants are provided to avoid making typographical errors when formulating keys.
+	// Note: JOB represents a batch job, while STREAMING_JOB represents a streaming job.  Had to provide distinction here because
+	// a batch job and a streaming job may have the same job id.
 	private static final String
 			CANCELLED = "CANCELLED",
 			DETAIL = "DETAIL",
@@ -90,7 +92,12 @@ public class RedisImpl implements Redis {
 			TRACK = "TRACK",
 			SEQUENCE = "SEQUENCE",
 			STATUS = "STATUS",
-			JOB_STATUS = "JOB_STATUS";
+			JOB_STATUS = "JOB_STATUS",
+			STREAMING_JOB = "STREAMING_JOB",
+			STREAM = "STREAM",
+			HEALTH_REPORT_CALLBACK_URI = "HEALTH_REPORT_CALLBACK_URI",
+			SUMMARY_REPORT_CALLBACK_URI = "SUMMARY_REPORT_CALLBACK_URI",
+			NEW_TRACK_ALERT_CALLBACK_URI = "NEW_TRACK_ALERT_CALLBACK_URI";
 
 	/**
 	 * Creates a "key" from one or more components. This is a convenience method for creating
@@ -154,6 +161,17 @@ public class RedisImpl implements Redis {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	public synchronized boolean cancelStreamingJob(long jobId) {
+		if(redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).size() > 0) {
+			redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(CANCELLED, true);
+			return true;
+		} else {
+			log.warn("Streaming Job #{} is not running and cannot be cancelled.", jobId);
+			return false;
+		}
+	}
+
 	/** Removes everything in the Redis datastore. */
 	public void clear() {
 		redisTemplate.execute(new RedisCallback() {
@@ -192,6 +210,40 @@ public class RedisImpl implements Redis {
 							if(!file.delete()) {
                                 log.warn("Failed to delete the file '{}'. It has been leaked and must be removed manually.", file);
                             }
+						}
+					} catch (Exception exception) {
+						log.warn("Failed to delete the local file '{}' which was created retrieved from a remote location - it must be manually deleted.", transientMedia.getLocalPath(), exception);
+					}
+				}
+			}
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public synchronized void clearStreamingJob(long jobId) throws WfmProcessingException {
+		TransientJob transientJob = getStreamingJob(jobId);
+		if(transientJob == null) { return; }
+		redisTemplate.boundSetOps(STREAMING_JOB).remove(Long.toString(jobId));
+		redisTemplate.delete(key(STREAMING_JOB, jobId));
+		for(TransientMedia transientMedia : transientJob.getMedia()) {
+			redisTemplate.delete(key(STREAMING_JOB, jobId, MEDIA, transientMedia.getId()));
+			if(transientJob.getPipeline() != null) {
+				for (int taskIndex = 0; taskIndex < transientJob.getPipeline().getStages().size(); taskIndex++) {
+					for (int actionIndex = 0; actionIndex < transientJob.getPipeline().getStages().get(taskIndex).getActions().size(); actionIndex++) {
+						redisTemplate.delete(key(STREAMING_JOB, jobId, MEDIA, transientMedia.getId(), ERRORS, taskIndex, actionIndex));
+						redisTemplate.delete(key(STREAMING_JOB, jobId, MEDIA, transientMedia.getId(), TRACK, taskIndex, actionIndex));
+					}
+				}
+			}
+
+			if(transientMedia.getUriScheme().isRemote()) {
+				if(transientMedia.getLocalPath() != null) {
+					try {
+						File file = new File(transientMedia.getLocalPath());
+						if (file.exists()) {
+							if(!file.delete()) {
+								log.warn("Failed to delete the file '{}'. It has been leaked and must be removed manually.", file);
+							}
 						}
 					} catch (Exception exception) {
 						log.warn("Failed to delete the local file '{}' which was created retrieved from a remote location - it must be manually deleted.", transientMedia.getLocalPath(), exception);
@@ -405,6 +457,56 @@ public class RedisImpl implements Redis {
 		redisTemplate
 				.boundValueOps(key(JOB, job, MEDIA, transientMedia.getId())) // e.g., JOB:5:MEDIA:16
 				.set(jsonUtils.serialize(transientMedia));
+	}
+
+
+
+
+
+	@SuppressWarnings("unchecked")
+	public synchronized void persistJob(TransientStreamingJob transientStreamingJob) throws WfmProcessingException {
+		// Redis cannot store complex objects, so it is necessary to store complex objects using
+		// less complex data structures such as lists and hashes (maps). The jobHash variable
+		// is used to store the simple properties of a streaming job in a map.
+		Map<String, Object> jobHash = new HashMap<>();
+
+		// The Redis-assigned ID for the stream element associated with this job.
+		TransientStream transientStream = transientStreamingJob.getStream();
+		redisTemplate
+				.boundValueOps(key(STREAMING_JOB, transientStreamingJob.getId(), STREAM, transientStream.getId())) // e.g., stream key example: STREAMING_JOB:5:STREAM:16
+				.set(jsonUtils.serialize(transientStream));
+
+		// Associate the stream id with the job hash.
+		jobHash.put(STREAM, transientStream.getId());
+
+		// Copy the remaining properties from the java object to the job hash...
+		// Note: need to convert from ByteArray (using JsonUtils.serialize) from REDIS to Java
+		jobHash.put(PIPELINE, jsonUtils.serialize(transientStreamingJob.getPipeline())); // Serialized to conserve space.
+		jobHash.put(OVERRIDDEN_JOB_PROPERTIES, jsonUtils.serialize(transientStreamingJob.getOverriddenJobProperties()));
+		jobHash.put(OVERRIDDEN_ALGORITHM_PROPERTIES, jsonUtils.serialize(transientStreamingJob.getOverriddenAlgorithmProperties()));
+		jobHash.put(TASK, transientStreamingJob.getCurrentStage());
+		jobHash.put(TASK_COUNT, transientStreamingJob.getPipeline() == null ? 0 : transientStreamingJob.getPipeline().getStages().size());
+		jobHash.put(EXTERNAL_ID, transientStreamingJob.getExternalId());
+		jobHash.put(PRIORITY, transientStreamingJob.getPriority());
+		jobHash.put(HEALTH_REPORT_CALLBACK_URI, transientStreamingJob.getHealthReportCallbackURI());
+		jobHash.put(SUMMARY_REPORT_CALLBACK_URI, transientStreamingJob.getSummaryReportCallbackURI());
+		jobHash.put(NEW_TRACK_ALERT_CALLBACK_URI, transientStreamingJob.getNewTrackAlertCallbackURI());
+		jobHash.put(CALLBACK_METHOD, transientStreamingJob.getCallbackMethod());
+		jobHash.put(OUTPUT_ENABLED, transientStreamingJob.isOutputEnabled());
+		jobHash.put(CANCELLED, transientStreamingJob.isCancelled());
+
+
+		// Finally, persist the data to Redis.
+		redisTemplate
+				.boundHashOps(key(STREAMING_JOB, transientStreamingJob.getId())) // e.g., STREAMING_JOB:5
+				.putAll(jobHash);
+
+		// If this is the first time the streaming job has been persisted, add the job's ID to the
+		// collection of jobs known to the system so that we can assume that the key STREAMING_JOB:N
+		// exists in Redis provided that N exists in this set.
+		redisTemplate
+				.boundSetOps(STREAMING_JOB) // e.g., JOB
+				.add(Long.toString(transientStreamingJob.getId()));
 	}
 
     @SuppressWarnings("unchecked")

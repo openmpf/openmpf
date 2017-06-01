@@ -24,29 +24,10 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.wfm.data.access.hibernate;
 
-public enum UriScheme {
-	/** Default: The URI scheme is either unknown or undefined. */
-	UNDEFINED(false),
+import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 
-	FILE(false),
-	HTTP(true),
-	HTTPS(true),
-	RTSP(true);
-
-	private boolean remote;
-	public boolean isRemote() { return remote; }
-
-	UriScheme(boolean remote) { this.remote = remote; }
-
-	/** Gets the enumerated value which maps to the case-insensitive input; if no value exists, {@link #UNDEFINED} is returned. */
-	public static UriScheme parse(String scheme) {
-		for(UriScheme uriScheme : UriScheme.values()) {
-			if(uriScheme.name().equalsIgnoreCase(scheme)) {
-				return uriScheme;
-			}
-		}
-		return UNDEFINED;
-	}
+public interface HibernateStreamingJobRequestDao extends StreamingJobRequestDao, HibernateDao<StreamingJobRequest> {
 }

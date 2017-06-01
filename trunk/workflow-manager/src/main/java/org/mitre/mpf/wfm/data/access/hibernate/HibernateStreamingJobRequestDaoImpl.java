@@ -24,29 +24,34 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.wfm.data.access.hibernate;
 
-public enum UriScheme {
-	/** Default: The URI scheme is either unknown or undefined. */
-	UNDEFINED(false),
+import org.hibernate.Query;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
+import org.mitre.mpf.wfm.enums.JobStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
-	FILE(false),
-	HTTP(true),
-	HTTPS(true),
-	RTSP(true);
+@Repository(HibernateStreamingJobRequestDaoImpl.REF)
+@Transactional(propagation = Propagation.REQUIRED)
+public class HibernateStreamingJobRequestDaoImpl extends AbstractHibernateDao<StreamingJobRequest> implements HibernateStreamingJobRequestDao {
+	private static final Logger log = LoggerFactory.getLogger(HibernateStreamingJobRequestDaoImpl.class);
 
-	private boolean remote;
-	public boolean isRemote() { return remote; }
+	public static final String REF = "hibernateStreamingJobRequestDaoImpl";
+	public HibernateStreamingJobRequestDaoImpl() { this.clazz = StreamingJobRequest.class; }
 
-	UriScheme(boolean remote) { this.remote = remote; }
-
-	/** Gets the enumerated value which maps to the case-insensitive input; if no value exists, {@link #UNDEFINED} is returned. */
-	public static UriScheme parse(String scheme) {
-		for(UriScheme uriScheme : UriScheme.values()) {
-			if(uriScheme.name().equalsIgnoreCase(scheme)) {
-				return uriScheme;
-			}
+	@Override
+	public void cancelJobsInNonTerminalState() {
+		Query query = getCurrentSession().
+				createQuery("UPDATE StreamingJobRequest set status = :newStatus where status in (:nonTerminalStatuses)");
+		query.setParameter("newStatus", JobStatus.CANCELLED_BY_SHUTDOWN);
+		query.setParameterList("nonTerminalStatuses", JobStatus.getNonTerminalStatuses());
+		int updatedRows = query.executeUpdate();
+		if(updatedRows >= 0) {
+			log.warn("{} streaming jobs were in a non-terminal state and have been marked as {}", updatedRows, JobStatus.CANCELLED_BY_SHUTDOWN);
 		}
-		return UNDEFINED;
 	}
 }

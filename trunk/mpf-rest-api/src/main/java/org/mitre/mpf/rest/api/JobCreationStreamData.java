@@ -24,29 +24,58 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.rest.api;
 
-public enum UriScheme {
-	/** Default: The URI scheme is either unknown or undefined. */
-	UNDEFINED(false),
+import java.util.HashMap;
+import java.util.Map;
 
-	FILE(false),
-	HTTP(true),
-	HTTPS(true),
-	RTSP(true);
 
-	private boolean remote;
-	public boolean isRemote() { return remote; }
+public class JobCreationStreamData {
 
-	UriScheme(boolean remote) { this.remote = remote; }
+    public JobCreationStreamData() {}
+    public JobCreationStreamData(String uri) {
+        this.streamURI=uri;
+    }
 
-	/** Gets the enumerated value which maps to the case-insensitive input; if no value exists, {@link #UNDEFINED} is returned. */
-	public static UriScheme parse(String scheme) {
-		for(UriScheme uriScheme : UriScheme.values()) {
-			if(uriScheme.name().equalsIgnoreCase(scheme)) {
-				return uriScheme;
-			}
-		}
-		return UNDEFINED;
-	}
+    public String getStreamURI() {
+        return streamURI;
+    }
+
+    public void setStreamURI(String streamURI) {
+        this.streamURI = streamURI;
+    }
+
+    private String streamURI;
+
+
+    public Map<String, String> getMediaProperties() {
+        return mediaProperties;
+    }
+
+    public void setMediaProperties(Map<String, String> mediaProperties) {
+        this.mediaProperties = mediaProperties;
+    }
+
+    private Map<String,String> mediaProperties = new HashMap<>();
+
+    private int segmentSize = 0;
+    public void setSegmentSize(int seg_size) {this.segmentSize=seg_size; }
+    public int getSegmentSize() { return segmentSize; }
+
+    private long stallAlertDetectionThreshold = 0;
+    public void setStallAlertDetectionThreshold(long stallAlertDetectionThreshold) {this.stallAlertDetectionThreshold=stallAlertDetectionThreshold; }
+    public long getStallAlertDetectionThreshold() { return stallAlertDetectionThreshold; }
+
+    private long stallAlertRate = 0;
+    public void setStallAlertRate(long stallAlertRate) {this.stallAlertRate=stallAlertRate; }
+    public long getStallAlertRate() { return stallAlertRate; }
+
+    private long stallTimeout = 0;
+    public void setStallTimeout(long stallTimeout) {this.stallTimeout=stallTimeout; }
+    public long getStallTimeout() { return stallTimeout; }
+
+    private String stallCallbackURI = null; // the URL to send a stall report to
+    public void setStallCallbackURI(String stallTimeout) {this.stallCallbackURI=stallCallbackURI; }
+    public String getStallCallbackURI() { return stallCallbackURI; }
+
 }

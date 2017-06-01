@@ -24,29 +24,35 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.rest.api;
 
-public enum UriScheme {
-	/** Default: The URI scheme is either unknown or undefined. */
-	UNDEFINED(false),
+public class StreamingJobCreationResponse {
+	private long jobId = -1; //will be -1 if there is an error creating the job
+	private MpfResponse mpfResponse = new MpfResponse();
 
-	FILE(false),
-	HTTP(true),
-	HTTPS(true),
-	RTSP(true);
+	/*
+	 * Constructors
+	 */
+	public StreamingJobCreationResponse() { }
 
-	private boolean remote;
-	public boolean isRemote() { return remote; }
+	public StreamingJobCreationResponse(int errorCode, String errorMessage) {
+		this.mpfResponse.setMessage(errorCode, errorMessage);
+		this.jobId = -1;
+	}
 
-	UriScheme(boolean remote) { this.remote = remote; }
-
-	/** Gets the enumerated value which maps to the case-insensitive input; if no value exists, {@link #UNDEFINED} is returned. */
-	public static UriScheme parse(String scheme) {
-		for(UriScheme uriScheme : UriScheme.values()) {
-			if(uriScheme.name().equalsIgnoreCase(scheme)) {
-				return uriScheme;
-			}
-		}
-		return UNDEFINED;
+	public StreamingJobCreationResponse(long jobId) {
+		this.mpfResponse.setResponseCode(0);
+		this.jobId = jobId;
+	}
+	
+	/*
+	 * Getters
+	 */
+	public long getJobId() {
+		return jobId;
+	}
+	
+	public MpfResponse getMpfResponse() {
+		return mpfResponse;
 	}
 }

@@ -103,6 +103,17 @@ public class JobRequestBoImpl implements JobRequestBo {
 	@EndpointInject(uri = JobCreatorRouteBuilder.ENTRY_POINT)
 	private ProducerTemplate jobRequestProducerTemplate;
 
+	/** method to create and initialize a JSON representation of a job request given the raw parameters
+	 * This version of the method does not allow for a callback to be defined
+	 * @param externalId
+	 * @param pipelineName
+	 * @param media
+	 * @param algorithmProperties
+	 * @param jobProperties
+	 * @param buildOutput
+	 * @param priority
+	 * @return
+	 */
 	@Override
 	public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String,Map> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority) {
 
@@ -127,6 +138,19 @@ public class JobRequestBoImpl implements JobRequestBo {
 		return jsonJobRequest;
 	}
 
+	/** method to create and initialize a JSON representation of a job request given the raw parameters
+	 * This version of the method allows for a callback to be defined
+	 * @param externalId
+	 * @param pipelineName
+	 * @param media
+	 * @param algorithmProperties
+	 * @param jobProperties
+	 * @param buildOutput
+	 * @param priority
+	 * @param callbackURL
+	 * @param callbackMethod
+	 * @return JSON representation of the job request
+	 */
 	@Override
 	public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String,Map> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority, String callbackURL, String callbackMethod) {
 		log.debug("[createRequest] externalId:"+externalId +" pipeline:"+pipelineName + " buildOutput:"+buildOutput+" priority:"+priority+" callbackURL:"+callbackURL + " callbackMethod:"+callbackMethod);
@@ -160,12 +184,25 @@ public class JobRequestBoImpl implements JobRequestBo {
 		return jsonJobRequest;
 	}
 
+	/** method will create a new JobRequest using the provided JSON job request and persist it in the database for long-term storage
+	 * and will send the job request to the components using the ActiveMQ routes
+	 * Upon return, the job will be persisted in the long-term database
+	 * @param jobRequest JSON representation of the job request
+	 * @return initialized job request
+	 * @throws WfmProcessingException
+	 */
 	@Override
 	public JobRequest run(JsonJobRequest jobRequest) throws WfmProcessingException {
 		JobRequest jobRequestEntity = initialize(jobRequest);
 		return runInternal(jobRequestEntity, jobRequest, (jobRequest == null) ? propertiesUtil.getJmsPriority() : jobRequest.getPriority());
 	}
 
+	/** method will create a new JobRequest using the provided JSON job request and persist it in the database for long-term storage
+	 * Upon return, the job will be persisted in the long-term database
+	 * @param jsonJobRequest JSON representation of the job request
+	 * @return initialized job request
+	 * @throws WfmProcessingException
+	 */
 	@Override
 	public JobRequest initialize(JsonJobRequest jsonJobRequest) throws WfmProcessingException {
 		JobRequest jobRequestEntity = new JobRequest();
@@ -182,6 +219,13 @@ public class JobRequestBoImpl implements JobRequestBo {
 		return resubmitInternal(jobId, PriorityPolicy.PROVIDED, priority);
 	}
 
+	/** public method used to cancel a batch job
+	 * This method will mark the job as cancelled in both REDIS and in the long-term database.  The job cancel request will also be sent
+	 * along to the components via ActiveMQ using the JobCreatorRouteBuilder.ENTRY_POINT
+	 * @param jobId
+	 * @return true if the job was successfully cancelled, false otherwise
+	 * @throws WfmProcessingException
+	 */
 	@Override
 	public synchronized boolean cancel(long jobId) throws WfmProcessingException {
 		log.debug("[Job {}:*:*] Received request to cancel this job.", jobId);
@@ -256,6 +300,13 @@ public class JobRequestBoImpl implements JobRequestBo {
 		}
 	}
 
+	/** private method will finish initializing the JobRequest and persist it in the database for long-term storage
+	 * Upon return, the job will be persisted in the long-term database
+	 * @param jobRequest partially initialized jobRequest
+	 * @param jsonJobRequest JSON version of the job request that will be serialized into the jobRequests input object
+	 * @return fully initialized jobRequest
+	 * @throws WfmProcessingException
+	 */
 	private JobRequest initializeInternal(JobRequest jobRequest, JsonJobRequest jsonJobRequest) throws WfmProcessingException {
 		jobRequest.setPriority(jsonJobRequest.getPriority());
 		jobRequest.setStatus(JobStatus.INITIALIZED);
@@ -271,6 +322,14 @@ public class JobRequestBoImpl implements JobRequestBo {
 		return jobRequestDao.persist(jobRequest);
 	}
 
+	/** private method will send the job request to the components via ActiveMQ using the JobCreatorRouteBuilder.ENTRY_POINT
+	 *
+	 * @param jobRequest
+	 * @param jsonJobRequest
+	 * @param priority
+	 * @return
+	 * @throws WfmProcessingException
+	 */
 	private JobRequest runInternal(JobRequest jobRequest, JsonJobRequest jsonJobRequest, int priority) throws WfmProcessingException {
 		Map<String, Object> headers = new HashMap<String, Object>();
 		headers.put(MpfHeaders.JOB_ID, jobRequest.getId());

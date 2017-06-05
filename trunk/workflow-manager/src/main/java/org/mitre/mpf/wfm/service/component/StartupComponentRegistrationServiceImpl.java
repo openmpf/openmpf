@@ -94,7 +94,11 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
 			return;
 		}
 
-		List<Path> uploadedComponentPackages = listDirContent(_componentUploadDir);
+		List<Path> uploadedComponentPackages = listDirContent(_componentUploadDir).stream()
+				.filter(Files::isRegularFile)
+				.filter(p -> p.toString().endsWith(".tar.gz"))
+				.collect(toList());
+
 		List<RegisterComponentModel> allComponentEntries = _componentStateSvc.get();
 		Set<Path> unregisteredComponentPackages = getUnregisteredComponentPackages(uploadedComponentPackages,
 		                                                                           allComponentEntries);
@@ -281,7 +285,6 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
 		}
 		try (Stream<Path> dirChildren = Files.list(dir)) {
 			return dirChildren.collect(toList());
-
 		}
 		catch (IOException e) {
 			throw new UncheckedIOException("Failed to list contents of: " + dir, e);

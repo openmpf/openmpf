@@ -82,6 +82,9 @@ public class TestStartupComponentRegistrationService {
 
 	@Before
 	public void init() throws IOException, ComponentRegistrationException {
+		_componentUploadDir.newFolder("test");
+		_componentUploadDir.newFile("bad.bad");
+
 		_mockPropertiesUtil = mock(PropertiesUtil.class);
 		when(_mockPropertiesUtil.getUploadedComponentsDirectory())
 				.thenReturn(_componentUploadDir.getRoot());

@@ -90,7 +90,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 5 * MINUTES)
     public void runFaceOcvDetectImageWithAutoOrientation() throws Exception {
-        runSystemTest("OCV FACE DETECTION WITH AUTO ORIENTATION PIPELINE",
+        runSystemTest("OCV FACE DETECTION (WITH AUTO-ORIENTATION) PIPELINE",
                 "output/face/runFaceOcvDetectImageWithAutoOrientation.json",
                 "/samples/face/meds-aa-S001-01-exif-rotation.jpg");
     }
@@ -193,9 +193,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 5 * MINUTES)
     public void runSpeechSphinxDetectAudio() throws Exception {
-		String sphinxPipeline = addDefaultSphinxSpeechExtractionPipeline();
-
-        runSystemTest(sphinxPipeline, "output/speech/runSpeechSphinxDetectAudio.json",
+        runSystemTest("SPHINX SPEECH DETECTION PIPELINE", "output/speech/runSpeechSphinxDetectAudio.json",
                 "/samples/speech/green.wav",
                 "/samples/speech/left.wav",
                 "/samples/speech/10001-90210-01803.wav");
@@ -203,9 +201,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 5 * MINUTES)
     public void runSpeechSphinxDetectVideo() throws Exception {
-	    String sphinxPipeline = addDefaultSphinxSpeechExtractionPipeline();
-
-        runSystemTest(sphinxPipeline, "output/speech/runSpeechSphinxDetectVideo.json",
+        runSystemTest("SPHINX SPEECH DETECTION PIPELINE", "output/speech/runSpeechSphinxDetectVideo.json",
                 "/samples/speech/green.mov",
                 "/samples/speech/left.avi",
                 "/samples/speech/10001-90210-01803.mp4"
@@ -224,10 +220,9 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 		return pipelineName;
     }
 
-
     @Test(timeout = 5 * MINUTES)
     public void runTextOalprDetectImage() throws Exception {
-		String pipelineName = addDefaultOalprPipeline();
+	String pipelineName = addDefaultOalprPipeline();
 
 	// TODO: Revert this after upgrading to OpenCV 3.2
 	// With OpenCV 3.1, there are issues with the cv::imread() function,

@@ -32,7 +32,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.tika.Tika;
-import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
@@ -134,6 +133,10 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
 						if (videoMetadata.get("xmpDM:videoFrameRate") != null) {
 							transientMedia.addMetadata("FPS", videoMetadata.get("xmpDM:videoFrameRate"));
+						}
+						String rotation = videoMetadata.get("rotation");
+						if (rotation != null) {
+							transientMedia.addMetadata("ROTATION", rotation);
 						}
 						break;
 					case IMAGE:

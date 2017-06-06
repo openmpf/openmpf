@@ -23,25 +23,31 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 -->
-    <div ng-class="( task._actions.length>1 ) ? 'mpf-task-parallel' : 'mpf-task-sequential'">
-        <div ng-if="task._actions.length>1">
+    <div ng-class="( containsParallelActions() ) ? 'mpf-task-parallel' : 'mpf-task-sequential'">
+
+        <div ng-if="containsParallelActions()">
             <div class="mpf-task-description">
                 <!--invisible for sequential tasks because the task description is either blank or is always the same as the action-->
                 Description:  {{task.description}}
+                <a ng-if="canEdit()" class="pull-right" href ng-click="removeTaskFromPipeline( $event )">
+                    <div class="pp-remove-task glyphicon glyphicon-minus-sign"></div>
+                </a>
             </div>
+
             <ul class="mpf-task-parallel-outer">
                 <ul class="mpf-task-parallel-actions-container">
                     <div ng-repeat="action in task._actions">
-                        <li action arrow-in arrow-out action-obj="action"
-                            op-obj="opObj" index-in-sequence="{{indexInSequence}}"></li>
+                        <li action arrow-in arrow-out action-obj="action" task-obj="task"
+                            op-obj="opObj" index-in-sequence="{{$index}}"></li>
                     </div>
                 </ul>
             </ul>
         </div>
 
-        <div ng-if="task._actions.length<=1" ng-repeat="action in task._actions">
+        <div ng-if="!containsParallelActions()" ng-repeat="action in task._actions">
             <li action arrow-in action-obj="action"
                 op-obj="opObj" index-in-sequence="{{indexInSequence}}"></li>
         </div>
+        <!--<button ng-click="logTask()">~task</button>-->
 
     </div>

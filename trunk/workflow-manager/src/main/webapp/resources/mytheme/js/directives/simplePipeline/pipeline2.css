@@ -181,6 +181,12 @@ hk:  this should be useful once we have a a pipeline-sequence class that can wra
 .pipelineArrowheadP {
   margin-top: -4pt;
 }
+.pipeline-add-task {
+  color: #804400;
+}
+.pipeline-add-task-tooltip {
+  width:5em;
+}
 /* --------------- pipeline page, tab-related ------------------------------------- */
 #pipeline-tab.active > a,
 #pipeline-tab.active > a:hover,
@@ -192,16 +198,13 @@ hk:  this should be useful once we have a a pipeline-sequence class that can wra
   border-bottom-color: transparent;
   font-weight: 800;
 }
-#algorithm-tab.active > a,
-#algorithm-tab.active > a:hover,
-#algorithm-tab.active > a:focus,
-#newActionButton,
-#editActionButton {
+#action-tab.active > a,
+#action-tab.active > a:hover,
+#action-tab.active > a:focus {
   color: #804400;
   cursor: default;
   background-color: #fff3e6;
   border: 1px solid #804400;
-  border-bottom-color: transparent;
   font-weight: 800;
 }
 /* --------------- pipeline page, pipeline-related ------------------------------------- */
@@ -263,7 +266,7 @@ hk:  this should be useful once we have a a pipeline-sequence class that can wra
 .pp-remove-task {
   font-weight: 100;
   font-size: .8em;
-  color: #cebab4;
+  color: #f95523;
 }
 /* --------------- pipeline page, action-related ------------------------------------- */
 .pp-action {
@@ -273,8 +276,11 @@ hk:  this should be useful once we have a a pipeline-sequence class that can wra
   background-color: #fff3e6;
 }
 input.pp-modified-value {
-  border: 1px solid;
+  border: 1px solid #804400;
   font-weight: 800;
+}
+.pp-action-popover-textface {
+  font-weight: 500;
 }
 #newActionButton {
   cursor: pointer;
@@ -357,4 +363,22 @@ input.pp-modified-value {
 }
 .pp-information-icon {
   font-size: .9em;
+}
+.selector-container {
+  height: 25em;
+  margin-left: -15px; /*override padding of tab*/
+}
+.selector-container .selectize-dropdown-content {
+  max-height: 23em;
+  min-height: 23em;
+}
+
+
+#pipeline-selector .select2-arrow,
+#action-selector .select2-arrow {
+  width: 0;
+}
+#pipeline-selector .selectize-input:after,
+#action-selector .selectize-input:after {
+  border-style: none;
 }

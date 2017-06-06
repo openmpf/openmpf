@@ -1,303 +1,320 @@
 {
-  "jobId": 18,
-  "objectId": "b9a1c1de-c65b-4442-aeb1-1701702be849",
+  "jobId": 17,
+  "objectId": "fd417b24-c3f3-41cc-89de-8a7b7615fbc2",
   "pipeline": {
-    "name": "TEST DEFAULT SPHINX SPEECH DETECTION PIPELINE",
-    "description": "TEST DEFAULT SPHINX SPEECH DETECTION PIPELINE",
-    "stages": [{
-      "actionType": "DETECTION",
-      "name": "TEST DEFAULT SPHINX SPEECH DETECTION TASK",
-      "description": "TEST DEFAULT SPHINX SPEECH DETECTION TASK",
-      "actions": [{
-        "algorithm": "SPHINX",
-        "name": "TEST DEFAULT SPHINX SPEECH DETECTION ACTION",
-        "description": "TEST DEFAULT SPHINX SPEECH DETECTION ACTION",
-        "properties": {
-          "EXTRACT_TRACK_DATA_FROM_MEDIA": "false"
-        }
+    "name": "SPHINX SPEECH DETECTION PIPELINE",
+    "description": "Performs Sphinx speech detection.",
+    "stages": [
+      {
+        "actionType": "DETECTION",
+        "name": "SPHINX SPEECH DETECTION TASK",
+        "description": "Performs Sphinx speech detection.",
+        "actions": [
+          {
+            "algorithm": "SPHINX",
+            "name": "SPHINX SPEECH DETECTION ACTION",
+            "description": "Executes the Sphinx speech detection algorithm using the default parameters.",
+            "properties": {}
+          }
+        ]
       }
-      ]
-    }
     ]
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "ed5fb278-c431-4506-a166-88e8ea3f25f0",
-  "timeStart": "2017-04-11 10:49:10.0",
-  "timeStop": "2017-04-11 10:49:44.0",
+  "externalJobId": "9a11c172-ca26-4e0f-b39f-ff2494a1aba4",
+  "timeStart": "2017-05-25 16:00:44.0",
+  "timeStop": "2017-05-25 16:01:24.0",
   "status": "COMPLETE",
+  "algorithmProperties": {},
   "jobProperties": {},
-  "media": [{
-    "mediaId": 20,
-    "path": "file:/var/lib/jenkins/jobs/mpf-phabricator/workspace/trunk/mpf-system-tests/target/test-classes/samples/speech/10001-90210-01803.wav",
-    "mimeType": "audio/x-wav",
-    "length": -1,
-    "sha256": "dcfea5712c43a43ba7ae8083afb39d36993e5a69c46e88b68aaa72b65cb615bb",
-    "message": null,
-    "status": "COMPLETE",
-    "mediaMetadata": {
-      "DURATION": "8031"
-    },
-    "mediaProperties": {},
-    "markupResult": null,
-    "output": {
-      "SPEECH": [{
-        "source": "+#TEST DEFAULT SPHINX SPEECH DETECTION ACTION",
-        "tracks": [{
-          "id": "7e611d64959f4aac62dd4d296e311e3d0145acd5ad147704d979f76434e99765",
-          "startOffsetFrame": 0,
-          "stopOffsetFrame": 0,
-          "startOffsetTime": 830,
-          "stopOffsetTime": 2530,
-          "type": "SPEECH",
-          "source": "+#TEST DEFAULT SPHINX SPEECH DETECTION ACTION",
-          "exemplar": {
-            "x": 0,
-            "y": 1,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPTION": "one zero zero zero one"
-            },
-            "offsetFrame": 0,
-            "offsetTime": 830,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 0
-          },
-          "detections": [{
-            "x": 0,
-            "y": 1,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPTION": "one zero zero zero one"
-            },
-            "offsetFrame": 0,
-            "offsetTime": 830,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 0
+  "media": [
+    {
+      "mediaId": 19,
+      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/mpf-system-tests/target/test-classes/samples/speech/10001-90210-01803.wav",
+      "mimeType": "audio/x-wav",
+      "length": -1,
+      "sha256": "dcfea5712c43a43ba7ae8083afb39d36993e5a69c46e88b68aaa72b65cb615bb",
+      "message": null,
+      "status": "COMPLETE",
+      "mediaMetadata": {
+        "DURATION": "8031"
+      },
+      "mediaProperties": {},
+      "markupResult": null,
+      "output": {
+        "SPEECH": [
+          {
+            "source": "+#SPHINX SPEECH DETECTION ACTION",
+            "tracks": [
+              {
+                "id": "7e611d64959f4aac62dd4d296e311e3d0145acd5ad147704d979f76434e99765",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 830,
+                "stopOffsetTime": 2530,
+                "type": "SPEECH",
+                "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "exemplar": {
+                  "x": 0,
+                  "y": 1,
+                  "width": 0,
+                  "height": 0,
+                  "confidence": -1.0,
+                  "detectionProperties": {
+                    "TRANSCRIPTION": "one zero zero zero one"
+                  },
+                  "offsetFrame": 0,
+                  "offsetTime": 830,
+                  "artifactExtractionStatus": "NOT_ATTEMPTED",
+                  "artifactPath": null,
+                  "offset": 0
+                },
+                "detections": [
+                  {
+                    "x": 0,
+                    "y": 1,
+                    "width": 0,
+                    "height": 0,
+                    "confidence": -1.0,
+                    "detectionProperties": {
+                      "TRANSCRIPTION": "one zero zero zero one"
+                    },
+                    "offsetFrame": 0,
+                    "offsetTime": 830,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 0
+                  }
+                ],
+                "stopOffset": 0,
+                "startOffset": 0
+              },
+              {
+                "id": "7e611d64959f4aac62dd4d296e311e3d0145acd5ad147704d979f76434e99765",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 3920,
+                "stopOffsetTime": 4880,
+                "type": "SPEECH",
+                "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "exemplar": {
+                  "x": 0,
+                  "y": 1,
+                  "width": 0,
+                  "height": 0,
+                  "confidence": -1.0,
+                  "detectionProperties": {
+                    "TRANSCRIPTION": "nine oh two one oh"
+                  },
+                  "offsetFrame": 0,
+                  "offsetTime": 3920,
+                  "artifactExtractionStatus": "NOT_ATTEMPTED",
+                  "artifactPath": null,
+                  "offset": 0
+                },
+                "detections": [
+                  {
+                    "x": 0,
+                    "y": 1,
+                    "width": 0,
+                    "height": 0,
+                    "confidence": -1.0,
+                    "detectionProperties": {
+                      "TRANSCRIPTION": "nine oh two one oh"
+                    },
+                    "offsetFrame": 0,
+                    "offsetTime": 3920,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 0
+                  }
+                ],
+                "stopOffset": 0,
+                "startOffset": 0
+              },
+              {
+                "id": "7e611d64959f4aac62dd4d296e311e3d0145acd5ad147704d979f76434e99765",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 6240,
+                "stopOffsetTime": 7900,
+                "type": "SPEECH",
+                "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "exemplar": {
+                  "x": 0,
+                  "y": 1,
+                  "width": 0,
+                  "height": 0,
+                  "confidence": -1.0,
+                  "detectionProperties": {
+                    "TRANSCRIPTION": "cyril one eight zero three"
+                  },
+                  "offsetFrame": 0,
+                  "offsetTime": 6240,
+                  "artifactExtractionStatus": "NOT_ATTEMPTED",
+                  "artifactPath": null,
+                  "offset": 0
+                },
+                "detections": [
+                  {
+                    "x": 0,
+                    "y": 1,
+                    "width": 0,
+                    "height": 0,
+                    "confidence": -1.0,
+                    "detectionProperties": {
+                      "TRANSCRIPTION": "cyril one eight zero three"
+                    },
+                    "offsetFrame": 0,
+                    "offsetTime": 6240,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 0
+                  }
+                ],
+                "stopOffset": 0,
+                "startOffset": 0
+              }
+            ]
           }
-          ],
-          "stopOffset": 0,
-          "startOffset": 0
-        }, {
-          "id": "7e611d64959f4aac62dd4d296e311e3d0145acd5ad147704d979f76434e99765",
-          "startOffsetFrame": 0,
-          "stopOffsetFrame": 0,
-          "startOffsetTime": 3920,
-          "stopOffsetTime": 4880,
-          "type": "SPEECH",
-          "source": "+#TEST DEFAULT SPHINX SPEECH DETECTION ACTION",
-          "exemplar": {
-            "x": 0,
-            "y": 1,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPTION": "nine oh two one oh"
-            },
-            "offsetFrame": 0,
-            "offsetTime": 3920,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 0
-          },
-          "detections": [{
-            "x": 0,
-            "y": 1,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPTION": "nine oh two one oh"
-            },
-            "offsetFrame": 0,
-            "offsetTime": 3920,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 0
-          }
-          ],
-          "stopOffset": 0,
-          "startOffset": 0
-        }, {
-          "id": "7e611d64959f4aac62dd4d296e311e3d0145acd5ad147704d979f76434e99765",
-          "startOffsetFrame": 0,
-          "stopOffsetFrame": 0,
-          "startOffsetTime": 6240,
-          "stopOffsetTime": 7900,
-          "type": "SPEECH",
-          "source": "+#TEST DEFAULT SPHINX SPEECH DETECTION ACTION",
-          "exemplar": {
-            "x": 0,
-            "y": 1,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPTION": "cyril one eight zero three"
-            },
-            "offsetFrame": 0,
-            "offsetTime": 6240,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 0
-          },
-          "detections": [{
-            "x": 0,
-            "y": 1,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPTION": "cyril one eight zero three"
-            },
-            "offsetFrame": 0,
-            "offsetTime": 6240,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 0
-          }
-          ],
-          "stopOffset": 0,
-          "startOffset": 0
-        }
         ]
-      }
-      ]
+      },
+      "detectionProcessingErrors": {}
     },
-    "detectionProcessingErrors": {}
-  }, {
-    "mediaId": 18,
-    "path": "file:/var/lib/jenkins/jobs/mpf-phabricator/workspace/trunk/mpf-system-tests/target/test-classes/samples/speech/green.wav",
-    "mimeType": "audio/x-wav",
-    "length": -1,
-    "sha256": "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0",
-    "message": null,
-    "status": "COMPLETE",
-    "mediaMetadata": {
-      "DURATION": "2020"
-    },
-    "mediaProperties": {},
-    "markupResult": null,
-    "output": {
-      "SPEECH": [{
-        "source": "+#TEST DEFAULT SPHINX SPEECH DETECTION ACTION",
-        "tracks": [{
-          "id": "7f2a9c612342371081d9674df3b07598ae92cb4c557e86923cf0bece76eae6fc",
-          "startOffsetFrame": 0,
-          "stopOffsetFrame": 0,
-          "startOffsetTime": 280,
-          "stopOffsetTime": 1520,
-          "type": "SPEECH",
-          "source": "+#TEST DEFAULT SPHINX SPEECH DETECTION ACTION",
-          "exemplar": {
-            "x": 0,
-            "y": 1,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPTION": "the green one right in the middle"
-            },
-            "offsetFrame": 0,
-            "offsetTime": 280,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 0
-          },
-          "detections": [{
-            "x": 0,
-            "y": 1,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPTION": "the green one right in the middle"
-            },
-            "offsetFrame": 0,
-            "offsetTime": 280,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 0
+    {
+      "mediaId": 17,
+      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/mpf-system-tests/target/test-classes/samples/speech/green.wav",
+      "mimeType": "audio/x-wav",
+      "length": -1,
+      "sha256": "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0",
+      "message": null,
+      "status": "COMPLETE",
+      "mediaMetadata": {
+        "DURATION": "2020"
+      },
+      "mediaProperties": {},
+      "markupResult": null,
+      "output": {
+        "SPEECH": [
+          {
+            "source": "+#SPHINX SPEECH DETECTION ACTION",
+            "tracks": [
+              {
+                "id": "7f2a9c612342371081d9674df3b07598ae92cb4c557e86923cf0bece76eae6fc",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 280,
+                "stopOffsetTime": 1520,
+                "type": "SPEECH",
+                "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "exemplar": {
+                  "x": 0,
+                  "y": 1,
+                  "width": 0,
+                  "height": 0,
+                  "confidence": -1.0,
+                  "detectionProperties": {
+                    "TRANSCRIPTION": "the green one right in the middle"
+                  },
+                  "offsetFrame": 0,
+                  "offsetTime": 280,
+                  "artifactExtractionStatus": "NOT_ATTEMPTED",
+                  "artifactPath": null,
+                  "offset": 0
+                },
+                "detections": [
+                  {
+                    "x": 0,
+                    "y": 1,
+                    "width": 0,
+                    "height": 0,
+                    "confidence": -1.0,
+                    "detectionProperties": {
+                      "TRANSCRIPTION": "the green one right in the middle"
+                    },
+                    "offsetFrame": 0,
+                    "offsetTime": 280,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 0
+                  }
+                ],
+                "stopOffset": 0,
+                "startOffset": 0
+              }
+            ]
           }
-          ],
-          "stopOffset": 0,
-          "startOffset": 0
-        }
         ]
-      }
-      ]
+      },
+      "detectionProcessingErrors": {}
     },
-    "detectionProcessingErrors": {}
-  }, {
-    "mediaId": 19,
-    "path": "file:/var/lib/jenkins/jobs/mpf-phabricator/workspace/trunk/mpf-system-tests/target/test-classes/samples/speech/left.wav",
-    "mimeType": "audio/x-wav",
-    "length": -1,
-    "sha256": "382fe5814ccf0253594a31f2ca8c3c320899c543b008374c7f26b85eab7508af",
-    "message": null,
-    "status": "COMPLETE",
-    "mediaMetadata": {
-      "DURATION": "5020"
-    },
-    "mediaProperties": {},
-    "markupResult": null,
-    "output": {
-      "SPEECH": [{
-        "source": "+#TEST DEFAULT SPHINX SPEECH DETECTION ACTION",
-        "tracks": [{
-          "id": "99ae1a32617588d5019d96c378f5be6d45d597983dd56cfaf61de24f7ffd38ab",
-          "startOffsetFrame": 0,
-          "stopOffsetFrame": 0,
-          "startOffsetTime": 1100,
-          "stopOffsetTime": 4470,
-          "type": "SPEECH",
-          "source": "+#TEST DEFAULT SPHINX SPEECH DETECTION ACTION",
-          "exemplar": {
-            "x": 0,
-            "y": 1,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPTION": "this three left on the left side of the one closest to us"
-            },
-            "offsetFrame": 0,
-            "offsetTime": 1100,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 0
-          },
-          "detections": [{
-            "x": 0,
-            "y": 1,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPTION": "this three left on the left side of the one closest to us"
-            },
-            "offsetFrame": 0,
-            "offsetTime": 1100,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 0
+    {
+      "mediaId": 18,
+      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/mpf-system-tests/target/test-classes/samples/speech/left.wav",
+      "mimeType": "audio/x-wav",
+      "length": -1,
+      "sha256": "382fe5814ccf0253594a31f2ca8c3c320899c543b008374c7f26b85eab7508af",
+      "message": null,
+      "status": "COMPLETE",
+      "mediaMetadata": {
+        "DURATION": "5020"
+      },
+      "mediaProperties": {},
+      "markupResult": null,
+      "output": {
+        "SPEECH": [
+          {
+            "source": "+#SPHINX SPEECH DETECTION ACTION",
+            "tracks": [
+              {
+                "id": "99ae1a32617588d5019d96c378f5be6d45d597983dd56cfaf61de24f7ffd38ab",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 1100,
+                "stopOffsetTime": 4470,
+                "type": "SPEECH",
+                "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "exemplar": {
+                  "x": 0,
+                  "y": 1,
+                  "width": 0,
+                  "height": 0,
+                  "confidence": -1.0,
+                  "detectionProperties": {
+                    "TRANSCRIPTION": "this three left on the left side of the one closest to us"
+                  },
+                  "offsetFrame": 0,
+                  "offsetTime": 1100,
+                  "artifactExtractionStatus": "NOT_ATTEMPTED",
+                  "artifactPath": null,
+                  "offset": 0
+                },
+                "detections": [
+                  {
+                    "x": 0,
+                    "y": 1,
+                    "width": 0,
+                    "height": 0,
+                    "confidence": -1.0,
+                    "detectionProperties": {
+                      "TRANSCRIPTION": "this three left on the left side of the one closest to us"
+                    },
+                    "offsetFrame": 0,
+                    "offsetTime": 1100,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 0
+                  }
+                ],
+                "stopOffset": 0,
+                "startOffset": 0
+              }
+            ]
           }
-          ],
-          "stopOffset": 0,
-          "startOffset": 0
-        }
         ]
-      }
-      ]
-    },
-    "detectionProcessingErrors": {}
-  }
+      },
+      "detectionProcessingErrors": {}
+    }
   ]
 }

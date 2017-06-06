@@ -150,8 +150,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     public void testBadPipeline() throws Exception {
         testCtr++;
         log.info("Beginning test #{} testBadPipeline()", testCtr);
-        List<JsonMediaInputObject> media = new LinkedList<>();
-        media.add(new JsonMediaInputObject("http://somehost-mpf-4.mitre.org/rsrc/datasets/samples/motion/five-second-marathon-clip.mkv"));
+        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-aa-S001-01.jpg"));
         long jobId = runPipelineOnMedia("X", media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(),
                 propertiesUtil.getJmsPriority());
         log.info("Finished test testBadPipeline()");
@@ -217,13 +216,22 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         testCtr++;
         log.info("Beginning test #{} runFaceOcvCustomDetectVideo()", testCtr);
 
+        // uncomment to run standard nightly test
         String actionName = "TEST X OCV FACE MIN FACE SIZE 100";
         addAction(actionName, "FACECV", Collections.singletonMap("MIN_FACE_SIZE", "100"));
 
         String taskName = "TEST OCV FACE MIN FACE SIZE 100 TASK";
         addTask(taskName, actionName);
 
-        String pipelineName = "TEST OCV FACE MIN FACE SIZE 100 PIPELINE";
+//        // uncomment to generate default output
+//        String actionName = "TEST X OCV FACE";
+//        addAction(actionName, "FACECV", Collections.emptyMap());
+//
+//        String taskName = "TEST OCV FACE TASK";
+//        addTask(taskName, actionName);
+
+        String pipelineName = "TEST OCV FACE MIN FACE SIZE 100 PIPELINE";  // uncomment to run standard nightly test
+//        String pipelineName = "OCV FACE DETECTION PIPELINE";  // uncomment to generate default output
         addPipeline(pipelineName, taskName);
 
         List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/person/video_02.mp4"));

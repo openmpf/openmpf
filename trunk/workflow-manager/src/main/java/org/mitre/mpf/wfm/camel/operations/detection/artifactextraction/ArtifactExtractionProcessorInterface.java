@@ -24,22 +24,19 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm;
+package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
+import org.mitre.mpf.frameextractor.FrameExtractor;
+import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
-import org.mitre.mpf.interop.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Map;
 
-public class JsonTests {
-	private static final Logger log = LoggerFactory.getLogger(JsonTests.class);
-	private static final long SECOND = 1000;
-	private static final ObjectMapper MAPPER = new ObjectMapper();
+public interface ArtifactExtractionProcessorInterface extends WfmProcessorInterface {
 
-	@Test(timeout = 1 * SECOND)
-	public void testJson() throws Exception {
-		MAPPER.readValue("{\"jobId\":5,\"pipeline\":null,\"siteId\":\"d4dcbf92-d7af-490a-a4fa-13463a6b6304\",\"timeStart\":\"2015-10-21 12:46:53.0\",\"timeStop\":\"2015-10-21 12:46:54.0\",\"status\":\"ERROR\",\"media\":[{\"mediaId\":0,\"path\":\"http://somehost-mpf-4.mitre.org/rsrc/datasets/samples/motion/five-second-marathon-clip.mkv\",\"mimeType\":null,\"length\":0,\"status\":\"COMPLETE\",\"message\":null,\"sha256\":null,\"markupResult\":null,\"tracks\":{},\"detectionProcessingErrors\":{}}]}", JsonOutputObject.class);
-	}
+	public Map<Integer, String> processUnsupportedMediaType(ArtifactExtractionRequest request) throws WfmProcessingException;
+
+	public String processImageRequest(ArtifactExtractionRequest request);
+
+	public Map<Integer, String> processVideoRequest(ArtifactExtractionRequest request, FrameExtractor extractor) throws WfmProcessingException;
 }

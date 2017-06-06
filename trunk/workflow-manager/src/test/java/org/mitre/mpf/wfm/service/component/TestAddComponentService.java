@@ -43,10 +43,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -79,6 +76,9 @@ public class TestAddComponentService {
 
     @Mock
     private RemoveComponentService _mockRemoveComponentService;
+
+    @Mock
+    private Properties _mockProperties;
 
     @Mock
     private ObjectMapper _mockObjectMapper;
@@ -181,11 +181,8 @@ public class TestAddComponentService {
         when(_mockPipelineService.addAndSaveAlgorithm(algoDef))
                 .thenReturn(_successTuple);
 
-        Map<String, String> propertyMap = new HashMap<>();
-        propertyMap.put(ALGO_PROP_NAMES.get(0), "100");
-        propertyMap.put(ALGO_PROP_NAMES.get(1), "property2-value");
-
-        when(_mockPipelineService.addAndSaveActionDeprecated(contains(algoDef.getName()), anyString(), eq(algoDef.getName()), eq(propertyMap)))
+        when(_mockPipelineService.addAndSaveActionDeprecated(
+					contains(algoDef.getName()), anyString(), eq(algoDef.getName()), eq(Collections.emptyMap())))
                 .thenReturn(_successTuple);
 
         when(_mockPipelineService.addAndSaveTaskDeprecated(whereArg(td -> td.getName().contains(algoDef.getName()))))
@@ -227,7 +224,8 @@ public class TestAddComponentService {
                 .addAndSaveAlgorithm(algoDef);
 
         verify(_mockPipelineService)
-                .addAndSaveActionDeprecated(contains(algoDef.getName()), anyString(), anyString(), eq(propertyMap));
+                .addAndSaveActionDeprecated(contains(algoDef.getName()), anyString(), anyString(),
+                                            eq(Collections.emptyMap()));
 
         verify(_mockDeploymentService)
                 .deployComponent(_testPackageName);

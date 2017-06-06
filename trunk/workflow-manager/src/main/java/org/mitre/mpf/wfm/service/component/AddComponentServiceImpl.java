@@ -39,6 +39,7 @@ import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -81,6 +82,7 @@ public class AddComponentServiceImpl implements AddComponentService {
             ExtrasDescriptorValidator extrasDescriptorValidator,
             CustomPipelineValidator customPipelineValidator,
             RemoveComponentService removeComponentService,
+            @Qualifier("loadedProperties") Properties loadedProperties,
             ObjectMapper objectMapper)
     {
         this.pipelineService = pipelineService;
@@ -270,15 +272,6 @@ public class AddComponentServiceImpl implements AddComponentService {
         return algoDef;
     }
 
-    private static Map<String, String> convertJsonAlgoProps(JsonComponentDescriptor descriptor) {
-        return descriptor
-                .algorithm
-                .providesCollection
-                .properties
-                .stream()
-                .collect(toMap(p -> p.name, p -> p.defaultValue));
-    }
-
     private static List<EnvironmentVariable> convertJsonEnvVars(JsonComponentDescriptor descriptor) {
         return descriptor
                 .environmentVariables
@@ -320,9 +313,8 @@ public class AddComponentServiceImpl implements AddComponentService {
 
             // add a default action associated with the algorithm
             String actionDescription = "Default action for the " + algorithmDef.getName() + " algorithm.";
-            Map<String, String> algoProps = convertJsonAlgoProps(descriptor);
             String actionName = getDefaultActionName(algorithmDef);
-            saveAction(actionName, actionDescription, algorithmDef.getName(), algoProps);
+            saveAction(actionName, actionDescription, algorithmDef.getName(), Collections.emptyMap());
             return Collections.singleton(actionName);
         }
 

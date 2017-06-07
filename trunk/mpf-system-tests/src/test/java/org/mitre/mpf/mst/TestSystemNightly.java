@@ -216,22 +216,23 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         testCtr++;
         log.info("Beginning test #{} runFaceOcvCustomDetectVideo()", testCtr);
 
-        // uncomment to run standard nightly test
+        // set property MIN_FACE_SIZE=100 on the custom action "TEST X OCV FACE MIN FACE SIZE 100" to run the custom pipeline standard nightly test.
+        // Note that this statement can be left as is when the default output object is created (i.e. when the default pipeline of
+        // "OCV FACE DETECTION PIPELINE" is specified).  It doesn't have to be commented out
+        // because that pipeline doen't use the custom action TEST X OCV FACE MIN FACE SIZE 100", it will
+        // be using instead whatever task&action is defined for "OCV FACE DETECTION PIPELINE" pipeline in the component descriptor file
         String actionName = "TEST X OCV FACE MIN FACE SIZE 100";
         addAction(actionName, "FACECV", Collections.singletonMap("MIN_FACE_SIZE", "100"));
-//        // uncomment to generate default output
-//        String actionName = "TEST X OCV FACE";
-//        addAction(actionName, "FACECV", Collections.emptyMap());
 
         String taskName = "TEST OCV FACE MIN FACE SIZE 100 TASK";
         addTask(taskName, actionName);
 
-        String pipelineName = "TEST OCV FACE MIN FACE SIZE 100 PIPELINE";  // uncomment to run standard nightly test
-//        String pipelineName = "OCV FACE DETECTION PIPELINE";  // uncomment to generate default output
+        String pipelineName = "TEST OCV FACE MIN FACE SIZE 100 PIPELINE"; 
         addPipeline(pipelineName, taskName);
 
         List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/person/video_02.mp4"));
-        long jobId = runPipelineOnMedia(pipelineName, media, Collections.emptyMap(),
+        long jobId = runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), // use this line to generate output using the custom pipeline
+//      long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),  // use this line to generate default output
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         // Compare the normal Ocv pipeline output with this output.  The custom pipeline output should have fewer track sets
         // on this video (requires a video with some small faces)

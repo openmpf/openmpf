@@ -219,16 +219,12 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         // uncomment to run standard nightly test
         String actionName = "TEST X OCV FACE MIN FACE SIZE 100";
         addAction(actionName, "FACECV", Collections.singletonMap("MIN_FACE_SIZE", "100"));
-
-        String taskName = "TEST OCV FACE MIN FACE SIZE 100 TASK";
-        addTask(taskName, actionName);
-
 //        // uncomment to generate default output
 //        String actionName = "TEST X OCV FACE";
 //        addAction(actionName, "FACECV", Collections.emptyMap());
-//
-//        String taskName = "TEST OCV FACE TASK";
-//        addTask(taskName, actionName);
+
+        String taskName = "TEST OCV FACE MIN FACE SIZE 100 TASK";
+        addTask(taskName, actionName);
 
         String pipelineName = "TEST OCV FACE MIN FACE SIZE 100 PIPELINE";  // uncomment to run standard nightly test
 //        String pipelineName = "OCV FACE DETECTION PIPELINE";  // uncomment to generate default output
@@ -236,7 +232,6 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
 
         List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/person/video_02.mp4"));
         long jobId = runPipelineOnMedia(pipelineName, media, Collections.emptyMap(),
-//        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", mediaPaths,  // to generate default output
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         // Compare the normal Ocv pipeline output with this output.  The custom pipeline output should have fewer track sets
         // on this video (requires a video with some small faces)

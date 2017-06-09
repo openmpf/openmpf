@@ -35,7 +35,9 @@ import org.mitre.mpf.rest.api.InfoModel;
 import org.mitre.mpf.rest.api.MarkupResultModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
 import org.mitre.mpf.rest.api.SingleJobInfo;
+import org.mitre.mpf.rest.api.StreamingJobInfo;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -125,6 +127,19 @@ public class ModelUtils {
 				jobRequest.getStatus().toString(), jobContainerProgress, jobRequest.getTimeReceived(), 
 				jobRequest.getTimeCompleted(), jobRequest.getOutputObjectPath(), isTerminal);
 	}
+
+	public static StreamingJobInfo convertJobRequest(StreamingJobRequest streamingjobRequest,
+												  float jobContainerProgress) {
+		//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR
+		JobStatus jobStatus = streamingjobRequest.getStatus();
+		boolean isTerminal = (jobStatus != null && jobStatus.isTerminal());
+
+		return new StreamingJobInfo(streamingjobRequest.getId(), streamingjobRequest.getPipeline(), streamingjobRequest.getPriority(),
+				streamingjobRequest.getStatus().toString(), jobContainerProgress, streamingjobRequest.getTimeReceived(),
+				streamingjobRequest.getTimeCompleted(), 
+				streamingjobRequest.getOutputObjectPath(),isTerminal);
+	}
+
 
 	// returns an InfoModel
 	public InfoModel getInfoModel() {

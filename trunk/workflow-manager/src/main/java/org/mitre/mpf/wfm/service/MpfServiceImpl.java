@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.service;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
+import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.AtmosphereChannel;
 import org.mitre.mpf.wfm.data.access.SystemMessageDao;
@@ -152,16 +153,7 @@ public class MpfServiceImpl implements MpfService {
 
 
 	/** Create a new streaming job which will execute the specified pipeline on the provided list of provided URIs
-	 * @param streamURI URI of the streaming job
-	 * @param segmentSize sdefines how to reduce the video into manageable segments for processing within the components. Value must be > 10
-	 * @param mediaProperties media properties to be applied to the media in this streaming job
-	 * @param stallAlertDetectionThreshold Time before sending out an initial alert when the stream is observed to have stalled  (seconds)
-	 * @param stallAlertRate Time between subsequent alerts after stall has been detected (seconds)
-	 * @param stallTimeout Time before MPF will terminate the streaming job after stall has been initially detected (seconds).  The stream
-	 * is considered to be abandoned if this timeout has been exceeded, so MPF will terminate this streaming job. Set value to -1 if the streaming
-	 * should never be terminated due to stream stall
-	 * @param stallCallbackURI if not null and the MPF detects that the stream associated with a streaming job has been Stalled,
-	 * then the MPF will deliver the stream Stall condition to the client
+	 * @param json_stream JSON representation of the stream data
 	 * @param algorithmProperties A map of properties which will override the job properties on this job for a particular algorithm.
 	 * @param jobProperties A map of properties which will override the default and pipeline properties on this job.
 	 * @param pipelineName The name of the pipeline to execute.
@@ -175,25 +167,45 @@ public class MpfServiceImpl implements MpfService {
 	 * @return A {@link org.mitre.mpf.interop.JsonStreamingJobRequest} which summarizes this request
 	 */
 	@Override
-	public JsonStreamingJobRequest createStreamingJob(String streamURI, int segmentSize, Map <String,String> mediaProperties,
-													  long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout, String stallCallbackURI,
-													  Map<String,Map> algorithmProperties, Map<String,String> jobProperties, String pipelineName, String externalId,
-													  boolean buildOutput, int priority, String healthReportCallbackURI, String summaryReportCallbackURI, String newTrackAlertCallbackURI,
+	public JsonStreamingJobRequest createStreamingJob(JsonStreamingInputObject json_stream,
+													  Map<String,Map> algorithmProperties,
+													  Map<String,String> jobProperties, String pipelineName, String externalId,
+													  boolean buildOutput, int priority, String healthReportCallbackURI,
+													  String summaryReportCallbackURI, String newTrackAlertCallbackURI,
 													  String method) {
 
-		log.debug("createStreamingJob: streamURI: {}. segmentSize: {}. Pipeline: {}. Build Output: {}. Priority: {}. healthReportCallbackURI: {}. summaryReportCallbackURI: {}. newTrackAlertCallbackURI: {}. Method: {}.", streamURI, segmentSize,
+		log.debug("createStreamingJob: stream: {}. Pipeline: {}. Build Output: {}. Priority: {}. healthReportCallbackURI: {}. summaryReportCallbackURI: {}. newTrackAlertCallbackURI: {}. Method: {}.", json_stream,
 				pipelineName, buildOutput, priority, healthReportCallbackURI, summaryReportCallbackURI, newTrackAlertCallbackURI, method);
-		return streamingJobRequestBo.createRequest(externalId, pipelineName, streamURI, segmentSize, mediaProperties, algorithmProperties, jobProperties, buildOutput, priority,
+		return streamingJobRequestBo.createRequest(externalId, pipelineName, json_stream, algorithmProperties, jobProperties, buildOutput, priority,
 				healthReportCallbackURI, summaryReportCallbackURI, newTrackAlertCallbackURI, method);
 	}
 
-
+	/**
+	 * cancel a batch job
+	 * @param jobId The MPF-assigned identifier for the batch job. The job must be a batch job.
+	 * @return
+	 */
 	@Override
 	public boolean cancel(long jobId) {
 		try {
 			return jobRequestBo.cancel(jobId);
 		} catch(WfmProcessingException wpe) {
-			log.error("Failed to cancel Job #{} due to an exception.", jobId, wpe);
+			log.error("Failed to cancel Batch Job #{} due to an exception.", jobId, wpe);
+			return false;
+		}
+	}
+
+	/**
+	 * cancel a streaming job
+	 * @param jobId The MPF-assigned identifier for the streaming job. The job must be a streaming job.
+	 * @return
+	 */
+	@Override
+	public boolean cancelStreamingJob(long jobId) {
+		try {
+			return streamingJobRequestBo.cancel(jobId);
+		} catch(WfmProcessingException wpe) {
+			log.error("Failed to cancel Streaming Job #{} due to an exception.", jobId, wpe);
 			return false;
 		}
 	}
@@ -214,15 +226,32 @@ public class MpfServiceImpl implements MpfService {
 	}
 
 	@Override
-	public JobRequest getJobRequest(long id) {
-		return jobRequestDao.findById(id);
+	public JobRequest getJobRequest(long jobId) {
+		return jobRequestDao.findById(jobId);
 	}
 
+	@Override
+	public StreamingJobRequest getStreamingJobRequest(long jobId) {
+		return streamingJobRequestDao.findById(jobId);
+	}
+
+	/**
+	 * Get the list of all batch job requests
+	 * @return
+	 */
 	@Override
 	public List<JobRequest> getAllJobRequests() {
 		return jobRequestDao.findAll();
 	}
 
+	/**
+	 * get the list of all streaming job requests
+	 * @return
+	 */
+	@Override
+	public List<StreamingJobRequest> getAllStreamingJobRequests() {
+		return streamingJobRequestDao.findAll();
+	}
 
 	/* ***** System Messages ***** */
 

@@ -75,10 +75,11 @@ public class JsonStreamingInputObject {
     private String stallCallbackURI;
     public String getStallCallbackURI() { return stallCallbackURI; }
 
-    public JsonStreamingInputObject(String streamURI, int segmentSize, long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout, String stallCallbackURI) {
+    public JsonStreamingInputObject(String streamURI, int segmentSize, Map <String,String> media_properties,
+                                    long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout, String stallCallbackURI) {
         this.streamURI = streamURI;
         this.segmentSize = segmentSize;
-        this.mediaProperties = new HashMap<>();
+        this.mediaProperties = media_properties;
         this.stallAlertDetectionThreshold = stallAlertDetectionThreshold;
         this.stallAlertRate = stallAlertRate;
         this.stallTimeout = stallTimeout;
@@ -92,10 +93,14 @@ public class JsonStreamingInputObject {
                                                    @JsonProperty("stallAlertRate") long stallAlertRate,
                                                    @JsonProperty("stallTimeout") long stallTimeout,
                                                    @JsonProperty("stallCallbackURI") String stallCallbackURI) {
-        JsonStreamingInputObject obj = new JsonStreamingInputObject(streamURI,segmentSize,stallAlertDetectionThreshold,stallAlertRate,stallTimeout,stallCallbackURI);
+        JsonStreamingInputObject obj = null;
 
         if (mediaProperties!=null) {
-            obj.mediaProperties.putAll(mediaProperties);
+            obj = new JsonStreamingInputObject(streamURI,segmentSize,mediaProperties,
+                    stallAlertDetectionThreshold,stallAlertRate,stallTimeout,stallCallbackURI);
+        } else {
+            obj = new JsonStreamingInputObject(streamURI,segmentSize,new HashMap<String,String>(),
+                    stallAlertDetectionThreshold,stallAlertRate,stallTimeout,stallCallbackURI);
         }
         return obj;
     }

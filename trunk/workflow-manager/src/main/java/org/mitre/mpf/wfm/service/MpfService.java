@@ -75,11 +75,42 @@ public interface MpfService {
 	public JsonJobRequest createJob(List<JsonMediaInputObject> media, Map<String,Map> algorithmProperties, Map<String,String> jobProperties, String pipelineName, String externalId, boolean buildOutput, int priority, String callback, String method);
 
 	/**
-	 * Asynchronously submits a JSON-based job request and returns the identifier associated with the persistent job request which was created.
-	 * @param jobRequest The job to execute.
-	 * @return The id of the job which was created.
+	 * Create a new streaming job which will execute the specified pipeline on the URI defined in the stream object.
+	 * @param json_stream
+	 * @param algorithmProperties
+	 * @param jobProperties
+	 * @param pipelineName
+	 * @param externalId
+	 * @param buildOutput
+	 * @param priority
+	 * @param healthReportCallbackURI
+	 * @param summaryReportCallbackURI
+	 * @param newTrackAlertCallbackURI
+	 * @param method
+	 * @return
+	 */
+	public JsonStreamingJobRequest createStreamingJob(JsonStreamingInputObject json_stream,
+													  Map<String,Map> algorithmProperties,
+													  Map<String,String> jobProperties,
+													  String pipelineName, String externalId,
+													  boolean buildOutput, int priority,
+													  String healthReportCallbackURI,
+													  String summaryReportCallbackURI,
+													  String newTrackAlertCallbackURI,
+													  String method);
+
+	/**
+	 * Asynchronously submits a JSON-based batch job request and returns the identifier associated with the persistent job request which was created.
+	 * @param jobRequest The batch job to execute.
+	 * @return The id of the batch job which was created.
 	 */
 	public long submitJob(JsonJobRequest jobRequest);
+	/**
+	 * Asynchronously submits a JSON-based streaming job request and returns the identifier associated with the persistent job request which was created.
+	 * @param streamingJobRequest The streaming job to execute.
+	 * @return The id of the streaming job which was created.
+	 */
+	public long submitJob(JsonStreamingJobRequest streamingJobRequest);
 
 	/**
 	 * Asynchronously submits a job using the originally provided priority. See {@link #resubmitJob(long, int)}. */
@@ -93,34 +124,34 @@ public interface MpfService {
 	 */
 	long resubmitJob(long jobId, int newPriority);
 
-    /** Create a new streaming job which will execute the specified pipeline on the provided list of provided URIs
-     * @param streamURI URI of the streaming job
-     * @param segmentSize sdefines how to reduce the video into manageable segments for processing within the components. Value must be > 10
-     * @param mediaProperties media properties to be applied to the media in this streaming job
-     * @param stallAlertDetectionThreshold Time before sending out an initial alert when the stream is observed to have stalled  (seconds)
-     * @param stallAlertRate Time between subsequent alerts after stall has been detected (seconds)
-     * @param stallTimeout Time before MPF will terminate the streaming job after stall has been initially detected (seconds).  The stream
-     * is considered to be abandoned if this timeout has been exceeded, so MPF will terminate this streaming job. Set value to -1 if the streaming
-     * should never be terminated due to stream stall
-     * @param stallCallbackURI if not null and the MPF detects that the stream associated with a streaming job has been Stalled,
-     * then the MPF will deliver the stream Stall condition to the client
-     * @param algorithmProperties A map of properties which will override the job properties on this job for a particular algorithm.
-     * @param jobProperties A map of properties which will override the default and pipeline properties on this job.
-     * @param pipelineName The name of the pipeline to execute.
-     * @param externalId A user-defined and optional external identifier for the job.
-     * @param buildOutput {@literal true} to build output objects, {@literal false} to suppress output objects.
-     * @param priority The priority to assign to this job.
-     * @param healthReportCallbackURI The health report callback URI or null to disable health reports
-     * @param summaryReportCallbackURI The summary callback URI or null to disable summary reports
-     * @param newTrackAlertCallbackURI The new track alert callback URI or null to disable new track alerts
-     * @param method The method to communicate the response body to the callback URL or null if no HTTP method for callbacks is defined
-     * @return A {@link org.mitre.mpf.interop.JsonStreamingJobRequest} which summarizes this request
-     */
-    public JsonStreamingJobRequest createStreamingJob(String streamURI, int segmentSize, Map <String,String> mediaProperties,
-        long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout, String stallCallbackURI,
-        Map<String,Map> algorithmProperties, Map<String,String> jobProperties, String pipelineName, String externalId,
-        boolean buildOutput, int priority, String healthReportCallbackURI, String summaryReportCallbackURI, String newTrackAlertCallbackURI,
-                                                      String method);
+//    /** Create a new streaming job which will execute the specified pipeline on the provided list of provided URIs
+//     * @param streamURI URI of the streaming job
+//     * @param segmentSize sdefines how to reduce the video into manageable segments for processing within the components. Value must be > 10
+//     * @param mediaProperties media properties to be applied to the media in this streaming job
+//     * @param stallAlertDetectionThreshold Time before sending out an initial alert when the stream is observed to have stalled  (seconds)
+//     * @param stallAlertRate Time between subsequent alerts after stall has been detected (seconds)
+//     * @param stallTimeout Time before MPF will terminate the streaming job after stall has been initially detected (seconds).  The stream
+//     * is considered to be abandoned if this timeout has been exceeded, so MPF will terminate this streaming job. Set value to -1 if the streaming
+//     * should never be terminated due to stream stall
+//     * @param stallCallbackURI if not null and the MPF detects that the stream associated with a streaming job has been Stalled,
+//     * then the MPF will deliver the stream Stall condition to the client
+//     * @param algorithmProperties A map of properties which will override the job properties on this job for a particular algorithm.
+//     * @param jobProperties A map of properties which will override the default and pipeline properties on this job.
+//     * @param pipelineName The name of the pipeline to execute.
+//     * @param externalId A user-defined and optional external identifier for the job.
+//     * @param buildOutput {@literal true} to build output objects, {@literal false} to suppress output objects.
+//     * @param priority The priority to assign to this job.
+//     * @param healthReportCallbackURI The health report callback URI or null to disable health reports
+//     * @param summaryReportCallbackURI The summary callback URI or null to disable summary reports
+//     * @param newTrackAlertCallbackURI The new track alert callback URI or null to disable new track alerts
+//     * @param method The method to communicate the response body to the callback URL or null if no HTTP method for callbacks is defined
+//     * @return A {@link org.mitre.mpf.interop.JsonStreamingJobRequest} which summarizes this request
+//     */
+//    public JsonStreamingJobRequest createStreamingJob(String streamURI, int segmentSize, Map <String,String> mediaProperties,
+//        long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout, String stallCallbackURI,
+//        Map<String,Map> algorithmProperties, Map<String,String> jobProperties, String pipelineName, String externalId,
+//        boolean buildOutput, int priority, String healthReportCallbackURI, String summaryReportCallbackURI, String newTrackAlertCallbackURI,
+//                                                      String method);
 
 
 	/**

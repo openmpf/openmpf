@@ -88,13 +88,13 @@ public class TransientStream {
 	public String getType() { return type; }
 	public void setType(String type) { this.type = type; }
 
-//	/** The Metadata for the stream. */
-//	private Map<String,String> metadata = new HashMap<>();
-//	public String addMetadata(String key, String value) {
-//		return metadata.put(key,value);
-//	}
-//	public Map<String,String> getMetadata() { return metadata; }
-//	public String getMetadata(String key) { return metadata.get(key); }
+	/** The Metadata for the stream. */
+	private Map<String,String> metadata = new HashMap<>();
+	public String addMetadata(String key, String value) {
+		return metadata.put(key,value);
+	}
+	public Map<String,String> getMetadata() { return metadata; }
+	public String getMetadata(String key) { return metadata.get(key); }
 
 	/** The media properties to override for this stream. */
 	private Map<String,String> mediaProperties = new HashMap<>();

@@ -30,7 +30,7 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.camel.DefaultJobErrorHandler;
 import org.mitre.mpf.wfm.camel.StreamingJobCompleteProcessorImpl;
-import org.mitre.mpf.wfm.camel.operations.streamingjobcreation.StreamingJobCreationProcessor;
+import org.mitre.mpf.wfm.camel.operations.jobcreation.StreamingJobCreationProcessor;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -43,8 +43,8 @@ import org.springframework.stereotype.Component;
 public class StreamingJobCreatorRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(StreamingJobCreatorRouteBuilder.class);
 
-	public static final String ENTRY_POINT = MpfEndpoints.STREAMING_JOB_REQUESTS;
-	public static final String EXIT_POINT = StreamRetrieverRouteBuilder.ENTRY_POINT;
+	public static final String ENTRY_POINT = MpfEndpoints.STREAMING_JOB_REQUESTS_ENTRY_POINT;
+	public static final String EXIT_POINT = MpfEndpoints.STREAM_FRAME_READER_ENTRY_POINT;
 	public static final String ROUTE_ID = "Streaming Job Creator Route";
 
 	private String routeId, entryPoint, exitPoint;
@@ -77,8 +77,8 @@ public class StreamingJobCreatorRouteBuilder extends RouteBuilder {
 			.end()
 			.processRef(StreamingJobCreationProcessor.REF)
 			.choice()
-				.when(header(MpfHeaders.STREAMING_JOB_CREATION_ERROR).isEqualTo(Boolean.TRUE))
-				.removeHeader(MpfHeaders.STREAMING_JOB_CREATION_ERROR)
+				.when(header(MpfHeaders.JOB_CREATION_ERROR).isEqualTo(Boolean.TRUE))
+				.removeHeader(MpfHeaders.JOB_CREATION_ERROR)
 				.setHeader(MpfHeaders.JOB_STATUS, simple(JobStatus.ERROR.name()))
 				.to(StreamingJobCompleteProcessorImpl.REF)
 			.otherwise()

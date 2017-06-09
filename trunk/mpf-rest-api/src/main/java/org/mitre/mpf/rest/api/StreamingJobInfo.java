@@ -37,12 +37,12 @@ public class StreamingJobInfo {
 	private Date startDate;
 	private Date endDate;
 	private String outputObjectPath;
-//	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
-//	//to maintain the use of only standard Java in the model.api classes
-//	private boolean terminal;
+	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
+	//to maintain the use of only standard Java in the model.api classes
+	private boolean terminal;
 
-	private String streamURI = null;
-	private String healthReportCallbackURI = null;
+//	private String streamURI = null;
+//	private String healthReportCallbackURI = null;
 
 	public StreamingJobInfo() {}
 
@@ -55,11 +55,9 @@ public class StreamingJobInfo {
 	 * @param startDate
 	 * @param endDate endDate may be null if the streaming job is still active
 	 * @param outputObjectPath
-	 * @param streamURI
-	 * @param healthReportCallbackURI
 	 */
 	public StreamingJobInfo(Long jobId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus, float jobProgress,
-							Date startDate, Date endDate, String outputObjectPath, String streamURI, String healthReportCallbackURI) {
+							Date startDate, Date endDate, String outputObjectPath, boolean terminal) {
 		this.jobId = jobId;
 		this.pipelineName = pipelineName;
 //		this.jobPriority = jobPriority;
@@ -68,9 +66,9 @@ public class StreamingJobInfo {
 		this.startDate = startDate;
 		this.endDate = endDate;
 		this.outputObjectPath = outputObjectPath;
-//		this.terminal = terminal;
-		this.streamURI = streamURI;
-		this.healthReportCallbackURI = healthReportCallbackURI;
+		this.terminal = terminal;
+//		this.streamURI = streamURI;
+//		this.healthReportCallbackURI = healthReportCallbackURI;
 	}
 	
 	public Long getJobId() {
@@ -107,12 +105,12 @@ public class StreamingJobInfo {
 	public String getOutputObjectPath() {
 		return outputObjectPath;
 	}
-	public String getStreamURI() {
-		return streamURI;
-	}
-	public String getHealthReportCallbackURI() {
-		return healthReportCallbackURI;
-	}
+//	public String getStreamURI() {
+//		return streamURI;
+//	}
+//	public String getHealthReportCallbackURI() {
+//		return healthReportCallbackURI;
+//	}
 
 //	public boolean isTerminal() {
 //		return terminal;

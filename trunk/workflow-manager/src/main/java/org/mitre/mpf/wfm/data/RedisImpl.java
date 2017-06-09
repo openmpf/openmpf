@@ -161,16 +161,16 @@ public class RedisImpl implements Redis {
 		}
 	}
 
-//	@SuppressWarnings("unchecked")
-//	public synchronized boolean cancelStreamingJob(long jobId) {
-//		if(redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).size() > 0) {
-//			redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(CANCELLED, true);
-//			return true;
-//		} else {
-//			log.warn("Streaming Job #{} is not running and cannot be cancelled.", jobId);
-//			return false;
-//		}
-//	}
+	@SuppressWarnings("unchecked")
+	public synchronized boolean cancelStreamingJob(long jobId) {
+		if(redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).size() > 0) {
+			redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(CANCELLED, true);
+			return true;
+		} else {
+			log.warn("Streaming Job #{} is not running and cannot be cancelled.", jobId);
+			return false;
+		}
+	}
 
 	/** Removes everything in the Redis datastore. */
 	public void clear() {

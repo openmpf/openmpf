@@ -46,11 +46,14 @@ import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.ModelUtils;
-import org.mitre.mpf.rest.api.*;
-import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.rest.api.StreamingJobInfo;
+import org.mitre.mpf.rest.api.StreamingJobCreationRequest;
+import org.mitre.mpf.rest.api.StreamingJobCreationResponse;
+import org.mitre.mpf.rest.api.MpfResponse;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.enums.JobStatus;
-//import org.mitre.mpf.wfm.event.JobProgress;
+import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -94,9 +97,9 @@ public class StreamingJobController {
     @Autowired
     private SessionModel sessionModel;
 
-    // job progress not required for streaming jobs
-//    @Autowired
-//    private StreamingJobProgress streamingJobProgress;
+    // job progress may not be required for streaming jobs
+    @Autowired
+    private JobProgress jobProgress;
 
     /*
      *	POST /jobs
@@ -363,13 +366,14 @@ public class StreamingJobController {
                 priority = streamingJobCreationRequest.getPriority();
             }
 
-            JsonStreamingJobRequest jsonStreamingJobRequest = mpfService.createStreamingJob(streamingJobCreationRequest.getStreamURI(),
+            JsonStreamingInputObject json_stream = new JsonStreamingInputObject(streamingJobCreationRequest.getStreamURI(),
                     streamingJobCreationRequest.getSegmentSize(),
                     streamingJobCreationRequest.getMediaProperties(),
                     streamingJobCreationRequest.getStallAlertDetectionThreshold(),
                     streamingJobCreationRequest.getStallAlertRate(),
                     streamingJobCreationRequest.getStallTimeout(),
-                    streamingJobCreationRequest.getStallCallbackURI(),
+                    streamingJobCreationRequest.getStallCallbackURI());
+            JsonStreamingJobRequest jsonStreamingJobRequest = mpfService.createStreamingJob(json_stream,
                     streamingJobCreationRequest.getAlgorithmProperties(),
                     streamingJobCreationRequest.getJobProperties(),
                     streamingJobCreationRequest.getPipelineName(),
@@ -411,7 +415,7 @@ public class StreamingJobController {
 //                        buildOutput, // Use the buildOutput value if it is provided, otherwise use the default value from the properties file.,
 //                        priority); // Use the priority value if it is provided, otherwise use the default value from the properties file.);
 //            }
-            long jobId = mpfService.submitStreamingJob(jsonJobRequest);
+            long jobId = mpfService.submitJob(jsonStreamingJobRequest);
             log.debug("Successful creation of streaming JobId: {}", jobId);
 
             if (!fromExternalRestClient) {
@@ -420,7 +424,7 @@ public class StreamingJobController {
 
             return new StreamingJobCreationResponse(jobId);
         } catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
-            log.error("Failure creating job due to an exception.", ex);
+            log.error("Failure creating streaming job due to an exception.", ex);
             return new StreamingJobCreationResponse(-1, String.format("Failure creating streaming job with External Id '%s' due to an exception. Please check server logs for more detail.", streamingJobCreationRequest.getExternalId()));
         }
     }
@@ -432,10 +436,16 @@ public class StreamingJobController {
 
     }
 
+    /** Get information about all streaming jobs
+     * Note: this method requires that batch and streaming jobIds be unique, with no conflicts
+     * @param jobId
+     * @param useSession
+     * @return
+     */
     private List<StreamingJobInfo> getStreamingJobInfo(Long jobId, boolean useSession) {
         List<StreamingJobInfo> jobInfoList = new ArrayList<StreamingJobInfo>();
         try {
-            List<StreamingJobRequest> jobs = new ArrayList<JobRequest>();
+            List<StreamingJobRequest> jobs = new ArrayList<StreamingJobRequest>();
             if (jobId != null) {
                 StreamingJobRequest job = mpfService.getStreamingJobRequest(jobId);
                 if (job != null) {
@@ -450,25 +460,25 @@ public class StreamingJobController {
             } else {
                 if (useSession) {
                     for (Long keyId : sessionModel.getSessionJobsMap().keySet()) {
-                        jobs.add(mpfService.getJobRequest(keyId));
+                        jobs.add(mpfService.getStreamingJobRequest(keyId));
                     }
                 } else {
-                    //get all of the jobs
-                    jobs = mpfService.getAllJobRequests();
+                    //get all of the streaming jobs
+                    jobs = mpfService.getAllStreamingJobRequests();
                 }
             }
 
-            for (JobRequest job : jobs) {
+            for (StreamingJobRequest job : jobs) {
                 long id = job.getId();
-                StreamingJobInfo singleJobInfo;
+                StreamingJobInfo streamingJobInfo;
 
                 float jobProgressVal = jobProgress.getJobProgress(id) != null ? jobProgress.getJobProgress(id) : 0.0f;
-                singleJobInfo = ModelUtils.convertJobRequest(job, jobProgressVal);
+                streamingJobInfo = ModelUtils.convertJobRequest(job, jobProgressVal);
 
-                jobInfoList.add(singleJobInfo);
+                jobInfoList.add(streamingJobInfo);
             }
         } catch (Exception ex) {
-            log.error("exception in get job status with stack trace: {}", ex.getMessage());
+            log.error("exception in get streaming job status with stack trace: {}", ex.getMessage());
         }
 
         return jobInfoList;

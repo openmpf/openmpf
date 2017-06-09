@@ -229,7 +229,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 					// If this operation fails, any remaining pending items will continue to process, but
 					// the future splitters should not create any new work items. In short, if this fails,
 					// the system should not be affected, but the streaming job may not complete any faster.
-					jmsUtils.cancelStreamingJob(jobId);
+					jmsUtils.cancel(jobId);
 				} catch (Exception exception) {
 					log.warn("[Job {}:*:*] Failed to remove the pending work elements in the message broker for this streaming job. The job must complete the pending work elements before it will cancel the job.", jobId, exception);
 				}

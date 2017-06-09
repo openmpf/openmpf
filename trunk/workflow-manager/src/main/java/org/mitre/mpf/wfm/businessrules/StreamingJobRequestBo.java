@@ -41,7 +41,8 @@ public interface StreamingJobRequestBo {
 	 * newly-created request is made in the persistent database; this method also exposes functionality for making
 	 * a callback when the job completes.
 	 */
-	JsonStreamingJobRequest createRequest(String externalId, String pipelineName, JsonStreamingInputObject stream, Map<String, Map> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority,
+	JsonStreamingJobRequest createRequest(String externalId, String pipelineName, JsonStreamingInputObject stream,
+										  Map<String, Map> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority,
 										  String healthReportCallbackURI, String summaryReportCallbackURI, String newTrackAlertCallbackURI, String method);
 
 	/**

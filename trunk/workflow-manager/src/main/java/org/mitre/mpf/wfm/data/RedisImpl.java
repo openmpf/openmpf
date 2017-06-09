@@ -161,16 +161,16 @@ public class RedisImpl implements Redis {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	public synchronized boolean cancelStreamingJob(long jobId) {
-		if(redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).size() > 0) {
-			redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(CANCELLED, true);
-			return true;
-		} else {
-			log.warn("Streaming Job #{} is not running and cannot be cancelled.", jobId);
-			return false;
-		}
-	}
+//	@SuppressWarnings("unchecked")
+//	public synchronized boolean cancelStreamingJob(long jobId) {
+//		if(redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).size() > 0) {
+//			redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(CANCELLED, true);
+//			return true;
+//		} else {
+//			log.warn("Streaming Job #{} is not running and cannot be cancelled.", jobId);
+//			return false;
+//		}
+//	}
 
 	/** Removes everything in the Redis datastore. */
 	public void clear() {
@@ -219,69 +219,69 @@ public class RedisImpl implements Redis {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	public synchronized void clearStreamingJob(long jobId) throws WfmProcessingException {
-		TransientStreamingJob transientJob = getStreamingJob(jobId);
-		if(transientJob == null) { return; }
-		redisTemplate.boundSetOps(STREAMING_JOB).remove(Long.toString(jobId));
-		redisTemplate.delete(key(STREAMING_JOB, jobId));
-		for(TransientMedia transientMedia : transientJob.getMedia()) {
-			redisTemplate.delete(key(STREAMING_JOB, jobId, MEDIA, transientMedia.getId()));
-			if(transientJob.getPipeline() != null) {
-				for (int taskIndex = 0; taskIndex < transientJob.getPipeline().getStages().size(); taskIndex++) {
-					for (int actionIndex = 0; actionIndex < transientJob.getPipeline().getStages().get(taskIndex).getActions().size(); actionIndex++) {
-						redisTemplate.delete(key(STREAMING_JOB, jobId, MEDIA, transientMedia.getId(), ERRORS, taskIndex, actionIndex));
-						redisTemplate.delete(key(STREAMING_JOB, jobId, MEDIA, transientMedia.getId(), TRACK, taskIndex, actionIndex));
-					}
-				}
-			}
-
-			if(transientMedia.getUriScheme().isRemote()) {
-				if(transientMedia.getLocalPath() != null) {
-					try {
-						File file = new File(transientMedia.getLocalPath());
-						if (file.exists()) {
-							if(!file.delete()) {
-								log.warn("Failed to delete the file '{}'. It has been leaked and must be removed manually.", file);
-							}
-						}
-					} catch (Exception exception) {
-						log.warn("Failed to delete the local file '{}' which was created retrieved from a remote location - it must be manually deleted.", transientMedia.getLocalPath(), exception);
-					}
-				}
-			}
-		}
-	}
+//	@SuppressWarnings("unchecked")
+//	public synchronized void clearStreamingJob(long jobId) throws WfmProcessingException {
+//		TransientStreamingJob transientJob = getStreamingJob(jobId);
+//		if(transientJob == null) { return; }
+//		redisTemplate.boundSetOps(STREAMING_JOB).remove(Long.toString(jobId));
+//		redisTemplate.delete(key(STREAMING_JOB, jobId));
+//		for(TransientMedia transientMedia : transientJob.getMedia()) {
+//			redisTemplate.delete(key(STREAMING_JOB, jobId, MEDIA, transientMedia.getId()));
+//			if(transientJob.getPipeline() != null) {
+//				for (int taskIndex = 0; taskIndex < transientJob.getPipeline().getStages().size(); taskIndex++) {
+//					for (int actionIndex = 0; actionIndex < transientJob.getPipeline().getStages().get(taskIndex).getActions().size(); actionIndex++) {
+//						redisTemplate.delete(key(STREAMING_JOB, jobId, MEDIA, transientMedia.getId(), ERRORS, taskIndex, actionIndex));
+//						redisTemplate.delete(key(STREAMING_JOB, jobId, MEDIA, transientMedia.getId(), TRACK, taskIndex, actionIndex));
+//					}
+//				}
+//			}
+//
+//			if(transientMedia.getUriScheme().isRemote()) {
+//				if(transientMedia.getLocalPath() != null) {
+//					try {
+//						File file = new File(transientMedia.getLocalPath());
+//						if (file.exists()) {
+//							if(!file.delete()) {
+//								log.warn("Failed to delete the file '{}'. It has been leaked and must be removed manually.", file);
+//							}
+//						}
+//					} catch (Exception exception) {
+//						log.warn("Failed to delete the local file '{}' which was created retrieved from a remote location - it must be manually deleted.", transientMedia.getLocalPath(), exception);
+//					}
+//				}
+//			}
+//		}
+//	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public synchronized boolean containsJob(long jobId) {
-		return redisTemplate.boundSetOps(JOB).members().contains(Long.toString(jobId));
+		return redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId));
 	}
 
 	@SuppressWarnings("unchecked")
 	public int getCurrentTaskIndexForJob(long jobId)  {
-		if(!redisTemplate.boundSetOps(JOB).members().contains(Long.toString(jobId))) {
+		if(!redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
 			return 0;
 		} else {
-			Map jobHash = redisTemplate.boundHashOps(key(JOB, jobId)).entries();
+			Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
 			return (int)(jobHash.get(TASK));
 		}
 	}
 
 	@SuppressWarnings("unchecked")
 	public JobStatus getJobStatus(long jobId)  {
-		if(!redisTemplate.boundSetOps(JOB).members().contains(Long.toString(jobId))) {
+		if(!redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
 			return null;
 		} else {
-			Map jobHash = redisTemplate.boundHashOps(key(JOB, jobId)).entries();
+			Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
 			return (JobStatus)jobHash.get(JOB_STATUS);
 		}
 	}
 
 	@SuppressWarnings("unchecked")
 	public synchronized SortedSet<DetectionProcessingError> getDetectionProcessingErrors(long jobId, long mediaId, int taskIndex, int actionIndex) {
-		final String key = key(JOB, jobId, MEDIA, mediaId, ERRORS, taskIndex, actionIndex);
+		final String key = key(BATCH_JOB, jobId, MEDIA, mediaId, ERRORS, taskIndex, actionIndex);
 		int length = (Integer)(redisTemplate.execute(new RedisCallback() {
 			@Override
 			public Object doInRedis(RedisConnection redisConnection) throws DataAccessException {
@@ -339,7 +339,7 @@ public class RedisImpl implements Redis {
 			}
 			List<TransientMedia> transientMediaList = new ArrayList<>(1);
 			for (Long mediaId : mediaToRetrieve) {
-				TransientMedia media = jsonUtils.deserialize((byte[]) (redisTemplate.boundValueOps(key(JOB, jobId, MEDIA, mediaId)).get()), TransientMedia.class);
+				TransientMedia media = jsonUtils.deserialize((byte[]) (redisTemplate.boundValueOps(key(BATCH_JOB, jobId, MEDIA, mediaId)).get()), TransientMedia.class);
 				if (media != null) {
 					transientMediaList.add(media);
 				} else {
@@ -350,6 +350,43 @@ public class RedisImpl implements Redis {
 			return transientJob;
 		}
 	}
+
+
+	@SuppressWarnings("unchecked")
+	public synchronized TransientStreamingJob getStreamingJob(long jobId) throws WfmProcessingException {
+		if(!redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))) {
+			// The streaming job is not known to the system.
+			return null;
+		} else {
+			// The streaming job is known to the system and should be retrievable.
+			// Get the hash containing the job properties.
+			Map<String, Object> jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
+
+			TransientStreamingJob transientStreamingJob = new TransientStreamingJob(jobId,
+					(String) (jobHash.get(EXTERNAL_ID)),
+					jsonUtils.deserialize((byte[]) (jobHash.get(PIPELINE)), TransientPipeline.class),
+					(Integer) (jobHash.get(TASK)),
+					(Integer) (jobHash.get(PRIORITY)),
+					(Boolean) (jobHash.get(OUTPUT_ENABLED)),
+					(Boolean) (jobHash.get(CANCELLED)),
+					(String) (jobHash.get(HEALTH_REPORT_CALLBACK_URI)),
+					(String) (jobHash.get(SUMMARY_REPORT_CALLBACK_URI)),
+					(String) (jobHash.get(NEW_TRACK_ALERT_CALLBACK_URI)),
+					(String) (jobHash.get(CALLBACK_METHOD))
+			);
+
+			transientStreamingJob.getOverriddenJobProperties().putAll(jsonUtils.deserialize((byte[])jobHash.get(OVERRIDDEN_JOB_PROPERTIES), HashMap.class));
+			transientStreamingJob.getOverriddenAlgorithmProperties().putAll(jsonUtils.deserialize((byte[])jobHash.get(OVERRIDDEN_ALGORITHM_PROPERTIES), HashMap.class));
+
+			Long streamId = (Long)jobHash.get(STREAM);
+			TransientStream transientStream = jsonUtils.deserialize((byte[]) (redisTemplate.boundValueOps(key(STREAMING_JOB, jobId, STREAM, streamId)).get()), TransientStream.class);
+
+			transientStreamingJob.setStream(transientStream);
+			return transientStreamingJob;
+		}
+	}
+
+
 
     @SuppressWarnings("unchecked")
 	public synchronized long getNextSequenceValue() {
@@ -363,17 +400,17 @@ public class RedisImpl implements Redis {
 
 	@SuppressWarnings("unchecked")
 	public int getTaskCountForJob(long jobId) throws WfmProcessingException {
-		if(!redisTemplate.boundSetOps(JOB).members().contains(Long.toString(jobId))) {
+		if(!redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
 			return 0;
 		} else {
-			Map jobHash = redisTemplate.boundHashOps(key(JOB, jobId)).entries();
+			Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
 			return (int)(jobHash.get(TASK_COUNT));
 		}
 	}
 
     @SuppressWarnings("unchecked")
 	public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) {
-		final String key = key(JOB, jobId, MEDIA, mediaId, TRACK, taskIndex, actionIndex);
+		final String key = key(BATCH_JOB, jobId, MEDIA, mediaId, TRACK, taskIndex, actionIndex);
 		int length = (Integer)(redisTemplate.execute(new RedisCallback() {
 			@Override
 			public Object doInRedis(RedisConnection redisConnection) throws DataAccessException {
@@ -382,10 +419,10 @@ public class RedisImpl implements Redis {
 		}));
 
 		if(length == 0) {
-			log.debug("No tracks for JOB:{}:MEDIA:{}:{}:{}.", jobId, mediaId, taskIndex, actionIndex);
+			log.debug("No tracks for BATCH_JOB:{}:MEDIA:{}:{}:{}.", jobId, mediaId, taskIndex, actionIndex);
 			return new TreeSet<>();
 		} else {
-			log.debug("{} tracks for JOB:{}:MEDIA:{}:{}:{}.", length, jobId, mediaId, taskIndex, actionIndex);
+			log.debug("{} tracks for BATCH_JOB:{}:MEDIA:{}:{}:{}.", length, jobId, mediaId, taskIndex, actionIndex);
 			SortedSet<Track> tracks = new TreeSet<>();
 			for(Object trackJson : redisTemplate.boundListOps(key).range(0, length)) {
 				try {
@@ -412,7 +449,7 @@ public class RedisImpl implements Redis {
 			// and then store the serialized media element to the specified key.
 			mediaIds.add(transientMedia.getId());
 			redisTemplate
-					.boundValueOps(key(JOB, transientJob.getId(), MEDIA, transientMedia.getId())) // e.g., JOB:5:MEDIA:16
+					.boundValueOps(key(BATCH_JOB, transientJob.getId(), MEDIA, transientMedia.getId())) // e.g., JOB:5:MEDIA:16
 					.set(jsonUtils.serialize(transientMedia));
 		}
 
@@ -436,14 +473,14 @@ public class RedisImpl implements Redis {
 
 		// Finally, persist the data to Redis.
 		redisTemplate
-				.boundHashOps(key(JOB, transientJob.getId())) // e.g., JOB:5
+				.boundHashOps(key(BATCH_JOB, transientJob.getId())) // e.g., JOB:5
 				.putAll(jobHash);
 
 		// If this is the first time the job has been persisted, add the job's ID to the
 		// collection of jobs known to the system so that we can assume that the key JOB:N
 		// exists in Redis provided that N exists in this set.
 		redisTemplate
-				.boundSetOps(JOB) // e.g., JOB
+				.boundSetOps(BATCH_JOB) // e.g., JOB
 				.add(Long.toString(transientJob.getId()));
 	}
 
@@ -455,10 +492,22 @@ public class RedisImpl implements Redis {
 
 		// Create or overwrite the value at the key for this medium with the new serialized version of this medium.
 		redisTemplate
-				.boundValueOps(key(JOB, job, MEDIA, transientMedia.getId())) // e.g., JOB:5:MEDIA:16
+				.boundValueOps(key(BATCH_JOB, job, MEDIA, transientMedia.getId())) // e.g., BATCH_JOB:5:MEDIA:16
 				.set(jsonUtils.serialize(transientMedia));
 	}
 
+
+	@SuppressWarnings("unchecked")
+	public synchronized void persistStream(long job, TransientStream transientStream) throws WfmProcessingException {
+		if(transientStream == null) {
+			throw new NullPointerException("transientStream");
+		}
+
+		// Create or overwrite the value at the key for this medium with the new serialized version of this medium.
+		redisTemplate
+				.boundValueOps(key(STREAMING_JOB, job, STREAM, transientStream.getId())) // e.g., STREAMING_JOB:5:STREAM:16
+				.set(jsonUtils.serialize(transientStream));
+	}
 
 
 
@@ -511,18 +560,18 @@ public class RedisImpl implements Redis {
 
     @SuppressWarnings("unchecked")
 	public synchronized  void setCurrentTaskIndex(long jobId, int taskIndex) {
-		redisTemplate.boundHashOps(key(JOB, jobId)).put(TASK, taskIndex);
+		redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(TASK, taskIndex);
 	}
 
 	@SuppressWarnings("unchecked")
 	public synchronized  void setJobStatus(long jobId, JobStatus jobStatus) {
-		redisTemplate.boundHashOps(key(JOB, jobId)).put(JOB_STATUS, jobStatus);
+		redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(JOB_STATUS, jobStatus);
 	}
 
     @SuppressWarnings("unchecked")
 	public synchronized void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks) {
 		try {
-			String key = key(JOB, jobId, MEDIA, mediaId, TRACK, taskIndex, actionIndex);
+			String key = key(BATCH_JOB, jobId, MEDIA, mediaId, TRACK, taskIndex, actionIndex);
 			redisTemplate.delete(key);
 			for(Track track : tracks) {
 				redisTemplate.boundListOps(key).rightPush(jsonUtils.serialize(track));
@@ -533,31 +582,43 @@ public class RedisImpl implements Redis {
 	}
 
 	@Override
+	/** Note: only batch jobs have CallbackURL defined */
 	public String getCallbackURL(long jobId) throws WfmProcessingException {
-		if(!redisTemplate.boundSetOps("JOB").members().contains(Long.toString(jobId))) {
+		if(!redisTemplate.boundSetOps("BATCH_JOB").members().contains(Long.toString(jobId))) {
 			return null;
 		} else {
-			Map jobHash = redisTemplate.boundHashOps(key("JOB", jobId)).entries();
+			Map jobHash = redisTemplate.boundHashOps(key("BATCH_JOB", jobId)).entries();
 			return (String)jobHash.get(CALLBACK_URL);
 		}
 	}
 
 	@Override
-	public String getCallbackMethod(long jobId) throws WfmProcessingException {
-		if(!redisTemplate.boundSetOps("JOB").members().contains(Long.toString(jobId))) {
+	/** Note: only streaming jobs have SummaryReportCallbackURI defined */
+	public String getSummaryReportCallbackURI(long jobId) throws WfmProcessingException {
+		if(!redisTemplate.boundSetOps("STREAMING_JOB").members().contains(Long.toString(jobId))) {
 			return null;
 		} else {
-			Map jobHash = redisTemplate.boundHashOps(key("JOB", jobId)).entries();
+			Map jobHash = redisTemplate.boundHashOps(key("STREAMING_JOB", jobId)).entries();
+			return (String)jobHash.get(SUMMARY_REPORT_CALLBACK_URI);
+		}
+	}
+
+	@Override
+	public String getCallbackMethod(long jobId) throws WfmProcessingException {
+		if(!redisTemplate.boundSetOps("BATCH_JOB").members().contains(Long.toString(jobId))) {
+			return null;
+		} else {
+			Map jobHash = redisTemplate.boundHashOps(key("BATCH_JOB", jobId)).entries();
 			return (String)jobHash.get(CALLBACK_METHOD);
 		}
 	}
 
 	@Override
 	public String getExternalId(long jobId) throws WfmProcessingException {
-		if(!redisTemplate.boundSetOps("JOB").members().contains(Long.toString(jobId))) {
+		if(!redisTemplate.boundSetOps("BATCH_JOB").members().contains(Long.toString(jobId))) {
 			return null;
 		} else {
-			Map jobHash = redisTemplate.boundHashOps(key("JOB", jobId)).entries();
+			Map jobHash = redisTemplate.boundHashOps(key("BATCH_JOB", jobId)).entries();
 			return (String)(jobHash.get(EXTERNAL_ID));
 		}
 	}

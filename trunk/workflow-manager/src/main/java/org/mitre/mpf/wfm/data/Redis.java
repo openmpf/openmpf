@@ -60,11 +60,6 @@ public interface Redis {
 	 */
 	boolean cancel(long jobId);
 
-	/**
-	 * Marks a streaming job as cancelled/cancelling in the Redis data store.
-	 * @param jobId The MPF-assigned ID of the streaming job.
-	 */
-	boolean cancelStreamingJob(long jobId);
 
 	/** Clears the contents of the Redis data store. Equivalent to performing "FLUSH ALL". */
 	void clear();
@@ -107,15 +102,23 @@ public interface Redis {
 	SortedSet<DetectionProcessingError> getDetectionProcessingErrors(long jobId, long mediaId, int taskIndex, int actionIndex);
 
 	/**
-	 * Retrieves the job data structure with the specified id from the Redis data store.
-	 * @param jobId The MPF-assigned ID of the job.
+	 * Retrieves the batch job data structure with the specified id from the Redis data store.
+	 * @param jobId The MPF-assigned ID of the batch job.
 	 * @param mediaIds Optionally, a list of mediaIds to load.  If values are provided for media ids, the returned
 	 *                 TransientJob will contain only the TransientMedia objects which relate to those ids. If no
 	 *                 values are provided, the TransientJob will include all associated TransientMedia.
-	 * @return The job or {@literal null}.
+	 * @return The transient batch job or {@literal null}.
 	 * @throws WfmProcessingException
 	 */
 	TransientJob getJob(long jobId, Long... mediaIds) throws WfmProcessingException;
+
+	/**
+	 * Retrieves the streaming job data structure with the specified id from the Redis data store.
+	 * @param jobId The MPF-assigned ID of the streaming job.
+	 * @return The transient streaming job or {@literal null}.
+	 * @throws WfmProcessingException
+	 */
+	TransientStreamingJob getStreamingJob(long jobId) throws WfmProcessingException;
 
 	/**
 	 * Generates and returns a new and unique sequence value. These IDs are used internally and are not meaningful
@@ -166,6 +169,23 @@ public interface Redis {
 	 */
 	void persistMedia(long jobId, TransientMedia transientMedia) throws WfmProcessingException;
 
+
+	/**
+	 * Persists the given {@literal TransientStreamingJob} instance in the Redis data store.
+	 * @param transientStreamingJob The non-null instance to store.
+	 * @throws WfmProcessingException If persisting the job fails for any reason.
+	 */
+	void persistJob(TransientStreamingJob transientStreamingJob) throws WfmProcessingException;
+
+	/**
+	 * Persists the given {@literal TransientStream} instance in the Redis data store and associates it with the given {@literal jobId}.
+	 * @param jobId The MPF-assigned ID of the job with which this stream is associated.
+	 * @param transientStream The non-null stream instance to persist.
+	 * @throws WfmProcessingException
+	 */
+	void persistStream(long jobId, TransientStream transientStream) throws WfmProcessingException;
+
+
 	/**
 	 * Updates the "current task index" of a job to the specified task index.
 	 * @param jobId The MPF-assigned ID of the job.
@@ -191,12 +211,20 @@ public interface Redis {
 	void setJobStatus(long jobId, JobStatus jobStatus);
 
 	/**
-	 * The URL of the Callback to connect to when the job is completed.
-	 * @param jobId The MPF-assigned ID of the job to which this Callback URL will refer to.
+	 * The URL of the Callback to connect to when the batch job is completed.
+	 * @param jobId The MPF-assigned ID of the batch job to which this Callback URL will refer to.
 	 * @return The URL of the Callback.
 	 * @throws WfmProcessingException
-     */
+	 */
 	String getCallbackURL(final long jobId) throws WfmProcessingException;
+
+	/**
+	 * The URL of the SummaryReportCallback to connect to when the streaming job is completed.
+	 * @param jobId The MPF-assigned ID of the streaming job to which this SummaryReportCallback URI will refer to.
+	 * @return The URI of the SummaryReportCallback.
+	 * @throws WfmProcessingException
+	 */
+	String getSummaryReportCallbackURI(final long jobId) throws WfmProcessingException;
 
 	/**
 	 * The METHOD of the Callback to connect to when the job is completed POST or GET.

@@ -65,7 +65,7 @@ public class TransientStream {
 	}
 
 	/** The URI scheme (protocol) associated with the input stream URI. */
-	private UriScheme uriScheme;
+	private UriScheme uriScheme = null;
 	public UriScheme getUriScheme() { return uriScheme == null ? UriScheme.UNDEFINED : uriScheme; }
 
 //	/** The local file path of the file once it has been retrieved. */
@@ -88,21 +88,46 @@ public class TransientStream {
 	public String getType() { return type; }
 	public void setType(String type) { this.type = type; }
 
-	/** The Metadata for the stream. */
-	private Map<String,String> metadata = new HashMap<>();
-	public String addMetadata(String key, String value) {
-		return metadata.put(key,value);
-	}
-	public Map<String,String> getMetadata() { return metadata; }
-	public String getMetadata(String key) { return metadata.get(key); }
+//	/** The Metadata for the stream. */
+//	private Map<String,String> metadata = new HashMap<>();
+//	public String addMetadata(String key, String value) {
+//		return metadata.put(key,value);
+//	}
+//	public Map<String,String> getMetadata() { return metadata; }
+//	public String getMetadata(String key) { return metadata.get(key); }
 
 	/** The media properties to override for this stream. */
 	private Map<String,String> mediaProperties = new HashMap<>();
+	public void setMediaProperties (Map<String,String> updated_media_properties) {
+		mediaProperties = updated_media_properties;
+	}
 	public String addMediaProperty(String key, String value) {
 		return mediaProperties.put(key,value);
 	}
 	public Map<String,String> getMediaProperties() { return mediaProperties; }
 	public String getMediaProperty(String key) { return mediaProperties.get(key); }
+
+	private int segmentSize;
+	public void setSegmentSize(int segment_size) {segmentSize=segment_size;}
+	public int getSegmentSize(){return segmentSize;}
+
+	private long stallAlertDetectionThreshold;
+	public void setStallAlertDetectionThreshold(long value) {stallAlertDetectionThreshold=value;}
+	public long getStallAlertDetectionThreshold(){return stallAlertDetectionThreshold;}
+
+	private long stallAlertRate;
+	public void setStallAlertRate(long value) {stallAlertRate=value;}
+	public long getStallAlertRate(){return stallAlertRate;}
+
+	private long stallTimeout;
+	public void setStallTimeout(long value) {stallTimeout=value;}
+	public long getStallTimeout(){return stallTimeout;}
+
+	private String stallCallbackURI;
+	public void setStallCallbackURI(String url_s) {stallCallbackURI=url_s;}
+	public String getStallCallbackURI(){return stallCallbackURI;}
+
+
 
 	@JsonIgnore
 	public MediaType getMediaType() { return MediaTypeUtils.parse(type); }

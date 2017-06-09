@@ -129,7 +129,7 @@ public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements J
 			markJobStatus(jobId, jobStatus.getValue());
 
 			try {
-				callback(jobId);
+				summaryReportCallback(jobId);
 			} catch (Exception exception) {
 				log.warn("Failed to make callback (if appropriate) for Streaming Job #{}.", jobId);
 			}

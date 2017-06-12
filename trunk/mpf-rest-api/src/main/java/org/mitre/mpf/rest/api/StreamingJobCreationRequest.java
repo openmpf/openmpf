@@ -39,7 +39,7 @@ public class StreamingJobCreationRequest {
 	private String pipelineName = null;
 //	private Boolean buildOutput = null; //will use a server side property if null
 	private Integer priority = null; //will be set to 4 (default) on the server side if null
-	private JobCreationStreamData streamData = null;
+	private JobCreationStreamData streamData = new JobCreationStreamData();
 	private Boolean enableOutputToDisk = null;     // true or false to write video segments to disk.  Note that this is called buildOutput in other code
 	private String healthReportCallbackURI = null; // the URL to send a health report to
 	private String summaryReportCallbackURI = null; // the URL to send a summary report to
@@ -50,9 +50,7 @@ public class StreamingJobCreationRequest {
 	public JobCreationStreamData getStreamData() {
 		return streamData;
 	}
-	public String getStreamURI() {
-		return streamData.getStreamURI();
-	}
+	public String getStreamURI() {return streamData.getStreamURI();}
 	public Map<String, String> getMediaProperties() { return streamData.getMediaProperties(); }
 	public int getSegmentSize() {
 		return streamData.getSegmentSize();

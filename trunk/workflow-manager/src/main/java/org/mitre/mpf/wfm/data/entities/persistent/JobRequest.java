@@ -40,9 +40,11 @@ public class JobRequest {
 
 	public JobRequest() { }
 
-	/** The unique numeric identifier for this job. */
+	/** The unique numeric identifier for this job.
+	 * Using SEQUENCE rather than IDENTITY to avoid conflicts between batch and streaming job Ids
+	 * */
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@GeneratedValue(strategy = GenerationType.SEQUENCE)
 	private long id;
 	public long getId() { return id; }
 

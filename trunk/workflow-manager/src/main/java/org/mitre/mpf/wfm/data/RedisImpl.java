@@ -97,7 +97,8 @@ public class RedisImpl implements Redis {
 			STREAM = "STREAM",
 			HEALTH_REPORT_CALLBACK_URI = "HEALTH_REPORT_CALLBACK_URI",
 			SUMMARY_REPORT_CALLBACK_URI = "SUMMARY_REPORT_CALLBACK_URI",
-			NEW_TRACK_ALERT_CALLBACK_URI = "NEW_TRACK_ALERT_CALLBACK_URI";
+			NEW_TRACK_ALERT_CALLBACK_URI = "NEW_TRACK_ALERT_CALLBACK_URI",
+			JOB_TYPE = "JOB_TYPE";
 
 	/**
 	 * Creates a "key" from one or more components. This is a convenience method for creating
@@ -117,59 +118,79 @@ public class RedisImpl implements Redis {
 
 	@SuppressWarnings("unchecked")
 	public synchronized boolean addDetectionProcessingError(DetectionProcessingError detectionProcessingError) {
-		if(detectionProcessingError != null) {
-			try {
-				redisTemplate
-                    .boundListOps(
-                        key(BATCH_JOB, detectionProcessingError.getJobId(),
-                            MEDIA, detectionProcessingError.getMediaId(),
-                            ERRORS, detectionProcessingError.getStageIndex(), detectionProcessingError.getActionIndex())) // e.g., JOB:5:MEDIA:3:ERRORS:0:1
-                    .rightPush(jsonUtils.serialize(detectionProcessingError));
-				return true;
-			} catch(Exception exception) {
-				log.error("Failed to persist the detection processing error {} in the transient data store due to an exception.", detectionProcessingError, exception);
+		if(!redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(detectionProcessingError.getJobId()))) {
+			log.error("Failed to persist the detection processing error {} in the transient data store, not supported for streaming jobs",detectionProcessingError);
+			return false;
+		} else {
+			if (detectionProcessingError != null) {
+				try {
+					redisTemplate
+							.boundListOps(
+									key(BATCH_JOB, detectionProcessingError.getJobId(),
+											MEDIA, detectionProcessingError.getMediaId(),
+											ERRORS, detectionProcessingError.getStageIndex(), detectionProcessingError.getActionIndex())) // e.g., JOB:5:MEDIA:3:ERRORS:0:1
+							.rightPush(jsonUtils.serialize(detectionProcessingError));
+					return true;
+				} catch (Exception exception) {
+					log.error("Failed to persist the detection processing error {} in the transient data store due to an exception.", detectionProcessingError, exception);
+					return false;
+				}
+			} else {
+				// Receiving a null parameter may be a symptom of a much larger issue.
 				return false;
 			}
-		} else {
-			// Receiving a null parameter may be a symptom of a much larger issue.
-			return false;
 		}
 	}
 
 
 	@SuppressWarnings("unchecked")
 	public boolean addTrack(Track track) {
-		try {
-			redisTemplate
-				.boundListOps(key(BATCH_JOB, track.getJobId(), MEDIA, track.getMediaId(), TRACK, track.getStageIndex(), track.getActionIndex())) // e.g., JOB:5:MEDIA:10:0:0
-				.rightPush(jsonUtils.serialize(track));
-			return true;
-		} catch(Exception exception) {
-			log.error("Failed to serialize or store the track instance '{}' due to an exception.", track, exception);
+		if(!redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(track.getJobId()))) {
+			log.error("Failed to store the track instance '{}', not supported for streaming jobs", track);
 			return false;
+		} else {
+			try {
+				redisTemplate
+						.boundListOps(key(BATCH_JOB, track.getJobId(), MEDIA, track.getMediaId(), TRACK, track.getStageIndex(), track.getActionIndex())) // e.g., JOB:5:MEDIA:10:0:0
+						.rightPush(jsonUtils.serialize(track));
+				return true;
+			} catch (Exception exception) {
+				log.error("Failed to serialize or store the track instance '{}' due to an exception.", track, exception);
+				return false;
+			}
 		}
 	}
 
+	/**
+	 * marked the batch or streaming job as CANCELLED in REDIS
+	 * @param jobId The MPF-assigned ID of the batch or streaming job (must be unique)
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
 	public synchronized boolean cancel(long jobId) {
-		if(redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).size() > 0) {
-			redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(CANCELLED, true);
-			return true;
+		if(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
+			// confirmed that this is a batch job
+			if (redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).size() > 0) {
+				redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(CANCELLED, true);
+				return true;
+			} else {
+				log.warn("Batch Job #{} is not running and cannot be cancelled.", jobId);
+				return false;
+			}
+		} else if(redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))) {
+			// confirmed that this is a streaming job
+			if (redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).size() > 0) {
+				redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(CANCELLED, true);
+				return true;
+			} else {
+				log.warn("Streaming Job #{} is not running and cannot be cancelled.", jobId);
+				return false;
+			}
 		} else {
-			log.warn("Batch Job #{} is not running and cannot be cancelled.", jobId);
+			log.warn("Job #{} was not found as a batch or a streaming job so it cannot be cancelled.", jobId);
 			return false;
 		}
-	}
 
-	@SuppressWarnings("unchecked")
-	public synchronized boolean cancelStreamingJob(long jobId) {
-		if(redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).size() > 0) {
-			redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(CANCELLED, true);
-			return true;
-		} else {
-			log.warn("Streaming Job #{} is not running and cannot be cancelled.", jobId);
-			return false;
-		}
 	}
 
 	/** Removes everything in the Redis datastore. */
@@ -184,39 +205,87 @@ public class RedisImpl implements Redis {
 	}
 
 
-
+	/**
+	 * Clear the specified job from the REDIS database
+	 * @param jobId The MPF-assigned ID of the batch or streaming job to purge (must be unique)
+	 * @throws WfmProcessingException
+	 */
     @SuppressWarnings("unchecked")
 	public synchronized void clearJob(long jobId) throws WfmProcessingException {
-		TransientJob transientJob = getJob(jobId);
-		if(transientJob == null) { return; }
-		redisTemplate.boundSetOps(BATCH_JOB).remove(Long.toString(jobId));
-		redisTemplate.delete(key(BATCH_JOB, jobId));
-		for(TransientMedia transientMedia : transientJob.getMedia()) {
-			redisTemplate.delete(key(BATCH_JOB, jobId, MEDIA, transientMedia.getId()));
-			if(transientJob.getPipeline() != null) {
-				for (int taskIndex = 0; taskIndex < transientJob.getPipeline().getStages().size(); taskIndex++) {
-					for (int actionIndex = 0; actionIndex < transientJob.getPipeline().getStages().get(taskIndex).getActions().size(); actionIndex++) {
-						redisTemplate.delete(key(BATCH_JOB, jobId, MEDIA, transientMedia.getId(), ERRORS, taskIndex, actionIndex));
-						redisTemplate.delete(key(BATCH_JOB, jobId, MEDIA, transientMedia.getId(), TRACK, taskIndex, actionIndex));
+		if(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
+			// confirmed that this is a batch job that was requested to be cleared
+			TransientJob transientJob = getJob(jobId);
+			if (transientJob == null) {
+				return;
+			}
+			redisTemplate.boundSetOps(BATCH_JOB).remove(Long.toString(jobId));
+			redisTemplate.delete(key(BATCH_JOB, jobId));
+			for (TransientMedia transientMedia : transientJob.getMedia()) {
+				redisTemplate.delete(key(BATCH_JOB, jobId, MEDIA, transientMedia.getId()));
+				if (transientJob.getPipeline() != null) {
+					for (int taskIndex = 0; taskIndex < transientJob.getPipeline().getStages().size(); taskIndex++) {
+						for (int actionIndex = 0; actionIndex < transientJob.getPipeline().getStages().get(taskIndex).getActions().size(); actionIndex++) {
+							redisTemplate.delete(key(BATCH_JOB, jobId, MEDIA, transientMedia.getId(), ERRORS, taskIndex, actionIndex));
+							redisTemplate.delete(key(BATCH_JOB, jobId, MEDIA, transientMedia.getId(), TRACK, taskIndex, actionIndex));
+						}
+					}
+				}
+
+				if (transientMedia.getUriScheme().isRemote()) {
+					if (transientMedia.getLocalPath() != null) {
+						try {
+							File file = new File(transientMedia.getLocalPath());
+							if (file.exists()) {
+								if (!file.delete()) {
+									log.warn("Failed to delete the file '{}'. It has been leaked and must be removed manually.", file);
+								}
+							}
+						} catch (Exception exception) {
+							log.warn("Failed to delete the local file '{}' which was created retrieved from a remote location - it must be manually deleted.", transientMedia.getLocalPath(), exception);
+						}
+					}
+				}
+			}
+		} else if (redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))) {
+			// confirmed that this is a streaming job that was requested to be cleared
+			TransientStreamingJob transientStreamingJob = getStreamingJob(jobId);
+			if (transientStreamingJob == null) {
+				return;
+			}
+			redisTemplate.boundSetOps(STREAMING_JOB).remove(Long.toString(jobId));
+			redisTemplate.delete(key(STREAMING_JOB, jobId));
+			TransientStream transientStream = transientStreamingJob.getStream();
+
+
+			redisTemplate.delete(key(STREAMING_JOB, jobId, STREAM, transientStream.getId()));
+			if (transientStreamingJob.getPipeline() != null) {
+				for (int taskIndex = 0; taskIndex < transientStreamingJob.getPipeline().getStages().size(); taskIndex++) {
+					for (int actionIndex = 0; actionIndex < transientStreamingJob.getPipeline().getStages().get(taskIndex).getActions().size(); actionIndex++) {
+						redisTemplate.delete(key(STREAMING_JOB, jobId, STREAM, transientStream.getId(), ERRORS, taskIndex, actionIndex));
+						redisTemplate.delete(key(STREAMING_JOB, jobId, STREAM, transientStream.getId(), TRACK, taskIndex, actionIndex));
 					}
 				}
 			}
 
-			if(transientMedia.getUriScheme().isRemote()) {
-				if(transientMedia.getLocalPath() != null) {
-					try {
-						File file = new File(transientMedia.getLocalPath());
-						if (file.exists()) {
-							if(!file.delete()) {
-                                log.warn("Failed to delete the file '{}'. It has been leaked and must be removed manually.", file);
-                            }
-						}
-					} catch (Exception exception) {
-						log.warn("Failed to delete the local file '{}' which was created retrieved from a remote location - it must be manually deleted.", transientMedia.getLocalPath(), exception);
-					}
-				}
-			}
+//			if (transientStream.getUriScheme().isRemote()) {
+//				if (transientStream.getLocalPath() != null) {
+//					try {
+//						File file = new File(transientStream.getLocalPath());
+//						if (file.exists()) {
+//							if (!file.delete()) {
+//								log.warn("Failed to delete the file '{}'. It has been leaked and must be removed manually.", file);
+//							}
+//						}
+//					} catch (Exception exception) {
+//						log.warn("Failed to delete the local file '{}' which was created retrieved from a remote location - it must be manually deleted.", transientMedia.getLocalPath(), exception);
+//					}
+//				}
+//			}
+
+		} else {
+			log.warn("Job #{} was not found as a batch or a streaming job so it cannot be cancelled.", jobId);
 		}
+
 	}
 
 //	@SuppressWarnings("unchecked")
@@ -253,66 +322,142 @@ public class RedisImpl implements Redis {
 //		}
 //	}
 
+	/**
+	 * See if the specified job has been persisted in the REDIS database
+	 * @param jobId The ID of the batch or streaming job to look up, must be unique
+	 * @return
+	 */
 	@Override
 	@SuppressWarnings("unchecked")
 	public synchronized boolean containsJob(long jobId) {
-		return redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId));
+		if(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
+			// confirmed that the specified job is a batch job
+			return redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId));
+		} else if (redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))) {
+			// confirmed that the specified job is a streaming job
+			return redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId));
+		} else {
+			log.warn("Job #{} was not found as a batch or a streaming job so we don't know if this job was persisted.", jobId);
+			return false;
+		}
 	}
 
+	/**
+	 * Get the task index for the specified batch or streaming job
+	 * @param jobId The MPF-assigned ID of the batch or streaming job to look up, must be unique.
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
 	public int getCurrentTaskIndexForJob(long jobId)  {
-		if(!redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
-			return 0;
+		if(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
+			// confirmed that the specified job is a batch job
+			if(!redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
+				return 0;
+			} else {
+				Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
+				return (int)(jobHash.get(TASK));
+			}
+		} else if (redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))) {
+			// confirmed that the specified job is a streaming job
+			if(!redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))) {
+				return 0;
+			} else {
+				Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
+				return (int)(jobHash.get(TASK));
+			}
 		} else {
-			Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
-			return (int)(jobHash.get(TASK));
+			log.warn("Job #{} was not found as a batch or a streaming job so we can't return the task number (returning -1).", jobId);
+			return -1;
 		}
 	}
 
+	/**
+	 * Get the job status for the specified job
+	 * @param jobId The MPF-assigned ID of the batch or streaming job, must be unique.
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
 	public JobStatus getJobStatus(long jobId)  {
-		if(!redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
-			return null;
+		if(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
+			// confirmed that the specified job is a batch job
+			if(!redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
+				return null;
+			} else {
+				Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
+				return (JobStatus)jobHash.get(JOB_STATUS);
+			}
+		} else if (redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))) {
+			// confirmed that the specified job is a streaming job
+			if(!redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))) {
+				return null;
+			} else {
+				Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
+				return (JobStatus)jobHash.get(JOB_STATUS);
+			}
 		} else {
-			Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
-			return (JobStatus)jobHash.get(JOB_STATUS);
+			log.warn("Job #{} was not found as a batch or a streaming job so we can't return the job status (returning null).", jobId);
+			return null;
 		}
 	}
 
+	/**
+	 * Get the detection errors for the batch job
+	 * @param jobId The MPF-assigned ID of the batch job.
+	 * @param mediaId The MPF-assigned media ID.
+	 * @param taskIndex The index of the task in the job's pipeline which generated these errors.
+	 * @param actionIndex The index of the action in the job's pipeline's task which generated these errors.
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
 	public synchronized SortedSet<DetectionProcessingError> getDetectionProcessingErrors(long jobId, long mediaId, int taskIndex, int actionIndex) {
-		final String key = key(BATCH_JOB, jobId, MEDIA, mediaId, ERRORS, taskIndex, actionIndex);
-		int length = (Integer)(redisTemplate.execute(new RedisCallback() {
-			@Override
-			public Object doInRedis(RedisConnection redisConnection) throws DataAccessException {
-				return Integer.valueOf(redisConnection.execute("llen", key.getBytes()).toString());
-			}
-		}));
-
-		if(length == 0) {
-			log.debug("No detection processing errors for JOB:{}:MEDIA:{}:{}:{}.", jobId, mediaId, taskIndex, actionIndex);
-			return new TreeSet<>();
-		} else {
-			log.debug("{} detection processing errors for JOB:{}:MEDIA:{}:{}:{}.", length, jobId, mediaId, taskIndex, actionIndex);
-			SortedSet<DetectionProcessingError> errors = new TreeSet<>();
-			for(Object errorJson : redisTemplate.boundListOps(key).range(0, length)) {
-				try {
-					errors.add(jsonUtils.deserialize((byte[]) (errorJson), DetectionProcessingError.class));
-				} catch(Exception exception) {
-					log.warn("Failed to deserialize '{}'.", errorJson);
+		if(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
+			// confirmed that the specified job is a batch job
+			final String key = key(BATCH_JOB, jobId, MEDIA, mediaId, ERRORS, taskIndex, actionIndex);
+			int length = (Integer) (redisTemplate.execute(new RedisCallback() {
+				@Override
+				public Object doInRedis(RedisConnection redisConnection) throws DataAccessException {
+					return Integer.valueOf(redisConnection.execute("llen", key.getBytes()).toString());
 				}
+			}));
+
+			if (length == 0) {
+				log.debug("No detection processing errors for JOB:{}:MEDIA:{}:{}:{}.", jobId, mediaId, taskIndex, actionIndex);
+				return new TreeSet<>();
+			} else {
+				log.debug("{} detection processing errors for JOB:{}:MEDIA:{}:{}:{}.", length, jobId, mediaId, taskIndex, actionIndex);
+				SortedSet<DetectionProcessingError> errors = new TreeSet<>();
+				for (Object errorJson : redisTemplate.boundListOps(key).range(0, length)) {
+					try {
+						errors.add(jsonUtils.deserialize((byte[]) (errorJson), DetectionProcessingError.class));
+					} catch (Exception exception) {
+						log.warn("Failed to deserialize '{}'.", errorJson);
+					}
+				}
+				return errors;
 			}
-			return errors;
+		} else {
+			log.warn("Error, detection error processing is not supported for streaming job '{}', returning null.", jobId);
+			return null;
 		}
 	}
 
+	/**
+	 * Get the transient representation of the batch job as specified by the batch jobs unique jobId.
+	 * This method should not be called for streaming jobs.
+	 * @param jobId The MPF-assigned ID of the batch job, must be unique
+	 * @param mediaIds Optionally, a list of mediaIds to load.  If values are provided for media ids, the returned
+	 *                 TransientJob will contain only the TransientMedia objects which relate to those ids. If no
+	 *                 values are provided, the TransientJob will include all associated TransientMedia.
+	 * @return
+	 * @throws WfmProcessingException
+	 */
 	@SuppressWarnings("unchecked")
 	public synchronized TransientJob getJob(long jobId, Long... mediaIds) throws WfmProcessingException {
 		if(!redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
-			// The job is not known to the system.
+			// The batch job is not known to the system.
 			return null;
 		} else {
-			// The job is known to the system and should be retrievable.
+			// The batch job is known to the system and should be retrievable.
 			// Get the hash containing the job properties.
 			Map<String, Object> jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
 
@@ -352,6 +497,13 @@ public class RedisImpl implements Redis {
 	}
 
 
+	/**
+	 * Get the transient representation of the streaming job as specified by the streaming jobs unique jobId.
+	 * This method should not be called for batch jobs.
+	 * @param jobId The MPF-assigned ID of the streaming job, must be unique.
+	 * @return
+	 * @throws WfmProcessingException
+	 */
 	@SuppressWarnings("unchecked")
 	public synchronized TransientStreamingJob getStreamingJob(long jobId) throws WfmProcessingException {
 		if(!redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))) {
@@ -398,42 +550,74 @@ public class RedisImpl implements Redis {
 		return id;
 	}
 
+	/**
+	 * Get the task count for the specified batch or streaming job
+	 * @param jobId The MPF-assigned ID of the batch or the streaming job, must be unique.
+	 * @return
+	 * @throws WfmProcessingException
+	 */
 	@SuppressWarnings("unchecked")
 	public int getTaskCountForJob(long jobId) throws WfmProcessingException {
-		if(!redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
-			return 0;
-		} else {
+		if(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
+			// confirmed that this is a batch job
 			Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
-			return (int)(jobHash.get(TASK_COUNT));
+			return (int) (jobHash.get(TASK_COUNT));
+		} else if (redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))) {
+			// confirmed that this is a streaming job
+			Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
+			return (int) (jobHash.get(TASK_COUNT));
+		} else {
+			log.warn("Job #{} was not found as a batch or a streaming job so we can't return the task count (returning 0).", jobId);
+			return 0;
 		}
 	}
 
+	/**
+	 * Get the tracks for the specified batch job
+	 * Streaming jobs not supported
+	 * @param jobId The MPF-assigned ID of the batch job, must be unique
+	 * @param mediaId The MPF-assigned media ID.
+	 * @param taskIndex The index of the task which created the tracks in the job's pipeline.
+	 * @param actionIndex The index of the action in the job's pipeline's task which generated the tracks.
+	 * @return
+	 */
     @SuppressWarnings("unchecked")
 	public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) {
-		final String key = key(BATCH_JOB, jobId, MEDIA, mediaId, TRACK, taskIndex, actionIndex);
-		int length = (Integer)(redisTemplate.execute(new RedisCallback() {
-			@Override
-			public Object doInRedis(RedisConnection redisConnection) throws DataAccessException {
-				return Integer.valueOf(redisConnection.execute("llen", key.getBytes()).toString());
-			}
-		}));
-
-		if(length == 0) {
-			log.debug("No tracks for BATCH_JOB:{}:MEDIA:{}:{}:{}.", jobId, mediaId, taskIndex, actionIndex);
-			return new TreeSet<>();
-		} else {
-			log.debug("{} tracks for BATCH_JOB:{}:MEDIA:{}:{}:{}.", length, jobId, mediaId, taskIndex, actionIndex);
-			SortedSet<Track> tracks = new TreeSet<>();
-			for(Object trackJson : redisTemplate.boundListOps(key).range(0, length)) {
-				try {
-					tracks.add(jsonUtils.deserialize((byte[]) (trackJson), Track.class));
-				} catch(Exception exception) {
-					log.warn("Failed to deserialize '{}'.", trackJson);
+		if(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
+			final String key = key(BATCH_JOB, jobId, MEDIA, mediaId, TRACK, taskIndex, actionIndex);
+			int length = (Integer)(redisTemplate.execute(new RedisCallback() {
+				@Override
+				public Object doInRedis(RedisConnection redisConnection) throws DataAccessException {
+					return Integer.valueOf(redisConnection.execute("llen", key.getBytes()).toString());
 				}
+			}));
+
+			if(length == 0) {
+				log.debug("No tracks for BATCH_JOB:{}:MEDIA:{}:{}:{}.", jobId, mediaId, taskIndex, actionIndex);
+				return new TreeSet<>();
+			} else {
+				log.debug("{} tracks for BATCH_JOB:{}:MEDIA:{}:{}:{}.", length, jobId, mediaId, taskIndex, actionIndex);
+				SortedSet<Track> tracks = new TreeSet<>();
+				for(Object trackJson : redisTemplate.boundListOps(key).range(0, length)) {
+					try {
+						tracks.add(jsonUtils.deserialize((byte[]) (trackJson), Track.class));
+					} catch(Exception exception) {
+						log.warn("Failed to deserialize '{}'.", trackJson);
+					}
+				}
+				return tracks;
 			}
-			return tracks;
+		} else {
+			log.warn("Job #{} is not a batch job, streaming jobs not supported in getTracks (returning null).", jobId);
+			return null;
 		}
 	}
+
+	/**
+	 * Persist a batch job by storing it in the REDIS database
+	 * @param transientJob The non-null instance to store.
+	 * @throws WfmProcessingException
+	 */
 	@SuppressWarnings("unchecked")
 	public synchronized void persistJob(TransientJob transientJob) throws WfmProcessingException {
 		// Redis cannot store complex objects, so it is necessary to store complex objects using
@@ -473,17 +657,24 @@ public class RedisImpl implements Redis {
 
 		// Finally, persist the data to Redis.
 		redisTemplate
-				.boundHashOps(key(BATCH_JOB, transientJob.getId())) // e.g., JOB:5
+				.boundHashOps(key(BATCH_JOB, transientJob.getId())) // e.g., BATCH_JOB:5
 				.putAll(jobHash);
 
 		// If this is the first time the job has been persisted, add the job's ID to the
-		// collection of jobs known to the system so that we can assume that the key JOB:N
+		// collection of batch jobs known to the system so that we can assume that the key BATCH_JOB:N
 		// exists in Redis provided that N exists in this set.
+		// Note that in prior releases of openmpf, "BATCH_JOB" was represented as "JOB"
 		redisTemplate
-				.boundSetOps(BATCH_JOB) // e.g., JOB
+				.boundSetOps(BATCH_JOB) // e.g., BATCH_JOB
 				.add(Long.toString(transientJob.getId()));
 	}
 
+	/**
+	 * Persist the media data for a batch job by storing it in the REDIS database
+	 * @param job
+	 * @param transientMedia The non-null media instance to persist.
+	 * @throws WfmProcessingException
+	 */
 	@SuppressWarnings("unchecked")
 	public synchronized void persistMedia(long job, TransientMedia transientMedia) throws WfmProcessingException {
 		if(transientMedia == null) {
@@ -497,6 +688,12 @@ public class RedisImpl implements Redis {
 	}
 
 
+	/**
+	 * Persist the stream data for a streaming job by storing it in the REDIS database
+	 * @param job
+	 * @param transientStream The non-null stream instance to persist.
+	 * @throws WfmProcessingException
+	 */
 	@SuppressWarnings("unchecked")
 	public synchronized void persistStream(long job, TransientStream transientStream) throws WfmProcessingException {
 		if(transientStream == null) {
@@ -510,8 +707,11 @@ public class RedisImpl implements Redis {
 	}
 
 
-
-
+	/**
+	 * Persist a streaming job by storing it in the REDIS database
+	 * @param transientStreamingJob The non-null instance to store.
+	 * @throws WfmProcessingException
+	 */
 	@SuppressWarnings("unchecked")
 	public synchronized void persistJob(TransientStreamingJob transientStreamingJob) throws WfmProcessingException {
 		// Redis cannot store complex objects, so it is necessary to store complex objects using
@@ -550,34 +750,71 @@ public class RedisImpl implements Redis {
 				.boundHashOps(key(STREAMING_JOB, transientStreamingJob.getId())) // e.g., STREAMING_JOB:5
 				.putAll(jobHash);
 
-		// If this is the first time the streaming job has been persisted, add the job's ID to the
-		// collection of jobs known to the system so that we can assume that the key STREAMING_JOB:N
+		// If this is the first time the streaming job has been persisted, add the streaming job's ID to the
+		// collection of streaming jobs known to the system so that we can assume that the key STREAMING_JOB:N
 		// exists in Redis provided that N exists in this set.
 		redisTemplate
-				.boundSetOps(STREAMING_JOB) // e.g., JOB
+				.boundSetOps(STREAMING_JOB) // e.g., STREAMING_JOB
 				.add(Long.toString(transientStreamingJob.getId()));
 	}
 
+	/**
+	 * Set the current task index of the specified batch or streaming job
+	 * @param jobId The MPF-assigned ID of the batch or streaming job, must be unique.
+	 * @param taskIndex The index of the task which should be used as the "current" task.
+	 */
     @SuppressWarnings("unchecked")
 	public synchronized  void setCurrentTaskIndex(long jobId, int taskIndex) {
-		redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(TASK, taskIndex);
+		if(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
+			redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(TASK, taskIndex);
+		} else if (redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))){
+			redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(TASK, taskIndex);
+		} else {
+			log.warn("Job #{} was not found as a batch or a streaming job so we can't set the current task index", jobId);
+		}
 	}
 
+	/**
+	 * Set the job status of the specified batch or streaming job
+	 * @param jobId The MPF-assigned ID of the batch or streaming job, must be unique.
+	 * @param jobStatus The new status of the specified job.
+	 */
 	@SuppressWarnings("unchecked")
 	public synchronized  void setJobStatus(long jobId, JobStatus jobStatus) {
-		redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(JOB_STATUS, jobStatus);
+		if(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
+			redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(JOB_STATUS, jobStatus);
+		} else if (redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))){
+			redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(JOB_STATUS, jobStatus);
+		} else {
+			log.warn("Job #{} was not found as a batch or a streaming job so we can't set the job status", jobId);
+		}
+
 	}
 
+	/**
+	 * Set the tracks for the specified batch job
+	 * Not supported for streaming jobs
+	 * @param jobId The MPF-assigned ID of the batch job, must be unique
+	 * @param mediaId The MPF-assigned media ID.
+	 * @param taskIndex The index of the task which created the tracks in the job's pipeline.
+	 * @param actionIndex The index of the action in the job's pipeline's task which generated the tracks.
+	 * @param tracks The collection of tracks to associate with the (job, media, task, action) 4-ple.
+	 */
     @SuppressWarnings("unchecked")
 	public synchronized void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks) {
-		try {
-			String key = key(BATCH_JOB, jobId, MEDIA, mediaId, TRACK, taskIndex, actionIndex);
-			redisTemplate.delete(key);
-			for(Track track : tracks) {
-				redisTemplate.boundListOps(key).rightPush(jsonUtils.serialize(track));
+		if(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
+			// confirmed that this is a batch job
+			try {
+				String key = key(BATCH_JOB, jobId, MEDIA, mediaId, TRACK, taskIndex, actionIndex);
+				redisTemplate.delete(key);
+				for (Track track : tracks) {
+					redisTemplate.boundListOps(key).rightPush(jsonUtils.serialize(track));
+				}
+			} catch (Exception exception) {
+				log.warn("Failed to serialize tracks.", exception);
 			}
-		} catch(Exception exception) {
-			log.warn("Failed to serialize tracks.", exception);
+		} else {
+			log.warn("Job #{} is not a batch job, streaming jobs are not supported in setTracks", jobId);
 		}
 	}
 
@@ -605,21 +842,29 @@ public class RedisImpl implements Redis {
 
 	@Override
 	public String getCallbackMethod(long jobId) throws WfmProcessingException {
-		if(!redisTemplate.boundSetOps("BATCH_JOB").members().contains(Long.toString(jobId))) {
-			return null;
-		} else {
+		if(redisTemplate.boundSetOps("BATCH_JOB").members().contains(Long.toString(jobId))) {
 			Map jobHash = redisTemplate.boundHashOps(key("BATCH_JOB", jobId)).entries();
-			return (String)jobHash.get(CALLBACK_METHOD);
+			return (String) jobHash.get(CALLBACK_METHOD);
+		} else if(redisTemplate.boundSetOps("STREAMING_JOB").members().contains(Long.toString(jobId))) {
+			Map jobHash = redisTemplate.boundHashOps(key("STREAMING_JOB", jobId)).entries();
+			return (String) jobHash.get(CALLBACK_METHOD);
+		} else {
+			log.warn("Job #{} was not found as a batch or a streaming job so we can't get the callback method", jobId);
+			return null;
 		}
 	}
 
 	@Override
 	public String getExternalId(long jobId) throws WfmProcessingException {
-		if(!redisTemplate.boundSetOps("BATCH_JOB").members().contains(Long.toString(jobId))) {
-			return null;
-		} else {
+		if(redisTemplate.boundSetOps("BATCH_JOB").members().contains(Long.toString(jobId))) {
 			Map jobHash = redisTemplate.boundHashOps(key("BATCH_JOB", jobId)).entries();
 			return (String)(jobHash.get(EXTERNAL_ID));
+		} else if(redisTemplate.boundSetOps("STREAMING_JOB").members().contains(Long.toString(jobId))) {
+			Map jobHash = redisTemplate.boundHashOps(key("STREAMING_JOB", jobId)).entries();
+			return (String) (jobHash.get(EXTERNAL_ID));
+		} else {
+			log.warn("Job #{} was not found as a batch or a streaming job so we can't get the external id", jobId);
+			return null;
 		}
 	}
 }

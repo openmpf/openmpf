@@ -60,13 +60,6 @@ public interface Redis {
 	 */
 	boolean cancel(long jobId);
 
-	/**
-	 * Marks a streaming job as cancelled/cancelling in the Redis data store.
-	 * @param jobId The MPF-assigned ID of the streaming job.
-	 */
-	boolean cancelStreamingJob(long jobId);
-
-
 	/** Clears the contents of the Redis data store. Equivalent to performing "FLUSH ALL". */
 	void clear();
 

@@ -55,6 +55,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.MpfService;
+import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,6 +101,11 @@ public class StreamingJobController {
     // job progress may not be required for streaming jobs
     @Autowired
     private JobProgress jobProgress;
+
+    // temporary - jsonUtils used for debugging
+    @Autowired
+    private JsonUtils jsonUtils;
+
 
     /*
      *	POST /jobs
@@ -348,6 +354,12 @@ public class StreamingJobController {
      * Private methods
      */
     private StreamingJobCreationResponse processStreamingJobCreationRequest(StreamingJobCreationRequest streamingJobCreationRequest) {
+        System.out.println(this.getClass().getName()+".processStreamingJobCreationRequest: debug, got a streamingJobCreationRequest="+streamingJobCreationRequest);
+        System.out.println(this.getClass().getName()+".processStreamingJobCreationRequest: debug, got a streamingJobCreationRequest.getStallAlertDetectionThreshold()="+streamingJobCreationRequest.getStallAlertDetectionThreshold());
+         System.out.println(this.getClass().getName()+".processStreamingJobCreationRequest: debug, got a streamingJobCreationRequest.getStream()="+streamingJobCreationRequest.getStream());
+        System.out.println(this.getClass().getName()+".processStreamingJobCreationRequest: debug, got a streamingJobCreationRequest.getStream().getStreamURI="+streamingJobCreationRequest.getStream().getStreamURI());
+        System.out.println(this.getClass().getName()+".processStreamingJobCreationRequest: debug, got a streamingJobCreationRequest.getSegmentSize()="+streamingJobCreationRequest.getSegmentSize());
+
         try {
             boolean fromExternalRestClient = true;
             //hack of using 'from_mpf_web_app' as the externalId to prevent duplicating a method and keeping streaming jobs
@@ -373,6 +385,11 @@ public class StreamingJobController {
                     streamingJobCreationRequest.getStallAlertRate(),
                     streamingJobCreationRequest.getStallTimeout(),
                     streamingJobCreationRequest.getStallCallbackURI());
+            System.out.println(this.getClass().getName()+".processStreamingJobCreationRequest: debug, created json_stream="+json_stream);
+
+            System.out.println(this.getClass().getName()+".processStreamingJobCreationRequest: debug, json_stream as JSON is " +
+                            jsonUtils.serializeAsTextString(json_stream));
+
             JsonStreamingJobRequest jsonStreamingJobRequest = mpfService.createStreamingJob(json_stream,
                     streamingJobCreationRequest.getAlgorithmProperties(),
                     streamingJobCreationRequest.getJobProperties(),
@@ -385,36 +402,11 @@ public class StreamingJobController {
                     streamingJobCreationRequest.getNewTrackAlertCallbackURI(),
                     streamingJobCreationRequest.getCallbackMethod());
 
-//            List<JsonMediaInputObject> media = new ArrayList<>();
-//            for (JobCreationMediaData mediaRequest : streamingJobCreationRequest.getMedia()) {
-//                JsonMediaInputObject medium = new JsonMediaInputObject(mediaRequest.getMediaUri());
-//                if (mediaRequest.getProperties() != null) {
-//                    for (Map.Entry<String, String> property : mediaRequest.getProperties().entrySet()) {
-//                        medium.getProperties().put(property.getKey().toUpperCase(), property.getValue());
-//                    }
-//                }
-//                media.add(medium);
-//            }
-//            if (streamingJobCreationRequest.getCallbackURL() != null && streamingJobCreationRequest.getCallbackURL().length() > 0) {
-//                jsonJobRequest = mpfService.createStreamingJob(media,
-//                        streamingJobCreationRequest.getAlgorithmProperties(),
-//                        streamingJobCreationRequest.getJobProperties(),
-//                        streamingJobCreationRequest.getPipelineName(),
-//                        streamingJobCreationRequest.getExternalId(), //TODO: what do we do with this from the UI?
-//                        buildOutput, // Use the buildOutput value if it is provided, otherwise use the default value from the properties file.,
-//                        priority,// Use the priority value if it is provided, otherwise use the default value from the properties file.
-//                        streamingJobCreationRequest.getCallbackURL(),
-//                        streamingJobCreationRequest.getCallbackMethod());
-//
-//            } else {
-//                jsonJobRequest = mpfService.createStreamingJob(media,
-//                        streamingJobCreationRequest.getAlgorithmProperties(),
-//                        streamingJobCreationRequest.getJobProperties(),
-//                        streamingJobCreationRequest.getPipelineName(),
-//                        streamingJobCreationRequest.getExternalId(), //TODO: what do we do with this from the UI?
-//                        buildOutput, // Use the buildOutput value if it is provided, otherwise use the default value from the properties file.,
-//                        priority); // Use the priority value if it is provided, otherwise use the default value from the properties file.);
-//            }
+            System.out.println(this.getClass().getName()+".processStreamingJobCreationRequest: debug, created jsonStreamingJobRequest="+jsonStreamingJobRequest);
+            System.out.println(this.getClass().getName()+".processStreamingJobCreationRequest: debug, jsonStreamingJobRequest as JSON is " +
+                    jsonUtils.serializeAsTextString(jsonStreamingJobRequest));
+            System.out.println(this.getClass().getName()+".processStreamingJobCreationRequest: debug, jsonStreamingJobRequest.getStream()="+jsonStreamingJobRequest.getStream());
+
             long jobId = mpfService.submitJob(jsonStreamingJobRequest);
             log.debug("Successful creation of streaming JobId: {}", jobId);
 

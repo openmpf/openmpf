@@ -167,14 +167,18 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 	/** method will create a new StreamingJobRequest using the provided JSON streaming job request and persist it in the database for long-term storage
 	 * and will send the streaming job request to the components using the ActiveMQ routes
 	 * Upon return, the streaming job will be persisted in the long-term database
-	 * @param streamingJobRequest JSON representation of the job request
+	 * @param jsonStreamingJobRequest JSON representation of the job request
 	 * @return initialized streaming job request
 	 * @throws WfmProcessingException
 	 */
 	@Override
-	public StreamingJobRequest run(JsonStreamingJobRequest streamingJobRequest) throws WfmProcessingException {
-		StreamingJobRequest streamingJobRequestEntity = initialize(streamingJobRequest);
-		return runInternal(streamingJobRequestEntity, streamingJobRequest, (streamingJobRequest == null) ? propertiesUtil.getJmsPriority() : streamingJobRequest.getPriority());
+	public StreamingJobRequest run(JsonStreamingJobRequest jsonStreamingJobRequest) throws WfmProcessingException {
+		System.out.println(this.getClass().getName()+".run: debug, jsonStreamingJobRequest as JSON is " +
+				jsonUtils.serializeAsTextString(jsonStreamingJobRequest));
+		StreamingJobRequest streamingJobRequestEntity = initialize(jsonStreamingJobRequest);
+		System.out.println(this.getClass().getName()+".run: debug, created streamingJobRequestEntity="+streamingJobRequestEntity);
+		System.out.println(this.getClass().getName()+".run: debug, streamingJobRequestEntitygetOutputObjectPath()="+streamingJobRequestEntity.getOutputObjectPath());
+		return runInternal(streamingJobRequestEntity, jsonStreamingJobRequest, (jsonStreamingJobRequest == null) ? propertiesUtil.getJmsPriority() : jsonStreamingJobRequest.getPriority());
 	}
 
 	/** method will create a new StreamingJobRequest using the provided JSON job request and persist it in the database for long-term storage
@@ -186,6 +190,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 	@Override
 	public StreamingJobRequest initialize(JsonStreamingJobRequest jsonStreamingJobRequest) throws WfmProcessingException {
 		StreamingJobRequest streamingJobRequestEntity = new StreamingJobRequest();
+		System.out.println(this.getClass().getName()+".initialize: debug, streamingJobRequestEntity="+streamingJobRequestEntity);
+		System.out.println(this.getClass().getName()+".initialize: debug, streamingJobRequestEntity.getOutputObjectPath()="+streamingJobRequestEntity.getOutputObjectPath());
 		return initializeInternal(streamingJobRequestEntity, jsonStreamingJobRequest);
 	}
 
@@ -223,7 +229,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 			log.info("[Job {}:*:*] Cancelling streaming job.", jobId);
 
 			// Mark the streaming job as cancelled in Redis so that future steps in the workflow will know not to continue processing.
-			if(redis.cancelStreamingJob(jobId)) {
+			if(redis.cancel(jobId)) {
 				try {
 					// Try to move any pending work items on the queues to the appropriate cancellation queues.
 					// If this operation fails, any remaining pending items will continue to process, but
@@ -309,6 +315,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		headers.put(MpfHeaders.JOB_ID, streamingJobRequest.getId());
 		headers.put(MpfHeaders.JMS_PRIORITY, Math.max(0, Math.min(9, priority)));
 		log.info("[Streaming Job {}|*|*] Job has started and is running at priority {}.", streamingJobRequest.getId(), headers.get(MpfHeaders.JMS_PRIORITY));
+		System.out.println(this.getClass().getName()+".runInternal: debug, serialized jsonStreamingJobRequest is "+jsonUtils.serialize(jsonStreamingJobRequest));
 		streamingJobRequestProducerTemplate.sendBodyAndHeaders(StreamingJobCreatorRouteBuilder.ENTRY_POINT, ExchangePattern.InOnly, jsonUtils.serialize(jsonStreamingJobRequest), headers);
 		return streamingJobRequest;
 	}

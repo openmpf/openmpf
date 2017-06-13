@@ -32,42 +32,40 @@ import java.util.List;
 import java.util.Map;
 
 public class StreamingJobCreationRequest {
-//	private List<JobCreationMediaData> media = new LinkedList<>();
 	private Map<String, String> jobProperties = new HashMap<>();
 	private Map<String, Map> algorithmProperties = new HashMap<>();
 	private String externalId = null;
 	private String pipelineName = null;
-//	private Boolean buildOutput = null; //will use a server side property if null
 	private Integer priority = null; //will be set to 4 (default) on the server side if null
-	private JobCreationStreamData streamData = new JobCreationStreamData();
-	private Boolean enableOutputToDisk = null;     // true or false to write video segments to disk.  Note that this is called buildOutput in other code
+	private JobCreationStreamData stream = new JobCreationStreamData();
+	// true or false to write video segments to disk.  Note that this is called buildOutput in other code.  Will use a server side property if null
+	private Boolean enableOutputToDisk = null;
 	private String healthReportCallbackURI = null; // the URL to send a health report to
 	private String summaryReportCallbackURI = null; // the URL to send a summary report to
 	private String newTrackAlertCallbackURI = null; // the URL to send a new track alert report to
 	private String callbackMethod = "POST"; // the method to send the response back after a job completes
 
 
-	public JobCreationStreamData getStreamData() {
-		return streamData;
+	public JobCreationStreamData getStream() {
+		return stream;
 	}
-	public String getStreamURI() {return streamData.getStreamURI();}
-	public Map<String, String> getMediaProperties() { return streamData.getMediaProperties(); }
+	public void setStream(JobCreationStreamData streamData) {this.stream = streamData;}
+	public String getStreamURI() {return stream.getStreamURI();}
+	public Map<String, String> getMediaProperties() { return stream.getMediaProperties(); }
 	public int getSegmentSize() {
-		return streamData.getSegmentSize();
+		return stream.getSegmentSize();
 	}
 	public String getStallCallbackURI() {
-		return streamData.getStallCallbackURI();
+		return stream.getStallCallbackURI();
 	}
 	public long getStallAlertDetectionThreshold() {
-		return streamData.getStallAlertDetectionThreshold();
+		return stream.getStallAlertDetectionThreshold();
 	}
 	public long getStallTimeout() {
-		return streamData.getStallTimeout();
+		return stream.getStallTimeout();
 	}
-	public long getStallAlertRate() { return streamData.getStallAlertRate(); }
-	public void setStreamData(JobCreationStreamData streamData) {
-		this.streamData = streamData;
-	}
+	public long getStallAlertRate() { return stream.getStallAlertRate(); }
+
 
 	public Map<String, String> getJobProperties() {
 		return jobProperties;

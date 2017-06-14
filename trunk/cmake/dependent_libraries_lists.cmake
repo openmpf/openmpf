@@ -37,7 +37,7 @@ list(APPEND MediaFiles_NEEDED avcodec avdevice avformat avutil swscale avresampl
                               speex opus gsm openjpeg atspi opencore-amrwb opencore-amrnb)
 
 list(APPEND CMAKE_FIND_LIBRARY_SUFFIXES .so.0 .so.1)
-find_package(OpenCV 3.1 EXACT REQUIRED PATHS /opt/opencv-3.1.0)
+find_package(OpenCV 3.2 EXACT REQUIRED PATHS /opt/opencv-3.2.0)
 
 # Use the following function if the project being built needs to find and install
 # the OpenCV libraries, and the ffmpeg/gstreamer libraries that OpenCV uses.  All of the

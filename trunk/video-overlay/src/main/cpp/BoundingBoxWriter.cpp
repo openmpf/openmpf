@@ -493,12 +493,9 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
         if (inChars != NULL) {
 
             try {
-                // TODO: Revert this after upgrading to OpenCV 3.2
-                Mat image;
-                cv::VideoCapture cap(inChars);
-                cap.read(image);
+                Mat image = imread(inChars);
 
-                if (!image.data) {
+                if (image.empty()) {
                     // Cleanup...
                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
 

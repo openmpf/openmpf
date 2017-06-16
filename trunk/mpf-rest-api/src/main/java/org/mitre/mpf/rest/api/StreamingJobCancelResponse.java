@@ -26,38 +26,39 @@
 
 package org.mitre.mpf.rest.api;
 
-public class StreamingJobCreationResponse {
-	private long jobId = -1; //will be -1 if there is an error creating the job
-	private String outputObjectPath = null;
+public class StreamingJobCancelResponse {
+	private Long jobId;
 	private String externalId = null;
+	private String outputObjectPath;
 	private MpfResponse mpfResponse = new MpfResponse();
 
-	/*
-	 * Constructors
-	 */
-	public StreamingJobCreationResponse() { }
+	public StreamingJobCancelResponse() {}
 
-	public StreamingJobCreationResponse(int errorCode, String errorMessage) {
+	public StreamingJobCancelResponse(int errorCode, String errorMessage) {
 		this.mpfResponse.setMessage(errorCode, errorMessage);
-		this.jobId = -1;
+		this.jobId = -1L;
 	}
 
-	public StreamingJobCreationResponse(long jobId, String externalId, String outputObjectPath) {
-		this.mpfResponse.setMessage(0,"success");
+
+	/**
+	 * @param jobId
+	 * @param externalId
+	 * @param outputObjectPath
+	 */
+	public StreamingJobCancelResponse(Long jobId, String externalId, String outputObjectPath) {
 		this.jobId = jobId;
 		this.externalId = externalId;
 		this.outputObjectPath = outputObjectPath;
+		this.mpfResponse.setMessage(0,"success");
 	}
 	
-	/*
-	 * Getters
-	 */
-	public long getJobId() {
+	public Long getJobId() {
 		return jobId;
 	}
-	public String getExternalId() {return externalId;}
-	public String getOutputObjectPath() {return outputObjectPath;}
-	
+	public String getExternalId() { return externalId; }
+	public String getOutputObjectPath() {
+		return outputObjectPath;
+	}
 	public MpfResponse getMpfResponse() {
 		return mpfResponse;
 	}

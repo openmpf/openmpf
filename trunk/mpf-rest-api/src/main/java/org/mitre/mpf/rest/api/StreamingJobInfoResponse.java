@@ -28,8 +28,9 @@ package org.mitre.mpf.rest.api;
 
 import java.util.Date;
 
-public class StreamingJobInfo {
+public class StreamingJobInfoResponse {
 	private Long jobId;
+	private String externalId = null;
 	private String pipelineName;
 //	private int jobPriority = -1;
 	private String /*JobStatus*/ jobStatus;
@@ -37,14 +38,13 @@ public class StreamingJobInfo {
 	private Date startDate;
 	private Date endDate;
 	private String outputObjectPath;
+	private String streamURI = null;
+	private String healthReportCallbackURI = null;
 	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
 	//to maintain the use of only standard Java in the model.api classes
 	private boolean terminal;
 
-//	private String streamURI = null;
-//	private String healthReportCallbackURI = null;
-
-	public StreamingJobInfo() {}
+	public StreamingJobInfoResponse() {}
 
 	/**
 	 * @param jobId
@@ -56,9 +56,11 @@ public class StreamingJobInfo {
 	 * @param endDate endDate may be null if the streaming job is still active
 	 * @param outputObjectPath
 	 */
-	public StreamingJobInfo(Long jobId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus, float jobProgress,
-							Date startDate, Date endDate, String outputObjectPath, boolean terminal) {
+	public StreamingJobInfoResponse(Long jobId, String externalId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus, float jobProgress,
+									Date startDate, Date endDate, String outputObjectPath,
+									String streamURI, String healthReportCallbackURI, boolean terminal) {
 		this.jobId = jobId;
+		this.externalId = externalId;
 		this.pipelineName = pipelineName;
 //		this.jobPriority = jobPriority;
 		this.jobStatus = jobStatus;
@@ -67,13 +69,16 @@ public class StreamingJobInfo {
 		this.endDate = endDate;
 		this.outputObjectPath = outputObjectPath;
 		this.terminal = terminal;
-//		this.streamURI = streamURI;
-//		this.healthReportCallbackURI = healthReportCallbackURI;
+		this.streamURI = streamURI;
+		this.healthReportCallbackURI = healthReportCallbackURI;
 	}
 	
 	public Long getJobId() {
 		return jobId;
 	}
+	public String getExternalId() { return externalId; }
+	public String getStreamURI() { return streamURI; }
+	public String getHealthReportCallbackURI() { return healthReportCallbackURI; }
 	
 	public String getPipelineName() {
 		return pipelineName;
@@ -105,14 +110,9 @@ public class StreamingJobInfo {
 	public String getOutputObjectPath() {
 		return outputObjectPath;
 	}
-//	public String getStreamURI() {
-//		return streamURI;
-//	}
-//	public String getHealthReportCallbackURI() {
-//		return healthReportCallbackURI;
-//	}
 
-//	public boolean isTerminal() {
-//		return terminal;
-//	}
+
+	public boolean isTerminal() {
+		return terminal;
+	}
 }

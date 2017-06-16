@@ -91,6 +91,22 @@ public class StreamingJobRequest {
 	public String getPipeline() { return pipeline; }
 	public void setPipeline(String pipeline) { this.pipeline = pipeline; }
 
+	@Column
+	private String externalId;
+	public String getExternalId() { return externalId; }
+	public void setExternalId(String externalId) { this.externalId = externalId; }
+
+	@Column
+	private String streamURI;
+	public String getStreamURI() { return streamURI; }
+	public void setStreamURI(String streamURI) { this.streamURI = streamURI; }
+
+	@Column
+	private String healthReportCallbackURI;
+	public String getHealthReportCallbackURI() { return healthReportCallbackURI; }
+	public void setHealthReportCallbackURI(String healthReportCallbackURI) { this.healthReportCallbackURI = healthReportCallbackURI; }
+
+
 	/** The version of the output object. */
 	@Column
 	private String outputObjectVersion;

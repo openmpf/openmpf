@@ -26,6 +26,7 @@
 
 #include <jni.h>
 #include <stdlib.h>
+#include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc.hpp>
@@ -493,7 +494,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
         if (inChars != NULL) {
 
             try {
-                Mat image = imread(inChars);
+                Mat image = imread(inChars, CV_LOAD_IMAGE_IGNORE_ORIENTATION + CV_LOAD_IMAGE_COLOR);
 
                 if (image.empty()) {
                     // Cleanup...

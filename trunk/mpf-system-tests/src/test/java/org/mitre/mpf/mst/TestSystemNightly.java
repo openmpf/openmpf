@@ -129,8 +129,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     public void runMotionTracking1() throws Exception {
         testCtr++;
         log.info("Beginning test #{} runMotionTracking1()", testCtr);
-        // When tracking is run on these videos it uses the STRUCK algorithm, which is non-deterministic, so there is
-        // no output checking
+
         List<JsonMediaInputObject> media = toMediaObjectList(
                 ioUtils.findFile("/samples/motion/five-second-marathon-clip.mkv"),
                 ioUtils.findFile("/samples/person/video_02.mp4"));

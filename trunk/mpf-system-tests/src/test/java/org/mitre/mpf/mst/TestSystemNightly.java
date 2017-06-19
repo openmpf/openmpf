@@ -125,7 +125,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                 "/samples/person/video_02.mp4");
     }
 
-    @Test(timeout = 5*MINUTES)
+    @Test(timeout = 10*MINUTES)
     public void runMotionTracking1() throws Exception {
         testCtr++;
         log.info("Beginning test #{} runMotionTracking1()", testCtr);

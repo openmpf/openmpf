@@ -49,7 +49,6 @@ import org.mitre.mpf.rest.api.StreamingJobCancelResponse;
 import org.mitre.mpf.rest.api.StreamingJobInfoResponse;
 import org.mitre.mpf.rest.api.StreamingJobCreationRequest;
 import org.mitre.mpf.rest.api.StreamingJobCreationResponse;
-import org.mitre.mpf.rest.api.MpfResponse;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.event.JobProgress;
@@ -326,8 +325,9 @@ public class StreamingJobController {
             @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
-    public ResponseEntity<StreamingJobCancelResponse> cancelStreamingJobRest(@ApiParam(required = true, value = "Streaming Job id") @PathVariable("id") long jobId) {
-        StreamingJobCancelResponse cancelResponse = cancel(jobId);
+    public ResponseEntity<StreamingJobCancelResponse> cancelStreamingJobRest(@ApiParam(required = true, value = "Streaming Job id") @PathVariable("id") long jobId,
+                                                                             @ApiParam(required = false, value = "Enable disk cleanup, if true then files associated with this streaming job will be deleted after this streaming job is cancelled") @PathVariable("doCleanup") Boolean doCleanup) {
+        StreamingJobCancelResponse cancelResponse = cancel(jobId,doCleanup);
 
         //return 200 for successful GET and object, 401 for bad credentials, 400 for bad id
         return new ResponseEntity<>(cancelResponse, (cancelResponse.getMpfResponse().getResponseCode() == 0) ? HttpStatus.OK : HttpStatus.BAD_REQUEST);
@@ -337,8 +337,8 @@ public class StreamingJobController {
     @RequestMapping(value = "/streaming/jobs/{id}/cancel", method = RequestMethod.POST)
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
-    public StreamingJobCancelResponse cancelStreamingJobSession(@PathVariable("id") long jobId) {
-        return cancel(jobId);
+    public StreamingJobCancelResponse cancelStreamingJobSession(@PathVariable("id") long jobId, @PathVariable("doCleanup") Boolean doCleanup) {
+        return cancel(jobId, doCleanup);
     }
 
     /*
@@ -452,18 +452,18 @@ public class StreamingJobController {
         return jobInfoList;
     }
 
-    private StreamingJobCancelResponse cancel(long jobId) {
+    private StreamingJobCancelResponse cancel(long jobId, Boolean doCleanup) {
         log.debug("Attempting to cancel streaming job with id: {}.", jobId);
         StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
-        if (mpfService.cancelStreamingJob(jobId)) {
+        if (mpfService.cancelStreamingJob(jobId,doCleanup)) {
             log.debug("Successful cancellation of streaming job with id: {}");
             return new StreamingJobCancelResponse(jobId,streamingJobRequest.getExternalId(),
-                    streamingJobRequest.getOutputObjectPath());
+                    streamingJobRequest.getOutputObjectPath(),doCleanup);
         }
         String errorStr = "Failed to cancel the streaming job with id '" + Long.toString(jobId) + "'. Please check to make sure the streaming job exists before submitting a cancel request. "
                 + "Also consider checking the server logs for more information on this error.";
         log.error(errorStr);
-        return new StreamingJobCancelResponse(1, errorStr);
+        return new StreamingJobCancelResponse( doCleanup, 1, errorStr);
     }
 
 

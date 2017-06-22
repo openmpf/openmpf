@@ -218,12 +218,15 @@ public class MpfServiceImpl implements MpfService {
 	/**
 	 * cancel a streaming job
 	 * @param jobId The MPF-assigned identifier for the streaming job. The job must be a streaming job.
+	 * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job
 	 * @return
 	 */
 	@Override
-	public boolean cancelStreamingJob(long jobId) {
+	public boolean cancelStreamingJob(long jobId, Boolean doCleanup) {
 		try {
-			return streamingJobRequestBo.cancel(jobId);
+			log.debug(this.getClass().getName()+":cancelStreamingJob: jobId="+jobId+", doCleanup="+doCleanup+" - don't know what to do with doCleanup NYI");
+			boolean status = streamingJobRequestBo.cancel(jobId);
+			return status;
 		} catch(WfmProcessingException wpe) {
 			log.error("Failed to cancel Streaming Job #{} due to an exception.", jobId, wpe);
 			return false;

@@ -97,12 +97,12 @@ public class StreamingJobCreationRequest {
 		this.pipelineName = pipelineName;
 	}
 
-//	public Boolean getBuildOutput() {
-//		return buildOutput;
-//	}
-//	public void setBuildOutput(Boolean buildOutput) {
-//		this.buildOutput = buildOutput;
-//	}
+	public Boolean getEnableOutputToDisk() {
+		return enableOutputToDisk;
+	}
+	public void setEnableOutputToDisk(Boolean enableOutputToDisk) {
+		this.enableOutputToDisk = enableOutputToDisk;
+	}
 
 	public Boolean getBuildOutput() {
 		return enableOutputToDisk;

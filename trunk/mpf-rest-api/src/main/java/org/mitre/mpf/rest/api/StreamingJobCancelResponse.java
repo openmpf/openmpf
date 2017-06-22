@@ -28,15 +28,17 @@ package org.mitre.mpf.rest.api;
 
 public class StreamingJobCancelResponse {
 	private Long jobId;
+	private Boolean doCleanup = null;
 	private String externalId = null;
 	private String outputObjectPath;
 	private MpfResponse mpfResponse = new MpfResponse();
 
 	public StreamingJobCancelResponse() {}
 
-	public StreamingJobCancelResponse(int errorCode, String errorMessage) {
+	public StreamingJobCancelResponse(Boolean doCleanup, int errorCode, String errorMessage) {
 		this.mpfResponse.setMessage(errorCode, errorMessage);
 		this.jobId = -1L;
+		this.doCleanup = doCleanup;
 	}
 
 
@@ -45,10 +47,11 @@ public class StreamingJobCancelResponse {
 	 * @param externalId
 	 * @param outputObjectPath
 	 */
-	public StreamingJobCancelResponse(Long jobId, String externalId, String outputObjectPath) {
+	public StreamingJobCancelResponse(Long jobId, String externalId, String outputObjectPath, Boolean doCleanup) {
 		this.jobId = jobId;
 		this.externalId = externalId;
 		this.outputObjectPath = outputObjectPath;
+		this.doCleanup = doCleanup;
 		this.mpfResponse.setMessage(0,"success");
 	}
 	
@@ -56,6 +59,7 @@ public class StreamingJobCancelResponse {
 		return jobId;
 	}
 	public String getExternalId() { return externalId; }
+	public Boolean getDoCleanup() { return doCleanup; }
 	public String getOutputObjectPath() {
 		return outputObjectPath;
 	}

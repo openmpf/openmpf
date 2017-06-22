@@ -172,9 +172,10 @@ public interface MpfService {
      * Attempts to cancel a streaming job that is currently executing. If the streaming job does not exist or otherwise cannot be
      * cancelled, this method will return {@literal false}.
      * @param jobId The MPF-assigned identifier for the streaming job. The job must be a streaming job.
-     * @return {@literal true} iff the streaming job exists and was cancelled successfully.
+	 * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job
+	 * @return {@literal true} iff the streaming job exists and was cancelled successfully.
      */
-    boolean cancelStreamingJob(long jobId);
+    boolean cancelStreamingJob(long jobId, Boolean doCleanup);
 
 	/** Gets the marked-up media with the specified id. */
 	public MarkupResult getMarkupResult(long id);

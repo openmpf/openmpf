@@ -310,6 +310,12 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
 		// Set output object version to null.
 		streamingJobRequest.setOutputObjectVersion(null);
+
+		// set remaining items that need to be persisted
+		streamingJobRequest.setExternalId(jsonStreamingJobRequest.getExternalId());
+		streamingJobRequest.setHealthReportCallbackURI(jsonStreamingJobRequest.getHealthReportCallbackURI());
+		streamingJobRequest.setStreamURI(jsonStreamingJobRequest.getStream().getStreamURI());
+
 		return streamingJobRequestDao.persist(streamingJobRequest);
 	}
 

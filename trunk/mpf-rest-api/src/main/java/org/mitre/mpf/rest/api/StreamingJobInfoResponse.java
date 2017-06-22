@@ -44,7 +44,15 @@ public class StreamingJobInfoResponse {
 	//to maintain the use of only standard Java in the model.api classes
 	private boolean terminal;
 
+	private MpfResponse mpfResponse = new MpfResponse();
+
+
 	public StreamingJobInfoResponse() {}
+
+	public StreamingJobInfoResponse(int errorCode, String errorMessage) {
+		this.mpfResponse.setMessage(errorCode, errorMessage);
+		this.jobId = -1L;
+	}
 
 	/**
 	 * @param jobId
@@ -59,6 +67,7 @@ public class StreamingJobInfoResponse {
 	public StreamingJobInfoResponse(Long jobId, String externalId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus, float jobProgress,
 									Date startDate, Date endDate, String outputObjectPath,
 									String streamURI, String healthReportCallbackURI, boolean terminal) {
+		this.mpfResponse.setMessage(0,"success");
 		this.jobId = jobId;
 		this.externalId = externalId;
 		this.pipelineName = pipelineName;
@@ -111,6 +120,9 @@ public class StreamingJobInfoResponse {
 		return outputObjectPath;
 	}
 
+	public MpfResponse getMpfResponse() {
+		return mpfResponse;
+	}
 
 	public boolean isTerminal() {
 		return terminal;

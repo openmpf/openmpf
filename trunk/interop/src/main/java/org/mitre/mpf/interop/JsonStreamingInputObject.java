@@ -55,52 +55,22 @@ public class JsonStreamingInputObject {
         mediaProperties.put(key,value);
     }
 
-    @JsonProperty("stallAlertDetectionThreshold")
-    @JsonPropertyDescription("The stall alert detection threshold to be defined for this stream.")
-    private long stallAlertDetectionThreshold;
-    public long getStallAlertDetectionThreshold() { return stallAlertDetectionThreshold; }
 
-    @JsonProperty("stallAlertRate")
-    @JsonPropertyDescription("The stall alert rate to be defined for this stream.")
-    private long stallAlertRate;
-    public long getStallAlertRate() { return stallAlertRate; }
-
-    @JsonProperty("stallTimeout")
-    @JsonPropertyDescription("The stall timeout to be defined for this stream.")
-    private long stallTimeout;
-    public long getStallTimeout() { return stallTimeout; }
-
-    @JsonProperty("stallCallbackURI")
-    @JsonPropertyDescription("The stall callback URI to be used with this stream.")
-    private String stallCallbackURI;
-    public String getStallCallbackURI() { return stallCallbackURI; }
-
-    public JsonStreamingInputObject(String streamURI, int segmentSize, Map <String,String> media_properties,
-                                    long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout, String stallCallbackURI) {
+    public JsonStreamingInputObject(String streamURI, int segmentSize, Map <String,String> media_properties) {
         this.streamURI = streamURI;
         this.segmentSize = segmentSize;
         this.mediaProperties = media_properties;
-        this.stallAlertDetectionThreshold = stallAlertDetectionThreshold;
-        this.stallAlertRate = stallAlertRate;
-        this.stallTimeout = stallTimeout;
-        this.stallCallbackURI = stallCallbackURI;
     }
 
     @JsonCreator
     public static JsonStreamingInputObject factory(@JsonProperty("streamURI") String streamURI, @JsonProperty("segmentSize") int segmentSize,
-                                                   @JsonProperty("mediaProperties") HashMap<String, String> mediaProperties,
-                                                   @JsonProperty("stallAlertDetectionThreshold") long stallAlertDetectionThreshold,
-                                                   @JsonProperty("stallAlertRate") long stallAlertRate,
-                                                   @JsonProperty("stallTimeout") long stallTimeout,
-                                                   @JsonProperty("stallCallbackURI") String stallCallbackURI) {
+                                                   @JsonProperty("mediaProperties") HashMap<String, String> mediaProperties) {
         JsonStreamingInputObject obj = null;
 
         if (mediaProperties!=null) {
-            obj = new JsonStreamingInputObject(streamURI,segmentSize,mediaProperties,
-                    stallAlertDetectionThreshold,stallAlertRate,stallTimeout,stallCallbackURI);
+            obj = new JsonStreamingInputObject(streamURI,segmentSize,mediaProperties);
         } else {
-            obj = new JsonStreamingInputObject(streamURI,segmentSize,new HashMap<String,String>(),
-                    stallAlertDetectionThreshold,stallAlertRate,stallTimeout,stallCallbackURI);
+            obj = new JsonStreamingInputObject(streamURI,segmentSize,new HashMap<String,String>());
         }
         return obj;
     }

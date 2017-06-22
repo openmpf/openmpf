@@ -111,23 +111,6 @@ public class TransientStream {
 	public void setSegmentSize(int segment_size) {segmentSize=segment_size;}
 	public int getSegmentSize(){return segmentSize;}
 
-	private long stallAlertDetectionThreshold;
-	public void setStallAlertDetectionThreshold(long value) {stallAlertDetectionThreshold=value;}
-	public long getStallAlertDetectionThreshold(){return stallAlertDetectionThreshold;}
-
-	private long stallAlertRate;
-	public void setStallAlertRate(long value) {stallAlertRate=value;}
-	public long getStallAlertRate(){return stallAlertRate;}
-
-	private long stallTimeout;
-	public void setStallTimeout(long value) {stallTimeout=value;}
-	public long getStallTimeout(){return stallTimeout;}
-
-	private String stallCallbackURI;
-	public void setStallCallbackURI(String url_s) {stallCallbackURI=url_s;}
-	public String getStallCallbackURI(){return stallCallbackURI;}
-
-
 
 	@JsonIgnore
 	public MediaType getMediaType() { return MediaTypeUtils.parse(type); }

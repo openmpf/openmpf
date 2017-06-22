@@ -83,6 +83,9 @@ public interface MpfService {
 	 * @param externalId
 	 * @param buildOutput
 	 * @param priority
+	 * @param stallAlertDetectionThreshold
+	 * @param stallAlertRate
+	 * @param stallTimeout
 	 * @param healthReportCallbackURI
 	 * @param summaryReportCallbackURI
 	 * @param newTrackAlertCallbackURI
@@ -94,6 +97,9 @@ public interface MpfService {
 													  Map<String,String> jobProperties,
 													  String pipelineName, String externalId,
 													  boolean buildOutput, int priority,
+													  long stallAlertDetectionThreshold,
+													  long stallAlertRate,
+													  long stallTimeout,
 													  String healthReportCallbackURI,
 													  String summaryReportCallbackURI,
 													  String newTrackAlertCallbackURI,

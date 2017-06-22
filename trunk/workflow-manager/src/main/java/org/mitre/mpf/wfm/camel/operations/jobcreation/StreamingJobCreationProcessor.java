@@ -159,6 +159,8 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 
 			TransientStreamingJob transientStreamingJob = new TransientStreamingJob(streamingJobRequestEntity.getId(),
 					json_streamingJobRequest.getExternalId(), transientPipeline, 0, json_streamingJobRequest.getPriority(),
+					json_streamingJobRequest.getStallAlertDetectionThreshold(),
+					json_streamingJobRequest.getStallAlertRate(), json_streamingJobRequest.getStallTimeout(),
 					json_streamingJobRequest.isOutputObjectEnabled(), false,
 					json_streamingJobRequest.getHealthReportCallbackURI(),json_streamingJobRequest.getSummaryReportCallbackURI(),
 					json_streamingJobRequest.getHealthReportCallbackURI(),json_streamingJobRequest.getCallbackMethod());
@@ -212,10 +214,6 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 				json_input_stream.getStreamURI());
 		transientStream.setSegmentSize(json_input_stream.getSegmentSize());
 		transientStream.setMediaProperties(json_input_stream.getMediaProperties());
-		transientStream.setStallAlertDetectionThreshold(json_input_stream.getStallAlertDetectionThreshold());
-		transientStream.setStallAlertRate(json_input_stream.getStallAlertRate());
-		transientStream.setStallTimeout(json_input_stream.getStallTimeout());
-		transientStream.setStallCallbackURI(json_input_stream.getStallCallbackURI());
 		return transientStream;
 	}
 }

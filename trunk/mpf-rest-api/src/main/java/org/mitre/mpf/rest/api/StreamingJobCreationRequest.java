@@ -38,6 +38,19 @@ public class StreamingJobCreationRequest {
 	private String pipelineName = null;
 	private Integer priority = null; //will be set to 4 (default) on the server side if null
 	private JobCreationStreamData stream = new JobCreationStreamData();
+
+	private long stallAlertDetectionThreshold = 0;
+	public void setStallAlertDetectionThreshold(long stallAlertDetectionThreshold) {this.stallAlertDetectionThreshold=stallAlertDetectionThreshold; }
+	public long getStallAlertDetectionThreshold() { return stallAlertDetectionThreshold; }
+
+	private long stallAlertRate = 0;
+	public void setStallAlertRate(long stallAlertRate) {this.stallAlertRate=stallAlertRate; }
+	public long getStallAlertRate() { return stallAlertRate; }
+
+	private long stallTimeout = 0;
+	public void setStallTimeout(long stallTimeout) {this.stallTimeout=stallTimeout; }
+	public long getStallTimeout() { return stallTimeout; }
+
 	// true or false to write video segments to disk.  Note that this is called buildOutput in other code.  Will use a server side property if null
 	private Boolean enableOutputToDisk = null;
 	private String healthReportCallbackURI = null; // the URL to send a health report to
@@ -55,17 +68,6 @@ public class StreamingJobCreationRequest {
 	public int getSegmentSize() {
 		return stream.getSegmentSize();
 	}
-	public String getStallCallbackURI() {
-		return stream.getStallCallbackURI();
-	}
-	public long getStallAlertDetectionThreshold() {
-		return stream.getStallAlertDetectionThreshold();
-	}
-	public long getStallTimeout() {
-		return stream.getStallTimeout();
-	}
-	public long getStallAlertRate() { return stream.getStallAlertRate(); }
-
 
 	public Map<String, String> getJobProperties() {
 		return jobProperties;

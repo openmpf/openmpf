@@ -48,6 +48,21 @@ public class JsonStreamingJobRequest {
 	public void setStream(JsonStreamingInputObject stream) { this.stream=stream; }
 	public JsonStreamingInputObject getStream() { return stream; }
 
+	@JsonProperty("stallAlertDetectionThreshold")
+	@JsonPropertyDescription("The stall alert detection threshold to be defined for this stream.")
+	private long stallAlertDetectionThreshold;
+	public long getStallAlertDetectionThreshold() { return stallAlertDetectionThreshold; }
+
+	@JsonProperty("stallAlertRate")
+	@JsonPropertyDescription("The stall alert rate to be defined for this stream.")
+	private long stallAlertRate;
+	public long getStallAlertRate() { return stallAlertRate; }
+
+	@JsonProperty("stallTimeout")
+	@JsonPropertyDescription("The stall timeout to be defined for this stream.")
+	private long stallTimeout;
+	public long getStallTimeout() { return stallTimeout; }
+
 	@JsonProperty("algorithmProperties")
 	@JsonPropertyDescription("Properties to apply to this streaming job's algorithms overriding default, job and pipeline properties.")
 	private Map<String, Map> algorithmProperties;
@@ -94,17 +109,23 @@ public class JsonStreamingJobRequest {
 	private String callbackMethod;
 	public String getCallbackMethod() { return callbackMethod; }
 
-	public JsonStreamingJobRequest(String externalId, boolean outputObjectEnabled, JsonPipeline pipeline, int priority) {
-		this(externalId, outputObjectEnabled, pipeline, priority,null, null, null,null);
+	public JsonStreamingJobRequest(String externalId, boolean outputObjectEnabled, JsonPipeline pipeline, int priority,
+								   long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout) {
+		this(externalId, outputObjectEnabled, pipeline, priority, stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
+				null, null, null,null);
 	}
 
 	public JsonStreamingJobRequest(String externalId, boolean outputObjectEnabled, JsonPipeline pipeline, int priority,
+								   long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout,
 								   String healthReportCallbackURI, String summaryReportCallbackURI, String newTrackAlertCallbackURI,
 								   String callbackMethod) {
 		this.externalId = externalId;
 		this.outputObjectEnabled = outputObjectEnabled;
 		this.pipeline = pipeline;
 		this.priority = priority;
+		this.stallAlertDetectionThreshold = stallAlertDetectionThreshold;
+		this.stallAlertRate = stallAlertRate;
+		this.stallTimeout = stallTimeout;
 		this.healthReportCallbackURI = healthReportCallbackURI;
 		this.summaryReportCallbackURI = summaryReportCallbackURI;
 		this.newTrackAlertCallbackURI = newTrackAlertCallbackURI;
@@ -119,6 +140,9 @@ public class JsonStreamingJobRequest {
                                                   @JsonProperty("outputObjectEnabled") boolean outputObjectEnabled,
                                                   @JsonProperty("pipeline") JsonPipeline pipeline,
                                                   @JsonProperty("priority") int priority,
+												  @JsonProperty("stallAlertDetectionThreshold") long stallAlertDetectionThreshold,
+												  @JsonProperty("stallAlertRate") long stallAlertRate,
+												  @JsonProperty("stallTimeout") long stallTimeout,
 												  @JsonProperty("healthReportCallbackURI") String healthReportCallbackURI,
 												  @JsonProperty("summaryReportCallbackURI") String summaryReportCallbackURI,
 												  @JsonProperty("newTrackAlertCallbackURI") String newTrackAlertCallbackURI,
@@ -127,6 +151,7 @@ public class JsonStreamingJobRequest {
                                                   @JsonProperty("algorithmProperties") Map<String, Map> algorithmProperties,
                                                   @JsonProperty("jobProperties") Map<String, String> jobProperties) {
 		JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(externalId, outputObjectEnabled, pipeline, priority,
+																stallAlertDetectionThreshold,stallAlertRate,stallTimeout,
 																healthReportCallbackURI,summaryReportCallbackURI,newTrackAlertCallbackURI,callbackMethod);
 		if(stream != null) {
 			jsonStreamingJobRequest.stream = stream;

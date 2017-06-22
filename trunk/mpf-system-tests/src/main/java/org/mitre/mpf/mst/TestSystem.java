@@ -262,9 +262,12 @@ public abstract class TestSystem {
 		return jobRequestId;
 	}
 
-	protected long runPipelineOnStream(String pipelineName, JsonStreamingInputObject stream, Map<String, String> jobProperties, boolean buildOutput, int priority) throws Exception {
-		JsonStreamingJobRequest jsonStreamingJobRequest = streamingJobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, stream, Collections.emptyMap(), jobProperties,
+	protected long runPipelineOnStream(String pipelineName, JsonStreamingInputObject stream, Map<String, String> jobProperties, boolean buildOutput, int priority,
+									   long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout) throws Exception {
+		JsonStreamingJobRequest jsonStreamingJobRequest = streamingJobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, stream,
+				Collections.emptyMap(), jobProperties,
 				buildOutput, priority,
+				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
 				null,null,null,null);
 		long jobRequestId = mpfService.submitJob(jsonStreamingJobRequest);
 		Assert.assertTrue(waitFor(jobRequestId));

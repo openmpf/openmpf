@@ -51,6 +51,18 @@ public class TransientStreamingJob {
 	private int priority;
 	public int getPriority() { return  priority; }
 
+	private long stallAlertDetectionThreshold;
+	public void setStallAlertDetectionThreshold(long value) {stallAlertDetectionThreshold=value;}
+	public long getStallAlertDetectionThreshold(){return stallAlertDetectionThreshold;}
+
+	private long stallAlertRate;
+	public void setStallAlertRate(long value) {stallAlertRate=value;}
+	public long getStallAlertRate(){return stallAlertRate;}
+
+	private long stallTimeout;
+	public void setStallTimeout(long value) {stallTimeout=value;}
+	public long getStallTimeout(){return stallTimeout;}
+
 	private boolean outputEnabled;
 	public boolean isOutputEnabled() { return outputEnabled; }
 
@@ -85,13 +97,19 @@ public class TransientStreamingJob {
                                  @JsonProperty("pipeline") TransientPipeline pipeline,
                                  @JsonProperty("currentStage") int currentStage,
                                  @JsonProperty("priority") int priority,
-                                 @JsonProperty("outputEnabled") boolean outputEnabled,
+								 @JsonProperty("stallAlertDetectionThreshold") long stallAlertDetectionThreshold,
+								 @JsonProperty("stallAlertRate") long stallAlertRate,
+								 @JsonProperty("stallTimeout") long stallTimeout,
+								 @JsonProperty("outputEnabled") boolean outputEnabled,
                                  @JsonProperty("cancelled") boolean cancelled) {
 		this.id = id;
 		this.externalId = externalId;
 		this.pipeline = pipeline;
 		this.currentStage = currentStage;
 		this.priority = priority;
+		this.stallAlertDetectionThreshold = stallAlertDetectionThreshold;
+		this.stallAlertRate = stallAlertRate;
+		this.stallTimeout = stallTimeout;
 		this.outputEnabled = outputEnabled;
 		this.cancelled = cancelled;
 		this.stream = null;
@@ -105,13 +123,17 @@ public class TransientStreamingJob {
                                  @JsonProperty("pipeline") TransientPipeline pipeline,
                                  @JsonProperty("currentStage") int currentStage,
                                  @JsonProperty("priority") int priority,
-                                 @JsonProperty("outputEnabled") boolean outputEnabled,
+								 @JsonProperty("stallAlertDetectionThreshold") long stallAlertDetectionThreshold,
+								 @JsonProperty("stallAlertRate") long stallAlertRate,
+								 @JsonProperty("stallTimeout") long stallTimeout,
+								 @JsonProperty("outputEnabled") boolean outputEnabled,
                                  @JsonProperty("cancelled") boolean cancelled,
 								 @JsonProperty("healthReportCallbackURI") String healthReportCallbackURI,
 								 @JsonProperty("summaryReportCallbackURI") String summaryReportCallbackURI,
 								 @JsonProperty("newTrackAlertCallbackURI") String newTrackAlertCallbackURI,
                                  @JsonProperty("callbackMethod") String callbackMethod) {
-		this(id,externalId,pipeline,currentStage,priority,outputEnabled,cancelled);
+		this(id,externalId,pipeline,currentStage,priority,
+				stallAlertDetectionThreshold,stallAlertRate,stallTimeout,outputEnabled,cancelled);
 		this.healthReportCallbackURI = healthReportCallbackURI;
 		this.summaryReportCallbackURI = summaryReportCallbackURI;
 		this.newTrackAlertCallbackURI = newTrackAlertCallbackURI;

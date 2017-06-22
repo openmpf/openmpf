@@ -113,6 +113,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 	 * @param jobProperties
 	 * @param buildOutput
 	 * @param priority
+	 * @param stallAlertDetectionThreshold
+	 * @param stallAlertRate
+	 * @param stallTimeout
 	 * @param healthReportCallbackURI callback for health reports, pass null to disable health reports
 	 * @param summaryReportCallbackURI	callback for summary reports, pass null to disable summary reports
 	 * @param newTrackAlertCallbackURI callback for new track alerts, pass null to disable new track alerts
@@ -120,7 +123,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 	 * @return JSON representation of the streaming job request
 	 */
 	@Override
-	public JsonStreamingJobRequest createRequest(String externalId, String pipelineName, JsonStreamingInputObject stream, Map<String,Map> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority,
+	public JsonStreamingJobRequest createRequest(String externalId, String pipelineName, JsonStreamingInputObject stream, Map<String,Map> algorithmProperties,
+												 Map<String, String> jobProperties, boolean buildOutput, int priority,
+												 long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout,
 												 String healthReportCallbackURI, String summaryReportCallbackURI, String newTrackAlertCallbackURI, String callbackMethod) {
 		log.debug("[streaming createRequest] externalId:"+externalId +" pipeline:"+pipelineName + " buildOutput:"+buildOutput+" priority:"+priority+
 				  " healthReportCallbackURI:"+healthReportCallbackURI + " summaryReportCallbackURI:"+summaryReportCallbackURI +
@@ -142,7 +147,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 			jsonCallbackMethod = "POST";
 		}
 
-		JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(TextUtils.trim(externalId), buildOutput, pipelineManager.createJsonPipeline(pipelineName), priority,
+		JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(TextUtils.trim(externalId), buildOutput,
+				pipelineManager.createJsonPipeline(pipelineName), priority,
+				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
 				jsonHealthReportCallbackURI,jsonSummaryReportCallbackURI,newTrackAlertCallbackURI,jsonCallbackMethod);
 		if(stream != null) {
 			jsonStreamingJobRequest.setStream(stream);
@@ -267,7 +274,11 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 			if(priorityPolicy == PriorityPolicy.PROVIDED) {
 
 				// Get a copy of this streaming job's stream in order to add it to the new instance we're about to create.
-				jsonStreamingJobRequest = new JsonStreamingJobRequest(jsonStreamingJobRequest.getExternalId(), jsonStreamingJobRequest.isOutputObjectEnabled(), jsonStreamingJobRequest.getPipeline(), priority);
+				jsonStreamingJobRequest = new JsonStreamingJobRequest(jsonStreamingJobRequest.getExternalId(),
+						jsonStreamingJobRequest.isOutputObjectEnabled(), jsonStreamingJobRequest.getPipeline(), priority,
+						jsonStreamingJobRequest.getStallAlertDetectionThreshold(),
+						jsonStreamingJobRequest.getStallAlertRate(),
+						jsonStreamingJobRequest.getStallTimeout());
 				jsonStreamingJobRequest.setStream(jsonStreamingJobRequest.getStream());
 
 			}

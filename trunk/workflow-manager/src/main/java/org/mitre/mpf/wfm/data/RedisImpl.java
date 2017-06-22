@@ -95,6 +95,9 @@ public class RedisImpl implements Redis {
 			JOB_STATUS = "JOB_STATUS",
 			STREAMING_JOB = "STREAMING_JOB",
 			STREAM = "STREAM",
+			STALL_ALERT_DETECTION_THRESHOLD = "STALL_ALERT_DETECTION_THRESHOLD",
+			STALL_ALERT_RATE = "STALL_ALERT_RATE",
+			STALL_TIMEOUT = "STALL_TIMEOUT",
 			HEALTH_REPORT_CALLBACK_URI = "HEALTH_REPORT_CALLBACK_URI",
 			SUMMARY_REPORT_CALLBACK_URI = "SUMMARY_REPORT_CALLBACK_URI",
 			NEW_TRACK_ALERT_CALLBACK_URI = "NEW_TRACK_ALERT_CALLBACK_URI",
@@ -519,6 +522,9 @@ public class RedisImpl implements Redis {
 					jsonUtils.deserialize((byte[]) (jobHash.get(PIPELINE)), TransientPipeline.class),
 					(Integer) (jobHash.get(TASK)),
 					(Integer) (jobHash.get(PRIORITY)),
+					(Long) (jobHash.get(STALL_ALERT_DETECTION_THRESHOLD)),
+					(Long) (jobHash.get(STALL_ALERT_RATE)),
+					(Long) (jobHash.get(STALL_TIMEOUT)),
 					(Boolean) (jobHash.get(OUTPUT_ENABLED)),
 					(Boolean) (jobHash.get(CANCELLED)),
 					(String) (jobHash.get(HEALTH_REPORT_CALLBACK_URI)),
@@ -737,6 +743,9 @@ public class RedisImpl implements Redis {
 		jobHash.put(TASK_COUNT, transientStreamingJob.getPipeline() == null ? 0 : transientStreamingJob.getPipeline().getStages().size());
 		jobHash.put(EXTERNAL_ID, transientStreamingJob.getExternalId());
 		jobHash.put(PRIORITY, transientStreamingJob.getPriority());
+		jobHash.put(STALL_ALERT_DETECTION_THRESHOLD, transientStreamingJob.getStallAlertDetectionThreshold());
+		jobHash.put(STALL_ALERT_RATE, transientStreamingJob.getStallAlertRate());
+		jobHash.put(STALL_TIMEOUT, transientStreamingJob.getStallTimeout());
 		jobHash.put(HEALTH_REPORT_CALLBACK_URI, transientStreamingJob.getHealthReportCallbackURI());
 		jobHash.put(SUMMARY_REPORT_CALLBACK_URI, transientStreamingJob.getSummaryReportCallbackURI());
 		jobHash.put(NEW_TRACK_ALERT_CALLBACK_URI, transientStreamingJob.getNewTrackAlertCallbackURI());

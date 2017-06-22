@@ -172,6 +172,9 @@ public class MpfServiceImpl implements MpfService {
 	 * @param externalId A user-defined and optional external identifier for the job.
 	 * @param buildOutput {@literal true} to build output objects, {@literal false} to suppress output objects.
 	 * @param priority The priority to assign to this job.
+	 * @param stallAlertDetectionThreshold
+	 * @param stallAlertRate
+	 * @param stallTimeout
 	 * @param healthReportCallbackURI The health report callback URI or null to disable health reports
 	 * @param summaryReportCallbackURI The summary callback URI or null to disable summary reports
 	 * @param newTrackAlertCallbackURI The new track alert callback URI or null to disable new track alerts
@@ -182,13 +185,18 @@ public class MpfServiceImpl implements MpfService {
 	public JsonStreamingJobRequest createStreamingJob(JsonStreamingInputObject json_stream,
 													  Map<String,Map> algorithmProperties,
 													  Map<String,String> jobProperties, String pipelineName, String externalId,
-													  boolean buildOutput, int priority, String healthReportCallbackURI,
+													  boolean buildOutput, int priority,
+													  long stallAlertDetectionThreshold,
+													  long stallAlertRate,
+													  long stallTimeout,
+													  String healthReportCallbackURI,
 													  String summaryReportCallbackURI, String newTrackAlertCallbackURI,
 													  String method) {
 
 		log.debug("createStreamingJob: stream: {}. Pipeline: {}. Build Output: {}. Priority: {}. healthReportCallbackURI: {}. summaryReportCallbackURI: {}. newTrackAlertCallbackURI: {}. Method: {}.", json_stream,
 				pipelineName, buildOutput, priority, healthReportCallbackURI, summaryReportCallbackURI, newTrackAlertCallbackURI, method);
 		return streamingJobRequestBo.createRequest(externalId, pipelineName, json_stream, algorithmProperties, jobProperties, buildOutput, priority,
+				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
 				healthReportCallbackURI, summaryReportCallbackURI, newTrackAlertCallbackURI, method);
 	}
 

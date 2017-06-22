@@ -62,20 +62,5 @@ public class JobCreationStreamData {
     public void setSegmentSize(int seg_size) {this.segmentSize=seg_size; }
     public int getSegmentSize() { return segmentSize; }
 
-    private long stallAlertDetectionThreshold = 0;
-    public void setStallAlertDetectionThreshold(long stallAlertDetectionThreshold) {this.stallAlertDetectionThreshold=stallAlertDetectionThreshold; }
-    public long getStallAlertDetectionThreshold() { return stallAlertDetectionThreshold; }
-
-    private long stallAlertRate = 0;
-    public void setStallAlertRate(long stallAlertRate) {this.stallAlertRate=stallAlertRate; }
-    public long getStallAlertRate() { return stallAlertRate; }
-
-    private long stallTimeout = 0;
-    public void setStallTimeout(long stallTimeout) {this.stallTimeout=stallTimeout; }
-    public long getStallTimeout() { return stallTimeout; }
-
-    private String stallCallbackURI = null; // the URL to send a stall report to
-    public void setStallCallbackURI(String stallTimeout) {this.stallCallbackURI=stallCallbackURI; }
-    public String getStallCallbackURI() { return stallCallbackURI; }
 
 }

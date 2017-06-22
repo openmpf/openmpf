@@ -366,11 +366,7 @@ public class StreamingJobController {
 
             JsonStreamingInputObject json_stream = new JsonStreamingInputObject(streamingJobCreationRequest.getStreamURI(),
                     streamingJobCreationRequest.getSegmentSize(),
-                    streamingJobCreationRequest.getMediaProperties(),
-                    streamingJobCreationRequest.getStallAlertDetectionThreshold(),
-                    streamingJobCreationRequest.getStallAlertRate(),
-                    streamingJobCreationRequest.getStallTimeout(),
-                    streamingJobCreationRequest.getStallCallbackURI());
+                    streamingJobCreationRequest.getMediaProperties());
 
             JsonStreamingJobRequest jsonStreamingJobRequest = mpfService.createStreamingJob(json_stream,
                     streamingJobCreationRequest.getAlgorithmProperties(),
@@ -379,6 +375,9 @@ public class StreamingJobController {
                     streamingJobCreationRequest.getExternalId(), //TODO: what do we do with this from the UI?
                     buildOutput, // Use the buildOutput value if it is provided with the streaming job, otherwise use the default value from the properties file.,
                     priority,// Use the priority value if it is provided, otherwise use the default value from the properties file.
+                    streamingJobCreationRequest.getStallAlertDetectionThreshold(),
+                    streamingJobCreationRequest.getStallAlertRate(),
+                    streamingJobCreationRequest.getStallTimeout(),
                     streamingJobCreationRequest.getHealthReportCallbackURI(),
                     streamingJobCreationRequest.getSummaryReportCallbackURI(),
                     streamingJobCreationRequest.getNewTrackAlertCallbackURI(),

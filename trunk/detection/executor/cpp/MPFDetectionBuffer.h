@@ -87,9 +87,6 @@ private:
             const DetectionResponse &detection_response,
             int *packed_length) const;
 
-    static string GetDetectionMetadata(const Properties &detection_properties);
-
-
 public:
     explicit MPFDetectionBuffer(const log4cxx::LoggerPtr &logger):logger(logger) {};
 

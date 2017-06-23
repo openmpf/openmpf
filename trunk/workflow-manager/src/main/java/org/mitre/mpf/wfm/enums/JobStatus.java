@@ -73,7 +73,19 @@ public enum JobStatus {
 	CANCELLED(true),
 
 	/** Indicates the job is in an error state. */
-	ERROR(true);
+	ERROR(true),
+
+	/** added additional job status enumerations to support streaming job which is running */
+	RUNNING(false),
+
+	/** added additional job status enumerations to support streaming job which is terminated */
+	TERMINATED(true),
+
+	/** added additional job status enumerations to support streaming job which is paused */
+	PAUSED(false),
+
+	/** added additional job status enumerations to support streaming job which is stalled */
+	STALLED(false);
 
 	public static final JobStatus DEFAULT = COMPLETE;
 

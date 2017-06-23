@@ -74,9 +74,14 @@ public class JsonStreamingJobRequest {
 	public Map<String, String> getJobProperties() { return jobProperties; }
 
 	@JsonProperty("outputObjectEnabled")
-	@JsonPropertyDescription("A boolean flag indicating if output objects should be created for this streaming job.")
+	@JsonPropertyDescription("A boolean flag indicating if output objects should be stored for this streaming job.")
 	private boolean outputObjectEnabled;
 	public boolean isOutputObjectEnabled() { return outputObjectEnabled; }
+
+	@JsonProperty("outputObjectPath")
+	@JsonPropertyDescription("The path to all output objects for this streaming job. May be empty string if output object storage is disabled.")
+	private String outputObjectPath;
+	public String getOutputObjectPath() { return outputObjectPath; }
 
 	@JsonProperty("pipeline")
 	@JsonPropertyDescription("The pipeline (or workflow) that media and derived information will pass through during the streaming job.")
@@ -109,18 +114,19 @@ public class JsonStreamingJobRequest {
 	private String callbackMethod;
 	public String getCallbackMethod() { return callbackMethod; }
 
-	public JsonStreamingJobRequest(String externalId, boolean outputObjectEnabled, JsonPipeline pipeline, int priority,
+	public JsonStreamingJobRequest(String externalId, boolean outputObjectEnabled, String outputObjectPath, JsonPipeline pipeline, int priority,
 								   long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout) {
-		this(externalId, outputObjectEnabled, pipeline, priority, stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
+		this(externalId, outputObjectEnabled, outputObjectPath, pipeline, priority, stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
 				null, null, null,null);
 	}
 
-	public JsonStreamingJobRequest(String externalId, boolean outputObjectEnabled, JsonPipeline pipeline, int priority,
+	public JsonStreamingJobRequest(String externalId, boolean outputObjectEnabled, String outputObjectPath, JsonPipeline pipeline, int priority,
 								   long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout,
 								   String healthReportCallbackURI, String summaryReportCallbackURI, String newTrackAlertCallbackURI,
 								   String callbackMethod) {
 		this.externalId = externalId;
 		this.outputObjectEnabled = outputObjectEnabled;
+		this.outputObjectPath = outputObjectPath;
 		this.pipeline = pipeline;
 		this.priority = priority;
 		this.stallAlertDetectionThreshold = stallAlertDetectionThreshold;
@@ -138,6 +144,7 @@ public class JsonStreamingJobRequest {
 	@JsonCreator
 	public static JsonStreamingJobRequest factory(@JsonProperty("externalId") String externalId,
                                                   @JsonProperty("outputObjectEnabled") boolean outputObjectEnabled,
+												  @JsonProperty("outputObjectPath") String outputObjectPath,
                                                   @JsonProperty("pipeline") JsonPipeline pipeline,
                                                   @JsonProperty("priority") int priority,
 												  @JsonProperty("stallAlertDetectionThreshold") long stallAlertDetectionThreshold,
@@ -150,7 +157,7 @@ public class JsonStreamingJobRequest {
                                                   @JsonProperty("stream") JsonStreamingInputObject stream,
                                                   @JsonProperty("algorithmProperties") Map<String, Map> algorithmProperties,
                                                   @JsonProperty("jobProperties") Map<String, String> jobProperties) {
-		JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(externalId, outputObjectEnabled, pipeline, priority,
+		JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(externalId, outputObjectEnabled, outputObjectPath, pipeline, priority,
 																stallAlertDetectionThreshold,stallAlertRate,stallTimeout,
 																healthReportCallbackURI,summaryReportCallbackURI,newTrackAlertCallbackURI,callbackMethod);
 		if(stream != null) {

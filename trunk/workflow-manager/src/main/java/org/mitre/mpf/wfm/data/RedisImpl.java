@@ -81,6 +81,7 @@ public class RedisImpl implements Redis {
 			BATCH_JOB = "BATCH_JOB",
 			MEDIA = "MEDIA",
 			OUTPUT_ENABLED = "OUTPUT_ENABLED",
+			OUTPUT_OBJECT_PATH = "OUTPUT_OBJECT_PATH",
 			PIPELINE = "PIPELINE",
 			PRIORITY = "PRIORITY",
 			OVERRIDDEN_ALGORITHM_PROPERTIES = "OVERRIDDEN_ALGORITHM_PROPERTIES",
@@ -526,6 +527,7 @@ public class RedisImpl implements Redis {
 					(Long) (jobHash.get(STALL_ALERT_RATE)),
 					(Long) (jobHash.get(STALL_TIMEOUT)),
 					(Boolean) (jobHash.get(OUTPUT_ENABLED)),
+					(String) (jobHash.get(OUTPUT_OBJECT_PATH)),
 					(Boolean) (jobHash.get(CANCELLED)),
 					(String) (jobHash.get(HEALTH_REPORT_CALLBACK_URI)),
 					(String) (jobHash.get(SUMMARY_REPORT_CALLBACK_URI)),
@@ -751,6 +753,7 @@ public class RedisImpl implements Redis {
 		jobHash.put(NEW_TRACK_ALERT_CALLBACK_URI, transientStreamingJob.getNewTrackAlertCallbackURI());
 		jobHash.put(CALLBACK_METHOD, transientStreamingJob.getCallbackMethod());
 		jobHash.put(OUTPUT_ENABLED, transientStreamingJob.isOutputEnabled());
+		jobHash.put(OUTPUT_OBJECT_PATH, transientStreamingJob.getOutputObjectPath());
 		jobHash.put(CANCELLED, transientStreamingJob.isCancelled());
 
 
@@ -876,4 +879,22 @@ public class RedisImpl implements Redis {
 			return null;
 		}
 	}
+
+	/**Method will return true if the specified jobId is a batch job stored in the transient data store
+	 * @param jobId The MPF-assigned ID of the job
+	 * @return rue if the specified jobId is a batch job stored in the transient data store, false otherwise
+	 */
+	public boolean isJobTypeBatch(final long jobId) {
+		return(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)));
+	}
+
+	/**Method will return true if the specified jobId is a streaming job stored in the transient data store
+	 * @param jobId The MPF-assigned ID of the job
+	 * @return rue if the specified jobId is a streaming job stored in the transient data store, false otherwise
+	 */
+	public boolean isJobTypeStreaming(final long jobId) {
+		return(redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)));
+	}
+
+
 }

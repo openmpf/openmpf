@@ -39,15 +39,15 @@ public class StreamingJobCreationRequest {
 	private Integer priority = null; //will be set to 4 (default) on the server side if null
 	private JobCreationStreamData stream = new JobCreationStreamData();
 
-	private long stallAlertDetectionThreshold = 0;
+	private long stallAlertDetectionThreshold = -1L;
 	public void setStallAlertDetectionThreshold(long stallAlertDetectionThreshold) {this.stallAlertDetectionThreshold=stallAlertDetectionThreshold; }
 	public long getStallAlertDetectionThreshold() { return stallAlertDetectionThreshold; }
 
-	private long stallAlertRate = 0;
+	private long stallAlertRate = -1L;
 	public void setStallAlertRate(long stallAlertRate) {this.stallAlertRate=stallAlertRate; }
 	public long getStallAlertRate() { return stallAlertRate; }
 
-	private long stallTimeout = 0;
+	private long stallTimeout = -1L;
 	public void setStallTimeout(long stallTimeout) {this.stallTimeout=stallTimeout; }
 	public long getStallTimeout() { return stallTimeout; }
 
@@ -141,5 +141,20 @@ public class StreamingJobCreationRequest {
 	 */
 	public String getCallbackMethod() {return callbackMethod;}
 	public void setCallbackMethod(String callbackMethod) {this.callbackMethod = callbackMethod;	}
+
+	/** this method will check the current settings within this streaming job creation request,
+	 * and will return true if the current settings are set within the constraints defined for a
+	 * streaming job, false otherwise
+	 * @return true if settings define a valid job request, false otherwise.
+	 */
+	public boolean isValidRequest() {
+		// do error checks on the streaming job request.
+		if ( getStream().isValidStreamData() && getStallAlertDetectionThreshold() != -1L &&
+				getStallAlertRate() != -1L && getStallTimeout() != -1L) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 
 }

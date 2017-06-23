@@ -62,6 +62,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.method.P;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -115,19 +116,30 @@ public class StreamingJobController {
             produces = "application/json", response = StreamingJobCreationResponse.class)
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "Streaming Job created"),
+            @ApiResponse(code = 400, message = "Bad request"),
             @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
-    @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
-    public StreamingJobCreationResponse processStreamRest(@ApiParam(required = true, value = "StreamingJobCreationRequest") @RequestBody StreamingJobCreationRequest streamingJobCreationRequest) {
-        return processStreamingJobCreationRequest(streamingJobCreationRequest);
+//    @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
+    public ResponseEntity <StreamingJobCreationResponse> processStreamRest(@ApiParam(required = true, value = "StreamingJobCreationRequest") @RequestBody StreamingJobCreationRequest streamingJobCreationRequest) {
+        StreamingJobCreationResponse create_job_response = processStreamingJobCreationRequest(streamingJobCreationRequest);
+        if (streamingJobCreationRequest.isValidRequest() ) {
+            return new ResponseEntity<>(create_job_response,HttpStatus.CREATED);
+        } else {
+            return new ResponseEntity<>(create_job_response,HttpStatus.BAD_REQUEST);
+        }
     }
 
     //INTERNAL
     @RequestMapping(value = {"/streaming/jobs"}, method = RequestMethod.POST)
     @ResponseBody
-    @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
-    public StreamingJobCreationResponse processStreamSession(@RequestBody StreamingJobCreationRequest streamingJobCreationRequest) {
-        return processStreamingJobCreationRequest(streamingJobCreationRequest);
+//    @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
+    public ResponseEntity <StreamingJobCreationResponse>  processStreamSession(@RequestBody StreamingJobCreationRequest streamingJobCreationRequest) {
+        StreamingJobCreationResponse create_job_response = processStreamingJobCreationRequest(streamingJobCreationRequest);
+        if (streamingJobCreationRequest.isValidRequest() ) {
+            return new ResponseEntity<>(create_job_response,HttpStatus.CREATED);
+        } else {
+            return new ResponseEntity<>(create_job_response,HttpStatus.BAD_REQUEST);
+        }
     }
 
     /*
@@ -218,12 +230,13 @@ public class StreamingJobController {
         List<StreamingJobInfoResponse> streamingJobInfoResponseModels = getStreamingJobInfo(jobIdPathVar, false);
         if (streamingJobInfoResponseModels != null && streamingJobInfoResponseModels.size() == 1) {
             streamingJobInfoResponseModel = streamingJobInfoResponseModels.get(0);
+            //return 200 for successful GET and object
+            return new ResponseEntity<>(streamingJobInfoResponseModel, HttpStatus.OK);
         } else {
+            // return 401 for bad credentials, 404 for bad id (not found)
             log.error("Error retrieving the StreamingJobInfoResponse model for the streaming job with id '{}'", jobIdPathVar);
+            return new ResponseEntity<>(new StreamingJobInfoResponse(-1,"streaming job "+jobIdPathVar+" doesn't exist"),HttpStatus.NOT_FOUND);
         }
-
-        //return 200 for successful GET and object, 401 for bad credentials, 400 for bad id
-        return new ResponseEntity<>(streamingJobInfoResponseModel, (streamingJobInfoResponseModel != null) ? HttpStatus.OK : HttpStatus.BAD_REQUEST);
     }
 
     //INTERNAL
@@ -316,7 +329,7 @@ public class StreamingJobController {
      * /streaming/jobs/{id}/cancel
      */
     //EXTERNAL
-    @RequestMapping(value = "/rest/streaming/jobs/{id}/cancel", method = RequestMethod.POST)
+    @RequestMapping(value = "/rest/streaming/jobs/{id}/cancel", method = RequestMethod.POST, params = {"doCleanup"} )
     @ApiOperation(value = "Cancels the streaming job with the supplied job id.",
             produces = "application/json", response = StreamingJobCancelResponse.class)
     @ApiResponses(value = {
@@ -326,7 +339,9 @@ public class StreamingJobController {
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<StreamingJobCancelResponse> cancelStreamingJobRest(@ApiParam(required = true, value = "Streaming Job id") @PathVariable("id") long jobId,
-                                                                             @ApiParam(required = false, value = "Enable disk cleanup, if true then files associated with this streaming job will be deleted after this streaming job is cancelled") @PathVariable("doCleanup") Boolean doCleanup) {
+                                                                             @ApiParam(name = "doCleanup", value = "doCleanup", required = false,
+                                                                                     defaultValue = "false") @RequestParam("doCleanup")
+                                                                                     boolean doCleanup) {
         StreamingJobCancelResponse cancelResponse = cancel(jobId,doCleanup);
 
         //return 200 for successful GET and object, 401 for bad credentials, 400 for bad id
@@ -334,10 +349,12 @@ public class StreamingJobController {
     }
 
     //INTERNAL
-    @RequestMapping(value = "/streaming/jobs/{id}/cancel", method = RequestMethod.POST)
+    @RequestMapping(value = "/streaming/jobs/{id}/cancel", method = RequestMethod.POST, params = {"doCleanup"} )
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
-    public StreamingJobCancelResponse cancelStreamingJobSession(@PathVariable("id") long jobId, @PathVariable("doCleanup") Boolean doCleanup) {
+    public StreamingJobCancelResponse cancelStreamingJobSession(@PathVariable("id") long jobId,
+                                                                @ApiParam(name = "doCleanup", value = "doCleanup", required = false,
+                                                                    defaultValue = "false") @RequestParam("doCleanup") boolean doCleanup) {
         return cancel(jobId, doCleanup);
     }
 
@@ -347,50 +364,56 @@ public class StreamingJobController {
     private StreamingJobCreationResponse processStreamingJobCreationRequest(StreamingJobCreationRequest streamingJobCreationRequest) {
 
         try {
-            boolean fromExternalRestClient = true;
-            //hack of using 'from_mpf_web_app' as the externalId to prevent duplicating a method and keeping streaming jobs
-            //from the web app in the session jobs collections
-            if (streamingJobCreationRequest.getExternalId() != null && streamingJobCreationRequest.getExternalId().equals("from_mpf_web_app")) {
-                fromExternalRestClient = false;
-                streamingJobCreationRequest.setExternalId(null);
+            if ( streamingJobCreationRequest.isValidRequest() ) {
+                boolean fromExternalRestClient = true;
+                //hack of using 'from_mpf_web_app' as the externalId to prevent duplicating a method and keeping streaming jobs
+                //from the web app in the session jobs collections
+                if (streamingJobCreationRequest.getExternalId() != null && streamingJobCreationRequest.getExternalId().equals("from_mpf_web_app")) {
+                    fromExternalRestClient = false;
+                    streamingJobCreationRequest.setExternalId(null);
+                }
+                boolean buildOutput = propertiesUtil.isOutputObjectsEnabled();
+                if (streamingJobCreationRequest.getBuildOutput() != null) {
+                    buildOutput = streamingJobCreationRequest.getBuildOutput();
+                }
+
+                int priority = propertiesUtil.getJmsPriority();
+                if (streamingJobCreationRequest.getPriority() != null) {
+                    priority = streamingJobCreationRequest.getPriority();
+                }
+
+                JsonStreamingInputObject json_stream = new JsonStreamingInputObject(streamingJobCreationRequest.getStreamURI(),
+                        streamingJobCreationRequest.getSegmentSize(),
+                        streamingJobCreationRequest.getMediaProperties());
+
+                JsonStreamingJobRequest jsonStreamingJobRequest = mpfService.createStreamingJob(json_stream,
+                        streamingJobCreationRequest.getAlgorithmProperties(),
+                        streamingJobCreationRequest.getJobProperties(),
+                        streamingJobCreationRequest.getPipelineName(),
+                        streamingJobCreationRequest.getExternalId(), //TODO: what do we do with this from the UI?
+                        buildOutput, // Use the buildOutput value if it is provided with the streaming job, otherwise use the default value from the properties file.,
+                        priority,// Use the priority value if it is provided, otherwise use the default value from the properties file.
+                        streamingJobCreationRequest.getStallAlertDetectionThreshold(),
+                        streamingJobCreationRequest.getStallAlertRate(),
+                        streamingJobCreationRequest.getStallTimeout(),
+                        streamingJobCreationRequest.getHealthReportCallbackURI(),
+                        streamingJobCreationRequest.getSummaryReportCallbackURI(),
+                        streamingJobCreationRequest.getNewTrackAlertCallbackURI(),
+                        streamingJobCreationRequest.getCallbackMethod());
+
+
+                long jobId = mpfService.submitJob(jsonStreamingJobRequest);
+                log.debug("Successful creation of streaming JobId: {}", jobId);
+
+                if (!fromExternalRestClient) {
+                    addJobToSession(jobId);
+                }
+
+                return new StreamingJobCreationResponse(jobId, jsonStreamingJobRequest.getExternalId(), jsonStreamingJobRequest.getOutputObjectPath());
+            } else {
+                log.error("Failure creating streaming job due to a malformed request, check the request parameters against the constraints defined in the REST API");
+                return new StreamingJobCreationResponse(-1, String.format("Failure creating streaming job with External Id '%s'.  Request was not valid, confirm the job parameter constraints and resend the request.", streamingJobCreationRequest.getExternalId()));
             }
-            boolean buildOutput = propertiesUtil.isOutputObjectsEnabled();
-            if (streamingJobCreationRequest.getBuildOutput() != null) {
-                buildOutput = streamingJobCreationRequest.getBuildOutput();
-            }
-
-            int priority = propertiesUtil.getJmsPriority();
-            if (streamingJobCreationRequest.getPriority() != null) {
-                priority = streamingJobCreationRequest.getPriority();
-            }
-
-            JsonStreamingInputObject json_stream = new JsonStreamingInputObject(streamingJobCreationRequest.getStreamURI(),
-                    streamingJobCreationRequest.getSegmentSize(),
-                    streamingJobCreationRequest.getMediaProperties());
-
-            JsonStreamingJobRequest jsonStreamingJobRequest = mpfService.createStreamingJob(json_stream,
-                    streamingJobCreationRequest.getAlgorithmProperties(),
-                    streamingJobCreationRequest.getJobProperties(),
-                    streamingJobCreationRequest.getPipelineName(),
-                    streamingJobCreationRequest.getExternalId(), //TODO: what do we do with this from the UI?
-                    buildOutput, // Use the buildOutput value if it is provided with the streaming job, otherwise use the default value from the properties file.,
-                    priority,// Use the priority value if it is provided, otherwise use the default value from the properties file.
-                    streamingJobCreationRequest.getStallAlertDetectionThreshold(),
-                    streamingJobCreationRequest.getStallAlertRate(),
-                    streamingJobCreationRequest.getStallTimeout(),
-                    streamingJobCreationRequest.getHealthReportCallbackURI(),
-                    streamingJobCreationRequest.getSummaryReportCallbackURI(),
-                    streamingJobCreationRequest.getNewTrackAlertCallbackURI(),
-                    streamingJobCreationRequest.getCallbackMethod());
-
-            long jobId = mpfService.submitJob(jsonStreamingJobRequest);
-            log.debug("Successful creation of streaming JobId: {}", jobId);
-
-            if (!fromExternalRestClient) {
-                addJobToSession(jobId);
-            }
-
-            return new StreamingJobCreationResponse(jobId,jsonStreamingJobRequest.getExternalId(),"TBD");
         } catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
             log.error("Failure creating streaming job due to an exception.", ex);
             return new StreamingJobCreationResponse(-1, String.format("Failure creating streaming job with External Id '%s' due to an exception. Please check server logs for more detail.", streamingJobCreationRequest.getExternalId()));
@@ -452,7 +475,7 @@ public class StreamingJobController {
         return jobInfoList;
     }
 
-    private StreamingJobCancelResponse cancel(long jobId, Boolean doCleanup) {
+    private StreamingJobCancelResponse cancel(long jobId, boolean doCleanup) {
         log.debug("Attempting to cancel streaming job with id: {}.", jobId);
         StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
         if (mpfService.cancelStreamingJob(jobId,doCleanup)) {

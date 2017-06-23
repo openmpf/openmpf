@@ -133,7 +133,6 @@ public class MpfServiceImpl implements MpfService {
 
 	@Override
 	public long submitJob(JsonStreamingJobRequest streamingJobRequest) {
-		System.out.println(this.getClass().getName()+".submitJob: debug, processing streamingJobRequest="+streamingJobRequest);
 		try {
 			return streamingJobRequestBo.run(streamingJobRequest).getId();
 		} catch(WfmProcessingException wpe) {

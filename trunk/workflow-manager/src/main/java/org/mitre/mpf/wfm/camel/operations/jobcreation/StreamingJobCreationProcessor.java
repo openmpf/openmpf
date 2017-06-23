@@ -161,7 +161,9 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 					json_streamingJobRequest.getExternalId(), transientPipeline, 0, json_streamingJobRequest.getPriority(),
 					json_streamingJobRequest.getStallAlertDetectionThreshold(),
 					json_streamingJobRequest.getStallAlertRate(), json_streamingJobRequest.getStallTimeout(),
-					json_streamingJobRequest.isOutputObjectEnabled(), false,
+					json_streamingJobRequest.isOutputObjectEnabled(),
+					json_streamingJobRequest.getOutputObjectPath(),
+					false,
 					json_streamingJobRequest.getHealthReportCallbackURI(),json_streamingJobRequest.getSummaryReportCallbackURI(),
 					json_streamingJobRequest.getHealthReportCallbackURI(),json_streamingJobRequest.getCallbackMethod());
 
@@ -181,9 +183,9 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 				throw new WfmProcessingException(INVALID_PIPELINE_MESSAGE);
 			}
 
-			// Everything has been good so far. Update the job status.
-			streamingJobRequestEntity.setStatus(JobStatus.IN_PROGRESS);
-			redis.setJobStatus(jobId, JobStatus.IN_PROGRESS);
+			// Everything has been good so far. Update the job status using running status for a streaming job
+			streamingJobRequestEntity.setStatus(JobStatus.RUNNING);
+			redis.setJobStatus(jobId, JobStatus.RUNNING);
 			streamingJobRequestEntity = streamingJobRequestDao.persist(streamingJobRequestEntity);
 
 			exchange.getOut().setBody(jsonUtils.serialize(transientStreamingJob));

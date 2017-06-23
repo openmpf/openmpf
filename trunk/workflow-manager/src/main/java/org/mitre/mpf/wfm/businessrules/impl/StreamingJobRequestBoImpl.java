@@ -105,13 +105,15 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 	private ProducerTemplate streamingJobRequestProducerTemplate;
 
 	/** method to create and initialize a JSON representation of a streaming job request given the raw parameters
-	 * This version of the method allows for callbacks to be defined, use null to disable
+	 * This version of the method allows for callbacks to be defined, use null to disable.  This method also
+	 * does value checks, and sets additional parameters for the streaming job given the current state of streaming
+	 * job request parameters
 	 * @param externalId
 	 * @param pipelineName
 	 * @param stream
 	 * @param algorithmProperties
 	 * @param jobProperties
-	 * @param buildOutput
+	 * @param buildOutput if true, output objects will be stored and this method will assign the output object directory
 	 * @param priority
 	 * @param stallAlertDetectionThreshold
 	 * @param stallAlertRate
@@ -147,10 +149,15 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 			jsonCallbackMethod = "POST";
 		}
 
-		JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(TextUtils.trim(externalId), buildOutput,
+		String outputObjectPath = ""; // by default, output output object is empty string, indicating no output objects are being stored
+		if ( buildOutput ) {
+			outputObjectPath = this.getClass().getName()+".createRequest: PathToOutputObjectNYI";
+		}
+
+		JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(TextUtils.trim(externalId), buildOutput, outputObjectPath,
 				pipelineManager.createJsonPipeline(pipelineName), priority,
 				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
-				jsonHealthReportCallbackURI,jsonSummaryReportCallbackURI,newTrackAlertCallbackURI,jsonCallbackMethod);
+				jsonHealthReportCallbackURI,jsonSummaryReportCallbackURI,jsonNewTrackAlertCallbackURI,jsonCallbackMethod);
 		if(stream != null) {
 			jsonStreamingJobRequest.setStream(stream);
 		}
@@ -180,11 +187,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 	 */
 	@Override
 	public StreamingJobRequest run(JsonStreamingJobRequest jsonStreamingJobRequest) throws WfmProcessingException {
-		System.out.println(this.getClass().getName()+".run: debug, jsonStreamingJobRequest as JSON is " +
-				jsonUtils.serializeAsTextString(jsonStreamingJobRequest));
 		StreamingJobRequest streamingJobRequestEntity = initialize(jsonStreamingJobRequest);
-		System.out.println(this.getClass().getName()+".run: debug, created streamingJobRequestEntity="+streamingJobRequestEntity);
-		System.out.println(this.getClass().getName()+".run: debug, streamingJobRequestEntitygetOutputObjectPath()="+streamingJobRequestEntity.getOutputObjectPath());
 		return runInternal(streamingJobRequestEntity, jsonStreamingJobRequest, (jsonStreamingJobRequest == null) ? propertiesUtil.getJmsPriority() : jsonStreamingJobRequest.getPriority());
 	}
 
@@ -197,8 +200,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 	@Override
 	public StreamingJobRequest initialize(JsonStreamingJobRequest jsonStreamingJobRequest) throws WfmProcessingException {
 		StreamingJobRequest streamingJobRequestEntity = new StreamingJobRequest();
-		System.out.println(this.getClass().getName()+".initialize: debug, streamingJobRequestEntity="+streamingJobRequestEntity);
-		System.out.println(this.getClass().getName()+".initialize: debug, streamingJobRequestEntity.getOutputObjectPath()="+streamingJobRequestEntity.getOutputObjectPath());
 		return initializeInternal(streamingJobRequestEntity, jsonStreamingJobRequest);
 	}
 
@@ -275,7 +276,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
 				// Get a copy of this streaming job's stream in order to add it to the new instance we're about to create.
 				jsonStreamingJobRequest = new JsonStreamingJobRequest(jsonStreamingJobRequest.getExternalId(),
-						jsonStreamingJobRequest.isOutputObjectEnabled(), jsonStreamingJobRequest.getPipeline(), priority,
+						jsonStreamingJobRequest.isOutputObjectEnabled(), jsonStreamingJobRequest.getOutputObjectPath(),
+						jsonStreamingJobRequest.getPipeline(), priority,
 						jsonStreamingJobRequest.getStallAlertDetectionThreshold(),
 						jsonStreamingJobRequest.getStallAlertRate(),
 						jsonStreamingJobRequest.getStallTimeout());
@@ -305,10 +307,10 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		streamingJobRequest.setInputObject(jsonUtils.serialize(jsonStreamingJobRequest));
 		streamingJobRequest.setPipeline(jsonStreamingJobRequest.getPipeline() == null ? null : TextUtils.trimAndUpper(jsonStreamingJobRequest.getPipeline().getName()));
 
-		// Reset output object paths.
-		streamingJobRequest.setOutputObjectPath(null);
+		// Initialize output object path, this is the top level directory for output objects.
+		streamingJobRequest.setOutputObjectPath(jsonStreamingJobRequest.getOutputObjectPath());
 
-		// Set output object version to null.
+		// Set output object version to null.  This will be set later when the output objects are actually created (if enabled)
 		streamingJobRequest.setOutputObjectVersion(null);
 
 		// set remaining items that need to be persisted
@@ -320,7 +322,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 	}
 
 	/** private method will send the streaming job request to the components via ActiveMQ using the StreamingJobCreatorRouteBuilder.ENTRY_POINT
-	 *
+	 * This method sets job status to RUNNING
 	 * @param streamingJobRequest
 	 * @param jsonStreamingJobRequest
 	 * @param priority
@@ -331,8 +333,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		Map<String, Object> headers = new HashMap<String, Object>();
 		headers.put(MpfHeaders.JOB_ID, streamingJobRequest.getId());
 		headers.put(MpfHeaders.JMS_PRIORITY, Math.max(0, Math.min(9, priority)));
-		log.info("[Streaming Job {}|*|*] Job has started and is running at priority {}.", streamingJobRequest.getId(), headers.get(MpfHeaders.JMS_PRIORITY));
-		System.out.println(this.getClass().getName()+".runInternal: debug, serialized jsonStreamingJobRequest is "+jsonUtils.serialize(jsonStreamingJobRequest));
+		log.info("[Streaming Job {}|*|*] is running at priority {}.", streamingJobRequest.getId(), headers.get(MpfHeaders.JMS_PRIORITY));
 		streamingJobRequestProducerTemplate.sendBodyAndHeaders(StreamingJobCreatorRouteBuilder.ENTRY_POINT, ExchangePattern.InOnly, jsonUtils.serialize(jsonStreamingJobRequest), headers);
 		return streamingJobRequest;
 	}

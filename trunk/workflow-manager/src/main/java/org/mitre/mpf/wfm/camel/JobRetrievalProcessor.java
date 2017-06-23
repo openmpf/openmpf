@@ -31,6 +31,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -53,12 +54,25 @@ public class JobRetrievalProcessor extends WfmProcessor {
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
 		long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
 
-		// Retrieve the job from the transient data store.
-		TransientJob transientJob = redis.getJob(jobId);
-		assert transientJob != null : String.format("A job with id %d could not be found.", jobId);
+		// Retrieve the batch or streaming job from the transient data store. Note that we don't know
+		// just from the jobId, whether or not the job is a batch job or a streaming job.  Check with
+		// REDIS to get this information
+		if ( redis.isJobTypeBatch(jobId) ) {
+			TransientJob transientJob = redis.getJob(jobId);
+			assert transientJob != null : String.format("A batch job with id %d could not be found.", jobId);
 
-		// Serialize the transient job and assign it to the body of the outgoing message.
-		byte[] binaryJson = jsonUtils.serialize(transientJob);
-		exchange.getOut().setBody(binaryJson);
+			// Serialize the transient batch job and assign it to the body of the outgoing message.
+			byte[] binaryJson = jsonUtils.serialize(transientJob);
+			exchange.getOut().setBody(binaryJson);
+		} else if ( redis.isJobTypeStreaming(jobId) ) {
+			TransientStreamingJob transientStreamingJob = redis.getStreamingJob(jobId);
+			assert transientStreamingJob != null : String.format("A streaming job with id %d could not be found.", jobId);
+
+			// Serialize the transient streaming job and assign it to the body of the outgoing message.
+			byte[] binaryJson = jsonUtils.serialize(transientStreamingJob);
+			exchange.getOut().setBody(binaryJson);
+		} else {
+			throw new WfmProcessingException("Error, jobId "+jobId+" was not found in the transient data store as a batch or a streaming job");
+		}
 	}
 }

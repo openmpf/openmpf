@@ -62,5 +62,18 @@ public class JobCreationStreamData {
     public void setSegmentSize(int seg_size) {this.segmentSize=seg_size; }
     public int getSegmentSize() { return segmentSize; }
 
+    /** this method will check the current settings within this job creation stream data,
+     * and will return true if the current settings are set within the constraints defined for
+     * streaming job data, false otherwise
+     * @return true if settings define a valid streaming job data, false otherwise.
+     */
+    public boolean isValidStreamData() {
+        // do error checks on the streaming job data
+        if (getSegmentSize() >= 10 && getStreamURI() != null ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
 }

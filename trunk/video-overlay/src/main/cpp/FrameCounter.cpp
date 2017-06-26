@@ -68,11 +68,8 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
 
                 if (bruteForce) {
                     count = 0;
-                    Mat frame;
-                    src >> frame;
-                    while (!frame.empty()) {
+                    while (src.grab()) {
                         count++;
-                        src >> frame;
                     }
                 } else {
                     count = static_cast<int>(src.get(cv::CAP_PROP_FRAME_COUNT));

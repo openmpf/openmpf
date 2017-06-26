@@ -593,30 +593,33 @@ public class RedisImpl implements Redis {
 	public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) {
 		if(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
 			final String key = key(BATCH_JOB, jobId, MEDIA, mediaId, TRACK, taskIndex, actionIndex);
-			int length = (Integer)(redisTemplate.execute(new RedisCallback() {
+			int length = (Integer) (redisTemplate.execute(new RedisCallback() {
 				@Override
 				public Object doInRedis(RedisConnection redisConnection) throws DataAccessException {
 					return Integer.valueOf(redisConnection.execute("llen", key.getBytes()).toString());
 				}
 			}));
 
-			if(length == 0) {
+			if (length == 0) {
 				log.debug("No tracks for BATCH_JOB:{}:MEDIA:{}:{}:{}.", jobId, mediaId, taskIndex, actionIndex);
 				return new TreeSet<>();
 			} else {
 				log.debug("{} tracks for BATCH_JOB:{}:MEDIA:{}:{}:{}.", length, jobId, mediaId, taskIndex, actionIndex);
 				SortedSet<Track> tracks = new TreeSet<>();
-				for(Object trackJson : redisTemplate.boundListOps(key).range(0, length)) {
+				for (Object trackJson : redisTemplate.boundListOps(key).range(0, length)) {
 					try {
 						tracks.add(jsonUtils.deserialize((byte[]) (trackJson), Track.class));
-					} catch(Exception exception) {
+					} catch (Exception exception) {
 						log.warn("Failed to deserialize '{}'.", trackJson);
 					}
 				}
 				return tracks;
 			}
+		} else if(redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))) {
+			log.warn(getClass().getName()+".getTracks(): got Job #{}, but streaming jobs not supported in this method (returning null).", jobId);
+			return null;
 		} else {
-			log.warn("Job #{} is not a batch job, streaming jobs not supported in getTracks (returning null).", jobId);
+			log.warn(getClass().getName()+".getTracks(): got Job #{}, but this job could not be identified as a batch or a streaming job (returning null).", jobId);
 			return null;
 		}
 	}

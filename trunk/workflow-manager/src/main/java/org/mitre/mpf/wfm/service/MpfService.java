@@ -177,25 +177,25 @@ public interface MpfService {
      */
     boolean cancelStreamingJob(long jobId, Boolean doCleanup);
 
-	/** Gets the marked-up media with the specified id. */
+	/** Gets the marked-up media with the specified (batch job) id. */
 	public MarkupResult getMarkupResult(long id);
 
-	/** Gets the marked-up media associated with the specified job. */
+	/** Gets the marked-up media associated with the specified (batch job) job. */
 	public List<MarkupResult> getMarkupResultsForJob(long jobId);
 
-	/** Gets the marked-up media associated with all jobs. */
+	/** Gets the marked-up media associated with all (batch) jobs. */
 	public List<MarkupResult> getAllMarkupResults();
 
-    /** Gets the JobRequest instance in the persistent data store associated with the specified id. */
+    /** Gets the JobRequest instance in the persistent data store associated with the specified batch (job) id. */
     public JobRequest getJobRequest(long id);
 
-    /** Gets the StreamingJobRequest instance in the persistent data store associated with the specified id. */
+    /** Gets the StreamingJobRequest instance in the persistent data store associated with the specified streaming (job) id. */
     public StreamingJobRequest getStreamingJobRequest(long id);
 
-    /** Gets all of the JobRequest instances in the persistent data store. */
+    /** Gets all of the JobRequest (batch job) instances in the persistent data store. */
     public List<JobRequest> getAllJobRequests();
 
-    /** Gets all of the StreamingJobRequest instances in the persistent data store. */
+    /** Gets all of the StreamingJobRequest (streaming job) instances in the persistent data store. */
     public List<StreamingJobRequest> getAllStreamingJobRequests();
 
     public List<SystemMessage> getSystemMessagesByType(String filterbyType );

@@ -334,7 +334,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		headers.put(MpfHeaders.JOB_ID, streamingJobRequest.getId());
 		headers.put(MpfHeaders.JMS_PRIORITY, Math.max(0, Math.min(9, priority)));
 		log.info("[Streaming Job {}|*|*] is running at priority {}.", streamingJobRequest.getId(), headers.get(MpfHeaders.JMS_PRIORITY));
-		streamingJobRequestProducerTemplate.sendBodyAndHeaders(StreamingJobCreatorRouteBuilder.ENTRY_POINT, ExchangePattern.InOnly, jsonUtils.serialize(jsonStreamingJobRequest), headers);
+		log.info(this.getClass().getName()+".runInternal: notificate for new streaming job "+streamingJobRequest.getId()+" to Components via NodeManager is TBD (pending OpenMPF Issue #109)");
+//		streamingJobRequestProducerTemplate.sendBodyAndHeaders(StreamingJobCreatorRouteBuilder.ENTRY_POINT, ExchangePattern.InOnly, jsonUtils.serialize(jsonStreamingJobRequest), headers);
 		return streamingJobRequest;
 	}
 }

@@ -71,8 +71,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 @Component(StreamingJobCompleteProcessorImpl.REF)
-public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements JobCompleteProcessor {
-	private static final Logger log = LoggerFactory.getLogger(JobCompleteProcessor.class);
+public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements StreamingJobCompleteProcessor {
+	private static final Logger log = LoggerFactory.getLogger(StreamingJobCompleteProcessor.class);
 	public static final String REF = "streamingJobCompleteProcessorImpl";
 
 	private Set<NotificationConsumer<JobCompleteNotification>> consumers = new ConcurrentSkipListSet<>();

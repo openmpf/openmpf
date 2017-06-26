@@ -223,9 +223,7 @@ public class StreamingJobController {
             @ApiResponse(code = 400, message = "Invalid id"),
             @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
-    public ResponseEntity<StreamingJobInfoResponse> getJobStatusRest(/* @ApiParam(value="The version of this request - NOT IMPLEMENTED - NOT REQUIRED")
-            @RequestParam(value = "v", required = false) String v, */
-                                                          @ApiParam(required = true, value = "Streaming Job Id") @PathVariable("id") long jobIdPathVar) {
+    public ResponseEntity<StreamingJobInfoResponse> getJobStatusRest(@ApiParam(required = true, value = "Streaming Job Id") @PathVariable("id") long jobIdPathVar) {
         StreamingJobInfoResponse streamingJobInfoResponseModel = null;
         List<StreamingJobInfoResponse> streamingJobInfoResponseModels = getStreamingJobInfo(jobIdPathVar, false);
         if (streamingJobInfoResponseModels != null && streamingJobInfoResponseModels.size() == 1) {
@@ -253,11 +251,11 @@ public class StreamingJobController {
     }
 
 //    /*
-//     * /jobs/{id}/output/detection
+//     * /rest/streaming/jobs/{id}/output/detection
 //     */
 //    //EXTERNAL
 //    @RequestMapping(value = "/rest/streaming/jobs/{id}/output/detection", method = RequestMethod.GET)
-//    @ApiOperation(value = "Gets the JSON detection output object of a specific job using the job id as a required path variable.",
+//    @ApiOperation(value = "Gets the JSON detection output object of a specific streaming job using the job id as a required path variable.",
 //            produces = "application/json", response = JsonOutputObject.class)
 //    @ApiResponses({
 //            @ApiResponse(code = 200, message = "Successful response"),

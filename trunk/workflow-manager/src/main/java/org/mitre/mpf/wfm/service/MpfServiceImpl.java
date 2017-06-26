@@ -142,6 +142,11 @@ public class MpfServiceImpl implements MpfService {
 	}
 
 
+	/**
+	 * resubmit a batch job
+	 * @param jobId jobId of a batch job
+	 * @return
+	 */
 	@Override
 	public long resubmitJob(long jobId) {
 		try {
@@ -151,7 +156,13 @@ public class MpfServiceImpl implements MpfService {
 			return -1;
 		}
 	}
-	
+
+	/**
+	 * resubmit a batch job with revised priority
+	 * @param jobId The MPF-assigned identifier for the original batch job.
+	 * @param newPriority The new priority to assign to this job. Note: Future resubmissions will use this priority value.
+	 * @return
+	 */
 	@Override
 	public long resubmitJob(long jobId, int newPriority) {
 		try {

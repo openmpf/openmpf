@@ -214,7 +214,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 	}
 
 	/** public method used to cancel a streaming job
-	 * This method will mark the job as cancelled in both REDIS and in the long-term database.  The job cancel request will also be sent
+	 * This method will mark the job as cancelled in both REDIS and in the long-term MySQL database.  The job cancel request will also be sent
 	 * along to the components via ActiveMQ using the StreamingJobCreatorRouteBuilder.ENTRY_POINT
 	 * @param jobId
 	 * @return true if the streaming job was successfully cancelled, false otherwise
@@ -321,9 +321,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		return streamingJobRequestDao.persist(streamingJobRequest);
 	}
 
-	/** private method will send the streaming job request to the components via ActiveMQ using the StreamingJobCreatorRouteBuilder.ENTRY_POINT
-	 * This method sets job status to RUNNING
-	 * @param streamingJobRequest
+	/** will send the streaming job request to the components via the Node Manager (TODO)
+	 * @param streamingJobRequest)
 	 * @param jsonStreamingJobRequest
 	 * @param priority
 	 * @return

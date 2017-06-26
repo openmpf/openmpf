@@ -38,7 +38,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-/** Builds the route that is executed when a streaming job request is submitted to the system. */
+/** Builds the route that is executed when a streaming job request is submitted to the system.
+ * TODO: this route might not be needed, likely being changed to a call to NodeManager (pending issue #109)
+ */
 @Component
 public class StreamingJobCreatorRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(StreamingJobCreatorRouteBuilder.class);

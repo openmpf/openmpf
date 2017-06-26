@@ -580,9 +580,10 @@ public class RedisImpl implements Redis {
 		}
 	}
 
-	/**
-	 * Get the tracks for the specified batch job
-	 * Streaming jobs not supported
+	/** Get the tracks for the specified batch job
+	 * Note: to be consistent with legacy unit test processing, this method assumes that the job is a batch job.  This method should not be called for streaming jobs
+	 * This method will check to see if the specified jobId has been stored in REDIS and is associated with a streaming job.  If this is the case,
+	 * it will return a null
 	 * @param jobId The MPF-assigned ID of the batch job, must be unique
 	 * @param mediaId The MPF-assigned media ID.
 	 * @param taskIndex The index of the task which created the tracks in the job's pipeline.
@@ -591,7 +592,11 @@ public class RedisImpl implements Redis {
 	 */
     @SuppressWarnings("unchecked")
 	public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) {
-		if(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
+		if(redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))) {
+			// this jobId is associated with a streaming job, this is an error - return a null
+			return null;
+		} else {
+			// assume that this jobId is associated with a batch job
 			final String key = key(BATCH_JOB, jobId, MEDIA, mediaId, TRACK, taskIndex, actionIndex);
 			int length = (Integer) (redisTemplate.execute(new RedisCallback() {
 				@Override
@@ -615,12 +620,6 @@ public class RedisImpl implements Redis {
 				}
 				return tracks;
 			}
-		} else if(redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))) {
-			log.warn(getClass().getName()+".getTracks(): got Job #{}, but streaming jobs not supported in this method (returning null).", jobId);
-			return null;
-		} else {
-			log.warn(getClass().getName()+".getTracks(): got Job #{}, but this job could not be identified as a batch or a streaming job (returning null).", jobId);
-			return null;
 		}
 	}
 
@@ -682,7 +681,7 @@ public class RedisImpl implements Redis {
 
 	/**
 	 * Persist the media data for a batch job by storing it in the REDIS database
-	 * @param job
+	 * @param job The MPF-assigned ID of the batch job, must be unique
 	 * @param transientMedia The non-null media instance to persist.
 	 * @throws WfmProcessingException
 	 */
@@ -701,7 +700,7 @@ public class RedisImpl implements Redis {
 
 	/**
 	 * Persist the stream data for a streaming job by storing it in the REDIS database
-	 * @param job
+	 * @param job The MPF-assigned ID of the streaming job, must be unique
 	 * @param transientStream The non-null stream instance to persist.
 	 * @throws WfmProcessingException
 	 */
@@ -808,7 +807,9 @@ public class RedisImpl implements Redis {
 
 	/**
 	 * Set the tracks for the specified batch job
-	 * Not supported for streaming jobs
+	 * Note: to be consistent with legacy unit test processing, this method assumes that the job is a batch job.  This method should not be called for streaming jobs
+	 * This method will check to see if the specified jobId has been stored in REDIS and is associated with a streaming job.  If this is the case,
+	 * it will just log the warning
 	 * @param jobId The MPF-assigned ID of the batch job, must be unique
 	 * @param mediaId The MPF-assigned media ID.
 	 * @param taskIndex The index of the task which created the tracks in the job's pipeline.
@@ -817,8 +818,10 @@ public class RedisImpl implements Redis {
 	 */
     @SuppressWarnings("unchecked")
 	public synchronized void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks) {
-		if(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId))) {
-			// confirmed that this is a batch job
+		if(redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId))) {
+			log.warn("Job #{} streaming jobs are not supported in setTracks", jobId);
+		} else {
+			// confirmed that this is not a streaming job
 			try {
 				String key = key(BATCH_JOB, jobId, MEDIA, mediaId, TRACK, taskIndex, actionIndex);
 				redisTemplate.delete(key);
@@ -828,8 +831,6 @@ public class RedisImpl implements Redis {
 			} catch (Exception exception) {
 				log.warn("Failed to serialize tracks.", exception);
 			}
-		} else {
-			log.warn("Job #{} is not a batch job, streaming jobs are not supported in setTracks", jobId);
 		}
 	}
 

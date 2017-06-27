@@ -197,7 +197,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 		return runInternal(jobRequestEntity, jobRequest, (jobRequest == null) ? propertiesUtil.getJmsPriority() : jobRequest.getPriority());
 	}
 
-	/** method will create a new JobRequest using the provided JSON job request and persist it in the database for long-term storage
+	/** Will create a new JobRequest using the provided JSON job request and persist it in the database for long-term storage
 	 * Upon return, the job will be persisted in the long-term database
 	 * @param jsonJobRequest JSON representation of the job request
 	 * @return initialized job request

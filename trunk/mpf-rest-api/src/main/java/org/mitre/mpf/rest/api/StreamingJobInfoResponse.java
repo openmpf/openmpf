@@ -46,7 +46,6 @@ public class StreamingJobInfoResponse {
 
 	private MpfResponse mpfResponse = new MpfResponse();
 
-
 	public StreamingJobInfoResponse() {}
 
 	public StreamingJobInfoResponse(int errorCode, String errorMessage) {
@@ -100,13 +99,6 @@ public class StreamingJobInfoResponse {
 	public String /*JobStatus*/ getJobStatus() {
 		return jobStatus;
 	}
-	
-//	public float getJobProgress() {
-//		return jobProgress;
-//	}
-//	public void setJobProgress(float jobProgress) {
-//		this.jobProgress = jobProgress;
-//	}
 	
 	public Date getStartDate() {
 		return startDate;

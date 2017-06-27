@@ -32,31 +32,25 @@ import java.util.Map;
 
 public class JobCreationStreamData {
 
+    private String streamURI;
     public JobCreationStreamData() {}
     public JobCreationStreamData(String uri) {
         this.streamURI=uri;
     }
-
     public String getStreamURI() {
         return streamURI;
     }
-
     public void setStreamURI(String streamURI) {
         this.streamURI = streamURI;
     }
 
-    private String streamURI;
-
-
+    private Map<String,String> mediaProperties = new HashMap<>();
     public Map<String, String> getMediaProperties() {
         return mediaProperties;
     }
-
     public void setMediaProperties(Map<String, String> mediaProperties) {
         this.mediaProperties = mediaProperties;
     }
-
-    private Map<String,String> mediaProperties = new HashMap<>();
 
     private int segmentSize = 0;
     public void setSegmentSize(int seg_size) {this.segmentSize=seg_size; }
@@ -69,7 +63,7 @@ public class JobCreationStreamData {
      */
     public boolean isValidStreamData() {
         // do error checks on the streaming job data
-        if (getSegmentSize() >= 10 && getStreamURI() != null ) {
+        if ( getSegmentSize() >= 10 && getStreamURI() != null ) {
             return true;
         } else {
             return false;

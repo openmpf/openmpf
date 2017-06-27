@@ -72,7 +72,7 @@ public class JobRetrievalProcessor extends WfmProcessor {
 			byte[] binaryJson = jsonUtils.serialize(transientStreamingJob);
 			exchange.getOut().setBody(binaryJson);
 		} else {
-			throw new WfmProcessingException("Error, jobId "+jobId+" was not found in the transient data store as a batch or a streaming job");
+			throw new WfmProcessingException("Error, jobId " + jobId + " was not found in the transient data store as a batch or a streaming job");
 		}
 	}
 }

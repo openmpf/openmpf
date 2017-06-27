@@ -41,7 +41,6 @@ public class StreamingJobCancelResponse {
 		this.doCleanup = doCleanup;
 	}
 
-
 	/**
 	 * @param jobId
 	 * @param externalId
@@ -58,12 +57,17 @@ public class StreamingJobCancelResponse {
 	public Long getJobId() {
 		return jobId;
 	}
+
 	public String getExternalId() { return externalId; }
+
 	public boolean getDoCleanup() { return doCleanup; }
+
 	public String getOutputObjectPath() {
 		return outputObjectPath;
 	}
+
 	public MpfResponse getMpfResponse() {
 		return mpfResponse;
 	}
+
 }

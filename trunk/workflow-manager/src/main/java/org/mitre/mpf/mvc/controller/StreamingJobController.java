@@ -107,19 +107,18 @@ public class StreamingJobController {
             notes = "The pipelineName should be one of the values in 'rest/pipelines'. The stream should contain a valid streamURI, " +
                     "for example: rtsp://example.com/media.mp4.  Optional segmentSize, mediaProperties, stallAlertDetectionThreshold, "+
                     "stallAlertRate, stallTimeout and stallCallbackURI may also be defined for the stream. " +
-                    "Addtional streaming job options include summaryReportCallbackURI, healthReportCallbackURI, newTrackAlertCallbackUIR and " +
+                    "Addtional streaming job options include summaryReportCallbackURI, healthReportCallbackURI, newTrackAlertCallbackURI and " +
                     "callbackMethod (GET or POST). " +
                     "Other streaming job options include jobProperties object contains String key-value pairs which override the pipeline's job properties for this streaming job. " +
                     "An optional algorithmProperties object containing <String,Map> key-value pairs can override jobProperties for a specific algorithm defined in the pipeline.  "+
                     "For algorithmProperties, the key should be the algorithm name, and the value should be a Map of String key-value pairs representing properties specific to the named algorithm."+
-                    "Note that the batch jobs and streaming jobs share a range of valid job ids.  MPF does not guarantee that the ids of a streaming job and a batch job would be unique",
+                    "Note that the batch jobs and streaming jobs share a range of valid job ids.  MPF guarantees that the ids of a streaming job and a batch job will be unique",
             produces = "application/json", response = StreamingJobCreationResponse.class)
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "Streaming Job created"),
             @ApiResponse(code = 400, message = "Bad request"),
             @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
-//    @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
     public ResponseEntity <StreamingJobCreationResponse> processStreamRest(@ApiParam(required = true, value = "StreamingJobCreationRequest") @RequestBody StreamingJobCreationRequest streamingJobCreationRequest) {
         StreamingJobCreationResponse create_job_response = processStreamingJobCreationRequest(streamingJobCreationRequest);
         if (streamingJobCreationRequest.isValidRequest() ) {

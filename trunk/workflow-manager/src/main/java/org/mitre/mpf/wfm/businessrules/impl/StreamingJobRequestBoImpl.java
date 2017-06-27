@@ -191,7 +191,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		return runInternal(streamingJobRequestEntity, jsonStreamingJobRequest, (jsonStreamingJobRequest == null) ? propertiesUtil.getJmsPriority() : jsonStreamingJobRequest.getPriority());
 	}
 
-	/** method will create a new StreamingJobRequest using the provided JSON job request and persist it in the database for long-term storage
+	/** Will create a new StreamingJobRequest using the provided JSON job request and persist it in the database for long-term storage
 	 * Upon return, the job will be persisted in the long-term database
 	 * @param jsonStreamingJobRequest JSON representation of the job request
 	 * @return initialized job request

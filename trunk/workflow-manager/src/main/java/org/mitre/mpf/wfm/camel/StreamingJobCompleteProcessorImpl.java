@@ -214,7 +214,7 @@ public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements S
 
 		log.debug("StreamingJobCompleteProcessorImpl.createOutputObject: setting of stream data NYI for Streaming Job {} ", jobId);
 
-//
+// keep this commented out section intact for later reference until stream processing is finalized
 //		int mediaIndex = 0;
 //		for(TransientMedia transientMedia : transientJob.getMedia()) {
 //			StringBuilder stateKeyBuilder = new StringBuilder("+");
@@ -314,12 +314,14 @@ public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements S
 //			jsonOutputObject.getMedia().add(mediaOutputObject);
 //			mediaIndex++;
 //		}
+		// end of keep this commented out section intact for later reference until stream processing is finalized
 
 		try {
 			File outputFile = propertiesUtil.createDetectionOutputObjectFile(jobId);
 			jsonUtils.serialize(jsonOutputObject, outputFile);
 			streamingJobRequest.setOutputObjectPath(outputFile.getAbsolutePath());
 			streamingJobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
+			// store the streaming job request in the MySQL long-term database
 			streamingJobRequestDao.persist(streamingJobRequest);
 		} catch(IOException | WfmProcessingException wpe) {
 			log.error("Failed to create the JSON detection output object for streaming job '{}' due to an exception.", jobId, wpe);

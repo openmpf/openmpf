@@ -67,10 +67,10 @@ public class JsonStreamingInputObject {
                                                    @JsonProperty("mediaProperties") HashMap<String, String> mediaProperties) {
         JsonStreamingInputObject obj = null;
 
-        if (mediaProperties!=null) {
-            obj = new JsonStreamingInputObject(streamURI,segmentSize,mediaProperties);
+        if ( mediaProperties != null)  {
+            obj = new JsonStreamingInputObject(streamURI, segmentSize, mediaProperties);
         } else {
-            obj = new JsonStreamingInputObject(streamURI,segmentSize,new HashMap<String,String>());
+            obj = new JsonStreamingInputObject(streamURI, segmentSize, new HashMap<String,String>());
         }
         return obj;
     }

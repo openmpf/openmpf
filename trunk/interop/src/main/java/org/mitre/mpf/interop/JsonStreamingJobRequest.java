@@ -108,7 +108,6 @@ public class JsonStreamingJobRequest {
 	private String newTrackAlertCallbackURI;
 	public String getNewTrackAlertCallbackURI() { return newTrackAlertCallbackURI; }
 
-
 	@JsonProperty("callbackMethod")
 	@JsonPropertyDescription("The OPTIONAL method to connect to the callback URIs. GET or POST.")
 	private String callbackMethod;
@@ -158,9 +157,9 @@ public class JsonStreamingJobRequest {
                                                   @JsonProperty("algorithmProperties") Map<String, Map> algorithmProperties,
                                                   @JsonProperty("jobProperties") Map<String, String> jobProperties) {
 		JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(externalId, outputObjectEnabled, outputObjectPath, pipeline, priority,
-																stallAlertDetectionThreshold,stallAlertRate,stallTimeout,
-																healthReportCallbackURI,summaryReportCallbackURI,newTrackAlertCallbackURI,callbackMethod);
-		if(stream != null) {
+																stallAlertDetectionThreshold, stallAlertRate,stallTimeout,
+																healthReportCallbackURI, summaryReportCallbackURI, newTrackAlertCallbackURI, callbackMethod);
+		if( stream != null ) {
 			jsonStreamingJobRequest.stream = stream;
 		}
 

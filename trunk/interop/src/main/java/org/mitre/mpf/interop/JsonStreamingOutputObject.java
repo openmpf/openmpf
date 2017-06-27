@@ -135,19 +135,19 @@ public class JsonStreamingOutputObject implements Comparable<JsonStreamingOutput
 		JsonStreamingOutputObject jsonStreamOutputObject = new JsonStreamingOutputObject(mediaId, path, mimeType, length, sha256, message, status);
 		jsonStreamOutputObject.markupResult = markupResult;
 
-		if(mediaMetadata != null) {
+		if( mediaMetadata != null ) {
 			jsonStreamOutputObject.mediaMetadata.putAll(mediaMetadata);
 		}
 
-		if(mediaProperties != null) {
+		if( mediaProperties != null ) {
 			jsonStreamOutputObject.mediaProperties.putAll(mediaProperties);
 		}
 
-		if(types != null) {
+		if( types != null ) {
 			jsonStreamOutputObject.types.putAll(types);
 		}
 
-		if(detectionProcessingErrors != null) {
+		if( detectionProcessingErrors != null ) {
 			jsonStreamOutputObject.detectionProcessingErrors.putAll(detectionProcessingErrors);
 		}
 
@@ -163,13 +163,7 @@ public class JsonStreamingOutputObject implements Comparable<JsonStreamingOutput
 			return false;
 		} else {
 			JsonStreamingOutputObject casted = (JsonStreamingOutputObject)other;
-			return mediaId == casted.mediaId &&
-					StringUtils.equals(path, casted.path) &&
-					length == casted.length &&
-					StringUtils.equals(sha256, casted.sha256) &&
-					StringUtils.equals(message, casted.message) &&
-					StringUtils.equals(status, casted.status) &&
-					StringUtils.equals(mimeType, casted.mimeType);
+			return compareTo((JsonStreamingOutputObject)other) == 0;
 		}
 	}
 

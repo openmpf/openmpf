@@ -36,19 +36,19 @@ public class StreamingJobCreationRequest {
 	private Map<String, Map> algorithmProperties = new HashMap<>();
 	private String externalId = null;
 	private String pipelineName = null;
-	private Integer priority = null; //will be set to 4 (default) on the server side if null
+	private Integer priority = null; // will be set to 4 (default) on the server side if null
 	private JobCreationStreamData stream = new JobCreationStreamData();
 
 	private long stallAlertDetectionThreshold = -1L;
-	public void setStallAlertDetectionThreshold(long stallAlertDetectionThreshold) {this.stallAlertDetectionThreshold=stallAlertDetectionThreshold; }
+	public void setStallAlertDetectionThreshold(long stallAlertDetectionThreshold) { this.stallAlertDetectionThreshold=stallAlertDetectionThreshold; }
 	public long getStallAlertDetectionThreshold() { return stallAlertDetectionThreshold; }
 
 	private long stallAlertRate = -1L;
-	public void setStallAlertRate(long stallAlertRate) {this.stallAlertRate=stallAlertRate; }
+	public void setStallAlertRate(long stallAlertRate) { this.stallAlertRate=stallAlertRate; }
 	public long getStallAlertRate() { return stallAlertRate; }
 
 	private long stallTimeout = -1L;
-	public void setStallTimeout(long stallTimeout) {this.stallTimeout=stallTimeout; }
+	public void setStallTimeout(long stallTimeout) { this.stallTimeout=stallTimeout; }
 	public long getStallTimeout() { return stallTimeout; }
 
 	// true or false to write video segments to disk.  Note that this is called buildOutput in other code.  Will use a server side property if null
@@ -57,7 +57,6 @@ public class StreamingJobCreationRequest {
 	private String summaryReportCallbackURI = null; // the URL to send a summary report to
 	private String newTrackAlertCallbackURI = null; // the URL to send a new track alert report to
 	private String callbackMethod = "POST"; // the method to send the response back after a job completes
-
 
 	public JobCreationStreamData getStream() {
 		return stream;
@@ -121,26 +120,26 @@ public class StreamingJobCreationRequest {
 	/** return the HealthReportCallbackURI.  May be null if not defined.
 	 * @return return the specified callback URI.  May be null if not defined
 	 */
-	public String getHealthReportCallbackURI() {return healthReportCallbackURI;	}
-	public void setHealthReportCallbackURI(String callbackURI) {this.healthReportCallbackURI = callbackURI;	}
+	public String getHealthReportCallbackURI() { return healthReportCallbackURI;	}
+	public void setHealthReportCallbackURI(String callbackURI) { this.healthReportCallbackURI = callbackURI;	}
 
 	/** return the SummaryReportCallbackURI.  May be null if not defined.
 	 * @return return the specified callback URI.  May be null if not defined
 	 */
-	public String getSummaryReportCallbackURI() {return summaryReportCallbackURI;	}
-	public void setSummaryReportCallbackURL(String callbackURI) {this.summaryReportCallbackURI = callbackURI; }
+	public String getSummaryReportCallbackURI() { return summaryReportCallbackURI; }
+	public void setSummaryReportCallbackURL(String callbackURI) { this.summaryReportCallbackURI = callbackURI; }
 
 	/** return the NewTrackAlertCallbackURI.  May be null if not defined.
 	 * @return return the specified callback URI.  May be null if not defined
 	 */
-	public String getNewTrackAlertCallbackURI() {return newTrackAlertCallbackURI;	}
-	public void setNewTrackAlertCallbackURI(String callbackURI) {this.newTrackAlertCallbackURI = callbackURI; }
+	public String getNewTrackAlertCallbackURI() { return newTrackAlertCallbackURI;	}
+	public void setNewTrackAlertCallbackURI(String callbackURI) { this.newTrackAlertCallbackURI = callbackURI; }
 
 	/** Method will return the HTTP method to be used for the callbacks.
 	 * @return will return SET or POST or null if the method is not defined
 	 */
-	public String getCallbackMethod() {return callbackMethod;}
-	public void setCallbackMethod(String callbackMethod) {this.callbackMethod = callbackMethod;	}
+	public String getCallbackMethod() { return callbackMethod; }
+	public void setCallbackMethod(String callbackMethod) { this.callbackMethod = callbackMethod;	}
 
 	/** this method will check the current settings within this streaming job creation request,
 	 * and will return true if the current settings are set within the constraints defined for a

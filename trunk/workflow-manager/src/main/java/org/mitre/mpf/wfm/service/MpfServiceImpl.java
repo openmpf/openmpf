@@ -203,7 +203,7 @@ public class MpfServiceImpl implements MpfService {
 													  String summaryReportCallbackURI, String newTrackAlertCallbackURI,
 													  String method) {
 
-		log.debug("createStreamingJob: stream: {}. Pipeline: {}. Build Output: {}. Priority: {}. healthReportCallbackURI: {}. summaryReportCallbackURI: {}. newTrackAlertCallbackURI: {}. Method: {}.", json_stream,
+		log.debug("createStreamingJob: stream: {}, Pipeline: {}, Build Output: {}, Priority: {}, healthReportCallbackURI: {}, summaryReportCallbackURI: {}, newTrackAlertCallbackURI: {}, Method: {}", json_stream,
 				pipelineName, buildOutput, priority, healthReportCallbackURI, summaryReportCallbackURI, newTrackAlertCallbackURI, method);
 		return streamingJobRequestBo.createRequest(externalId, pipelineName, json_stream, algorithmProperties, jobProperties, buildOutput, priority,
 				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
@@ -234,7 +234,7 @@ public class MpfServiceImpl implements MpfService {
 	@Override
 	public boolean cancelStreamingJob(long jobId, Boolean doCleanup) {
 		try {
-			log.debug(this.getClass().getName()+":cancelStreamingJob: jobId="+jobId+", doCleanup="+doCleanup+" - don't know what to do with doCleanup NYI");
+			log.debug(this.getClass().getName()+":cancelStreamingJob: jobId="+jobId+", doCleanup="+doCleanup+" - don't know what to do with doCleanup TODO");
 			boolean status = streamingJobRequestBo.cancel(jobId);
 			return status;
 		} catch(WfmProcessingException wpe) {
@@ -278,7 +278,7 @@ public class MpfServiceImpl implements MpfService {
 	}
 
 	/**
-	 * get the list of all streaming job requests
+	 * Get the list of all streaming job requests
 	 * @return
 	 */
 	@Override

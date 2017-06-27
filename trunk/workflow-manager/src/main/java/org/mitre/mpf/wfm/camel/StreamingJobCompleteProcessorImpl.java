@@ -184,6 +184,7 @@ public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements S
 		streamingJobRequestDao.persist(streamingJobRequest);
 	}
 
+	// TODO, this method will likely be moved to somewhere else, leave here for now until streaming video processing is finalized.
 	public void createOutputObject(long jobId, Mutable<JobStatus> jobStatus) throws WfmProcessingException {
 		TransientStreamingJob transientStreamingJob = redis.getStreamingJob(jobId);
 		StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
@@ -317,12 +318,17 @@ public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements S
 		// end of keep this commented out section intact for later reference until stream processing is finalized
 
 		try {
-			File outputFile = propertiesUtil.createDetectionOutputObjectFile(jobId);
+			// get the directory that has already been created for storing output objects for this streaming job
+			File outputFile = propertiesUtil.createStreamingOutputObjectsFile(jobId,Paths.get(streamingJobRequest.getOutputObjectPath()).toFile());
+			// write the JSON output to the output object file
 			jsonUtils.serialize(jsonOutputObject, outputFile);
-			streamingJobRequest.setOutputObjectPath(outputFile.getAbsolutePath());
-			streamingJobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
-			// store the streaming job request in the MySQL long-term database
-			streamingJobRequestDao.persist(streamingJobRequest);
+
+// keep this commented out section intact for later reference until stream processing is finalized
+//			streamingJobRequest.setOutputObjectPath(outputFile.getAbsolutePath());
+//			streamingJobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
+//			// store the updated streaming job request in the MySQL long-term database
+//			streamingJobRequestDao.persist(streamingJobRequest);
+// end of keep this commented out section intact for later reference until stream processing is finalized
 		} catch(IOException | WfmProcessingException wpe) {
 			log.error("Failed to create the JSON detection output object for streaming job '{}' due to an exception.", jobId, wpe);
 		}

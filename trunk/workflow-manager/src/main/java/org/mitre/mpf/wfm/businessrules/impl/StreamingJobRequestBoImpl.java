@@ -54,6 +54,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 @Component
@@ -293,7 +295,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		}
 	}
 
-	/** private method will finish initializing the StreamingJobRequest and persist it in the database for long-term storage
+	/** Finish initializing the StreamingJobRequest and persist it in the database for long-term storage
 	 * Upon return, the streaming job will be persisted in the long-term database
 	 * @param streamingJobRequest partially initialized streamingJobRequest
 	 * @param jsonStreamingJobRequest JSON version of the streaming job request that will be serialized into the streamingJobRequests input object
@@ -318,6 +320,17 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		streamingJobRequest.setHealthReportCallbackURI(jsonStreamingJobRequest.getHealthReportCallbackURI());
 		streamingJobRequest.setStreamURI(jsonStreamingJobRequest.getStream().getStreamURI());
 
+		try {
+			// create the output object directory for this streaming job and store the absolute path to that directory
+			// (as a String) in the streaming job request
+			File outputObjectsDirName = propertiesUtil.createStreamingOutputObjectsDirectory(streamingJobRequest.getId());
+			streamingJobRequest.setOutputObjectPath(outputObjectsDirName.getAbsolutePath());
+			streamingJobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
+		} catch(IOException wpe) {
+			log.error("Failed to create the output object file directory for streaming job '{}' due to an exception.", streamingJobRequest.getId(), wpe);
+		}
+
+		// store the streaming job request in the MySQL long-term database
 		return streamingJobRequestDao.persist(streamingJobRequest);
 	}
 

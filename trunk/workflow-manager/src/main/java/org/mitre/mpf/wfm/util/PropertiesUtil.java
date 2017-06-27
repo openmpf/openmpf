@@ -184,13 +184,73 @@ public class PropertiesUtil {
 
 
 	private File outputObjectsDirectory;
+
+	/** Gets the path to the top level output object directory
+	 * @return path to the top level output object directory
+	 */
 	public File getOutputObjectsDirectory() { return outputObjectsDirectory; }
+
+	/** Create the output objects directory for batch jobs
+	 * @param jobId unique id that has been assigned to the batch job
+	 * @return directory that was created under the output objects directory for storage of files from this batch job
+	 * @throws IOException
+	 */
 	public File createDetectionOutputObjectFile(long jobId) throws IOException {
 		return createOutputObjectsFile(jobId, "detection");
 	}
+	/** Create the output objects directory for a streaming job
+	 * @param jobId unique id that has been assigned to the streaming job
+	 * @return directory that was created under the output objects directory for storage of files from this streaming job
+	 * @throws IOException
+	 */
+	public File createStreamingOutputObjectsDirectory(long jobId) throws IOException {
+		return createOutputObjectsDirectory(jobId, "streaming-output");
+	}
+	/** Create the output object file in the specified streaming job output objects directory
+	 * @param jobId unique id that has been assigned to the streaming job
+	 * @param parentDir this streaming jobs output objects directory
+	 * @return output object File that was created under the specified output objects directory
+	 * @throws IOException
+	 */
+	public File createStreamingOutputObjectsFile(long jobId, File parentDir) throws IOException {
+		return createOutputObjectsFile(jobId, parentDir, "detection");
+	}
+	/** Create the directory path to be used for storing output objects for a job, return the path to that directory as a File
+	 * @param jobId unique id that has been assigned to the job
+	 * @param outputObjectDirectoryName name of the directory to be created for storing the output objects
+	 * @return File (directory) to be used for storing an output object for this job
+	 * @throws IOException
+	 */
+	private File createOutputObjectsDirectory(long jobId, String outputObjectDirectoryName) throws IOException {
+		String fileName = String.format("%d/%s.json", jobId, TextUtils.trimToEmpty(outputObjectDirectoryName));
+		Path path = Paths.get(outputObjectsDirectory.toURI()).resolve(fileName).normalize().toAbsolutePath();
+		Files.createDirectories(path);
+		return path.toFile();
+	}
+	/** Create the File to be used for storing output objects from a job, plus create the directory path to that File
+	 * This version of the method is typically used for batch jobs
+	 * @param jobId unique id that has been assigned to the job
+	 * @param outputObjectType pre-defined type of output object for the job
+	 * @return File to be used for storing an output object for this job
+	 * @throws IOException
+	 */
 	private File createOutputObjectsFile(long jobId, String outputObjectType) throws IOException {
 		String fileName = String.format("%d/%s.json", jobId, TextUtils.trimToEmpty(outputObjectType));
 		Path path = Paths.get(outputObjectsDirectory.toURI()).resolve(fileName).normalize().toAbsolutePath();
+		Files.createDirectories(path.getParent());
+		return path.toFile();
+	}
+	/** Create the File to be used for storing output objects from a job, plus create the directory path to that File
+	 * This version of the method is typically used for streaming jobs
+	 * @param jobId unique id that has been assigned to the job
+	 * @param parentDir parent directory for the file to be created
+	 * @param outputObjectType pre-defined type of output object for the job
+	 * @return File to be used for storing an output object for this job
+	 * @throws IOException
+	 */
+	private File createOutputObjectsFile(long jobId, File parentDir, String outputObjectType) throws IOException {
+		String fileName = String.format("%d/%s.json", jobId, TextUtils.trimToEmpty(outputObjectType));
+		Path path = Paths.get(parentDir.toURI()).resolve(fileName).normalize().toAbsolutePath();
 		Files.createDirectories(path.getParent());
 		return path.toFile();
 	}

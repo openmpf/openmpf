@@ -39,7 +39,7 @@
       "status": "COMPLETE",
       "mediaMetadata": {
         "DURATION": "7084",
-        "FPS": "24",
+        "FPS": "24.0",
         "FRAME_COUNT": "185"
       },
       "mediaProperties": {},
@@ -194,7 +194,7 @@
       "status": "COMPLETE",
       "mediaMetadata": {
         "DURATION": "2025",
-        "FPS": "24",
+        "FPS": "24.0",
         "FRAME_COUNT": "54"
       },
       "mediaProperties": {},
@@ -263,7 +263,7 @@
       "status": "COMPLETE",
       "mediaMetadata": {
         "DURATION": "5008",
-        "FPS": "24",
+        "FPS": "24.0",
         "FRAME_COUNT": "122"
       },
       "mediaProperties": {},

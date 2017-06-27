@@ -187,7 +187,7 @@ public class MarkupStageSplitter implements StageSplitter {
 							.setTaskIndex(transientJob.getCurrentStage())
 							.setActionIndex(actionIndex)
 							.setMediaId(transientMedia.getId())
-							.setMediaType(Markup.MediaType.valueOf(StringUtils.upperCase(transientMedia.getType().substring(0, transientMedia.getType().indexOf('/')))))
+							.setMediaType(Markup.MediaType.valueOf(transientMedia.getMediaType().toString().toUpperCase()))
 							.setRequestId(redis.getNextSequenceValue())
 							.setSourceUri(new File(transientMedia.getLocalPath()).getAbsoluteFile().toURI().toString())
 							.setDestinationUri(boundingBoxMapEntryList.size() > 0 ?

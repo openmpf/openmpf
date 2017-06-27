@@ -196,7 +196,8 @@
       "status": "COMPLETE",
       "mediaMetadata": {
         "DURATION": "17007",
-        "FPS": "29.97"
+        "FPS": "29.97",
+        "FRAME_COUNT": "511"
       },
       "mediaProperties": {},
       "markupResult": {
@@ -3144,7 +3145,8 @@
       "status": "COMPLETE",
       "mediaMetadata": {
         "DURATION": "5013",
-        "FPS": "29.97"
+        "FPS": "29.97",
+        "FRAME_COUNT": "154"
       },
       "mediaProperties": {},
       "markupResult": {
@@ -3177,7 +3179,8 @@
       "status": "COMPLETE",
       "mediaMetadata": {
         "DURATION": "17041",
-        "FPS": "29.97"
+        "FPS": "29.97",
+        "FRAME_COUNT": "511"
       },
       "mediaProperties": {},
       "markupResult": {

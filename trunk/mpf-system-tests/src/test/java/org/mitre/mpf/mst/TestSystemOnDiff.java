@@ -161,7 +161,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
     @Test(timeout = 15 * MINUTES)
-    @Ignore
     public void runMultipleDetectionAlgorithmsVideo() throws Exception {
         String multipleTaskName = "TEST MULTIPLE FACE DETECTION TASK 2";
         addTask(multipleTaskName, "OCV FACE DETECTION ACTION", "DLIB FACE DETECTION ACTION", "OCV PERSON DETECTION ACTION");

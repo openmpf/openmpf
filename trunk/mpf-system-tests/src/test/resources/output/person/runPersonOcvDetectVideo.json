@@ -38,7 +38,8 @@
             "overriddenProperties": {},
             "mediaMetadata": {
                 "DURATION": "17041",
-                "FPS": "29.97"
+                "FPS": "29.97",
+                "FRAME_COUNT": "511"
             },
             "markupResult": null,
             "tracks": {
@@ -22119,7 +22120,8 @@
             "overriddenProperties": {},
             "mediaMetadata": {
                 "DURATION": "68064",
-                "FPS": "29.97"
+                "FPS": "29.97",
+                "FRAME_COUNT": "2057"
             },
             "markupResult": null,
             "tracks": {

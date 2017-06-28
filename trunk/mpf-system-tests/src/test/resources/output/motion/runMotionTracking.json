@@ -41,7 +41,8 @@
       "status": "COMPLETE",
       "mediaMetadata": {
         "DURATION": "8069",
-        "FPS": "25.28"
+        "FPS": "25.28",
+        "FRAME_COUNT": "220"
       },
       "mediaProperties": {},
       "markupResult": null,

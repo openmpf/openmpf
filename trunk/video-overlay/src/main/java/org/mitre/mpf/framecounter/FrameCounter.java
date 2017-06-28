@@ -38,9 +38,9 @@ public class FrameCounter {
 
     public FrameCounter(File file) { this.file = file; }
 
-    public int count() throws IOException {
+    public int count(boolean bruteForce) throws IOException {
         if(file == null) {
-            throw new IllegalArgumentException("file must not be null");
+            throw new IllegalArgumentException("File must not be null.");
         }
 
         if(!file.exists()) {
@@ -51,7 +51,7 @@ public class FrameCounter {
             throw new IOException(String.format("Cannot read file '%s'.", file));
         }
 
-        int returnCode = countNative(file.getAbsolutePath());
+        int returnCode = countNative(file.getAbsolutePath(), bruteForce);
         if(returnCode < 0) {
             throw new FrameCounterJniException(returnCode);
         } else {
@@ -59,5 +59,5 @@ public class FrameCounter {
         }
     }
 
-    private native int countNative(String absolutePath);
+    private native int countNative(String absolutePath, boolean bruteForce);
 }

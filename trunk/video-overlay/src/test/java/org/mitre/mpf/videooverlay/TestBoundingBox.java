@@ -74,7 +74,7 @@ class Color {
     }
 }
 
-public class BoundingBoxTests {
+public class TestBoundingBox {
     @Test
     public void testSetColorUsingArgb() {
         BoundingBox boundingBox = new BoundingBox();

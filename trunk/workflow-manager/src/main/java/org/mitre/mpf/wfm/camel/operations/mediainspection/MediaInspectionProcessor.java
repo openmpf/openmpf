@@ -106,88 +106,25 @@ public class MediaInspectionProcessor extends WfmProcessor {
 					transientMedia.setMessage("Could not determine the MIME type for the media due to an exception.");
 				}
 
-
 				switch(transientMedia.getMediaType()) {
 					case AUDIO:
-						// We do not fetch the length of audio files.
-						Metadata audioMetadata = generateFFMPEGMetadata(localFile);
-						int audioMilliseconds = calculateDurationMilliseconds(audioMetadata.get("xmpDM:duration"));
-						if (audioMilliseconds>=0) {
-							transientMedia.addMetadata("DURATION", Integer.toString(audioMilliseconds));
-						}
-						transientMedia.setLength(-1);
+						inspectAudio(localFile, transientMedia);
 						break;
+
 					case VIDEO:
-						// Use the frame counter native library to calculate the length of videos.
-						log.debug("Counting frames in '{}'.", localFile);
-						transientMedia.setLength(new FrameCounter(localFile).count());
-						if (transientMedia.getLength()==0) {
-							transientMedia.setFailed(true);
-							transientMedia.setMessage("Invalid video file: length 0.");
-						}
-						Metadata videoMetadata = generateFFMPEGMetadata(localFile);
-						int milliseconds = this.calculateDurationMilliseconds(videoMetadata.get("xmpDM:duration"));
-						if (milliseconds>=0) {
-							transientMedia.addMetadata("DURATION",Integer.toString(milliseconds));
-						}
-
-						if (videoMetadata.get("xmpDM:videoFrameRate") != null) {
-							transientMedia.addMetadata("FPS", videoMetadata.get("xmpDM:videoFrameRate"));
-						}
-						String rotation = videoMetadata.get("rotation");
-						if (rotation != null) {
-							transientMedia.addMetadata("ROTATION", rotation);
-						}
+						inspectVideo(localFile, transientMedia);
 						break;
+
 					case IMAGE:
-						Metadata imageMetadata = generateExifMetadata(localFile);
-						if (imageMetadata.get("tiff:Orientation")!=null) {
-							transientMedia.addMetadata("EXIF_ORIENTATION", imageMetadata.get("tiff:Orientation"));
-							int orientation = Integer.valueOf(imageMetadata.get("tiff:Orientation"));
-							switch (orientation) {
-								case 1:
-									transientMedia.addMetadata("ROTATION", "0");
-									transientMedia.addMetadata("HORIZONTAL_FLIP", "FALSE");
-									break;
-								case 2:
-									transientMedia.addMetadata("ROTATION", "0");
-									transientMedia.addMetadata("HORIZONTAL_FLIP", "TRUE");
-									break;
-								case 3:
-									transientMedia.addMetadata("ROTATION", "180");
-									transientMedia.addMetadata("HORIZONTAL_FLIP", "FALSE");
-									break;
-								case 4:
-									transientMedia.addMetadata("ROTATION", "180");
-									transientMedia.addMetadata("HORIZONTAL_FLIP", "TRUE");
-									break;
-								case 5:
-									transientMedia.addMetadata("ROTATION", "90");
-									transientMedia.addMetadata("HORIZONTAL_FLIP", "TRUE");
-									break;
-								case 6:
-									transientMedia.addMetadata("ROTATION", "90");
-									transientMedia.addMetadata("HORIZONTAL_FLIP", "FALSE");
-									break;
-								case 7:
-									transientMedia.addMetadata("ROTATION", "270");
-									transientMedia.addMetadata("HORIZONTAL_FLIP", "TRUE");
-									break;
-								case 8:
-									transientMedia.addMetadata("ROTATION", "270");
-									transientMedia.addMetadata("HORIZONTAL_FLIP", "FALSE");
-									break;
-
-							}
-						}
-						transientMedia.setLength(1);
+						inspectImage(localFile, transientMedia);
 						break;
+
 					default:
 						transientMedia.setFailed(true);
 						transientMedia.setMessage("Unsupported file format.");
 						break;
 				}
-			} catch(Exception exception) {
+			} catch (Exception exception) {
 				log.warn("[Job {}|*|*] Failed to inspect Media #{} due to an exception.", exchange.getIn().getHeader(MpfHeaders.JOB_ID), transientMedia.getId(), exception);
 				transientMedia.setFailed(true);
 				transientMedia.setMessage(exception.getMessage());
@@ -206,6 +143,109 @@ public class MediaInspectionProcessor extends WfmProcessor {
 			redis.setJobStatus(exchange.getIn().getHeader(MpfHeaders.JOB_ID,Long.class), JobStatus.IN_PROGRESS_ERRORS);
 		}
 		redis.persistMedia(exchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class), transientMedia);
+	}
+
+	private void inspectAudio(File localFile, TransientMedia transientMedia) throws IOException, TikaException, SAXException {
+		// We do not fetch the length of audio files.
+		Metadata audioMetadata = generateFFMPEGMetadata(localFile);
+		int audioMilliseconds = calculateDurationMilliseconds(audioMetadata.get("xmpDM:duration"));
+		if (audioMilliseconds >= 0) {
+			transientMedia.addMetadata("DURATION", Integer.toString(audioMilliseconds));
+		}
+		transientMedia.setLength(-1);
+	}
+
+	private void inspectVideo(File localFile, TransientMedia transientMedia) throws IOException, TikaException, SAXException {
+		// FRAME_COUNT
+
+		// Use the frame counter native library to calculate the length of videos.
+		log.debug("Counting frames in '{}'.", localFile);
+
+		// We can't get the frame count directly from a gif,
+		// so iterate over the frames and count them one by one
+		boolean isGif = transientMedia.getType().equals("image/gif");
+		int retval = new FrameCounter(localFile).count(isGif);
+
+		if (retval <= 0) {
+			transientMedia.setFailed(true);
+			transientMedia.setMessage("Cannot detect video file length.");
+			return;
+		}
+
+		int frameCount = retval;
+		transientMedia.setLength(frameCount);
+		transientMedia.addMetadata("FRAME_COUNT", Integer.toString(frameCount));
+
+		// FPS
+
+		Metadata videoMetadata = generateFFMPEGMetadata(localFile);
+		String fpsStr = videoMetadata.get("xmpDM:videoFrameRate");
+		double fps = 0;
+		if (fpsStr != null) {
+			fps = Double.parseDouble(fpsStr);
+			transientMedia.addMetadata("FPS", Double.toString(fps));
+		}
+
+		// DURATION
+
+		int duration = this.calculateDurationMilliseconds(videoMetadata.get("xmpDM:duration"));
+		if (duration <= 0 && frameCount > 0 && fps > 0) {
+			duration = (int) ((frameCount / fps) * 1000);
+		}
+		if (duration > 0) {
+			transientMedia.addMetadata("DURATION", Integer.toString(duration));
+		}
+
+		// ROTATION
+
+		String rotation = videoMetadata.get("rotation");
+		if (rotation != null) {
+			transientMedia.addMetadata("ROTATION", rotation);
+		}
+	}
+
+	private void inspectImage(File localFile, TransientMedia transientMedia) throws IOException, TikaException, SAXException {
+		Metadata imageMetadata = generateExifMetadata(localFile);
+		if (imageMetadata.get("tiff:Orientation") != null) {
+			transientMedia.addMetadata("EXIF_ORIENTATION", imageMetadata.get("tiff:Orientation"));
+			int orientation = Integer.valueOf(imageMetadata.get("tiff:Orientation"));
+			switch (orientation) {
+				case 1:
+					transientMedia.addMetadata("ROTATION", "0");
+					transientMedia.addMetadata("HORIZONTAL_FLIP", "FALSE");
+					break;
+				case 2:
+					transientMedia.addMetadata("ROTATION", "0");
+					transientMedia.addMetadata("HORIZONTAL_FLIP", "TRUE");
+					break;
+				case 3:
+					transientMedia.addMetadata("ROTATION", "180");
+					transientMedia.addMetadata("HORIZONTAL_FLIP", "FALSE");
+					break;
+				case 4:
+					transientMedia.addMetadata("ROTATION", "180");
+					transientMedia.addMetadata("HORIZONTAL_FLIP", "TRUE");
+					break;
+				case 5:
+					transientMedia.addMetadata("ROTATION", "90");
+					transientMedia.addMetadata("HORIZONTAL_FLIP", "TRUE");
+					break;
+				case 6:
+					transientMedia.addMetadata("ROTATION", "90");
+					transientMedia.addMetadata("HORIZONTAL_FLIP", "FALSE");
+					break;
+				case 7:
+					transientMedia.addMetadata("ROTATION", "270");
+					transientMedia.addMetadata("HORIZONTAL_FLIP", "TRUE");
+					break;
+				case 8:
+					transientMedia.addMetadata("ROTATION", "270");
+					transientMedia.addMetadata("HORIZONTAL_FLIP", "FALSE");
+					break;
+
+			}
+		}
+		transientMedia.setLength(1);
 	}
 
 	private Metadata generateFFMPEGMetadata(File fileName) throws IOException, TikaException, SAXException {
@@ -253,7 +293,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 			int minutes = Integer.parseInt(durationArray[1]);
 			int seconds = Integer.parseInt(durationArray[2]);
 			int milliseconds = Integer.parseInt(durationArray[3]);
-			milliseconds = milliseconds + 1000*seconds + 1000*60*minutes + 1000*60*60*hours;
+			milliseconds = milliseconds + 1000 * seconds + 1000 * 60 * minutes + 1000 * 60 * 60 * hours;
 			return milliseconds;
 		}
 		return -1;

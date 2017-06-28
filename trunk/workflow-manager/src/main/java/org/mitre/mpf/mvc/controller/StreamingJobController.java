@@ -66,6 +66,8 @@ import org.springframework.security.access.method.P;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 import static java.util.stream.Collectors.joining;
@@ -398,7 +400,8 @@ public class StreamingJobController {
                         streamingJobCreationRequest.getNewTrackAlertCallbackURI(),
                         streamingJobCreationRequest.getCallbackMethod());
 
-
+                // submit the streaming job to MPF services.  Note that the jobId of the streaming job is
+                // created when the job is submitted to the MPF service
                 long jobId = mpfService.submitJob(jsonStreamingJobRequest);
                 log.debug("Successful creation of streaming JobId: {}", jobId);
 
@@ -406,7 +409,16 @@ public class StreamingJobController {
                     addJobToSession(jobId);
                 }
 
-                return new StreamingJobCreationResponse(jobId, jsonStreamingJobRequest.getExternalId(), jsonStreamingJobRequest.getOutputObjectPath());
+                // create the output file system for the streaming job, then return the appropriate streaming job creation response
+                if ( mpfService.initializeOutputDirectoryForStreamingJob(jobId) ) {
+                    // get the updated streamingJobRequest so we can pass along the output object directory in the
+                    // streaming job creation response.
+                    StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
+                    return new StreamingJobCreationResponse(jobId, jsonStreamingJobRequest.getExternalId(), streamingJobRequest.getOutputObjectPath());
+                } else {
+                    log.error("Failure creating output file system for streaming jobId " + jobId + ". Please check server logs for more detail");
+                    return new StreamingJobCreationResponse(-1, String.format("Failure creating output file system for streaming job with Job Id '%s'.  Please check server log for more details.", jobId));
+                }
             } else {
                 log.error("Failure creating streaming job due to a malformed request, check the request parameters against the constraints defined in the REST API");
                 return new StreamingJobCreationResponse(-1, String.format("Failure creating streaming job with External Id '%s'.  Request was not valid, confirm the job parameter constraints and resend the request.", streamingJobCreationRequest.getExternalId()));

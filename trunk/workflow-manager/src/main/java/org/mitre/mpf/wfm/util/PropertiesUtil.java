@@ -215,18 +215,19 @@ public class PropertiesUtil {
 	public File createStreamingOutputObjectsFile(long jobId, File parentDir) throws IOException {
 		return createOutputObjectsFile(jobId, parentDir, "detection");
 	}
-	/** Create the directory path to be used for storing output objects for a job, return the path to that directory as a File
+
+	/** Get the directory path to be used for storing output objects for a job, return the path to that directory as a Path
+	 * This method is typically used for streaming jobs
 	 * @param jobId unique id that has been assigned to the job
-	 * @param outputObjectDirectoryName name of the directory to be created for storing the output objects
-	 * @return File (directory) to be used for storing an output object for this job
-	 * @throws IOException
-	 */
-	private File createOutputObjectsDirectory(long jobId, String outputObjectDirectoryName) throws IOException {
-		String fileName = String.format("%d/%s.json", jobId, TextUtils.trimToEmpty(outputObjectDirectoryName));
+	 * @param outputObjectDirectoryName name of the sub-directory to be used for storing the output objects from this streaming job
+	 * @return Path (directory) to be used for storing an output object for this job
+	*/
+	private Path getOutputObjectsDirectoryPath(long jobId, String outputObjectDirectoryName) {
+		String fileName = String.format("%s/%d", TextUtils.trimToEmpty(outputObjectDirectoryName), jobId);
 		Path path = Paths.get(outputObjectsDirectory.toURI()).resolve(fileName).normalize().toAbsolutePath();
-		Files.createDirectories(path);
-		return path.toFile();
+		return(path);
 	}
+
 	/** Create the File to be used for storing output objects from a job, plus create the directory path to that File
 	 * This version of the method is typically used for batch jobs
 	 * @param jobId unique id that has been assigned to the job
@@ -240,6 +241,20 @@ public class PropertiesUtil {
 		Files.createDirectories(path.getParent());
 		return path.toFile();
 	}
+
+	/** Create the directory path to be used for storing output objects for a job, return the path to that directory as a File
+	 * This method is typically used for streaming jobs
+	 * @param jobId unique id that has been assigned to the job
+	 * @param outputObjectDirectoryName name of the sub-directory to be used for storing the output objects from this streaming job
+	 * @return File (directory) to be used for storing an output object for this job
+	 * @throws IOException
+	 */
+	private File createOutputObjectsDirectory(long jobId, String outputObjectDirectoryName) throws IOException {
+		Path path = getOutputObjectsDirectoryPath(jobId,outputObjectDirectoryName);
+		Files.createDirectories(path);
+		return path.toFile();
+	}
+
 	/** Create the File to be used for storing output objects from a job, plus create the directory path to that File
 	 * This version of the method is typically used for streaming jobs
 	 * @param jobId unique id that has been assigned to the job

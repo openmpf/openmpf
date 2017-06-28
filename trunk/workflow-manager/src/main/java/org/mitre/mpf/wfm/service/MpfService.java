@@ -107,16 +107,25 @@ public interface MpfService {
 
 	/**
 	 * Asynchronously submits a JSON-based batch job request and returns the identifier associated with the persistent job request which was created.
+	 * Note: this method creates the jobId for this newly created batch job
 	 * @param jobRequest The batch job to execute.
-	 * @return The id of the batch job which was created.
+	 * @return The jobId of the batch job which was created.
 	 */
 	public long submitJob(JsonJobRequest jobRequest);
 	/**
 	 * Asynchronously submits a JSON-based streaming job request and returns the identifier associated with the persistent job request which was created.
+	 * Note: this method creates the jobId for this newly created streaming job
 	 * @param streamingJobRequest The streaming job to execute.
-	 * @return The id of the streaming job which was created.
+	 * @return The jobId of the streaming job which was created.
 	 */
 	public long submitJob(JsonStreamingJobRequest streamingJobRequest);
+
+	/** Create the output object file system for the specified streaming job and store parameters describing
+	 * the output object file system within the persistant object representing this streaming job
+	 * @param jobId The unique job id of the streaming job
+	 * @return true if successful, false otherwise
+	 */
+	public boolean initializeOutputDirectoryForStreamingJob(long jobId);
 
 	/**
 	 * Asynchronously submits a job using the originally provided priority. See {@link #resubmitJob(long, int)}. */

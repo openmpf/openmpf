@@ -120,7 +120,12 @@ public class MpfServiceImpl implements MpfService {
 		return jobRequestBo.createRequest(externalId, pipelineName, media, algorithmProperties, jobProperties, buildOutput, priority, callbackUrl, method);
 	}
 
-
+	/**
+	 * Asynchronously submits a JSON-based batch job request and returns the identifier associated with the persistent job request which was created.
+	 * Note: this method creates the jobId for this newly created batch job
+	 * @param jobRequest The batch job to execute.
+	 * @return The jobId of the batch job which was created.
+	 */
 	@Override
 	public long submitJob(JsonJobRequest jobRequest) {
 		try {
@@ -131,6 +136,12 @@ public class MpfServiceImpl implements MpfService {
 		}
 	}
 
+	/**
+	 * Asynchronously submits a JSON-based streaming job request and returns the identifier associated with the persistent job request which was created.
+	 * Note: this method creates the jobId for this newly created streaming job
+	 * @param streamingJobRequest The streaming job to execute.
+	 * @return The jobId of the streaming job which was created.
+	 */
 	@Override
 	public long submitJob(JsonStreamingJobRequest streamingJobRequest) {
 		try {
@@ -242,6 +253,24 @@ public class MpfServiceImpl implements MpfService {
 			return false;
 		}
 	}
+
+	/** Create the output object file system for the specified streaming job and store parameters describing
+	 * the output object file system within the persistant object representing this streaming job
+	 * @param jobId The unique job id of the streaming job
+	 * @return true if successful, false otherwise
+	 */
+	@Override
+	public boolean initializeOutputDirectoryForStreamingJob(long jobId) {
+		try {
+			log.debug(this.getClass().getName()+":initializeOutputDirectoryForStreamingJob: jobId="+jobId);
+			streamingJobRequestBo.initializeOutputDirectoryForStreamingJob(jobId);
+			return true;
+		} catch(WfmProcessingException wpe) {
+			log.error("Failed to initialize output directory for Streaming Job #{} due to an exception.", jobId, wpe);
+			return false;
+		}
+	}
+
 
 	@Override
 	public MarkupResult getMarkupResult(long id) {

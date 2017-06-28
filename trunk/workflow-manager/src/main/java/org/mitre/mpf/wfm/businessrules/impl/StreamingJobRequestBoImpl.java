@@ -259,6 +259,34 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		}
 	}
 
+	/** Create the output object file system for the specified streaming job and store parameters describing
+	 * the output object file system within the streaming job
+	 * @param jobId The unique job id of the streaming job
+	 * @throws WfmProcessingException
+	 */
+	@Override
+	public synchronized void initializeOutputDirectoryForStreamingJob(long jobId) throws WfmProcessingException {
+		StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
+		if(streamingJobRequest == null) {
+			throw new WfmProcessingException(String.format("A streaming job with id %d is not known to the system.", jobId));
+		} else {
+			try {
+				// create the output object directory for this streaming job and store the absolute path to that directory
+				// (as a String) in the streaming job request
+				File outputObjectsDirName = propertiesUtil.createStreamingOutputObjectsDirectory(jobId);
+				streamingJobRequest.setOutputObjectPath(outputObjectsDirName.getAbsolutePath());
+				streamingJobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
+
+				// update the streaming job request in the MySQL long-term database
+				streamingJobRequestDao.persist(streamingJobRequest);
+
+			} catch(IOException wpe) {
+				log.error("Failed to create the output object file directory for streaming job '{}' due to an exception.", streamingJobRequest.getId(), wpe);
+				throw new WfmProcessingException(String.format("Failed to create the output object file directory for streaming job %d due to an exception.", jobId),wpe);
+			}
+		}
+	}
+
 	private StreamingJobRequest resubmitInternal(long jobId, PriorityPolicy priorityPolicy, int priority) throws WfmProcessingException {
 		priorityPolicy = (priorityPolicy == null) ? PriorityPolicy.DEFAULT : priorityPolicy;
 
@@ -266,7 +294,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
 		StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
 		if(streamingJobRequest == null) {
-			throw new WfmProcessingException(String.format("A streaming job with id %d is not known to the system.", priority));
+			throw new WfmProcessingException(String.format("A streaming job with id %d is not known to the system.", jobId));
 		} else if(!streamingJobRequest.getStatus().isTerminal()) {
 			throw new WfmProcessingException(String.format("The streaming job with id %d is in the non-terminal state of '%s'. Only jobs in a terminal state may be resubmitted.",
 					jobId, streamingJobRequest.getStatus().name()));
@@ -309,26 +337,16 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		streamingJobRequest.setInputObject(jsonUtils.serialize(jsonStreamingJobRequest));
 		streamingJobRequest.setPipeline(jsonStreamingJobRequest.getPipeline() == null ? null : TextUtils.trimAndUpper(jsonStreamingJobRequest.getPipeline().getName()));
 
-		// Initialize output object path, this is the top level directory for output objects.
-		streamingJobRequest.setOutputObjectPath(jsonStreamingJobRequest.getOutputObjectPath());
-
-		// Set output object version to null.  This will be set later when the output objects are actually created (if enabled)
+		// Set output object version and path to null.  These will be set later after the job has been
+		// submitted to MPF and when the
+		// output objects are actually created (if enabled)
+		streamingJobRequest.setOutputObjectPath(null);
 		streamingJobRequest.setOutputObjectVersion(null);
 
 		// set remaining items that need to be persisted
 		streamingJobRequest.setExternalId(jsonStreamingJobRequest.getExternalId());
 		streamingJobRequest.setHealthReportCallbackURI(jsonStreamingJobRequest.getHealthReportCallbackURI());
 		streamingJobRequest.setStreamURI(jsonStreamingJobRequest.getStream().getStreamURI());
-
-		try {
-			// create the output object directory for this streaming job and store the absolute path to that directory
-			// (as a String) in the streaming job request
-			File outputObjectsDirName = propertiesUtil.createStreamingOutputObjectsDirectory(streamingJobRequest.getId());
-			streamingJobRequest.setOutputObjectPath(outputObjectsDirName.getAbsolutePath());
-			streamingJobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
-		} catch(IOException wpe) {
-			log.error("Failed to create the output object file directory for streaming job '{}' due to an exception.", streamingJobRequest.getId(), wpe);
-		}
 
 		// store the streaming job request in the MySQL long-term database
 		return streamingJobRequestDao.persist(streamingJobRequest);

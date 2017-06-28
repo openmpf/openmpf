@@ -85,5 +85,12 @@ public interface StreamingJobRequestBo {
 	 */
 	StreamingJobRequest initialize(JsonStreamingJobRequest streamingJobRequest) throws WfmProcessingException;
 
+	/** Create the output object file system for the specified streaming job and store parameters describing
+	 * the output object file system within the streaming job
+	 * @param jobId The unique job id of the streaming job
+	 * @throws WfmProcessingException
+	 */
+	void initializeOutputDirectoryForStreamingJob(long jobId) throws WfmProcessingException;
+
 	boolean cancel(long jobId) throws WfmProcessingException;
 }

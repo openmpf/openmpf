@@ -75,16 +75,16 @@ public enum JobStatus {
 	/** Indicates the job is in an error state. */
 	ERROR(true),
 
-	/** added additional job status enumerations to support streaming job which is running */
+	/** Job status enumeration to support streaming job which is running */
 	RUNNING(false),
 
-	/** added additional job status enumerations to support streaming job which is terminated */
+	/** Job status enumeration to support streaming job which is terminated */
 	TERMINATED(true),
 
-	/** added additional job status enumerations to support streaming job which is paused */
+	/** Job status enumeration to support streaming job which is paused */
 	PAUSED(false),
 
-	/** added additional job status enumerations to support streaming job which is stalled */
+	/** Job status enumeration to support streaming job which is stalled */
 	STALLED(false);
 
 	public static final JobStatus DEFAULT = COMPLETE;
@@ -101,8 +101,8 @@ public enum JobStatus {
 
 	public static JobStatus parse(String input, JobStatus defaultValue) {
 		String trimmed = StringUtils.trimToNull(input);
-		for(JobStatus jobStatus : JobStatus.values()) {
-			if(StringUtils.equalsIgnoreCase(jobStatus.name(), trimmed)) {
+		for ( JobStatus jobStatus : JobStatus.values() ) {
+			if ( StringUtils.equalsIgnoreCase(jobStatus.name(), trimmed) ) {
 				return jobStatus;
 			}
 		}
@@ -111,8 +111,8 @@ public enum JobStatus {
 
 	public static Collection<JobStatus> getNonTerminalStatuses() {
 		List<JobStatus> jobStatuses = new ArrayList<>();
-		for(JobStatus jobStatus : values()) {
-			if(!jobStatus.isTerminal()) {
+		for ( JobStatus jobStatus : values() ) {
+			if (!jobStatus.isTerminal() ) {
 				jobStatuses.add(jobStatus);
 			}
 		}

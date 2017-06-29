@@ -37,10 +37,19 @@ public class StreamingJobCreationRequest {
 	private String externalId = null;
 	private String pipelineName = null;
 	private Integer priority = null; // will be set to 4 (default) on the server side if null
+
 	private JobCreationStreamData stream = new JobCreationStreamData();
 
+	// true or false to write video segments to disk.  Note that this is called buildOutput in other code.  Will use a server side property if null
+	private Boolean enableOutputToDisk = null;
+
+	private String healthReportCallbackURI = null; // the URL to send a health report to
+	private String summaryReportCallbackURI = null; // the URL to send a summary report to
+	private String newTrackAlertCallbackURI = null; // the URL to send a new track alert report to
+	private String callbackMethod = "POST"; // the method to send the response back after a job completes
+
 	private long stallAlertDetectionThreshold = -1L;
-	public void setStallAlertDetectionThreshold(long stallAlertDetectionThreshold) { this.stallAlertDetectionThreshold=stallAlertDetectionThreshold; }
+	public void setStallAlertDetectionThreshold(long stallAlertDetectionThreshold) { this.stallAlertDetectionThreshold = stallAlertDetectionThreshold; }
 	public long getStallAlertDetectionThreshold() { return stallAlertDetectionThreshold; }
 
 	private long stallAlertRate = -1L;
@@ -51,18 +60,12 @@ public class StreamingJobCreationRequest {
 	public void setStallTimeout(long stallTimeout) { this.stallTimeout=stallTimeout; }
 	public long getStallTimeout() { return stallTimeout; }
 
-	// true or false to write video segments to disk.  Note that this is called buildOutput in other code.  Will use a server side property if null
-	private Boolean enableOutputToDisk = null;
-	private String healthReportCallbackURI = null; // the URL to send a health report to
-	private String summaryReportCallbackURI = null; // the URL to send a summary report to
-	private String newTrackAlertCallbackURI = null; // the URL to send a new track alert report to
-	private String callbackMethod = "POST"; // the method to send the response back after a job completes
-
 	public JobCreationStreamData getStream() {
 		return stream;
 	}
-	public void setStream(JobCreationStreamData streamData) {this.stream = streamData;}
-	public String getStreamURI() {return stream.getStreamURI();}
+	public void setStream(JobCreationStreamData streamData) { this.stream = streamData; }
+	public String getStreamURI() { return stream.getStreamURI(); }
+
 	public Map<String, String> getMediaProperties() { return stream.getMediaProperties(); }
 	public int getSegmentSize() {
 		return stream.getSegmentSize();
@@ -139,7 +142,7 @@ public class StreamingJobCreationRequest {
 	 * @return will return SET or POST or null if the method is not defined
 	 */
 	public String getCallbackMethod() { return callbackMethod; }
-	public void setCallbackMethod(String callbackMethod) { this.callbackMethod = callbackMethod;	}
+	public void setCallbackMethod(String callbackMethod) { this.callbackMethod = callbackMethod; }
 
 	/** this method will check the current settings within this streaming job creation request,
 	 * and will return true if the current settings are set within the constraints defined for a
@@ -149,7 +152,7 @@ public class StreamingJobCreationRequest {
 	public boolean isValidRequest() {
 		// do error checks on the streaming job request.
 		if ( getStream().isValidStreamData() && getStallAlertDetectionThreshold() != -1L &&
-				getStallAlertRate() != -1L && getStallTimeout() != -1L) {
+				getStallAlertRate() != -1L && getStallTimeout() != -1L ) {
 			return true;
 		} else {
 			return false;

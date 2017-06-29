@@ -52,7 +52,7 @@ public class JsonStreamingInputObject {
     private Map<String,String> mediaProperties;
     public Map<String,String> getMediaProperties() { return mediaProperties; }
     public void addProperty(String key, String value){
-        mediaProperties.put(key,value);
+        mediaProperties.put(key, value);
     }
 
 

@@ -69,11 +69,11 @@ public class PropertiesUtil {
 		permissions.add(PosixFilePermission.OWNER_EXECUTE);
 
 		Path share = Paths.get(sharePath).toAbsolutePath();
-		if(!Files.exists(share)) {
+		if ( !Files.exists(share) ) {
 			share = Files.createDirectories(share, PosixFilePermissions.asFileAttribute(permissions));
 		}
 
-		if(!Files.exists(share) || !Files.isDirectory(share)) {
+		if ( !Files.exists(share) || !Files.isDirectory(share) ) {
 			throw new WfmProcessingException(String.format(
 					"Failed to create the path '%s'. It does not exist or it is not a directory.",
 					share.toString()));
@@ -103,21 +103,19 @@ public class PropertiesUtil {
 		log.debug("Uploaded Components Directory = {}", uploadedComponentsDirectory);
 	}
 
-
 	private static File createOrFail(Path parent, String subdirectory, Set<PosixFilePermission> permissions)
 				throws IOException, WfmProcessingException {
 		Path child = parent.resolve(subdirectory);
-		if(!Files.exists(child)) {
+		if ( !Files.exists(child) ) {
 			child = Files.createDirectories(child, PosixFilePermissions.asFileAttribute(permissions));
 		}
 
-		if(!Files.exists(child) || !Files.isDirectory(child)) {
+		if ( !Files.exists(child) || !Files.isDirectory(child) ) {
 			throw new WfmProcessingException(String.format("Failed to create the path '%s'. It does not exist or it is not a directory.", child));
 		}
 
 		return child.toAbsolutePath().toFile();
 	}
-
 
 	//
 	// JMX Configuration
@@ -142,7 +140,8 @@ public class PropertiesUtil {
 	@Value("#{'${jmx.amq.broker.whiteList}'.split(',')}")
 	private String[] amqBrokerPurgeWhiteList;
 	public Set<String> getAmqBrokerPurgeWhiteList() {
-		return new HashSet<>(Arrays.asList(amqBrokerPurgeWhiteList)); }
+		return new HashSet<>(Arrays.asList(amqBrokerPurgeWhiteList));
+	}
 
 	//
 	// Main Configuration
@@ -167,7 +166,6 @@ public class PropertiesUtil {
 	@Value("${mpf.share.path}")
 	private String sharePath;
 
-
 	private File artifactsDirectory;
 	public File getArtifactsDirectory() { return artifactsDirectory; }
 	public File createArtifactDirectory(long jobId, long mediaId, int stageIndex) throws IOException {
@@ -181,15 +179,11 @@ public class PropertiesUtil {
 		return path.toFile();
 	}
 
-
-
 	private File outputObjectsDirectory;
-
 	/** Gets the path to the top level output object directory
 	 * @return path to the top level output object directory
 	 */
 	public File getOutputObjectsDirectory() { return outputObjectsDirectory; }
-
 	/** Create the output objects directory for batch jobs
 	 * @param jobId unique id that has been assigned to the batch job
 	 * @return directory that was created under the output objects directory for storage of files from this batch job
@@ -333,7 +327,6 @@ public class PropertiesUtil {
 	private int jmsPriority;
 	public int getJmsPriority() { return jmsPriority; }
 
-
 	//
 	// Pipeline Configuration
 	//
@@ -347,7 +340,6 @@ public class PropertiesUtil {
 	public WritableResource getAlgorithmDefinitions() {
 		return getDataResource(algorithmsData, algorithmsTemplate);
 	}
-
 
 	@Value("${data.actions.file}")
 	private FileSystemResource actionsData;
@@ -369,7 +361,6 @@ public class PropertiesUtil {
 		return getDataResource(tasksData, tasksTemplate);
 	}
 
-
 	@Value("${data.pipelines.file}")
 	private FileSystemResource pipelinesData;
 
@@ -379,7 +370,6 @@ public class PropertiesUtil {
 	public WritableResource getPipelineDefinitions() {
 		return getDataResource(pipelinesData, pipelinesTemplate);
 	}
-
 
 	@Value("${data.nodemanagerpalette.file}")
 	private FileSystemResource nodeManagerPaletteData;
@@ -417,9 +407,8 @@ public class PropertiesUtil {
 	private File uploadedComponentsDirectory;
 	public File getUploadedComponentsDirectory() { return uploadedComponentsDirectory; }
 
-
 	//should not need these outside of this file
-    @Value("${component.upload.dir.name}")
+	@Value("${component.upload.dir.name}")
 	private String componentUploadDirName;
 
 	@Value("${mpf.component.dependency.finder.script}")
@@ -464,7 +453,7 @@ public class PropertiesUtil {
 
 	@Value("#{'${web.active.profiles}'.split(',')}")
 	private List<String> webActiveProfiles;
-    public List<String> getWebActiveProfiles() {
+	public List<String> getWebActiveProfiles() {
         return webActiveProfiles;
     }
 
@@ -477,7 +466,7 @@ public class PropertiesUtil {
 	public String getServerMediaTreeRoot() { return serverMediaTreeRoot; }
 
 	@Value("#{'${web.server.media.tree.custom.extensions}'.split(',')}")
-	private List<String> serverMediaTreeCustomExtensions; //modifications are made in @PostConstruct
+	private List<String> serverMediaTreeCustomExtensions; // modifications are made in @PostConstruct
 	public List<String> getServerMediaTreeCustomExtensions() {
 		return serverMediaTreeCustomExtensions;
 	}
@@ -519,7 +508,6 @@ public class PropertiesUtil {
 		return outputObjectVersion;
 	}
 
-
 	@Value("${config.mediaTypes.file}")
 	private FileSystemResource mediaTypesFile;
 
@@ -532,7 +520,6 @@ public class PropertiesUtil {
 		return customPropertiesFile;
 	}
 
-
 	private void createConfigFiles() throws IOException {
 		if (!mediaTypesFile.exists()) {
 			copyResource(mediaTypesFile, mediaTypesTemplate);
@@ -544,7 +531,6 @@ public class PropertiesUtil {
 		}
 	}
 
-
 	private static WritableResource getDataResource(WritableResource dataResource, InputStreamSource templateResource) {
 		if (dataResource.exists()) {
 			return dataResource;
@@ -554,25 +540,22 @@ public class PropertiesUtil {
 			log.info("{} doesn't exist. Copying from {}", dataResource, templateResource);
 			copyResource(dataResource, templateResource);
 			return dataResource;
-		}
-		catch (IOException e) {
+		} catch ( IOException e ) {
 			throw new UncheckedIOException(e);
 		}
 	}
 
-
 	private static void copyResource(WritableResource target, InputStreamSource source) throws IOException {
 		createParentDir(target);
-		try (InputStream inStream = source.getInputStream(); OutputStream outStream = target.getOutputStream()) {
+		try ( InputStream inStream = source.getInputStream(); OutputStream outStream = target.getOutputStream() ) {
 			IOUtils.copy(inStream, outStream);
 		}
 	}
 
-
 	private static void createParentDir(Resource resource) throws IOException {
 		Path resourcePath = Paths.get(resource.getURI());
 		Path resourceDir = resourcePath.getParent();
-		if (Files.notExists(resourceDir)) {
+		if ( Files.notExists(resourceDir) ) {
 			log.info("Directory {} doesn't exist. Creating it now.", resourceDir);
 			Files.createDirectories(resourceDir);
 		}

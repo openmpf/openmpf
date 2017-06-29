@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.enums;
 
 public enum UriScheme {
+
 	/** Default: The URI scheme is either unknown or undefined. */
 	UNDEFINED(false),
 
@@ -42,8 +43,8 @@ public enum UriScheme {
 
 	/** Gets the enumerated value which maps to the case-insensitive input; if no value exists, {@link #UNDEFINED} is returned. */
 	public static UriScheme parse(String scheme) {
-		for(UriScheme uriScheme : UriScheme.values()) {
-			if(uriScheme.name().equalsIgnoreCase(scheme)) {
+		for ( UriScheme uriScheme : UriScheme.values() ) {
+			if ( uriScheme.name().equalsIgnoreCase(scheme) ) {
 				return uriScheme;
 			}
 		}

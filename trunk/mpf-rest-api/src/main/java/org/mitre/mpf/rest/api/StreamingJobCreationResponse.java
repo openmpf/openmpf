@@ -43,7 +43,7 @@ public class StreamingJobCreationResponse {
 	}
 
 	public StreamingJobCreationResponse(long jobId, String externalId, String outputObjectPath) {
-		this.mpfResponse.setMessage(0,"success");
+		this.mpfResponse.setMessage(0, "success");
 		this.jobId = jobId;
 		this.externalId = externalId;
 		this.outputObjectPath = outputObjectPath;
@@ -55,9 +55,8 @@ public class StreamingJobCreationResponse {
 	public long getJobId() {
 		return jobId;
 	}
-	public String getExternalId() {return externalId;}
-	public String getOutputObjectPath() {return outputObjectPath;}
-	
+	public String getExternalId() { return externalId; }
+	public String getOutputObjectPath() { return outputObjectPath; }
 	public MpfResponse getMpfResponse() {
 		return mpfResponse;
 	}

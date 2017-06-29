@@ -50,7 +50,7 @@ public class HibernateStreamingJobRequestDaoImpl extends AbstractHibernateDao<St
 		query.setParameter("newStatus", JobStatus.CANCELLED_BY_SHUTDOWN);
 		query.setParameterList("nonTerminalStatuses", JobStatus.getNonTerminalStatuses());
 		int updatedRows = query.executeUpdate();
-		if(updatedRows >= 0) {
+		if ( updatedRows >= 0 ) {
 			log.warn("{} streaming jobs were in a non-terminal state and have been marked as {}", updatedRows, JobStatus.CANCELLED_BY_SHUTDOWN);
 		}
 	}

@@ -84,7 +84,7 @@ public class MpfServiceImpl implements MpfService {
 	@Qualifier(HibernateSystemMessageDaoImpl.REF)
 	private SystemMessageDao systemMessageDao;
 
-	/** method used to create a batch job using the raw parameters for the job
+	/** Create a batch job using the raw parameters for the job
 	 * This version of the method does not allow for callbacks to be defined for this job
 	 * @param media
 	 * @param algorithmProperties
@@ -97,11 +97,11 @@ public class MpfServiceImpl implements MpfService {
 	 */
 	@Override
 	public JsonJobRequest createJob(List<JsonMediaInputObject> media, Map<String,Map> algorithmProperties, Map<String,String> jobProperties, String pipelineName, String externalId, boolean buildOutput, int priority) {
-		log.debug("createJob: MediaUris: {}. Pipeline: {}. Build Output: {}. Priority: {}.", (media == null) ? null : media.size(), pipelineName, buildOutput, priority);
+		log.debug("createJob: MediaUris: {}, Pipeline: {}, Build Output: {}, Priority: {}", (media == null) ? null : media.size(), pipelineName, buildOutput, priority);
 		return jobRequestBo.createRequest(externalId, pipelineName, media, algorithmProperties, jobProperties, buildOutput, priority);
 	}
 
-	/** method used to create a batch job using the raw parameters for the job
+	/** Create a batch job using the raw parameters for the job
 	 * This version of the method allows for a callback to be defined for this job
 	 * @param media
 	 * @param algorithmProperties
@@ -116,7 +116,7 @@ public class MpfServiceImpl implements MpfService {
 	 */
 	@Override
 	public JsonJobRequest createJob(List<JsonMediaInputObject> media, Map<String,Map> algorithmProperties, Map<String,String> jobProperties, String pipelineName, String externalId, boolean buildOutput, int priority, String callbackUrl, String method) {
-		log.debug("createJob: MediaUris: {}. Pipeline: {}. Build Output: {}. Priority: {}. Callback: {}. Method: {}.", (media == null) ? null : media.size(), pipelineName, buildOutput, priority, callbackUrl, method);
+		log.debug("createJob: MediaUris: {}, Pipeline: {}, Build Output: {}, Priority: {}, Callback: {}, Method: {}", (media == null) ? null : media.size(), pipelineName, buildOutput, priority, callbackUrl, method);
 		return jobRequestBo.createRequest(externalId, pipelineName, media, algorithmProperties, jobProperties, buildOutput, priority, callbackUrl, method);
 	}
 
@@ -130,7 +130,7 @@ public class MpfServiceImpl implements MpfService {
 	public long submitJob(JsonJobRequest jobRequest) {
 		try {
 			return jobRequestBo.run(jobRequest).getId();
-		} catch(WfmProcessingException wpe) {
+		} catch ( WfmProcessingException wpe ) {
 			log.error("Failed to submit job with external id '{}' due to an exception.", jobRequest.getExternalId(), wpe);
 			return -1;
 		}
@@ -146,15 +146,14 @@ public class MpfServiceImpl implements MpfService {
 	public long submitJob(JsonStreamingJobRequest streamingJobRequest) {
 		try {
 			return streamingJobRequestBo.run(streamingJobRequest).getId();
-		} catch(WfmProcessingException wpe) {
+		} catch ( WfmProcessingException wpe ) {
 			log.error("Failed to submit streaming job with external id '{}' due to an exception.", streamingJobRequest.getExternalId(), wpe);
 			return -1;
 		}
 	}
 
-
 	/**
-	 * resubmit a batch job
+	 * Resubmit a batch job
 	 * @param jobId jobId of a batch job
 	 * @return
 	 */
@@ -162,14 +161,14 @@ public class MpfServiceImpl implements MpfService {
 	public long resubmitJob(long jobId) {
 		try {
 			return jobRequestBo.resubmit(jobId).getId();
-		} catch(WfmProcessingException wpe) {
+		} catch ( WfmProcessingException wpe ) {
 			log.error("Failed to resubmit job {} due to an exception.", jobId, wpe);
 			return -1;
 		}
 	}
 
 	/**
-	 * resubmit a batch job with revised priority
+	 * Resubmit a batch job with revised priority
 	 * @param jobId The MPF-assigned identifier for the original batch job.
 	 * @param newPriority The new priority to assign to this job. Note: Future resubmissions will use this priority value.
 	 * @return
@@ -178,12 +177,11 @@ public class MpfServiceImpl implements MpfService {
 	public long resubmitJob(long jobId, int newPriority) {
 		try {
 			return jobRequestBo.resubmit(jobId, newPriority).getId();
-		} catch(WfmProcessingException wpe) {
+		} catch ( WfmProcessingException wpe ) {
 			log.error("Failed to resubmit job {} due to an exception.", jobId, wpe);
 			return -1;
 		}
 	}
-
 
 	/** Create a new streaming job which will execute the specified pipeline on the provided list of provided URIs
 	 * @param json_stream JSON representation of the stream data
@@ -222,7 +220,7 @@ public class MpfServiceImpl implements MpfService {
 	}
 
 	/**
-	 * cancel a batch job
+	 * Cancel a batch job
 	 * @param jobId The MPF-assigned identifier for the batch job. The job must be a batch job.
 	 * @return
 	 */
@@ -230,14 +228,15 @@ public class MpfServiceImpl implements MpfService {
 	public boolean cancel(long jobId) {
 		try {
 			return jobRequestBo.cancel(jobId);
-		} catch(WfmProcessingException wpe) {
+		} catch ( WfmProcessingException wpe ) {
 			log.error("Failed to cancel Batch Job #{} due to an exception.", jobId, wpe);
 			return false;
 		}
 	}
 
 	/**
-	 * cancel a streaming job
+	 * Cancel a streaming job
+	 * TODO handle cleanUp
 	 * @param jobId The MPF-assigned identifier for the streaming job. The job must be a streaming job.
 	 * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job
 	 * @return
@@ -248,7 +247,7 @@ public class MpfServiceImpl implements MpfService {
 			log.debug(this.getClass().getName()+":cancelStreamingJob: jobId="+jobId+", doCleanup="+doCleanup+" - don't know what to do with doCleanup TODO");
 			boolean status = streamingJobRequestBo.cancel(jobId);
 			return status;
-		} catch(WfmProcessingException wpe) {
+		} catch ( WfmProcessingException wpe ) {
 			log.error("Failed to cancel Streaming Job #{} due to an exception.", jobId, wpe);
 			return false;
 		}
@@ -265,12 +264,11 @@ public class MpfServiceImpl implements MpfService {
 			log.debug(this.getClass().getName()+":initializeOutputDirectoryForStreamingJob: jobId="+jobId);
 			streamingJobRequestBo.initializeOutputDirectoryForStreamingJob(jobId);
 			return true;
-		} catch(WfmProcessingException wpe) {
+		} catch ( WfmProcessingException wpe ) {
 			log.error("Failed to initialize output directory for Streaming Job #{} due to an exception.", jobId, wpe);
 			return false;
 		}
 	}
-
 
 	@Override
 	public MarkupResult getMarkupResult(long id) {

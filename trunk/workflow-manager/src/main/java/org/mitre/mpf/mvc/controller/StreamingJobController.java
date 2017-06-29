@@ -65,10 +65,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.method.P;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.util.stream.Collectors.joining;
 
@@ -98,7 +96,6 @@ public class StreamingJobController {
     // temporary - jsonUtils used for debugging
     @Autowired
     private JsonUtils jsonUtils;
-
 
     /*
      *	POST /jobs
@@ -137,9 +134,9 @@ public class StreamingJobController {
     public ResponseEntity <StreamingJobCreationResponse>  processStreamSession(@RequestBody StreamingJobCreationRequest streamingJobCreationRequest) {
         StreamingJobCreationResponse create_job_response = processStreamingJobCreationRequest(streamingJobCreationRequest);
         if (streamingJobCreationRequest.isValidRequest() ) {
-            return new ResponseEntity<>(create_job_response,HttpStatus.CREATED);
+            return new ResponseEntity<>(create_job_response, HttpStatus.CREATED);
         } else {
-            return new ResponseEntity<>(create_job_response,HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(create_job_response, HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -227,14 +224,14 @@ public class StreamingJobController {
     public ResponseEntity<StreamingJobInfoResponse> getJobStatusRest(@ApiParam(required = true, value = "Streaming Job Id") @PathVariable("id") long jobIdPathVar) {
         StreamingJobInfoResponse streamingJobInfoResponseModel = null;
         List<StreamingJobInfoResponse> streamingJobInfoResponseModels = getStreamingJobInfo(jobIdPathVar, false);
-        if (streamingJobInfoResponseModels != null && streamingJobInfoResponseModels.size() == 1) {
+        if ( streamingJobInfoResponseModels != null && streamingJobInfoResponseModels.size() == 1 ) {
             streamingJobInfoResponseModel = streamingJobInfoResponseModels.get(0);
             //return 200 for successful GET and object
             return new ResponseEntity<>(streamingJobInfoResponseModel, HttpStatus.OK);
         } else {
             // return 401 for bad credentials, 404 for bad id (not found)
             log.error("Error retrieving the StreamingJobInfoResponse model for the streaming job with id '{}'", jobIdPathVar);
-            return new ResponseEntity<>(new StreamingJobInfoResponse(-1,"streaming job "+jobIdPathVar+" doesn't exist"),HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(new StreamingJobInfoResponse(-1, "streaming job "+jobIdPathVar+" doesn't exist"), HttpStatus.NOT_FOUND);
         }
     }
 
@@ -244,7 +241,7 @@ public class StreamingJobController {
     public StreamingJobInfoResponse getStreamingJobStatusWithIdSession(@PathVariable("id") long jobIdPathVar,
                                                                        @RequestParam(value = "useSession", required = false) boolean useSession) {
         List<StreamingJobInfoResponse> streamingJobInfoResponseModels = getStreamingJobInfo(jobIdPathVar, useSession);
-        if (streamingJobInfoResponseModels != null && streamingJobInfoResponseModels.size() == 1) {
+        if ( streamingJobInfoResponseModels != null && streamingJobInfoResponseModels.size() == 1 ) {
             return streamingJobInfoResponseModels.get(0);
         }
         log.error("Error retrieving the StreamingJobInfoResponse model for the streaming job with id '{}'", jobIdPathVar);
@@ -344,7 +341,7 @@ public class StreamingJobController {
         StreamingJobCancelResponse cancelResponse = cancel(jobId,doCleanup);
 
         //return 200 for successful GET and object, 401 for bad credentials, 400 for bad id
-        return new ResponseEntity<>(cancelResponse, (cancelResponse.getMpfResponse().getResponseCode() == 0) ? HttpStatus.OK : HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>( cancelResponse, ( cancelResponse.getMpfResponse().getResponseCode() == 0 ) ? HttpStatus.OK : HttpStatus.BAD_REQUEST );
     }
 
     //INTERNAL
@@ -367,17 +364,17 @@ public class StreamingJobController {
                 boolean fromExternalRestClient = true;
                 //hack of using 'from_mpf_web_app' as the externalId to prevent duplicating a method and keeping streaming jobs
                 //from the web app in the session jobs collections
-                if (streamingJobCreationRequest.getExternalId() != null && streamingJobCreationRequest.getExternalId().equals("from_mpf_web_app")) {
+                if ( streamingJobCreationRequest.getExternalId() != null && streamingJobCreationRequest.getExternalId().equals("from_mpf_web_app") ) {
                     fromExternalRestClient = false;
                     streamingJobCreationRequest.setExternalId(null);
                 }
                 boolean buildOutput = propertiesUtil.isOutputObjectsEnabled();
-                if (streamingJobCreationRequest.getBuildOutput() != null) {
+                if ( streamingJobCreationRequest.getBuildOutput() != null ) {
                     buildOutput = streamingJobCreationRequest.getBuildOutput();
                 }
 
                 int priority = propertiesUtil.getJmsPriority();
-                if (streamingJobCreationRequest.getPriority() != null) {
+                if ( streamingJobCreationRequest.getPriority() != null ) {
                     priority = streamingJobCreationRequest.getPriority();
                 }
 
@@ -414,7 +411,7 @@ public class StreamingJobController {
                     // get the updated streamingJobRequest so we can pass along the output object directory in the
                     // streaming job creation response.
                     StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
-                    return new StreamingJobCreationResponse(jobId, jsonStreamingJobRequest.getExternalId(), streamingJobRequest.getOutputObjectPath());
+                    return new StreamingJobCreationResponse( jobId, jsonStreamingJobRequest.getExternalId(), streamingJobRequest.getOutputObjectPath() );
                 } else {
                     log.error("Failure creating output file system for streaming jobId " + jobId + ". Please check server logs for more detail");
                     return new StreamingJobCreationResponse(-1, String.format("Failure creating output file system for streaming job with Job Id '%s'.  Please check server log for more details.", jobId));
@@ -487,10 +484,10 @@ public class StreamingJobController {
     private StreamingJobCancelResponse cancel(long jobId, boolean doCleanup) {
         log.debug("Attempting to cancel streaming job with id: {}.", jobId);
         StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
-        if (mpfService.cancelStreamingJob(jobId,doCleanup)) {
-            log.debug("Successful cancellation of streaming job with id: {}");
+        if ( mpfService.cancelStreamingJob(jobId, doCleanup ) ) {
+            log.debug("Successful cancellation of streaming job with id: {}",jobId);
             return new StreamingJobCancelResponse(jobId,streamingJobRequest.getExternalId(),
-                    streamingJobRequest.getOutputObjectPath(),doCleanup);
+                    streamingJobRequest.getOutputObjectPath(), doCleanup);
         }
         String errorStr = "Failed to cancel the streaming job with id '" + Long.toString(jobId) + "'. Please check to make sure the streaming job exists before submitting a cancel request. "
                 + "Also consider checking the server logs for more information on this error.";

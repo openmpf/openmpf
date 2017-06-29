@@ -41,11 +41,12 @@ import java.util.Map;
 
 /** transient stream data. Note that currently, only the RTSP protocol for streams is supported */
 public class TransientStream {
+
 	/** The unique identifier for this stream. */
 	private long id;
 	public long getId() { return id; }
 
-	/** The URI of the source stream, currently only supporting the RTSP protocoll. */
+	/** The URI of the source stream, currently only supporting the RTSP protocol. */
 	private String uri;
 	public String getUri() { return uri; }
 	private void setUri(String uri) {
@@ -53,11 +54,11 @@ public class TransientStream {
         try {
             URI uriInstance = new URI(uri);
             this.uriScheme = UriScheme.parse(uriInstance.getScheme());
-            if(uriScheme != UriScheme.RTSP) {
+            if ( uriScheme != UriScheme.RTSP ) {
                 failed = true;
                 message = "URI scheme "+uriScheme+" is not supported, currently only supporting RTSP.";
             }
-        } catch(URISyntaxException use) {
+        } catch ( URISyntaxException use ) {
             uriScheme = UriScheme.UNDEFINED;
             failed = true;
             message = use.getMessage();
@@ -67,11 +68,6 @@ public class TransientStream {
 	/** The URI scheme (protocol) associated with the input stream URI. */
 	private UriScheme uriScheme = null;
 	public UriScheme getUriScheme() { return uriScheme == null ? UriScheme.UNDEFINED : uriScheme; }
-
-//	/** The local file path of the file once it has been retrieved. */
-//	private String localPath;
-//	public String getLocalPath() { return localPath; }
-//	public void setLocalPath(String localPath) { this.localPath = localPath; }
 
 	/** A flag indicating if the medium has encountered an error during processing. */
 	private boolean failed;
@@ -91,7 +87,7 @@ public class TransientStream {
 	/** The Metadata for the stream. */
 	private Map<String,String> metadata = new HashMap<>();
 	public String addMetadata(String key, String value) {
-		return metadata.put(key,value);
+		return metadata.put(key, value);
 	}
 	public Map<String,String> getMetadata() { return metadata; }
 	public String getMetadata(String key) { return metadata.get(key); }
@@ -102,28 +98,18 @@ public class TransientStream {
 		mediaProperties = updated_media_properties;
 	}
 	public String addMediaProperty(String key, String value) {
-		return mediaProperties.put(key,value);
+		return mediaProperties.put(key, value);
 	}
 	public Map<String,String> getMediaProperties() { return mediaProperties; }
 	public String getMediaProperty(String key) { return mediaProperties.get(key); }
 
 	private int segmentSize;
-	public void setSegmentSize(int segment_size) {segmentSize=segment_size;}
-	public int getSegmentSize(){return segmentSize;}
+	public void setSegmentSize(int segment_size) { segmentSize = segment_size; }
+	public int getSegmentSize() { return segmentSize; }
 
 
 	@JsonIgnore
 	public MediaType getMediaType() { return MediaTypeUtils.parse(type); }
-
-//	/** The length of the medium in frames (for images and videos) or milliseconds (for audio). */
-//	private int length;
-//	public int getLength() { return length; }
-//	public void setLength(int length) { this.length = length; }
-//
-//	/** The number of frames per second for video files */
-//	private float fps;
-//	public float getFps() { return fps; }
-//	public void setFps(float fps) { this.fps = fps; }
 
 	/** The SHA 256 hash of the local file (assuming it could be retrieved. */
 	private String sha256;

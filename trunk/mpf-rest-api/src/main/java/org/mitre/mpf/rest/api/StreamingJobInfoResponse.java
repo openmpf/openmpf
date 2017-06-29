@@ -53,7 +53,7 @@ public class StreamingJobInfoResponse {
 		this.jobId = -1L;
 	}
 
-	/**
+	/** Constructor
 	 * @param jobId
 	 * @param pipelineName
 	 * @param jobPriority
@@ -66,7 +66,7 @@ public class StreamingJobInfoResponse {
 	public StreamingJobInfoResponse(Long jobId, String externalId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus, float jobProgress,
 									Date startDate, Date endDate, String outputObjectPath,
 									String streamURI, String healthReportCallbackURI, boolean terminal) {
-		this.mpfResponse.setMessage(0,"success");
+		this.mpfResponse.setMessage(0, "success");
 		this.jobId = jobId;
 		this.externalId = externalId;
 		this.pipelineName = pipelineName;
@@ -87,7 +87,6 @@ public class StreamingJobInfoResponse {
 	public String getExternalId() { return externalId; }
 	public String getStreamURI() { return streamURI; }
 	public String getHealthReportCallbackURI() { return healthReportCallbackURI; }
-	
 	public String getPipelineName() {
 		return pipelineName;
 	}

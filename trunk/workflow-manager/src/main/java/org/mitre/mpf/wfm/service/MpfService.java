@@ -45,7 +45,7 @@ public interface MpfService {
 	// ====================
 
 	/**
-	 * Create a new job which will execute the specified pipeline on the provided list of provided URIs.
+	 * Create a new batch job which will execute the specified pipeline on the provided list of provided URIs.
 	 * @param media A List of <code>JsonMediaInputObject</code> entries, each representing a medium to be processed
 	 *              and an optional set of media properties.
 	 * @param algorithmProperties A map of properties which will override the job properties on this job for a particular algorithm.
@@ -90,7 +90,7 @@ public interface MpfService {
 	 * @param summaryReportCallbackURI
 	 * @param newTrackAlertCallbackURI
 	 * @param method
-	 * @return
+	 * @return A {@link org.mitre.mpf.interop.JsonStreamingJobRequest} which summarizes this request.
 	 */
 	public JsonStreamingJobRequest createStreamingJob(JsonStreamingInputObject json_stream,
 													  Map<String,Map> algorithmProperties,
@@ -139,36 +139,6 @@ public interface MpfService {
 	 */
 	long resubmitJob(long jobId, int newPriority);
 
-//    /** Create a new streaming job which will execute the specified pipeline on the provided list of provided URIs
-//     * @param streamURI URI of the streaming job
-//     * @param segmentSize sdefines how to reduce the video into manageable segments for processing within the components. Value must be > 10
-//     * @param mediaProperties media properties to be applied to the media in this streaming job
-//     * @param stallAlertDetectionThreshold Time before sending out an initial alert when the stream is observed to have stalled  (seconds)
-//     * @param stallAlertRate Time between subsequent alerts after stall has been detected (seconds)
-//     * @param stallTimeout Time before MPF will terminate the streaming job after stall has been initially detected (seconds).  The stream
-//     * is considered to be abandoned if this timeout has been exceeded, so MPF will terminate this streaming job. Set value to -1 if the streaming
-//     * should never be terminated due to stream stall
-//     * @param stallCallbackURI if not null and the MPF detects that the stream associated with a streaming job has been Stalled,
-//     * then the MPF will deliver the stream Stall condition to the client
-//     * @param algorithmProperties A map of properties which will override the job properties on this job for a particular algorithm.
-//     * @param jobProperties A map of properties which will override the default and pipeline properties on this job.
-//     * @param pipelineName The name of the pipeline to execute.
-//     * @param externalId A user-defined and optional external identifier for the job.
-//     * @param buildOutput {@literal true} to build output objects, {@literal false} to suppress output objects.
-//     * @param priority The priority to assign to this job.
-//     * @param healthReportCallbackURI The health report callback URI or null to disable health reports
-//     * @param summaryReportCallbackURI The summary callback URI or null to disable summary reports
-//     * @param newTrackAlertCallbackURI The new track alert callback URI or null to disable new track alerts
-//     * @param method The method to communicate the response body to the callback URL or null if no HTTP method for callbacks is defined
-//     * @return A {@link org.mitre.mpf.interop.JsonStreamingJobRequest} which summarizes this request
-//     */
-//    public JsonStreamingJobRequest createStreamingJob(String streamURI, int segmentSize, Map <String,String> mediaProperties,
-//        long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout, String stallCallbackURI,
-//        Map<String,Map> algorithmProperties, Map<String,String> jobProperties, String pipelineName, String externalId,
-//        boolean buildOutput, int priority, String healthReportCallbackURI, String summaryReportCallbackURI, String newTrackAlertCallbackURI,
-//                                                      String method);
-
-
 	/**
 	 * Attempts to cancel a batch job that is currently executing. If the job does not exist or otherwise cannot be
 	 * cancelled, this method will return {@literal false}.
@@ -177,14 +147,14 @@ public interface MpfService {
 	 */
 	boolean cancel(long jobId);
 
-    /**
-     * Attempts to cancel a streaming job that is currently executing. If the streaming job does not exist or otherwise cannot be
-     * cancelled, this method will return {@literal false}.
-     * @param jobId The MPF-assigned identifier for the streaming job. The job must be a streaming job.
+	/**
+	 * Attempts to cancel a streaming job that is currently executing. If the streaming job does not
+	 * exist or otherwise cannot be cancelled, this method will return {@literal false}.
+	 * @param jobId The MPF-assigned identifier for the streaming job. The job must be a streaming job.
 	 * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job
 	 * @return {@literal true} iff the streaming job exists and was cancelled successfully.
-     */
-    boolean cancelStreamingJob(long jobId, Boolean doCleanup);
+	 */
+	boolean cancelStreamingJob(long jobId, Boolean doCleanup);
 
 	/** Gets the marked-up media with the specified (batch job) id. */
 	public MarkupResult getMarkupResult(long id);
@@ -195,30 +165,39 @@ public interface MpfService {
 	/** Gets the marked-up media associated with all (batch) jobs. */
 	public List<MarkupResult> getAllMarkupResults();
 
-    /** Gets the JobRequest instance in the persistent data store associated with the specified batch (job) id. */
-    public JobRequest getJobRequest(long id);
+	/**
+	 * Gets the JobRequest instance in the persistent data store associated with the specified batch (job) id.
+	 */
+	public JobRequest getJobRequest(long id);
 
-    /** Gets the StreamingJobRequest instance in the persistent data store associated with the specified streaming (job) id. */
-    public StreamingJobRequest getStreamingJobRequest(long id);
+	/**
+	 * Gets the StreamingJobRequest instance in the persistent data store associated with the
+	 * specified streaming (job) id.
+	 */
+	public StreamingJobRequest getStreamingJobRequest(long id);
 
-    /** Gets all of the JobRequest (batch job) instances in the persistent data store. */
-    public List<JobRequest> getAllJobRequests();
+	/**
+	 * Gets all of the JobRequest (batch job) instances in the persistent data store.
+	 */
+	public List<JobRequest> getAllJobRequests();
 
-    /** Gets all of the StreamingJobRequest (streaming job) instances in the persistent data store. */
-    public List<StreamingJobRequest> getAllStreamingJobRequests();
+	/**
+	 * Gets all of the StreamingJobRequest (streaming job) instances in the persistent data store.
+	 */
+	public List<StreamingJobRequest> getAllStreamingJobRequests();
 
-    public List<SystemMessage> getSystemMessagesByType(String filterbyType );
+	public List<SystemMessage> getSystemMessagesByType(String filterbyType);
 
 	public List<SystemMessage> getSystemMessagesByRemoveStrategy(String filterbyRemoveStrategy );
 
 	/** adds a System Message or updates the one that is already in the DB
 	 *  returns the System Message
-     */
+	 */
 	public SystemMessage addSystemMessage( SystemMessage obj );
 
 	/** adds one of the standard System Messages ID'ed with msgID;
 	 *  returns the System Message
-     */
+	 */
 	public SystemMessage addStandardSystemMessage( String msgID );
 
 	/** deletes the System Message with msgId

@@ -241,13 +241,13 @@ public interface Redis {
      */
 	String getExternalId(final long jobId) throws WfmProcessingException;
 
-	/**Method will return true if the specified jobId is a batch job stored in the transient data store
+	/** Will return true if the specified jobId is a batch job stored in the transient data store
 	 * @param jobId The MPF-assigned ID of the job
 	 * @return rue if the specified jobId is a batch job stored in the transient data store, false otherwise
 	 */
 	boolean isJobTypeBatch(final long jobId);
 
-	/**Method will return true if the specified jobId is a streaming job stored in the transient data store
+	/** Will return true if the specified jobId is a streaming job stored in the transient data store
 	 * @param jobId The MPF-assigned ID of the job
 	 * @return rue if the specified jobId is a streaming job stored in the transient data store, false otherwise
 	 */

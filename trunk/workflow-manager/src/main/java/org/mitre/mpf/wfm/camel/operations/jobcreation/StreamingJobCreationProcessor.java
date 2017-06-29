@@ -84,7 +84,7 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 	/** Converts a pipeline represented in JSON to a {@link TransientPipeline} instance. */
 	private TransientPipeline buildPipeline(JsonPipeline jsonPipeline) {
 
-		if(jsonPipeline == null) {
+		if ( jsonPipeline == null ) {
 			return null;
 		}
 
@@ -93,7 +93,7 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 		TransientPipeline transientPipeline = new TransientPipeline(name, description);
 
 		// Iterate through the pipeline's stages and add them to the pipeline protocol buffer.
-		for(JsonStage stage : jsonPipeline.getStages()) {
+		for ( JsonStage stage : jsonPipeline.getStages() ) {
 			transientPipeline.getStages().add(buildStage(stage));
 		}
 
@@ -109,7 +109,7 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 		TransientStage transientStage = new TransientStage(name, description, ActionType.valueOf(TextUtils.trimAndUpper(operation)));
 
 		// Iterate through the stage's actions and add them to the stage protocol buffer.
-		for(JsonAction action : stage.getActions()) {
+		for ( JsonAction action : stage.getActions() ) {
 			transientStage.getActions().add(buildAction(action));
 		}
 
@@ -125,8 +125,8 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 		TransientAction transientAction = new TransientAction(name, description, algorithm);
 
 		// Finally, iterate through all of the properties in this action and copy them to the protocol buffer.
-		for(Map.Entry<String, String> property : action.getProperties().entrySet()) {
-			if(StringUtils.isNotBlank(property.getKey()) && StringUtils.isNotBlank(property.getValue())) {
+		for ( Map.Entry<String, String> property : action.getProperties().entrySet() ) {
+			if ( StringUtils.isNotBlank(property.getKey()) && StringUtils.isNotBlank(property.getValue()) ) {
 				transientAction.getProperties().put(property.getKey().toUpperCase(), property.getValue());
 			}
 		}
@@ -147,7 +147,7 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 			JsonStreamingJobRequest json_streamingJobRequest = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), JsonStreamingJobRequest.class);
 			JsonStreamingInputObject json_stream = json_streamingJobRequest.getStream();
 
-			if(jobId == null) {
+			if ( jobId == null ) {
 				// A persistent representation of the object has not yet been created, so do that now.
 				streamingJobRequestEntity = streamingJobRequestBo.initialize(json_streamingJobRequest);
 			} else {
@@ -178,7 +178,7 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 			// add the transient streaming job to REDIS
 			redis.persistJob(transientStreamingJob);
 
-			if(transientPipeline == null) {
+			if ( transientPipeline == null ) {
 				redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_ERRORS);
 				throw new WfmProcessingException(INVALID_PIPELINE_MESSAGE);
 			}
@@ -190,10 +190,10 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 
 			exchange.getOut().setBody(jsonUtils.serialize(transientStreamingJob));
 			exchange.getOut().getHeaders().put(MpfHeaders.JOB_ID, streamingJobRequestEntity.getId());
-		} catch(WfmProcessingException exception) {
+		} catch ( WfmProcessingException exception ) {
 			try {
 				// Make an effort to mark the streaming job as failed.
-				if(INVALID_PIPELINE_MESSAGE.equals(exception.getMessage())) {
+				if ( INVALID_PIPELINE_MESSAGE.equals(exception.getMessage()) ) {
 					log.warn("Streaming Job #{} did not specify a valid pipeline.", jobId);
 				} else {
 					log.warn("Failed to parse the input object for Streaming Job #{} due to an exception.", streamingJobRequestEntity.getId(), exception);
@@ -201,7 +201,7 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 				streamingJobRequestEntity.setStatus(JobStatus.JOB_CREATION_ERROR);
 				streamingJobRequestEntity.setTimeCompleted(new Date());
 				streamingJobRequestEntity = streamingJobRequestDao.persist(streamingJobRequestEntity);
-			} catch(Exception persistException) {
+			} catch ( Exception persistException ) {
 				log.warn("Failed to mark Streaming Job #{} as failed due to an exception. It will remain it its current state until manually changed.", streamingJobRequestEntity, persistException);
 			}
 

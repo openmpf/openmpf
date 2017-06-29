@@ -172,13 +172,13 @@ public class JsonStreamingOutputObject implements Comparable<JsonStreamingOutput
 		int result = 0;
 		if(other == null) {
 			return 1;
-		} else if ((result = ObjectUtils.compare(path, other.path)) != 0
-				|| (result = ObjectUtils.compare(mediaId, other.mediaId)) != 0
-				|| (result = ObjectUtils.compare(sha256, other.sha256)) != 0
-				|| (result = ObjectUtils.compare(length, other.length)) != 0
-				|| (result = ObjectUtils.compare(message, other.message)) != 0
-				|| (result = ObjectUtils.compare(status, other.status)) != 0
-				|| (result = ObjectUtils.compare(mimeType, other.mimeType)) != 0) {
+		} else if ( (result = ObjectUtils.compare(path, other.path) ) != 0
+				|| ( result = ObjectUtils.compare(mediaId, other.mediaId) ) != 0
+				|| ( result = ObjectUtils.compare(sha256, other.sha256) ) != 0
+				|| ( result = ObjectUtils.compare(length, other.length) ) != 0
+				|| ( result = ObjectUtils.compare(message, other.message) ) != 0
+				|| ( result = ObjectUtils.compare(status, other.status) ) != 0
+				|| ( result = ObjectUtils.compare(mimeType, other.mimeType) ) != 0 ) {
 			return result;
 		} else {
 			return 0;

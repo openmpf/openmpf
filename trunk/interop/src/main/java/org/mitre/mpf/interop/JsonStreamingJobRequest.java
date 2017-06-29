@@ -116,7 +116,7 @@ public class JsonStreamingJobRequest {
 	public JsonStreamingJobRequest(String externalId, boolean outputObjectEnabled, String outputObjectPath, JsonPipeline pipeline, int priority,
 								   long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout) {
 		this(externalId, outputObjectEnabled, outputObjectPath, pipeline, priority, stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
-				null, null, null,null);
+				null, null, null, null);
 	}
 
 	public JsonStreamingJobRequest(String externalId, boolean outputObjectEnabled, String outputObjectPath, JsonPipeline pipeline, int priority,

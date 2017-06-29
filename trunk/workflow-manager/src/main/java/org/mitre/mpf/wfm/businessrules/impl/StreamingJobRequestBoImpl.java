@@ -131,56 +131,53 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 												 Map<String, String> jobProperties, boolean buildOutput, int priority,
 												 long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout,
 												 String healthReportCallbackURI, String summaryReportCallbackURI, String newTrackAlertCallbackURI, String callbackMethod) {
-		log.debug("[streaming createRequest] externalId:"+externalId +" pipeline:"+pipelineName + " buildOutput:"+buildOutput+" priority:"+priority+
-				  " healthReportCallbackURI:"+healthReportCallbackURI + " summaryReportCallbackURI:"+summaryReportCallbackURI +
-				  " newTrackAlertCallbackURI:"+newTrackAlertCallbackURI +" callbackMethod:"+callbackMethod);
+		log.debug("[streaming createRequest] externalId:"+externalId +", pipeline:"+pipelineName + ", buildOutput:"+buildOutput+", priority:"+priority+
+				  ", healthReportCallbackURI:"+healthReportCallbackURI + ", summaryReportCallbackURI:"+summaryReportCallbackURI +
+				  ", newTrackAlertCallbackURI:"+newTrackAlertCallbackURI +", callbackMethod:"+callbackMethod);
 		String jsonHealthReportCallbackURI = "";
 		String jsonSummaryReportCallbackURI = "";
 		String jsonNewTrackAlertCallbackURI = "";
 		String jsonCallbackMethod = "GET";
-		if(healthReportCallbackURI != null && TextUtils.trim(healthReportCallbackURI).length() > 0) {
+		if ( healthReportCallbackURI != null && TextUtils.trim(healthReportCallbackURI).length() > 0 ) {
 			jsonHealthReportCallbackURI = TextUtils.trim(healthReportCallbackURI);
 		}
-		if(summaryReportCallbackURI != null && TextUtils.trim(summaryReportCallbackURI).length() > 0) {
+		if ( summaryReportCallbackURI != null && TextUtils.trim(summaryReportCallbackURI).length() > 0 ) {
 			jsonSummaryReportCallbackURI = TextUtils.trim(summaryReportCallbackURI);
 		}
-		if(newTrackAlertCallbackURI != null && TextUtils.trim(newTrackAlertCallbackURI).length() > 0) {
+		if ( newTrackAlertCallbackURI != null && TextUtils.trim(newTrackAlertCallbackURI).length() > 0 ) {
 			jsonNewTrackAlertCallbackURI = TextUtils.trim(newTrackAlertCallbackURI);
 		}
-		if(callbackMethod != null && !TextUtils.trim(callbackMethod).equals("GET") ){//only GET or POST allowed
+		if ( callbackMethod != null && !TextUtils.trim(callbackMethod).equals("GET") ){ //only GET or POST allowed
 			jsonCallbackMethod = "POST";
 		}
 
-		String outputObjectPath = ""; // by default, output output object is empty string, indicating no output objects are being stored
-		if ( buildOutput ) {
-			outputObjectPath = this.getClass().getName()+".createRequest: PathToOutputObjectNYI";
-		}
-
+		String outputObjectPath = ""; // initialize output output object to empty string, the path will be set after the streaming job is submitted
 		JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(TextUtils.trim(externalId), buildOutput, outputObjectPath,
 				pipelineManager.createJsonPipeline(pipelineName), priority,
 				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
 				jsonHealthReportCallbackURI,jsonSummaryReportCallbackURI,jsonNewTrackAlertCallbackURI,jsonCallbackMethod);
-		if(stream != null) {
+
+		if( stream != null ) {
 			jsonStreamingJobRequest.setStream(stream);
 		}
 
 		// update to add the job algorithm-specific-properties, supporting the priority:
 		// action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
 		if ( algorithmProperties != null ) {
-			for (Map.Entry<String,Map> property : algorithmProperties.entrySet()) {
+			for ( Map.Entry<String,Map> property : algorithmProperties.entrySet() ) {
 				jsonStreamingJobRequest.getAlgorithmProperties().put(property.getKey().toUpperCase(), property.getValue());
 			}
 		}
 
 		if (jobProperties != null) {
-			for (Map.Entry<String,String> property : jobProperties.entrySet()) {
+			for ( Map.Entry<String,String> property : jobProperties.entrySet() ) {
 				jsonStreamingJobRequest.getJobProperties().put(property.getKey().toUpperCase(), property.getValue());
 			}
 		}
 		return jsonStreamingJobRequest;
 	}
 
-	/** method will create a new StreamingJobRequest using the provided JSON streaming job request and persist it in the database for long-term storage
+	/** Create a new StreamingJobRequest using the provided JSON streaming job request and persist it in the database for long-term storage
 	 * and will send the streaming job request to the components using the ActiveMQ routes
 	 * Upon return, the streaming job will be persisted in the long-term database
 	 * @param jsonStreamingJobRequest JSON representation of the job request
@@ -190,10 +187,10 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 	@Override
 	public StreamingJobRequest run(JsonStreamingJobRequest jsonStreamingJobRequest) throws WfmProcessingException {
 		StreamingJobRequest streamingJobRequestEntity = initialize(jsonStreamingJobRequest);
-		return runInternal(streamingJobRequestEntity, jsonStreamingJobRequest, (jsonStreamingJobRequest == null) ? propertiesUtil.getJmsPriority() : jsonStreamingJobRequest.getPriority());
+		return runInternal( streamingJobRequestEntity, jsonStreamingJobRequest, (jsonStreamingJobRequest == null ) ? propertiesUtil.getJmsPriority() : jsonStreamingJobRequest.getPriority() );
 	}
 
-	/** Will create a new StreamingJobRequest using the provided JSON job request and persist it in the database for long-term storage
+	/** Create a new StreamingJobRequest using the provided JSON job request and persist it in the database for long-term storage
 	 * Upon return, the job will be persisted in the long-term database
 	 * @param jsonStreamingJobRequest JSON representation of the job request
 	 * @return initialized job request
@@ -232,21 +229,21 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
 		assert streamingJobRequest.getStatus() != null : "Streaming jobs must not have a null status.";
 
-		if(streamingJobRequest.getStatus().isTerminal() || streamingJobRequest.getStatus() == JobStatus.CANCELLING) {
+		if ( streamingJobRequest.getStatus().isTerminal() || streamingJobRequest.getStatus() == JobStatus.CANCELLING ) {
 			log.warn("[Job {}:*:*] This streaming job is in the state of '{}' and cannot be cancelled at this time.", jobId, streamingJobRequest.getStatus().name());
 			return false;
 		} else {
 			log.info("[Job {}:*:*] Cancelling streaming job.", jobId);
 
 			// Mark the streaming job as cancelled in Redis so that future steps in the workflow will know not to continue processing.
-			if(redis.cancel(jobId)) {
+			if ( redis.cancel(jobId) ) {
 				try {
 					// Try to move any pending work items on the queues to the appropriate cancellation queues.
 					// If this operation fails, any remaining pending items will continue to process, but
 					// the future splitters should not create any new work items. In short, if this fails,
 					// the system should not be affected, but the streaming job may not complete any faster.
 					jmsUtils.cancel(jobId);
-				} catch (Exception exception) {
+				} catch ( Exception exception ) {
 					log.warn("[Job {}:*:*] Failed to remove the pending work elements in the message broker for this streaming job. The job must complete the pending work elements before it will cancel the job.", jobId, exception);
 				}
 				streamingJobRequest.setStatus(JobStatus.CANCELLING);
@@ -267,7 +264,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 	@Override
 	public synchronized void initializeOutputDirectoryForStreamingJob(long jobId) throws WfmProcessingException {
 		StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
-		if(streamingJobRequest == null) {
+		if ( streamingJobRequest == null ) {
 			throw new WfmProcessingException(String.format("A streaming job with id %d is not known to the system.", jobId));
 		} else {
 			try {
@@ -280,7 +277,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 				// update the streaming job request in the MySQL long-term database
 				streamingJobRequestDao.persist(streamingJobRequest);
 
-			} catch(IOException wpe) {
+			} catch( IOException wpe ) {
 				log.error("Failed to create the output object file directory for streaming job '{}' due to an exception.", streamingJobRequest.getId(), wpe);
 				throw new WfmProcessingException(String.format("Failed to create the output object file directory for streaming job %d due to an exception.", jobId),wpe);
 			}
@@ -293,16 +290,16 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		log.debug("Attempting to resubmit streaming job {} using {} priority of {}.", jobId, priorityPolicy.name(), priority);
 
 		StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
-		if(streamingJobRequest == null) {
+		if ( streamingJobRequest == null ) {
 			throw new WfmProcessingException(String.format("A streaming job with id %d is not known to the system.", jobId));
-		} else if(!streamingJobRequest.getStatus().isTerminal()) {
+		} else if ( !streamingJobRequest.getStatus().isTerminal() ) {
 			throw new WfmProcessingException(String.format("The streaming job with id %d is in the non-terminal state of '%s'. Only jobs in a terminal state may be resubmitted.",
 					jobId, streamingJobRequest.getStatus().name()));
 		} else {
 			JsonStreamingJobRequest jsonStreamingJobRequest = jsonUtils.deserialize(streamingJobRequest.getInputObject(), JsonStreamingJobRequest.class);
 
 			// If the priority should be changed during resubmission, make that change now.
-			if(priorityPolicy == PriorityPolicy.PROVIDED) {
+			if( priorityPolicy == PriorityPolicy.PROVIDED ) {
 
 				// Get a copy of this streaming job's stream in order to add it to the new instance we're about to create.
 				jsonStreamingJobRequest = new JsonStreamingJobRequest(jsonStreamingJobRequest.getExternalId(),
@@ -316,6 +313,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 			}
 
 			streamingJobRequest = initializeInternal(streamingJobRequest, jsonStreamingJobRequest);
+
 			// streaming jobs do not yet support markup, commenting out for now
 //			markupResultDao.deleteByJobId(jobId);
 
@@ -352,7 +350,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		return streamingJobRequestDao.persist(streamingJobRequest);
 	}
 
-	/** will send the streaming job request to the components via the Node Manager (TODO)
+	/** Send the streaming job request to the components via the Node Manager (TODO)
 	 * @param streamingJobRequest)
 	 * @param jsonStreamingJobRequest
 	 * @param priority
@@ -364,7 +362,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		headers.put(MpfHeaders.JOB_ID, streamingJobRequest.getId());
 		headers.put(MpfHeaders.JMS_PRIORITY, Math.max(0, Math.min(9, priority)));
 		log.info("[Streaming Job {}|*|*] is running at priority {}.", streamingJobRequest.getId(), headers.get(MpfHeaders.JMS_PRIORITY));
-		log.info(this.getClass().getName()+".runInternal: notificate for new streaming job "+streamingJobRequest.getId()+" to Components via NodeManager is TBD (pending OpenMPF Issue #109)");
+		log.info(this.getClass().getName()+".runInternal: TODO notification of new streaming job "+streamingJobRequest.getId()+" to Components via NodeManager (pending OpenMPF Issue #109)");
 //		streamingJobRequestProducerTemplate.sendBodyAndHeaders(StreamingJobCreatorRouteBuilder.ENTRY_POINT, ExchangePattern.InOnly, jsonUtils.serialize(jsonStreamingJobRequest), headers);
 		return streamingJobRequest;
 	}

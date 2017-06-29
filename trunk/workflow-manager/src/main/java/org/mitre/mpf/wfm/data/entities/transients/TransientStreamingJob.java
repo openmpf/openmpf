@@ -52,29 +52,29 @@ public class TransientStreamingJob {
 	public int getPriority() { return  priority; }
 
 	private long stallAlertDetectionThreshold;
-	public void setStallAlertDetectionThreshold(long value) {stallAlertDetectionThreshold=value;}
-	public long getStallAlertDetectionThreshold(){return stallAlertDetectionThreshold;}
+	public void setStallAlertDetectionThreshold(long value) { stallAlertDetectionThreshold = value; }
+	public long getStallAlertDetectionThreshold() { return stallAlertDetectionThreshold; }
 
 	private long stallAlertRate;
-	public void setStallAlertRate(long value) {stallAlertRate=value;}
-	public long getStallAlertRate(){return stallAlertRate;}
+	public void setStallAlertRate(long value) { stallAlertRate = value; }
+	public long getStallAlertRate() { return stallAlertRate; }
 
 	private long stallTimeout;
-	public void setStallTimeout(long value) {stallTimeout=value;}
-	public long getStallTimeout(){return stallTimeout;}
+	public void setStallTimeout(long value) { stallTimeout = value; }
+	public long getStallTimeout() { return stallTimeout; }
 
 	private boolean outputEnabled;
-	public void setOutputEnabled(boolean enabled) {outputEnabled=enabled;}
+	public void setOutputEnabled(boolean enabled) { outputEnabled = enabled; }
 	public boolean isOutputEnabled() { return outputEnabled; }
 
 	private String outputObjectPath;
-	public void setOutputEnabled(String outputObjectPath_s) {outputObjectPath=outputObjectPath_s;}
+	public void setOutputEnabled(String outputObjectPath_s) { outputObjectPath = outputObjectPath_s; }
 	public String getOutputObjectPath() { return outputObjectPath; }
 
 	private TransientStream stream;
-	public TransientStream getStream() {return stream;}
+	public TransientStream getStream() { return stream; }
 	public void setStream(TransientStream stream) { this.stream = stream; }
-	public void addStreamMetaData(String key, String value) { getStream().addMetadata(key,value); }
+	public void addStreamMetaData(String key, String value) { getStream().addMetadata(key, value); }
 
 	private Map<String, Map> overriddenAlgorithmProperties;
 	public Map<String, Map> getOverriddenAlgorithmProperties() { return overriddenAlgorithmProperties; }

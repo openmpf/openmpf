@@ -106,7 +106,7 @@ public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements S
 		Long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
 		assert jobId != null : String.format("The header '%s' (value=%s) was not set or is not a Long.", MpfHeaders.JOB_ID, exchange.getIn().getHeader(MpfHeaders.JOB_ID));
 
-		if(jobId == Long.MIN_VALUE) {
+		if ( jobId == Long.MIN_VALUE ) {
 			// If we receive a very large negative Job ID, it means an exception was encountered during processing of a job,
 			// and none of the provided error handling logic could fix it. Further processing should not be performed.
 			log.warn("[Streaming Job {}:*:*] An error prevents a streaming job from completing successfully. Please review the logs for additional information.", jobId);
@@ -162,10 +162,10 @@ public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements S
 	private void summaryReportCallback(long jobId) throws WfmProcessingException {
 		final String jsonSummaryReportCallbackURL = redis.getSummaryReportCallbackURI(jobId);
 		final String jsonCallbackMethod = redis.getCallbackMethod(jobId);
-		if(jsonSummaryReportCallbackURL != null && jsonCallbackMethod != null && (jsonCallbackMethod.equals("POST") || jsonCallbackMethod.equals("GET"))) {
+		if ( jsonSummaryReportCallbackURL != null && jsonCallbackMethod != null && ( jsonCallbackMethod.equals("POST") || jsonCallbackMethod.equals("GET") ) ) {
 			log.info("Starting "+jsonCallbackMethod+" summary report callback to "+jsonSummaryReportCallbackURL);
 			try {
-				JsonCallbackBody jsonBody =new JsonCallbackBody(jobId, redis.getExternalId(jobId));
+				JsonCallbackBody jsonBody = new JsonCallbackBody(jobId, redis.getExternalId(jobId));
 				new Thread(new CallbackThread(jsonSummaryReportCallbackURL, jsonCallbackMethod, jsonBody)).start();
 			} catch (IOException ioe) {
 				log.warn("Failed to issue {} callback to '{}' due to an I/O exception.", jsonCallbackMethod, jsonSummaryReportCallbackURL, ioe);
@@ -189,7 +189,7 @@ public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements S
 		TransientStreamingJob transientStreamingJob = redis.getStreamingJob(jobId);
 		StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
 
-		if(transientStreamingJob.isCancelled()) {
+		if ( transientStreamingJob.isCancelled() ) {
 			jobStatus.setValue(JobStatus.CANCELLED);
 		}
 
@@ -203,11 +203,11 @@ public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements S
 				streamingJobRequest.getTimeCompleted().toString(),
 				jobStatus.getValue().toString());
 
-		if (transientStreamingJob.getOverriddenJobProperties() != null) {
+		if ( transientStreamingJob.getOverriddenJobProperties() != null ) {
 			jsonOutputObject.getJobProperties().putAll(transientStreamingJob.getOverriddenJobProperties());
 		}
 
-		if (transientStreamingJob.getOverriddenAlgorithmProperties() != null) {
+		if ( transientStreamingJob.getOverriddenAlgorithmProperties() != null ) {
 			jsonOutputObject.getAlgorithmProperties().putAll(transientStreamingJob.getOverriddenAlgorithmProperties());
 		}
 
@@ -329,7 +329,8 @@ public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements S
 //			// store the updated streaming job request in the MySQL long-term database
 //			streamingJobRequestDao.persist(streamingJobRequest);
 // end of keep this commented out section intact for later reference until stream processing is finalized
-		} catch(IOException | WfmProcessingException wpe) {
+
+		} catch( IOException | WfmProcessingException wpe ) {
 			log.error("Failed to create the JSON detection output object for streaming job '{}' due to an exception.", jobId, wpe);
 		}
 
@@ -349,6 +350,7 @@ public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements S
 
 		log.debug("StreamingJobCompleteProcessorImpl.destroy: destruction of stream data NYI for Streaming Job {} ", jobId);
 
+		// keep this commented section here for reference until streaming job processing is finalized
 //		for(TransientMedia transientMedia : transientStreamingJob.getMedia()) {
 //			if(transientMedia.getUriScheme().isRemote() && transientMedia.getLocalPath() != null) {
 //				try {
@@ -358,6 +360,8 @@ public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements S
 //				}
 //			}
 //		}
+		// end of keep this commented section here for reference until streaming job processing is finalized
+
 		redis.clearJob(jobId);
 	}
 
@@ -383,15 +387,15 @@ public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements S
 			this.callbackURL = callbackURL;
 			this.callbackMethod = callbackMethod;
 
-			if(callbackMethod.equals("GET")) {
+			if ( callbackMethod.equals("GET") ) {
 				String jsonCallbackURL2 = callbackURL;
-				if(jsonCallbackURL2.contains("?")){
+				if ( jsonCallbackURL2.contains("?") ){
 					jsonCallbackURL2 +="&";
 				}else{
 					jsonCallbackURL2 +="?";
 				}
 				jsonCallbackURL2 +="jobid="+body.getJobId();
-				if(body.getExternalId() != null){
+				if ( body.getExternalId() != null ) {
 					jsonCallbackURL2 += "&externalid="+body.getExternalId();
 				}
 				req = new HttpGet(jsonCallbackURL2);

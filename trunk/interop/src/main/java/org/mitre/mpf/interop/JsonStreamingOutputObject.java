@@ -154,8 +154,11 @@ public class JsonStreamingOutputObject implements Comparable<JsonStreamingOutput
 		return jsonStreamOutputObject;
 	}
 
+	/** Use Java8 to return hashCode for Long value
+	 * @return return hashCode for Long value
+	 */
 	public int hashCode() {
-		return (int)(mediaId * 37);
+		return Long.valueOf(mediaId).hashCode();
 	}
 
 	public boolean equals(Object other) {

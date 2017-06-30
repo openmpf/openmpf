@@ -93,7 +93,7 @@ public interface MpfService {
 	 * @return A {@link org.mitre.mpf.interop.JsonStreamingJobRequest} which summarizes this request.
 	 */
 	public JsonStreamingJobRequest createStreamingJob(JsonStreamingInputObject json_stream,
-													  Map<String,Map> algorithmProperties,
+													  Map<String,Map<String,String>> algorithmProperties,
 													  Map<String,String> jobProperties,
 													  String pipelineName, String externalId,
 													  boolean buildOutput, int priority,

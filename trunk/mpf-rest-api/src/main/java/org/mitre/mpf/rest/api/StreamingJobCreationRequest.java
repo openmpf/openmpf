@@ -33,7 +33,7 @@ import java.util.Map;
 
 public class StreamingJobCreationRequest {
 	private Map<String, String> jobProperties = new HashMap<>();
-	private Map<String, Map> algorithmProperties = new HashMap<>();
+	private Map<String, Map<String,String>> algorithmProperties = new HashMap<>();
 	private String externalId = null;
 	private String pipelineName = null;
 	private Integer priority = null; // will be set to 4 (default) on the server side if null
@@ -78,10 +78,10 @@ public class StreamingJobCreationRequest {
 		this.jobProperties = jobProperties;
 	}
 
-	public Map<String, Map> getAlgorithmProperties() {
+	public Map<String, Map<String,String>> getAlgorithmProperties() {
 		return algorithmProperties;
 	}
-	public void setAlgorithmProperties(Map<String, Map> algorithmProperties) {
+	public void setAlgorithmProperties(Map<String, Map<String,String>> algorithmProperties) {
 		this.algorithmProperties = algorithmProperties;
 	}
 

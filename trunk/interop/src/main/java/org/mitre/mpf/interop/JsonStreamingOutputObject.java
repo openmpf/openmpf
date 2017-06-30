@@ -37,67 +37,78 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 
-@JsonTypeName("MarkupOutputObject")
+@JsonTypeName("StreamingOutputObject")
 public class JsonStreamingOutputObject implements Comparable<JsonStreamingOutputObject> {
 
-	@JsonProperty("mediaId")
+//	@JsonProperty("mediaId")
 	@JsonPropertyDescription("An internal identifier assigned to this media file. The value of this identifier may be useful when debugging system errors.")
 	private long mediaId;
 	public long getMediaId() { return mediaId; }
 
-	@JsonProperty("path")
+//	@JsonProperty("path")
 	@JsonPropertyDescription("The URI to this media file.")
 	private String path;
 	public String getPath() { return path; }
 
-	@JsonProperty("mimeType")
+//	@JsonProperty("mimeType")
 	@JsonPropertyDescription("The MIME type associated with this media file.")
 	private String mimeType;
 	public String getMimeType() { return mimeType; }
 
-	@JsonProperty("length")
+//	@JsonProperty("length")
 	@JsonPropertyDescription("The length of this medium. The meaning of this value depends on the context. For image files, the length is undefined. For video files, the length is the number of frames in the video. For audio files, the length is undefined.")
 	private int length;
 	public int getLength() { return length; }
 
-	@JsonProperty("status")
+//	@JsonProperty("status")
 	@JsonPropertyDescription("A summary status indicating the system's ability to process the file. The expected value is COMPLETE.")
 	private String status;
 	public String getStatus() { return status; }
 	public void setStatus(String status) { this.status = status; }
 
-	@JsonProperty("message")
+//	@JsonProperty("message")
 	@JsonPropertyDescription("A brief message which may include additional details regarding the system's ability to process this medium.")
 	private String message;
 	public String getMessage() { return message; }
 
-	@JsonProperty("sha256")
+//	@JsonProperty("sha256")
 	@JsonPropertyDescription("The SHA-256 cryptographic hash value for this medium.")
 	private String sha256;
 	public String getSha256() { return sha256; }
 
-	@JsonProperty("mediaMetadata")
+//	@JsonProperty("mediaMetadata")
 	@JsonPropertyDescription("A map of properties read from the given medium.")
 	private SortedMap<String, String> mediaMetadata;
 	public SortedMap<String, String> getMediaMetadata() { return mediaMetadata; }
 
-	@JsonProperty("mediaProperties")
+//	@JsonProperty("mediaProperties")
 	@JsonPropertyDescription("A map of medium-specific properties that override algorithm properties.")
 	private SortedMap<String, String> mediaProperties;
 	public SortedMap<String, String> getMediaProperties() { return mediaProperties; }
 
-	@JsonProperty("output")
+//	@JsonProperty("output")
 	@JsonPropertyDescription("The mapping of action type keys to a set of actions performed on the given medium.")
 	private SortedMap<String, SortedSet<JsonActionOutputObject>> types;
 	public SortedMap<String, SortedSet<JsonActionOutputObject>> getTypes() { return types; }
 
-	@JsonProperty("detectionProcessingErrors")
+//	@JsonProperty("detectionProcessingErrors")
 	@JsonPropertyDescription("The mapping of action state keys to detection errors produced in that action for the given medium.")
 	private SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors;
 	public SortedMap<String, SortedSet<JsonDetectionProcessingError>> getDetectionProcessingErrors() { return detectionProcessingErrors; }
 
-	public JsonStreamingOutputObject(long mediaId, String path, String mimeType, int length, String sha256, String message,
-                                     String status) {
+  @JsonCreator
+	public JsonStreamingOutputObject(@JsonProperty("mediaId") long mediaId,
+      @JsonProperty("path") String path,
+      @JsonProperty("mimeType") String mimeType,
+      @JsonProperty("length") int length,
+      @JsonProperty("sha256") String sha256,
+      @JsonProperty("message") String message,
+      @JsonProperty("status") String status,
+      @JsonProperty("mediaMetadata") SortedMap<String, String> mediaMetadata,
+      @JsonProperty("mediaProperties") SortedMap<String, String> mediaProperties,
+      @JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> types,
+      @JsonProperty("detectionProcessingErrors") SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors) {
+
 		this.mediaId = mediaId;
 		this.path = path;
 		this.mimeType = mimeType;
@@ -109,42 +120,59 @@ public class JsonStreamingOutputObject implements Comparable<JsonStreamingOutput
 		this.detectionProcessingErrors = new TreeMap<>();
 		this.mediaMetadata = new TreeMap<>();
 		this.mediaProperties = new TreeMap<>();
-	}
+
+    if( mediaMetadata != null ) {
+      this.mediaMetadata.putAll(mediaMetadata);
+    }
+
+    if( mediaProperties != null ) {
+      this.mediaProperties.putAll(mediaProperties);
+    }
+
+    if( types != null ) {
+      this.types.putAll(types);
+    }
+
+    if( detectionProcessingErrors != null ) {
+      this.detectionProcessingErrors.putAll(detectionProcessingErrors);
+    }
+
+  }
 
 	public JsonStreamingOutputObject(){}
 
-	@JsonCreator
-	public static JsonStreamingOutputObject factory(@JsonProperty("mediaId") long mediaId,
-                                                    @JsonProperty("path") String path,
-                                                    @JsonProperty("mimeType") String mimeType,
-                                                    @JsonProperty("length") int length,
-                                                    @JsonProperty("sha256") String sha256,
-                                                    @JsonProperty("message") String message,
-                                                    @JsonProperty("status") String status,
-                                                    @JsonProperty("mediaMetadata") SortedMap<String, String> mediaMetadata,
-                                                    @JsonProperty("mediaProperties") SortedMap<String, String> mediaProperties,
-                                                    @JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> types,
-                                                    @JsonProperty("detectionProcessingErrors") SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors) {
-		JsonStreamingOutputObject jsonStreamOutputObject = new JsonStreamingOutputObject(mediaId, path, mimeType, length, sha256, message, status);
-
-		if( mediaMetadata != null ) {
-			jsonStreamOutputObject.mediaMetadata.putAll(mediaMetadata);
-		}
-
-		if( mediaProperties != null ) {
-			jsonStreamOutputObject.mediaProperties.putAll(mediaProperties);
-		}
-
-		if( types != null ) {
-			jsonStreamOutputObject.types.putAll(types);
-		}
-
-		if( detectionProcessingErrors != null ) {
-			jsonStreamOutputObject.detectionProcessingErrors.putAll(detectionProcessingErrors);
-		}
-
-		return jsonStreamOutputObject;
-	}
+//	@JsonCreator
+//	public static JsonStreamingOutputObject factory(@JsonProperty("mediaId") long mediaId,
+//                                                    @JsonProperty("path") String path,
+//                                                    @JsonProperty("mimeType") String mimeType,
+//                                                    @JsonProperty("length") int length,
+//                                                    @JsonProperty("sha256") String sha256,
+//                                                    @JsonProperty("message") String message,
+//                                                    @JsonProperty("status") String status,
+//                                                    @JsonProperty("mediaMetadata") SortedMap<String, String> mediaMetadata,
+//                                                    @JsonProperty("mediaProperties") SortedMap<String, String> mediaProperties,
+//                                                    @JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> types,
+//                                                    @JsonProperty("detectionProcessingErrors") SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors) {
+//		JsonStreamingOutputObject jsonStreamOutputObject = new JsonStreamingOutputObject(mediaId, path, mimeType, length, sha256, message, status);
+//
+//		if( mediaMetadata != null ) {
+//			jsonStreamOutputObject.mediaMetadata.putAll(mediaMetadata);
+//		}
+//
+//		if( mediaProperties != null ) {
+//			jsonStreamOutputObject.mediaProperties.putAll(mediaProperties);
+//		}
+//
+//		if( types != null ) {
+//			jsonStreamOutputObject.types.putAll(types);
+//		}
+//
+//		if( detectionProcessingErrors != null ) {
+//			jsonStreamOutputObject.detectionProcessingErrors.putAll(detectionProcessingErrors);
+//		}
+//
+//		return jsonStreamOutputObject;
+//	}
 
 	/** Use Java8 to return hashCode for Long value
 	 * @return return hashCode for Long value

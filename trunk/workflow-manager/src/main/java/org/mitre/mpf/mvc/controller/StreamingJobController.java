@@ -67,6 +67,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.stream.Collectors.joining;
 
@@ -377,10 +378,9 @@ public class StreamingJobController {
                 if ( streamingJobCreationRequest.getPriority() != null ) {
                     priority = streamingJobCreationRequest.getPriority();
                 }
-
+              
                 JsonStreamingInputObject json_stream = new JsonStreamingInputObject(streamingJobCreationRequest.getStreamURI(),
-                        streamingJobCreationRequest.getSegmentSize(),
-                        streamingJobCreationRequest.getMediaProperties());
+                        streamingJobCreationRequest.getSegmentSize(), streamingJobCreationRequest.getMediaProperties());
 
                 JsonStreamingJobRequest jsonStreamingJobRequest = mpfService.createStreamingJob(json_stream,
                         streamingJobCreationRequest.getAlgorithmProperties(),

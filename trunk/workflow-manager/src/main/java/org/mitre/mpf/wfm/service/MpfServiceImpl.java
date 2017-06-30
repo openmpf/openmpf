@@ -202,7 +202,7 @@ public class MpfServiceImpl implements MpfService {
 	 */
 	@Override
 	public JsonStreamingJobRequest createStreamingJob(JsonStreamingInputObject json_stream,
-													  Map<String,Map> algorithmProperties,
+													  Map<String,Map<String,String>> algorithmProperties,
 													  Map<String,String> jobProperties, String pipelineName, String externalId,
 													  boolean buildOutput, int priority,
 													  long stallAlertDetectionThreshold,

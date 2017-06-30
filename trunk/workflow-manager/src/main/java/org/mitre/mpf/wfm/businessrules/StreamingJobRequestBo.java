@@ -42,7 +42,7 @@ public interface StreamingJobRequestBo {
 	 * a callback when the job completes.
 	 */
 	JsonStreamingJobRequest createRequest(String externalId, String pipelineName, JsonStreamingInputObject stream,
-										  Map<String, Map> algorithmProperties, Map<String, String> jobProperties,
+										  Map<String, Map<String,String>> algorithmProperties, Map<String, String> jobProperties,
 										  boolean buildOutput, int priority,
 										  long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout,
 										  String healthReportCallbackURI, String summaryReportCallbackURI, String newTrackAlertCallbackURI, String method);

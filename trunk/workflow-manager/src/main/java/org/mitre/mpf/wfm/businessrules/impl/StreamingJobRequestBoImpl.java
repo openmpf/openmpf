@@ -127,7 +127,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 	 * @return JSON representation of the streaming job request
 	 */
 	@Override
-	public JsonStreamingJobRequest createRequest(String externalId, String pipelineName, JsonStreamingInputObject stream, Map<String,Map> algorithmProperties,
+	public JsonStreamingJobRequest createRequest(String externalId, String pipelineName, JsonStreamingInputObject stream,
+												 Map<String,Map<String,String>> algorithmProperties,
 												 Map<String, String> jobProperties, boolean buildOutput, int priority,
 												 long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout,
 												 String healthReportCallbackURI, String summaryReportCallbackURI, String newTrackAlertCallbackURI, String callbackMethod) {
@@ -155,21 +156,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(TextUtils.trim(externalId), buildOutput, outputObjectPath,
 				pipelineManager.createJsonPipeline(pipelineName), priority, stream,
 				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
-				jsonHealthReportCallbackURI,jsonSummaryReportCallbackURI,jsonNewTrackAlertCallbackURI,jsonCallbackMethod);
+				jsonHealthReportCallbackURI,jsonSummaryReportCallbackURI,jsonNewTrackAlertCallbackURI,jsonCallbackMethod,
+        algorithmProperties, jobProperties);
 
-		// update to add the job algorithm-specific-properties, supporting the priority:
-		// action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
-		if ( algorithmProperties != null ) {
-			for ( Map.Entry<String,Map> property : algorithmProperties.entrySet() ) {
-				jsonStreamingJobRequest.getAlgorithmProperties().put(property.getKey().toUpperCase(), property.getValue());
-			}
-		}
-
-		if (jobProperties != null) {
-			for ( Map.Entry<String,String> property : jobProperties.entrySet() ) {
-				jsonStreamingJobRequest.getJobProperties().put(property.getKey().toUpperCase(), property.getValue());
-			}
-		}
 		return jsonStreamingJobRequest;
 	}
 
@@ -303,7 +292,12 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 						jsonStreamingJobRequest.getPipeline(), priority, jsonStreamingJobRequest.getStream(),
 						jsonStreamingJobRequest.getStallAlertDetectionThreshold(),
 						jsonStreamingJobRequest.getStallAlertRate(),
-						jsonStreamingJobRequest.getStallTimeout());
+						jsonStreamingJobRequest.getStallTimeout(),
+            jsonStreamingJobRequest.getHealthReportCallbackURI(),
+            jsonStreamingJobRequest.getSummaryReportCallbackURI(),
+            jsonStreamingJobRequest.getNewTrackAlertCallbackURI(),
+            jsonStreamingJobRequest.getCallbackMethod(),
+            jsonStreamingJobRequest.getAlgorithmProperties(), jsonStreamingJobRequest.getJobProperties());
 
 			}
 

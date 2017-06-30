@@ -153,13 +153,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
 		String outputObjectPath = ""; // initialize output output object to empty string, the path will be set after the streaming job is submitted
 		JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(TextUtils.trim(externalId), buildOutput, outputObjectPath,
-				pipelineManager.createJsonPipeline(pipelineName), priority,
+				pipelineManager.createJsonPipeline(pipelineName), priority, stream,
 				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
 				jsonHealthReportCallbackURI,jsonSummaryReportCallbackURI,jsonNewTrackAlertCallbackURI,jsonCallbackMethod);
-
-		if( stream != null ) {
-			jsonStreamingJobRequest.setStream(stream);
-		}
 
 		// update to add the job algorithm-specific-properties, supporting the priority:
 		// action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
@@ -304,11 +300,10 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 				// Get a copy of this streaming job's stream in order to add it to the new instance we're about to create.
 				jsonStreamingJobRequest = new JsonStreamingJobRequest(jsonStreamingJobRequest.getExternalId(),
 						jsonStreamingJobRequest.isOutputObjectEnabled(), jsonStreamingJobRequest.getOutputObjectPath(),
-						jsonStreamingJobRequest.getPipeline(), priority,
+						jsonStreamingJobRequest.getPipeline(), priority, jsonStreamingJobRequest.getStream(),
 						jsonStreamingJobRequest.getStallAlertDetectionThreshold(),
 						jsonStreamingJobRequest.getStallAlertRate(),
 						jsonStreamingJobRequest.getStallTimeout());
-				jsonStreamingJobRequest.setStream(jsonStreamingJobRequest.getStream());
 
 			}
 

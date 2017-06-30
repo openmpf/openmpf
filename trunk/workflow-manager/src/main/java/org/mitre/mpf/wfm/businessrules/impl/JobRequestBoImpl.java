@@ -168,7 +168,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 			jsonJobRequest.getMedia().addAll(media);
 		}
 
-		// update to add the job algorithm-specific-properties, supporting the priority:
+		// Putting algorithm properties in here supports the priority scheme (from lowest to highest):
 		// action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
 		if ( algorithmProperties != null ) {
 			for (Map.Entry<String,Map> property : algorithmProperties.entrySet()) {

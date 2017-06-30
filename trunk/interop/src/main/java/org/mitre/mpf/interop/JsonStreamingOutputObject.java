@@ -76,12 +76,6 @@ public class JsonStreamingOutputObject implements Comparable<JsonStreamingOutput
 	private String sha256;
 	public String getSha256() { return sha256; }
 
-	@JsonProperty("markupResult")
-	@JsonPropertyDescription("The OPTIONAL markup result produced for this medium.")
-	private JsonMarkupOutputObject markupResult;
-	public JsonMarkupOutputObject getMarkupResult() { return markupResult; }
-	public void setMarkupResult(JsonMarkupOutputObject markupResult) { this.markupResult = markupResult; }
-
 	@JsonProperty("mediaMetadata")
 	@JsonPropertyDescription("A map of properties read from the given medium.")
 	private SortedMap<String, String> mediaMetadata;
@@ -129,11 +123,9 @@ public class JsonStreamingOutputObject implements Comparable<JsonStreamingOutput
                                                     @JsonProperty("status") String status,
                                                     @JsonProperty("mediaMetadata") SortedMap<String, String> mediaMetadata,
                                                     @JsonProperty("mediaProperties") SortedMap<String, String> mediaProperties,
-                                                    @JsonProperty("markupResult") JsonMarkupOutputObject markupResult,
                                                     @JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> types,
                                                     @JsonProperty("detectionProcessingErrors") SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors) {
 		JsonStreamingOutputObject jsonStreamOutputObject = new JsonStreamingOutputObject(mediaId, path, mimeType, length, sha256, message, status);
-		jsonStreamOutputObject.markupResult = markupResult;
 
 		if( mediaMetadata != null ) {
 			jsonStreamOutputObject.mediaMetadata.putAll(mediaMetadata);

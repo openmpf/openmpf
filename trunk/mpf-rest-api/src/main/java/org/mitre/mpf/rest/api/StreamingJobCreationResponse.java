@@ -28,7 +28,7 @@ package org.mitre.mpf.rest.api;
 
 public class StreamingJobCreationResponse {
 	private long jobId = -1L; //will be -1 if there is an error creating the job
-	private String outputObjectPath = null;
+	private String outputObjectDirectory = null;
 	private String externalId = null;
 	private MpfResponse mpfResponse = new MpfResponse();
 
@@ -42,11 +42,11 @@ public class StreamingJobCreationResponse {
 		this.jobId = -1L;
 	}
 
-	public StreamingJobCreationResponse(long jobId, String externalId, String outputObjectPath) {
+	public StreamingJobCreationResponse(long jobId, String externalId, String outputObjectDirectory) {
 		this.mpfResponse.setMessage(0, "success");
 		this.jobId = jobId;
 		this.externalId = externalId;
-		this.outputObjectPath = outputObjectPath;
+		this.outputObjectDirectory = outputObjectDirectory;
 	}
 	
 	/*
@@ -56,7 +56,7 @@ public class StreamingJobCreationResponse {
 		return jobId;
 	}
 	public String getExternalId() { return externalId; }
-	public String getOutputObjectPath() { return outputObjectPath; }
+	public String getOutputObjectDirectory() { return outputObjectDirectory; }
 	public MpfResponse getMpfResponse() {
 		return mpfResponse;
 	}

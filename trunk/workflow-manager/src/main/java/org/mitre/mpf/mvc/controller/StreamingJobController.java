@@ -411,7 +411,7 @@ public class StreamingJobController {
                     // get the updated streamingJobRequest so we can pass along the output object directory in the
                     // streaming job creation response.
                     StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
-                    return new StreamingJobCreationResponse( jobId, jsonStreamingJobRequest.getExternalId(), streamingJobRequest.getOutputObjectPath() );
+                    return new StreamingJobCreationResponse( jobId, jsonStreamingJobRequest.getExternalId(), streamingJobRequest.getOutputObjectDirectory() );
                 } else {
                     log.error("Failure creating output file system for streaming jobId " + jobId + ". Please check server logs for more detail");
                     return new StreamingJobCreationResponse(-1, String.format("Failure creating output file system for streaming job with Job Id '%s'.  Please check server log for more details.", jobId));
@@ -487,7 +487,7 @@ public class StreamingJobController {
         if ( mpfService.cancelStreamingJob(jobId, doCleanup ) ) {
             log.debug("Successful cancellation of streaming job with id: {}",jobId);
             return new StreamingJobCancelResponse(jobId,streamingJobRequest.getExternalId(),
-                    streamingJobRequest.getOutputObjectPath(), doCleanup);
+                    streamingJobRequest.getOutputObjectDirectory(), doCleanup);
         }
         String errorStr = "Failed to cancel the streaming job with id '" + Long.toString(jobId) + "'. Please check to make sure the streaming job exists before submitting a cancel request. "
                 + "Also consider checking the server logs for more information on this error.";

@@ -67,9 +67,9 @@ public class TransientStreamingJob {
 	public void setOutputEnabled(boolean enabled) { outputEnabled = enabled; }
 	public boolean isOutputEnabled() { return outputEnabled; }
 
-	private String outputObjectPath;
-	public void setOutputEnabled(String outputObjectPath_s) { outputObjectPath = outputObjectPath_s; }
-	public String getOutputObjectPath() { return outputObjectPath; }
+	private String outputObjectDirectory;
+	public void setOutputObjectDirectory(String outputObjectDirectory_s) { outputObjectDirectory = outputObjectDirectory_s; }
+	public String getOutputObjectDirectory() { return outputObjectDirectory; }
 
 	private TransientStream stream;
 	public TransientStream getStream() { return stream; }
@@ -106,7 +106,7 @@ public class TransientStreamingJob {
 								 @JsonProperty("stallAlertRate") long stallAlertRate,
 								 @JsonProperty("stallTimeout") long stallTimeout,
 								 @JsonProperty("outputEnabled") boolean outputEnabled,
-								 @JsonProperty("outputObjectPath") String outputObjectPath,
+								 @JsonProperty("outputObjectDirectory") String outputObjectDirectory,
                                  @JsonProperty("cancelled") boolean cancelled) {
 		this.id = id;
 		this.externalId = externalId;
@@ -117,7 +117,7 @@ public class TransientStreamingJob {
 		this.stallAlertRate = stallAlertRate;
 		this.stallTimeout = stallTimeout;
 		this.outputEnabled = outputEnabled;
-		this.outputObjectPath = outputObjectPath;
+		this.outputObjectDirectory = outputObjectDirectory;
 		this.cancelled = cancelled;
 		this.stream = null;
 		this.overriddenAlgorithmProperties = new HashMap<>();
@@ -134,14 +134,14 @@ public class TransientStreamingJob {
 								 @JsonProperty("stallAlertRate") long stallAlertRate,
 								 @JsonProperty("stallTimeout") long stallTimeout,
 								 @JsonProperty("outputEnabled") boolean outputEnabled,
-								 @JsonProperty("outputObjectPath") String outputObjectPath,
+								 @JsonProperty("outputObjectDirectory") String outputObjectDirectory,
                                  @JsonProperty("cancelled") boolean cancelled,
 								 @JsonProperty("healthReportCallbackURI") String healthReportCallbackURI,
 								 @JsonProperty("summaryReportCallbackURI") String summaryReportCallbackURI,
 								 @JsonProperty("newTrackAlertCallbackURI") String newTrackAlertCallbackURI,
                                  @JsonProperty("callbackMethod") String callbackMethod) {
 		this(id,externalId,pipeline,currentStage,priority,
-				stallAlertDetectionThreshold,stallAlertRate,stallTimeout,outputEnabled,outputObjectPath,cancelled);
+				stallAlertDetectionThreshold,stallAlertRate,stallTimeout,outputEnabled,outputObjectDirectory,cancelled);
 		this.healthReportCallbackURI = healthReportCallbackURI;
 		this.summaryReportCallbackURI = summaryReportCallbackURI;
 		this.newTrackAlertCallbackURI = newTrackAlertCallbackURI;

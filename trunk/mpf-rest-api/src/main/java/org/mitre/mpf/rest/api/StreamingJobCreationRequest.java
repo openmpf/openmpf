@@ -147,10 +147,11 @@ public class StreamingJobCreationRequest {
 	/** this method will check the current settings within this streaming job creation request,
 	 * and will return true if the current settings are set within the constraints defined for a
 	 * streaming job, false otherwise
-	 * @return true if settings define a valid job request, false otherwise.
+	 * @return true if settings define a valid streaming job request, false otherwise.
 	 */
 	public boolean isValidRequest() {
 		// do error checks on the streaming job request.
+		// TODO check the pipeline name specfied in the create streaming job request and make sure it's streaming-capable
 		if ( getStream().isValidStreamData() && getStallAlertDetectionThreshold() != -1L &&
 				getStallAlertRate() != -1L && getStallTimeout() != -1L ) {
 			return true;

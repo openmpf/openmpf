@@ -82,9 +82,9 @@ public class StreamingJobRequest {
 	public void setInputObject(byte[] inputObject) { this.inputObject = inputObject; }
 
 	@Column
-	private String outputObjectPath;
-	public String getOutputObjectPath() { return outputObjectPath; }
-	public void setOutputObjectPath(String outputObjectPath) { this.outputObjectPath = outputObjectPath; }
+	private String outputObjectDirectory;
+	public String getOutputObjectDirectory() { return outputObjectDirectory; }
+	public void setOutputObjectDirectory(String outputObjectDirectory) { this.outputObjectDirectory = outputObjectDirectory; }
 
 	@Column
 	private String pipeline;

@@ -136,7 +136,7 @@ public class ModelUtils {
 				streamingJobRequest.getPriority(),
 				streamingJobRequest.getStatus().toString(), jobContainerProgress, streamingJobRequest.getTimeReceived(),
 				streamingJobRequest.getTimeCompleted(),
-				streamingJobRequest.getOutputObjectPath(),
+				streamingJobRequest.getOutputObjectDirectory(),
 				streamingJobRequest.getStreamURI(),
 				streamingJobRequest.getHealthReportCallbackURI(),
 				isTerminal);

@@ -715,7 +715,7 @@ public class RedisImpl implements Redis {
 		jobHash.put(NEW_TRACK_ALERT_CALLBACK_URI, transientStreamingJob.getNewTrackAlertCallbackURI());
 		jobHash.put(CALLBACK_METHOD, transientStreamingJob.getCallbackMethod());
 		jobHash.put(OUTPUT_ENABLED, transientStreamingJob.isOutputEnabled());
-		jobHash.put(OUTPUT_OBJECT_PATH, transientStreamingJob.getOutputObjectPath());
+		jobHash.put(OUTPUT_OBJECT_PATH, transientStreamingJob.getOutputObjectDirectory());
 		jobHash.put(CANCELLED, transientStreamingJob.isCancelled());
 
 		// Finally, persist the data to Redis.

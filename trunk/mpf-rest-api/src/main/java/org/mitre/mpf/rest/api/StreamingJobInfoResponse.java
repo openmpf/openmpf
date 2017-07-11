@@ -37,7 +37,7 @@ public class StreamingJobInfoResponse {
 //	private float jobProgress = 0;
 	private Date startDate;
 	private Date endDate;
-	private String outputObjectPath;
+	private String outputObjectDirectory;
 	private String streamURI = null;
 	private String healthReportCallbackURI = null;
 	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
@@ -54,17 +54,17 @@ public class StreamingJobInfoResponse {
 	}
 
 	/** Constructor
-	 * @param jobId
-	 * @param pipelineName
-	 * @param jobPriority
-	 * @param jobStatus
-	 * @param jobProgress
-	 * @param startDate
+	 * @param jobId job id of this streaming job
+	 * @param pipelineName name of the pipeline defined for this job
+	 * @param jobPriority priority associated with this job
+	 * @param jobStatus status of this job
+	 * @param jobProgress progress of this job
+	 * @param startDate date when this job was started
 	 * @param endDate endDate may be null if the streaming job is still active
-	 * @param outputObjectPath
+	 * @param outputObjectDirectory
 	 */
 	public StreamingJobInfoResponse(Long jobId, String externalId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus, float jobProgress,
-									Date startDate, Date endDate, String outputObjectPath,
+									Date startDate, Date endDate, String outputObjectDirectory,
 									String streamURI, String healthReportCallbackURI, boolean terminal) {
 		this.mpfResponse.setMessage(0, "success");
 		this.jobId = jobId;
@@ -75,7 +75,7 @@ public class StreamingJobInfoResponse {
 //		this.jobProgress = jobProgress;
 		this.startDate = startDate;
 		this.endDate = endDate;
-		this.outputObjectPath = outputObjectPath;
+		this.outputObjectDirectory = outputObjectDirectory;
 		this.terminal = terminal;
 		this.streamURI = streamURI;
 		this.healthReportCallbackURI = healthReportCallbackURI;
@@ -107,8 +107,8 @@ public class StreamingJobInfoResponse {
 		return endDate;
 	}
 
-	public String getOutputObjectPath() {
-		return outputObjectPath;
+	public String getOutputObjectDirectory() {
+		return outputObjectDirectory;
 	}
 
 	public MpfResponse getMpfResponse() {

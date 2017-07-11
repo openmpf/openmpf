@@ -112,7 +112,7 @@ public class JsonJobRequest {
 			jsonJobRequest.media.addAll(media);
 		}
 
-		// update to support the priority scheme (from lowest to highest):
+		// Putting algorithm properties as defined here supports the priority scheme (from lowest to highest):
 		// action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
 		if(algorithmProperties != null) {
 			jsonJobRequest.algorithmProperties.putAll(algorithmProperties);

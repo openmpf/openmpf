@@ -30,7 +30,7 @@ public class StreamingJobCancelResponse {
 	private Long jobId;
 	private boolean doCleanup = false;
 	private String externalId = null;
-	private String outputObjectPath;
+	private String outputObjectDirectory;
 	private MpfResponse mpfResponse = new MpfResponse();
 
 	public StreamingJobCancelResponse() {}
@@ -41,15 +41,16 @@ public class StreamingJobCancelResponse {
 		this.doCleanup = doCleanup;
 	}
 
-	/**
-	 * @param jobId
-	 * @param externalId
-	 * @param outputObjectPath
+	/** Constructor
+	 * @param jobId job id of this streaming job
+	 * @param externalId external id of this streaming job, may be null
+	 * @param outputObjectDirectory root directory for output objects created during this streaming job
+	 * @param doCleanup if true, then the caller is requesting that the output object directory is cleaned up prior to cancelling this job
 	 */
-	public StreamingJobCancelResponse(Long jobId, String externalId, String outputObjectPath, boolean doCleanup) {
+	public StreamingJobCancelResponse(Long jobId, String externalId, String outputObjectDirectory, boolean doCleanup) {
 		this.jobId = jobId;
 		this.externalId = externalId;
-		this.outputObjectPath = outputObjectPath;
+		this.outputObjectDirectory = outputObjectDirectory;
 		this.doCleanup = doCleanup;
 		this.mpfResponse.setMessage(0,"success");
 	}
@@ -62,8 +63,8 @@ public class StreamingJobCancelResponse {
 
 	public boolean getDoCleanup() { return doCleanup; }
 
-	public String getOutputObjectPath() {
-		return outputObjectPath;
+	public String getOutputObjectDirectory() {
+		return outputObjectDirectory;
 	}
 
 	public MpfResponse getMpfResponse() {

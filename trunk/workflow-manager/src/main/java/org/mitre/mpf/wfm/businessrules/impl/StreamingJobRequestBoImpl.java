@@ -256,7 +256,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 				// create the output object directory for this streaming job and store the absolute path to that directory
 				// (as a String) in the streaming job request
 				File outputObjectsDirName = propertiesUtil.createStreamingOutputObjectsDirectory(jobId);
-				streamingJobRequest.setOutputObjectPath(outputObjectsDirName.getAbsolutePath());
+				streamingJobRequest.setOutputObjectDirectory(outputObjectsDirName.getAbsolutePath());
 				streamingJobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
 
 				// update the streaming job request in the MySQL long-term database
@@ -288,7 +288,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
 				// Get a copy of this streaming job's stream in order to add it to the new instance we're about to create.
 				jsonStreamingJobRequest = new JsonStreamingJobRequest(jsonStreamingJobRequest.getExternalId(),
-						jsonStreamingJobRequest.isOutputObjectEnabled(), jsonStreamingJobRequest.getOutputObjectPath(),
+						jsonStreamingJobRequest.isOutputObjectEnabled(), jsonStreamingJobRequest.getOutputObjectDirectory(),
 						jsonStreamingJobRequest.getPipeline(), priority, jsonStreamingJobRequest.getStream(),
 						jsonStreamingJobRequest.getStallAlertDetectionThreshold(),
 						jsonStreamingJobRequest.getStallAlertRate(),
@@ -327,7 +327,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		// Set output object version and path to null.  These will be set later after the job has been
 		// submitted to MPF and when the
 		// output objects are actually created (if enabled)
-		streamingJobRequest.setOutputObjectPath(null);
+		streamingJobRequest.setOutputObjectDirectory(null);
 		streamingJobRequest.setOutputObjectVersion(null);
 
 		// set remaining items that need to be persisted

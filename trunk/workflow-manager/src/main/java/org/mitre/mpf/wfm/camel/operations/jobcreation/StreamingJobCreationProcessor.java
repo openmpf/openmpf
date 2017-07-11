@@ -162,7 +162,7 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 					json_streamingJobRequest.getStallAlertDetectionThreshold(),
 					json_streamingJobRequest.getStallAlertRate(), json_streamingJobRequest.getStallTimeout(),
 					json_streamingJobRequest.isOutputObjectEnabled(),
-					json_streamingJobRequest.getOutputObjectPath(),
+					json_streamingJobRequest.getOutputObjectDirectory(),
 					false,
 					json_streamingJobRequest.getHealthReportCallbackURI(),json_streamingJobRequest.getSummaryReportCallbackURI(),
 					json_streamingJobRequest.getHealthReportCallbackURI(),json_streamingJobRequest.getCallbackMethod());

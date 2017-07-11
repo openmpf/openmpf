@@ -319,7 +319,7 @@ public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements S
 
 		try {
 			// get the directory that has already been created for storing output objects for this streaming job
-			File outputFile = propertiesUtil.createStreamingOutputObjectsFile(jobId,Paths.get(streamingJobRequest.getOutputObjectPath()).toFile());
+			File outputFile = propertiesUtil.createStreamingOutputObjectsFile(jobId,Paths.get(streamingJobRequest.getOutputObjectDirectory()).toFile());
 			// write the JSON output to the output object file
 			jsonUtils.serialize(jsonOutputObject, outputFile);
 

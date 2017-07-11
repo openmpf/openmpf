@@ -24,10 +24,9 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.businessrules.impl;
+package org.mitre.mpf.wfm.service;
 
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.businessrules.PipelineManagementBo;
 import org.mitre.mpf.wfm.pipeline.PipelineManager;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.util.Tuple;
@@ -39,8 +38,8 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 @Component
-public class PipelineManagementBoImpl implements PipelineManagementBo {
-    private static final Logger log = LoggerFactory.getLogger(PipelineManagementBoImpl.class);
+public class PipelinesServiceImpl implements PipelinesService {
+    private static final Logger log = LoggerFactory.getLogger(PipelinesServiceImpl.class);
 
     @Autowired
     private PipelineManager pipelineManager;

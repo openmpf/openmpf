@@ -33,10 +33,10 @@ import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.service.PipelinesService;
 import org.mitre.mpf.wfm.pipeline.PipelineManager;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -60,7 +60,7 @@ public class TestRemoveComponentService {
     private RemoveComponentServiceImpl _removeComponentService;
 
     @Mock
-    private PipelineService _pipelineService;
+    private PipelinesService _pipelineService;
 
     @Mock
     private NodeManagerService _mockNodeManager;

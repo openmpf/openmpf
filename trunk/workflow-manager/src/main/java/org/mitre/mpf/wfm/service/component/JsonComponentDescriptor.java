@@ -115,6 +115,10 @@ public class JsonComponentDescriptor {
         @NotNull
         @Valid
         public AlgoProvides providesCollection;
+
+        public boolean supportsBatchProcessing;
+
+        public boolean supportsStreamProcessing;
     }
 
     public static class AlgoRequires {

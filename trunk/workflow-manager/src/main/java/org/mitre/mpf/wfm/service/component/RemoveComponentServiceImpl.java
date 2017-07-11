@@ -30,10 +30,10 @@ import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.service.PipelinesService;
 import org.mitre.mpf.wfm.pipeline.PipelineManager;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +53,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
     private static final Logger _log = LoggerFactory.getLogger(RemoveComponentServiceImpl.class);
 
-    private final PipelineService pipelineService;
+    private final PipelinesService pipelineService;
 
     private final NodeManagerService nodeManagerService;
 
@@ -67,7 +67,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
     @Inject
     RemoveComponentServiceImpl(
-            PipelineService pipelineService,
+            PipelinesService pipelineService,
             NodeManagerService nodeManagerService,
             ComponentDeploymentService deployService,
             ComponentStateService componentStateService,

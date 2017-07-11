@@ -33,9 +33,9 @@ import org.mitre.mpf.nms.xml.EnvironmentVariable;
 import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
+import org.mitre.mpf.wfm.service.PipelinesService;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +54,7 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     private static final Logger _log = LoggerFactory.getLogger(AddComponentServiceImpl.class);
 
-    private final PipelineService pipelineService;
+    private final PipelinesService pipelineService;
 
     private final NodeManagerService nodeManagerService;
 
@@ -74,7 +74,7 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     @Inject
     AddComponentServiceImpl(
-            PipelineService pipelineService,
+            PipelinesService pipelineService,
             NodeManagerService nodeManagerService,
             ComponentDeploymentService deployService,
             ComponentStateService componentStateService,

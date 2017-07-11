@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camel.operations.detection;
 import org.apache.camel.Message;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
+import org.mitre.mpf.wfm.service.PipelinesService;
 import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
@@ -36,7 +37,6 @@ import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.segmenting.*;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.TimePair;
 import org.slf4j.Logger;
@@ -80,7 +80,7 @@ public class DetectionSplitter implements StageSplitter {
 	private MediaSegmenter defaultMediaSegmenter;
 
 	@Autowired
-	private PipelineService pipelineService;
+	private PipelinesService pipelineService;
 
 	private static final String[] transformProperties = new String[]{
 			MpfConstants.ROTATION_PROPERTY,

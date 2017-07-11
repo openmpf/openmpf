@@ -35,7 +35,7 @@
 
     <context:component-scan base-package="org.mitre.mpf.wfm.util" use-default-filters="false">
         <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.util.PropertiesUtil"/>
-        <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.businessrules.PipelineManagementBo"/>
+        <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.service.PipelinesService"/>
         <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.pipeline.PipelineManager"/>
         <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.service.PipelineService"/>
         <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.nodeManager.NodeManagerStatus"/>
@@ -56,7 +56,7 @@
 
     <bean class="org.mitre.mpf.wfm.util.PropertiesUtil"/>
     <bean class="org.mitre.mpf.wfm.util.IoUtils"/>
-    <bean class="org.mitre.mpf.wfm.businessrules.impl.PipelineManagementBoImpl"/>
+    <bean class="org.mitre.mpf.wfm.service.PipelinesServiceImpl"/>
     <bean class="org.mitre.mpf.wfm.pipeline.PipelineManager"/>
     <bean class="org.mitre.mpf.wfm.service.PipelineServiceImpl"/>
     <bean class="org.mitre.mpf.wfm.nodeManager.NodeManagerStatus"/>

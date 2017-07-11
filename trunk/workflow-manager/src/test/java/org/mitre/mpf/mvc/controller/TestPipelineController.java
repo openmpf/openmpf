@@ -27,47 +27,29 @@
 package org.mitre.mpf.mvc.controller;
 
 import junit.framework.TestCase;
-import org.apache.camel.CamelContext;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
-import org.mitre.mpf.mvc.model.ActionModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.camel.JobStatusCalculator;
-import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.service.PipelinesService;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.pipeline.PipelineManager;
 import org.mitre.mpf.wfm.pipeline.xml.*;
-import org.mitre.mpf.wfm.service.PipelineService;
-import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.ResultHandler;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
 
 import java.util.Collections;
 import java.util.HashMap;
 
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.Matchers.is;
-import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
@@ -77,7 +59,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class TestPipelineController extends TestCase {
 
     @Autowired
-    private PipelineService pipelineService;
+    private PipelinesService pipelineService;
 
     @Autowired
     private PipelineManager pipelineManager;

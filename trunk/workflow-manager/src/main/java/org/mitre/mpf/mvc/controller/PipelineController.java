@@ -34,11 +34,11 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.mitre.mpf.mvc.model.*;
 import org.mitre.mpf.mvc.util.JsonView;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.service.PipelinesService;
 import org.mitre.mpf.wfm.exceptions.DuplicateNameWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.NotFoundWfmProcessingException;
 import org.mitre.mpf.wfm.pipeline.PipelineManager;
 import org.mitre.mpf.wfm.pipeline.xml.*;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,10 +52,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -71,7 +68,7 @@ public class PipelineController {
     public static final String DEFAULT_ERROR_VIEW = "error";
 
     @Autowired
-    private PipelineService pipelineService;
+    private PipelinesService pipelineService;
 
     @Autowired
     private PipelineManager pipelineManager;
@@ -91,7 +88,7 @@ public class PipelineController {
     		@ApiResponse(code = 401, message = "Bad credentials") })
     @ResponseBody
     public List<String> getAvailablePipelinesRest() {
-        return pipelineService.getPipelineNames();
+        return new ArrayList<>(pipelineService.getPipelineNames());
     }
 
 
@@ -142,8 +139,11 @@ public class PipelineController {
     @RequestMapping(value = "/pipelines/model", method = RequestMethod.GET)
     @ResponseBody
     public PipelinesModel getPipelinesModel() {
-        return new PipelinesModel(pipelineService.getAlgorithmNames(), pipelineService.getActionNames(),
-                pipelineService.getTaskNames(), pipelineService.getPipelineNames());
+        return new PipelinesModel(
+                new ArrayList<>(pipelineService.getAlgorithmNames()),
+                new ArrayList<>(pipelineService.getActionNames()),
+                new ArrayList<>(pipelineService.getTaskNames()),
+                new ArrayList<>(pipelineService.getPipelineNames()));
     }
 
     //INTERNAL - deprecated
@@ -487,7 +487,7 @@ public class PipelineController {
                 for(String actionName : addToPipelineModel.getItemsToAdd()) {
                     taskDefinition.getActions().add( new ActionDefinitionRef(actionName) );
                 }
-                successfulAdd = pipelineService.addTaskDeprecated(taskDefinition);
+                successfulAdd = pipelineService.addTask(taskDefinition);
             }
             else if(type.equals("pipeline")) {
                 PipelineDefinition pipelineDefinition = new PipelineDefinition(name, description);

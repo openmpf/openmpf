@@ -32,10 +32,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
+import org.mitre.mpf.wfm.service.PipelinesService;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.service.NodeManagerService;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.Tuple;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -43,7 +43,9 @@ import org.mockito.MockitoAnnotations;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -57,7 +59,7 @@ public class TestAddComponentService {
     private AddComponentServiceImpl _addComponentService;
 
     @Mock
-    private PipelineService _mockPipelineService;
+    private PipelinesService _mockPipelineService;
 
     @Mock
     private NodeManagerService _mockNodeManager;

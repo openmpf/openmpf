@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.service.PipelinesService;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
@@ -40,10 +40,10 @@ import static java.util.stream.Collectors.toSet;
 @Service
 public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
 
-    private final PipelineService pipelineService;
+    private final PipelinesService pipelineService;
 
     @Inject
-    CustomPipelineValidatorImpl(PipelineService pipelineService) {
+    CustomPipelineValidatorImpl(PipelinesService pipelineService) {
         this.pipelineService = pipelineService;
     }
 

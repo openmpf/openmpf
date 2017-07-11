@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.businessrules;
+package org.mitre.mpf.wfm.service;
 
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.SortedSet;
 
 @Component
-public interface PipelineManagementBo {
+public interface PipelinesService {
 	/** Gets the ordered collection of pipeline names. */
     public SortedSet<String> getPipelineNames();
 

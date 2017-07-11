@@ -26,11 +26,12 @@
 
 package org.mitre.mpf.wfm.service.component;
 
+import com.google.common.collect.ImmutableSortedSet;
 import org.junit.Before;
 import org.junit.Test;
+import org.mitre.mpf.wfm.service.PipelinesService;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.ValueType;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -48,7 +49,7 @@ public class TestCustomPipelineValidator {
     private CustomPipelineValidatorImpl _pipelineValidator;
 
     @Mock
-    private PipelineService _mockPipelineService;
+    private PipelinesService _mockPipelineService;
 
     @Before
     public void init() {
@@ -65,13 +66,13 @@ public class TestCustomPipelineValidator {
         descriptor.pipelines.get(0).tasks.add(existingTaskRef);
 
         when(_mockPipelineService.getAlgorithmNames())
-                .thenReturn(Arrays.asList("foo", REFERENCED_ALGO_NAME));
+                .thenReturn(ImmutableSortedSet.of("foo", REFERENCED_ALGO_NAME));
+
 
         when(_mockPipelineService.getActionNames())
-                .thenReturn(Arrays.asList("bar", existingActionRef));
-
+                .thenReturn(ImmutableSortedSet.of("bar", existingActionRef));
         when(_mockPipelineService.getTaskNames())
-                .thenReturn(Collections.singletonList(existingTaskRef));
+                .thenReturn(ImmutableSortedSet.of(existingTaskRef));
 
 
         List<PropertyDefinition> propDefs = ACTION1_PROP_NAMES
@@ -92,13 +93,13 @@ public class TestCustomPipelineValidator {
         JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();
 
         when(_mockPipelineService.getActionNames())
-                .thenReturn(ACTION_NAMES.subList(0, 2));
+                .thenReturn(ImmutableSortedSet.copyOf(ACTION_NAMES.subList(0, 2)));
 
         when(_mockPipelineService.getTaskNames())
-                .thenReturn(Arrays.asList("foo", TASK_NAMES.get(0)));
+                .thenReturn(ImmutableSortedSet.of("foo", TASK_NAMES.get(0)));
 
         when(_mockPipelineService.getPipelineNames())
-                .thenReturn(Collections.singletonList(PIPELINE_NAME));
+                .thenReturn(ImmutableSortedSet.of(PIPELINE_NAME));
 
         try {
             _pipelineValidator.validate(descriptor);
@@ -128,7 +129,7 @@ public class TestCustomPipelineValidator {
         descriptor.pipelines.get(0).tasks.add(invalidTaskName);
 
         when(_mockPipelineService.getAlgorithmNames())
-                .thenReturn(Arrays.asList("foo", "bar", "baz"));
+                .thenReturn(ImmutableSortedSet.of("foo", "bar", "baz"));
 
 
         try {

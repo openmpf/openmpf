@@ -36,7 +36,6 @@ import org.junit.runner.RunWith;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
@@ -44,12 +43,9 @@ import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.pipeline.xml.ActionDefinitionRef;
-import org.mitre.mpf.wfm.pipeline.xml.PipelineDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.TaskDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.TaskDefinitionRef;
+import org.mitre.mpf.wfm.pipeline.PipelinesService;
+import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -104,7 +100,7 @@ public abstract class TestSystem {
     private MpfService mpfService;
 
     @Autowired
-    protected PipelineService pipelineService;
+    protected PipelinesService pipelineService;
 
     @Autowired
 	@Qualifier(JobCompleteProcessorImpl.REF)
@@ -190,29 +186,34 @@ public abstract class TestSystem {
 	}
 
 
-	protected void addAction(String actionName, String algorithmName, Map<String, String> propertySettings) throws WfmProcessingException {
+	protected void addAction(String actionName, String algorithmName, Map<String, String> propertySettings) {
 		if (!pipelineService.getActionNames().contains(actionName)) {
-			pipelineService.addAndSaveAction(actionName, actionName, algorithmName, propertySettings);
+			ActionDefinition actionDef = new ActionDefinition(actionName, algorithmName, actionName);
+			for (Map.Entry<String, String> entry : propertySettings.entrySet()) {
+				actionDef.getProperties().add(new PropertyDefinitionRef(entry.getKey(), entry.getValue()));
+			}
+			pipelineService.saveAction(actionDef);
 		}
 	}
 
-	protected void addTask(String taskName, String... actions) throws WfmProcessingException {
+
+	protected void addTask(String taskName, String... actions) {
 		if (!pipelineService.getTaskNames().contains(taskName)) {
 			TaskDefinition taskDef = new TaskDefinition(taskName, taskName);
 			for (String actionName : actions) {
 				taskDef.getActions().add(new ActionDefinitionRef(actionName));
 			}
-			pipelineService.addAndSaveTask(taskDef);
+			pipelineService.saveTask(taskDef);
 		}
 	}
 
-	protected void addPipeline(String pipelineName, String... tasks) throws WfmProcessingException {
+	protected void addPipeline(String pipelineName, String... tasks) {
 		if (!pipelineService.getPipelineNames().contains(pipelineName)) {
 			PipelineDefinition pipelineDef = new PipelineDefinition(pipelineName, pipelineName);
 			for (String taskName : tasks) {
 				pipelineDef.getTaskRefs().add(new TaskDefinitionRef(taskName));
 			}
-			pipelineService.addAndSavePipeline(pipelineDef);
+			pipelineService.savePipeline(pipelineDef);
 		}
 	}
 

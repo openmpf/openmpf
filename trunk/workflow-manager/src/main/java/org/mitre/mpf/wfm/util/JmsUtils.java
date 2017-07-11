@@ -26,31 +26,23 @@
 
 package org.mitre.mpf.wfm.util;
 
-import org.apache.camel.*;
+import org.apache.camel.CamelContext;
+import org.apache.camel.ExchangePattern;
+import org.apache.camel.LoggingLevel;
+import org.apache.camel.Route;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.model.RouteDefinition;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.pipeline.PipelineManager;
+import org.mitre.mpf.wfm.pipeline.PipelinesService;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jms.core.JmsTemplate;
-import org.springframework.jms.core.MessageCreator;
 import org.springframework.stereotype.Component;
 
-import javax.jms.*;
-import javax.jms.Message;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 @Component
 public class JmsUtils {
@@ -64,8 +56,7 @@ public class JmsUtils {
 	}
 
 	@Autowired
-	@Qualifier(PipelineManager.REF)
-	private PipelineManager pipelineManager;
+	private PipelinesService pipelinesService;
 
 	@Autowired
 	private CamelContext camelContext;
@@ -74,7 +65,7 @@ public class JmsUtils {
 		camelContext.addRoutes(new RouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				for(final AlgorithmDefinition algorithmDefinition : pipelineManager.getAlgorithms()) {
+				for(final AlgorithmDefinition algorithmDefinition : pipelinesService.getAlgorithms()) {
 					String routeName = createCancellationRouteName(jobId, algorithmDefinition.getActionType().name(), algorithmDefinition.getName(), "REQUEST");
 					String routeUri = String.format("jms:MPF.%s_%s_REQUEST?selector=JobId%%3D%d", algorithmDefinition.getActionType().name(), algorithmDefinition.getName(), jobId);
 					log.debug("Creating route {} with URI {}.", routeName);

@@ -24,23 +24,69 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel.operations.detection.trackmerging;
+package org.mitre.mpf.wfm.pipeline;
 
-import org.apache.camel.CamelContext;
-import org.mitre.mpf.wfm.pipeline.PipelinesService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.mitre.mpf.interop.JsonPipeline;
+import org.mitre.mpf.wfm.pipeline.xml.*;
 
-@Component
-public class DetectionCancellationConsumer {
+import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
 
-	@Autowired
-	private CamelContext camelContext;
+public interface PipelinesService {
+	JsonPipeline createJsonPipeline(String pipeline);
 
-	@Autowired
-	private PipelinesService pipelinesService;
+	SortedSet<String> getPipelineNames();
 
-	public void cancel(long jobId) {
+	SortedSet<String> getActionNames();
 
-	}
+	SortedSet<String> getAlgorithmNames();
+
+	SortedSet<String> getTaskNames();
+
+	String getPipelineDefinitionAsJson();
+
+	Set<AlgorithmDefinition> getAlgorithms();
+
+	AlgorithmDefinition getAlgorithm(String name);
+
+	AlgorithmDefinition getAlgorithm(ActionDefinition actionDefinition);
+
+	AlgorithmDefinition getAlgorithm(ActionDefinitionRef actionDefinitionRef);
+
+	Set<ActionDefinition> getActions();
+
+	ActionDefinition getAction(String name);
+
+	ActionDefinition getAction(ActionDefinitionRef name);
+
+	Set<TaskDefinition> getTasks();
+
+	List<TaskDefinition> getTasks(String pipelineName);
+
+	TaskDefinition getTask(String name);
+
+	TaskDefinition getTask(TaskDefinitionRef taskDefinitionRef);
+
+	Set<PipelineDefinition> getPipelines();
+
+	PipelineDefinition getPipeline(String name);
+
+	void reset();
+
+	void deleteAlgorithm(String algorithmName);
+
+	void saveAlgorithm(AlgorithmDefinition algorithmDefinition);
+
+	void deleteAction(String actionName);
+
+	void saveAction(ActionDefinition action);
+
+	void deleteTask(String taskName);
+
+	void saveTask(TaskDefinition task);
+
+	void deletePipeline(String pipelineName);
+
+	void savePipeline(PipelineDefinition pipeline);
 }

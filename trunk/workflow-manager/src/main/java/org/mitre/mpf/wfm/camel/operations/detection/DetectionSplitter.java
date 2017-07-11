@@ -29,12 +29,13 @@ package org.mitre.mpf.wfm.camel.operations.detection;
 import org.apache.camel.Message;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
-import org.mitre.mpf.wfm.service.PipelinesService;
 import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.*;
+import org.mitre.mpf.wfm.pipeline.PipelinesService;
+import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.segmenting.*;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -319,7 +320,11 @@ public class DetectionSplitter implements StageSplitter {
 	}
 
 	private Map<String, String> getAlgorithmProperties(String algorithmName) {
-	 	return pipelineService.getAlgorithmProperties(algorithmName).stream()
+		AlgorithmDefinition algorithm = pipelineService.getAlgorithm(algorithmName);
+		if (algorithm == null) {
+			return Collections.emptyMap();
+		}
+		return algorithm.getProvidesCollection().getAlgorithmProperties().stream()
 			    .collect(toMap(PropertyDefinition::getName, PropertyDefinition::getDefaultValue));
 	}
 }

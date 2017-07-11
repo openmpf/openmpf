@@ -30,8 +30,7 @@ import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.service.PipelinesService;
-import org.mitre.mpf.wfm.pipeline.PipelineManager;
+import org.mitre.mpf.wfm.pipeline.PipelinesService;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -53,31 +52,27 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
     private static final Logger _log = LoggerFactory.getLogger(RemoveComponentServiceImpl.class);
 
-    private final PipelinesService pipelineService;
-
     private final NodeManagerService nodeManagerService;
 
     private final ComponentDeploymentService deployService;
 
     private final ComponentStateService componentStateService;
 
-    private final PipelineManager pipelineManager;
+    private final PipelinesService pipelinesService;
 
     private final PropertiesUtil propertiesUtil;
 
     @Inject
     RemoveComponentServiceImpl(
-            PipelinesService pipelineService,
             NodeManagerService nodeManagerService,
             ComponentDeploymentService deployService,
             ComponentStateService componentStateService,
-            PipelineManager pipelineManager,
+            PipelinesService pipelinesService,
             PropertiesUtil propertiesUtil) {
-        this.pipelineService = pipelineService;
         this.nodeManagerService = nodeManagerService;
         this.deployService = deployService;
         this.componentStateService = componentStateService;
-        this.pipelineManager = pipelineManager;
+        this.pipelinesService = pipelinesService;
         this.propertiesUtil = propertiesUtil;
     }
 
@@ -212,41 +207,41 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
     }
 
     private void removePipeline(String pipelineName) {
-        pipelineService.removeAndDeletePipeline(pipelineName.toUpperCase());
+        pipelinesService.deletePipeline(pipelineName.toUpperCase());
     }
 
     private void removeTask(String taskName) {
-        pipelineManager.getPipelines()
+        pipelinesService.getPipelines()
                 .stream()
                 .filter(pd -> referencesTask(pd, taskName))
                 .map(PipelineDefinition::getName)
                 .forEach(this::removePipeline);
 
-        pipelineService.removeAndDeleteTask(taskName.toUpperCase());
+        pipelinesService.deleteTask(taskName.toUpperCase());
     }
 
     private void removeAction(String actionName) {
-        pipelineManager.getTasks()
+        pipelinesService.getTasks()
                 .stream()
                 .filter(td -> referencesAction(td, actionName))
                 .map(TaskDefinition::getName)
                 .forEach(this::removeTask);
 
         try {
-            pipelineService.removeAndDeleteAction(actionName.toUpperCase());
+            pipelinesService.deleteAction(actionName.toUpperCase());
         } catch (WfmProcessingException e) {
             _log.error("Cannot delete action " + actionName.toUpperCase(), e);
         }
     }
 
     private void removeAlgorithm(String algorithmName) {
-        pipelineManager.getActions()
+        pipelinesService.getActions()
                 .stream()
                 .filter(ad -> ad.getAlgorithmRef().equalsIgnoreCase(algorithmName))
                 .map(ActionDefinition::getName)
                 .forEach(this::removeAction);
 
-        pipelineService.removeAndDeleteAlgorithm(algorithmName.toUpperCase());
+        pipelinesService.deleteAlgorithm(algorithmName.toUpperCase());
     }
 
     private void removeService(String serviceName) {

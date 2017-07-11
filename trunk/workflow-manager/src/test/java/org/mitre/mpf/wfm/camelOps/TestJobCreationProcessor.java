@@ -30,7 +30,8 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.interop.JsonJobRequest;
@@ -46,7 +47,6 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.pipeline.PipelineManager;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
@@ -87,9 +87,6 @@ public class TestJobCreationProcessor {
 
     @Autowired
     private JsonUtils jsonUtils;
-
-    @Autowired
-    private PipelineManager pipelineManager;
 
     @Autowired
     private Redis redis;

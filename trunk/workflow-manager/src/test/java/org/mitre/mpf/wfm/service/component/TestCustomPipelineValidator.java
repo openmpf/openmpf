@@ -29,14 +29,19 @@ package org.mitre.mpf.wfm.service.component;
 import com.google.common.collect.ImmutableSortedSet;
 import org.junit.Before;
 import org.junit.Test;
-import org.mitre.mpf.wfm.service.PipelinesService;
+import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.pipeline.PipelinesService;
+import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.ValueType;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.*;
@@ -49,7 +54,7 @@ public class TestCustomPipelineValidator {
     private CustomPipelineValidatorImpl _pipelineValidator;
 
     @Mock
-    private PipelinesService _mockPipelineService;
+    private PipelinesService _mockPipelinesService;
 
     @Before
     public void init() {
@@ -65,13 +70,13 @@ public class TestCustomPipelineValidator {
         String existingTaskRef = "EXISTING TASKS NAME";
         descriptor.pipelines.get(0).tasks.add(existingTaskRef);
 
-        when(_mockPipelineService.getAlgorithmNames())
+        when(_mockPipelinesService.getAlgorithmNames())
                 .thenReturn(ImmutableSortedSet.of("foo", REFERENCED_ALGO_NAME));
 
 
-        when(_mockPipelineService.getActionNames())
+        when(_mockPipelinesService.getActionNames())
                 .thenReturn(ImmutableSortedSet.of("bar", existingActionRef));
-        when(_mockPipelineService.getTaskNames())
+        when(_mockPipelinesService.getTaskNames())
                 .thenReturn(ImmutableSortedSet.of(existingTaskRef));
 
 
@@ -81,24 +86,24 @@ public class TestCustomPipelineValidator {
                 .collect(toList());
         propDefs.add(new PropertyDefinition("foo", ValueType.INT, "2", "0"));
 
-        when(_mockPipelineService.getAlgorithmProperties(REFERENCED_ALGO_NAME))
-                .thenReturn(propDefs);
+        setupAlgoWithProperties(REFERENCED_ALGO_NAME, propDefs);
 
         _pipelineValidator.validate(descriptor);
     }
+
 
 
     @Test
     public void throwsExceptionWhenDuplicates() {
         JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();
 
-        when(_mockPipelineService.getActionNames())
+        when(_mockPipelinesService.getActionNames())
                 .thenReturn(ImmutableSortedSet.copyOf(ACTION_NAMES.subList(0, 2)));
 
-        when(_mockPipelineService.getTaskNames())
+        when(_mockPipelinesService.getTaskNames())
                 .thenReturn(ImmutableSortedSet.of("foo", TASK_NAMES.get(0)));
 
-        when(_mockPipelineService.getPipelineNames())
+        when(_mockPipelinesService.getPipelineNames())
                 .thenReturn(ImmutableSortedSet.of(PIPELINE_NAME));
 
         try {
@@ -128,7 +133,7 @@ public class TestCustomPipelineValidator {
         String invalidTaskName = "INVALID TASK NAME";
         descriptor.pipelines.get(0).tasks.add(invalidTaskName);
 
-        when(_mockPipelineService.getAlgorithmNames())
+        when(_mockPipelinesService.getAlgorithmNames())
                 .thenReturn(ImmutableSortedSet.of("foo", "bar", "baz"));
 
 
@@ -159,8 +164,7 @@ public class TestCustomPipelineValidator {
                 .stream()
                 .map(n -> new PropertyDefinition(n, ValueType.INT, "1", "0"))
                 .collect(toList());
-        when(_mockPipelineService.getAlgorithmProperties(REFERENCED_ALGO_NAME))
-                .thenReturn(propDefs);
+        setupAlgoWithProperties(REFERENCED_ALGO_NAME, propDefs);
 
 
         try {
@@ -196,8 +200,7 @@ public class TestCustomPipelineValidator {
                 .stream()
                 .map(n -> new PropertyDefinition(n, ValueType.INT, "1", "0"))
                 .collect(toList());
-        when(_mockPipelineService.getAlgorithmProperties(REFERENCED_ALGO_NAME))
-                .thenReturn(propDefs);
+        setupAlgoWithProperties(REFERENCED_ALGO_NAME, propDefs);
 
         try {
             _pipelineValidator.validate(descriptor);
@@ -217,5 +220,14 @@ public class TestCustomPipelineValidator {
     @Test
     public void descriptorWithoutCustomPipelinesValidates() throws InvalidCustomPipelinesException {
         _pipelineValidator.validate(TestDescriptorFactory.get());
+    }
+
+
+    private void setupAlgoWithProperties(String algoName, List<PropertyDefinition> properties) {
+        AlgorithmDefinition algoDef = new AlgorithmDefinition(ActionType.DETECTION, algoName, "");
+        algoDef.getProvidesCollection().getAlgorithmProperties().addAll(properties);
+
+        when(_mockPipelinesService.getAlgorithm(algoName))
+                .thenReturn(algoDef);
     }
 }

@@ -32,8 +32,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
-import org.mitre.mpf.wfm.service.PipelinesService;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.pipeline.PipelinesService;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.util.Tuple;
@@ -49,7 +50,8 @@ import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mitre.mpf.test.TestUtil.*;
+import static org.mitre.mpf.test.TestUtil.anyNonNull;
+import static org.mitre.mpf.test.TestUtil.whereArg;
 import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.*;
 import static org.mockito.Mockito.*;
 
@@ -59,7 +61,7 @@ public class TestAddComponentService {
     private AddComponentServiceImpl _addComponentService;
 
     @Mock
-    private PipelinesService _mockPipelineService;
+    private PipelinesService _mockPipelinesService;
 
     @Mock
     private NodeManagerService _mockNodeManager;
@@ -180,16 +182,6 @@ public class TestAddComponentService {
         AlgorithmDefinition algoDef = new AlgorithmDefinition(
                 ActionType.DETECTION, descriptor.algorithm.name.toUpperCase(), descriptor.algorithm.description);
 
-        when(_mockPipelineService.addAndSaveAlgorithm(algoDef))
-                .thenReturn(_successTuple);
-
-        when(_mockPipelineService.addAndSaveActionDeprecated(
-					contains(algoDef.getName()), anyString(), eq(algoDef.getName()), eq(Collections.emptyMap())))
-                .thenReturn(_successTuple);
-
-        when(_mockPipelineService.addAndSaveTaskDeprecated(whereArg(td -> td.getName().contains(algoDef.getName()))))
-                .thenReturn(_successTuple);
-
         when(_mockStateService.getByPackageFile(_testPackageName))
                 .thenReturn(Optional.of(registerModel));
 
@@ -222,12 +214,16 @@ public class TestAddComponentService {
                         && rcm.getTasks().size() == 1));
 
         // Verify mocked methods
-        verify(_mockPipelineService)
-                .addAndSaveAlgorithm(algoDef);
+        verify(_mockPipelinesService)
+                .saveAlgorithm(algoDef);
 
-        verify(_mockPipelineService)
-                .addAndSaveActionDeprecated(contains(algoDef.getName()), anyString(), anyString(),
-                                            eq(Collections.emptyMap()));
+	    verify(_mockPipelinesService)
+                .saveAction(whereArg(ad -> ad.getName().contains(algoDef.getName())
+                        && ad.getAlgorithmRef().equals(algoDef.getName())
+                        && ad.getProperties().isEmpty() ));
+
+        verify(_mockPipelinesService)
+                .saveTask(whereArg(td -> td.getName().contains(algoDef.getName())));
 
         verify(_mockDeploymentService)
                 .deployComponent(_testPackageName);
@@ -286,19 +282,6 @@ public class TestAddComponentService {
         AlgorithmDefinition algoDef = new AlgorithmDefinition(
                 ActionType.DETECTION, descriptor.algorithm.name.toUpperCase(), descriptor.algorithm.description);
 
-        when(_mockPipelineService.addAndSaveAlgorithm(algoDef))
-                .thenReturn(_successTuple);
-
-        when(_mockPipelineService.addAndSaveActionDeprecated(nonBlank(), nonBlank(), eq(REFERENCED_ALGO_NAME),
-                anyNonNull()))
-                .thenReturn(_successTuple);
-
-        when(_mockPipelineService.addAndSaveTaskDeprecated(anyNonNull()))
-                .thenReturn(_successTuple);
-
-        when(_mockPipelineService.addAndSavePipelineDeprecated(anyNonNull()))
-                .thenReturn(_successTuple);
-
         when(_mockNodeManager.getServiceModels())
                 .thenReturn(Collections.singletonMap("fake name", null));
 
@@ -318,31 +301,32 @@ public class TestAddComponentService {
                                 && rcm.getTasks().containsAll(TASK_NAMES)
                                 && rcm.getPipelines().contains(PIPELINE_NAME)));
 
-        verify(_mockPipelineService, times(3))
-                .addAndSaveActionDeprecated(nonBlank(), nonBlank(), eq(REFERENCED_ALGO_NAME), anyNonNull());
+        verify(_mockPipelinesService)
+                .saveAlgorithm(algoDef);
 
-        verify(_mockPipelineService)
-                .addAndSaveActionDeprecated(
-                        eq(ACTION_NAMES.get(0)),
-                        nonBlank(),
-                        nonBlank(),
-                        whereArg(m -> m.get(ACTION1_PROP_NAMES.get(0))
-                                .equals(ACTION1_PROP_VALUES.get(0))));
+        verify(_mockPipelinesService, times(3))
+                .saveAction(whereArg(ad -> ad.getAlgorithmRef().equals(REFERENCED_ALGO_NAME)));
 
-        verify(_mockPipelineService)
-                .addAndSaveTaskDeprecated(whereArg(t ->
+        verify(_mockPipelinesService)
+                .saveAction(whereArg(ad -> ad.getName().equals(ACTION_NAMES.get(0))
+                        && ad.getProperties().stream()
+                                .anyMatch(pd -> pd.getName().equals(ACTION1_PROP_NAMES.get(0))
+                                        && pd.getValue().equals(ACTION1_PROP_VALUES.get(0)))));
+
+        verify(_mockPipelinesService)
+                .saveTask(whereArg(t ->
                         t.getName().equals(TASK_NAMES.get(0))
                                 && t.getDescription().equals(TASK_NAMES.get(0) + " description")
                                 && t.getActions().size() == 1));
 
-        verify(_mockPipelineService)
-                .addAndSaveTaskDeprecated(whereArg(t ->
+        verify(_mockPipelinesService)
+                .saveTask(whereArg(t ->
                         t.getName().equals(TASK_NAMES.get(1))
                                 && t.getDescription().equals(TASK_NAMES.get(1) + " description")
                                 && t.getActions().size() == 2));
 
-        verify(_mockPipelineService)
-                .addAndSavePipelineDeprecated(whereArg(p ->
+        verify(_mockPipelinesService)
+                .savePipeline(whereArg(p ->
                         p.getName().equals(PIPELINE_NAME)
                                 && p.getDescription().contains("description")
                                 && p.getTaskRefs().size() == 2));
@@ -360,8 +344,8 @@ public class TestAddComponentService {
 
         setUpMocksForDescriptor(descriptor);
 
-        when(_mockPipelineService.addAndSaveAlgorithm(any()))
-                .thenReturn(_failureTuple);
+        doThrow(WfmProcessingException.class)
+                .when(_mockPipelinesService).saveAlgorithm(any());
 
         // Act
         try {
@@ -392,11 +376,11 @@ public class TestAddComponentService {
         catch (InvalidComponentDescriptorException ignored) {
         }
 
-        verify(_mockPipelineService, never())
-                .addAndSaveAlgorithm(any());
+        verify(_mockPipelinesService, never())
+                .saveAlgorithm(any());
 
-        verify(_mockPipelineService, never())
-                .addAndSaveActionDeprecated(any(), any(), any(), any());
+        verify(_mockPipelinesService, never())
+                .saveAction(any());
         assertUndeployed(COMPONENT_NAME);
     }
 
@@ -415,11 +399,11 @@ public class TestAddComponentService {
         catch (InvalidCustomPipelinesException ignored) {
         }
 
-        verify(_mockPipelineService, never())
-                .addAndSaveAlgorithm(any());
+        verify(_mockPipelinesService, never())
+                .saveAlgorithm(any());
 
-        verify(_mockPipelineService, never())
-                .addAndSaveActionDeprecated(any(), any(), any(), any());
+        verify(_mockPipelinesService, never())
+                .saveAction(any());
         assertUndeployed(COMPONENT_NAME);
     }
 

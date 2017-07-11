@@ -40,7 +40,7 @@ public class StreamingJobCreationRequest {
 
 	private JobCreationStreamData stream = new JobCreationStreamData();
 
-	// true or false to write video segments to disk.  Note that this is called buildOutput in other code.  Will use a server side property if null
+	// true or false to write video segments to disk. Note that this is called buildOutput in other code. Will use a server side property if null
 	private Boolean enableOutputToDisk = null;
 
 	private String healthReportCallbackURI = null; // the URL to send a health report to
@@ -106,13 +106,6 @@ public class StreamingJobCreationRequest {
 		this.enableOutputToDisk = enableOutputToDisk;
 	}
 
-	public Boolean getBuildOutput() {
-		return enableOutputToDisk;
-	}
-	public void setBuildOutput(Boolean enableOutputToDisk) {
-		this.enableOutputToDisk = enableOutputToDisk;
-	}
-
 	public Integer getPriority() {
 		return priority;
 	}
@@ -120,20 +113,20 @@ public class StreamingJobCreationRequest {
 		this.priority = priority;
 	}
 
-	/** return the HealthReportCallbackURI.  May be null if not defined.
-	 * @return return the specified callback URI.  May be null if not defined
+	/** return the HealthReportCallbackURI. May be null if not defined.
+	 * @return return the specified callback URI. May be null if not defined
 	 */
 	public String getHealthReportCallbackURI() { return healthReportCallbackURI;	}
-	public void setHealthReportCallbackURI(String callbackURI) { this.healthReportCallbackURI = callbackURI;	}
+	public void setHealthReportCallbackURI(String callbackURI) { this.healthReportCallbackURI = callbackURI; }
 
-	/** return the SummaryReportCallbackURI.  May be null if not defined.
-	 * @return return the specified callback URI.  May be null if not defined
+	/** return the SummaryReportCallbackURI. May be null if not defined.
+	 * @return return the specified callback URI. May be null if not defined
 	 */
 	public String getSummaryReportCallbackURI() { return summaryReportCallbackURI; }
 	public void setSummaryReportCallbackURL(String callbackURI) { this.summaryReportCallbackURI = callbackURI; }
 
-	/** return the NewTrackAlertCallbackURI.  May be null if not defined.
-	 * @return return the specified callback URI.  May be null if not defined
+	/** return the NewTrackAlertCallbackURI. May be null if not defined.
+	 * @return return the specified callback URI. May be null if not defined
 	 */
 	public String getNewTrackAlertCallbackURI() { return newTrackAlertCallbackURI;	}
 	public void setNewTrackAlertCallbackURI(String callbackURI) { this.newTrackAlertCallbackURI = callbackURI; }

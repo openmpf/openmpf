@@ -369,9 +369,9 @@ public class StreamingJobController {
                     fromExternalRestClient = false;
                     streamingJobCreationRequest.setExternalId(null);
                 }
-                boolean buildOutput = propertiesUtil.isOutputObjectsEnabled();
-                if ( streamingJobCreationRequest.getBuildOutput() != null ) {
-                    buildOutput = streamingJobCreationRequest.getBuildOutput();
+                boolean enableOutputToDisk = propertiesUtil.isOutputObjectsEnabled();
+                if ( streamingJobCreationRequest.getEnableOutputToDisk() != null ) {
+                  enableOutputToDisk = streamingJobCreationRequest.getEnableOutputToDisk();
                 }
 
                 int priority = propertiesUtil.getJmsPriority();
@@ -387,7 +387,7 @@ public class StreamingJobController {
                         streamingJobCreationRequest.getJobProperties(),
                         streamingJobCreationRequest.getPipelineName(),
                         streamingJobCreationRequest.getExternalId(), //TODO: what do we do with this from the UI?
-                        buildOutput, // Use the buildOutput value if it is provided with the streaming job, otherwise use the default value from the properties file.,
+                        enableOutputToDisk, // Use the buildOutput value if it is provided with the streaming job, otherwise use the default value from the properties file.,
                         priority,// Use the priority value if it is provided, otherwise use the default value from the properties file.
                         streamingJobCreationRequest.getStallAlertDetectionThreshold(),
                         streamingJobCreationRequest.getStallAlertRate(),

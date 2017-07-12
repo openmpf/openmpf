@@ -211,8 +211,8 @@ public class OutputChecker {
                 case "TEST DEFAULT SPHINX SPEECH DETECTION PIPELINE":
                     break;
                 default:
-                    _errorCollector.checkThat("BestFrame Confidence", actExtrResult.getExemplar().getConfidence(),
-                                              is(expExtrResult.getExemplar().getConfidence()));
+                    _errorCollector.checkThat("BestFrame Confidence", (double) actExtrResult.getExemplar().getConfidence(),
+                                              closeTo(expExtrResult.getExemplar().getConfidence(), delta));
             }
         }
     }

@@ -34,7 +34,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.pipeline.PipelinesService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +56,7 @@ public class JmsUtils {
 	}
 
 	@Autowired
-	private PipelinesService pipelinesService;
+	private PipelineService pipelineService;
 
 	@Autowired
 	private CamelContext camelContext;
@@ -65,7 +65,7 @@ public class JmsUtils {
 		camelContext.addRoutes(new RouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				for(final AlgorithmDefinition algorithmDefinition : pipelinesService.getAlgorithms()) {
+				for(final AlgorithmDefinition algorithmDefinition : pipelineService.getAlgorithms()) {
 					String routeName = createCancellationRouteName(jobId, algorithmDefinition.getActionType().name(), algorithmDefinition.getName(), "REQUEST");
 					String routeUri = String.format("jms:MPF.%s_%s_REQUEST?selector=JobId%%3D%d", algorithmDefinition.getActionType().name(), algorithmDefinition.getName(), jobId);
 					log.debug("Creating route {} with URI {}.", routeName);

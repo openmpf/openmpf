@@ -43,7 +43,7 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.pipeline.PipelinesService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.JmsUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -77,7 +77,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 	public static final String REF = "jobRequestBoImpl";
 
 	@Autowired
-	private PipelinesService pipelinesService;
+	private PipelineService pipelineService;
 
 	@Autowired
 	private PropertiesUtil propertiesUtil;
@@ -106,7 +106,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 	@Override
 	public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String,Map> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority) {
 
-		JsonJobRequest jsonJobRequest = new JsonJobRequest(TextUtils.trim(externalId), buildOutput, pipelinesService.createJsonPipeline(pipelineName), priority);
+		JsonJobRequest jsonJobRequest = new JsonJobRequest(TextUtils.trim(externalId), buildOutput, pipelineService.createJsonPipeline(pipelineName), priority);
 		if(media != null) {
             jsonJobRequest.getMedia().addAll(media);
 		}
@@ -139,7 +139,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 			jsonCallbackMethod = "POST";
 		}
 
-		JsonJobRequest jsonJobRequest = new JsonJobRequest(TextUtils.trim(externalId), buildOutput, pipelinesService.createJsonPipeline(pipelineName), priority, jsonCallbackURL, jsonCallbackMethod);
+		JsonJobRequest jsonJobRequest = new JsonJobRequest(TextUtils.trim(externalId), buildOutput, pipelineService.createJsonPipeline(pipelineName), priority, jsonCallbackURL, jsonCallbackMethod);
 		if(media != null) {
 			jsonJobRequest.getMedia().addAll(media);
 		}

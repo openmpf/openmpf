@@ -27,7 +27,7 @@
 package org.mitre.mpf.wfm.event;
 
 import org.javasimon.aop.Monitored;
-import org.mitre.mpf.wfm.pipeline.PipelinesService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +43,7 @@ public class JobProgress {
 	private static final Logger log = LoggerFactory.getLogger(JobProgress.class);
 	
     @Autowired
-    private PipelinesService pipelines;
+    private PipelineService pipelines;
 	
     //trying to make this class thread safe - also added synchronized to some of the public methods - might need to use the keyword more
 	private volatile Map<Long, Float> jobProgressMap = new HashMap<Long, Float>();

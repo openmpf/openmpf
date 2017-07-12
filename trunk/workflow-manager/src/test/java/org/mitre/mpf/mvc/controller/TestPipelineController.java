@@ -34,7 +34,7 @@ import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.pipeline.PipelinesService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -57,7 +57,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class TestPipelineController extends TestCase {
 
     @Autowired
-    private PipelinesService pipelinesService;
+    private PipelineService pipelineService;
 
     @Autowired
     private MockPipelineController mockPipelineController;
@@ -73,46 +73,46 @@ public class TestPipelineController extends TestCase {
         def1.getProvidesCollection().getAlgorithmProperties().add(
                 new PropertyDefinition("TESTPROP", ValueType.BOOLEAN, "Test property", "TRUE", null)
             );
-        pipelinesService.saveAlgorithm(def1);
-        pipelinesService.saveAlgorithm(new AlgorithmDefinition(ActionType.MARKUP, "TEST_MARKUP_ALG", "Test algorithm for markup."));
+        pipelineService.saveAlgorithm(def1);
+        pipelineService.saveAlgorithm(new AlgorithmDefinition(ActionType.MARKUP, "TEST_MARKUP_ALG", "Test algorithm for markup."));
 
         // Setup dummy actions
         HashMap<String, String> props = new HashMap();
         props.put("TESTPROP", "FALSE");
-        pipelinesService.saveAction(
+        pipelineService.saveAction(
                 new ActionDefinition("TEST_DETECTION_ACTION1", "TEST_DETECTION_ALG", "Test action for detection."));
-        pipelinesService.saveAction(
+        pipelineService.saveAction(
                 new ActionDefinition("TEST_DETECTION_ACTION2", "TEST_DETECTION_ALG", "Second test action for detection."));
-        pipelinesService.saveAction(
+        pipelineService.saveAction(
                 new ActionDefinition("TEST_MARKUP_ACTION1", "TEST_MARKUP_ALG", "Test action for markup."));
 
 
         // Setup dummy tasks
         TaskDefinition td = new TaskDefinition("TEST_DETECTION_TASK1", "Test task for detection.");
         td.getActions().add(0, new ActionDefinitionRef("TEST_DETECTION_ACTION1"));
-        pipelinesService.saveTask(td);
+        pipelineService.saveTask(td);
 
         td = new TaskDefinition("TEST_DETECTION_TASK2", "Test task for detection.");
         td.getActions().add(0, new ActionDefinitionRef("TEST_DETECTION_ACTION2"));
-        pipelinesService.saveTask(td);
+        pipelineService.saveTask(td);
 
         td = new TaskDefinition("TEST_MARKUP_TASK1", "Test task for markup.");
         td.getActions().add(0, new ActionDefinitionRef("TEST_MARKUP_ACTION1"));
-        pipelinesService.saveTask(td);
+        pipelineService.saveTask(td);
     }
 
     @After
     public void tearDown() throws WfmProcessingException {
-        pipelinesService.deleteTask("TEST_DETECTION_TASK1");
-        pipelinesService.deleteTask("TEST_DETECTION_TASK2");
-        pipelinesService.deleteTask("TEST_MARKUP_TASK1");
+        pipelineService.deleteTask("TEST_DETECTION_TASK1");
+        pipelineService.deleteTask("TEST_DETECTION_TASK2");
+        pipelineService.deleteTask("TEST_MARKUP_TASK1");
 
-        pipelinesService.deleteAction("TEST_DETECTION_ACTION1");
-        pipelinesService.deleteAction("TEST_DETECTION_ACTION2");
-        pipelinesService.deleteAction("TEST_MARKUP_ACTION1");
+        pipelineService.deleteAction("TEST_DETECTION_ACTION1");
+        pipelineService.deleteAction("TEST_DETECTION_ACTION2");
+        pipelineService.deleteAction("TEST_MARKUP_ACTION1");
 
-        pipelinesService.deleteAlgorithm("TEST_MARKUP_ALG");
-        pipelinesService.deleteAlgorithm("TEST_DETECTION_ALG");
+        pipelineService.deleteAlgorithm("TEST_MARKUP_ALG");
+        pipelineService.deleteAlgorithm("TEST_DETECTION_ALG");
     }
 
 

@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.pipeline;
+package org.mitre.mpf.wfm.service;
 
 import com.thoughtworks.xstream.XStream;
 import org.apache.commons.io.IOUtils;
@@ -56,8 +56,8 @@ import java.io.UncheckedIOException;
 import java.util.*;
 
 @Component
-public class PipelineServiceImpl implements PipelinesService {
-    private static final Logger log = LoggerFactory.getLogger(PipelineServiceImpl.class);
+public class PipelineServiceImpl implements PipelineService {
+    private static final Logger log = LoggerFactory.getLogger(PipelineService.class);
 
     @Autowired
     @Qualifier(PropertiesUtil.REF)

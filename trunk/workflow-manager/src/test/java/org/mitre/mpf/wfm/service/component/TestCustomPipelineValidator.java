@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.pipeline.PipelinesService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.ValueType;
@@ -54,7 +54,7 @@ public class TestCustomPipelineValidator {
     private CustomPipelineValidatorImpl _pipelineValidator;
 
     @Mock
-    private PipelinesService _mockPipelinesService;
+    private PipelineService _mockPipelineService;
 
     @Before
     public void init() {
@@ -70,13 +70,13 @@ public class TestCustomPipelineValidator {
         String existingTaskRef = "EXISTING TASKS NAME";
         descriptor.pipelines.get(0).tasks.add(existingTaskRef);
 
-        when(_mockPipelinesService.getAlgorithmNames())
+        when(_mockPipelineService.getAlgorithmNames())
                 .thenReturn(ImmutableSortedSet.of("foo", REFERENCED_ALGO_NAME));
 
 
-        when(_mockPipelinesService.getActionNames())
+        when(_mockPipelineService.getActionNames())
                 .thenReturn(ImmutableSortedSet.of("bar", existingActionRef));
-        when(_mockPipelinesService.getTaskNames())
+        when(_mockPipelineService.getTaskNames())
                 .thenReturn(ImmutableSortedSet.of(existingTaskRef));
 
 
@@ -97,13 +97,13 @@ public class TestCustomPipelineValidator {
     public void throwsExceptionWhenDuplicates() {
         JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();
 
-        when(_mockPipelinesService.getActionNames())
+        when(_mockPipelineService.getActionNames())
                 .thenReturn(ImmutableSortedSet.copyOf(ACTION_NAMES.subList(0, 2)));
 
-        when(_mockPipelinesService.getTaskNames())
+        when(_mockPipelineService.getTaskNames())
                 .thenReturn(ImmutableSortedSet.of("foo", TASK_NAMES.get(0)));
 
-        when(_mockPipelinesService.getPipelineNames())
+        when(_mockPipelineService.getPipelineNames())
                 .thenReturn(ImmutableSortedSet.of(PIPELINE_NAME));
 
         try {
@@ -133,7 +133,7 @@ public class TestCustomPipelineValidator {
         String invalidTaskName = "INVALID TASK NAME";
         descriptor.pipelines.get(0).tasks.add(invalidTaskName);
 
-        when(_mockPipelinesService.getAlgorithmNames())
+        when(_mockPipelineService.getAlgorithmNames())
                 .thenReturn(ImmutableSortedSet.of("foo", "bar", "baz"));
 
 
@@ -227,7 +227,7 @@ public class TestCustomPipelineValidator {
         AlgorithmDefinition algoDef = new AlgorithmDefinition(ActionType.DETECTION, algoName, "");
         algoDef.getProvidesCollection().getAlgorithmProperties().addAll(properties);
 
-        when(_mockPipelinesService.getAlgorithm(algoName))
+        when(_mockPipelineService.getAlgorithm(algoName))
                 .thenReturn(algoDef);
     }
 }

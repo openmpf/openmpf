@@ -34,7 +34,7 @@ import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.pipeline.PipelinesService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.util.Tuple;
@@ -46,7 +46,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
-import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -61,7 +60,7 @@ public class TestAddComponentService {
     private AddComponentServiceImpl _addComponentService;
 
     @Mock
-    private PipelinesService _mockPipelinesService;
+    private PipelineService _mockPipelineService;
 
     @Mock
     private NodeManagerService _mockNodeManager;
@@ -80,9 +79,6 @@ public class TestAddComponentService {
 
     @Mock
     private RemoveComponentService _mockRemoveComponentService;
-
-    @Mock
-    private Properties _mockProperties;
 
     @Mock
     private ObjectMapper _mockObjectMapper;
@@ -214,15 +210,15 @@ public class TestAddComponentService {
                         && rcm.getTasks().size() == 1));
 
         // Verify mocked methods
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .saveAlgorithm(algoDef);
 
-	    verify(_mockPipelinesService)
+	    verify(_mockPipelineService)
                 .saveAction(whereArg(ad -> ad.getName().contains(algoDef.getName())
                         && ad.getAlgorithmRef().equals(algoDef.getName())
                         && ad.getProperties().isEmpty() ));
 
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .saveTask(whereArg(td -> td.getName().contains(algoDef.getName())));
 
         verify(_mockDeploymentService)
@@ -301,31 +297,31 @@ public class TestAddComponentService {
                                 && rcm.getTasks().containsAll(TASK_NAMES)
                                 && rcm.getPipelines().contains(PIPELINE_NAME)));
 
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .saveAlgorithm(algoDef);
 
-        verify(_mockPipelinesService, times(3))
+        verify(_mockPipelineService, times(3))
                 .saveAction(whereArg(ad -> ad.getAlgorithmRef().equals(REFERENCED_ALGO_NAME)));
 
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .saveAction(whereArg(ad -> ad.getName().equals(ACTION_NAMES.get(0))
                         && ad.getProperties().stream()
                                 .anyMatch(pd -> pd.getName().equals(ACTION1_PROP_NAMES.get(0))
                                         && pd.getValue().equals(ACTION1_PROP_VALUES.get(0)))));
 
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .saveTask(whereArg(t ->
                         t.getName().equals(TASK_NAMES.get(0))
                                 && t.getDescription().equals(TASK_NAMES.get(0) + " description")
                                 && t.getActions().size() == 1));
 
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .saveTask(whereArg(t ->
                         t.getName().equals(TASK_NAMES.get(1))
                                 && t.getDescription().equals(TASK_NAMES.get(1) + " description")
                                 && t.getActions().size() == 2));
 
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .savePipeline(whereArg(p ->
                         p.getName().equals(PIPELINE_NAME)
                                 && p.getDescription().contains("description")
@@ -345,7 +341,7 @@ public class TestAddComponentService {
         setUpMocksForDescriptor(descriptor);
 
         doThrow(WfmProcessingException.class)
-                .when(_mockPipelinesService).saveAlgorithm(any());
+                .when(_mockPipelineService).saveAlgorithm(any());
 
         // Act
         try {
@@ -376,10 +372,10 @@ public class TestAddComponentService {
         catch (InvalidComponentDescriptorException ignored) {
         }
 
-        verify(_mockPipelinesService, never())
+        verify(_mockPipelineService, never())
                 .saveAlgorithm(any());
 
-        verify(_mockPipelinesService, never())
+        verify(_mockPipelineService, never())
                 .saveAction(any());
         assertUndeployed(COMPONENT_NAME);
     }
@@ -399,10 +395,10 @@ public class TestAddComponentService {
         catch (InvalidCustomPipelinesException ignored) {
         }
 
-        verify(_mockPipelinesService, never())
+        verify(_mockPipelineService, never())
                 .saveAlgorithm(any());
 
-        verify(_mockPipelinesService, never())
+        verify(_mockPipelineService, never())
                 .saveAction(any());
         assertUndeployed(COMPONENT_NAME);
     }

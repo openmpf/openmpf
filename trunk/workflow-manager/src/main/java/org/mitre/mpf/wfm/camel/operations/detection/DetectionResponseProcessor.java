@@ -33,7 +33,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingCon
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.pipeline.PipelinesService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
@@ -57,7 +57,7 @@ public class DetectionResponseProcessor
 	private static final Logger log = LoggerFactory.getLogger(DetectionResponseProcessor.class);
 
 	@Autowired
-	private PipelinesService pipelinesService;
+	private PipelineService pipelineService;
 
 	@Autowired
 	private PropertiesUtil propertiesUtil;
@@ -117,7 +117,7 @@ public class DetectionResponseProcessor
 
 		} else {
 			// Look for a confidence threshold.  If confidence threshold is defined, only return detections above the threshold.
-			ActionDefinition action = pipelinesService.getAction(detectionResponse.getActionName());
+			ActionDefinition action = pipelineService.getAction(detectionResponse.getActionName());
 			TransientJob job = redis.getJob(jobId, detectionResponse.getMediaId());
 
 			double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
@@ -140,7 +140,7 @@ public class DetectionResponseProcessor
 				media.getMediaSpecificProperties());
 
 		if (confidenceThresholdProperty == null) {
-			AlgorithmDefinition algorithm = pipelinesService.getAlgorithm(action);
+			AlgorithmDefinition algorithm = pipelineService.getAlgorithm(action);
 			PropertyDefinition confidenceAlgorithmDef = algorithm.getProvidesCollection().getAlgorithmProperty(MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY);
 			if (confidenceAlgorithmDef != null) {
 				confidenceThresholdProperty = confidenceAlgorithmDef.getDefaultValue();

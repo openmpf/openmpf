@@ -33,7 +33,7 @@ import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.pipeline.PipelinesService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mockito.InjectMocks;
@@ -67,7 +67,7 @@ public class TestRemoveComponentService {
     private ComponentStateService _mockStateService;
 
     @Mock
-    private PipelinesService _mockPipelinesService;
+    private PipelineService _mockPipelineService;
 
 
 
@@ -111,18 +111,18 @@ public class TestRemoveComponentService {
 
         ActionDefinition actionDef = new ActionDefinition("action1-name", algoName, "");
         ActionDefinition actionDef2 = new ActionDefinition("action2-name", "foo", "");
-        when(_mockPipelinesService.getActions())
+        when(_mockPipelineService.getActions())
                 .thenReturn(Sets.newSet(actionDef, actionDef2));
 
         TaskDefinition taskDef = new TaskDefinition("task1-name", "");
         taskDef.getActions().add(new ActionDefinitionRef(actionDef.getName()));
-        when(_mockPipelinesService.getTasks())
+        when(_mockPipelineService.getTasks())
                 .thenReturn(Sets.newSet(taskDef, new TaskDefinition("asdf", "")));
 
         PipelineDefinition pipelineDef = new PipelineDefinition("pipeline1-name", "");
         pipelineDef.getTaskRefs().add(new TaskDefinitionRef(taskDef.getName()));
 
-        when(_mockPipelinesService.getPipelines())
+        when(_mockPipelineService.getPipelines())
                 .thenReturn(Sets.newSet(pipelineDef, new PipelineDefinition("sdaf", "")));
         // Act
         _removeComponentService.removeComponent(COMPONENT_NAME);
@@ -140,16 +140,16 @@ public class TestRemoveComponentService {
         verify(_mockNodeManager)
                 .removeService(serviceName);
 
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .deleteAlgorithm(algoName);
 
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .deleteAction(actionDef.getName());
 
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .deleteTask(taskDef.getName());
 
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .deletePipeline(pipelineDef.getName());
 
         verify(_mockDeploymentService)
@@ -206,44 +206,44 @@ public class TestRemoveComponentService {
 
 
 
-        when(_mockPipelinesService.getPipelines())
+        when(_mockPipelineService.getPipelines())
                 .thenReturn(Sets.newSet(pipeline, externalPipeline));
 
-        when(_mockPipelinesService.getActions())
+        when(_mockPipelineService.getActions())
                 .thenReturn(Sets.newSet(action, externalAction));
 
-        when(_mockPipelinesService.getTasks())
+        when(_mockPipelineService.getTasks())
                 .thenReturn(Sets.newSet(task, componentTask));
 
         // Act
         _removeComponentService.recursivelyDeleteCustomPipelines(rcm);
 
 
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .deleteAlgorithm(componentAlgoName.toUpperCase());
 
-        verify(_mockPipelinesService, never())
+        verify(_mockPipelineService, never())
                 .deleteAlgorithm(externalAlgoName.toUpperCase());
 
 
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .deleteAction(actionName.toUpperCase());
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .deleteAction(componentActionName.toUpperCase());
 
-        verify(_mockPipelinesService, never())
+        verify(_mockPipelineService, never())
                 .deleteAction(eqIgnoreCase(externalActionName));
 
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .deleteTask(taskName);
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .deleteTask(componentTaskName.toUpperCase());
 
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .deletePipeline(pipelineName.toUpperCase());
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .deletePipeline(externalPipelineName.toUpperCase());
-        verify(_mockPipelinesService)
+        verify(_mockPipelineService)
                 .deletePipeline(componentPipelineName.toUpperCase());
     }
 }

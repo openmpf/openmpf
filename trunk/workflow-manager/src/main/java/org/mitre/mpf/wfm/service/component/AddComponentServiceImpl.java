@@ -34,7 +34,7 @@ import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.pipeline.PipelinesService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.slf4j.Logger;
@@ -54,7 +54,7 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     private static final Logger _log = LoggerFactory.getLogger(AddComponentServiceImpl.class);
 
-    private final PipelinesService pipelinesService;
+    private final PipelineService pipelineService;
 
     private final NodeManagerService nodeManagerService;
 
@@ -74,7 +74,7 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     @Inject
     AddComponentServiceImpl(
-            PipelinesService pipelinesService,
+            PipelineService pipelineService,
             NodeManagerService nodeManagerService,
             ComponentDeploymentService deployService,
             ComponentStateService componentStateService,
@@ -84,7 +84,7 @@ public class AddComponentServiceImpl implements AddComponentService {
             RemoveComponentService removeComponentService,
             ObjectMapper objectMapper)
     {
-        this.pipelinesService = pipelinesService;
+        this.pipelineService = pipelineService;
         this.nodeManagerService = nodeManagerService;
         this.deployService = deployService;
         this.componentStateService = componentStateService;
@@ -291,7 +291,7 @@ public class AddComponentServiceImpl implements AddComponentService {
             throws ComponentRegistrationSubsystemException
     {
         try {
-            pipelinesService.saveAlgorithm(algoDef);
+            pipelineService.saveAlgorithm(algoDef);
             _log.info("Successfully added the " + algoDef.getName() + " algorithm");
             return algoDef.getName();
         }
@@ -335,7 +335,7 @@ public class AddComponentServiceImpl implements AddComponentService {
                 .forEach(pdr -> action.getProperties().add(pdr));
 
         try {
-            pipelinesService.saveAction(action);
+            pipelineService.saveAction(action);
             _log.info("Successfully added the {} action for the {} algorithm", actionName, algoName);
         }
         catch (WfmProcessingException ex) {
@@ -377,7 +377,7 @@ public class AddComponentServiceImpl implements AddComponentService {
                 .forEach(adr -> task.getActions().add(adr));
 
         try {
-            pipelinesService.saveTask(task);
+            pipelineService.saveTask(task);
             _log.info("Successfully added the {} task", taskName);
         }
         catch (WfmProcessingException ex) {
@@ -421,7 +421,7 @@ public class AddComponentServiceImpl implements AddComponentService {
                 .forEach(tdr -> pipeline.getTaskRefs().add(tdr));
 
         try {
-            pipelinesService.savePipeline(pipeline);
+            pipelineService.savePipeline(pipeline);
             _log.info("Successfully added the {} pipeline.", pipeline.getName());
         }
         catch (WfmProcessingException ex) {

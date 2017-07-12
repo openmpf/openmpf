@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import org.mitre.mpf.wfm.pipeline.PipelinesService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.springframework.stereotype.Service;
 
@@ -41,11 +41,11 @@ import static java.util.stream.Collectors.toSet;
 @Service
 public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
 
-    private final PipelinesService pipelinesService;
+    private final PipelineService pipelineService;
 
     @Inject
-    CustomPipelineValidatorImpl(PipelinesService pipelinesService) {
-        this.pipelinesService = pipelinesService;
+    CustomPipelineValidatorImpl(PipelineService pipelineService) {
+        this.pipelineService = pipelineService;
     }
 
     @Override
@@ -86,21 +86,21 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
         if (descriptor.actions == null) {
             return Collections.emptySet();
         }
-        return getDuplicates(a -> a.name, descriptor.actions, pipelinesService.getActionNames());
+        return getDuplicates(a -> a.name, descriptor.actions, pipelineService.getActionNames());
     }
 
     private Set<String> getDupTasks(JsonComponentDescriptor descriptor) {
         if (descriptor.tasks == null) {
             return Collections.emptySet();
         }
-        return getDuplicates(t -> t.name, descriptor.tasks, pipelinesService.getTaskNames());
+        return getDuplicates(t -> t.name, descriptor.tasks, pipelineService.getTaskNames());
     }
 
     private Set<String> getDupPipelines(JsonComponentDescriptor descriptor) {
         if (descriptor.pipelines == null) {
             return Collections.emptySet();
         }
-        return getDuplicates(p -> p.name, descriptor.pipelines, pipelinesService.getPipelineNames());
+        return getDuplicates(p -> p.name, descriptor.pipelines, pipelineService.getPipelineNames());
     }
 
     private static <T> Set<String> getDuplicates(
@@ -138,7 +138,7 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
             descriptorAlgo = Stream.of(descriptor.algorithm.name);
         }
 
-        return getInvalidRefs(algoRefs, descriptorAlgo, pipelinesService.getAlgorithmNames());
+        return getInvalidRefs(algoRefs, descriptorAlgo, pipelineService.getAlgorithmNames());
     }
 
 
@@ -158,7 +158,7 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
                     .map(a -> a.name);
         }
 
-        return getInvalidRefs(actionRefs, descriptorActions, pipelinesService.getActionNames());
+        return getInvalidRefs(actionRefs, descriptorActions, pipelineService.getActionNames());
     }
 
 
@@ -179,7 +179,7 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
                     .map(t -> t.name);
         }
 
-        return getInvalidRefs(taskRefs, descriptorTasks, pipelinesService.getTaskNames());
+        return getInvalidRefs(taskRefs, descriptorTasks, pipelineService.getTaskNames());
     }
 
     private static Set<String> getInvalidRefs(
@@ -227,7 +227,7 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
     }
 
     private Set<String> getPropNames(String algoName) {
-        AlgorithmDefinition algorithm = pipelinesService.getAlgorithm(algoName);
+        AlgorithmDefinition algorithm = pipelineService.getAlgorithm(algoName);
         if (algorithm == null) {
             return Collections.emptySet();
         }

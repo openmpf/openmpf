@@ -34,7 +34,7 @@ import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.*;
-import org.mitre.mpf.wfm.pipeline.PipelinesService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.segmenting.*;
@@ -81,7 +81,7 @@ public class DetectionSplitter implements StageSplitter {
 	private MediaSegmenter defaultMediaSegmenter;
 
 	@Autowired
-	private PipelinesService pipelineService;
+	private PipelineService pipelineService;
 
 	private static final String[] transformProperties = new String[]{
 			MpfConstants.ROTATION_PROPERTY,

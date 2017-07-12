@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.pipeline;
+package org.mitre.mpf.wfm.service;
 
 import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.wfm.pipeline.xml.*;
@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 
-public interface PipelinesService {
+public interface PipelineService {
 	JsonPipeline createJsonPipeline(String pipeline);
 
 	SortedSet<String> getPipelineNames();

@@ -36,7 +36,7 @@ import org.mitre.mpf.mvc.util.JsonView;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.DuplicateNameWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.NotFoundWfmProcessingException;
-import org.mitre.mpf.wfm.pipeline.PipelinesService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
@@ -67,7 +67,7 @@ public class PipelineController {
     public static final String DEFAULT_ERROR_VIEW = "error";
 
     @Autowired
-    private PipelinesService pipelinesService;
+    private PipelineService pipelineService;
 
     /*
      *	/pipelines
@@ -84,7 +84,7 @@ public class PipelineController {
     		@ApiResponse(code = 401, message = "Bad credentials") })
     @ResponseBody
     public List<String> getAvailablePipelinesRest() {
-        return new ArrayList<>(pipelinesService.getPipelineNames());
+        return new ArrayList<>(pipelineService.getPipelineNames());
     }
 
 
@@ -98,7 +98,7 @@ public class PipelineController {
             produces = "application/json")
     @ResponseBody
     public Set<PipelineComponentBasicInfo> getPipelines() {
-        return pipelinesService.getPipelines()
+        return pipelineService.getPipelines()
                 .stream()
                 .map(c -> new PipelineComponentBasicInfo(c.getName(), c.getDescription()))
                 .collect(Collectors.toSet());
@@ -106,12 +106,12 @@ public class PipelineController {
 
     //INTERNAL - deprecated
     //  pipelines2: todo: should remove this after removing usage in
-    //      AppServices.service('PipelinesService'... in client code
+    //      AppServices.service('PipelineService'... in client code
     @Deprecated
     @RequestMapping(value = {"/pipelines/details"}, method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
     public String getAvailablePipelinesDetails() {
-        return pipelinesService.getPipelineDefinitionAsJson();
+        return pipelineService.getPipelineDefinitionAsJson();
     }
 
 
@@ -125,7 +125,7 @@ public class PipelineController {
             produces = "application/json")
     @ResponseBody
     public Set<PipelineDefinition> getAllAvailablePipelines() {
-        return pipelinesService.getPipelines();
+        return pipelineService.getPipelines();
     }
 
 
@@ -136,10 +136,10 @@ public class PipelineController {
     @ResponseBody
     public PipelinesModel getPipelinesModel() {
         return new PipelinesModel(
-                new ArrayList<>(pipelinesService.getAlgorithmNames()),
-                new ArrayList<>(pipelinesService.getActionNames()),
-                new ArrayList<>(pipelinesService.getTaskNames()),
-                new ArrayList<>(pipelinesService.getPipelineNames()));
+                new ArrayList<>(pipelineService.getAlgorithmNames()),
+                new ArrayList<>(pipelineService.getActionNames()),
+                new ArrayList<>(pipelineService.getTaskNames()),
+                new ArrayList<>(pipelineService.getPipelineNames()));
     }
 
     //INTERNAL - deprecated
@@ -148,7 +148,7 @@ public class PipelineController {
     @ResponseBody
     public List<PropertyDefinition> getAlgorithmPropertiesJson(
             @RequestParam(value = "algName", required = true) String algName) {
-        AlgorithmDefinition algorithmDefinition = pipelinesService.getAlgorithm(algName);
+        AlgorithmDefinition algorithmDefinition = pipelineService.getAlgorithm(algName);
         if (algorithmDefinition == null) {
             return Collections.emptyList();
         }
@@ -169,7 +169,7 @@ public class PipelineController {
     @ResponseBody
     public PipelineDefinition getPipeline(
             @PathVariable("pipelineName") String pipelineName) throws WfmProcessingException{
-        PipelineDefinition pipelineDefinition = pipelinesService.getPipeline(pipelineName);
+        PipelineDefinition pipelineDefinition = pipelineService.getPipeline(pipelineName);
         if (pipelineDefinition==null) {
             throw new NotFoundWfmProcessingException("Pipeline not found: " + pipelineName + ".");
         }
@@ -199,7 +199,7 @@ public class PipelineController {
         for (String taskName : pipelineModel.getTasksToAdd()) {
             pipelineDefinition.getTaskRefs().add(new TaskDefinitionRef(taskName));
         }
-        pipelinesService.savePipeline(pipelineDefinition);
+        pipelineService.savePipeline(pipelineDefinition);
     }
 
     //INTERNAL
@@ -214,7 +214,7 @@ public class PipelineController {
     @ResponseBody
     public void deletePipeline(
             @PathVariable("pipelineName") String pipelineName) throws WfmProcessingException{
-    	pipelinesService.deletePipeline(pipelineName);
+    	pipelineService.deletePipeline(pipelineName);
     }
 
     //INTERNAL
@@ -227,7 +227,7 @@ public class PipelineController {
             produces = "application/json")
     @ResponseBody
     public Set<PipelineComponentBasicInfo> getPipelineTasks() {
-         return pipelinesService.getTasks()
+         return pipelineService.getTasks()
                 .stream()
                 .map(c -> new PipelineComponentBasicInfo(c.getName(), c.getDescription()))
                 .collect(Collectors.toSet());
@@ -246,7 +246,7 @@ public class PipelineController {
     @ResponseBody
     public TaskDefinition getPipelineTask(
             @PathVariable("taskName") String taskName) throws WfmProcessingException {
-        TaskDefinition task = pipelinesService.getTask(taskName);
+        TaskDefinition task = pipelineService.getTask(taskName);
         if (task == null) {
             throw new NotFoundWfmProcessingException("Task not found: " + taskName + ".");
         }
@@ -277,7 +277,7 @@ public class PipelineController {
         for (String actionName : taskModel.getActionsToAdd()) {
             taskDefinition.getActions().add(new ActionDefinitionRef(actionName));
         }
-        pipelinesService.saveTask(taskDefinition);
+        pipelineService.saveTask(taskDefinition);
     }
 
     //INTERNAL
@@ -292,7 +292,7 @@ public class PipelineController {
     @ResponseBody
     public void deletePipelineTask(
             @PathVariable("taskName") String taskName) throws WfmProcessingException {
-        pipelinesService.deleteTask(taskName);
+        pipelineService.deleteTask(taskName);
     }
 
     //INTERNAL
@@ -305,7 +305,7 @@ public class PipelineController {
             produces = "application/json")
     @ResponseBody
     public Set<PipelineComponentBasicInfo> getPipelineActions() {
-        return pipelinesService.getActions()
+        return pipelineService.getActions()
                 .stream()
                 .map(c -> new PipelineComponentBasicInfo(c.getName(), c.getDescription()))
                 .collect(Collectors.toSet());
@@ -324,7 +324,7 @@ public class PipelineController {
     @ResponseBody
     public ActionDefinition getPipelineAction(
             @PathVariable("actionName") String actionName) throws WfmProcessingException {
-        ActionDefinition action = pipelinesService.getAction(actionName);
+        ActionDefinition action = pipelineService.getAction(actionName);
         if (action == null) {
             throw new NotFoundWfmProcessingException("Action not found: " + actionName + ".");
         }
@@ -368,7 +368,7 @@ public class PipelineController {
             PropertyDefinitionRef propDef = new PropertyDefinitionRef(propEntry.getKey(), propEntry.getValue()) ;
             actionDef.getProperties().add(propDef);
         }
-        pipelinesService.saveAction(actionDef);
+        pipelineService.saveAction(actionDef);
     }
 
 
@@ -384,7 +384,7 @@ public class PipelineController {
     @ResponseBody
     public void deletePipelineAction(
             @PathVariable("actionName") String actionName) throws WfmProcessingException {
-        pipelinesService.deleteAction(actionName);
+        pipelineService.deleteAction(actionName);
     }
 
     //INTERNAL
@@ -397,7 +397,7 @@ public class PipelineController {
             produces = "application/json")
     @ResponseBody
     public Set<PipelineComponentBasicInfo> getPipelineAlgorithms() {
-        return pipelinesService.getAlgorithms()
+        return pipelineService.getAlgorithms()
                 .stream()
                 .map(c -> new PipelineComponentBasicInfo(c.getName(), c.getDescription()))
                 .collect(Collectors.toSet());
@@ -417,7 +417,7 @@ public class PipelineController {
     @ResponseBody
     public AlgorithmDefinition getPipelineAlgorithm(
             @PathVariable("algorithmName") String algorithmName) throws WfmProcessingException {
-        AlgorithmDefinition algorithmDefinition = pipelinesService.getAlgorithm(algorithmName);
+        AlgorithmDefinition algorithmDefinition = pipelineService.getAlgorithm(algorithmName);
         if (algorithmDefinition == null) {
             throw new NotFoundWfmProcessingException("Algorithm not found: " + algorithmName + ".");
         }
@@ -502,14 +502,14 @@ public class PipelineController {
                     for(String actionName : addToPipelineModel.getItemsToAdd()) {
                         taskDefinition.getActions().add( new ActionDefinitionRef(actionName) );
                     }
-                    pipelinesService.saveTask(taskDefinition);
+                    pipelineService.saveTask(taskDefinition);
                 }
                 else if(type.equals("pipeline")) {
                     PipelineDefinition pipelineDefinition = new PipelineDefinition(name, description);
                     for(String taskName : addToPipelineModel.getItemsToAdd()) {
                         pipelineDefinition.getTaskRefs().add( new TaskDefinitionRef(taskName) );
                     }
-                    pipelinesService.savePipeline(pipelineDefinition);
+                    pipelineService.savePipeline(pipelineDefinition);
                 }
                 log.debug("success adding to the {} collection", type);
                 responseTuple = new Tuple<Boolean, String>(true, null);

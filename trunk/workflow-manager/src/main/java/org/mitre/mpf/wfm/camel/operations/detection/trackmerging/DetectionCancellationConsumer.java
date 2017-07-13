@@ -27,12 +27,7 @@
 package org.mitre.mpf.wfm.camel.operations.detection.trackmerging;
 
 import org.apache.camel.CamelContext;
-import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.pipeline.PipelineManager;
-import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -43,7 +38,7 @@ public class DetectionCancellationConsumer {
 	private CamelContext camelContext;
 
 	@Autowired
-	private PipelineManager pipelineManager;
+	private PipelineService pipelineService;
 
 	public void cancel(long jobId) {
 

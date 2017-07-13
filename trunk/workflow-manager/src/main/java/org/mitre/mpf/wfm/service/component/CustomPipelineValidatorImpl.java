@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.service.component;
 
 import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
@@ -226,7 +227,11 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
     }
 
     private Set<String> getPropNames(String algoName) {
-        return pipelineService.getAlgorithmProperties(algoName)
+        AlgorithmDefinition algorithm = pipelineService.getAlgorithm(algoName);
+        if (algorithm == null) {
+            return Collections.emptySet();
+        }
+        return algorithm.getProvidesCollection().getAlgorithmProperties()
                 .stream()
                 .map(pd -> pd.getName().toUpperCase())
                 .collect(toSet());

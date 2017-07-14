@@ -37,6 +37,7 @@
 #include <cms/Session.h>
 #include <cms/MessageConsumer.h>
 #include <cms/MessageProducer.h>
+#include <log4cxx/logger.h>
 
 #include "MPFMessenger.h"
 #include "MPFAMQMessage.h"
@@ -49,16 +50,23 @@ class MPFAMQMessenger : public MPFMessenger {
     MPFAMQMessenger() = default;
     ~MPFAMQMessenger() { Shutdown(); }
 
-    MPFMessengerError Startup(const std::string &broker_name,
-                              Properties &properties) override;
+    void SetLogger(log4cxx::LoggerPtr &logger) {
+        logger_ = logger;
+    }
+
+    MPFMessengerError Connect(const std::string &broker_name,
+                              const MPF::COMPONENT::Properties &properties) override;
     MPFMessengerError CreateReceiver(const std::string &queue_name,
-                                     Properties &queue_properties,
-                                     MPFMessageReceiver *receiver) override;
+                                     const MPF::COMPONENT::Properties &queue_properties,
+                                     MPF::MPFReceiver *receiver) override;
     MPFMessengerError CreateSender(const std::string &queue_name,
-                                   Properties &queue_properties,
-                                   MPFMessageSender *sender) override;
-    MPFMessengerError CloseReceiver(MPFMessageReceiver *receiver) override;
-    MPFMessengerError CloseSender(MPFMessageSender *sender) override;
+                                   const MPF::COMPONENT::Properties &queue_properties,
+                                   MPF::MPFSender *sender) override;
+    MPFMessengerError Start() override;
+    MPFMessengerError SendMessage(const MPF::MPFMessage *msg) override;
+    MPFMessengerError ReceiveMessage(MPF::MPFMessage *msg) override;
+    MPFMessengerError CloseReceiver(MPFReceiver *receiver) override;
+    MPFMessengerError CloseSender(MPFSender *sender) override;
     MPFMessengerError Shutdown() override;
 
   private:

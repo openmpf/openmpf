@@ -5,10 +5,12 @@ using namespace std;
 using namespace cms;
 using activemq::library::ActiveMQCPP;
 using activemq::core::ActiveMQConnectionFactory;
+using namespace MPF;
+using namespace COMPONENT;
 
 
-MPFMessengerError MPFAMQMessenger::Startup(const string &broker_name,
-                                           Properties &properties) {
+MPFMessengerError MPFAMQMessenger::Connect(const string &broker_name,
+                                           const Properties &properties) {
     try {
         // This call will generate a runtime error if it fails
         ActiveMQCPP::initializeLibrary();
@@ -33,36 +35,42 @@ MPFMessengerError MPFAMQMessenger::Startup(const string &broker_name,
         session_.reset(connection_->createSession(Session::SESSION_TRANSACTED));
 
     } catch (CMSException& e) {
-        LOG4CXX_ERROR(main_logger_, "CMSException in MPFAMQMessenger::Startup: " << e.getMessage() << "\n" << e.getStackTraceString());
+        LOG4CXX_ERROR(logger_, "CMSException in MPFAMQMessenger::Startup: " << e.getMessage() << "\n" << e.getStackTraceString());
         throw;
     } catch (std::exception& e) {
         // When thrown, this will be caught and logged by the main program
     } catch (...) {
-        LOG4CXX_ERROR(main_logger_, "Unknown Exception occurred in MPFMessenger::Startup");
+        LOG4CXX_ERROR(logger_, "Unknown Exception occurred in MPFMessenger::Startup");
         throw;
     }
     initialized_ = true;
-    return MPF_MESSENGER_SUCCESS;
+    return MESSENGER_SUCCESS;
 
 }
 
 MPFMessengerError 
-MPFAMQMessenger::CreateReceiver(const std::string &queue_name,
-                                Properties &queue_properties,
-                                MPFMessageReceiver *receiver) {
+MPFAMQMessenger::CreateReceiver(const string &queue_name,
+                                const Properties &queue_properties,
+                                MPFReceiver *receiver) {
 
 
 }
 
 MPFMessengerError 
-MPFAMQMessenger::CreateSender(const std::string &queue_name,
-                              Properties &queue_properties,
-                              MPFMessageSender *sender) {}
+MPFAMQMessenger::CreateSender(const string &queue_name,
+                              const Properties &queue_properties,
+                              MPFSender *sender) {}
+MPFMessengerError MPFAMQMessenger::Start() {}
+
+MPFMessengerError MPFAMQMessenger::SendMessage(const MPF::MPFMessage *msg) {}
+
+MPFMessengerError MPFAMQMessenger::ReceiveMessage(MPF::MPFMessage *msg) {}
+
 
 MPFMessengerError 
-MPFAMQMessenger::CloseReceiver(MPFMessageReceiver *receiver) {}
+MPFAMQMessenger::CloseReceiver(MPFReceiver *receiver) {}
 
-MPFMessengerError MPFAMQMessenger::CloseSender(MPFMessageSender *sender) {}
+MPFMessengerError MPFAMQMessenger::CloseSender(MPFSender *sender) {}
 
 MPFMessengerError MPFAMQMessenger::Shutdown() {}
 

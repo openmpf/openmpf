@@ -29,11 +29,19 @@
 
 #include <string>
 
-// For definition of Properties
-#include "MPFComponentInterface.h"
 #include "MPFMessage.h"
 
 namespace MPF {
+
+enum MPFMessengerError {
+    MESSENGER_SUCCESS = 0,
+    MESSENGER_NOT_INITIALIZED,
+    MESSENGER_MISSING_PROPERTY,
+    MESSENGER_INVALID_PROPERTY,
+    MESSENGER_PROPERTY_IS_NOT_INT,
+    MESSENGER_PROPERTY_IS_NOT_FLOAT,
+    MESSENGER_OTHER_ERROR
+};
 
 class MPFMessenger {
 
@@ -42,18 +50,18 @@ class MPFMessenger {
     virtual ~MPFMessenger() = default;
 
     virtual MPFMessengerError Connect(const std::string &broker_name,
-                                      const Properties &properties) = 0;
+                                      const MPF::COMPONENT::Properties &properties) = 0;
     virtual MPFMessengerError CreateReceiver(const std::string &queue_name,
-                                             const Properties &queue_properties,
-                                             MPFMessageReceiver *receiver) = 0;
+                                             const MPF::COMPONENT::Properties &queue_properties,
+                                             MPF::MPFReceiver *receiver) = 0;
     virtual MPFMessengerError CreateSender(const std::string &queue_name,
-                                           const Properties &queue_properties,
-                                           MPFMessageSender *sender) = 0;
-    virtual void Start();
-    virtual MPFMessengerError SendMessage(const MPFMessage *msg);
-    virtual MPFMessengerError ReceiveMessage(MPFMessage *msg);
-    virtual MPFMessengerError CloseReceiver(MPFMessageReceiver *receiver) = 0;
-    virtual MPFMessengerError CloseSender(MPFMessageSender *sender) = 0;
+                                           const MPF::COMPONENT::Properties &queue_properties,
+                                           MPF::MPFSender *sender) = 0;
+    virtual MPFMessengerError Start() = 0;
+    virtual MPFMessengerError SendMessage(const MPF::MPFMessage *msg) = 0;
+    virtual MPFMessengerError ReceiveMessage(MPF::MPFMessage *msg) = 0;
+    virtual MPFMessengerError CloseReceiver(MPF::MPFReceiver *receiver) = 0;
+    virtual MPFMessengerError CloseSender(MPF::MPFSender *sender) = 0;
     virtual MPFMessengerError Shutdown() = 0;
 
   protected:

@@ -123,14 +123,13 @@ int main(int argc, char* argv[]) {
     string broker_uri;
     string frame_reader_library_path;
     string message_queue_library_path;
-    string frame_buffer_library_path;
     string stream_uri;
     unsigned int segment_size;
     unsigned int frame_buffer_num_segments;
     string frame_buffer_name;
     int num_pipeline_stages;
-    string SegmentReadyQueue1_name;
-    string SegmentReadyQueue2_name;  // Optional
+    string SegmentReadyStage1_name;
+    string SegmentReadyStage2_name;  // Optional
     string FrameReadyQueue_name;
     string ReleaseFrameQueue_name;
     string JobStatusQueue_name;
@@ -154,9 +153,13 @@ int main(int argc, char* argv[]) {
     if (rc) return rc;
 
     job_name = "Job " + job_id + ":" + stream_uri;
+    Properties job_properties;
 
-    string default_broker_uri = "failover://(tcp://localhost:61616?jms.prefetchPolicy.all=1)?startupMaxReconnectAttempts=1";
-    getArg(jobArgs, "broker_uri", default_broker_uri, broker_uri);
+    job_properties["JOB_NAME"] = job_name;
+    job_properties["LOGGER"] = logger;
+
+    const string default_broker_uri = "failover://(tcp://localhost:61616?jms.prefetchPolicy.all=1)?startupMaxReconnectAttempts=1";
+    getArg(jobArgs, "broker_uri", broker_uri, default_broker_uri);
 
     rc = getArg(jobArgs, "frame_reader.library_path", frame_reader_library_path);
     if (rc) return rc;
@@ -171,93 +174,90 @@ int main(int argc, char* argv[]) {
         return rc;
     }
 
-    // Create 4 FrameReader queues: JobStatus, SegmentReady,
-    // FrameReady, and ReleaseFrame. Pass the pointers to these queues
-    // to the FrameReader.
+    // Create the messenger object and store it in the Frame Reader
 
-    rc = getArg(jobArgs, "message_queue.library_path", message_queue_library_path);
+    rc = getArg(jobArgs, "messenger.library_path", messenger_library_path);
     if (rc) return rc;
 
-    string msg_queue_create_sym("msg_queue_creator");
-    MPFMessageQueue *jobStatusQ;
-    rc = create_libobj<MPFMessageQueue>(message_queue_library_path,
-                                        msg_queue_create_sym,
-                                        jobStatusQ);
+    string messenger_create_sym("messenger_creator");
+    MPFMessenger *messenger;
+    rc = create_libobj<MPFMessenger>(messenger_library_path,
+                                     messenger_create_sym,
+                                     messenger);
     if (rc) {
-        LOG4CXX_ERROR(logger, "Failed to instantiate job status queue");
+        LOG4CXX_ERROR(logger, "Failed to instantiate Messenger");
         return rc;
     }
+
+    Properties broker_properties;
+    MPFMessengerError MsgrErr;
+    MsgrErr = messenger->Startup(broker_uri, broker_properties);
+    if (MsgrErr != MPF_MESSENGER_SUCCESS) {
+        LOG4CXX_ERROR(logger, "Failed to start messenger");
+        return MsgrErr;
+    }
+
+    Freader->messenger_.reset(messenger);
+
+    // Create sender for the job status queue
     int rc = getArg(jobArgs, "job_status_queue_name", JobStatusQueue_name);
     if (rc) return rc;
-    MPFMessageQueueError Qerr;
-    Qerr = jobStatusQ->Startup(broker_uri);
-    if (Qerr != MPF_MESSAGE_QUEUE_SUCCESS) {
-        LOG4CXX_ERROR(logger, "Failed to start job status queue");
-        return Qerr;
-    }
-    Qerr = jobStatusQ->Connect(JobStatusQueue_name);
-    if (Qerr != MPF_MESSAGE_QUEUE_SUCCESS) {
-        LOG4CXX_ERROR(logger, "Failed to connect to job status queue");
-        return Qerr;
-    }
-    Freader->SetJobStatusQueue(jobStatusQ);
+    MPFMessageSender *jobStatusSender;
+    Properties queue_properties;
+    messenger_->CreateSender(JobStatusQueue_name,
+                             queue_properties,
+                             jobStatusSender);
+    Freader->job_status_sender_.reset(jobStatusSender);
+    
 
-    MPFMessageQueue *segReadyQ1;
-    rc = create_libobj<MPFMessageQueue>(message_queue_library_path,
-                                        msg_queue_create_sym,
-                                        segReadyQ1);
-    if (rc) {
-        LOG4CXX_ERROR(logger, "Failed to create segment ready queue");
-        return rc;
-    }
-    int rc = getArg(jobArgs, "segment_ready_queue_name", segReadyQ1_name);
+    // Create sender for the frame ready queue
+
+    int rc = getArg(jobArgs, "frame_ready_queue_name", FrameReadyQueue_name);
     if (rc) return rc;
-    segReadyQ1->SetName(segReadyQ1_name);
-    Freader->SetSegmentReadyQueue(segReadyQ1);
+    MPFMessageSender *FrameReadySender;
+    messenger_->CreateSender(FrameReadyQueue_name,
+                             queue_properties,
+                             FrameReadySender);
+    Freader->frame_ready_sender_.reset(FrameReadySender);
+    
 
+    // Create sender for the first stage segment ready queue
+
+    int rc = getArg(jobArgs, "segment_ready_stage1_queue_name", SegmentReadyStage1_name);
+    if (rc) return rc;
+    MPFMessageSender *Stage1Sender;
+    messenger_->CreateSender(SegmentReadyStage1_name,
+                             queue_properties,
+                             Stage1Sender);
+    Freader->segment_ready_stage1_sender_.reset(Stage1Sender);
+
+    // Check whether we have a 2 stage pipeline
     int rc = getArg(jobArgs, "num_pipeline_stages", num_pipeline_stages);
     if (rc) return rc;
-    MPFMessageQueue *segReadyQ2;
-    if (num_pipeline_stages == 1) {
-        segReadyQ2 = NULL;
-    }
-    else {   // prepare for 2-stage pipeline
-
-        rc = create_libobj<MPFMessageQueue>(message_queue_library_path,
-                                            msg_queue_create_sym,
-                                            segReadyQ2);
-        if (rc) {
-            LOG4CXX_ERROR(logger, "Failed to create segment ready queue for stage 2 processing");
-            return rc;
-        }
-        int rc = getArg(jobArgs, "segment_ready_queue_name_stage2", segReadyQ2_name);
+    MPFMessageSender *Stage2Sender;
+    if (num_pipeline_stages == 2 1) {
+        // prepare for 2-stage pipeline
+        int rc = getArg(jobArgs, "segment_ready_stage2_queue_name", SegmentReadyStage2_name);
         if (rc) return rc;
-        segReadyQ2->SetName(segReadyQ2_name);
-        Freader->SetSegmentReadyQueue2(segReadyQ2);
+        MPFMessageSender *Stage2Sender;
+        messenger_->CreateSender(SegmentReadyStage2_name,
+                                 queue_properties,
+                                 Stage2Sender);
+        Freader->segment_ready_stage2_sender_.reset(Stage2Sender);
+
     }
 
-    MPFMessageQueue *frameReadyQ;
-    rc = create_libobj<MPFMessageQueue>(message_queue_library_path,
-                                        msg_queue_create_sym,
-                                        frameReadyQ);
-    if (rc) {
-        LOG4CXX_ERROR(logger, "Failed to create frame ready queue");
-        return rc;
-    }
-    Freader->SetFrameReadyQueue(frameReadyQ);
+    // Create a receiver for the release frame queue
+
+    int rc = getArg(jobArgs, "release_frame_queue_name", ReleaseFrameQueue_name);
+    if (rc) return rc;
+    MPFMessageReceiver *releaseFrameReceiver;
+    messenger_->CreateReceiver(ReleaseFrameQueue_name,
+                               queue_properties,
+                               releaseFrameReceiver);
+    Freader->release_frame_receiver_.reset(releaseFrameReceiver);
 
 
-    MPFMessageQueue *releaseFrameQ;
-    rc = create_libobj<MPFMessageQueue>(message_queue_library_path,
-                                        msg_queue_create_sym,
-                                        releaseFrameQ);
-    if (rc) {
-        LOG4CXX_ERROR(logger, "Failed to create frame ready queue");
-        return rc;
-    }
-    Freader->SetReleaseFrameQueue(releaseFrameQ);
-
-    Properties job_properties;
     for (pt::ptree::value_type &job_prop : jobArgs.get_child("job_properties")) {
         job_properties[prop.first] = prop.second.data();
     }
@@ -281,6 +281,10 @@ int main(int argc, char* argv[]) {
         return FRerror;
     }
     // FrameReader creates the frame data shared storage.
+
+    int rc = getArg(jobArgs, "frame_store_path_name", frame_buffer_name);
+    if (rc) return rc;
+    Freader->OpenFrameStore(job, stream_properties);
 
     // Remain in loop handling track request messages
     // until 'q\n' is received on stdin

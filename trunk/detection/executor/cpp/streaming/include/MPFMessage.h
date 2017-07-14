@@ -29,13 +29,12 @@
 
 #include <string>
 
-// For definition of Properties
-#include "MPFComponentInterface.h"
+#include "MPFDetectionComponent.h"
 
 namespace MPF {
- 
+
 struct MPFMessage {
-    Properties msg_properties;
+    MPF::COMPONENT::Properties msg_properties;
   protected:
     MPFMessage(const MPF::COMPONENT::Properties &p) 
             : msg_properties(p) {}
@@ -82,14 +81,14 @@ struct MPFJobStatusMessage : MPFMessage {
     std::string status_message;
     MPFJobStatusMessage(const std::string &msg,
                         const MPF::COMPONENT::Properties &props) 
-            : MPFMessage(props), status_message_(msg) {}
+            : MPFMessage(props), status_message(msg) {}
 };
 
 struct MPFSegmentSummaryMessage : MPFMessage {
     int segment_number;
-    std::vector<MPFVideoTrack> tracks;
+    std::vector<MPF::COMPONENT::MPFVideoTrack> tracks;
     MPFSegmentSummaryMessage(int n,
-                             const std::vector<MPFVideoTrack> &tracks,
+                             const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks,
                              const MPF::COMPONENT::Properties &props) 
             : MPFMessage(props),
               segment_number(n),
@@ -108,6 +107,7 @@ struct MPFVideoWrittenMessage : MPFMessage {
 };
 
 class MPFReceiver {
+  public:
     virtual ~MPFReceiver() = default;
     virtual MPFMessage* getMessage() = 0;
   protected:
@@ -117,6 +117,7 @@ class MPFReceiver {
 
 
 class MPFSender {
+  public:
     virtual ~MPFSender() = default;
     virtual void putMessage(MPFMessage *msg) = 0;
   protected:

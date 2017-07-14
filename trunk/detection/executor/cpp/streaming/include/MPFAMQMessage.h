@@ -38,23 +38,33 @@
 namespace MPF {
 
 class MPFAMQReceiver : MPFReceiver {
-    MPFAMQReceiver(cms::MessageConsumer);
+  public:
+    MPFAMQReceiver() = default;
+    MPFAMQReceiver(cms::MessageConsumer *consumer,
+                   cms::Destination *destination)
+            : destination_(destination)
+            , consumer_(consumer) {}
     ~MPFAMQReceiver() = default;
     MPFMessage* getMessage() override;
   private:
-    std::unique_ptr<cms::Destination> request_destination_;
-    std::unique_ptr<cms::MessageConsumer> request_consumer_;
+    std::unique_ptr<cms::Destination> destination_;
+    std::unique_ptr<cms::MessageConsumer> consumer_;
     
 };
 
 
 class MPFAMQSender : MPFSender {
-    MPFAMQSender(const std::string queue_name);
+  public:
+    MPFAMQSender() = default;
+    MPFAMQSender(cms::MessageProducer *producer,
+                 cms::Destination *destination)
+            : destination_(destination)
+            , producer_(producer) {}
     ~MPFAMQSender() = default;
     void putMessage(MPFMessage *msg) override;
   private:
-    std::unique_ptr<cms::Destination> request_destination_;
-    std::unique_ptr<cms::MessageProducer> response_producer_;
+    std::unique_ptr<cms::Destination> destination_;
+    std::unique_ptr<cms::MessageProducer> producer_;
 
 };
 

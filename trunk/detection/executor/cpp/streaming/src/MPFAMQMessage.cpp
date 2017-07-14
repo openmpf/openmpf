@@ -1,6 +1,8 @@
 #include "MPFAMQMessage.h"
 
+using namespace MPF;
 
-MPFAMPFReceiver::MPFAMPFReceiver(const std::string queue_name) {
-    queue_name_ = queue_name;
-    request_destination_
+MPFMessage* MPFAMQReceiver::getMessage() {}
+
+void MPFAMQSender::putMessage(MPFMessage *msg) {}
+

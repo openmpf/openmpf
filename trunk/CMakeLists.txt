@@ -95,7 +95,8 @@ install_opencv("lib" "${OpenCV_CORE_LIBS}")
 install_log4cxx("lib")
 
 # Build the common detection component executable amq_detection_component
-add_subdirectory(detection/executor/cpp)
+add_subdirectory(detection/executor/cpp/batch)
+add_subdirectory(detection/executor/cpp/streaming)
 
 # Build the video overlay utility
 add_subdirectory(video-overlay)

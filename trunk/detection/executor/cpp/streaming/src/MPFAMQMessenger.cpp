@@ -35,12 +35,12 @@ MPFMessengerError MPFAMQMessenger::Connect(const string &broker_name,
         session_.reset(connection_->createSession(Session::SESSION_TRANSACTED));
 
     } catch (CMSException& e) {
-        LOG4CXX_ERROR(logger_, "CMSException in MPFAMQMessenger::Startup: " << e.getMessage() << "\n" << e.getStackTraceString());
+        //        LOG4CXX_ERROR(logger_, "CMSException in MPFAMQMessenger::Startup: " << e.getMessage() << "\n" << e.getStackTraceString());
         throw;
     } catch (std::exception& e) {
         // When thrown, this will be caught and logged by the main program
     } catch (...) {
-        LOG4CXX_ERROR(logger_, "Unknown Exception occurred in MPFMessenger::Startup");
+        //        LOG4CXX_ERROR(logger_, "Unknown Exception occurred in MPFMessenger::Startup");
         throw;
     }
     initialized_ = true;

@@ -50,10 +50,6 @@ class MPFAMQMessenger : public MPFMessenger {
     MPFAMQMessenger() = default;
     ~MPFAMQMessenger() { Shutdown(); }
 
-    void SetLogger(log4cxx::LoggerPtr &logger) {
-        logger_ = logger;
-    }
-
     MPFMessengerError Connect(const std::string &broker_name,
                               const MPF::COMPONENT::Properties &properties) override;
     MPFMessengerError CreateReceiver(const std::string &queue_name,
@@ -73,7 +69,6 @@ class MPFAMQMessenger : public MPFMessenger {
     bool initialized_;
     std::unique_ptr<cms::Connection> connection_;
     std::unique_ptr<cms::Session> session_;
-    log4cxx::LoggerPtr logger_;
 
 };
 

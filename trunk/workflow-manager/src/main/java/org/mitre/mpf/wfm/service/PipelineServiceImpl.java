@@ -440,7 +440,7 @@ public class PipelineServiceImpl implements PipelineService {
     @Override
     public void saveTask(TaskDefinition task) {
         addTask(task);
-        writeAlgorithmsToDisk();
+        writeTasksToDisk();
     }
 
     private void writeTasksToDisk() {

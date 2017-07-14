@@ -26,8 +26,11 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.ActionDefinitionRef;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.TaskDefinition;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
@@ -58,7 +61,8 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
                 getInvalidAlgorithmRefs(descriptor),
                 getInvalidActionRefs(descriptor),
                 getInvalidTaskRefs(descriptor),
-                getActionsWithInvalidProperties(descriptor));
+                getActionsWithInvalidProperties(descriptor),
+                getPipelinesWithInvalidProcessingType(descriptor));
 
         if (exception.isPresent()) {
             throw exception.get();
@@ -72,14 +76,17 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
             Set<String> invalidAlgorithmRefs,
             Set<String> invalidActionRefs,
             Set<String> invalidTaskRefs,
-            Map<String, Set<String>> actionsWithInvalidProps) {
+            Map<String, Set<String>> actionsWithInvalidProps,
+            Set<String> pipelinesWithInvalidProcessingType) {
 
         return Stream.of(dupActions, dupTasks, dupPipelines, invalidAlgorithmRefs,
-                            invalidActionRefs, invalidTaskRefs, actionsWithInvalidProps.entrySet())
+                            invalidActionRefs, invalidTaskRefs, actionsWithInvalidProps.entrySet(),
+                            pipelinesWithInvalidProcessingType)
                 .filter(s -> !s.isEmpty())
                 .findAny()
                 .map(s -> new InvalidCustomPipelinesException(dupActions, dupTasks, dupPipelines,
-                        invalidAlgorithmRefs, invalidActionRefs, invalidTaskRefs, actionsWithInvalidProps));
+                        invalidAlgorithmRefs, invalidActionRefs, invalidTaskRefs, actionsWithInvalidProps,
+					    pipelinesWithInvalidProcessingType));
     }
 
     private Set<String> getDupActions(JsonComponentDescriptor descriptor) {
@@ -256,4 +263,145 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
                 .filter(actionPropName -> !algoProps.contains(actionPropName))
                 .collect(toSet());
     }
+
+
+
+    private Set<String> getPipelinesWithInvalidProcessingType(JsonComponentDescriptor descriptor) {
+        if (descriptor.pipelines == null) {
+            return Collections.emptySet();
+        }
+
+        Map<String, JsonComponentDescriptor.Task> descriptorTasks = Optional.ofNullable(descriptor.tasks)
+                .orElseGet(Collections::emptyList)
+                .stream()
+                .collect(toMap(t -> t.name, Function.identity()));
+
+        Map<String, JsonComponentDescriptor.Action> descriptorActions = Optional.ofNullable(descriptor.actions)
+                .orElseGet(Collections::emptyList)
+                .stream()
+                .collect(toMap(a -> a.name, Function.identity()));
+
+        return descriptor.pipelines.stream()
+                .filter(p -> !isValidPipeline(p, descriptor, descriptorTasks, descriptorActions))
+                .map(p -> p.name)
+                .collect(toSet());
+    }
+
+
+    private boolean isValidPipeline(
+            JsonComponentDescriptor.Pipeline pipeline,
+            JsonComponentDescriptor descriptor,
+            Map<String, JsonComponentDescriptor.Task> descriptorTasks,
+            Map<String, JsonComponentDescriptor.Action> descriptorActions) {
+
+        Set<ProcessingType> pipelineSupportedProcessingTypes = EnumSet.allOf(ProcessingType.class);
+
+        for (String taskName : pipeline.tasks) {
+            JsonComponentDescriptor.Task descriptorTask = descriptorTasks.get(taskName);
+
+            Set<ProcessingType> taskProcessingTypes = descriptorTask != null
+                    ? getProcessingType(descriptorTask, descriptor, descriptorActions)
+                    : getExistingTaskProcessingType(taskName);
+
+            pipelineSupportedProcessingTypes.retainAll(taskProcessingTypes);
+
+            if (pipelineSupportedProcessingTypes.isEmpty()) {
+                return false;
+            }
+        }
+        return !pipelineSupportedProcessingTypes.isEmpty();
+    }
+
+
+
+    private Set<ProcessingType> getProcessingType(
+            JsonComponentDescriptor.Task task,
+            JsonComponentDescriptor descriptor,
+            Map<String, JsonComponentDescriptor.Action> descriptorActions) {
+
+        Set<ProcessingType> taskSupportedProcessing = EnumSet.allOf(ProcessingType.class);
+
+        for (String actionName : task.actions) {
+            JsonComponentDescriptor.Action descriptorAction = descriptorActions.get(actionName);
+
+            Set<ProcessingType> actionProcessingTypes = descriptorAction != null
+                    ? getProcessingType(descriptorAction, descriptor)
+                    : getExistingActionProcessingType(actionName);
+
+            taskSupportedProcessing.retainAll(actionProcessingTypes);
+
+            if (taskSupportedProcessing.isEmpty()) {
+                return taskSupportedProcessing;
+            }
+        }
+        return taskSupportedProcessing;
+    }
+
+
+    private Set<ProcessingType> getProcessingType(
+            JsonComponentDescriptor.Action action,
+            JsonComponentDescriptor descriptor) {
+
+        if (action.algorithm.equals(descriptor.algorithm.name)) {
+            Set<ProcessingType> actionProcessingType = EnumSet.noneOf(ProcessingType.class);
+            if (descriptor.algorithm.supportsBatchProcessing) {
+                actionProcessingType.add(ProcessingType.BATCH);
+            }
+            if (descriptor.algorithm.supportsStreamProcessing) {
+                actionProcessingType.add(ProcessingType.STREAMING);
+            }
+            return actionProcessingType;
+        }
+
+        return getExistingAlgoProcessingType(action.algorithm);
+    }
+
+
+
+    private Set<ProcessingType> getExistingTaskProcessingType(String taskName) {
+        Set<ProcessingType> taskProcessingTypes = EnumSet.allOf(ProcessingType.class);
+        TaskDefinition task = pipelineService.getTask(taskName);
+        if (task == null) {
+            return taskProcessingTypes;
+        }
+
+        for (ActionDefinitionRef action : task.getActions()) {
+            Set<ProcessingType> actionProcessingType = getExistingActionProcessingType(action.getName());
+            taskProcessingTypes.retainAll(actionProcessingType);
+
+            if (taskProcessingTypes.isEmpty()) {
+                return taskProcessingTypes;
+            }
+        }
+        return taskProcessingTypes;
+    }
+
+
+    private Set<ProcessingType> getExistingActionProcessingType(String actionName) {
+        ActionDefinition action = pipelineService.getAction(actionName);
+        if (action == null) {
+            return EnumSet.allOf(ProcessingType.class);
+        }
+        return getExistingAlgoProcessingType(action.getAlgorithmRef());
+    }
+
+
+    private Set<ProcessingType> getExistingAlgoProcessingType(String algoName) {
+        AlgorithmDefinition existingAlgo = pipelineService.getAlgorithm(algoName);
+        if (existingAlgo == null) {
+            return EnumSet.allOf(ProcessingType.class);
+        }
+
+        Set<ProcessingType> actionProcessingTypes = EnumSet.noneOf(ProcessingType.class);
+        if (existingAlgo.getSupportsBatchProcessing()) {
+            actionProcessingTypes.add(ProcessingType.BATCH);
+        }
+        if (existingAlgo.getSupportsStreamProcessing()) {
+            actionProcessingTypes.add(ProcessingType.STREAMING);
+        }
+        return actionProcessingTypes;
+    }
+
+
+    private enum ProcessingType { BATCH, STREAMING }
 }

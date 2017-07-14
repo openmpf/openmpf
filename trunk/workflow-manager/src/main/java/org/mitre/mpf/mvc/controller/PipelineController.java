@@ -195,8 +195,16 @@ public class PipelineController {
         //force uppercase
         String name = pipelineModel.getName().toUpperCase();
 
+        boolean supportsBatch = true;
+        boolean supportsStreaming = true;
         PipelineDefinition pipelineDefinition = new PipelineDefinition(name, description);
         for (String taskName : pipelineModel.getTasksToAdd()) {
+            supportsBatch = supportsBatch && pipelineService.taskSupportsBatch(taskName);
+            supportsStreaming = supportsStreaming && pipelineService.taskSupportsStreaming(taskName);
+            if (!supportsBatch && !supportsStreaming) {
+                log.error("Attempted to create pipeline that does not fully support batch or streaming.");
+                throw new WfmProcessingException("Pipeline does not fully support batch or streaming.");
+            }
             pipelineDefinition.getTaskRefs().add(new TaskDefinitionRef(taskName));
         }
         pipelineService.savePipeline(pipelineDefinition);
@@ -498,21 +506,11 @@ public class PipelineController {
             try {
                 //actions is handled by "/createaction"
                 if(type.equals("task")) {
-                    TaskDefinition taskDefinition = new TaskDefinition(name, description);
-                    for(String actionName : addToPipelineModel.getItemsToAdd()) {
-                        taskDefinition.getActions().add( new ActionDefinitionRef(actionName) );
-                    }
-                    pipelineService.saveTask(taskDefinition);
+                    responseTuple = saveTask(name, description, addToPipelineModel.getItemsToAdd());
                 }
                 else if(type.equals("pipeline")) {
-                    PipelineDefinition pipelineDefinition = new PipelineDefinition(name, description);
-                    for(String taskName : addToPipelineModel.getItemsToAdd()) {
-                        pipelineDefinition.getTaskRefs().add( new TaskDefinitionRef(taskName) );
-                    }
-                    pipelineService.savePipeline(pipelineDefinition);
+                    responseTuple = savePipeline(name, description, addToPipelineModel.getItemsToAdd());
                 }
-                log.debug("success adding to the {} collection", type);
-                responseTuple = new Tuple<Boolean, String>(true, null);
             }
             catch (WfmProcessingException ex) {
                 responseTuple = new Tuple<Boolean, String>(false, "failed to add the " + type + " check logs for detailed error");
@@ -524,5 +522,39 @@ public class PipelineController {
         }
 
         return JsonView.Render(responseTuple, response);
+    }
+
+
+    private Tuple<Boolean, String> saveTask(String name, String description, List<String> actionNames) {
+        boolean taskSupportsBatch = true;
+        boolean taskSupportsStreaming = true;
+        TaskDefinition taskDefinition = new TaskDefinition(name, description);
+        for(String actionName : actionNames) {
+            taskSupportsBatch = taskSupportsBatch && pipelineService.actionSupportsBatch(actionName);
+            taskSupportsStreaming = taskSupportsStreaming && pipelineService.actionSupportsStreaming(actionName);
+            if (!taskSupportsBatch && !taskSupportsStreaming) {
+                return new Tuple<>(false, "Task does not fully support batch or streaming.");
+            }
+            taskDefinition.getActions().add(new ActionDefinitionRef(actionName) );
+        }
+        pipelineService.saveTask(taskDefinition);
+        return new Tuple<>(true, null);
+    }
+
+    private Tuple<Boolean, String> savePipeline(String name, String description, List<String> taskNames) {
+        boolean pipelineSupportsBatch = true;
+        boolean pipelineSupportsStreaming = true;
+
+        PipelineDefinition pipelineDefinition = new PipelineDefinition(name, description);
+        for(String taskName : taskNames) {
+            pipelineSupportsBatch = pipelineSupportsBatch && pipelineService.taskSupportsBatch(taskName);
+            pipelineSupportsStreaming = pipelineSupportsStreaming && pipelineService.taskSupportsStreaming(taskName);
+            if (!pipelineSupportsBatch && !pipelineSupportsStreaming) {
+                return new Tuple<>(false, "Pipeline does not fully support batch or streaming");
+            }
+            pipelineDefinition.getTaskRefs().add( new TaskDefinitionRef(taskName) );
+        }
+        pipelineService.savePipeline(pipelineDefinition);
+        return new Tuple<>(true, null);
     }
 }

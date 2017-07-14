@@ -72,6 +72,18 @@ public interface PipelineService {
 
 	PipelineDefinition getPipeline(String name);
 
+	boolean pipelineSupportsBatch(String pipelineName);
+
+	boolean pipelineSupportsStreaming(String pipelineName);
+
+	boolean taskSupportsBatch(String taskName);
+
+	boolean taskSupportsStreaming(String taskName);
+
+	boolean actionSupportsBatch(String actionName);
+
+	boolean actionSupportsStreaming(String actionName);
+
 	void reset();
 
 	void deleteAlgorithm(String algorithmName);

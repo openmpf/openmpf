@@ -54,6 +54,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.function.Predicate;
 
 @Component
 public class PipelineServiceImpl implements PipelineService {
@@ -341,6 +342,63 @@ public class PipelineServiceImpl implements PipelineService {
     public PipelineDefinition getPipeline(String name) {
         return pipelines.get(StringUtils.upperCase(name));
     }
+
+
+    @Override
+    public boolean pipelineSupportsBatch(String pipelineName) {
+    	return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::getSupportsBatchProcessing);
+    }
+
+
+    @Override
+    public boolean pipelineSupportsStreaming(String pipelineName) {
+        return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::getSupportsStreamProcessing);
+    }
+
+
+    private boolean pipelineSupportsProcessingType(String pipelineName, Predicate<AlgorithmDefinition> supportsPred) {
+        PipelineDefinition pipeline = getPipeline(pipelineName);
+        return pipeline.getTaskRefs().stream()
+                .map(TaskDefinitionRef::getName)
+		        .allMatch(tName -> taskSupportsProcessingType(tName, supportsPred));
+    }
+
+
+    @Override
+    public boolean taskSupportsBatch(String taskName) {
+    	return taskSupportsProcessingType(taskName, AlgorithmDefinition::getSupportsBatchProcessing);
+    }
+
+    @Override
+    public boolean taskSupportsStreaming(String taskName) {
+        return taskSupportsProcessingType(taskName, AlgorithmDefinition::getSupportsStreamProcessing);
+
+    }
+
+    private boolean taskSupportsProcessingType(String taskName, Predicate<AlgorithmDefinition> supportsPred) {
+        TaskDefinition task = getTask(taskName);
+        return task.getActions().stream()
+                .map(ActionDefinitionRef::getName)
+		        .allMatch(actionName -> actionSupportsProcessingType(actionName, supportsPred));
+    }
+
+    @Override
+    public boolean actionSupportsBatch(String actionName) {
+        return actionSupportsProcessingType(actionName, AlgorithmDefinition::getSupportsBatchProcessing);
+    }
+
+    @Override
+    public boolean actionSupportsStreaming(String actionName) {
+        return actionSupportsProcessingType(actionName, AlgorithmDefinition::getSupportsStreamProcessing);
+    }
+
+
+    private boolean actionSupportsProcessingType(String actionName, Predicate<AlgorithmDefinition> supportsPred) {
+        ActionDefinition action = getAction(actionName);
+        AlgorithmDefinition algorithm = getAlgorithm(action);
+        return supportsPred.test(algorithm);
+    }
+
 
     /** Forgets all of the previously-added pipelines, tasks, actions, and algorithms. */
     @Override

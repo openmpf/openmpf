@@ -30,7 +30,6 @@
 #define OPENMPF_CPP_FRAME_READER_H
 
 #include "MPFComponentInterface.h"
-#include "MPFMessageQueue.h"
 #include "MPFFrameStore.h"
 
 namespace MPF { namespace COMPONENT {
@@ -54,12 +53,12 @@ enum MPFFrameReaderError {
 };
 
 struct MPFFrameReaderJob : MPFJob {
-
     MPFFrameReaderJob(const std::string &job_name,
                       const std::string &stream_uri,
+                      const std::string &config_pathname,
                       const MPF::COMPONENT::Properties &job_properties,
                       const MPF::COMPONENT::Properties &media_properties)
-            : MPFJob(job_name, data_uri, job_properties, media_properties) {}
+            : MPFJob(job_name, stream_uri, job_properties, media_properties) {}
 };
 
 class MPFFrameReader {
@@ -67,58 +66,26 @@ class MPFFrameReader {
   public:
 
     virtual ~MPFFrameReader() { }
-
-    virtual void SetSegmentReadyQueue1(MPFMessageQueue* segment_ready_queue) {
-        segment_ready_queue1_ = segment_ready_queue;
-    }
-    virtual MPFMessageQueue *GetSegmentReadyQueue1() {
-        return segment_ready_queue1_;
-    }
-    virtual void SetSegmentReadyQueue2(MPFMessageQueue* segment_ready_queue) {
-        segment_ready_queue2_ = segment_ready_queue;
-    }
-    virtual MPFMessageQueue *GetSegmentReadyQueue2() {
-        return segment_ready_queue2_;
-    }
-    virtual void SetFrameReadyQueue(MPFMessageQueue* frame_ready_queue) {
-        frame_ready_queue_ = frame_ready_queue1;
-    }
-    virtual MPFMessageQueue *GetFrameReadyQueue() {
-        return frame_ready_queue_;
-    }
-    virtual void SetReleaseFrameQueue(MPFMessageQueue* release_frame_queue) {
-        release_frame_queue_ = release_frame_queue;
-    }
-    virtual MPFMessageQueue *GetReleaseFrameQueue() {
-        return release_frame_queue_;
-    }
-    virtual void SetJobStatusQueue(MPFMessageQueue* job_status_queue) {
-        job_status_queue_ = job_status_queue;
-    }
-    virtual MPFMessageQueue *GetJobStatusQueue() {
-        return job_status_queue_;
-    }
     virtual MPFFrameReaderError AttachToStream(
                                            const MPFFrameReaderJob &job,
                                            Properties &stream_properties) = 0;
     virtual MPFFrameReaderError OpenFrameStore(MPFFrameReaderJob &job,
                                                Properties &stream_properties) = 0;
 
-    virtual MPFFrameStore GetFrameStore() {
-        return frame_buffer_;
-    }
     virtual MPFFrameReaderError CloseFrameStore() = 0;
-    virtual MPFFrameReaderError Run(MPFFrameReaderJob &job) = 0;
+    virtual MPFFrameReaderError GetFrameFromStream(MPFFrameReaderJob &job,
+                                                   cv::Mat &new_frame) = 0;
+    virtual MPFFrameReaderError StoreFrame(MPFFrameReaderJob &job,
+                                           cv::Mat &new_frame) = 0;
+
 
   protected:
 
     MPFFrameReader() = default;
-    MPFMessageQueue* segment_ready_queue1_;
-    MPFMessageQueue* segment_ready_queue2_;
-    MPFMessageQueue* frame_ready_queue_;
-    MPFMessageQueue* release_frame_queue_;
-    MPFMessageQueue* job_status_queue_;
     MPFFrameStore frame_store_;
+
+    int current_segment_num_;
+    int current_frame_index_;
 };
 }}
 

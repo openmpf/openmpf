@@ -36,6 +36,8 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
 
+#include <log4cxx/logger.h>
+
 #include "MPFFrameReader.h"
 
 namespace MPF { namespace COMPONENT {
@@ -56,30 +58,30 @@ class OcvFrameReaderComponent : public MPFFrameReaderComponent {
     virtual MPFFrameReaderError CreateFrameStore(MPFFrameReaderJob &job,
                                                  Properties &stream_properties) override;
     virtual MPFFrameReaderError CloseFrameStore() override;
-    virtual MPFFrameReaderError Run(MPFFrameReaderJob &job) override;
+    virtual MPFFrameReaderError GetFrameFromStream(MPFFrameReaderJob &job,
+                                                   cv::Mat &new_frame) override;
+    virtual MPFFrameReaderError StoreFrame(MPFFrameReaderJob &job,
+                                           cv::Mat &new_frame) override;
+
 
   private:
     cv::VideoCapture video_capture_;
+    log4cxx::LoggerPtr logger_;
+    int segment_length_;        // number of frames per processing segment.
     uint8_t *frame_buffer_start_addr_;  // virtual address of the
                                         // start of the frame buffer.
-    int num_frames_in_segment_;
     int frame_buffer_segment_capacity_; // how many segments can be
                                         // stored in the frame buffer
                                         // before we need to start
                                         // reusing storage.
-    int frame_rows_;
-    int frame_cols_;
+    int frame_num_rows_;
+    int frame_num_cols_;
     int frame_type_; // Corresponds to the OpenCV type, e.g., CV_8UC3
-    size_t frame_byte_size_;
-    size_t frame_buffer_byte_size_;
+    size_t frame_byte_size_;     // Size of each frame in bytes
+    size_t frame_buffer_byte_size_;  // Total size of the frame store;
+                                     // needed for mapping the shared
+                                     // storage file into memory.
     int frame_buffer_file_descriptor_;
-    int num_segments_;
-    std::string frame_buffer_name;
-    MPFFrameStore frame_store_;
-
-    SendSegmentJobMessage();
-    SendFrameMessage();
-    GetFreeFrameMessage();
 };
 }}
 

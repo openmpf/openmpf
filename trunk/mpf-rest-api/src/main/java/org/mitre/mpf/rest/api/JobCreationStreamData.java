@@ -29,19 +29,18 @@ package org.mitre.mpf.rest.api;
 import java.util.HashMap;
 import java.util.Map;
 
-
 public class JobCreationStreamData {
 
-    private String streamURI;
+    private String streamUri;
     public JobCreationStreamData() {}
     public JobCreationStreamData(String uri) {
-        this.streamURI=uri;
+        this.streamUri=uri;
     }
-    public String getStreamURI() {
-        return streamURI;
+    public String getStreamUri() {
+        return streamUri;
     }
-    public void setStreamURI(String streamURI) {
-        this.streamURI = streamURI;
+    public void setStreamUri(String streamUri) {
+        this.streamUri = streamUri;
     }
 
     private Map<String,String> mediaProperties = new HashMap<>();
@@ -63,7 +62,7 @@ public class JobCreationStreamData {
      */
     public boolean isValidStreamData() {
         // do error checks on the streaming job data
-        if ( getSegmentSize() >= 10 && getStreamURI() != null ) {
+        if ( getSegmentSize() >= 10 && getStreamUri() != null ) {
             return true;
         } else {
             return false;

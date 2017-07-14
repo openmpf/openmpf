@@ -103,7 +103,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 	@EndpointInject(uri = JobCreatorRouteBuilder.ENTRY_POINT)
 	private ProducerTemplate jobRequestProducerTemplate;
 
-	/** method to create and initialize a JSON representation of a job request given the raw parameters
+	/** Will create and initialize a JSON representation of a job request given the raw parameters
 	 * This version of the method does not allow for a callback to be defined
 	 * @param externalId
 	 * @param pipelineName
@@ -138,7 +138,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 		return jsonJobRequest;
 	}
 
-	/** method to create and initialize a JSON representation of a job request given the raw parameters
+	/** Will create and initialize a JSON representation of a job request given the raw parameters
 	 * This version of the method allows for a callback to be defined
 	 * @param externalId
 	 * @param pipelineName
@@ -156,10 +156,10 @@ public class JobRequestBoImpl implements JobRequestBo {
 		log.debug("[createRequest] externalId:"+externalId +" pipeline:"+pipelineName + " buildOutput:"+buildOutput+" priority:"+priority+" callbackURL:"+callbackURL + " callbackMethod:"+callbackMethod);
 		String jsonCallbackURL = "";
 		String jsonCallbackMethod = "GET";
-		if(callbackURL != null && TextUtils.trim(callbackURL).length() > 0) {
+		if(callbackURL != null && TextUtils.trim(callbackURL) != null ) {
 			jsonCallbackURL = TextUtils.trim(callbackURL);
 		}
-		if(callbackMethod != null && !TextUtils.trim(callbackMethod).equals("GET") ){//only GET or POST allowed
+		if(callbackMethod != null && TextUtils.trim(callbackMethod) != null && !TextUtils.trim(callbackMethod).equals("GET") ){//only GET or POST allowed
 			jsonCallbackMethod = "POST";
 		}
 
@@ -184,7 +184,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 		return jsonJobRequest;
 	}
 
-	/** method will create a new JobRequest using the provided JSON job request and persist it in the database for long-term storage
+	/** Will create a new JobRequest using the provided JSON job request and persist it in the database for long-term storage
 	 * and will send the job request to the components using the ActiveMQ routes
 	 * Upon return, the job will be persisted in the long-term database
 	 * @param jobRequest JSON representation of the job request
@@ -219,7 +219,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 		return resubmitInternal(jobId, PriorityPolicy.PROVIDED, priority);
 	}
 
-	/** public method used to cancel a batch job
+	/** Will cancel a batch job
 	 * This method will mark the job as cancelled in both REDIS and in the long-term database.  The job cancel request will also be sent
 	 * along to the components via ActiveMQ using the JobCreatorRouteBuilder.ENTRY_POINT
 	 * @param jobId

@@ -334,17 +334,12 @@ public class StreamingJobCompleteProcessorImpl extends WfmProcessor implements S
 			log.error("Failed to create the JSON detection output object for streaming job '{}' due to an exception.", jobId, wpe);
 		}
 
-		try {
-			jmsUtils.destroyCancellationRoutes(jobId);
-		} catch (Exception exception) {
-			log.warn("Failed to destroy the cancellation routes associated with streaming job {}. If this job is resubmitted, it will likely not complete again!", jobId, exception);
-		}
-
 	}
 
 	@Autowired
 	private JmsUtils jmsUtils;
 
+	// TODO finalize what needs to be done to destroy a streaming job in the WFM
 	private void destroy(long jobId) throws WfmProcessingException {
 		TransientStreamingJob transientStreamingJob = redis.getStreamingJob(jobId);
 

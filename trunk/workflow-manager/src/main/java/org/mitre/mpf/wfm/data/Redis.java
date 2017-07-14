@@ -226,9 +226,9 @@ public interface Redis {
 	String getSummaryReportCallbackURI(final long jobId) throws WfmProcessingException;
 
 	/**
-	 * The METHOD of the Callback to connect to when the job is completed POST or GET.
+	 * The METHOD of the Callback to connect to when the job is completed. POST or GET.
 	 * @param jobId The MPF-assigned ID of the job to which this Callback Method will refer to.
-	 * @return The METHOD of the Callback to connect to when the job is completed POST or GET.
+	 * @return The METHOD of the Callback to connect to when the job is completed. POST or GET.
 	 * @throws WfmProcessingException
 	 */
 	String getCallbackMethod(final long jobId) throws WfmProcessingException;
@@ -243,13 +243,13 @@ public interface Redis {
 
 	/** Will return true if the specified jobId is a batch job stored in the transient data store
 	 * @param jobId The MPF-assigned ID of the job
-	 * @return rue if the specified jobId is a batch job stored in the transient data store, false otherwise
+	 * @return true if the specified jobId is a batch job stored in the transient data store, false otherwise
 	 */
 	boolean isJobTypeBatch(final long jobId);
 
 	/** Will return true if the specified jobId is a streaming job stored in the transient data store
 	 * @param jobId The MPF-assigned ID of the job
-	 * @return rue if the specified jobId is a streaming job stored in the transient data store, false otherwise
+	 * @return true if the specified jobId is a streaming job stored in the transient data store, false otherwise
 	 */
 	boolean isJobTypeStreaming(final long jobId);
 

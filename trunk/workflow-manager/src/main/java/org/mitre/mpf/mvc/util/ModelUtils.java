@@ -116,19 +116,19 @@ public class ModelUtils {
 	//this method is created for the same reason as converMarkupResult
 	public static SingleJobInfo convertJobRequest(JobRequest jobRequest,
 			float jobContainerProgress) {
-		//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR
 		JobStatus jobStatus = jobRequest.getStatus();
+		// some job status' may be terminal
 		boolean isTerminal = (jobStatus != null && jobStatus.isTerminal());
 		
 		return new SingleJobInfo(jobRequest.getId(), jobRequest.getPipeline(), jobRequest.getPriority(), 
-				jobRequest.getStatus().toString(), jobContainerProgress, jobRequest.getTimeReceived(), 
+				jobRequest.getStatus().toString(), jobContainerProgress, jobRequest.getTimeReceived(),
 				jobRequest.getTimeCompleted(), jobRequest.getOutputObjectPath(), isTerminal);
 	}
 
 	public static StreamingJobInfoResponse convertJobRequest(StreamingJobRequest streamingJobRequest,
-															 float jobContainerProgress) {
-		//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR
+			float jobContainerProgress) {
 		JobStatus jobStatus = streamingJobRequest.getStatus();
+		// some job status' may be terminal
 		boolean isTerminal = (jobStatus != null && jobStatus.isTerminal());
 
 		return new StreamingJobInfoResponse(streamingJobRequest.getId(), streamingJobRequest.getExternalId(),
@@ -138,7 +138,6 @@ public class ModelUtils {
 				streamingJobRequest.getTimeCompleted(),
 				streamingJobRequest.getOutputObjectDirectory(),
 				streamingJobRequest.getStreamURI(),
-				streamingJobRequest.getHealthReportCallbackURI(),
 				isTerminal);
 	}
 

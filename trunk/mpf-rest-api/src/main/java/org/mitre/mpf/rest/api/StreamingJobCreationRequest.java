@@ -43,9 +43,9 @@ public class StreamingJobCreationRequest {
 	// true or false to write video segments to disk. Note that this is called buildOutput in other code. Will use a server side property if null
 	private Boolean enableOutputToDisk = null;
 
-	private String healthReportCallbackURI = null; // the URL to send a health report to
-	private String summaryReportCallbackURI = null; // the URL to send a summary report to
-	private String newTrackAlertCallbackURI = null; // the URL to send a new track alert report to
+	private String healthReportCallbackUri = null; // the URL to send a health report to
+	private String summaryReportCallbackUri = null; // the URL to send a summary report to
+	private String newTrackAlertCallbackUri = null; // the URL to send a new track alert report to
 	private String callbackMethod = "POST"; // the method to send the response back after a job completes
 
 	private long stallAlertDetectionThreshold = -1L;
@@ -64,7 +64,7 @@ public class StreamingJobCreationRequest {
 		return stream;
 	}
 	public void setStream(JobCreationStreamData streamData) { this.stream = streamData; }
-	public String getStreamURI() { return stream.getStreamURI(); }
+	public String getStreamUri() { return stream.getStreamUri(); }
 
 	public Map<String, String> getMediaProperties() { return stream.getMediaProperties(); }
 	public int getSegmentSize() {
@@ -113,23 +113,23 @@ public class StreamingJobCreationRequest {
 		this.priority = priority;
 	}
 
-	/** return the HealthReportCallbackURI. May be null if not defined.
-	 * @return return the specified callback URI. May be null if not defined
+	/** return the HealthReportCallbackUri. May be null if not defined.
+	 * @return return the specified callback Uri. May be null if not defined
 	 */
-	public String getHealthReportCallbackURI() { return healthReportCallbackURI;	}
-	public void setHealthReportCallbackURI(String callbackURI) { this.healthReportCallbackURI = callbackURI; }
+	public String getHealthReportCallbackUri() { return healthReportCallbackUri;	}
+	public void setHealthReportCallbackUri(String callbackUri) { this.healthReportCallbackUri = callbackUri; }
 
-	/** return the SummaryReportCallbackURI. May be null if not defined.
-	 * @return return the specified callback URI. May be null if not defined
+	/** return the SummaryReportCallbackUri. May be null if not defined.
+	 * @return return the specified callback Uri. May be null if not defined
 	 */
-	public String getSummaryReportCallbackURI() { return summaryReportCallbackURI; }
-	public void setSummaryReportCallbackURL(String callbackURI) { this.summaryReportCallbackURI = callbackURI; }
+	public String getSummaryReportCallbackUri() { return summaryReportCallbackUri; }
+	public void setSummaryReportCallbackURL(String callbackUri) { this.summaryReportCallbackUri = callbackUri; }
 
-	/** return the NewTrackAlertCallbackURI. May be null if not defined.
-	 * @return return the specified callback URI. May be null if not defined
+	/** return the NewTrackAlertCallbackUri. May be null if not defined.
+	 * @return return the specified callback Uri. May be null if not defined
 	 */
-	public String getNewTrackAlertCallbackURI() { return newTrackAlertCallbackURI;	}
-	public void setNewTrackAlertCallbackURI(String callbackURI) { this.newTrackAlertCallbackURI = callbackURI; }
+	public String getNewTrackAlertCallbackUri() { return newTrackAlertCallbackUri;	}
+	public void setNewTrackAlertCallbackUri(String callbackUri) { this.newTrackAlertCallbackUri = callbackUri; }
 
 	/** Method will return the HTTP method to be used for the callbacks.
 	 * @return will return SET or POST or null if the method is not defined

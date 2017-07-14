@@ -262,7 +262,7 @@ public class MpfServiceImpl implements MpfService {
 	public boolean initializeOutputDirectoryForStreamingJob(long jobId) {
 		try {
 			log.debug(this.getClass().getName()+":initializeOutputDirectoryForStreamingJob: jobId="+jobId);
-			streamingJobRequestBo.initializeOutputDirectoryForStreamingJob(jobId);
+			streamingJobRequestBo.initializeOutputDirectory(jobId);
 			return true;
 		} catch ( WfmProcessingException wpe ) {
 			log.error("Failed to initialize output directory for Streaming Job #{} due to an exception.", jobId, wpe);

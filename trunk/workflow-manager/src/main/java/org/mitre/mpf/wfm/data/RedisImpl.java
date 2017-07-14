@@ -71,8 +71,7 @@ public class RedisImpl implements Redis {
 	//
 
 	// The following constants are provided to avoid making typographical errors when formulating keys.
-	// Note: JOB represents a batch job, while STREAMING_JOB represents a streaming job.  Had to provide distinction here because
-	// a batch job and a streaming job may have the same job id.
+	// Note: BATCH_JOB represents a batch job, while STREAMING_JOB represents a streaming job.
 	private static final String
 			CANCELLED = "CANCELLED",
 			DETAIL = "DETAIL",
@@ -131,7 +130,7 @@ public class RedisImpl implements Redis {
 							.boundListOps(
 									key(BATCH_JOB, detectionProcessingError.getJobId(),
 											MEDIA, detectionProcessingError.getMediaId(),
-											ERRORS, detectionProcessingError.getStageIndex(), detectionProcessingError.getActionIndex())) // e.g., JOB:5:MEDIA:3:ERRORS:0:1
+											ERRORS, detectionProcessingError.getStageIndex(), detectionProcessingError.getActionIndex())) // e.g., BATCH_JOB:5:MEDIA:3:ERRORS:0:1
 							.rightPush(jsonUtils.serialize(detectionProcessingError));
 					return true;
 				} catch ( Exception exception ) {
@@ -154,7 +153,7 @@ public class RedisImpl implements Redis {
 		} else {
 			try {
 				redisTemplate
-						.boundListOps(key(BATCH_JOB, track.getJobId(), MEDIA, track.getMediaId(), TRACK, track.getStageIndex(), track.getActionIndex())) // e.g., JOB:5:MEDIA:10:0:0
+						.boundListOps(key(BATCH_JOB, track.getJobId(), MEDIA, track.getMediaId(), TRACK, track.getStageIndex(), track.getActionIndex())) // e.g., BATCH_JOB:5:MEDIA:10:0:0
 						.rightPush(jsonUtils.serialize(track));
 				return true;
 			} catch ( Exception exception ) {
@@ -268,6 +267,7 @@ public class RedisImpl implements Redis {
 				}
 			}
 
+			// TODO delete this commented block after streaming job cleanup is implemented
 			// leave this commented block here for reference until streaming video processing is finalized
 //			if (transientStream.getUriScheme().isRemote()) {
 //				if (transientStream.getLocalPath() != null) {
@@ -390,10 +390,10 @@ public class RedisImpl implements Redis {
 			}));
 
 			if ( length == 0 ) {
-				log.debug("No detection processing errors for JOB:{}:MEDIA:{}:{}:{}.", jobId, mediaId, taskIndex, actionIndex);
+				log.debug("No detection processing errors for BATCH_JOB:{}:MEDIA:{}:{}:{}.", jobId, mediaId, taskIndex, actionIndex);
 				return new TreeSet<>();
 			} else {
-				log.debug("{} detection processing errors for JOB:{}:MEDIA:{}:{}:{}.", length, jobId, mediaId, taskIndex, actionIndex);
+				log.debug("{} detection processing errors for BATCH_JOB:{}:MEDIA:{}:{}:{}.", length, jobId, mediaId, taskIndex, actionIndex);
 				SortedSet<DetectionProcessingError> errors = new TreeSet<>();
 				for ( Object errorJson : redisTemplate.boundListOps(key).range(0, length) ) {
 					try {
@@ -606,7 +606,7 @@ public class RedisImpl implements Redis {
 			// and then store the serialized media element to the specified key.
 			mediaIds.add(transientMedia.getId());
 			redisTemplate
-					.boundValueOps(key(BATCH_JOB, transientJob.getId(), MEDIA, transientMedia.getId())) // e.g., JOB:5:MEDIA:16
+					.boundValueOps(key(BATCH_JOB, transientJob.getId(), MEDIA, transientMedia.getId())) // e.g., BATCH_JOB:5:MEDIA:16
 					.set(jsonUtils.serialize(transientMedia));
 		}
 
@@ -844,7 +844,7 @@ public class RedisImpl implements Redis {
 
 	/**Method will return true if the specified jobId is a batch job stored in the transient data store
 	 * @param jobId The MPF-assigned ID of the job
-	 * @return rue if the specified jobId is a batch job stored in the transient data store, false otherwise
+	 * @return true if the specified jobId is a batch job stored in the transient data store, false otherwise
 	 */
 	public boolean isJobTypeBatch(final long jobId) {
 		return(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)));
@@ -852,11 +852,10 @@ public class RedisImpl implements Redis {
 
 	/**Method will return true if the specified jobId is a streaming job stored in the transient data store
 	 * @param jobId The MPF-assigned ID of the job
-	 * @return rue if the specified jobId is a streaming job stored in the transient data store, false otherwise
+	 * @return true if the specified jobId is a streaming job stored in the transient data store, false otherwise
 	 */
 	public boolean isJobTypeStreaming(final long jobId) {
 		return(redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)));
 	}
-
 
 }

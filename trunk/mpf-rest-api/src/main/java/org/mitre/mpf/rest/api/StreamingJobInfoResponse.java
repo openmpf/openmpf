@@ -30,21 +30,49 @@ import java.util.Date;
 
 public class StreamingJobInfoResponse {
 	private Long jobId;
+	public Long getJobId() {
+		return jobId;
+	}
 	private String externalId = null;
+	public String getExternalId() { return externalId; }
 	private String pipelineName;
+	public String getPipelineName() {
+		return pipelineName;
+	}
 //	private int jobPriority = -1;
+//	public int getJobPriority() { return jobPriority; }
 	private String /*JobStatus*/ jobStatus;
-//	private float jobProgress = 0;
+	public String /*JobStatus*/ getJobStatus() {
+		return jobStatus;
+	}
+ 	private float jobProgress;
+	public float getJobProgress() { return jobProgress; }
 	private Date startDate;
+	public Date getStartDate() {
+		return startDate;
+	}
 	private Date endDate;
+	public Date getEndDate() {
+		return endDate;
+	}
 	private String outputObjectDirectory;
-	private String streamURI = null;
-	private String healthReportCallbackURI = null;
+	public String getOutputObjectDirectory() {
+		return outputObjectDirectory;
+	}
+	private String streamUri = null;
+	public String getStreamUri() { return streamUri; }
+
 	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
 	//to maintain the use of only standard Java in the model.api classes
 	private boolean terminal;
+	public boolean isTerminal() {
+		return terminal;
+	}
 
 	private MpfResponse mpfResponse = new MpfResponse();
+	public MpfResponse getMpfResponse() {
+		return mpfResponse;
+	}
 
 	public StreamingJobInfoResponse() {}
 
@@ -61,61 +89,25 @@ public class StreamingJobInfoResponse {
 	 * @param jobProgress progress of this job
 	 * @param startDate date when this job was started
 	 * @param endDate endDate may be null if the streaming job is still active
-	 * @param outputObjectDirectory
+	 * @param outputObjectDirectory directory where objects from this streaming job are created
+	 * @param streamUri URI of the streaming data
+	 * @param terminal if true, marks a terminal error
 	 */
 	public StreamingJobInfoResponse(Long jobId, String externalId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus, float jobProgress,
 									Date startDate, Date endDate, String outputObjectDirectory,
-									String streamURI, String healthReportCallbackURI, boolean terminal) {
+									String streamUri, boolean terminal) {
 		this.mpfResponse.setMessage(0, "success");
 		this.jobId = jobId;
 		this.externalId = externalId;
 		this.pipelineName = pipelineName;
 //		this.jobPriority = jobPriority;
 		this.jobStatus = jobStatus;
-//		this.jobProgress = jobProgress;
+		this.jobProgress = jobProgress;
 		this.startDate = startDate;
 		this.endDate = endDate;
 		this.outputObjectDirectory = outputObjectDirectory;
 		this.terminal = terminal;
-		this.streamURI = streamURI;
-		this.healthReportCallbackURI = healthReportCallbackURI;
+		this.streamUri = streamUri;
 	}
 	
-	public Long getJobId() {
-		return jobId;
-	}
-	public String getExternalId() { return externalId; }
-	public String getStreamURI() { return streamURI; }
-	public String getHealthReportCallbackURI() { return healthReportCallbackURI; }
-	public String getPipelineName() {
-		return pipelineName;
-	}
-	
-//	public int getJobPriority() {
-//		return jobPriority;
-//	}
-	
-	public String /*JobStatus*/ getJobStatus() {
-		return jobStatus;
-	}
-	
-	public Date getStartDate() {
-		return startDate;
-	}
-
-	public Date getEndDate() {
-		return endDate;
-	}
-
-	public String getOutputObjectDirectory() {
-		return outputObjectDirectory;
-	}
-
-	public MpfResponse getMpfResponse() {
-		return mpfResponse;
-	}
-
-	public boolean isTerminal() {
-		return terminal;
-	}
 }

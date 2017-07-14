@@ -97,14 +97,14 @@ public class StreamingJobRequest {
 	public void setExternalId(String externalId) { this.externalId = externalId; }
 
 	@Column
-	private String streamURI;
-	public String getStreamURI() { return streamURI; }
-	public void setStreamURI(String streamURI) { this.streamURI = streamURI; }
+	private String streamUri;
+	public String getStreamUri() { return streamUri; }
+	public void setStreamUri(String streamUri) { this.streamUri = streamUri; }
 
 	@Column
-	private String healthReportCallbackURI;
-	public String getHealthReportCallbackURI() { return healthReportCallbackURI; }
-	public void setHealthReportCallbackURI(String healthReportCallbackURI) { this.healthReportCallbackURI = healthReportCallbackURI; }
+	private String healthReportCallbackUri;
+	public String getHealthReportCallbackUri() { return healthReportCallbackUri; }
+	public void setHealthReportCallbackUri(String healthReportCallbackUri) { this.healthReportCallbackUri = healthReportCallbackUri; }
 
 
 	/** The version of the output object. */

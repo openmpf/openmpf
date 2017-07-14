@@ -24,41 +24,23 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.interop;
+package org.mitre.mpf.rest.api;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+// TODO: finalize implementation of, usage of, StreamingJobProgress once the response from streaming components is better defined
+public class StreamingJobProgress {
+	/*
+	 * Fields and getters
+	 */
+	private int numberOfSegmentsProcessed = 0;
+	public void setNumberOfSegmentsProcessed(int value) { this.numberOfSegmentsProcessed = value; }
+	public int getNumberOfSegmentsProcessed() {
+		return numberOfSegmentsProcessed;
+	}
 
-import java.util.HashMap;
-import java.util.Map;
-
-@JsonTypeName("StreamingInputObject")
-public class JsonStreamingInputObject {
-
-    @JsonPropertyDescription("The URI for this stream object.")
-    private String streamUri;
-    public String getStreamUri() { return streamUri; }
-
-    @JsonPropertyDescription("The segment size to be applied to this stream.")
-    private int segmentSize;
-    public int getSegmentSize() { return segmentSize; }
-
-    @JsonPropertyDescription("A map of medium-specific properties that override algorithm properties.")
-    private Map<String,String> mediaProperties;
-    public Map<String,String> getMediaProperties() { return mediaProperties; }
-    public void addProperty(String key, String value){
-        mediaProperties.put(key, value);
-    }
-
-    @JsonCreator
-    public JsonStreamingInputObject(@JsonProperty("streamUri") String streamUri, @JsonProperty("segmentSize") int segmentSize,
-        @JsonProperty("mediaProperties") Map<String, String> mediaProperties) {
-
-        this.streamUri = streamUri;
-        this.segmentSize = segmentSize;
-        this.mediaProperties = mediaProperties;
-    }
-
+	/*
+	 * Constructor
+	 */
+	public StreamingJobProgress(int numberOfSegmentsProcessed) {
+		this.numberOfSegmentsProcessed = numberOfSegmentsProcessed;
+	}
 }

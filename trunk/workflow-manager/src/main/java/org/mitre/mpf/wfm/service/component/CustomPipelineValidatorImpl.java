@@ -357,11 +357,13 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
     }
 
 
-
     private Set<ProcessingType> getExistingTaskProcessingType(String taskName) {
         Set<ProcessingType> taskProcessingTypes = EnumSet.allOf(ProcessingType.class);
         TaskDefinition task = pipelineService.getTask(taskName);
         if (task == null) {
+        	// getInvalidTaskRefs will already report missing tasks.
+	        // We say that the missing task supports both processing types so the user only gets one error about
+            // the problematic task.
             return taskProcessingTypes;
         }
 
@@ -389,6 +391,9 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
     private Set<ProcessingType> getExistingAlgoProcessingType(String algoName) {
         AlgorithmDefinition existingAlgo = pipelineService.getAlgorithm(algoName);
         if (existingAlgo == null) {
+            // getInvalidActionRefs will already report missing actions.
+            // We say that the missing action supports both processing types so the user only gets one error about
+            // the problematic action.
             return EnumSet.allOf(ProcessingType.class);
         }
 

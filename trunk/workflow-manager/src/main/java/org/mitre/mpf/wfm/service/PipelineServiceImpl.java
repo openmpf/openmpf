@@ -649,6 +649,17 @@ public class PipelineServiceImpl implements PipelineService {
                     }
                 }
             }
+
+            boolean supportsBatch = task.getActions().stream()
+                    .allMatch(adr -> actionSupportsBatch(adr.getName()));
+            if (!supportsBatch) {
+                boolean supportsStreaming = task.getActions().stream()
+                        .allMatch(adr -> actionSupportsStreaming(adr.getName()));
+                if (!supportsStreaming) {
+                    throw new InvalidTaskWfmProcessingException(String.format(
+                            "The %s task does not fully support batch or stream processing", task.getName()));
+                }
+            }
         }
     }
 
@@ -692,6 +703,19 @@ public class PipelineServiceImpl implements PipelineService {
             throw new DuplicateNameWfmProcessingException(StringUtils.upperCase(pipeline.getName()) + ": pipeline name is already in use.");
         }
         validateTasks(StringUtils.upperCase(pipeline.getName()), pipeline.getTaskRefs());
+
+        boolean supportsBatch = pipeline.getTaskRefs().stream()
+                .allMatch(tdr -> taskSupportsBatch(tdr.getName()));
+        if (!supportsBatch) {
+            boolean supportsStreaming = pipeline.getTaskRefs().stream()
+                    .allMatch(tdr -> taskSupportsStreaming(tdr.getName()));
+
+            if (!supportsStreaming) {
+                throw new InvalidPipelineObjectWfmProcessingException(String.format(
+                        "The %s pipeline does not full support batch processing or stream processing",
+                        pipeline.getName()));
+            }
+        }
     }
 
     private ActionType getTaskType(TaskDefinition taskDefinition) {

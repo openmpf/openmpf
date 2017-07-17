@@ -312,8 +312,8 @@ public class RedisImpl implements Redis {
 	}
 
 	/**
-	 * Get the task index for the specified batch or streaming job
-	 * @param jobId The MPF-assigned ID of the batch or streaming job to look up, must be unique.
+	 * Get the task index for the specified batch job. Note that stage tracking is not supported for streaming jobs
+	 * @param jobId The MPF-assigned ID of the batch job to look up, must be unique.
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
@@ -327,13 +327,9 @@ public class RedisImpl implements Redis {
 				return (int)(jobHash.get(TASK));
 			}
 		} else if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
-			// confirmed that the specified job is a streaming job
-			if( !redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
-				return 0;
-			} else {
-				Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
-				return (int)(jobHash.get(TASK));
-			}
+			// confirmed that the specified job is a streaming job.  This is an error, WFM does not track stage of streaming jobs
+			log.warn("Job #{} is streaming job, stage tracking is not supported for streaming jobs so we can't return the task number (returning -1).", jobId);
+			return -1;
 		} else {
 			log.warn("Job #{} was not found as a batch or a streaming job so we can't return the task number (returning -1).", jobId);
 			return -1;
@@ -486,7 +482,6 @@ public class RedisImpl implements Redis {
 			TransientStreamingJob transientStreamingJob = new TransientStreamingJob(jobId,
 					(String) (jobHash.get(EXTERNAL_ID)),
 					jsonUtils.deserialize((byte[]) (jobHash.get(PIPELINE)), TransientPipeline.class),
-					(Integer) (jobHash.get(TASK)),
 					(Integer) (jobHash.get(PRIORITY)),
 					(Long) (jobHash.get(STALL_ALERT_DETECTION_THRESHOLD)),
 					(Long) (jobHash.get(STALL_ALERT_RATE)),
@@ -703,7 +698,6 @@ public class RedisImpl implements Redis {
 		jobHash.put(PIPELINE, jsonUtils.serialize(transientStreamingJob.getPipeline())); // Serialized to conserve space.
 		jobHash.put(OVERRIDDEN_JOB_PROPERTIES, jsonUtils.serialize(transientStreamingJob.getOverriddenJobProperties()));
 		jobHash.put(OVERRIDDEN_ALGORITHM_PROPERTIES, jsonUtils.serialize(transientStreamingJob.getOverriddenAlgorithmProperties()));
-		jobHash.put(TASK, transientStreamingJob.getCurrentStage());
 		jobHash.put(TASK_COUNT, transientStreamingJob.getPipeline() == null ? 0 : transientStreamingJob.getPipeline().getStages().size());
 		jobHash.put(EXTERNAL_ID, transientStreamingJob.getExternalId());
 		jobHash.put(PRIORITY, transientStreamingJob.getPriority());
@@ -732,8 +726,8 @@ public class RedisImpl implements Redis {
 	}
 
 	/**
-	 * Set the current task index of the specified batch or streaming job
-	 * @param jobId The MPF-assigned ID of the batch or streaming job, must be unique.
+	 * Set the current task index of the specified batch job.  Note: stage tracking is not supported for streaming jobs
+	 * @param jobId The MPF-assigned ID of the batch job, must be unique.
 	 * @param taskIndex The index of the task which should be used as the "current" task.
 	 */
     @SuppressWarnings("unchecked")
@@ -741,7 +735,7 @@ public class RedisImpl implements Redis {
 		if ( redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
 			redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(TASK, taskIndex);
 		} else if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
-			redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(TASK, taskIndex);
+			log.warn("Job #{} is a streaming job which doesn't support stage tracking, so we can't set the current task index", jobId);
 		} else {
 			log.warn("Job #{} was not found as a batch or a streaming job so we can't set the current task index", jobId);
 		}

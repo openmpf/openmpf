@@ -164,8 +164,8 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 					json_streamingJobRequest.isOutputObjectEnabled(),
 					json_streamingJobRequest.getOutputObjectDirectory(),
 					false,
-					json_streamingJobRequest.getHealthReportCallbackURI(),json_streamingJobRequest.getSummaryReportCallbackURI(),
-					json_streamingJobRequest.getHealthReportCallbackURI(),json_streamingJobRequest.getCallbackMethod());
+					json_streamingJobRequest.getHealthReportCallbackUri(),json_streamingJobRequest.getSummaryReportCallbackUri(),
+					json_streamingJobRequest.getHealthReportCallbackUri(),json_streamingJobRequest.getCallbackMethod());
 
 			transientStreamingJob.getOverriddenJobProperties().putAll(json_streamingJobRequest.getJobProperties());
 
@@ -213,7 +213,7 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 
 	private TransientStream buildTransientStream(JsonStreamingInputObject json_input_stream) throws WfmProcessingException {
 		TransientStream transientStream = new TransientStream(redis.getNextSequenceValue(),
-				json_input_stream.getStreamURI());
+				json_input_stream.getStreamUri());
 		transientStream.setSegmentSize(json_input_stream.getSegmentSize());
 		transientStream.setMediaProperties(json_input_stream.getMediaProperties());
 		return transientStream;

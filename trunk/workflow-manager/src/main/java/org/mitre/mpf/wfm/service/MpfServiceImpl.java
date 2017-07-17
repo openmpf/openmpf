@@ -212,7 +212,7 @@ public class MpfServiceImpl implements MpfService {
 													  String summaryReportCallbackURI, String newTrackAlertCallbackURI,
 													  String method) {
 
-		log.debug("createStreamingJob: stream: {}, Pipeline: {}, Build Output: {}, Priority: {}, healthReportCallbackURI: {}, summaryReportCallbackURI: {}, newTrackAlertCallbackURI: {}, Method: {}", json_stream,
+		log.debug("createStreamingJob: stream: {}, Pipeline: {}, Build Output: {}, Priority: {}, healthReportCallbackUri: {}, summaryReportCallbackUri: {}, newTrackAlertCallbackUri: {}, Method: {}", json_stream,
 				pipelineName, buildOutput, priority, healthReportCallbackURI, summaryReportCallbackURI, newTrackAlertCallbackURI, method);
 		return streamingJobRequestBo.createRequest(externalId, pipelineName, json_stream, algorithmProperties, jobProperties, buildOutput, priority,
 				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
@@ -244,6 +244,7 @@ public class MpfServiceImpl implements MpfService {
 	@Override
 	public boolean cancelStreamingJob(long jobId, Boolean doCleanup) {
 		try {
+			// TODO don't know what to do with doCleanup
 			log.debug(this.getClass().getName()+":cancelStreamingJob: jobId="+jobId+", doCleanup="+doCleanup+" - don't know what to do with doCleanup TODO");
 			boolean status = streamingJobRequestBo.cancel(jobId);
 			return status;

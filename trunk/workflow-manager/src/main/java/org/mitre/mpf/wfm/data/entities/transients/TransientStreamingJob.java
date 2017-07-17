@@ -41,10 +41,6 @@ public class TransientStreamingJob {
 	private TransientPipeline pipeline;
 	public TransientPipeline getPipeline() { return pipeline; }
 
-	private int currentStage;
-	public int getCurrentStage() { return currentStage; }
-	public void setCurrentStage(int currentStage) { this.currentStage = currentStage; }
-
 	private String externalId;
 	public String getExternalId() { return externalId; }
 
@@ -100,7 +96,6 @@ public class TransientStreamingJob {
 	public TransientStreamingJob(@JsonProperty("id") long id,
                                  @JsonProperty("externalId") String externalId,
                                  @JsonProperty("pipeline") TransientPipeline pipeline,
-                                 @JsonProperty("currentStage") int currentStage,
                                  @JsonProperty("priority") int priority,
 								 @JsonProperty("stallAlertDetectionThreshold") long stallAlertDetectionThreshold,
 								 @JsonProperty("stallAlertRate") long stallAlertRate,
@@ -111,7 +106,6 @@ public class TransientStreamingJob {
 		this.id = id;
 		this.externalId = externalId;
 		this.pipeline = pipeline;
-		this.currentStage = currentStage;
 		this.priority = priority;
 		this.stallAlertDetectionThreshold = stallAlertDetectionThreshold;
 		this.stallAlertRate = stallAlertRate;
@@ -128,7 +122,6 @@ public class TransientStreamingJob {
 	public TransientStreamingJob(@JsonProperty("id") long id,
                                  @JsonProperty("externalId") String externalId,
                                  @JsonProperty("pipeline") TransientPipeline pipeline,
-                                 @JsonProperty("currentStage") int currentStage,
                                  @JsonProperty("priority") int priority,
 								 @JsonProperty("stallAlertDetectionThreshold") long stallAlertDetectionThreshold,
 								 @JsonProperty("stallAlertRate") long stallAlertRate,
@@ -140,7 +133,7 @@ public class TransientStreamingJob {
 								 @JsonProperty("summaryReportCallbackURI") String summaryReportCallbackURI,
 								 @JsonProperty("newTrackAlertCallbackURI") String newTrackAlertCallbackURI,
                                  @JsonProperty("callbackMethod") String callbackMethod) {
-		this(id,externalId,pipeline,currentStage,priority,
+		this(id,externalId,pipeline,priority,
 				stallAlertDetectionThreshold,stallAlertRate,stallTimeout,outputEnabled,outputObjectDirectory,cancelled);
 		this.healthReportCallbackURI = healthReportCallbackURI;
 		this.summaryReportCallbackURI = summaryReportCallbackURI;

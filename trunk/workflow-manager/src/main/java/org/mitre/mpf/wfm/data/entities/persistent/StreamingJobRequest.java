@@ -106,6 +106,15 @@ public class StreamingJobRequest {
 	public String getHealthReportCallbackUri() { return healthReportCallbackUri; }
 	public void setHealthReportCallbackUri(String healthReportCallbackUri) { this.healthReportCallbackUri = healthReportCallbackUri; }
 
+	@Column
+	private String summaryReportCallbackUri;
+	public String getSummaryReportCallbackUri() { return summaryReportCallbackUri; }
+	public void setSummaryReportCallbackUri(String summaryReportCallbackUri) { this.summaryReportCallbackUri = summaryReportCallbackUri; }
+
+	@Column
+	private String newTrackAlertCallbackUri;
+	public String getNewTrackAlertCallbackUri() { return newTrackAlertCallbackUri; }
+	public void setNewTrackAlertCallbackUriCallbackUri(String newTrackAlertCallbackUri) { this.newTrackAlertCallbackUri = newTrackAlertCallbackUri; }
 
 	/** The version of the output object. */
 	@Column

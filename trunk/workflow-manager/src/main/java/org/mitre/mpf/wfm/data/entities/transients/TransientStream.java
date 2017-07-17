@@ -39,14 +39,14 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-/** transient stream data. Note that currently, only the RTSP protocol for streams is supported */
+/** transient stream data. Note that currently, only the RTSP and HTTP protocols for streams is currently supported */
 public class TransientStream {
 
 	/** The unique identifier for this stream. */
 	private long id;
 	public long getId() { return id; }
 
-	/** The URI of the source stream, currently only supporting the RTSP protocol. */
+	/** The URI of the source stream, currently only supporting the RTSP and the HTTP protocols. */
 	private String uri;
 	public String getUri() { return uri; }
 	private void setUri(String uri) {
@@ -54,9 +54,9 @@ public class TransientStream {
         try {
             URI uriInstance = new URI(uri);
             this.uriScheme = UriScheme.parse(uriInstance.getScheme());
-            if ( uriScheme != UriScheme.RTSP ) {
+            if ( uriScheme != UriScheme.RTSP && uriScheme != UriScheme.HTTP ) {
                 failed = true;
-                message = "URI scheme "+uriScheme+" is not supported, currently only supporting RTSP.";
+                message = "URI scheme "+uriScheme+" is not supported, only supporting RTSP and HTTP protocols at this time.";
             }
         } catch ( URISyntaxException use ) {
             uriScheme = UriScheme.UNDEFINED;
@@ -107,37 +107,23 @@ public class TransientStream {
 	public void setSegmentSize(int segment_size) { segmentSize = segment_size; }
 	public int getSegmentSize() { return segmentSize; }
 
-
 	@JsonIgnore
-	public MediaType getMediaType() { return MediaTypeUtils.parse(type); }
-
-	/** The SHA 256 hash of the local file (assuming it could be retrieved. */
-	private String sha256;
-	public String getSha256() { return sha256; }
-	public void setSha256(String sha256) { this.sha256 = sha256; }
+	public MediaType getMediaType() { return MediaType.VIDEO; }
 
 	public TransientStream(long id, String uri) {
 		this.id = id;
 		setUri(uri);
 	}
 
-	@JsonCreator
-	public TransientStream(@JsonProperty("id") long id, @JsonProperty("uri") String uri, @JsonProperty("uriScheme") UriScheme uriScheme) {
-		this.id = id;
-		this.uri = uri;
-		this.uriScheme = uriScheme;
-	}
-
 	public String toString() {
-		return String.format("%s#<id=%d, uri='%s', uriScheme='%s', failed=%s, message='%s', type='%s', sha256='%s'>",
+		return String.format("%s#<id=%d, uri='%s', uriScheme='%s', failed=%s, message='%s', type='%s'>",
 				this.getClass().getSimpleName(),
 				id,
 				uri,
 				uriScheme,
 				Boolean.toString(failed),
 				message,
-				type,
-				sha256);
+				type);
 	}
 
 }

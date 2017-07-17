@@ -265,7 +265,6 @@ public class TestCustomPipelineValidator {
         // Validator should only report invalid task ref.
         JsonComponentDescriptor.Pipeline pipelineWithMissingTask = new JsonComponentDescriptor.Pipeline();
         pipelineWithMissingTask.name = "PIPELINE_WITH_MISSING_TASK";
-        pipelineWithMissingTask.tasks = Collections.singletonList("MISSING_TASK");
         pipelineWithMissingTask.tasks = Arrays.asList("MISSING_TASK", batchOnlyTask.name);
         descriptor.pipelines.add(pipelineWithMissingTask);
 

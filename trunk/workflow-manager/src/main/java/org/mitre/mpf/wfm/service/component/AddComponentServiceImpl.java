@@ -33,13 +33,12 @@ import org.mitre.mpf.nms.xml.EnvironmentVariable;
 import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
+import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
-import org.mitre.mpf.wfm.service.PipelineService;
-import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -47,7 +46,8 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 @org.springframework.stereotype.Service
 public class AddComponentServiceImpl implements AddComponentService {
@@ -82,7 +82,6 @@ public class AddComponentServiceImpl implements AddComponentService {
             ExtrasDescriptorValidator extrasDescriptorValidator,
             CustomPipelineValidator customPipelineValidator,
             RemoveComponentService removeComponentService,
-            @Qualifier("loadedProperties") Properties loadedProperties,
             ObjectMapper objectMapper)
     {
         this.pipelineService = pipelineService;
@@ -291,15 +290,14 @@ public class AddComponentServiceImpl implements AddComponentService {
     private String saveAlgorithm(AlgorithmDefinition algoDef)
             throws ComponentRegistrationSubsystemException
     {
-        Tuple<Boolean, String> result = pipelineService.addAndSaveAlgorithm(algoDef);
-        if (result.getFirst()) {
+        try {
+            pipelineService.saveAlgorithm(algoDef);
             _log.info("Successfully added the " + algoDef.getName() + " algorithm");
             return algoDef.getName();
         }
-        else {
-            _log.error(result.getSecond());
+        catch (WfmProcessingException ex) {
             throw new ComponentRegistrationSubsystemException(
-                    String.format("Could not add the \"%s\" algorithm.", algoDef.getName()));
+                    String.format("Could not add the \"%s\" algorithm.", algoDef.getName()), ex);
         }
     }
 
@@ -314,16 +312,12 @@ public class AddComponentServiceImpl implements AddComponentService {
             // add a default action associated with the algorithm
             String actionDescription = "Default action for the " + algorithmDef.getName() + " algorithm.";
             String actionName = getDefaultActionName(algorithmDef);
-            saveAction(actionName, actionDescription, algorithmDef.getName(), Collections.emptyMap());
+            saveAction(actionName, actionDescription, algorithmDef.getName(), Collections.emptyList());
             return Collections.singleton(actionName);
         }
 
         for (JsonComponentDescriptor.Action action : descriptor.actions) {
-            Map<String, String> actionProps = action
-                    .properties
-                    .stream()
-                    .collect(toMap(p -> p.name, p -> p.value));
-            saveAction(action.name, action.description, action.algorithm, actionProps);
+            saveAction(action.name, action.description, action.algorithm, action.properties);
         }
         return descriptor.actions
                 .stream()
@@ -331,16 +325,22 @@ public class AddComponentServiceImpl implements AddComponentService {
                 .collect(toSet());
     }
 
-    private void saveAction(String actionName, String description, String algoName, Map<String, String> algoProps)
+    private void saveAction(String actionName, String description, String algoName,
+                            List<JsonComponentDescriptor.ActionProperty> actionProps)
             throws ComponentRegistrationSubsystemException {
-        Tuple<Boolean, String> result = pipelineService.addAndSaveActionDeprecated(actionName, description, algoName, algoProps);
-        if (result.getFirst()) {
+
+        ActionDefinition action = new ActionDefinition(actionName, algoName, description);
+        actionProps.stream()
+                .map(ap -> new PropertyDefinitionRef(ap.name, ap.value))
+                .forEach(pdr -> action.getProperties().add(pdr));
+
+        try {
+            pipelineService.saveAction(action);
             _log.info("Successfully added the {} action for the {} algorithm", actionName, algoName);
         }
-        else {
-            _log.error(result.getSecond());
+        catch (WfmProcessingException ex) {
             throw new ComponentRegistrationSubsystemException(String.format(
-                    "Could not add the %s action", actionName));
+                    "Could not add the %s action", actionName), ex);
         }
     }
 
@@ -375,13 +375,13 @@ public class AddComponentServiceImpl implements AddComponentService {
         actionNames.stream()
                 .map(ActionDefinitionRef::new)
                 .forEach(adr -> task.getActions().add(adr));
-        Tuple<Boolean, String> result = pipelineService.addAndSaveTaskDeprecated(task);
-        if (result.getFirst()) {
+
+        try {
+            pipelineService.saveTask(task);
             _log.info("Successfully added the {} task", taskName);
         }
-        else {
-            _log.error(result.getSecond());
-            throw new ComponentRegistrationSubsystemException(String.format("Could not add the %s task", taskName));
+        catch (WfmProcessingException ex) {
+            throw new ComponentRegistrationSubsystemException(String.format("Could not add the %s task", taskName), ex);
         }
     }
 
@@ -420,14 +420,13 @@ public class AddComponentServiceImpl implements AddComponentService {
                 .map(TaskDefinitionRef::new)
                 .forEach(tdr -> pipeline.getTaskRefs().add(tdr));
 
-        Tuple<Boolean, String> result = pipelineService.addAndSavePipelineDeprecated(pipeline);
-        if (result.getFirst()) {
+        try {
+            pipelineService.savePipeline(pipeline);
             _log.info("Successfully added the {} pipeline.", pipeline.getName());
         }
-        else {
-            _log.error(result.getSecond());
+        catch (WfmProcessingException ex) {
             throw new ComponentRegistrationSubsystemException(String.format(
-                    "Failed to add the %s pipeline", pipeline.getName()));
+                    "Failed to add the %s pipeline", pipeline.getName()), ex);
         }
     }
 

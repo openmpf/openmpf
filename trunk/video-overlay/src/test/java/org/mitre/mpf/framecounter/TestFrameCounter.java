@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.frameextractor;
+package org.mitre.mpf.framecounter;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,10 +32,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.UUID;
 
-public class FrameExtractorTests {
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(FrameExtractorTests.class);
+public class TestFrameCounter {
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(TestFrameCounter.class);
 
     static {
         String libraryFile = new File("install/lib/libmpfopencvjni.so").getAbsolutePath();
@@ -44,27 +43,27 @@ public class FrameExtractorTests {
     }
 
     @Test
-    public void testFrameExtractor() {
-        try {
-            File sourceFile = new File("video-overlay/src/test/resources/samples/five-second-marathon-clip.mkv");
+    public void testFrameCounterOnVideo() {
+        countFrames("video-overlay/src/test/resources/samples/five-second-marathon-clip.mkv", false, 154);
+    }
 
-            if(!sourceFile.exists()) {
+    @Test
+    public void testFrameCounterOnGif() {
+        countFrames("video-overlay/src/test/resources/samples/face-morphing.gif", true, 29);
+    }
+
+    private void countFrames(String filePath, boolean bruteForce, int expectedCount) {
+        try {
+            File sourceFile = new File(filePath);
+
+            if (!sourceFile.exists()) {
                 throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
             }
 
-            File outputDirectory = new File("/tmp", UUID.randomUUID().toString());
-            outputDirectory.mkdir();
-
-            FrameExtractor extractor = new FrameExtractor(sourceFile.toURI(), outputDirectory.toURI());
-            extractor.getFrames().add(2);
-            extractor.getFrames().add(4);
-            extractor.getFrames().add(8);
-            extractor.execute();
-            // Assert.assertTrue("The size of the output video must be greater than 4096.", destinationFile.length() > 4096);
-
-        } catch(IOException ioe) {
+            FrameCounter counter = new FrameCounter(sourceFile);
+            Assert.assertEquals("Did not count the expected number of frames.", expectedCount, counter.count(bruteForce));
+        } catch (IOException ioe) {
             Assert.fail(String.format("Encountered an exception when none was expected. %s", ioe));
         }
     }
-
 }

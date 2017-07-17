@@ -161,7 +161,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
     @Test(timeout = 15 * MINUTES)
-    @Ignore
     public void runMultipleDetectionAlgorithmsVideo() throws Exception {
         String multipleTaskName = "TEST MULTIPLE FACE DETECTION TASK 2";
         addTask(multipleTaskName, "OCV FACE DETECTION ACTION", "DLIB FACE DETECTION ACTION", "OCV PERSON DETECTION ACTION");
@@ -222,21 +221,11 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 5 * MINUTES)
     public void runTextOalprDetectImage() throws Exception {
-	String pipelineName = addDefaultOalprPipeline();
-
-	// TODO: Revert this after upgrading to OpenCV 3.2
-	// With OpenCV 3.1, there are issues with the cv::imread() function,
-	// so we converted image processing jobs to use MPFVideoCapture
-	// instead of MPFImageReader.  When this test was run with that
-	// change, the component failed to detect the license plate in
-	// the lp-trailer.jpg image. It is removed from the test temporarily
-	// until we can port to using OpenCV 3.2 where these issues
-	// have been fixed.
+        String pipelineName = addDefaultOalprPipeline();
         runSystemTest(pipelineName, "output/text/runTextOalprDetectImage.json",
                 "/samples/text/lp-bmw.jpg",
-                "/samples/text/lp-police-car.jpg");
-        // "/samples/text/lp-police-car.jpg",
-        // "/samples/text/lp-trailer.jpg");
+                "/samples/text/lp-police-car.jpg",
+                "/samples/text/lp-trailer.jpg");
     }
 
     @Test(timeout = 10 * MINUTES)

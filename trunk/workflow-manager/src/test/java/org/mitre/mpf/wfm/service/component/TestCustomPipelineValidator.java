@@ -256,8 +256,8 @@ public class TestCustomPipelineValidator {
         batchOnlyTask.actions = Collections.singletonList(batchOnlyAction.name);
         descriptor.tasks.add(batchOnlyTask);
 
-        // Invalid because the first task's second action only supports streaming, making the task overall only support
-        // streaming.
+        // Invalid because the first task's second action only supports streaming,
+	    // which would require every action in the pipeline to support streaming. This is not the case.
         JsonComponentDescriptor.Pipeline invalidPipeline = new JsonComponentDescriptor.Pipeline();
         invalidPipeline.name = "INVALID_PIPELINE";
         invalidPipeline.tasks = Arrays.asList(bothAndStreamingOnlyTask.name, batchOnlyTask.name);

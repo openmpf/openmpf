@@ -65,7 +65,7 @@ import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.pipeline.PipelineManager;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.JmsUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -107,7 +107,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 	public static final String REF = "streamingJobRequestBoImpl";
 
 	@Autowired
-	private PipelineManager pipelineManager;
+	private PipelineService pipelineService;
 
 	@Autowired
 	private PropertiesUtil propertiesUtil;
@@ -230,7 +230,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
 		String outputObjectPath = ""; // initialize output output object to empty string, the path will be set after the streaming job is submitted
 		JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(TextUtils.trim(externalId), buildOutput, outputObjectPath,
-				pipelineManager.createJsonPipeline(pipelineName), priority, stream,
+        pipelineService.createJsonPipeline(pipelineName), priority, stream,
 				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
 				jsonHealthReportCallbackUri,jsonSummaryReportCallbackUri,jsonNewTrackAlertCallbackUri,jsonCallbackMethod,
         algorithmProperties, jobProperties);

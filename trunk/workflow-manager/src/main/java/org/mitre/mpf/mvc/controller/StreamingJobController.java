@@ -224,7 +224,7 @@ public class StreamingJobController {
      */
     //EXTERNAL
     @RequestMapping(value = "/rest/streaming/jobs/{id}/cancel", method = RequestMethod.POST, params = {"doCleanup"} )
-    @ApiOperation(value = "Cancels the streaming job with the supplied job id.",
+    @ApiOperation(value = "Cancels the streaming job with the supplied job id. If doCleanup is true, then the HTTP Response to this request may be delayed while OpenMPF processes the cleanup",
             produces = "application/json", response = StreamingJobCancelResponse.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successful streaming job cancellation attempt"),

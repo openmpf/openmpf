@@ -39,14 +39,16 @@ public class StreamingJobInfoResponse {
 	public String getPipelineName() {
 		return pipelineName;
 	}
+	// TODO jobPriority may be included in a later release
 //	private int jobPriority = -1;
 //	public int getJobPriority() { return jobPriority; }
 	private String /*JobStatus*/ jobStatus;
 	public String /*JobStatus*/ getJobStatus() {
 		return jobStatus;
 	}
- 	private float jobProgress;
-	public float getJobProgress() { return jobProgress; }
+	// TODO jobProgress (alternative name jobRunTime) may be included in a later release
+// 	private float jobProgress;
+//	public float getJobProgress() { return jobProgress; }
 	private Date startDate;
 	public Date getStartDate() {
 		return startDate;
@@ -100,9 +102,10 @@ public class StreamingJobInfoResponse {
 		this.jobId = jobId;
 		this.externalId = externalId;
 		this.pipelineName = pipelineName;
-//		this.jobPriority = jobPriority;
 		this.jobStatus = jobStatus;
-		this.jobProgress = jobProgress;
+		// TODO jobPriority and jobProgress (alternate name jobRunTime) may be included in a later release
+//		this.jobPriority = jobPriority;
+//		this.jobProgress = jobProgress;
 		this.startDate = startDate;
 		this.endDate = endDate;
 		this.outputObjectDirectory = outputObjectDirectory;

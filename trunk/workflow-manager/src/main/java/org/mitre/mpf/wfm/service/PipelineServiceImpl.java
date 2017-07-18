@@ -606,7 +606,11 @@ public class PipelineServiceImpl implements PipelineService {
         }
     }
 
-    /** Check that the task is not null, is valid, has a name which has not already been added to the PipelineManager, references only actions which have already been added to the PipelineManager, and if more than one action is specified, check that all referenced actions are of the same Operation. Returns false if the task is invalid. */
+    /** Check that the task is not null, is valid, has a name which has not already been added to the PipelineManager,
+     *  references only actions which have already been added to the PipelineManager,
+     *  all actions support either batch or streaming, and if more than one action is specified,
+     *  check that all referenced actions are of the same Operation.
+     */
     private void validateTask(TaskDefinition task) {
         if (task == null) {
             throw new CannotBeNullWfmProcessingException("Task cannot be null.");
@@ -693,7 +697,10 @@ public class PipelineServiceImpl implements PipelineService {
         }
     }
 
-    /** Check that the pipeline is not null, is valid, has a name which is unique in the PipelineManager, references valid tasks, and that the states (using provides/requires) are valid for the proposed sequence of tasks. Returns false if the pipeline. */
+    /** Check that the pipeline is not null, is valid, has a name which is unique in the PipelineManager,
+     *  references valid tasks, that the states (using provides/requires) are valid for the proposed sequence of
+     *  tasks, and all of the tasks support either batch or streaming.
+     */
     private void validatePipeline(PipelineDefinition pipeline) {
         if (pipeline == null) {
             throw new CannotBeNullWfmProcessingException("Pipeline cannot be null.");

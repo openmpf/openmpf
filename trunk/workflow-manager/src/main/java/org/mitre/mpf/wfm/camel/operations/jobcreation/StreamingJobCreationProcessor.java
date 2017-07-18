@@ -158,14 +158,14 @@ public class StreamingJobCreationProcessor extends WfmProcessor {
 			TransientPipeline transientPipeline = buildPipeline(json_streamingJobRequest.getPipeline());
 
 			TransientStreamingJob transientStreamingJob = new TransientStreamingJob(streamingJobRequestEntity.getId(),
-					json_streamingJobRequest.getExternalId(), transientPipeline, 0, json_streamingJobRequest.getPriority(),
+					json_streamingJobRequest.getExternalId(), transientPipeline, json_streamingJobRequest.getPriority(),
 					json_streamingJobRequest.getStallAlertDetectionThreshold(),
 					json_streamingJobRequest.getStallAlertRate(), json_streamingJobRequest.getStallTimeout(),
 					json_streamingJobRequest.isOutputObjectEnabled(),
 					json_streamingJobRequest.getOutputObjectDirectory(),
 					false,
 					json_streamingJobRequest.getHealthReportCallbackUri(),json_streamingJobRequest.getSummaryReportCallbackUri(),
-					json_streamingJobRequest.getHealthReportCallbackUri(),json_streamingJobRequest.getCallbackMethod());
+					json_streamingJobRequest.getNewTrackAlertCallbackUri(),json_streamingJobRequest.getCallbackMethod());
 
 			transientStreamingJob.getOverriddenJobProperties().putAll(json_streamingJobRequest.getJobProperties());
 

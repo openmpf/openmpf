@@ -114,7 +114,7 @@ public class StreamingJobRequest {
 	@Column
 	private String newTrackAlertCallbackUri;
 	public String getNewTrackAlertCallbackUri() { return newTrackAlertCallbackUri; }
-	public void setNewTrackAlertCallbackUriCallbackUri(String newTrackAlertCallbackUri) { this.newTrackAlertCallbackUri = newTrackAlertCallbackUri; }
+	public void setNewTrackAlertCallbackUri(String newTrackAlertCallbackUri) { this.newTrackAlertCallbackUri = newTrackAlertCallbackUri; }
 
 	/** The version of the output object. */
 	@Column

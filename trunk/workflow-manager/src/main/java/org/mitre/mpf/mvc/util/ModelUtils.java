@@ -137,7 +137,7 @@ public class ModelUtils {
 				streamingJobRequest.getStatus().toString(), jobContainerProgress, streamingJobRequest.getTimeReceived(),
 				streamingJobRequest.getTimeCompleted(),
 				streamingJobRequest.getOutputObjectDirectory(),
-				streamingJobRequest.getStreamURI(),
+				streamingJobRequest.getStreamUri(),
 				isTerminal);
 	}
 

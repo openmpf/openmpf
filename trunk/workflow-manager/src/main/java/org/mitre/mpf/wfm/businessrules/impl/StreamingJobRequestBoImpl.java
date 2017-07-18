@@ -333,6 +333,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		// set remaining items that need to be persisted
 		streamingJobRequest.setExternalId(jsonStreamingJobRequest.getExternalId());
 		streamingJobRequest.setHealthReportCallbackUri(jsonStreamingJobRequest.getHealthReportCallbackUri());
+    streamingJobRequest.setSummaryReportCallbackUri(jsonStreamingJobRequest.getSummaryReportCallbackUri());
+    streamingJobRequest.setNewTrackAlertCallbackUri(jsonStreamingJobRequest.getNewTrackAlertCallbackUri());
 		streamingJobRequest.setStreamUri(jsonStreamingJobRequest.getStream().getStreamUri());
 
 		// store the streaming job request in the MySQL long-term database

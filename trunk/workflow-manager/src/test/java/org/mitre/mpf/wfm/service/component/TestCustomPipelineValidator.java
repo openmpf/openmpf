@@ -30,20 +30,19 @@ import com.google.common.collect.ImmutableSortedSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.ValueType;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.*;
 import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.*;
 import static org.mockito.Mockito.when;
@@ -79,14 +78,7 @@ public class TestCustomPipelineValidator {
         when(_mockPipelineService.getTaskNames())
                 .thenReturn(ImmutableSortedSet.of(existingTaskRef));
 
-
-        List<PropertyDefinition> propDefs = ACTION1_PROP_NAMES
-                .stream()
-                .map(n -> new PropertyDefinition(n, ValueType.INT, "1", "0"))
-                .collect(toList());
-        propDefs.add(new PropertyDefinition("foo", ValueType.INT, "2", "0"));
-
-        setupAlgoWithProperties(REFERENCED_ALGO_NAME, propDefs);
+        setupReferencedAlgo();
 
         _pipelineValidator.validate(descriptor);
     }
@@ -160,11 +152,7 @@ public class TestCustomPipelineValidator {
         actionProperty.name = "INVALID PROP NAME";
         descriptor.actions.get(0).properties.add(actionProperty);
 
-        List<PropertyDefinition> propDefs = ACTION1_PROP_NAMES
-                .stream()
-                .map(n -> new PropertyDefinition(n, ValueType.INT, "1", "0"))
-                .collect(toList());
-        setupAlgoWithProperties(REFERENCED_ALGO_NAME, propDefs);
+        setupReferencedAlgo();
 
 
         try {
@@ -196,11 +184,7 @@ public class TestCustomPipelineValidator {
 
         descriptor.actions.add(testAction);
 
-        List<PropertyDefinition> propDefs = ACTION1_PROP_NAMES
-                .stream()
-                .map(n -> new PropertyDefinition(n, ValueType.INT, "1", "0"))
-                .collect(toList());
-        setupAlgoWithProperties(REFERENCED_ALGO_NAME, propDefs);
+        setupReferencedAlgo();
 
         try {
             _pipelineValidator.validate(descriptor);
@@ -218,16 +202,111 @@ public class TestCustomPipelineValidator {
 
 
     @Test
+    public void throwsExceptionWhenPipelinesHaveInvalidProcessingType() {
+        setupReferencedAlgo();
+
+        JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();
+        descriptor.algorithm.supportsBatchProcessing = false;
+        descriptor.algorithm.supportsStreamProcessing = true;
+
+        AlgorithmDefinition batchAndStreamingAlgo = new AlgorithmDefinition(ActionType.DETECTION,
+                                                                            "BATCH_AND_STREAMING", "", true, true);
+        when(_mockPipelineService.getAlgorithm(batchAndStreamingAlgo.getName()))
+                .thenReturn(batchAndStreamingAlgo);
+
+        AlgorithmDefinition batchOnlyAlgo = new AlgorithmDefinition(ActionType.DETECTION, "BATCH_ONLY", "", true, false);
+        when(_mockPipelineService.getAlgorithm(batchOnlyAlgo.getName()))
+                .thenReturn(batchOnlyAlgo);
+
+
+        JsonComponentDescriptor.Action batchAndStreamingAction = new JsonComponentDescriptor.Action();
+        batchAndStreamingAction.name = "BATCH_AND_STREAMING_ACTION";
+        batchAndStreamingAction.algorithm = batchAndStreamingAlgo.getName();
+        batchAndStreamingAction.properties = Collections.emptyList();
+        descriptor.actions.add(batchAndStreamingAction);
+
+        JsonComponentDescriptor.Action streamingOnlyAction = new JsonComponentDescriptor.Action();
+        streamingOnlyAction.name = "STREAMING_ONLY_ACTION";
+        streamingOnlyAction.algorithm = descriptor.algorithm.name;
+        streamingOnlyAction.properties = Collections.emptyList();
+        descriptor.actions.add(streamingOnlyAction);
+
+
+        // Valid because first action supports either and second supports streaming
+        JsonComponentDescriptor.Task bothAndStreamingOnlyTask = new JsonComponentDescriptor.Task();
+        bothAndStreamingOnlyTask.name = "BOTH_AND_STREAMING_ONLY_TASK";
+        bothAndStreamingOnlyTask.actions = Arrays.asList(batchAndStreamingAction.name, streamingOnlyAction.name);
+        descriptor.tasks.add(bothAndStreamingOnlyTask);
+
+        JsonComponentDescriptor.Pipeline bothAndStreamingOnlyPipeline = new JsonComponentDescriptor.Pipeline();
+        bothAndStreamingOnlyPipeline.name = "BOTH_AND_STREAMING_ONLY_PIPELINE";
+        bothAndStreamingOnlyPipeline.tasks = Collections.singletonList(bothAndStreamingOnlyTask.name);
+        descriptor.pipelines.add(bothAndStreamingOnlyPipeline);
+
+
+
+        JsonComponentDescriptor.Action batchOnlyAction = new JsonComponentDescriptor.Action();
+        batchOnlyAction.name = "BATCH_ONLY_ACTION";
+        batchOnlyAction.algorithm = batchOnlyAlgo.getName();
+        batchOnlyAction.properties = Collections.emptyList();
+        descriptor.actions.add(batchOnlyAction);
+
+        JsonComponentDescriptor.Task batchOnlyTask = new JsonComponentDescriptor.Task();
+        batchOnlyTask.name = "BATCH_ONLY_TASK";
+        batchOnlyTask.actions = Collections.singletonList(batchOnlyAction.name);
+        descriptor.tasks.add(batchOnlyTask);
+
+        // Invalid because the first task's second action only supports streaming,
+	    // which would require every action in the pipeline to support streaming. This is not the case.
+        JsonComponentDescriptor.Pipeline invalidPipeline = new JsonComponentDescriptor.Pipeline();
+        invalidPipeline.name = "INVALID_PIPELINE";
+        invalidPipeline.tasks = Arrays.asList(bothAndStreamingOnlyTask.name, batchOnlyTask.name);
+        descriptor.pipelines.add(invalidPipeline);
+
+        // Make sure validator doesn't consider this to have invalid processing type.
+        // Validator should only report invalid task ref.
+        JsonComponentDescriptor.Pipeline pipelineWithMissingTask = new JsonComponentDescriptor.Pipeline();
+        pipelineWithMissingTask.name = "PIPELINE_WITH_MISSING_TASK";
+        pipelineWithMissingTask.tasks = Arrays.asList("MISSING_TASK", batchOnlyTask.name);
+        descriptor.pipelines.add(pipelineWithMissingTask);
+
+
+        when(_mockPipelineService.getAlgorithmNames())
+                .thenReturn(ImmutableSortedSet.of("foo", REFERENCED_ALGO_NAME, batchAndStreamingAlgo.getName(),
+                                                  batchOnlyAlgo.getName()));
+
+        try {
+            _pipelineValidator.validate(descriptor);
+            fail("expected InvalidCustomPipelinesException");
+        }
+        catch (InvalidCustomPipelinesException ex) {
+            assertEquals(Collections.singleton(invalidPipeline.name), ex.getPipelinesWithInvalidProcessingType());
+            assertEquals(Collections.singleton(pipelineWithMissingTask.tasks.get(0)), ex.getInvalidTaskRefs());
+        }
+
+    }
+
+
+    @Test
     public void descriptorWithoutCustomPipelinesValidates() throws InvalidCustomPipelinesException {
         _pipelineValidator.validate(TestDescriptorFactory.get());
     }
 
 
-    private void setupAlgoWithProperties(String algoName, List<PropertyDefinition> properties) {
-        AlgorithmDefinition algoDef = new AlgorithmDefinition(ActionType.DETECTION, algoName, "");
-        algoDef.getProvidesCollection().getAlgorithmProperties().addAll(properties);
 
-        when(_mockPipelineService.getAlgorithm(algoName))
+    private void setupReferencedAlgo() {
+        AlgorithmDefinition algoDef = new AlgorithmDefinition(ActionType.DETECTION, REFERENCED_ALGO_NAME, "", true, false);
+        ACTION1_PROP_NAMES
+                .stream()
+                .map(n -> new PropertyDefinition(n, ValueType.INT, "1", "0"))
+                .forEach(pd -> algoDef.getProvidesCollection().getAlgorithmProperties().add(pd));
+        algoDef.getProvidesCollection().getAlgorithmProperties().add(
+                new PropertyDefinition("foo", ValueType.INT, "2", "0"));
+
+        when(_mockPipelineService.getAlgorithm(REFERENCED_ALGO_NAME))
                 .thenReturn(algoDef);
+
+        when(_mockPipelineService.getAlgorithmNames())
+                .thenReturn(ImmutableSortedSet.of("foo", REFERENCED_ALGO_NAME));
     }
 }

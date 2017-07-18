@@ -54,6 +54,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.function.Predicate;
 
 @Component
 public class PipelineServiceImpl implements PipelineService {
@@ -342,6 +343,63 @@ public class PipelineServiceImpl implements PipelineService {
         return pipelines.get(StringUtils.upperCase(name));
     }
 
+
+    @Override
+    public boolean pipelineSupportsBatch(String pipelineName) {
+    	return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::getSupportsBatchProcessing);
+    }
+
+
+    @Override
+    public boolean pipelineSupportsStreaming(String pipelineName) {
+        return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::getSupportsStreamProcessing);
+    }
+
+
+    private boolean pipelineSupportsProcessingType(String pipelineName, Predicate<AlgorithmDefinition> supportsPred) {
+        PipelineDefinition pipeline = getPipeline(pipelineName);
+        return pipeline.getTaskRefs().stream()
+                .map(TaskDefinitionRef::getName)
+		        .allMatch(tName -> taskSupportsProcessingType(tName, supportsPred));
+    }
+
+
+    @Override
+    public boolean taskSupportsBatch(String taskName) {
+    	return taskSupportsProcessingType(taskName, AlgorithmDefinition::getSupportsBatchProcessing);
+    }
+
+    @Override
+    public boolean taskSupportsStreaming(String taskName) {
+        return taskSupportsProcessingType(taskName, AlgorithmDefinition::getSupportsStreamProcessing);
+
+    }
+
+    private boolean taskSupportsProcessingType(String taskName, Predicate<AlgorithmDefinition> supportsPred) {
+        TaskDefinition task = getTask(taskName);
+        return task.getActions().stream()
+                .map(ActionDefinitionRef::getName)
+		        .allMatch(actionName -> actionSupportsProcessingType(actionName, supportsPred));
+    }
+
+    @Override
+    public boolean actionSupportsBatch(String actionName) {
+        return actionSupportsProcessingType(actionName, AlgorithmDefinition::getSupportsBatchProcessing);
+    }
+
+    @Override
+    public boolean actionSupportsStreaming(String actionName) {
+        return actionSupportsProcessingType(actionName, AlgorithmDefinition::getSupportsStreamProcessing);
+    }
+
+
+    private boolean actionSupportsProcessingType(String actionName, Predicate<AlgorithmDefinition> supportsPred) {
+        ActionDefinition action = getAction(actionName);
+        AlgorithmDefinition algorithm = getAlgorithm(action);
+        return supportsPred.test(algorithm);
+    }
+
+
     /** Forgets all of the previously-added pipelines, tasks, actions, and algorithms. */
     @Override
     public void reset() {
@@ -548,7 +606,11 @@ public class PipelineServiceImpl implements PipelineService {
         }
     }
 
-    /** Check that the task is not null, is valid, has a name which has not already been added to the PipelineManager, references only actions which have already been added to the PipelineManager, and if more than one action is specified, check that all referenced actions are of the same Operation. Returns false if the task is invalid. */
+    /** Check that the task is not null, is valid, has a name which has not already been added to the PipelineManager,
+     *  references only actions which have already been added to the PipelineManager,
+     *  all actions support either batch or streaming, and if more than one action is specified,
+     *  check that all referenced actions are of the same Operation.
+     */
     private void validateTask(TaskDefinition task) {
         if (task == null) {
             throw new CannotBeNullWfmProcessingException("Task cannot be null.");
@@ -591,6 +653,17 @@ public class PipelineServiceImpl implements PipelineService {
                     }
                 }
             }
+
+            boolean supportsBatch = task.getActions().stream()
+                    .allMatch(adr -> actionSupportsBatch(adr.getName()));
+            if (!supportsBatch) {
+                boolean supportsStreaming = task.getActions().stream()
+                        .allMatch(adr -> actionSupportsStreaming(adr.getName()));
+                if (!supportsStreaming) {
+                    throw new InvalidTaskWfmProcessingException(String.format(
+                            "The %s task does not fully support batch or stream processing", task.getName()));
+                }
+            }
         }
     }
 
@@ -624,7 +697,10 @@ public class PipelineServiceImpl implements PipelineService {
         }
     }
 
-    /** Check that the pipeline is not null, is valid, has a name which is unique in the PipelineManager, references valid tasks, and that the states (using provides/requires) are valid for the proposed sequence of tasks. Returns false if the pipeline. */
+    /** Check that the pipeline is not null, is valid, has a name which is unique in the PipelineManager,
+     *  references valid tasks, that the states (using provides/requires) are valid for the proposed sequence of
+     *  tasks, and all of the tasks support either batch or streaming.
+     */
     private void validatePipeline(PipelineDefinition pipeline) {
         if (pipeline == null) {
             throw new CannotBeNullWfmProcessingException("Pipeline cannot be null.");
@@ -634,6 +710,19 @@ public class PipelineServiceImpl implements PipelineService {
             throw new DuplicateNameWfmProcessingException(StringUtils.upperCase(pipeline.getName()) + ": pipeline name is already in use.");
         }
         validateTasks(StringUtils.upperCase(pipeline.getName()), pipeline.getTaskRefs());
+
+        boolean supportsBatch = pipeline.getTaskRefs().stream()
+                .allMatch(tdr -> taskSupportsBatch(tdr.getName()));
+        if (!supportsBatch) {
+            boolean supportsStreaming = pipeline.getTaskRefs().stream()
+                    .allMatch(tdr -> taskSupportsStreaming(tdr.getName()));
+
+            if (!supportsStreaming) {
+                throw new InvalidPipelineObjectWfmProcessingException(String.format(
+                        "The %s pipeline does not full support batch processing or stream processing",
+                        pipeline.getName()));
+            }
+        }
     }
 
     private ActionType getTaskType(TaskDefinition taskDefinition) {

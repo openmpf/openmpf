@@ -245,7 +245,9 @@ public class AddComponentServiceImpl implements AddComponentService {
         AlgorithmDefinition algoDef = new AlgorithmDefinition(
                 jsonAlgo.actionType,
                 descriptor.algorithm.name.toUpperCase(),
-                jsonAlgo.description);
+                jsonAlgo.description,
+                jsonAlgo.supportsBatchProcessing,
+                jsonAlgo.supportsStreamProcessing);
 
         jsonAlgo
                 .requiresCollection

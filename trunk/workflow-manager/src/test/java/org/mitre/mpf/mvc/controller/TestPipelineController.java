@@ -69,12 +69,12 @@ public class TestPipelineController extends TestCase {
         mockMvc = MockMvcBuilders.standaloneSetup(mockPipelineController).build();
 
         // Setup dummy algorithms
-        AlgorithmDefinition def1 = new AlgorithmDefinition(ActionType.DETECTION, "TEST_DETECTION_ALG", "Test algorithm for detection.");
+        AlgorithmDefinition def1 = new AlgorithmDefinition(ActionType.DETECTION, "TEST_DETECTION_ALG", "Test algorithm for detection.", true, false);
         def1.getProvidesCollection().getAlgorithmProperties().add(
                 new PropertyDefinition("TESTPROP", ValueType.BOOLEAN, "Test property", "TRUE", null)
             );
         pipelineService.saveAlgorithm(def1);
-        pipelineService.saveAlgorithm(new AlgorithmDefinition(ActionType.MARKUP, "TEST_MARKUP_ALG", "Test algorithm for markup."));
+        pipelineService.saveAlgorithm(new AlgorithmDefinition(ActionType.MARKUP, "TEST_MARKUP_ALG", "Test algorithm for markup.", true, false));
 
         // Setup dummy actions
         HashMap<String, String> props = new HashMap();

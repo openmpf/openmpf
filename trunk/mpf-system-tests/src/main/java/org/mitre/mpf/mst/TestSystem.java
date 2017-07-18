@@ -42,8 +42,6 @@ import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
-import org.mitre.mpf.wfm.camel.StreamingJobCompleteProcessor;
-import org.mitre.mpf.wfm.camel.StreamingJobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.pipeline.xml.ActionDefinitionRef;
@@ -115,11 +113,6 @@ public abstract class TestSystem {
 	@Autowired
 	@Qualifier(JobCompleteProcessorImpl.REF)
 	private JobCompleteProcessor jobCompleteProcessor;
-
-	@Autowired
-	@Qualifier(StreamingJobCompleteProcessorImpl.REF)
-	private StreamingJobCompleteProcessor streamingJobCompleteProcessor;
-
 
 	@Rule
 	public TestName testName = new TestName();

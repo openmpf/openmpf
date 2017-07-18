@@ -33,6 +33,8 @@ import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 
 import java.util.List;
 import java.util.Map;
+import org.mitre.mpf.wfm.event.JobCompleteNotification;
+import org.mitre.mpf.wfm.event.NotificationConsumer;
 
 public interface StreamingJobRequestBo {
 
@@ -55,7 +57,10 @@ public interface StreamingJobRequestBo {
 	 * @throws WfmProcessingException If the streaming job could not be executed.
 	 */
 	StreamingJobRequest run(JsonStreamingJobRequest streamingJobRequest) throws WfmProcessingException;
-//
+
+	void subscribe(NotificationConsumer<JobCompleteNotification> consumer);
+	void unsubscribe(NotificationConsumer<JobCompleteNotification> consumer);
+
 //	/**
 //	 * Resubmits a streaming job that has already been received by the system.
 //	 * @param jobId The id of the streaming job to resubmit.

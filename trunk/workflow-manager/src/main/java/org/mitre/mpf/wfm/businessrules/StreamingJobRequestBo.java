@@ -61,25 +61,6 @@ public interface StreamingJobRequestBo {
 	void subscribe(NotificationConsumer<JobCompleteNotification> consumer);
 	void unsubscribe(NotificationConsumer<JobCompleteNotification> consumer);
 
-//	/**
-//	 * Resubmits a streaming job that has already been received by the system.
-//	 * @param jobId The id of the streaming job to resubmit.
-//	 * @return A persistent entity whose identity {@link StreamingJobRequest#getId()} id} may be
-//	 * used to track the progress of the streaming job.
-//	 * @throws WfmProcessingException If the streaming job could not be executed.
-//	 */
-//	StreamingJobRequest resubmit(long jobId) throws WfmProcessingException;
-//
-//	/**
-//	 * Resubmits a streaming job that has already been received by the system using a new priority.
-//	 * @param jobId The id of the streaming job to resubmit.
-//	 * @param priority The new priority to assign to the streaming job.
-//	 * @return A persistent entity whose identity {@link StreamingJobRequest#getId()} id} may be
-//	 * used to track the progress of the streaming job.
-//	 * @throws WfmProcessingException If the streaming job could not be executed.
-//	 */
-//	StreamingJobRequest resubmit(long jobId, int priority) throws WfmProcessingException;
-
 	/**
 	 * Creates, but does not submit, a persistent entity created from the provided input request. The primary benefit
 	 * of this method is to return a {@link StreamingJobRequest#getId() record} of
@@ -90,12 +71,12 @@ public interface StreamingJobRequestBo {
 	 */
 	StreamingJobRequest initialize(JsonStreamingJobRequest streamingJobRequest) throws WfmProcessingException;
 
-	/** Create the output object file system for the specified streaming job and store parameters describing
-	 * the output object file system within the streaming job
-	 * @param jobId The unique job id of the streaming job
-	 * @throws WfmProcessingException
-	 */
-	void initializeOutputDirectory(long jobId) throws WfmProcessingException;
+//	/** Create the output object file system for the specified streaming job and store parameters describing
+//	 * the output object file system within the streaming job
+//	 * @param jobId The unique job id of the streaming job
+//	 * @throws WfmProcessingException
+//	 */
+//	void initializeOutputDirectory(long jobId) throws WfmProcessingException;
 
 	boolean cancel(long jobId) throws WfmProcessingException;
 }

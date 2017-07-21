@@ -120,12 +120,12 @@ public interface MpfService {
 	 */
 	public long submitJob(JsonStreamingJobRequest streamingJobRequest);
 
-	/** Create the output object file system for the specified streaming job and store parameters describing
-	 * the output object file system within the persistant object representing this streaming job
-	 * @param jobId The unique job id of the streaming job
-	 * @return true if successful, false otherwise
-	 */
-	public boolean initializeOutputDirectoryForStreamingJob(long jobId);
+//	/** Create the output object file system for the specified streaming job and store parameters describing
+//	 * the output object file system within the persistant object representing this streaming job
+//	 * @param jobId The unique job id of the streaming job
+//	 * @return true if successful, false otherwise
+//	 */
+//	public boolean initializeOutputDirectoryForStreamingJob(long jobId);
 
 	/**
 	 * Asynchronously submits a job using the originally provided priority. See {@link #resubmitJob(long, int)}. */

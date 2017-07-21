@@ -122,7 +122,7 @@ public class MpfServiceImpl implements MpfService {
 
 	/**
 	 * Asynchronously submits a JSON-based batch job request and returns the identifier associated with the persistent job request which was created.
-	 * Note: this method creates the jobId for this newly created batch job
+	 * Note: this method will initialize the jobId for this newly created batch job
 	 * @param jobRequest The batch job to execute.
 	 * @return The jobId of the batch job which was created.
 	 */
@@ -138,7 +138,8 @@ public class MpfServiceImpl implements MpfService {
 
 	/**
 	 * Asynchronously submits a JSON-based streaming job request and returns the identifier associated with the persistent job request which was created.
-	 * Note: this method creates the jobId for this newly created streaming job
+	 * Note: this method will initialize the jobId for this newly created streaming job.  Upon return, this method will also
+	 * create the output file system for this streaming job, if creation of output objects is enabled.
 	 * @param streamingJobRequest The streaming job to execute.
 	 * @return The jobId of the streaming job which was created.
 	 */
@@ -153,7 +154,7 @@ public class MpfServiceImpl implements MpfService {
 	}
 
 	/**
-	 * Resubmit a batch job
+	 * Resubmit a batch job. Note that resubmission of streaming jobs is not supported.
 	 * @param jobId jobId of a batch job
 	 * @return
 	 */
@@ -168,7 +169,7 @@ public class MpfServiceImpl implements MpfService {
 	}
 
 	/**
-	 * Resubmit a batch job with revised priority
+	 * Resubmit a batch job with revised priority. Note that resubmission of streaming jobs is not supported
 	 * @param jobId The MPF-assigned identifier for the original batch job.
 	 * @param newPriority The new priority to assign to this job. Note: Future resubmissions will use this priority value.
 	 * @return
@@ -254,22 +255,22 @@ public class MpfServiceImpl implements MpfService {
 		}
 	}
 
-	/** Create the output object file system for the specified streaming job and store parameters describing
-	 * the output object file system within the persistant object representing this streaming job
-	 * @param jobId The unique job id of the streaming job
-	 * @return true if successful, false otherwise
-	 */
-	@Override
-	public boolean initializeOutputDirectoryForStreamingJob(long jobId) {
-		try {
-			log.debug(this.getClass().getName()+":initializeOutputDirectoryForStreamingJob: jobId="+jobId);
-			streamingJobRequestBo.initializeOutputDirectory(jobId);
-			return true;
-		} catch ( WfmProcessingException wpe ) {
-			log.error("Failed to initialize output directory for Streaming Job #{} due to an exception.", jobId, wpe);
-			return false;
-		}
-	}
+//	/** Create the output object file system for the specified streaming job and store parameters describing
+//	 * the output object file system within the persistant object representing this streaming job
+//	 * @param jobId The unique job id of the streaming job
+//	 * @return true if successful, false otherwise
+//	 */
+//	@Override
+//	public boolean initializeOutputDirectoryForStreamingJob(long jobId) {
+//		try {
+//			log.debug(this.getClass().getName()+":initializeOutputDirectoryForStreamingJob: jobId="+jobId);
+//			streamingJobRequestBo.initializeOutputDirectory(jobId);
+//			return true;
+//		} catch ( WfmProcessingException wpe ) {
+//			log.error("Failed to initialize output directory for Streaming Job #{} due to an exception.", jobId, wpe);
+//			return false;
+//		}
+//	}
 
 	@Override
 	public MarkupResult getMarkupResult(long id) {

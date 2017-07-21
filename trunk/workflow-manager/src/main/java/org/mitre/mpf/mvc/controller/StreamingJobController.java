@@ -295,21 +295,28 @@ public class StreamingJobController {
                         streamingJobCreationRequest.getCallbackMethod());
 
                 // submit the streaming job to MPF services.  Note that the jobId of the streaming job is
-                // created when the job is submitted to the MPF service
+                // created when the job is submitted to the MPF service because it is here when the streaming job
+                // is persisted in the long term database, and the streaming jobs output object file system
+                // will be created using the assigned jobId, if the creation of output objects is enabled .
                 long jobId = mpfService.submitJob(jsonStreamingJobRequest);
                 log.debug("Successful creation of streaming JobId: {}", jobId);
 
-                // create the output file system for the streaming job, then return the appropriate streaming job creation response
-                if ( mpfService.initializeOutputDirectoryForStreamingJob(jobId) ) {
-                    // get the updated streamingJobRequest so we can pass along the output object directory in the
-                    // streaming job creation response.
-                    StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
-                    return new StreamingJobCreationResponse( jobId, jsonStreamingJobRequest.getExternalId(), streamingJobRequest.getOutputObjectDirectory() );
-                } else {
-                    String errorMessage = "Failure creating output file system for streaming jobId " + jobId + ". Please check server logs for more detail";
-                    log.error(errorMessage);
-                    return new StreamingJobCreationResponse(-1, errorMessage);
-                }
+                // get the streamingJobRequest so we can pass along the output object directory in the
+                // streaming job creation response.
+                StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
+                return new StreamingJobCreationResponse( jobId, jsonStreamingJobRequest.getExternalId(), streamingJobRequest.getOutputObjectDirectory() );
+
+//                // create the output file system for the streaming job, then return the appropriate streaming job creation response
+//                if ( mpfService.initializeOutputDirectoryForStreamingJob(jobId) ) {
+//                    // get the updated streamingJobRequest so we can pass along the output object directory in the
+//                    // streaming job creation response.
+//                    StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
+//                    return new StreamingJobCreationResponse( jobId, jsonStreamingJobRequest.getExternalId(), streamingJobRequest.getOutputObjectDirectory() );
+//                } else {
+//                    String errorMessage = "Failure creating output file system for streaming jobId " + jobId + ". Please check server logs for more detail";
+//                    log.error(errorMessage);
+//                    return new StreamingJobCreationResponse(-1, errorMessage);
+//                }
             } else {
                 log.error("Failure creating streaming job due to a malformed request, check the request parameters against the constraints defined in the REST API");
                 return new StreamingJobCreationResponse(-1, String.format("Failure creating streaming job with External Id '%s'.  Request was not valid, confirm the job parameter constraints and resend the request.", streamingJobCreationRequest.getExternalId()));

@@ -61,7 +61,6 @@ import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.JobStatus;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
@@ -252,26 +251,42 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 	}
 
 	/** Create a new StreamingJobRequest using the provided JSON job request and persist it in the database for long-term storage
-	 * Upon return, the job will be persisted in the long-term database
+	 * Upon return, the streaming job will be assigned a unique jobId and it will be persisted in the long-term database
 	 * @param jsonStreamingJobRequest JSON representation of the job request
-	 * @return initialized job request
+	 * @return initialized job request, including assignment of a unique jobId
 	 * @throws WfmProcessingException
 	 */
 	@Override
 	public StreamingJobRequest initialize(JsonStreamingJobRequest jsonStreamingJobRequest) throws WfmProcessingException {
-		StreamingJobRequest streamingJobRequestEntity = new StreamingJobRequest();
-		return initializeInternal(streamingJobRequestEntity, jsonStreamingJobRequest);
-	}
 
-//	@Override
-//	public StreamingJobRequest resubmit(long jobId) throws WfmProcessingException {
-//		return resubmitInternal(jobId, PriorityPolicy.EXISTING, 0);
-//	}
-//
-//	@Override
-//	public StreamingJobRequest resubmit(long jobId, int priority) throws WfmProcessingException {
-//		return resubmitInternal(jobId, PriorityPolicy.PROVIDED, priority);
-//	}
+    // construct a new streaming job request that is persisted in the long term database, and has a unique jobId
+	  StreamingJobRequest streamingJobRequestEntity = initializeInternal( new StreamingJobRequest(), jsonStreamingJobRequest);
+
+    // If creation of output objects is enabled, now that a unique jobId has been defined for this streaming job,
+    // create the output object directory for the streaming job and store the absolute path to that directory
+    // (as a String) in the streaming job request and persist the update in the long-term database
+    if ( jsonStreamingJobRequest.isOutputObjectEnabled() ) {
+      long jobId = streamingJobRequestEntity.getId();
+      try {
+        // create the output file system to be used for this streaming job
+        File outputObjectsDirName = propertiesUtil.createStreamingOutputObjectsDirectory(jobId);
+        streamingJobRequestEntity.setOutputObjectDirectory(outputObjectsDirName.getAbsolutePath());
+        streamingJobRequestEntity.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
+
+        // update the streaming job request in the MySQL long-term database so that it includes the
+        // output object directory and object version information
+        streamingJobRequestDao.persist(streamingJobRequestEntity);
+      } catch (IOException wpe) {
+        String errorMessage =
+            "Failed to create the output object file directory for streaming job " + jobId
+                + " due to IO exception.";
+        log.error(errorMessage);
+        throw new WfmProcessingException(errorMessage, wpe);
+      }
+    }
+
+    return streamingJobRequestEntity;
+	}
 
 	/** Cancel a streaming job
 	 * This method will mark the job as cancelled in both REDIS and in the long-term MySQL database.
@@ -318,35 +333,35 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		}
 	}
 
-
-	/** Create the output object file system for the specified streaming job and store parameters describing
-	 * the output object file system within the streaming job
-	 * @param jobId The unique job id of the streaming job
-	 * @throws WfmProcessingException
-	 */
-	@Override
-	public synchronized void initializeOutputDirectory(long jobId) throws WfmProcessingException {
-		StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
-		if ( streamingJobRequest == null ) {
-			throw new WfmProcessingException(String.format("A streaming job with id %d is not known to the system.", jobId));
-		} else {
-			try {
-				// create the output object directory for this streaming job and store the absolute path to that directory
-				// (as a String) in the streaming job request
-				File outputObjectsDirName = propertiesUtil.createStreamingOutputObjectsDirectory(jobId);
-				streamingJobRequest.setOutputObjectDirectory(outputObjectsDirName.getAbsolutePath());
-				streamingJobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
-
-				// update the streaming job request in the MySQL long-term database
-				streamingJobRequestDao.persist(streamingJobRequest);
-
-			} catch( IOException wpe ) {
-			  String errorMessage = "Failed to create the output object file directory for streaming job " + jobId + " due to IO exception.";
-				log.error(errorMessage);
-				throw new WfmProcessingException(errorMessage,wpe);
-			}
-		}
-	}
+//
+//	/** Create the output object file system for the specified streaming job and store parameters describing
+//	 * the output object file system within the streaming job
+//	 * @param jobId The unique job id of the streaming job
+//	 * @throws WfmProcessingException
+//	 */
+//	@Override
+//	public synchronized void initializeOutputDirectory(long jobId) throws WfmProcessingException {
+//		StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
+//		if ( streamingJobRequest == null ) {
+//			throw new WfmProcessingException(String.format("A streaming job with id %d is not known to the system.", jobId));
+//		} else {
+//			try {
+//				// create the output object directory for this streaming job and store the absolute path to that directory
+//				// (as a String) in the streaming job request
+//				File outputObjectsDirName = propertiesUtil.createStreamingOutputObjectsDirectory(jobId);
+//				streamingJobRequest.setOutputObjectDirectory(outputObjectsDirName.getAbsolutePath());
+//				streamingJobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
+//
+//				// update the streaming job request in the MySQL long-term database
+//				streamingJobRequestDao.persist(streamingJobRequest);
+//
+//			} catch( IOException wpe ) {
+//			  String errorMessage = "Failed to create the output object file directory for streaming job " + jobId + " due to IO exception.";
+//				log.error(errorMessage);
+//				throw new WfmProcessingException(errorMessage,wpe);
+//			}
+//		}
+//	}
 
 	/** Finish initializing the StreamingJobRequest and persist it in the database for long-term storage
 	 * Upon return, the streaming job will be persisted in the long-term database
@@ -362,9 +377,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		streamingJobRequest.setInputObject(jsonUtils.serialize(jsonStreamingJobRequest));
 		streamingJobRequest.setPipeline(jsonStreamingJobRequest.getPipeline() == null ? null : TextUtils.trimAndUpper(jsonStreamingJobRequest.getPipeline().getName()));
 
-		// Set output object version and path to null.  These will be set later after the job has been
-		// submitted to MPF and when the
-		// output objects are actually created (if enabled)
+		// Set output object version and path to null.  These will be set later if creation of output objects is enabled
+    // and after the job has been
+		// persisted to the long term database (when it actually is assigned a unique jobId)
 		streamingJobRequest.setOutputObjectDirectory(null);
 		streamingJobRequest.setOutputObjectVersion(null);
 
@@ -376,7 +391,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		streamingJobRequest.setStreamUri(jsonStreamingJobRequest.getStream().getStreamUri());
 
 		// store the streaming job request in the MySQL long-term database.  Once the streaming job has been
-    // persisted to the long-term database, the streaming jobs unique job id should be valid.
+    // successfully persisted to the long-term database, the streaming jobs unique jobId will be valid.
 		return streamingJobRequestDao.persist(streamingJobRequest);
 	}
 

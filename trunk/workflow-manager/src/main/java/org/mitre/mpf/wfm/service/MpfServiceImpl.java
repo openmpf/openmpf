@@ -255,23 +255,6 @@ public class MpfServiceImpl implements MpfService {
 		}
 	}
 
-//	/** Create the output object file system for the specified streaming job and store parameters describing
-//	 * the output object file system within the persistant object representing this streaming job
-//	 * @param jobId The unique job id of the streaming job
-//	 * @return true if successful, false otherwise
-//	 */
-//	@Override
-//	public boolean initializeOutputDirectoryForStreamingJob(long jobId) {
-//		try {
-//			log.debug(this.getClass().getName()+":initializeOutputDirectoryForStreamingJob: jobId="+jobId);
-//			streamingJobRequestBo.initializeOutputDirectory(jobId);
-//			return true;
-//		} catch ( WfmProcessingException wpe ) {
-//			log.error("Failed to initialize output directory for Streaming Job #{} due to an exception.", jobId, wpe);
-//			return false;
-//		}
-//	}
-
 	@Override
 	public MarkupResult getMarkupResult(long id) {
 		return markupResultDao.findById(id);

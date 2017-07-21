@@ -120,20 +120,15 @@ public interface MpfService {
 	 */
 	public long submitJob(JsonStreamingJobRequest streamingJobRequest);
 
-//	/** Create the output object file system for the specified streaming job and store parameters describing
-//	 * the output object file system within the persistant object representing this streaming job
-//	 * @param jobId The unique job id of the streaming job
-//	 * @return true if successful, false otherwise
-//	 */
-//	public boolean initializeOutputDirectoryForStreamingJob(long jobId);
-
 	/**
-	 * Asynchronously submits a job using the originally provided priority. See {@link #resubmitJob(long, int)}. */
+	 * Asynchronously submits a job using the originally provided priority. See {@link #resubmitJob(long, int)}.
+	 * Only batch jobs support resubmitJob
+	 */
 	long resubmitJob(long jobId);
 
 	/**
 	 * Asynchronously resubmits a job. It is assumed that the job 1) exists and 2) is in a terminal state at the
-	 * moment the request is made.
+	 * moment the request is made. Only batch jobs support resubmitJob
 	 * @param jobId The MPF-assigned identifier for the original job.
 	 * @param newPriority The new priority to assign to this job. Note: Future resubmissions will use this priority value.
 	 */

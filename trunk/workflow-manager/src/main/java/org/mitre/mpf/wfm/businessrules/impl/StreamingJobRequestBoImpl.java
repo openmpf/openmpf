@@ -333,36 +333,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 		}
 	}
 
-//
-//	/** Create the output object file system for the specified streaming job and store parameters describing
-//	 * the output object file system within the streaming job
-//	 * @param jobId The unique job id of the streaming job
-//	 * @throws WfmProcessingException
-//	 */
-//	@Override
-//	public synchronized void initializeOutputDirectory(long jobId) throws WfmProcessingException {
-//		StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
-//		if ( streamingJobRequest == null ) {
-//			throw new WfmProcessingException(String.format("A streaming job with id %d is not known to the system.", jobId));
-//		} else {
-//			try {
-//				// create the output object directory for this streaming job and store the absolute path to that directory
-//				// (as a String) in the streaming job request
-//				File outputObjectsDirName = propertiesUtil.createStreamingOutputObjectsDirectory(jobId);
-//				streamingJobRequest.setOutputObjectDirectory(outputObjectsDirName.getAbsolutePath());
-//				streamingJobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
-//
-//				// update the streaming job request in the MySQL long-term database
-//				streamingJobRequestDao.persist(streamingJobRequest);
-//
-//			} catch( IOException wpe ) {
-//			  String errorMessage = "Failed to create the output object file directory for streaming job " + jobId + " due to IO exception.";
-//				log.error(errorMessage);
-//				throw new WfmProcessingException(errorMessage,wpe);
-//			}
-//		}
-//	}
-
 	/** Finish initializing the StreamingJobRequest and persist it in the database for long-term storage
 	 * Upon return, the streaming job will be persisted in the long-term database
 	 * @param streamingJobRequest partially initialized streamingJobRequest

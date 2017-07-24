@@ -38,6 +38,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /** transient stream data. Note that currently, only the RTSP and HTTP protocols for streams is currently supported */
 public class TransientStream {
@@ -110,9 +111,40 @@ public class TransientStream {
 	@JsonIgnore
 	public MediaType getMediaType() { return MediaType.VIDEO; }
 
+	/** Default constructor for use with serialize and deserialize methods
+	 */
+	public TransientStream() {
+	}
+
+	/** Constructor
+	 * @param id unique identifier for this stream
+	 * @param uri URI for this stream
+	 */
 	public TransientStream(long id, String uri) {
 		this.id = id;
 		setUri(uri);
+	}
+
+	@Override
+	/** Equality test
+	 * @param other other stream to check agains
+	 * @return true if two TransientStreams are equal, false otherwise
+	 */
+	public boolean equals(Object other) {
+		if ( other instanceof TransientStream ) {
+			TransientStream otherTransientStream = (TransientStream) other;
+			return ( id == otherTransientStream.id && uri.equals(otherTransientStream.uri) && uriScheme == otherTransientStream.uriScheme );
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	/** override of equals requires override of hashCode
+	 * @return hashcode for this TransientStream
+	 */
+	public int hashCode() {
+		return Objects.hash(id,uri,uriScheme);
 	}
 
 	public String toString() {

@@ -133,7 +133,8 @@ public class TransientStream {
 	public boolean equals(Object other) {
 		if ( other instanceof TransientStream ) {
 			TransientStream otherTransientStream = (TransientStream) other;
-			return ( id == otherTransientStream.id && uri.equals(otherTransientStream.uri) && uriScheme == otherTransientStream.uriScheme );
+			return ( id == otherTransientStream.id && uri.equals(otherTransientStream.uri) && uriScheme == otherTransientStream.uriScheme &&
+			         type == otherTransientStream.type );
 		} else {
 			return false;
 		}
@@ -144,7 +145,7 @@ public class TransientStream {
 	 * @return hashcode for this TransientStream
 	 */
 	public int hashCode() {
-		return Objects.hash(id,uri,uriScheme);
+		return Objects.hash(id,uri,uriScheme,type);
 	}
 
 	public String toString() {

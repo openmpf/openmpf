@@ -53,6 +53,7 @@ enum DetectionError {
     MEMORY_ALLOCATION_FAILED       = 21;
     UNRECOGNIZED_DETECTION_ERROR   = 22;
     REQUEST_CANCELLED              = 23; // The detection request was cancelled by the user.
+    DEAD_LETTER                    = 24;
 }
 
 message PropertyMap {

@@ -24,44 +24,21 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel.routes;
+package org.mitre.mpf.wfm.camel.operations.detection;
 
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.camel.operations.detection.DetectionCancellationProcessor;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.camel.Exchange;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.springframework.stereotype.Component;
 
-@Component
-public class DetectionCancellationRouteBuilder extends RouteBuilder {
-	private static final Logger log = LoggerFactory.getLogger(DetectionCancellationRouteBuilder.class);
+/**
+ * This class is used in the Camel routing logic to create a simple response based on the contents of a detection
+ * request. The returned response indicates that the request ended up on the dead letter queue.
+ */
+@Component(DetectionDeadLetterProcessor.REF)
+public class DetectionDeadLetterProcessor extends BaseDetectionStatusProcessor {
+	public static final String REF = "detectionDeadLetterProcessor";
 
-	public static final String ENTRY_POINT = MpfEndpoints.CANCELLED_DETECTIONS;
-	public static final String EXIT_POINT = MpfEndpoints.COMPLETED_DETECTIONS;
-	public static final String ROUTE_ID = "Detection Cancellation Route";
-
-	private final String entryPoint, exitPoint, routeId;
-
-	public DetectionCancellationRouteBuilder() {
-		this(ENTRY_POINT, EXIT_POINT, ROUTE_ID);
-	}
-
-	public DetectionCancellationRouteBuilder(String entryPoint, String exitPoint, String routeId) {
-		this.entryPoint = entryPoint;
-		this.exitPoint = exitPoint;
-		this.routeId = routeId;
-	}
-
-	@Override
-	public void configure() throws Exception {
-		log.debug("Configuring route '{}'.", routeId);
-
-		from(entryPoint)
-			.routeId(routeId)
-			.setExchangePattern(ExchangePattern.InOnly)
-			.process(DetectionCancellationProcessor.REF)
-			.to(exitPoint);
+	public void process(Exchange exchange) throws Exception {
+		process(exchange, DetectionProtobuf.DetectionError.DEAD_LETTER);
 	}
 }

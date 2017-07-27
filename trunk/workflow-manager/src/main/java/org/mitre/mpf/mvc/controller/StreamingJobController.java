@@ -295,7 +295,7 @@ public class StreamingJobController {
                         streamingJobCreationRequest.getCallbackMethod());
 
                 // submit the streaming job to MPF services.  Note that the jobId of the streaming job is
-                // created when the job is submitted to the MPF service because it is here when the streaming job
+                // created when the job is submitted to the MPF service because that is when the streaming job
                 // is persisted in the long term database, and the streaming jobs output object file system
                 // will be created using the assigned jobId, if the creation of output objects is enabled .
                 long jobId = mpfService.submitJob(jsonStreamingJobRequest);

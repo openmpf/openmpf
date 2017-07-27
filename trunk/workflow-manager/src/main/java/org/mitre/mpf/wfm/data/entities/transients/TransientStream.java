@@ -125,27 +125,47 @@ public class TransientStream {
 		setUri(uri);
 	}
 
-	@Override
-	/** Equality test
+	/** Deep level equality test
 	 * @param other other stream to check agains
-	 * @return true if two TransientStreams are equal, false otherwise
+	 * @return true if two TransientStreams are equal when all properties of the TransientStream are compared, false otherwise
 	 */
-	public boolean equals(Object other) {
+	public boolean equalsAllFields(Object other) {
 		if ( other instanceof TransientStream ) {
 			TransientStream otherTransientStream = (TransientStream) other;
-			return ( id == otherTransientStream.id && uri.equals(otherTransientStream.uri) && uriScheme == otherTransientStream.uriScheme &&
-			         type == otherTransientStream.type );
+			return ( id == otherTransientStream.id && uri.equals(otherTransientStream.uri) &&
+					uriScheme == otherTransientStream.uriScheme &&
+					failed == otherTransientStream.failed &&
+					( ( message == null && otherTransientStream.message == null ) ||
+							message.equals(otherTransientStream.message) ) &&
+					metadata.equals(otherTransientStream.metadata) &&
+					mediaProperties.equals(otherTransientStream.mediaProperties) &&
+					segmentSize == otherTransientStream.segmentSize &&
+					type == otherTransientStream.type );
 		} else {
 			return false;
 		}
 	}
 
 	@Override
-	/** override of equals requires override of hashCode
+	/** Equality test that only checks the unique id of the TransientStreams
+	 * @param other other stream to check agains
+	 * @return true if two TransientStream ids are equal, false otherwise
+	 */
+	public boolean equals(Object other) {
+		if ( other instanceof TransientStream ) {
+			TransientStream otherTransientStream = (TransientStream) other;
+			return ( id == otherTransientStream.id);
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	/** override of equals method requires override of hashCode method
 	 * @return hashcode for this TransientStream
 	 */
 	public int hashCode() {
-		return Objects.hash(id,uri,uriScheme,type);
+		return Objects.hash(id);
 	}
 
 	public String toString() {

@@ -69,22 +69,19 @@ public enum JobStatus {
 	/** Indicates the job was cancelled as a result of a system shutdown. */
 	CANCELLED_BY_SHUTDOWN(true),
 
-	/** Indicates the job was cancelled. */
+	/** Indicates the job was cancelled by a user-initiated process. */
 	CANCELLED(true),
 
 	/** Indicates the job is in an error state. */
 	ERROR(true),
 
-	/** Job status enumeration to support streaming job which is running */
-	RUNNING(false),
-
-	/** Job status enumeration to support streaming job which is terminated */
+	/** Indicates the streaming job was terminated due to being stalled for too long. */
 	TERMINATED(true),
 
-	/** Job status enumeration to support streaming job which is paused */
+	/** Indicates the streaming job is paused. */
 	PAUSED(false),
 
-	/** Job status enumeration to support streaming job which is stalled */
+	/** Indicates the streaming job is stalled */
 	STALLED(false);
 
 	public static final JobStatus DEFAULT = COMPLETE;

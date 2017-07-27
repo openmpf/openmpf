@@ -184,22 +184,30 @@ public class PropertiesUtil {
 	 * @return path to the top level output object directory
 	 */
 	public File getOutputObjectsDirectory() { return outputObjectsDirectory; }
-	/** Create the output objects directory for batch jobs
+
+	/** Create the output objects directory and detection*.json file for batch jobs
 	 * @param jobId unique id that has been assigned to the batch job
-	 * @return directory that was created under the output objects directory for storage of files from this batch job
+	 * @return directory that was created under the output objects directory for storage of detection files from this batch job
 	 * @throws IOException
 	 */
 	public File createDetectionOutputObjectFile(long jobId) throws IOException {
 		return createOutputObjectsFile(jobId, "detection");
 	}
-	/** Create the output objects directory for a streaming job
-	 * @param jobId unique id that has been assigned to the streaming job
-	 * @return directory that was created under the output objects directory for storage of files from this streaming job
+
+	/** Create the output objects directory for a job
+   * Note: this method is typically used by streaming jobs, since the WFM will only be creating the output directory for the job,
+   * but output files will generally be created by the components.
+	 * @param jobId unique id that has been assigned to the job
+	 * @return directory that was created under the output objects directory for storage of files from this job
 	 * @throws IOException
 	 */
-	public File createStreamingOutputObjectsDirectory(long jobId) throws IOException {
-		return createOutputObjectsDirectory(jobId, "streaming-output");
+	public File createOutputObjectsDirectory(long jobId) throws IOException {
+		String fileName = String.format("%d", jobId);
+		Path path = Paths.get(outputObjectsDirectory.toURI()).resolve(fileName).normalize().toAbsolutePath();
+		Files.createDirectories(path);
+		return path.toFile();
 	}
+
 	/** Create the output object file in the specified streaming job output objects directory
 	 * @param jobId unique id that has been assigned to the streaming job
 	 * @param parentDir this streaming jobs output objects directory
@@ -218,20 +226,6 @@ public class PropertiesUtil {
 	 */
 	private File createOutputObjectsFile(long jobId, String outputObjectType) throws IOException {
 		return createOutputObjectsFile(jobId,outputObjectsDirectory,outputObjectType);
-	}
-
-	/** Create the directory path to be used for storing output objects for a job, return the path to that directory as a File
-	 * This method is typically used for streaming jobs
-	 * @param jobId unique id that has been assigned to the job
-	 * @param outputObjectDirectoryName name of the sub-directory to be used for storing the output objects from this streaming job
-	 * @return File (directory) to be used for storing an output object for this job
-	 * @throws IOException
-	 */
-	private File createOutputObjectsDirectory(long jobId, String outputObjectDirectoryName) throws IOException {
-		String fileName = String.format("%s/%d", TextUtils.trimToEmpty(outputObjectDirectoryName), jobId);
-		Path path = Paths.get(outputObjectsDirectory.toURI()).resolve(fileName).normalize().toAbsolutePath();
-		Files.createDirectories(path);
-		return path.toFile();
 	}
 
 	/** Create the File to be used for storing output objects from a job, plus create the directory path to that File

@@ -55,14 +55,20 @@ public class TestJsonUtils extends TestSystemWithDefaultConfig {
         TransientStream transientStream1 = new TransientStream(1L,"rtsp://home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/person/obama-basketball.mp4");
         TransientStream transientStream2 = jsonUtils.deserialize(jsonUtils.serialize(transientStream1),TransientStream.class);
 
-        Assert.assertEquals("JsonUtils test serialize,deserialize of a TransientStream with lower-case rtsp protocol failed",transientStream1,transientStream2);
+        boolean test_id_check = transientStream1.equals(transientStream2);
+        Assert.assertTrue("JsonUtils test serialize,deserialize of a TransientStream with lower-case rtsp protocol failed the id check",test_id_check);
+        boolean test_deep_check = transientStream1.equalsAllFields(transientStream2);
+        Assert.assertTrue("JsonUtils test serialize,deserialize of a TransientStream with lower-case rtsp protocol failed the serialization/deserialization check",test_deep_check);
 
-        TransientStream transientStream3 = new TransientStream(1L,"RTSP://home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/person/obama-basketball.mp4");
-        TransientStream transientStream4 = jsonUtils.deserialize(jsonUtils.serialize(transientStream3),TransientStream.class);
+        transientStream1 = new TransientStream(2L,"RTSP://home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/person/obama-basketball.mp4");
+        transientStream2 = jsonUtils.deserialize(jsonUtils.serialize(transientStream1),TransientStream.class);
 
-        Assert.assertEquals("JsonUtils test serialize,deserialize of a TransientStream with upper-case RTSP protocol failed",transientStream3,transientStream4);
+        test_id_check = transientStream1.equals(transientStream2);
+        Assert.assertTrue("JsonUtils test serialize,deserialize of a TransientStream with upper-case rtsp protocol failed the id check",test_id_check);
+        test_deep_check = transientStream1.equalsAllFields(transientStream2);
+        Assert.assertTrue("JsonUtils test serialize,deserialize of a TransientStream with upper-case rtsp protocol failed the serialization/deserialization check",test_deep_check);
 
-        log.info("runTestTransientStreamSerialization(): Finished serialize,deserialize test of upper and lower-case RTSP protocol TransientStreams");
+        log.info("runTestTransientStreamSerialization(): Finished id and serialize/deserialize tests of upper and lower-case RTSP protocol TransientStreams");
     }
 
 

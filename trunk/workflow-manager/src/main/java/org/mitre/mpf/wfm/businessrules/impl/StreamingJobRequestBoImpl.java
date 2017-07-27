@@ -28,9 +28,6 @@ package org.mitre.mpf.wfm.businessrules.impl;
 
 import java.io.UnsupportedEncodingException;
 import java.util.concurrent.ConcurrentSkipListSet;
-import org.apache.camel.EndpointInject;
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.ProducerTemplate;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -269,7 +266,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
       long jobId = streamingJobRequestEntity.getId();
       try {
         // create the output file system to be used for this streaming job
-        File outputObjectsDirName = propertiesUtil.createStreamingOutputObjectsDirectory(jobId);
+        File outputObjectsDirName = propertiesUtil.createOutputObjectsDirectory(jobId);
         streamingJobRequestEntity.setOutputObjectDirectory(outputObjectsDirName.getAbsolutePath());
         streamingJobRequestEntity.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
 
@@ -381,38 +378,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     try {
 
-        TransientPipeline transientPipeline = buildPipeline(jsonStreamingJobRequest.getPipeline());
-
-        TransientStreamingJob transientStreamingJob = new TransientStreamingJob(streamingJobRequestEntity.getId(),
-            jsonStreamingJobRequest.getExternalId(), transientPipeline, jsonStreamingJobRequest.getPriority(),
-            jsonStreamingJobRequest.getStallAlertDetectionThreshold(),
-            jsonStreamingJobRequest.getStallAlertRate(), jsonStreamingJobRequest.getStallTimeout(),
-            jsonStreamingJobRequest.isOutputObjectEnabled(),
-            jsonStreamingJobRequest.getOutputObjectDirectory(),
-            false,
-            jsonStreamingJobRequest.getHealthReportCallbackUri(),jsonStreamingJobRequest.getSummaryReportCallbackUri(),
-            jsonStreamingJobRequest.getNewTrackAlertCallbackUri(),jsonStreamingJobRequest.getCallbackMethod());
-
-        transientStreamingJob.getOverriddenJobProperties().putAll(jsonStreamingJobRequest.getJobProperties());
-
-        // algorithm properties should override any previously set properties (note: priority scheme enforced in DetectionSplitter)
-        transientStreamingJob.getOverriddenAlgorithmProperties().putAll(jsonStreamingJobRequest.getAlgorithmProperties());
-
-        // add the transient stream to this transient streaming job
-        transientStreamingJob.setStream(buildTransientStream(jsonStreamingJobRequest.getStream()));
-
-        // add the transient streaming job to REDIS
-        redis.persistJob(transientStreamingJob);
-
-        if ( transientPipeline == null ) {
-          redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_ERRORS);
-          throw new WfmProcessingException(INVALID_PIPELINE_MESSAGE);
-        }
-
-        // Everything has been good so far. Update the job status using running status for a streaming job
-        streamingJobRequestEntity.setStatus(JobStatus.RUNNING);
-        redis.setJobStatus(jobId, JobStatus.RUNNING);
-        streamingJobRequestEntity = streamingJobRequestDao.persist(streamingJobRequestEntity);
+      // persist the pipeline and streaming job in REDIS
+      TransientPipeline transientPipeline = buildPipeline(jsonStreamingJobRequest.getPipeline());
+      TransientStreamingJob transientStreamingJob = buildStreamingJob(jobId,streamingJobRequestEntity,transientPipeline,jsonStreamingJobRequest);
 
     } catch (Exception e) {
         // mark any exception as a failure by recording the error in the persistent database and throwing an exception
@@ -439,6 +407,56 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     return streamingJobRequestEntity;
 	}
+
+  /** Build a TransientStreamingJob that is persisted in REDIS
+   * @param jobId unique id that is assigned to this job
+   * @param streamingJobRequestEntity the streaming job request as persisted in the long term database (mysql)
+   * @param transientPipeline pipeline that has been created for this streaming job that has been persisted in REDIS
+   * @param jsonStreamingJobRequest JSON representation of the streaming job request
+   * @return TransientStreamingJob that is persisted in REDIS
+   * @throws WfmProcessingException
+   */
+  private TransientStreamingJob buildStreamingJob(long jobId, StreamingJobRequest streamingJobRequestEntity,TransientPipeline transientPipeline,
+                                                  JsonStreamingJobRequest jsonStreamingJobRequest) throws WfmProcessingException  {
+    TransientStreamingJob transientStreamingJob = new TransientStreamingJob(
+        streamingJobRequestEntity.getId(),
+        jsonStreamingJobRequest.getExternalId(), transientPipeline,
+        jsonStreamingJobRequest.getPriority(),
+        jsonStreamingJobRequest.getStallAlertDetectionThreshold(),
+        jsonStreamingJobRequest.getStallAlertRate(), jsonStreamingJobRequest.getStallTimeout(),
+        jsonStreamingJobRequest.isOutputObjectEnabled(),
+        jsonStreamingJobRequest.getOutputObjectDirectory(),
+        false,
+        jsonStreamingJobRequest.getHealthReportCallbackUri(),
+        jsonStreamingJobRequest.getSummaryReportCallbackUri(),
+        jsonStreamingJobRequest.getNewTrackAlertCallbackUri(),
+        jsonStreamingJobRequest.getCallbackMethod());
+
+    transientStreamingJob.getOverriddenJobProperties()
+        .putAll(jsonStreamingJobRequest.getJobProperties());
+
+    // algorithm properties should override any previously set properties (note: priority scheme enforced in DetectionSplitter)
+    transientStreamingJob.getOverriddenAlgorithmProperties()
+        .putAll(jsonStreamingJobRequest.getAlgorithmProperties());
+
+    // add the transient stream to this transient streaming job
+    transientStreamingJob.setStream(buildTransientStream(jsonStreamingJobRequest.getStream()));
+
+    // add the transient streaming job to REDIS
+    redis.persistJob(transientStreamingJob);
+
+    if (transientPipeline == null) {
+      redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_ERRORS);
+      throw new WfmProcessingException(INVALID_PIPELINE_MESSAGE);
+    }
+
+    // Everything has been good so far. Update the job status using running status for a streaming job
+    streamingJobRequestEntity.setStatus(JobStatus.IN_PROGRESS);
+    redis.setJobStatus(jobId, JobStatus.IN_PROGRESS);
+    streamingJobRequestEntity = streamingJobRequestDao.persist(streamingJobRequestEntity);
+
+    return transientStreamingJob;
+  }
 
   private TransientStream buildTransientStream(JsonStreamingInputObject json_input_stream) throws WfmProcessingException {
     TransientStream transientStream = new TransientStream(redis.getNextSequenceValue(),

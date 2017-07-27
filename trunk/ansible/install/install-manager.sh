@@ -25,7 +25,7 @@
 # limitations under the License.                                            #
 #############################################################################
 echo "--------------------------------------------------------------------------------"
-echo "-                      MPF Management Installation                             -"
+echo "                       MPF Management Installation                              "
 echo "--------------------------------------------------------------------------------"
 #Determine script path
 # SCRIPT_PATH="`dirname \"$0\"`" #relative path

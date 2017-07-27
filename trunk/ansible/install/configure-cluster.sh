@@ -39,7 +39,7 @@ if [ ! -f /etc/ansible/hosts ]; then
 fi
 
 echo "--------------------------------------------------------------------------------"
-echo "-                          MPF Cluster Configuraton                            -"
+echo "                           MPF Cluster Configuraton                             "
 echo "--------------------------------------------------------------------------------"
 
 #If we've setup the cluster previously, warn the user

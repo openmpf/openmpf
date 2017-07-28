@@ -75,7 +75,7 @@ public class MockDetectionComponentRouteBuilder extends RouteBuilder {
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
 			.unmarshal(new ProtobufDataFormat(DetectionProtobuf.DetectionRequest.getDefaultInstance())) // Unpack the protobuf response.
-			.processRef(MockDetectionComponent.REF) // Run the response through the response processor.
+			.process(MockDetectionComponent.REF) // Run the response through the response processor.
 			.to(exitPoint);
 	}
 }

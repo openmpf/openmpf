@@ -195,8 +195,8 @@ public class PropertiesUtil {
 	}
 
 	/** Create the output objects directory for a job
-   * Note: this method is typically used by streaming jobs, since the WFM will only be creating the output directory for the job,
-   * but output files will generally be created by the components.
+   * Note: this method is typically used by streaming jobs.
+   * The WFM will need to create the directory before it is populated with files.
 	 * @param jobId unique id that has been assigned to the job
 	 * @return directory that was created under the output objects directory for storage of files from this job
 	 * @throws IOException

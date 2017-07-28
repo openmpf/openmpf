@@ -126,7 +126,7 @@ public class TransientStream {
 	}
 
 	/** Deep level equality test
-	 * @param other other stream to check agains
+	 * @param other other stream to check against
 	 * @return true if two TransientStreams are equal when all properties of the TransientStream are compared, false otherwise
 	 */
 	public boolean equalsAllFields(Object other) {
@@ -148,7 +148,7 @@ public class TransientStream {
 
 	@Override
 	/** Equality test that only checks the unique id of the TransientStreams
-	 * @param other other stream to check agains
+	 * @param other stream to check against
 	 * @return true if two TransientStream ids are equal, false otherwise
 	 */
 	public boolean equals(Object other) {

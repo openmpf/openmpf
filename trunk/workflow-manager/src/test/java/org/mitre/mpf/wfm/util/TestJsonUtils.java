@@ -26,25 +26,42 @@
 
 package org.mitre.mpf.wfm.util;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runner.notification.RunListener;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonMediaInputObject;
-import org.mitre.mpf.mst.TestSystemWithDefaultConfig;
+
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
+import org.springframework.context.ApplicationContext;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestJsonUtils extends TestSystemWithDefaultConfig {
+@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
+@RunWith(SpringJUnit4ClassRunner.class)
+@RunListener.ThreadSafe
+public class TestJsonUtils {
 
-    protected static final Logger log = LoggerFactory.getLogger(TestJsonUtils.class);
+  protected static final Logger log = LoggerFactory.getLogger(TestJsonUtils.class);
 
-    @Autowired
-    private JsonUtils jsonUtils;
+  private static final int MINUTES = 1000 * 60; // 1000 milliseconds/second & 60 seconds/minute.
+
+  @Autowired
+  private ApplicationContext context;
+
+  @Autowired
+  private JsonUtils jsonUtils;
 
     /**
      * Test serialize and deserialize a TransientStream using JsonUtils
@@ -56,20 +73,26 @@ public class TestJsonUtils extends TestSystemWithDefaultConfig {
         TransientStream transientStream2 = jsonUtils.deserialize(jsonUtils.serialize(transientStream1),TransientStream.class);
 
         boolean test_id_check = transientStream1.equals(transientStream2);
-        Assert.assertTrue("JsonUtils test serialize,deserialize of a TransientStream with lower-case rtsp protocol failed the id check",test_id_check);
+        Assert.assertTrue("JsonUtils test serialize,deserialize of a default TransientStream failed the id check",test_id_check);
         boolean test_deep_check = transientStream1.equalsAllFields(transientStream2);
-        Assert.assertTrue("JsonUtils test serialize,deserialize of a TransientStream with lower-case rtsp protocol failed the serialization/deserialization check",test_deep_check);
+        Assert.assertTrue("JsonUtils test serialize,deserialize of a default TransientStream failed the serialization/deserialization check",test_deep_check);
 
-        transientStream1 = new TransientStream(2L,"RTSP://home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/person/obama-basketball.mp4");
+        transientStream1 = new TransientStream(3L,"RTSP://home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/person/obama-basketball.mp4");
+        transientStream1.setSegmentSize(500);
+        transientStream1.setMessage("some message here");
+        Map <String,String> mediaProperties = new <String,String>  HashMap();
+        mediaProperties.put(MpfConstants.HORIZONTAL_FLIP_PROPERTY,"true");
+        transientStream1.setMediaProperties(mediaProperties);
+        transientStream1.addMetadata("someMetaDataKeyHere","someMetaDataValueHere");
+        transientStream1.setFailed(true);
         transientStream2 = jsonUtils.deserialize(jsonUtils.serialize(transientStream1),TransientStream.class);
 
         test_id_check = transientStream1.equals(transientStream2);
-        Assert.assertTrue("JsonUtils test serialize,deserialize of a TransientStream with upper-case rtsp protocol failed the id check",test_id_check);
+        Assert.assertTrue("JsonUtils test serialize,deserialize of a TransientStream with non-default values failed the id check",test_id_check);
         test_deep_check = transientStream1.equalsAllFields(transientStream2);
-        Assert.assertTrue("JsonUtils test serialize,deserialize of a TransientStream with upper-case rtsp protocol failed the serialization/deserialization check",test_deep_check);
+        Assert.assertTrue("JsonUtils test serialize,deserialize of a TransientStream with non-default values failed the serialization/deserialization check",test_deep_check);
 
-        log.info("runTestTransientStreamSerialization(): Finished id and serialize/deserialize tests of upper and lower-case RTSP protocol TransientStreams");
+        log.info("TestJsonUtils:runTestTransientStreamSerialization(), completed id and serialize/deserialize tests of TransientStreams");
     }
-
 
 }

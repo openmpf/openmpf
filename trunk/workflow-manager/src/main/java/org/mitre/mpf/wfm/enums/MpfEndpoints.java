@@ -27,7 +27,11 @@
 package org.mitre.mpf.wfm.enums;
 
 public class MpfEndpoints {
-    public static final String
+
+  // TODO need to add the queue for accepting summary reports
+  // TODO need to add the queue for accepting new track alerts.
+
+  public static final String
 			ARTIFACT_EXTRACTION_WORK_QUEUE= "jms:MPF.ARTIFACT_EXTRACTION_WORK_QUEUE",
         MEDIA_INSPECTION_ENTRY_POINT = "jms:MPF.MEDIA_INSPECTION",
 
@@ -49,7 +53,4 @@ public class MpfEndpoints {
 
 			UNSOLICITED_MESSAGES_QUEUE_NAME = "MPF.UNSOLICITED_MESSAGES",
 			UNSOLICITED_MESSAGES = "jms:"+UNSOLICITED_MESSAGES_QUEUE_NAME;
-
-      // TODO need to add the queue for accepting summary reports
-			// TODO need to add the queue for accepting new track alerts.
 }

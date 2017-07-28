@@ -223,10 +223,23 @@ public class TestDescriptorValidator {
         assertValidationErrors(descriptor, isNull("algorithm"));
 
         descriptor.algorithm = new JsonComponentDescriptor.Algorithm();
-        assertFieldValid(descriptor, "algorithm");
         assertValidationErrors(descriptor,
                 isNull("algorithm.actionType"),
-                isNull("algorithm.requiresCollection"));
+                isNull("algorithm.requiresCollection"),
+                doesNotSupportBatchOrStream());
+
+	    descriptor.algorithm.supportsStreamProcessing = true;
+	    descriptor.algorithm.supportsBatchProcessing = false;
+        assertFieldValid(descriptor, "algorithm");
+
+	    descriptor.algorithm.supportsStreamProcessing = false;
+	    descriptor.algorithm.supportsBatchProcessing = true;
+	    assertFieldValid(descriptor, "algorithm");
+
+	    descriptor.algorithm.supportsStreamProcessing = true;
+	    descriptor.algorithm.supportsBatchProcessing = true;
+	    assertFieldValid(descriptor, "algorithm");
+
 
         descriptor.algorithm.actionType = ActionType.DETECTION;
         assertFieldValid(descriptor, "algorithm.actionType");
@@ -383,5 +396,10 @@ public class TestDescriptorValidator {
 
     private static String hasInvalidProvidesProp(String field) {
         return field + " must provide either a defaultValue or propertiesKey, but not both.";
+    }
+
+
+    private static String doesNotSupportBatchOrStream() {
+    	return "must contain supportsBatchProcessing, supportsStreamProcessing, or both.";
     }
 }

@@ -397,6 +397,19 @@
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-parsers</artifactId>
             <version>${tika.core.version}</version>
+            <exclusions>
+                <exclusion>
+                    <!-- This version of jsr-275 no longer exists. A newer version is included as a separate dependency -->
+                    <groupId>javax.measure</groupId>
+                    <artifactId>jsr-275</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <!-- The version referenced by tika-parsers no longer exists, so this version is included manually -->
+            <groupId>javax.measure</groupId>
+            <artifactId>jsr-275</artifactId>
+            <version>0.9.4</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>

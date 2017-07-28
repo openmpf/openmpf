@@ -32,4 +32,8 @@ public class ComponentRegistrationSubsystemException extends ComponentRegistrati
     public ComponentRegistrationSubsystemException(String reason) {
         super(reason);
     }
+
+    public ComponentRegistrationSubsystemException(String reason, Throwable cause) {
+        super(reason, cause);
+    }
 }

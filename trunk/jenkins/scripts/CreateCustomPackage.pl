@@ -34,7 +34,7 @@ use utf8;
 use JSON;
 use File::Basename;
 
-my $mpfVersion = "0.9.0";
+my $mpfVersion = "0.10.0";
 my $ansibleRepoPath = "/mpfdata/ansible/install/repo";
 
 # The following hashes use the name of the packaging element as a key, and the source path
@@ -187,7 +187,7 @@ MPF::Jenkins::printInfo("Creating MPF admin python script tar.gz package.\n");
 		MPF::Jenkins::printFatal("The mpf-scripts folder ($mpfPath/trunk/bin/mpf-scripts) did not exist.\n");
 		MPF::Jenkins::fatalExit();
 	}
-	system "tar -C $mpfPath/trunk/bin -pczf $tarDest/mpf-admin-scripts-$mpfVersion.tar.gz mpf-scripts";
+	system "tar -C $mpfPath/trunk/bin -pczf $tarDest/mpf-admin-scripts.tar.gz mpf-scripts";
 
 system "cp -a $ansibleRepoPath/files $workspace/install/repo/";
 system "cp -a $ansibleRepoPath/rpms $workspace/install/repo/";
@@ -215,7 +215,7 @@ MPF::Jenkins::printInfo("Copying plugin packages from $mpfPath/mpf-component-bui
 my @plugins = glob("$mpfPath/mpf-component-build/plugin-packages/*.tar.gz");
 foreach my $plugin (@plugins) {
     my($filename, $dirs, $suffix) = fileparse($plugin, ".tar.gz");
-    system "cp $dirs$filename.tar.gz $tarDest/$filename-$mpfVersion.tar.gz";
+    system "cp $dirs$filename.tar.gz $tarDest/$filename.tar.gz";
 }
 
 # Tar everything up!

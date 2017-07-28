@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionDeadLetterProcessor;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -71,13 +72,16 @@ public class DlqRouteBuilder extends RouteBuilder {
 		from(entryPoint + selector)
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
-			.wireTap(tapPoint) // send unmodified message to the tap point
-			// deserialize protobuf message for readability
-			.unmarshal().protobuf(org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.getDefaultInstance()).convertBodyTo(String.class)
-			.to(exitPoint); // send to the exit point to indicate it has been processed (and for auditing)
-
-		from(tapPoint)
-			.process(DetectionDeadLetterProcessor.REF) // generate a detection response protobuf message with an error status
-			.to(MpfEndpoints.COMPLETED_DETECTIONS); // send protobuf message to the intended destination to increment the job count
+			.multicast()
+				.pipeline()
+					// deserialize protobuf message for readability
+					.unmarshal().protobuf(DetectionProtobuf.DetectionRequest.getDefaultInstance()).convertBodyTo(String.class)
+					.to(exitPoint) // send to the exit point to indicate it has been processed (and for auditing)
+				.end()
+				.pipeline()
+					.process(DetectionDeadLetterProcessor.REF) // generate a detection response protobuf message with an error status
+					.to(MpfEndpoints.COMPLETED_DETECTIONS) // send protobuf message to the intended destination to increment the job count
+				.end()
+			.end();
 	}
 }

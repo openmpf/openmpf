@@ -32,8 +32,8 @@
 
 - name: Download MPF Core Component Archives
   get_url:
-    url="http://{{ repo_host }}/repo/tars/mpf/{{ item }}-{{ mpf_version }}.tar.gz"
-    dest="{{ tmp }}{{ item }}-{{ mpf_version }}.tar.gz"
+    url="http://{{ repo_host }}/repo/tars/mpf/{{ item }}.tar.gz"
+    dest="{{ tmp }}{{ item }}.tar.gz"
     use_proxy=no
     timeout=30
   with_items: "{{ MPF_Core_Tars }}"
@@ -41,7 +41,7 @@
 
 - name: Extract MPF Core Component Archives
   unarchive:
-    src="{{ tmp }}{{ item }}-{{ mpf_version }}.tar.gz"
+    src="{{ tmp }}{{ item }}.tar.gz"
     dest="{{ mpf_home }}"
     copy=no
     mode=0755
@@ -52,7 +52,7 @@
 
 - name: Remove MPF Core Component archives
   file:
-    path="{{ tmp }}{{ item }}-{{ mpf_version }}.tar.gz"
+    path="{{ tmp }}{{ item }}.tar.gz"
     state=absent
   with_items: "{{ MPF_Core_Tars }}"
   when: "'mpf-master' not in group_names"

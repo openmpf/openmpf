@@ -65,16 +65,16 @@ public class DlqRouteBuilder extends RouteBuilder {
 	public void configure() throws Exception {
 		log.debug("Configuring route '{}'.", routeId);
 
-		from(entryPoint)
+		// only process detection messages sent to components; otherwise leave messages on the default DLQ (for auditing)
+		String selector = "?selector=" + java.net.URLEncoder.encode(MpfHeaders.JMS_REPLY_TO + "='" + MpfEndpoints.COMPLETED_DETECTIONS_REPLY_TO + "'","UTF-8");
+
+		from(entryPoint + selector)
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
-			.choice()
-				.when(header(MpfHeaders.JMS_REPLY_TO).isEqualTo(MpfEndpoints.COMPLETED_DETECTIONS_REPLY_TO)) // otherwise leave message on the default DLQ (for auditing)
-					.wireTap(tapPoint) // send unmodified message to the tap point
-					// deserialize protobuf message for readability
-					.unmarshal().protobuf(org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.getDefaultInstance()).convertBodyTo(String.class)
-					.to(exitPoint) // send to the exit point to indicate it has been processed (and for auditing)
-			.end();
+			.wireTap(tapPoint) // send unmodified message to the tap point
+			// deserialize protobuf message for readability
+			.unmarshal().protobuf(org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.getDefaultInstance()).convertBodyTo(String.class)
+			.to(exitPoint); // send to the exit point to indicate it has been processed (and for auditing)
 
 		from(tapPoint)
 			.process(DetectionDeadLetterProcessor.REF) // generate a detection response protobuf message with an error status

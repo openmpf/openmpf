@@ -27,6 +27,6 @@ master_host: "{{ hostvars[groups['mpf-master'][0]]['inventory_hostname'] }}"
 repo_host: "{{ hostvars[groups['mpf-repo'][0]]['inventory_hostname'] }}"
 tmp: "/tmp/"
 mpf_home: "{{ lookup('env','MPF_HOME') | default('/opt/mpf', true) }}"
-mpf_version: 0.9.0
+mpf_version: 0.10.0
 component_descriptor_regex: "^(?i)([a-zA-Z0-9_-]*\\/descriptor\\/[a-zA-Z0-9_-]*\\.json)"
 component_tld_regex: "^([a-zA-Z0-9_-]+)([\\/])$"

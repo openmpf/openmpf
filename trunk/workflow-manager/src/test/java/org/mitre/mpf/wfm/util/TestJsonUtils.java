@@ -66,7 +66,6 @@ public class TestJsonUtils {
     /**
      * Test serialize and deserialize a TransientStream using JsonUtils
      */
-    @Test(timeout = 2*MINUTES)
     public void runTestTransientStreamSerialization() throws Exception {
 
         TransientStream transientStream1 = new TransientStream(1L,"rtsp://home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/person/obama-basketball.mp4");
@@ -77,7 +76,7 @@ public class TestJsonUtils {
         boolean test_deep_check = transientStream1.equalsAllFields(transientStream2);
         Assert.assertTrue("JsonUtils test serialize,deserialize of a default TransientStream failed the serialization/deserialization check",test_deep_check);
 
-        transientStream1 = new TransientStream(3L,"RTSP://home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/person/obama-basketball.mp4");
+        transientStream1 = new TransientStream(2L,"RTSP://home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/person/obama-basketball.mp4");
         transientStream1.setSegmentSize(500);
         transientStream1.setMessage("some message here");
         Map <String,String> mediaProperties = new <String,String>  HashMap();

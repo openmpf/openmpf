@@ -45,6 +45,14 @@ class MPFAMQReceiver : MPFReceiver {
             : destination_(destination)
             , consumer_(consumer) {}
     ~MPFAMQReceiver() = default;
+
+    void SetConsumer(cms::MessageConsumer *consumer) {
+        consumer_.reset(consumer);
+    }
+    void SetDestination(cms::Destination *destination) {
+        destination_.reset(destination);
+    }
+
     MPFMessage* getMessage() override;
   private:
     std::unique_ptr<cms::Destination> destination_;
@@ -60,6 +68,14 @@ class MPFAMQSender : MPFSender {
                  cms::Destination *destination)
             : destination_(destination)
             , producer_(producer) {}
+
+    void SetProducer(cms::MessageProducer *producer) {
+        producer_.reset(producer);
+    }
+    void SetDestination(cms::Destination *destination) {
+        destination_.reset(destination);
+    }
+
     ~MPFAMQSender() = default;
     void putMessage(MPFMessage *msg) override;
   private:

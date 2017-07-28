@@ -53,13 +53,11 @@ class MPFMessenger {
                                       const MPF::COMPONENT::Properties &properties) = 0;
     virtual MPFMessengerError CreateReceiver(const std::string &queue_name,
                                              const MPF::COMPONENT::Properties &queue_properties,
-                                             MPF::MPFReceiver *receiver) = 0;
+                                             MPF::MPFReceiver &receiver) = 0;
     virtual MPFMessengerError CreateSender(const std::string &queue_name,
                                            const MPF::COMPONENT::Properties &queue_properties,
-                                           MPF::MPFSender *sender) = 0;
+                                           MPF::MPFSender &sender) = 0;
     virtual MPFMessengerError Start() = 0;
-    virtual MPFMessengerError SendMessage(const MPF::MPFMessage *msg) = 0;
-    virtual MPFMessengerError ReceiveMessage(MPF::MPFMessage *msg) = 0;
     virtual MPFMessengerError CloseReceiver(MPF::MPFReceiver *receiver) = 0;
     virtual MPFMessengerError CloseSender(MPF::MPFSender *sender) = 0;
     virtual MPFMessengerError Shutdown() = 0;

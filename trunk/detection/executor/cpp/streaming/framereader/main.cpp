@@ -75,16 +75,6 @@ string GetFileName(const string& s) {
 
 
 template<typename T>
-int create_libobj(const string library_path,
-                  const string creator_symbol,
-                  T *objptr);
-
-template<typename T>
-int delete_libobj(const string library_path,
-                   const string deleter_symbol,
-                  T *objptr);
-
-template<typename T>
 void getArg(pt::ptree Ptree,
             const string prop_tree_path,
             const T defaultValue,
@@ -166,59 +156,105 @@ int main(int argc, char* argv[]) {
 
     MPFFrameReader *Freader;
     string frame_reader_create_sym("frame_reader_creator");
-    rc = create_libobj<MPFFrameReader>(frame_reader_library_path,
-                                           frame_reader_create_sym,
-                                           Freader);
-    if (rc) {
-        LOG4CXX_ERROR(logger, "Failed to create a frame reader instance");
-        return rc;
+    typedef MPFFrameReader* framereader_create_t();
+    typedef void framereader_destroy_t(MPFFrameReader*);
+
+    // The RTLD_NOW flag causes dlopen() to resolve all symbols now so if something is
+    // missing, we will fail now rather than later.
+    void *framereader_lib = dlopen(frame_reader_library_path.c_str(), RTLD_LOCAL | RTLD_NOW);
+    if (NULL == framereader_lib) {
+        LOG4CXX_ERROR(logger, "Failed to open frame reader library " << frame_reader_library_path << ": " << dlerror());
+	return(79);  // 79=ELIBACC Can not access a needed shared library
     }
 
-    // Create the messenger object and store it in the Frame Reader
+    framereader_create_t* framereader_create =
+            (framereader_create_t*)dlsym(framereader_lib, "frame_reader_creator");
+    if (NULL == framereader_create) {
+        LOG4CXX_ERROR(logger, "dlsym failed for frame reader creator: " << dlerror());
+        dlclose(framereader_lib);
+        return(38);  // 38=ENOSYS Function not implemented
+    }
+
+    framereader_destroy_t* framereader_destroy =
+            (framereader_destroy_t*)dlsym(framereader_lib,"frame_reader_deleter");
+    if (NULL == framereader_destroy) {
+        LOG4CXX_ERROR(logger,"dlsym failed for frame_reader_deleter: " << dlerror());
+        dlclose(framereader_lib);
+        return(38);  // 38=ENOSYS Function not implemented
+    }
+
+    FReader = framereader_create();
+    if (NULL == FReader) {
+	LOG4CXX_ERROR(logger,"Failed to create a frame reader instance");
+	dlclose(framereader_lib);
+	return(79);  // 79=ELIBACC Can not access a needed shared library
+    }
+
+    // Create the messenger object
 
     rc = getArg(jobArgs, "messenger.library_path", messenger_library_path);
     if (rc) return rc;
 
-    string messenger_create_sym("messenger_creator");
-    MPFMessenger *messenger;
-    rc = create_libobj<MPFMessenger>(messenger_library_path,
-                                     messenger_create_sym,
-                                     messenger);
-    if (rc) {
-        LOG4CXX_ERROR(logger, "Failed to instantiate Messenger");
-        return rc;
+    MPFMessenger *Messenger;
+    typedef MPFMessenger* messenger_create_t();
+    typedef void messenger_destroy_t(MPFMessenger*);
+
+    // The RTLD_NOW flag causes dlopen() to resolve all symbols now so if something is
+    // missing, we will fail now rather than later.
+    void *messenger_lib = dlopen(messenger_library_path.c_str(), RTLD_LOCAL | RTLD_NOW);
+    if (NULL == messenger_lib) {
+        LOG4CXX_ERROR(logger, "Failed to open messenger library " << messenger_library_path << ": " << dlerror());
+	return(79);  // 79=ELIBACC Can not access a needed shared library
+    }
+
+    messenger_create_t* messenger_create =
+            (messenger_create_t*)dlsym(messenger_lib, "messenger_creator");
+    if (NULL == messenger_create) {
+        LOG4CXX_ERROR(logger, "dlsym failed for messenger creator: " << dlerror());
+        dlclose(messenger_lib);
+        return(38);  // 38=ENOSYS Function not implemented
+    }
+
+    messenger_destroy_t* messenger_destroy =
+            (messenger_destroy_t*)dlsym(messenger_lib,"messenger_deleter");
+    if (NULL == messenger_destroy) {
+        LOG4CXX_ERROR(logger,"dlsym failed for messenger_deleter: " << dlerror());
+        dlclose(messenger_lib);
+        return(38);  // 38=ENOSYS Function not implemented
+    }
+
+    Messenger = messenger_create();
+    if (NULL == messenger) {
+	LOG4CXX_ERROR(logger,"Failed to create a messenger instance");
+	dlclose(messenger_lib);
+	return(79);  // 79=ELIBACC Can not access a needed shared library
     }
 
     Properties broker_properties;
     MPFMessengerError MsgrErr;
-    MsgrErr = messenger->Startup(broker_uri, broker_properties);
+    MsgrErr = Messenger->Startup(broker_uri, broker_properties);
     if (MsgrErr != MPF_MESSENGER_SUCCESS) {
         LOG4CXX_ERROR(logger, "Failed to start messenger");
         return MsgrErr;
     }
 
-    Freader->messenger_.reset(messenger);
-
     // Create sender for the job status queue
     int rc = getArg(jobArgs, "job_status_queue_name", JobStatusQueue_name);
     if (rc) return rc;
-    MPFMessageSender *jobStatusSender;
+    MPFMessageSender jobStatusSender;
     Properties queue_properties;
-    messenger_->CreateSender(JobStatusQueue_name,
-                             queue_properties,
-                             jobStatusSender);
-    Freader->job_status_sender_.reset(jobStatusSender);
-    
+    MsgrErr = Messenger->CreateSender(JobStatusQueue_name,
+                                      queue_properties,
+                                      jobStatusSender);
 
     // Create sender for the frame ready queue
 
     int rc = getArg(jobArgs, "frame_ready_queue_name", FrameReadyQueue_name);
     if (rc) return rc;
-    MPFMessageSender *FrameReadySender;
-    messenger_->CreateSender(FrameReadyQueue_name,
-                             queue_properties,
-                             FrameReadySender);
-    Freader->frame_ready_sender_.reset(FrameReadySender);
+    MPFMessageSender FrameReadySender;
+    MsgrErr = Messenger->CreateSender(FrameReadyQueue_name,
+                                      queue_properties,
+                                      FrameReadySender);
     
 
     // Create sender for the first stage segment ready queue
@@ -226,10 +262,9 @@ int main(int argc, char* argv[]) {
     int rc = getArg(jobArgs, "segment_ready_stage1_queue_name", SegmentReadyStage1_name);
     if (rc) return rc;
     MPFMessageSender *Stage1Sender;
-    messenger_->CreateSender(SegmentReadyStage1_name,
-                             queue_properties,
-                             Stage1Sender);
-    Freader->segment_ready_stage1_sender_.reset(Stage1Sender);
+    MsgrErr = Messenger->CreateSender(SegmentReadyStage1_name,
+                                      queue_properties,
+                                      Stage1Sender);
 
     // Check whether we have a 2 stage pipeline
     int rc = getArg(jobArgs, "num_pipeline_stages", num_pipeline_stages);
@@ -240,10 +275,9 @@ int main(int argc, char* argv[]) {
         int rc = getArg(jobArgs, "segment_ready_stage2_queue_name", SegmentReadyStage2_name);
         if (rc) return rc;
         MPFMessageSender *Stage2Sender;
-        messenger_->CreateSender(SegmentReadyStage2_name,
-                                 queue_properties,
-                                 Stage2Sender);
-        Freader->segment_ready_stage2_sender_.reset(Stage2Sender);
+        MsgrErr = Messenger->CreateSender(SegmentReadyStage2_name,
+                                          queue_properties,
+                                          Stage2Sender);
 
     }
 
@@ -252,10 +286,9 @@ int main(int argc, char* argv[]) {
     int rc = getArg(jobArgs, "release_frame_queue_name", ReleaseFrameQueue_name);
     if (rc) return rc;
     MPFMessageReceiver *releaseFrameReceiver;
-    messenger_->CreateReceiver(ReleaseFrameQueue_name,
-                               queue_properties,
-                               releaseFrameReceiver);
-    Freader->release_frame_receiver_.reset(releaseFrameReceiver);
+    MsgrErr = Messenger->CreateReceiver(ReleaseFrameQueue_name,
+                                        queue_properties,
+                                        releaseFrameReceiver);
 
 
     for (pt::ptree::value_type &job_prop : jobArgs.get_child("job_properties")) {
@@ -544,76 +577,23 @@ int main(int argc, char* argv[]) {
                               << request_queue);
     }
 
-#if 1
-    string frame_reader_delete_sym("frame_reader_deleter");
-    rc = delete_libobj<MPFFrameReader>(frame_reader_library_path,
-                                       frame_reader_delete_sym,
-                                       Freader);
-#else
-    // Delete the detection component
-    comp_destroy(detection_engine);
-#endif
+    // Don't call this until the 'quit' message is received from the
+    // node manager.
+    // Destroy the FrameReader
+    Freader->CloseFrameStore();
+    framereader_destroy(FReader);
+
+    // Close the senders and receivers
+
+    // Delete the Messenger
+    messenger_destroy(FReader);
+
 
     // Close the logger
     log4cxx::LogManager::shutdown();
     return 0;
 }
 
-template<typename T>
-int create_libobj(const std::string library_path,
-                  const std::string creator_symbol,
-                  T *objptr) {
-
-    typedef T* create_t();
-    objptr = NULL;
-
-    // The RTLD_NOW flag causes dlopen() to resolve all symbols now so if something is
-    // missing, we will fail now rather than later.
-    void *obj_handle = dlopen(library_path.c_str(), RTLD_LOCAL | RTLD_NOW);
-    if (NULL == obj_handle) {
-        LOG4CXX_ERROR(logger, "Failed to open library " << library_path << ": " << dlerror());
-	return(79);  // 79=ELIBACC Can not access a needed shared library
-    }
-
-    create_t* obj_create = (create_t*)dlsym(obj_handle, creator_symbol.c_str());
-    if (NULL == obj_create) {
-        LOG4CXX_ERROR(logger, "dlsym failed for object creator: " << dlerror());
-        dlclose(obj_handle);
-        return(38);  // 38=ENOSYS Function not implemented
-    }
-
-    objptr = obj_create();
-    if (NULL == objptr) {
-	LOG4CXX_ERROR(logger,"Object construction failed");
-	dlclose(obj_handle);
-	return(79);  // 79=ELIBACC Can not access a needed shared library
-    }
-}
-
-template<typename T>
-int delete_libobj(const std::string library_path,
-                   const std::string deleter_symbol,
-                   T *objptr) {
-
-    typedef void destroy_t(T*);
-
-    // The library has already been loaded, so this call is to
-    // retrieve the library handle.
-    void *obj_handle = dlopen(library_path.c_str(), RTLD_LOCAL);
-    if (NULL == obj_handle) {
-        LOG4CXX_ERROR(logger, "Failed to open library " << library_path << ": " << dlerror());
-	return(79);  // 79=ELIBACC Can not access a needed shared library
-    }
-
-    destroy_t* obj_destroy = (destroy_t*)dlsym(obj_handle, deleter_symbol.c_str());
-    if (NULL == obj_destroy) {
-        LOG4CXX_ERROR(logger,"dlsym failed for object deleter: " << dlerror());
-        dlclose(obj_handle);
-        return(38);  // 38=ENOSYS Function not implemented
-    }
-
-    obj_destroy(objptr);
-}
 
 // This version allows a default value for properties that can be
 // omitted if we want to use a default value

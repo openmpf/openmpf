@@ -87,15 +87,44 @@ void MPFDetectionBuffer::GetMediaProperties(map<string, string> &media_propertie
 void MPFDetectionBuffer::GetVideoRequest(MPFDetectionVideoRequest &video_request) {
     video_request.start_frame = detection_request.video_request().start_frame();
     video_request.stop_frame = detection_request.video_request().stop_frame();
+    //If there is a feed-forward track in the request, copy it into an
+    //MPFVideoTrack
+    if (detection_request.video_request().has_feed_forward_track()) {
+        video_request.feed_forward_track.start_frame =
+                detection_request.video_request().feed_forward_track().start_frame();
+        video_request.feed_forward_track.stop_frame =
+                detection_request.video_request().feed_forward_track().stop_frame();
+        video_request.feed_forward_track.confidence =
+                detection_request.video_request().feed_forward_track().confidence();
+        // Copy the track properties
+        for (auto prop : detection_request.video_request().feed_forward_track().detection_properties()) {
+            video_request.feed_forward_track.detection_properties[prop.key()] = prop.value();
+        }
+        for ( auto loc : detection_request.video_request().feed_forward_track().frame_locations()) {
+            Properties tmp_props;
+            for (auto prop : loc.image_location().detection_properties()) {
+                tmp_props[prop.key()] = tmp_props[prop.value()];
+            }
+            MPFImageLocation tmp_loc(loc.image_location().x_left_upper(),
+                                     loc.image_location().y_left_upper(),
+                                     loc.image_location().width(),
+                                     loc.image_location().height(),
+                                     loc.image_location().confidence(),
+                                     tmp_props);
+            video_request.feed_forward_track.frame_locations[loc.frame()] = tmp_loc;
+        }
+    }
 }
 
 void MPFDetectionBuffer::GetAudioRequest(MPFDetectionAudioRequest &audio_request) {
     audio_request.start_time = detection_request.audio_request().start_time();
     audio_request.stop_time = detection_request.audio_request().stop_time();
+    //    audio_request.feed_forward_track = detection_request.audio_request().feed_forward_track();
 }
 
 void MPFDetectionBuffer::GetImageRequest(MPFDetectionImageRequest &image_request) {
-    // TODO: set image-request-specific properties here
+    //    image_request.feed_forward_location = detection_request.image_request().feed_forward_location();
+
 }
 
 void MPFDetectionBuffer::PackCommonFields(
@@ -167,7 +196,7 @@ unsigned char *MPFDetectionBuffer::PackVideoResponse(
 
     for (vector<MPFVideoTrack>::const_iterator tracks_iter = tracks.begin(); tracks_iter != tracks.end(); tracks_iter++) {
         MPFVideoTrack track = *tracks_iter;
-        DetectionResponse_VideoResponse_VideoTrack *new_track = video_response->add_video_tracks();
+        VideoTrack *new_track = video_response->add_video_tracks();
         new_track->set_start_frame(track.start_frame);
         new_track->set_stop_frame(track.stop_frame);
         new_track->set_confidence(track.confidence);
@@ -181,11 +210,11 @@ unsigned char *MPFDetectionBuffer::PackVideoResponse(
         for (map<int, MPFImageLocation>::const_iterator locations_iter = track.frame_locations.begin(); locations_iter != track.frame_locations.end(); locations_iter++) {
             MPFImageLocation detection = locations_iter->second;
 
-            DetectionResponse_VideoResponse_VideoTrack_FrameLocationMap *new_frame_location = new_track->add_frame_locations();
+            VideoTrack_FrameLocationMap *new_frame_location = new_track->add_frame_locations();
 
             new_frame_location->set_frame(locations_iter->first);
 
-            DetectionResponse_ImageLocation *new_detection = new_frame_location->mutable_image_location();
+            ImageLocation *new_detection = new_frame_location->mutable_image_location();
             new_detection->set_x_left_upper(detection.x_left_upper);
             new_detection->set_y_left_upper(detection.y_left_upper);
             new_detection->set_width(detection.width);
@@ -220,7 +249,7 @@ unsigned char *MPFDetectionBuffer::PackAudioResponse(
 
     for (vector<MPFAudioTrack>::const_iterator tracks_iter = tracks.begin(); tracks_iter != tracks.end(); tracks_iter++) {
         MPFAudioTrack track = *tracks_iter;
-        DetectionResponse_AudioResponse_AudioTrack *new_track = audio_response->add_audio_tracks();
+        AudioTrack *new_track = audio_response->add_audio_tracks();
         new_track->set_start_time(track.start_time);
         new_track->set_stop_time(track.stop_time);
         new_track->set_confidence(track.confidence);
@@ -251,7 +280,7 @@ unsigned char *MPFDetectionBuffer::PackImageResponse(
 
     for (vector<MPFImageLocation>::const_iterator locations_iter = locations.begin(); locations_iter != locations.end(); locations_iter++) {
         MPFImageLocation detection = *(locations_iter);
-        DetectionResponse_ImageLocation *new_detection = image_response->add_image_locations();
+        ImageLocation *new_detection = image_response->add_image_locations();
         new_detection->set_x_left_upper(detection.x_left_upper);
         new_detection->set_y_left_upper(detection.y_left_upper);
         new_detection->set_width(detection.width);

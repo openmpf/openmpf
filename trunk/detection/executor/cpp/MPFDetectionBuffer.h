@@ -46,12 +46,13 @@ using org::mitre::mpf::wfm::buffers::DetectionRequest_VideoRequest;
 using org::mitre::mpf::wfm::buffers::DetectionResponse;
 using org::mitre::mpf::wfm::buffers::DetectionResponse_DataType;
 using org::mitre::mpf::wfm::buffers::DetectionResponse_AudioResponse;
-using org::mitre::mpf::wfm::buffers::DetectionResponse_AudioResponse_AudioTrack;
-using org::mitre::mpf::wfm::buffers::DetectionResponse_ImageLocation;
+using org::mitre::mpf::wfm::buffers::AudioTrack;
+using org::mitre::mpf::wfm::buffers::ImageLocation;
 using org::mitre::mpf::wfm::buffers::DetectionResponse_ImageResponse;
 using org::mitre::mpf::wfm::buffers::DetectionResponse_VideoResponse;
-using org::mitre::mpf::wfm::buffers::DetectionResponse_VideoResponse_VideoTrack;
-using org::mitre::mpf::wfm::buffers::DetectionResponse_VideoResponse_VideoTrack_FrameLocationMap;
+using org::mitre::mpf::wfm::buffers::VideoTrack;
+using org::mitre::mpf::wfm::buffers::VideoTrack_FrameLocationMap;
+using org::mitre::mpf::wfm::buffers::PropertyMap;
 
 using std::map;
 using std::string;
@@ -63,14 +64,18 @@ using namespace COMPONENT;
 struct MPFDetectionVideoRequest {
     int start_frame;
     int stop_frame;
+    MPFVideoTrack feed_forward_track;
 };
 
 struct MPFDetectionAudioRequest {
     int start_time;
     int stop_time;
+    MPFAudioTrack feed_forward_track;
 };
 
-struct MPFDetectionImageRequest {};
+struct MPFDetectionImageRequest {
+    MPFImageLocation feed_forward_location;
+};
 
 class MPFDetectionBuffer {
 private:

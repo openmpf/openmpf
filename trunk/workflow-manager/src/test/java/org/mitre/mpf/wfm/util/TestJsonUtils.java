@@ -66,6 +66,7 @@ public class TestJsonUtils {
     /**
      * Test serialize and deserialize a TransientStream using JsonUtils
      */
+    @Test()
     public void runTestTransientStreamSerialization() throws Exception {
 
         TransientStream transientStream1 = new TransientStream(1L,"rtsp://home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/person/obama-basketball.mp4");

@@ -27,6 +27,10 @@
 package org.mitre.mpf.wfm.businessrules.impl;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
@@ -285,15 +289,16 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     return streamingJobRequestEntity;
 	}
 
-	/** Cancel a streaming job
+	/** Cancel a streaming job.
 	 * This method will mark the job as cancelled in both REDIS and in the long-term MySQL database.
-   * // TODO The streaming job cancel request will also be sent along to the components via the Master Node Manager
-	 * @param jobId
-	 * @return true if the streaming job was successfully cancelled, false otherwise
+   * // TODO The streaming job cancel request must also be sent to the components via the Master Node Manager
+	 * @param jobId The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
+   * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job
+   * @return true if the streaming job was successfully cancelled, false otherwise
 	 * @throws WfmProcessingException
 	 */
 	@Override
-	public synchronized boolean cancel(long jobId) throws WfmProcessingException {
+	public synchronized boolean cancel(long jobId, Boolean doCleanup) throws WfmProcessingException {
 		log.debug("[Job {}:*:*] Received request to cancel this streaming job.", jobId);
 		StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
 		if(streamingJobRequest == null) {
@@ -307,6 +312,46 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 			return false;
 		} else {
 			log.info("[Job {}:*:*] Cancelling streaming job.", jobId);
+
+			// If doCleanup is true, then the caller has requested that the output object directory be deleted as part
+      // of the job cancellation
+      if ( doCleanup ) {
+        // delete the output object directory as part of the job cancellation
+        String outputObjectDirectory = streamingJobRequest.getOutputObjectDirectory();
+        if ( outputObjectDirectory == null ) {
+          log.warn("[Job {}:*:*] doCleanup is enabled but the streaming job output object directory is null. Can't cleanup the output object directory for this job.", jobId);
+        } else {
+          // before we start deleting any file system, double check that this is the root directory of the
+          // streaming jobs output object directory.
+          File outputObjectDirectoryFile = new File(outputObjectDirectory);
+          if ( outputObjectDirectoryFile.exists() && outputObjectDirectoryFile.isDirectory() && outputObjectDirectoryFile.isAbsolute()) {
+            Path outputObjectDirectoryFileRootPath = Paths.get(outputObjectDirectoryFile.toURI());
+            // TODO some extra validation should be added here for security to ensure that the output object directory identified is of valid syntax (i.e. error out if equal to "/", etc)
+            // TODO need to define naming convention for VidoeWriter output files.
+            // TODO extra validation should be added here for security to ensure that only VideoWriter output files are deleted.
+            // TODO not sure if we want to allow for following symbolic links here
+            // TODO the software that actually deletes the output object file system is commented out until the security filters can be enforced
+            // TODO what extra handling needs to be added if the cleanup fails?  How to notify the user?
+            log.warn("[Job {}:*:*] doCleanup is enabled but cleanup of the output object directory associated with this streaming job isn't yet implemented, pending the addition of the directory/file validation filters.",jobId);
+//            try {
+//              Files.walk(outputObjectDirectoryFileRootPath, FileVisitOption.FOLLOW_LINKS)
+//                  .sorted(Comparator.reverseOrder())
+//                  .map(Path::toFile)
+//                  .peek(System.out::println)
+//                  .forEach(File::delete);
+//            } catch (IOException ioe) {
+//              String errorMessage =
+//                  "Failed to cleanup the output object file directory for streaming job " + jobId
+//                      + " due to IO exception.";
+//              log.error(errorMessage);
+//              throw new WfmProcessingException(errorMessage, ioe);
+//            }
+
+          } else {
+            log.warn("[Job {}:*:*] doCleanup is enabled but the output object directory associated with this streaming job isn't a viable directory. Can't cleanup the output object directory for this job.", jobId);
+          }
+        }
+      }
 
 			// Mark the streaming job as cancelled in Redis so that future steps in the workflow will know not to continue processing.
 			if ( redis.cancel(jobId) ) {

@@ -104,7 +104,7 @@ public class StreamingJobController {
                     "Other streaming job options include jobProperties object which contains String key-value pairs which override the pipeline's job properties for this streaming job. " +
                     "An optional algorithmProperties object containing <String,Map> key-value pairs can override jobProperties for a specific algorithm defined in the pipeline.  "+
                     "For algorithmProperties, the key should be the algorithm name, and the value should be a Map of String key-value pairs representing properties specific to the named algorithm. "+
-                    "Note that the batch jobs and streaming jobs share a range of valid job ids.  OpenMPF guarantees that the ids of a streaming job and a batch job will be unique",
+                    "Note that the batch jobs and streaming jobs share a range of valid job ids.  OpenMPF guarantees that the ids of a streaming job and a batch job will be unique.",
             produces = "application/json", response = StreamingJobCreationResponse.class)
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "Streaming Job created"),
@@ -140,9 +140,9 @@ public class StreamingJobController {
             //return 200 for successful GET and object
             return new ResponseEntity<>(streamingJobInfoResponseModel, HttpStatus.OK);
         } else {
-            // return 404 for bad id (not found)
+            // return 400 for invalid job id (Bad Request)
             log.error("Error retrieving the StreamingJobInfoResponse model for the streaming job with id '{}'", jobIdPathVar);
-            return new ResponseEntity<>(new StreamingJobInfoResponse(-1, "streaming job "+jobIdPathVar+" doesn't exist"), HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(new StreamingJobInfoResponse(-1, "streaming job "+jobIdPathVar+" doesn't exist"), HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -224,7 +224,7 @@ public class StreamingJobController {
      */
     //EXTERNAL
     @RequestMapping(value = "/rest/streaming/jobs/{id}/cancel", method = RequestMethod.POST, params = {"doCleanup"} )
-    @ApiOperation(value = "Cancels the streaming job with the supplied job id. If doCleanup is true, then the HTTP Response to this request may be delayed while OpenMPF processes the cleanup",
+    @ApiOperation(value = "Cancels the streaming job with the supplied job id. If doCleanup is true, then the HTTP Response to this request may be delayed while OpenMPF processes the cleanup.",
             produces = "application/json", response = StreamingJobCancelResponse.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successful streaming job cancellation attempt"),
@@ -308,12 +308,12 @@ public class StreamingJobController {
 
             } else {
                 log.error("Failure creating streaming job due to a malformed request, check the request parameters against the constraints defined in the REST API");
-                return new StreamingJobCreationResponse(-1, String.format("Failure creating streaming job with External Id '%s'.  Request was not valid, confirm the job parameter constraints and resend the request.", streamingJobCreationRequest.getExternalId()));
+                return new StreamingJobCreationResponse(-1, String.format("Failure creating streaming job with External Id '%s'.  Request was not valid. Confirm the job parameter constraints and resend the request.", streamingJobCreationRequest.getExternalId()));
             }
 
         } catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
             log.error("Failure creating streaming job due to an exception.", ex);
-            return new StreamingJobCreationResponse(-1, String.format("Failure creating streaming job with External Id '%s' due to an exception. Please check server logs for more detail.", streamingJobCreationRequest.getExternalId()));
+            return new StreamingJobCreationResponse(-1, String.format("Failure creating streaming job due to an exception. Please check server logs for more detail."));
         }
     }
 

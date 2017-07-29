@@ -222,7 +222,7 @@ public class MpfServiceImpl implements MpfService {
 
 	/**
 	 * Cancel a batch job
-	 * @param jobId The MPF-assigned identifier for the batch job. The job must be a batch job.
+	 * @param jobId The OpenMPF-assigned identifier for the batch job. The job must be a batch job.
 	 * @return
 	 */
 	@Override
@@ -236,18 +236,16 @@ public class MpfServiceImpl implements MpfService {
 	}
 
 	/**
-	 * Cancel a streaming job
-	 * TODO handle cleanUp
-	 * @param jobId The MPF-assigned identifier for the streaming job. The job must be a streaming job.
-	 * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job
+	 * Cancel a streaming job.
+	 * @param jobId The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
+	 * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job.
 	 * @return
 	 */
 	@Override
 	public boolean cancelStreamingJob(long jobId, Boolean doCleanup) {
 		try {
-			// TODO don't know what to do with doCleanup
 			log.debug(this.getClass().getName()+":cancelStreamingJob: jobId="+jobId+", doCleanup="+doCleanup+" - don't know what to do with doCleanup TODO");
-			boolean status = streamingJobRequestBo.cancel(jobId);
+			boolean status = streamingJobRequestBo.cancel(jobId, doCleanup);
 			return status;
 		} catch ( WfmProcessingException wpe ) {
 			log.error("Failed to cancel Streaming Job #{} due to an exception.", jobId, wpe);

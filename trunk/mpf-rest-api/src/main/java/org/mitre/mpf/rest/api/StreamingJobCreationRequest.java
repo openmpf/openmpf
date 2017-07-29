@@ -123,7 +123,7 @@ public class StreamingJobCreationRequest {
 	 * @return return the specified callback Uri. May be null if not defined
 	 */
 	public String getSummaryReportCallbackUri() { return summaryReportCallbackUri; }
-	public void setSummaryReportCallbackURL(String callbackUri) { this.summaryReportCallbackUri = callbackUri; }
+	public void setSummaryReportCallbackUri(String callbackUri) { this.summaryReportCallbackUri = callbackUri; }
 
 	/** return the NewTrackAlertCallbackUri. May be null if not defined.
 	 * @return return the specified callback Uri. May be null if not defined

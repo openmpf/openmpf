@@ -111,7 +111,8 @@ public class JobController {
                     " Example when no externalId is provided: /api.example.com/foo?jobId=1. The body of a POST callback will always include the 'jobId' and 'externalId', even if the latter is 'null'." +
                     " An optional jobProperties object contains String key-value pairs which override the pipeline's job properties for this job." +
                     " An optional algorithmProperties object containing <String,Map> key-value pairs can override jobProperties for a specific algorithm defined in the pipeline.  "+
-                    "For algorithmProperties, the key should be the algorithm name, and the value should be a Map of String key-value pairs representing properties specific to the named algorithm.",
+                    "For algorithmProperties, the key should be the algorithm name, and the value should be a Map of String key-value pairs representing properties specific to the named algorithm. "+
+                    "Note that the batch jobs and streaming jobs share a range of valid job ids.  OpenMPF guarantees that the ids of a streaming job and a batch job will be unique.",
             produces = "application/json", response = JobCreationResponse.class)
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "Job created"),

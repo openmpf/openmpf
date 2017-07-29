@@ -71,5 +71,12 @@ public interface StreamingJobRequestBo {
 	 */
 	StreamingJobRequest initialize(JsonStreamingJobRequest streamingJobRequest) throws WfmProcessingException;
 
-	boolean cancel(long jobId) throws WfmProcessingException;
+	/**
+	 * Cancel a streaming job.
+	 * @param jobId The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job
+	 * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job
+	 * @return
+	 * @throws WfmProcessingException
+	 */
+	boolean cancel(long jobId, Boolean doCleanup) throws WfmProcessingException;
 }

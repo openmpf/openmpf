@@ -142,7 +142,7 @@ public class MPFDetectionBuffer {
 
             for (int i = 0; i < tracks.size(); i++) {
 
-                DetectionProtobuf.DetectionResponse.AudioResponse.AudioTrack audioTrack = audioResponseBuilder.addAudioTracksBuilder()
+                DetectionProtobuf.AudioTrack audioTrack = audioResponseBuilder.addAudioTracksBuilder()
                         .setStartTime(tracks.get(i).getStartTime())
                         .setStopTime(tracks.get(i).getStopTime())
                         .setConfidence(tracks.get(i).getConfidence())
@@ -177,13 +177,13 @@ public class MPFDetectionBuffer {
                     msgMetadata.getRequestId() + " = " + tracks.size());
 
             for (int i = 0; i < tracks.size(); i++) {
-                Set<DetectionResponse.VideoResponse.VideoTrack.FrameLocationMap> frameLocationMapSet = new HashSet<>();
+                Set<DetectionProtobuf.VideoTrack.FrameLocationMap> frameLocationMapSet = new HashSet<>();
                 for (Map.Entry<Integer,MPFImageLocation> entry : tracks.get(i).getFrameLocations().entrySet()) {
                     MPFImageLocation mpfImageLocation = entry.getValue();
 
-                    DetectionResponse.VideoResponse.VideoTrack.FrameLocationMap frameLocationMap = DetectionResponse.VideoResponse.VideoTrack.FrameLocationMap.newBuilder()
+                    DetectionProtobuf.VideoTrack.FrameLocationMap frameLocationMap = DetectionProtobuf.VideoTrack.FrameLocationMap.newBuilder()
                             .setFrame(entry.getKey())
-                            .setImageLocation(DetectionResponse.ImageLocation.newBuilder()
+                            .setImageLocation(DetectionProtobuf.ImageLocation.newBuilder()
                                     .setHeight(mpfImageLocation.getHeight())
                                     .setWidth(mpfImageLocation.getWidth())
                                     .setConfidence(mpfImageLocation.getConfidence())
@@ -193,7 +193,7 @@ public class MPFDetectionBuffer {
                     frameLocationMapSet.add(frameLocationMap);
 
                 }
-                DetectionProtobuf.DetectionResponse.VideoResponse.VideoTrack videoTrack = videoResponseBuilder.addVideoTracksBuilder()
+                DetectionProtobuf.VideoTrack videoTrack = videoResponseBuilder.addVideoTracksBuilder()
                         .setStartFrame(tracks.get(i).getStartFrame())
                         .setStopFrame(tracks.get(i).getStopFrame())
                         .setConfidence(tracks.get(i).getConfidence())
@@ -230,7 +230,7 @@ public class MPFDetectionBuffer {
                     msgMetadata.getRequestId() + " = " + locations.size());
 
             for (int i = 0; i < locations.size(); i++) {
-                imageResponseBuilder.addImageLocations(DetectionResponse.ImageLocation.newBuilder()
+                imageResponseBuilder.addImageLocations(DetectionProtobuf.ImageLocation.newBuilder()
                         .setHeight(locations.get(i).getHeight())
                         .setWidth(locations.get(i).getWidth())
                         .setConfidence(locations.get(i).getConfidence())

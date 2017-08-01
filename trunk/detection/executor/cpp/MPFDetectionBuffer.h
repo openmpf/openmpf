@@ -64,16 +64,19 @@ using namespace COMPONENT;
 struct MPFDetectionVideoRequest {
     int start_frame;
     int stop_frame;
+    bool has_feed_forward_track = false;
     MPFVideoTrack feed_forward_track;
 };
 
 struct MPFDetectionAudioRequest {
     int start_time;
     int stop_time;
+    bool has_feed_forward_track = false;
     MPFAudioTrack feed_forward_track;
 };
 
 struct MPFDetectionImageRequest {
+    bool has_feed_forward_location = false;
     MPFImageLocation feed_forward_location;
 };
 

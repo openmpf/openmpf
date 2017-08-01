@@ -87,9 +87,11 @@ void MPFDetectionBuffer::GetMediaProperties(map<string, string> &media_propertie
 void MPFDetectionBuffer::GetVideoRequest(MPFDetectionVideoRequest &video_request) {
     video_request.start_frame = detection_request.video_request().start_frame();
     video_request.stop_frame = detection_request.video_request().stop_frame();
+    video_request.has_feed_forward_track = false;
     //If there is a feed-forward track in the request, copy it into an
     //MPFVideoTrack
     if (detection_request.video_request().has_feed_forward_track()) {
+        video_request.has_feed_forward_track = true;
         video_request.feed_forward_track.start_frame =
                 detection_request.video_request().feed_forward_track().start_frame();
         video_request.feed_forward_track.stop_frame =
@@ -119,12 +121,42 @@ void MPFDetectionBuffer::GetVideoRequest(MPFDetectionVideoRequest &video_request
 void MPFDetectionBuffer::GetAudioRequest(MPFDetectionAudioRequest &audio_request) {
     audio_request.start_time = detection_request.audio_request().start_time();
     audio_request.stop_time = detection_request.audio_request().stop_time();
-    //    audio_request.feed_forward_track = detection_request.audio_request().feed_forward_track();
+    audio_request.has_feed_forward_track = false;
+    //If there is a feed-forward track in the request, copy it into an
+    //MPFAudioTrack
+    if (detection_request.audio_request().has_feed_forward_track()) {
+        audio_request.has_feed_forward_track = true;
+        audio_request.feed_forward_track.start_time =
+                detection_request.audio_request().feed_forward_track().start_time();
+        audio_request.feed_forward_track.stop_time =
+                detection_request.audio_request().feed_forward_track().stop_time();
+        audio_request.feed_forward_track.confidence =
+                detection_request.audio_request().feed_forward_track().confidence();
+        // Copy the track properties
+        for (auto prop : detection_request.audio_request().feed_forward_track().detection_properties()) {
+            audio_request.feed_forward_track.detection_properties[prop.key()] = prop.value();
+        }
+    }
 }
 
 void MPFDetectionBuffer::GetImageRequest(MPFDetectionImageRequest &image_request) {
-    //    image_request.feed_forward_location = detection_request.image_request().feed_forward_location();
-
+    image_request.has_feed_forward_location = false;
+    if (detection_request.image_request().has_feed_forward_location()) {
+        image_request.has_feed_forward_location = true;
+        image_request.feed_forward_location.x_left_upper =
+                detection_request.image_request().feed_forward_location().x_left_upper();
+        image_request.feed_forward_location.y_left_upper =
+                detection_request.image_request().feed_forward_location().y_left_upper();
+        image_request.feed_forward_location.width =
+                detection_request.image_request().feed_forward_location().width();
+        image_request.feed_forward_location.height =
+                detection_request.image_request().feed_forward_location().height();
+        image_request.feed_forward_location.confidence =
+                detection_request.image_request().feed_forward_location().confidence();
+    }
+    for (auto prop : detection_request.image_request().feed_forward_location().detection_properties()) {
+        image_request.feed_forward_location.detection_properties[prop.key()] = prop.value();
+    }
 }
 
 void MPFDetectionBuffer::PackCommonFields(

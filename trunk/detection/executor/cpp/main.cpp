@@ -255,16 +255,34 @@ int main(int argc, char* argv[]) {
                     string detection_type = detection_engine->GetDetectionType();
 
                     if (detection_engine->Supports(data_type)) {
-
+                        MPFDetectionError rc;
                         if (data_type == MPFDetectionDataType::VIDEO) {
                             vector <MPFVideoTrack> tracks;
 
+                            if (video_request.has_feed_forward_track) {
+                                // Invoke the detection component with
+                                // a feed-forward track
+                                MPFVideoJob video_job(job_name.str(),
+                                                      data_uri,
+                                                      video_request.start_frame,
+                                                      video_request.stop_frame,
+                                                      video_request.feed_forward_track,
+                                                      algorithm_properties,
+                                                      media_properties);
 
-                            MPFVideoJob video_job(job_name.str(), data_uri, video_request.start_frame,
-                                                  video_request.stop_frame, algorithm_properties, media_properties);
+                                rc = detection_engine->GetDetections(video_job, tracks);
+                            }
+                            else {
+                                // Invoke the detection component
+                                // without a feed-forward track
+                                MPFVideoJob video_job(job_name.str(), data_uri,
+                                                      video_request.start_frame,
+                                                      video_request.stop_frame,
+                                                      algorithm_properties,
+                                                      media_properties);
 
-                            // Invoke component
-                            MPFDetectionError rc = detection_engine->GetDetections(video_job, tracks);
+                                rc = detection_engine->GetDetections(video_job, tracks);
+                            }
 
                             msg_metadata->time_elapsed = time.elapsed();
                             
@@ -278,13 +296,31 @@ int main(int argc, char* argv[]) {
 
                         } else if (data_type == MPFDetectionDataType::AUDIO) {
                             vector <MPFAudioTrack> tracks;
+                            if (audio_request.has_feed_forward_track) {
+                                // Invoke the detection component with
+                                // a feed-forward track
+                                MPFAudioJob audio_job(job_name.str(),
+                                                      data_uri,
+                                                      audio_request.start_time,
+                                                      audio_request.stop_time,
+                                                      audio_request.feed_forward_track,
+                                                      algorithm_properties,
+                                                      media_properties);
 
-                            MPFAudioJob audio_job(job_name.str(), data_uri, audio_request.start_time,
-                                                  audio_request.stop_time, algorithm_properties, media_properties);
+                                rc = detection_engine->GetDetections(audio_job, tracks);
+                            }
+                            else {
+                                // Invoke the detection component
+                                // without a feed-forward track
+                                MPFAudioJob audio_job(job_name.str(),
+                                                      data_uri,
+                                                      audio_request.start_time,
+                                                      audio_request.stop_time,
+                                                      algorithm_properties,
+                                                      media_properties);
 
-                            // Invoke the detection component
-                            MPFDetectionError rc = detection_engine->GetDetections(audio_job, tracks);
-
+                                rc = detection_engine->GetDetections(audio_job, tracks);
+                            }
                             msg_metadata->time_elapsed = time.elapsed();
 
                             if (rc != MPF_DETECTION_SUCCESS) {
@@ -297,11 +333,27 @@ int main(int argc, char* argv[]) {
 
                         } else if (data_type == MPFDetectionDataType::IMAGE) {
                             vector <MPFImageLocation> locations;
-                            MPFImageJob image_job(job_name.str(), data_uri, algorithm_properties, media_properties);
+                            if (image_request.has_feed_forward_location) {
+                                // Invoke the detection component with
+                                // a feed-forward location
+                                MPFImageJob image_job(job_name.str(),
+                                                      data_uri,
+                                                      image_request.feed_forward_location,
+                                                      algorithm_properties,
+                                                      media_properties);
 
-                            // Invoke component
-                            MPFDetectionError rc = detection_engine->GetDetections(image_job, locations);
+                                rc = detection_engine->GetDetections(image_job, locations);
+                            }
+                            else {
+                                // Invoke the detection component
+                                // without a feed-forward location
+                                MPFImageJob image_job(job_name.str(),
+                                                      data_uri,
+                                                      algorithm_properties,
+                                                      media_properties);
 
+                                rc = detection_engine->GetDetections(image_job, locations);
+                            }
                             msg_metadata->time_elapsed = time.elapsed();
 
                             if (rc != MPF_DETECTION_SUCCESS) {

@@ -59,6 +59,13 @@ public class MPFDetectionBuffer {
         }
     }
 
+    public Map<String, String> copyProperties(List<DetectionProtobuf.PropertyMap> prop_map) {
+	Map<String, String> props = new HashMap<String, String>();
+	for (int i = 0; i < prop_map.size(); i++) {
+	    props.put(prop_map.get(i).getKey(), prop_map.get(i).getValue());
+	}
+	return props;
+    }
     public MPFMessageMetadata getMessageMetadata(final byte[] requestContents) {
 
         MPFMessageMetadata inputs = null;
@@ -73,11 +80,7 @@ public class MPFDetectionBuffer {
             algorithmProperties.put(algProp.getPropertyName(), algProp.getPropertyValue());
         }
 
-        Map<String, String> mediaProperties = new HashMap<String, String>();
-        for (int i = 0; i < detectionRequest.getMediaMetadataList().size(); i++) {
-            DetectionProtobuf.PropertyMap mediaMetaProp = detectionRequest.getMediaMetadata(i);
-            mediaProperties.put(mediaMetaProp.getKey(), mediaMetaProp.getValue());
-        }
+	Map<String, String> mediaProperties = copyProperties(detectionRequest.getMediaMetadataList());
 
         String jobName = "Job " + detectionRequest.getRequestId() + ":" + FilenameUtils.getName(dataUri);
         inputs = new MPFMessageMetadata(dataUri, dataType,
@@ -90,19 +93,87 @@ public class MPFDetectionBuffer {
     }
 
     public MPFDetectionAudioRequest getAudioRequest() {
-        return new MPFDetectionAudioRequest(
-            detectionRequest.getAudioRequest().getStartTime(),
-            detectionRequest.getAudioRequest().getStopTime());
+	if (detectionRequest.getAudioRequest().hasFeedForwardTrack()) {
+	    DetectionProtobuf.AudioTrack track = detectionRequest.getAudioRequest().getFeedForwardTrack();
+	    // Copy the properties
+	    Map<String, String> trackProps = copyProperties(track.getDetectionPropertiesList());
+	    MPFAudioTrack new_track = new MPFAudioTrack(track.getStartTime(),
+							track.getStopTime(),
+							track.getConfidence(),
+							trackProps);
+	    return new MPFDetectionAudioRequest(
+                           detectionRequest.getAudioRequest().getStartTime(),
+                           detectionRequest.getAudioRequest().getStopTime(),
+			   new_track);
+	}
+	else {
+	    return new MPFDetectionAudioRequest(
+                           detectionRequest.getAudioRequest().getStartTime(),
+                           detectionRequest.getAudioRequest().getStopTime());
+	}
     }
 
     public MPFDetectionVideoRequest getVideoRequest() {
-        return new MPFDetectionVideoRequest(
+	if (detectionRequest.getVideoRequest().hasFeedForwardTrack()) {
+	    DetectionProtobuf.VideoTrack track = detectionRequest.getVideoRequest().getFeedForwardTrack();
+
+	    // Copy the frame locations map
+	    Map<Integer, MPFImageLocation> locations = new HashMap<Integer, MPFImageLocation>();
+	    for (int i = 0; i < track.getFrameLocationsList().size(); i++) {
+		DetectionProtobuf.VideoTrack.FrameLocationMap loc_map = track.getFrameLocations(i);
+
+		// Copy the detection properties for this location
+		Map<String, String> locationProps =
+		    copyProperties(loc_map.getImageLocation().getDetectionPropertiesList());
+		// Create a new image location and put it into the new map
+		MPFImageLocation loc = new MPFImageLocation(loc_map.getImageLocation().getXLeftUpper(),
+							    loc_map.getImageLocation().getYLeftUpper(),
+							    loc_map.getImageLocation().getWidth(),
+							    loc_map.getImageLocation().getHeight(),
+							    loc_map.getImageLocation().getConfidence(),
+							    locationProps);
+		locations.put(loc_map.getFrame(), loc);
+	    }
+	    // Copy the properties for the track itself
+	    Map<String, String> trackProps = copyProperties(track.getDetectionPropertiesList());
+
+	    MPFVideoTrack new_track = new MPFVideoTrack(track.getStartFrame(),
+							track.getStopFrame(),
+							locations,
+							track.getConfidence(),
+							trackProps);
+
+	    return new MPFDetectionVideoRequest(
+                detectionRequest.getVideoRequest().getStartFrame(),
+                detectionRequest.getVideoRequest().getStopFrame(),
+		new_track);
+	}
+	else {
+	    return new MPFDetectionVideoRequest(
                 detectionRequest.getVideoRequest().getStartFrame(),
                 detectionRequest.getVideoRequest().getStopFrame());
+	}
     }
 
     public MPFDetectionImageRequest getImageRequest() {
-        return new MPFDetectionImageRequest();
+	if (detectionRequest.getImageRequest().hasFeedForwardLocation()) {
+	    DetectionProtobuf.ImageLocation tmp_loc =
+		detectionRequest.getImageRequest().getFeedForwardLocation();
+
+	    Map<String, String> locationProperties =
+		copyProperties(tmp_loc.getDetectionPropertiesList());
+
+	    MPFImageLocation loc = new MPFImageLocation(tmp_loc.getXLeftUpper(),
+							tmp_loc.getYLeftUpper(),
+							tmp_loc.getWidth(),
+							tmp_loc.getHeight(),
+							tmp_loc.getConfidence(),
+							locationProperties);
+	    return new MPFDetectionImageRequest(loc);
+	}
+	else {
+	    return new MPFDetectionImageRequest();
+	}
     }
 
 

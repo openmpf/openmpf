@@ -347,7 +347,7 @@ sub mavenCompile {
 
     # This maven run is mainly to build and install the node manager.
     # Components will be built through Jenkins' call to Maven or through PackageRPMS.pl.
-    my $buildCommand = "mvn install -Pjenkins -DskipTests -Dmaven.test.skip=true -DskipITs -Dmaven.tomcat.skip=true -Dcomponents.build.components='' |";
+    my $buildCommand = "mvn install -Pjenkins -DskipTests -Dmaven.test.skip=true -DskipITs -Dmaven.tomcat.skip=true -Dcomponents.build.dir=$mpfPath -Dcomponents.build.components='' |";
 
 	chdir "$mpfPath";
     open PIPE, $buildCommand;

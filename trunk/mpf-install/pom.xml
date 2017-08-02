@@ -66,20 +66,13 @@
             <artifactId>mpf-java-component-executor</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- needed to populate $MPF_HOME/bin -->
         <dependency>
             <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-project</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
         </dependency>
-        <!-- this is a war
-            <dependency>
-              <groupId>org.mitre.mpf</groupId>
-              <artifactId>workflow-manager</artifactId>
-              <version>${project.version}</version>
-              <type>war</type>
-            </dependency>
-        -->
     </dependencies>
 
 </project>

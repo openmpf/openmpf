@@ -123,6 +123,13 @@
             <version>${project.parent.version}</version>
             <type>pom</type>
         </dependency>
+        <!-- needed for IT tests -->
+        <dependency>
+            <groupId>org.mitre.mpf</groupId>
+            <artifactId>mpf-install</artifactId>
+            <version>${project.parent.version}</version>
+            <type>pom</type>
+        </dependency>
         <!-- / MPF -->
 
         <!-- added for REST web services -->

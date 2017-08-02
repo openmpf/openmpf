@@ -46,6 +46,7 @@
             <artifactId>hamcrest-all</artifactId>
             <version>1.3</version>
         </dependency>
+        <!-- depends on workflow-manager-classes.jar for applicationContext.xml -->
         <dependency>
             <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-workflowManager</artifactId>

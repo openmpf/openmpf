@@ -69,8 +69,8 @@ public class StageResponseAggregationRoute extends RouteBuilder {
 			.aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)
 			.completionPredicate(new SplitCompletedPredicate())
 			.removeHeader(MpfHeaders.SPLIT_COMPLETED)
-			.processRef(JobRetrievalProcessor.REF)
-			.processRef(EndOfStageProcessor.REF)
+			.process(JobRetrievalProcessor.REF)
+			.process(EndOfStageProcessor.REF)
 			.to(exitPoint);
 	}
 }

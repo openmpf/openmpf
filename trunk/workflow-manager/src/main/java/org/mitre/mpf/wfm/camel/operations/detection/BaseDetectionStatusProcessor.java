@@ -24,44 +24,39 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel.routes;
+package org.mitre.mpf.wfm.camel.operations.detection;
 
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.camel.operations.detection.DetectionCancellationProcessor;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+import org.apache.camel.Exchange;
+import org.apache.camel.Processor;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 
-@Component
-public class DetectionCancellationRouteBuilder extends RouteBuilder {
-	private static final Logger log = LoggerFactory.getLogger(DetectionCancellationRouteBuilder.class);
+/**
+ * This class is used to create a simple detection response. It can be extended to provide a specific error status.
+ */
+public abstract class BaseDetectionStatusProcessor implements Processor {
 
-	public static final String ENTRY_POINT = MpfEndpoints.CANCELLED_DETECTIONS;
-	public static final String EXIT_POINT = MpfEndpoints.COMPLETED_DETECTIONS;
-	public static final String ROUTE_ID = "Detection Cancellation Route";
+	protected void process(Exchange exchange, DetectionProtobuf.DetectionError error) throws Exception {
+		// Copy the headers from the incoming message to the outgoing message.
+		exchange.getOut().getHeaders().putAll(exchange.getIn().getHeaders());
 
-	private final String entryPoint, exitPoint, routeId;
+		DetectionProtobuf.DetectionRequest extractionRequest = DetectionProtobuf.DetectionRequest.parseFrom(exchange.getIn().getBody(byte[].class));
 
-	public DetectionCancellationRouteBuilder() {
-		this(ENTRY_POINT, EXIT_POINT, ROUTE_ID);
-	}
+		// Create a simple response based on the request and indicate that the request was cancelled.
+		exchange.getOut().setBody(
+			DetectionProtobuf.DetectionResponse.newBuilder()
+				.setActionIndex(extractionRequest.getActionIndex())
+				.setActionName(extractionRequest.getActionName())
+				.setDataType(DetectionProtobuf.DetectionResponse.DataType.valueOf(extractionRequest.getDataType().name()))
+				.setError(error)
+				.setMediaId(extractionRequest.getMediaId())
+				.setRequestId(extractionRequest.getRequestId())
+				.setStageIndex(extractionRequest.getStageIndex())
+				.setStageName(extractionRequest.getStageName())
 
-	public DetectionCancellationRouteBuilder(String entryPoint, String exitPoint, String routeId) {
-		this.entryPoint = entryPoint;
-		this.exitPoint = exitPoint;
-		this.routeId = routeId;
-	}
+				// Build the response...
+				.build()
 
-	@Override
-	public void configure() throws Exception {
-		log.debug("Configuring route '{}'.", routeId);
-
-		from(entryPoint)
-			.routeId(routeId)
-			.setExchangePattern(ExchangePattern.InOnly)
-			.process(DetectionCancellationProcessor.REF)
-			.to(exitPoint);
+				// ...then convert it to a byte array.
+				.toByteArray());
 	}
 }

@@ -66,7 +66,7 @@ public class MarkupResponseRouteBuilder extends RouteBuilder {
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
 			.unmarshal(new ProtobufDataFormat(Markup.MarkupResponse.getDefaultInstance()))
-			.processRef(MarkupResponseProcessor.REF)
+			.process(MarkupResponseProcessor.REF)
 			.choice()
 				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(Boolean.TRUE.toString()))
 					.to(MpfEndpoints.UNSOLICITED_MESSAGES)

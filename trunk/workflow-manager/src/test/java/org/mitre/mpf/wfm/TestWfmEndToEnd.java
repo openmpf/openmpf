@@ -52,8 +52,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -64,8 +62,6 @@ import java.util.*;
 
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
-@ComponentScan({"org.mitre.mpf"})
-@Configuration
 @RunWith(SpringJUnit4ClassRunner.class)
 public class TestWfmEndToEnd {
 	protected static final Logger log = LoggerFactory.getLogger(TestWfmEndToEnd.class);

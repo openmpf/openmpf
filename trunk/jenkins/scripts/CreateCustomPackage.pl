@@ -212,10 +212,9 @@ foreach $elem ( @{ $data->{'MPF_Core_Tars'} }) {
 
 # Process the MPF Component Tars
 MPF::Jenkins::printInfo("Copying plugin packages from $mpfPath/mpf-component-build/plugin-packages.\n");
-my @plugins = glob("$mpfPath/mpf-component-build/plugin-packages/*.tar.gz");
-foreach my $plugin (@plugins) {
-    my($filename, $dirs, $suffix) = fileparse($plugin, ".tar.gz");
-    system "cp $dirs$filename.tar.gz $tarDest/$filename.tar.gz";
+foreach $elem ( @{ $data->{'MPF_Components'} }) {
+    print "MPF Component tar = $elem->{name}\n";
+    system "cp $mpfPath/mpf-component-build/plugin-packages/$elem->{name}*.tar.gz $tarDest";
 }
 
 # Tar everything up!

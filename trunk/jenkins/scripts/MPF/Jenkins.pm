@@ -333,30 +333,34 @@ sub cleanMaven {
 }
 
 
-sub mavenCompile {
+sub mavenCompileNodeManager {
 	if ((@_) != 1) {
 		printFatal("Needed 1 argument: mpfPath.\n");
 		fatalExit();
 	}
 	my $mpfPath = $_[0];
 	my $pwd = `pwd`;
-	
-	printInfo("Building MPF\n");
-	printWarn("\t\tThis may take a few minutes.\n");
-	printWarn("\t\tTake a stretch break.\n");
 
-    # This maven run is mainly to build and install the node manager.
-    # Components will be built through Jenkins' call to Maven or through PackageRPMS.pl.
-    my $buildCommand = "mvn install -Pjenkins -DskipTests -Dmaven.test.skip=true -DskipITs -Dmaven.tomcat.skip=true -Dcomponents.build.dir=$mpfPath/mpf-component-build -Dcomponents.build.components='' |";
+	printInfo("Compiling MPF Node Manager\n");
 
-	chdir "$mpfPath";
-    open PIPE, $buildCommand;
+	my $buildCommand = "mvn install -Pjenkins -DskipTests -Dmaven.test.skip=true -DskipITs";
+
+	chdir "$mpfPath/trunk/node-manager";
+	open PIPE, $buildCommand . " |";
 	while(<PIPE>) {
 	   printMaven($_);
 	}
 	close PIPE;
-	printInfo("Compilation completed.\n");
-	
+
+	chdir "$mpfPath/trunk/mpf-install";
+	open PIPE, $buildCommand . " -f node-manager-only-pom.xml |";
+	while(<PIPE>) {
+	   printMaven($_);
+	}
+	close PIPE;
+
+	printInfo("Node Manager compilation completed.\n");
+
 	chdir $pwd;
 }
 
@@ -495,7 +499,7 @@ sub installNodeManager {
 	system "sudo chmod -R 777 $mpfPath/trunk/install";
 	
 	if (-f "/etc/init.d/node-manager") {
-		printInfo("Removing the old node manager instaled in /etc/init.d\n");
+		printInfo("Removing the old node manager installed in /etc/init.d\n");
 		system "sudo rm /etc/init.d/node-manager";
 	} else {
 		printInfo("No old node-manager to remove.\n");

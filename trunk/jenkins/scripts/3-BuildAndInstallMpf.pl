@@ -50,8 +50,8 @@ if ($hostname eq "master") {
 	$hostname = "jenkins-mpf-1.mitre.org";
 }
 
-MPF::Jenkins::printDebug("Building MPF from source.\n");
-MPF::Jenkins::mavenCompile($mpfPath);
+MPF::Jenkins::printDebug("Compiling Node Manager from source.\n");
+MPF::Jenkins::mavenCompileNodeManager($mpfPath);
 
 MPF::Jenkins::printDebug("Installing the MPF runtime environment profile.\n");
 MPF::Jenkins::installProfile($mpfPath, $mpfLogPath, $hostname);

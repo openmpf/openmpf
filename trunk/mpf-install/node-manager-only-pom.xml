@@ -31,55 +31,21 @@
         <groupId>org.mitre.mpf</groupId>
         <artifactId>mpf-install-base</artifactId>
         <version>0.10.0</version>
-	    <relativePath>base-pom.xml</relativePath>
+        <relativePath>base-pom.xml</relativePath>
     </parent>
 
     <groupId>org.mitre.mpf</groupId>
-    <artifactId>mpf-install</artifactId>
+    <artifactId>mpf-install-node-manager-only</artifactId>
     <packaging>pom</packaging>
-    <name>MPF Install</name>
+    <name>MPF Install (Node Manager Only)</name>
 
     <!-- our jar modules and their dependencies: the one found first wins even over a newer version -->
     <dependencies>
         <dependency>
             <groupId>org.mitre.mpf</groupId>
-            <artifactId>mpf-protobuf</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-nodemanager</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.mitre.mpf</groupId>
-            <artifactId>mpf-markup</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mitre.mpf</groupId>
-            <artifactId>mpf-video-overlay</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mitre.mpf</groupId>
-            <artifactId>mpf-java-component-executor</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mitre.mpf</groupId>
-            <artifactId>mpf-project</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-        </dependency>
-        <!-- this is a war
-            <dependency>
-              <groupId>org.mitre.mpf</groupId>
-              <artifactId>workflow-manager</artifactId>
-              <version>${project.version}</version>
-              <type>war</type>
-            </dependency>
-        -->
     </dependencies>
 
 </project>

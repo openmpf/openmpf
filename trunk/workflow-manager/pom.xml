@@ -45,9 +45,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.rpm.prefix>/opt/apache-tomcat/webapps</maven.rpm.prefix>
-        <node.manager.hostname>localhost.localdomain</node.manager.hostname>
         <tomcat.port>8080</tomcat.port>
-        <json.output.object.schema.version>2.0</json.output.object.schema.version>
     </properties>
 
     <repositories>
@@ -843,7 +841,6 @@
         <profile>
             <id>jenkins</id>
             <properties>
-                <node.manager.hostname>jenkins-mpf-1.mitre.org</node.manager.hostname>
                 <tomcat.port>8181</tomcat.port>
             </properties>
             <build>

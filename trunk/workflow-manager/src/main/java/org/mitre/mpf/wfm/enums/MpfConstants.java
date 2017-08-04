@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,20 +29,23 @@ package org.mitre.mpf.wfm.enums;
 public class MpfConstants {
 	public static final String
 		ARTIFACT_EXTRACTION_POLICY_PROPERTY = "ARTIFACT_EXTRACTION_POLICY",
-		MINIMUM_SEGMENT_LENGTH_PROPERTY = "MIN_SEGMENT_LENGTH",
-		MINIMUM_GAP_BETWEEN_SEGMENTS = "MIN_GAP_BETWEEN_SEGMENTS",
 		MEDIA_SAMPLING_INTERVAL_PROPERTY = "FRAME_INTERVAL",
-		MERGE_TRACKS_PROPERTY = "MERGE_TRACKS",
 		CONFIDENCE_THRESHOLD_PROPERTY = "CONFIDENCE_THRESHOLD",
-		ROTATION_PROPERTY = "ROTATION",
-		HORIZONTAL_FLIP_PROPERTY = "HORIZONTAL_FLIP",
-		AUTO_ROTATE_PROPERTY = "AUTO_ROTATE",
-		AUTO_FLIP_PROPERTY = "AUTO_FLIP",
-		REPORT_ERROR = "REPORT_ERROR",
+		MINIMUM_GAP_BETWEEN_SEGMENTS = "MIN_GAP_BETWEEN_SEGMENTS",
 		TARGET_SEGMENT_LENGTH_PROPERTY = "TARGET_SEGMENT_LENGTH",
+		MINIMUM_SEGMENT_LENGTH_PROPERTY = "MIN_SEGMENT_LENGTH",
+		MERGE_TRACKS_PROPERTY = "MERGE_TRACKS",
+		MIN_GAP_BETWEEN_TRACKS = "MIN_GAP_BETWEEN_TRACKS",
+		MIN_TRACK_LENGTH = "MIN_TRACK_LENGTH",
+		MIN_TRACK_OVERLAP = "MIN_OVERLAP",
+		SEARCH_REGION_ENABLE_DETECTION_PROPERTY = "SEARCH_REGION_ENABLE_DETECTION",
 		SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY = "SEARCH_REGION_TOP_LEFT_X_DETECTION",
 		SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY = "SEARCH_REGION_TOP_LEFT_Y_DETECTION",
 		SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY = "SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION",
 		SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY = "SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION",
-		SEARCH_REGION_ENABLE_DETECTION_PROPERTY = "SEARCH_REGION_ENABLE_DETECTION";
+		ROTATION_PROPERTY = "ROTATION",
+		HORIZONTAL_FLIP_PROPERTY = "HORIZONTAL_FLIP",
+		AUTO_ROTATE_PROPERTY = "AUTO_ROTATE",
+		AUTO_FLIP_PROPERTY = "AUTO_FLIP",
+		REPORT_ERROR = "REPORT_ERROR";
 }

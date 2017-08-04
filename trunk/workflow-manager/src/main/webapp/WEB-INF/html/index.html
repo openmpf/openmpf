@@ -5,11 +5,11 @@
     under contract, and is subject to the Rights in Data-General Clause
     52.227-14, Alt. IV (DEC 2007).
 
-    Copyright 2016 The MITRE Corporation. All Rights Reserved.
+    Copyright 2017 The MITRE Corporation. All Rights Reserved.
 -->
 
 <!--
-    Copyright 2016 The MITRE Corporation
+    Copyright 2017 The MITRE Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@
                     <a class="dropdown-toggle active" id="jobs_dropdown" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Jobs<span class="caret"></span></a>
                     <ul class="dropdown-menu">
                         <li><a ui-sref="/jobs" id="menu_jobs" title="View status of queued jobs">Status</a></li>
-                        <li><a ui-sref="/server_media" id="menu_server_media" title="Create jobs and upload mediato the server">Create</a></li>
+                        <li><a ui-sref="/server_media" id="menu_server_media" title="Create jobs and upload media to the server">Create</a></li>
                         <li><a ui-sref="/adminStatistics" id="menu_adminStatistics" title="Displays job statistics">Statistics</a></li>
                     </ul>
                 </li>
@@ -104,7 +104,7 @@
                         <li><a ui-sref="/adminLogs" id="menu_adminLogs" title="Display process and system logs">Logs</a></li>
                         <li><a href="swagger-ui.html" target="_blank" title="Displays REST web service information (for Developers)">REST API</a></li>
                         <li><a ui-sref="/pipelines" id="menu_pipelines" title="Create and edit pipelines and algorithms">Pipelines </a></li>
-                        <!--<li><a ui-sref="/pipelines2" id="menu_pipelines2" title="Create and edit pipelines and algorithms">Pipelines 2</a></li>-->
+                        <li><a ui-sref="/pipelines2" id="menu_pipelines2" title="Create and edit pipelines and algorithms">Pipelines 2</a></li>
                     </ul>
                 </li>
                 <li><a ui-sref="/about">About</a></li>
@@ -225,6 +225,7 @@ tree rendering for each click... this would nearly lock the browser up with ~100
 
 <!-- angular ui-select -->
 <script src="resources/js/lib/select.min.js"></script>
+<!--<script src="resources/js/lib/select.js"></script>-->
 
 <!-- angular confirm dialog -->
 <script src="resources/js/lib/angular-confirm.js"></script>
@@ -254,14 +255,12 @@ tree rendering for each click... this would nearly lock the browser up with ~100
 	<!-- Pipelines (original version before Pipelines2 -->
 	<script src="resources/js/controllers/PipelinesCtrl.js"></script>  <!-- todo: remove when pipelines2 is done -->
 <!--Pipelines2-->
-<!--
 	<script src="resources/js/angular_app/pipelines2/AlgorithmService.js"></script>
 	<script src="resources/js/angular_app/pipelines2/ActionService.js"></script>
 	<script src="resources/js/angular_app/pipelines2/TaskService.js"></script>
     <script src="resources/js/directives/simplePipeline/pipeline-directives.js"></script>
     <script src="resources/js/angular_app/pipelines2/Pipelines2Ctrl.js"></script>
     <script src="resources/js/angular_app/pipelines2/actionProperties.js"></script>
--->
 
 <script>
     var checkForRootInfoId = undefined;

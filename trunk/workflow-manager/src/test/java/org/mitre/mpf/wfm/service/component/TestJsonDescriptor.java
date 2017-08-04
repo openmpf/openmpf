@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -44,7 +44,7 @@ public class TestJsonDescriptor {
 
         assertEquals("CplusplusHelloWorld", descriptor.componentName);
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
-        assertEquals("0.9.0", descriptor.componentVersion);
+        assertEquals("0.10.0", descriptor.componentVersion);
         assertEquals(Collections.singletonList(
                 "${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so"),
                 descriptor.launchArgs);
@@ -67,7 +67,7 @@ public class TestJsonDescriptor {
 
         assertEquals("CplusplusHelloCustomPipelinesComponent", descriptor.componentName);
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
-        assertEquals("0.9.0", descriptor.componentVersion);
+        assertEquals("0.10.0", descriptor.componentVersion);
         assertEquals(Collections.singletonList(
                 "${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so"),
                 descriptor.launchArgs);
@@ -119,9 +119,9 @@ public class TestJsonDescriptor {
         assertNull(descriptor.pipelines);
         assertEquals("JavaTestDetection", descriptor.componentName);
         assertEquals(ComponentLanguage.JAVA, descriptor.sourceLanguage);
-        assertEquals("0.9.0", descriptor.componentVersion);
-        assertEquals("0.9.0", descriptor.middlewareVersion);
-        assertEquals("mpf-java-test-detection-component-0.9.0.jar", descriptor.pathName);
+        assertEquals("0.10.0", descriptor.componentVersion);
+        assertEquals("0.10.0", descriptor.middlewareVersion);
+        assertEquals("mpf-java-test-detection-component-0.10.0.jar", descriptor.pathName);
         assertTrue(descriptor.launchArgs.isEmpty());
         assertEquals(1, descriptor.environmentVariables.size());
         JsonComponentDescriptor.EnvironmentVariable envVar = descriptor.environmentVariables.get(0);

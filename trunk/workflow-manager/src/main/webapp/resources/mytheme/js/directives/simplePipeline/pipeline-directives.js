@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -49,7 +49,7 @@ var templateUrlPath = 'resources/js/directives';
                 scope.logTasks = function() {
                     console.log("tasks->");
                     console.log(scope.tasks);
-                }
+                };
             }
         };
     }]);
@@ -65,13 +65,39 @@ var templateUrlPath = 'resources/js/directives';
                 indexInSequence: "@",
                 opObj: "="
             },
-            link: function( scope /*, element, attrs*/ ) {
-                scope.logTask = function() {
+            link: function (scope /*, element, attrs*/) {
+                scope.logTask = function () {
                     console.log("task->");
                     console.log(scope.task);
-                    console.log("indexInSequence="+scope.indexInSequence)
-                }
-            }
+                    console.log("indexInSequence=" + scope.indexInSequence)
+                    console.log("containsParallelActions()->");
+                    console.log(scope.containsParallelActions());
+                };
+
+                scope.containsParallelActions = function () {
+                    return ( scope.task.actions.length > 1 )
+                };
+
+                // remove a task from task sequence (pipeline)
+                //  if task is null, then user wants to create a new action/task
+                scope.removeTaskFromPipeline = function ($event) {
+                    console.log("removeTaskFromPipeline( $event -> )");
+                    console.log($event);
+                    $event.stopPropagation();   // so it doesn't also fire popover
+                    scope.opObj.removeTaskFromPipeline(scope.indexInSequence);
+                };
+
+            },
+            controller: ['$scope', function ($scope) {
+                $scope.canEdit = function () {
+                    if ($scope.opObj) {
+                        return $scope.opObj.inEditMode();
+                    }
+                    else {
+                        return true;
+                    }
+                };
+            }]
         };
     }]);
 
@@ -86,53 +112,86 @@ var templateUrlPath = 'resources/js/directives';
                 scope: {
                     actionObj: "=?",
                     noPopover: "=?",
-                    canEdit: "=?",
-                    indexInSequence: "@?",
-                    opObj: "=?"
+                    indexInSequence: "@?",  // for actions inside both parallel and non-parallel tasks
+                    opObj: "=?",
+                    taskObj: "="
                 },
                 link: function( scope, element, attrs ) {
                     scope.arrowIn = attrs.hasOwnProperty('arrowIn');
                     scope.showPopover = !attrs.hasOwnProperty('noPopover');
                     // arrowOut without a condition is equivalent to arrowOut="true"
                     scope.arrowOut = attrs.hasOwnProperty('arrowOut');
-                    if ( scope.arrowOut && attrs.arrowOut !== "" ) {
+                    if (scope.arrowOut && attrs.arrowOut !== "") {
                         attrs.$observe('arrowOut', function (value) {
-                            //console.log("arrowOut=" + value);
                             scope.arrowOut = scope.$eval(value);
                         })
                     }
-                    scope.canEdit = attrs.hasOwnProperty('canEdit');
-                    if ( scope.canEdit && attrs.canEdit !== "" ) {
-                        attrs.$observe('canEdit', function (value) {
-                            //console.log("canEdit=" + value);
-                            scope.canEdit = scope.$eval(value);
-                        })
-                    }
+                    // scope.isParallel = attrs.hasOwnProperty('isParallel');
 
                     // get all available tasks
-                    scope.updateAvailableTasks = function() {
+                    scope.updateAvailableTasks = function () {
                         scope.availableTasks = TaskService.query();
                     };
 
                     // add a task to task sequence (pipeline)
                     //  if task is null, then user wants to create a new action/task
-                    scope.addTaskToPipeline = function( task ) {
-                        console.log("addTaskToPipeline( task -> )");
-                        console.log(task);
-                        console.log("indexInSequence="+scope.indexInSequence)
-                        scope.opObj.addTaskToCurrentPipeline( task.name, scope.indexInSequence );
+                    scope.addTaskToPipeline = function (task) {
+                        // console.log("addTaskToPipeline( task -> )");
+                        // console.log(task);
+                        // console.log("indexInSequence=" + scope.indexInSequence)
+                        scope.opObj.addTaskToCurrentPipeline(task.name, scope.indexInSequence);
                     };
 
                     // remove a task from task sequence (pipeline)
                     //  if task is null, then user wants to create a new action/task
-                    scope.removeTaskFromPipeline = function( $event ) {
-                        console.log("removeTaskFromPipeline( $event -> )");
-                        console.log($event);
+                    scope.removeTaskFromPipeline = function ($event) {
+                        // console.log("removeTaskFromPipeline( $event -> )");
+                        // console.log($event);
                         $event.stopPropagation();   // so it doesn't also fire popover
-                        scope.opObj.removeTaskFromPipeline( scope.indexInSequence );
+                        scope.opObj.removeTaskFromPipeline(scope.indexInSequence);
+                    };
 
-                    }
-                }
+                },
+                controller: ['$scope', function ($scope) {
+                    $scope.canEdit = function() {
+                        if ( $scope.opObj ) {
+                            return $scope.opObj.inEditMode();
+                        }
+                        else {
+                            return true;
+                        }
+                    };
+                    $scope.inParallelTask = function() {
+                        if ( $scope.opObj && $scope.opObj.tasks2 ) {
+                            return $scope.opObj.tasks2.containsParallelActions();
+                        }
+                        else {
+                            return false;
+                        }
+                    };
+                    //
+                    // // remove a action
+                    // //      either from task (if it's part of a parallel task)
+                    // //      or its related task from the pipeline (if it's not part of a parallel task)
+                    // $scope.remove = function ($event) {
+                    //     console.log("remove( $event -> )");
+                    //     console.log($event);
+                    //     $event.stopPropagation();   // so it doesn't also fire popover
+                    //     if ( $scope.inParallelTask() ) { // this is part of a series of parallel actions
+                    //         // $scope.opObj.tasks2.removeActionFromTask($scope.taskObj,$scope.indexInSequence);
+                    //     }
+                    //     else {
+                    //         $scope.opObj.removeTaskFromPipeline($scope.indexInSequence);
+                    //     }
+                    // };
+
+                    // $scope.$on( 'PIPELINE_ENTER_EDIT_MODE', function( event, data ) {
+                    //     console.log("received event-> and data-> in action directive containing action->");
+                    // });
+                    // $scope.$on( 'PIPELINE_EXIT_EDIT_MODE', function( event, data ) {
+                    //     console.log("received event-> and data-> in action directive containing action->");
+                    // });
+                }]
             };
         }
     ]);

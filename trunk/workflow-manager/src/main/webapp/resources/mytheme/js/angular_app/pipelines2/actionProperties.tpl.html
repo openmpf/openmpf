@@ -5,11 +5,11 @@
     under contract, and is subject to the Rights in Data-General Clause
     52.227-14, Alt. IV (DEC 2007).
 
-    Copyright 2016 The MITRE Corporation. All Rights Reserved.
+    Copyright 2017 The MITRE Corporation. All Rights Reserved.
 -->
 
 <!--
-    Copyright 2016 The MITRE Corporation
+    Copyright 2017 The MITRE Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -28,14 +28,14 @@
     <label class="control-label col-md-7 pp-prop-name"
            ng-class="{'pp-modified-value':hasChanged(prop),'pp-action':hasChanged(prop)}"
            for="property-{{prop.name}}-value">{{prop.name}}
-            <span class="pp-information-icon glyphicon glyphicon-question-sign"
+            <span class="pp-information-icon fa fa-info-circle"
                   uib-popover="{{prop.name}}:  {{prop.description}} [{{prop.type}}]" popover-placement="auto left"
-                  popover-class="pp-action"
+                  popover-class="{'pp-modified-value':hasChanged(prop),'pp-action':hasChanged(prop)}"
                   popover-append-to-body popover-trigger="mouseenter"></span>
     </label>
     <div>
         <input class="col-md-2" type="text" id="property-{{prop.name}}-value"
-               ng-class="{'pp-modified-value':!prop.value,'pp-action':!prop.value}"
+               ng-class="{'pp-modified-value':hasChanged(prop),'pp-action':hasChanged(prop)}"
                ng-readonly="!editMode"
                ng-model="prop.value"
                placeholder="{{prop.defaultValue}}"

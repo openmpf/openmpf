@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -40,7 +40,7 @@ var App = angular.module('mpf.wfm', [
 	'angular-confirm',
 	'mpf.wfm.controller.ServerMediaCtrl',
 	'mpf.wfm.controller.AdminComponentRegistrationCtrl',
-	// 'mpf.wfm.pipeline2',
+	'mpf.wfm.pipeline2',
 	'mpf.wfm.filters',
 	'mpf.wfm.services',
 	'mpf.wfm.directives',
@@ -77,14 +77,17 @@ App.config(['$stateProvider', '$urlRouterProvider','$httpProvider' ,function ($s
 		  controller: PipelinesCtrl
 	  });
 
-	  /*
 	  $stateProvider.state('/pipelines2', {
 		  url: '/pipelines2',
 		  templateUrl: 'pipelines2/layout.html',
           controller: 'Pipelines2Ctrl',
-		  controllerAs: 'pipes2'
-	  });
-	  */
+          // controllerAs: 'pipes2',
+          // resolve: {
+          //     init: function() {
+          //         vm.init();
+          //     }
+          // }
+      });
 
 	  $stateProvider.state('/jobs', {
 		  url: '/jobs',

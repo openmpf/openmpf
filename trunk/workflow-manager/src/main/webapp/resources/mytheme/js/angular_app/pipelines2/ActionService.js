@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,7 +28,8 @@
 
 /**
  *
- * Actions are called algorithms in the UI, but actions in the client and server code;
+ * Actions used to be called algorithms in the UI, but have since changed.  They
+ *  should now be called actions in the client and server code;
  *  They are algorithms with 0 or more overridden parameters, specifically so that tasks
  *  can easily refer to them.
  *
@@ -74,28 +75,34 @@
 
                 return {
                     get: function (actionName) {
-                        var action = new actionResource({
-                            $resolved: false,
-                            $promise: getActionWithAlgoInfo(actionName)
-                                .then(function (actionData) {
-                                    //action.name = actionData.name;
-                                    //action.description = actionData.description;
-                                    angular.forEach(actionData, function (value, key) {
-                                        if (key !== '$resolved' && key !== '$promise') {
-                                            action[key] = value;
-                                        }
-                                    });
-                                    action.$resolved = true;
-                                    //console.log("action="+JSON.stringify(action));
-                                    return action;
-                                })
-                        });
-                        return action;
+                        if ( actionName ) {
+                            var action = new actionResource({
+                                $resolved: false,
+                                $promise: getActionWithAlgoInfo(actionName)
+                                    .then(function (actionData) {
+                                        //action.name = actionData.name;
+                                        //action.description = actionData.description;
+                                        angular.forEach(actionData, function (value, key) {
+                                            if (key !== '$resolved' && key !== '$promise') {
+                                                action[key] = value;
+                                            }
+                                        });
+                                        action.$resolved = true;
+                                        //console.log("action="+JSON.stringify(action));
+                                        return action;
+                                    })
+                            });
+                            return action;
+                        }
                     },
                     query: function () {
                         var list = actionResource.query();
                         list.$promise.then( function() {
                             list =  orderByFilter( list, '+name');
+                            //todo: the REST service needs to return algorithmRef
+                            //  so that actions can be searched in the UI
+                            //  by algorithm
+                            // list[0].algorithmRef="ARBITRARY_ALGORITHM";
                         });
                         return list;
                     },

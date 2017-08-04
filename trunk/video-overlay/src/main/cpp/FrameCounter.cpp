@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -37,13 +37,14 @@ extern "C" {
 using namespace cv;
 
 #endif
+
 /*
  * Class:     org_mitre_mpf_framecounter_FrameCounter
  * Method:    countNative
  * Signature: (Ljava/lang/String;)V
  */
 JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
-  (JNIEnv *env, jobject frameCounterInstance, jstring sourceVideoPath)
+  (JNIEnv *env, jobject frameCounterInstance, jstring sourceVideoPath, bool bruteForce)
 {
     int count = -8701;
 
@@ -57,7 +58,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
         if (inChars != NULL) {
             try {
                 VideoCapture src(inChars);
-                if(!src.isOpened())
+                if (!src.isOpened())
                 {
                     // Cleanup...
                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
@@ -65,7 +66,14 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
                     return -8700;
                 }
 
-                count = static_cast<int>(src.get(cv::CAP_PROP_FRAME_COUNT));
+                if (bruteForce) {
+                    count = 0;
+                    while (src.grab()) {
+                        count++;
+                    }
+                } else {
+                    count = static_cast<int>(src.get(cv::CAP_PROP_FRAME_COUNT));
+                }
 
                 src.release();
                 env->ReleaseStringUTFChars(sourceVideoPath, inChars);

@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2017 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2016 The MITRE Corporation                                      #
+# Copyright 2017 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -37,7 +37,7 @@ list(APPEND MediaFiles_NEEDED avcodec avdevice avformat avutil swscale avresampl
                               speex opus gsm openjpeg atspi opencore-amrwb opencore-amrnb)
 
 list(APPEND CMAKE_FIND_LIBRARY_SUFFIXES .so.0 .so.1)
-find_package(OpenCV 3.1 EXACT REQUIRED PATHS /opt/opencv-3.1.0)
+find_package(OpenCV 3.2 EXACT REQUIRED PATHS /opt/opencv-3.2.0)
 
 # Use the following function if the project being built needs to find and install
 # the OpenCV libraries, and the ffmpeg/gstreamer libraries that OpenCV uses.  All of the

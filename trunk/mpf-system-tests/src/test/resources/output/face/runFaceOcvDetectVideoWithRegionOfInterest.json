@@ -1,190 +1,206 @@
 {
-  "jobId": 13,
-  "objectId": "43b659ab-cd5c-40b0-ac77-9664dadee2bc",
+  "jobId": 12,
+  "objectId": "e338ae1c-56fc-40c4-ab50-d62dde31569d",
   "pipeline": {
     "name": "TEST OCV FACE WITH ROI PIPELINE",
     "description": "TEST OCV FACE WITH ROI PIPELINE",
-    "stages": [{
-      "actionType": "DETECTION",
-      "name": "TEST OCV FACE WITH ROI TASK",
-      "description": "TEST OCV FACE WITH ROI TASK",
-      "actions": [{
-        "algorithm": "FACECV",
-        "name": "TEST OCV FACE WITH ROI ACTION",
-        "description": "TEST OCV FACE WITH ROI ACTION",
-        "properties": {
-          "SEARCH_REGION_TOP_LEFT_X_DETECTION": "310",
-          "SEARCH_REGION_ENABLE_DETECTION": "true",
-          "SEARCH_REGION_TOP_LEFT_Y_DETECTION": "50"
-        }
+    "stages": [
+      {
+        "actionType": "DETECTION",
+        "name": "TEST OCV FACE WITH ROI TASK",
+        "description": "TEST OCV FACE WITH ROI TASK",
+        "actions": [
+          {
+            "algorithm": "FACECV",
+            "name": "TEST OCV FACE WITH ROI ACTION",
+            "description": "TEST OCV FACE WITH ROI ACTION",
+            "properties": {
+              "SEARCH_REGION_TOP_LEFT_X_DETECTION": "310",
+              "SEARCH_REGION_ENABLE_DETECTION": "true",
+              "SEARCH_REGION_TOP_LEFT_Y_DETECTION": "50"
+            }
+          }
+        ]
       }
-      ]
-    }
     ]
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "e99e3c01-d1f7-42ae-a961-5da210ac4d98",
-  "timeStart": "2017-04-11 10:48:56.0",
-  "timeStop": "2017-04-11 10:49:03.0",
+  "externalJobId": "de09d7f3-cf32-4997-8352-82918887d106",
+  "timeStart": "2017-06-15 22:42:53.0",
+  "timeStop": "2017-06-15 22:43:00.0",
   "status": "COMPLETE",
+  "algorithmProperties": {},
   "jobProperties": {},
-  "media": [{
-    "mediaId": 9,
-    "path": "file:/var/lib/jenkins/jobs/mpf-phabricator/workspace/trunk/mpf-system-tests/target/test-classes/samples/face/new_face_video.avi",
-    "mimeType": "video/x-msvideo",
-    "length": 511,
-    "sha256": "7acdf25b2f577c7f1128b9569cebfbcabd13cd0f45e90b51bb67b243a0a56f41",
-    "message": null,
-    "status": "COMPLETE",
-    "mediaMetadata": {
-      "DURATION": "17007",
-      "FPS": "29.97"
-    },
-    "mediaProperties": {},
-    "markupResult": null,
-    "output": {
-      "FACE": [{
-        "source": "+#TEST OCV FACE WITH ROI ACTION",
-        "tracks": [{
-          "id": "2ac2bd04537e18f709e6912a83867285c321198131a8e0352d61f3dc0310884d",
-          "startOffsetFrame": 242,
-          "stopOffsetFrame": 250,
-          "startOffsetTime": 8075,
-          "stopOffsetTime": 8342,
-          "type": "FACE",
-          "source": "+#TEST OCV FACE WITH ROI ACTION",
-          "exemplar": {
-            "x": 333,
-            "y": 123,
-            "width": 181,
-            "height": 181,
-            "confidence": 41.0,
-            "detectionProperties": {},
-            "offsetFrame": 248,
-            "offsetTime": 8275,
-            "artifactExtractionStatus": "COMPLETED",
-            "artifactPath": "/var/lib/jenkins/jobs/mpf-phabricator/workspace/trunk/install/share/artifacts/13/9/0/frame-248.png",
-            "offset": 248
-          },
-          "detections": [{
-            "x": 318,
-            "y": 98,
-            "width": 188,
-            "height": 188,
-            "confidence": 20.0,
-            "detectionProperties": {},
-            "offsetFrame": 242,
-            "offsetTime": 8075,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 242
-          }, {
-            "x": 318,
-            "y": 109,
-            "width": 181,
-            "height": 181,
-            "confidence": 13.0,
-            "detectionProperties": {},
-            "offsetFrame": 243,
-            "offsetTime": 8108,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 243
-          }, {
-            "x": 316,
-            "y": 109,
-            "width": 185,
-            "height": 185,
-            "confidence": 16.0,
-            "detectionProperties": {},
-            "offsetFrame": 244,
-            "offsetTime": 8141,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 244
-          }, {
-            "x": 331,
-            "y": 108,
-            "width": 186,
-            "height": 186,
-            "confidence": 36.0,
-            "detectionProperties": {},
-            "offsetFrame": 245,
-            "offsetTime": 8175,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 245
-          }, {
-            "x": 329,
-            "y": 106,
-            "width": 196,
-            "height": 196,
-            "confidence": 32.0,
-            "detectionProperties": {},
-            "offsetFrame": 246,
-            "offsetTime": 8208,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 246
-          }, {
-            "x": 335,
-            "y": 118,
-            "width": 183,
-            "height": 183,
-            "confidence": 38.0,
-            "detectionProperties": {},
-            "offsetFrame": 247,
-            "offsetTime": 8242,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 247
-          }, {
-            "x": 333,
-            "y": 123,
-            "width": 181,
-            "height": 181,
-            "confidence": 41.0,
-            "detectionProperties": {},
-            "offsetFrame": 248,
-            "offsetTime": 8275,
-            "artifactExtractionStatus": "COMPLETED",
-            "artifactPath": "/var/lib/jenkins/jobs/mpf-phabricator/workspace/trunk/install/share/artifacts/13/9/0/frame-248.png",
-            "offset": 248
-          }, {
-            "x": 323,
-            "y": 137,
-            "width": 167,
-            "height": 167,
-            "confidence": 25.0,
-            "detectionProperties": {},
-            "offsetFrame": 249,
-            "offsetTime": 8308,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 249
-          }, {
-            "x": 310,
-            "y": 138,
-            "width": 167,
-            "height": 167,
-            "confidence": 0.0,
-            "detectionProperties": {},
-            "offsetFrame": 250,
-            "offsetTime": 8342,
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null,
-            "offset": 250
+  "media": [
+    {
+      "mediaId": 8,
+      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/new_face_video.avi",
+      "mimeType": "video/x-msvideo",
+      "length": 511,
+      "sha256": "7acdf25b2f577c7f1128b9569cebfbcabd13cd0f45e90b51bb67b243a0a56f41",
+      "message": null,
+      "status": "COMPLETE",
+      "mediaMetadata": {
+        "DURATION": "17007",
+        "FPS": "29.97",
+        "FRAME_COUNT": "511"
+      },
+      "mediaProperties": {},
+      "markupResult": null,
+      "output": {
+        "FACE": [
+          {
+            "source": "+#TEST OCV FACE WITH ROI ACTION",
+            "tracks": [
+              {
+                "id": "a577db846e68c6e4e481f1babe69445976162f45c664fd32aae1ee49c998956f",
+                "startOffsetFrame": 243,
+                "stopOffsetFrame": 251,
+                "startOffsetTime": 8108,
+                "stopOffsetTime": 8375,
+                "type": "FACE",
+                "source": "+#TEST OCV FACE WITH ROI ACTION",
+                "exemplar": {
+                  "x": 333,
+                  "y": 123,
+                  "width": 181,
+                  "height": 181,
+                  "confidence": 41.0,
+                  "detectionProperties": {},
+                  "offsetFrame": 249,
+                  "offsetTime": 8308,
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/12/8/0/frame-249.png",
+                  "offset": 249
+                },
+                "detections": [
+                  {
+                    "x": 318,
+                    "y": 98,
+                    "width": 188,
+                    "height": 188,
+                    "confidence": 20.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 243,
+                    "offsetTime": 8108,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 243
+                  },
+                  {
+                    "x": 318,
+                    "y": 109,
+                    "width": 181,
+                    "height": 181,
+                    "confidence": 13.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 244,
+                    "offsetTime": 8141,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 244
+                  },
+                  {
+                    "x": 316,
+                    "y": 109,
+                    "width": 185,
+                    "height": 185,
+                    "confidence": 16.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 245,
+                    "offsetTime": 8175,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 245
+                  },
+                  {
+                    "x": 331,
+                    "y": 108,
+                    "width": 186,
+                    "height": 186,
+                    "confidence": 36.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 246,
+                    "offsetTime": 8208,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 246
+                  },
+                  {
+                    "x": 329,
+                    "y": 106,
+                    "width": 196,
+                    "height": 196,
+                    "confidence": 32.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 247,
+                    "offsetTime": 8242,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 247
+                  },
+                  {
+                    "x": 335,
+                    "y": 118,
+                    "width": 183,
+                    "height": 183,
+                    "confidence": 38.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 248,
+                    "offsetTime": 8275,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 248
+                  },
+                  {
+                    "x": 333,
+                    "y": 123,
+                    "width": 181,
+                    "height": 181,
+                    "confidence": 41.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 249,
+                    "offsetTime": 8308,
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/12/8/0/frame-249.png",
+                    "offset": 249
+                  },
+                  {
+                    "x": 323,
+                    "y": 137,
+                    "width": 167,
+                    "height": 167,
+                    "confidence": 25.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 250,
+                    "offsetTime": 8342,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 250
+                  },
+                  {
+                    "x": 310,
+                    "y": 138,
+                    "width": 167,
+                    "height": 167,
+                    "confidence": 0.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 251,
+                    "offsetTime": 8375,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 251
+                  }
+                ],
+                "stopOffset": 251,
+                "startOffset": 243
+              }
+            ]
           }
-          ],
-          "stopOffset": 250,
-          "startOffset": 242
-        }
         ]
-      }
-      ]
-    },
-    "detectionProcessingErrors": {}
-  }
+      },
+      "detectionProcessingErrors": {}
+    }
   ]
 }

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,8 +29,6 @@ package org.mitre.mpf.mst;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.springframework.test.context.ContextConfiguration;
 
-import java.util.Collections;
-
 @ContextConfiguration(initializers = TestSystemWithDefaultConfig.AppCtxInit.class)
 public abstract class TestSystemWithDefaultConfig extends TestSystem {
 
@@ -40,23 +38,9 @@ public abstract class TestSystemWithDefaultConfig extends TestSystem {
 		}
 	}
 
-
 	protected String addDefaultMotionMogPipeline() throws WfmProcessingException {
 		String pipelineName = "TEST DEFAULT MOG MOTION DETECTION PIPELINE";
 		addPipeline(pipelineName, "MOG MOTION DETECTION TASK");
-		return pipelineName;
-	}
-
-	protected String addDefaultSphinxSpeechExtractionPipeline() throws WfmProcessingException {
-		String actionName = "TEST DEFAULT SPHINX SPEECH DETECTION ACTION";
-		addAction(actionName, "SPHINX",
-		          Collections.singletonMap("EXTRACT_TRACK_DATA_FROM_MEDIA", "false"));
-
-		String taskName = "TEST DEFAULT SPHINX SPEECH DETECTION TASK";
-		addTask(taskName, actionName);
-
-		String pipelineName = "TEST DEFAULT SPHINX SPEECH DETECTION PIPELINE";
-		addPipeline(pipelineName, taskName);
 		return pipelineName;
 	}
 }

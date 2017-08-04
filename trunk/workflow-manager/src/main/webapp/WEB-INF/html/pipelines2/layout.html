@@ -5,11 +5,11 @@
     under contract, and is subject to the Rights in Data-General Clause
     52.227-14, Alt. IV (DEC 2007).
 
-    Copyright 2016 The MITRE Corporation. All Rights Reserved.
+    Copyright 2017 The MITRE Corporation. All Rights Reserved.
 -->
 
 <!--
-    Copyright 2016 The MITRE Corporation
+    Copyright 2017 The MITRE Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -25,11 +25,16 @@
 -->
 
 <div>
-    <div class="row">
-        <div class="col-lg-12">
-            <h1 class="page-header"><i class="fa fa-bars fa-fw"></i><span id="pagename">Pipelines</span></h1>
-        </div>  <!-- /.col-lg-12 -->
-    </div>  <!-- row -->
+    <div class="page-header text-center">
+        <h3>Pipelines</h3>
+        <page-info>
+            <p>This page enables users to create custom pipelines.  A pipeline is a collection of tasks executed in sequence on input media.
+                A task is an action or group of actions executed in parallel.  An
+                action is a distinct algorithm and property configuration specifying how to process input media.
+            </p>
+            <p>To create a new custom pipeline, click on the "New" button.</p>
+        </page-info>
+    </div>
 
     <div class="row">
         <div class="col-lg-12">
@@ -40,34 +45,74 @@
                     <uib-tab id="pipeline-tab" index="0" heading="Pipelines">
                         <div id="pp_pipeline-pane">
                             <div class="col-lg-2">
-                                <div class="row selection-area">
-                                    <div ng-repeat="pipeline in pipelines | orderBy: 'name'">
-                                        <div class="btn selection-button"
-                                             ng-click="selectPipeline(pipeline)"
-                                             ng-model="$parent.currentPipelineIndex"
-                                             uib-btn-radio="'{{$index}}'">{{pipeline.name}}</div>
-                                    </div>
+                                <!--<div class="row selection-area">-->
+                                    <!--<div ng-repeat="pipeline in pipelines | orderBy: 'name'">-->
+                                        <!--<div class="btn selection-button"-->
+                                             <!--ng-click="selectPipeline(pipeline)"-->
+                                             <!--ng-model="$parent.currentPipelineIndex"-->
+                                             <!--uib-btn-radio="'{{$index}}'">{{pipeline.name}}</div>-->
+                                    <!--</div>-->
+                                <!--</div>-->
+                                <div class="selector-container">
+                                    <ui-select ui-select-opened close-on-select="false"
+                                               ng-model="currentPipeline.selected" ng-cloak
+                                               on-select="selectPipeline($item, $model)"
+                                               id="pipeline-selector" theme="selectize">
+                                        <ui-select-match placeholder="Type here to search">{{$select.selected.name}}</ui-select-match>
+                                        <ui-select-choices repeat="pipeline.name as pipeline in pipelines | filter: $select.search">
+                                        <div ng-bind-html="pipeline.name | highlight: $select.search"
+                                              uib-popover="{{pipeline.description}}" popover-placement="right"
+                                              popover-append-to-body="true" popover-trigger="mouseenter">
+                                        </div>
+                                        </ui-select-choices>
+                                    </ui-select>
                                 </div>
                                 <div class="row">
                                     <button class="btn btn-default col-sm-6" id="newPipelineButton"
-                                        ng-click="pipes2.newPipeline()">New</button>
-                                    <button class="btn btn-default col-sm-6 pull-right" disabled="disabled">Copy</button>
+                                            ng-click="pipes2.newPipeline()">New</button>
+                                    <!--<button class="btn btn-default col-sm-6 pull-right" -->
+                                            <!--disabled="disabled">Copy</button>-->
                                 </div>
-                            </div>
+                           </div>
+
                             <div ng-include="'pipeline.pane.html'"></div>
                         </div>
                     </uib-tab>
 
-                    <!-- ----- Algorithms Tab -->
-                    <uib-tab index="1" id="algorithm-tab" class="pipeline-page-tab-content" heading="Algorithms">
+                    <!-- ----- Action Tab -->
+                    <uib-tab index="1" id="action-tab" class="pipeline-page-tab-content" heading="Actions">
                         <div class="col-lg-2">
-                            <div class="row selection-area">
-                                <div ng-repeat="action in actions | orderBy: 'name'">
-                                    <div class="btn selection-button"
-                                         ng-click="selectAction(action.name)"
-                                         ng-model="$parent.currentActionIndex"
-                                         uib-btn-radio="'{{$index}}'">{{action.name}}</div>
-                                </div>
+                            <!--<div class="row selection-area">-->
+                                <!--<div ng-repeat="action in actions | orderBy: 'name'">-->
+                                    <!--<div class="btn selection-button"-->
+                                         <!--ng-click="selectAction(action.name)"-->
+                                         <!--ng-model="$parent.currentActionIndex"-->
+                                         <!--uib-btn-radio="'{{$index}}'">{{action.name}}</div>-->
+                                <!--</div>-->
+                            <!--</div>-->
+                            <div class="selector-container">
+                                <ui-select ui-select-opened close-on-select="false"
+                                           ng-model="currentAction.selected" ng-cloak
+                                           on-select="selectAction($item, $model)"
+                                           id="action-selector" theme="selectize">
+                                    <ui-select-match placeholder="Type here to search">{{$select.selected.name}}</ui-select-match>
+                                    <ui-select-choices
+                                            group-by="'algorithmRef'"
+                                            repeat="action.name as action in actions | filter: $select.search">
+                                        <div ng-bind-html="action.name | highlight: $select.search"
+                                             uib-popover="[{{action.algorithmRef}}]  {{action.description}}" popover-placement="right"
+                                             popover-append-to-body="true" popover-trigger="mouseenter">
+                                        </div>
+                                        <!--<div>-->
+                                            <!--<span ng-bind-html="''+action.algorithmRef | highlight: $select.search"></span>-->
+                                            <!--<span ng-bind-html="''+action.description | highlight: $select.search"></span>-->
+                                        <!--</div>-->
+                                        <!--<span ng-bind-html="action.name | highlight: $select.search"-->
+                                              <!--uib-popover="{{action.description}}" popover-placement="right"-->
+                                              <!--popover-append-to-body="true" popover-trigger="mouseenter">-->
+                                        <!--</span>-->
+                                    </ui-select-choices>
+                                </ui-select>
                             </div>
                             <div class="row">
                                 <button class="btn btn-default col-sm-6" id="newActionButton"
@@ -76,7 +121,7 @@
                                         <!--disabled="disabled">Copy</button>-->
                             </div>
                         </div>
-                        <div ng-include="'algorithm.pane.html'"></div>
+                        <div ng-include="'action.pane.html'"></div>
                     </uib-tab>
 
                 </uib-tabset>
@@ -88,37 +133,33 @@
 </div>
 
 
-<script type="text/ng-template" id="algorithm.property-help.html">
-    <div>
-        <p>{{prop.name}}</p>
-        <p class="pp-popover-description">{{prop.description}}</p>
-        <p>[{{prop.type}}]</p>
-    </div>
-</script>
-
 
 <!-- Pipeline pane -->
 <script type="text/ng-template" id="pipeline.pane.html">
-    <div class="col-lg-10 pp-pipeline pp-pipeline-bg">
+    <div ng-if="currentPipeline.name!==undefined" class="col-lg-10 pp-pipeline pp-pipeline-bg">
         <ng-form name="nestedForm">
             <div class="row">
                 <div class="form-group">
                     <label class="control-label col-sm-1 pp-name" for="pipeline-name"><strong>Pipeline</strong>:</label>
                     <input class="col-sm-9 pp-pipeline pp-name" type="text" id="pipeline-name"
-                           required ng-readonly="!editMode" ng-model="currentPipeline.name"
-                           ng-model-options="{ updateOn: 'blur' }"/>
+                           ng-readonly="!pipes2.inEditMode()" ng-model="currentPipeline.name"
+                           ng-model-options="{ updateOn: 'blur' }"
+                           tabindex="1" placeholder="Pipeline name (required)"/>
                     &nbsp;
-                    <button ng-if="editMode" class="btn btn-default" id="savePipelineButton"
-                            ng-click="pipes2.savePipeline( currentPipeline )">Save
+                    <button ng-if="pipes2.inEditMode()" class="btn btn-default" id="savePipelineButton"
+                            ng-click="pipes2.savePipeline( currentPipeline )" tabindex="3">
+                        Save
                     </button>
-                    <!--<button ng-if="!editMode" class="btn btn-default" id="deletePipelineButton"-->
+                    <!--<button ng-if="!pipes2.inEditMode()" class="btn btn-default" id="deletePipelineButton"-->
                             <!--ng-click="pipes2.deletePipeline( currentPipeline )">Delete-->
                     <!--</button>-->
                 </div>
                 <div class="form-group pp-description-group">
                     <label class="control-label col-sm-1" for="pipeline-description"></label>
                     <textarea class="col-sm-9 pp-pipeline pp-description" id="pipeline-description"
-                              ng-readonly="!editMode" ng-model="currentPipeline.description"/>
+                              ng-readonly="!pipes2.inEditMode()" ng-model="currentPipeline.description"
+                              tabindex="2"
+                              placeholder="Pipeline description (required)"/>
                 </div>
             </div>
             <div class="row">
@@ -130,29 +171,31 @@
     </div>
 </script>
 
-<!-- Algorithm pane -->
-<script type="text/ng-template" id="algorithm.pane.html">
-    <div class="col-lg-10 pp-action pp-action-bg">
+<!-- Actions pane -->
+<script type="text/ng-template" id="action.pane.html">
+    <div ng-if="actions2.inEditMode()||currentAction.properties!==undefined" class="col-lg-10 pp-action pp-action-bg">
         <ng-form name="nestedForm">
             <div class="row">
                 <div class="form-group">
-                    <label class="control-label col-sm-2 pp-name" for="action-name"><strong>Algorithm</strong>:</label>
+                    <label class="control-label col-sm-2 pp-name" for="action-name"><strong>Action</strong>:</label>
                     <input class="col-sm-8 pp-action pp-name" type="text" id="action-name"
-                           required ng-readonly="!editMode" ng-model="currentAction.name"
-                           ng-model-options="{ updateOn: 'blur' }"/>
+                           ng-readonly="!actions2.inEditMode()" ng-model="currentAction.name"
+                           ng-model-options="{ updateOn: 'blur' }" tabindex="1"
+                           placeholder="Action name (required)"/>
                     &nbsp;
-                    <button ng-if="editMode" class="btn btn-default" id="saveActionButton"
-                            ng-click="saveActionAndTask( currentAction )">Save
+                    <button ng-if="actions2.inEditMode()" class="btn btn-default" id="saveActionButton"
+                            ng-click="saveActionAndTask( currentAction )" tabindex="4">Save
                     </button>
-                    <!--<button ng-if="!editMode" class="btn btn-default" id="deleteActionButton"-->
+                    <!--<button ng-if="!actions2.inEditMode()" class="btn btn-default" id="deleteActionButton"-->
                             <!--ng-click="deleteAction()">Delete-->
                     <!--</button>-->
                 </div>
                 <div class="form-group pp-description-group">
                     <label class="control-label col-sm-2" for="action-description"></label>
                     <textarea class="col-sm-8 pp-action pp-description" id="action-description"
-                              ng-readonly="!editMode" ng-model="currentAction.description"
-                              ng-model-options="{ updateOn: 'blur' }"/>
+                              ng-readonly="!actions2.inEditMode()" ng-model="currentAction.description"
+                              ng-model-options="{ updateOn: 'blur' }" tabindex="2"
+                              placeholder="Action description (required)"/>
                 </div>
                 <div class="col-lg-2">
                     <!--placeholder-->
@@ -162,9 +205,9 @@
                         <div class="row">
                             <div class="col-lg-10 col-sm-10">
                                 <fieldset class="action-overridden-properties">
-                                    <div ng-if="editMode">
+                                    <div ng-if="actions2.inEditMode()">
                                             <span uib-dropdown on-toggle="toggled(open)">
-                                                <a href id="simple-dropdown" uib-dropdown-toggle>
+                                                <a href id="simple-dropdown" uib-dropdown-toggle tabindex="3">
                                                     Select an algorithm base...
                                                 </a>
                                                 <ul class="dropdown-menu" uib-dropdown-menu>
@@ -177,15 +220,15 @@
                                     <div ng-if="currentAction.viewProperties.length>0" class="action-all-properties pp-algorithm">
                                         <span class="pp-algorithm-decoration">{{currentAction.algorithm.actionType}}</span>
                                         <span class="pp-algorithm-decoration">{{currentAction.algorithmRef}}</span>
-                                        <span ng-if="!editMode" class="pp-algorithm">
+                                        <span ng-if="!actions2.inEditMode()" class="pp-algorithm">
                                             <strong>{{currentAction.properties.length}}</strong> parameters overriding
                                         </span>
-                                        <span ng-if="!editMode">
+                                        <span ng-if="!actions2.inEditMode()">
                                             <strong>{{currentAction.viewProperties.length}}</strong> default parameters
                                         </span>
                                         <div class="pp-algorithm-panel">
                                             <div ng-repeat="prop in currentAction.viewProperties">
-                                                <action-property prop="prop" edit-mode="editMode"></action-property>
+                                                <action-property prop="prop" edit-mode="actions2.inEditMode()"></action-property>
                                             </div>
                                         </div>
                                     </div>

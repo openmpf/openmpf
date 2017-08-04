@@ -7,11 +7,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2016 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2017 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2016 The MITRE Corporation                                      #
+# Copyright 2017 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -34,7 +34,7 @@ use utf8;
 use JSON;
 use File::Basename;
 
-my $mpfVersion = "0.9.0";
+my $mpfVersion = "0.10.0";
 my $ansibleRepoPath = "/mpfdata/ansible/install/repo";
 
 # The following hashes use the name of the packaging element as a key, and the source path
@@ -46,7 +46,7 @@ my %mpfCoreRPMs = ('markup' => "trunk/markup/target/rpm/mpf-markup/RPMS/noarch",
 		   'protobuf' => "trunk/protobuf/target/rpm/mpf-protobuf/RPMS/noarch",
 		   'video-overlay' => "trunk/video-overlay/target/rpm/mpf-video-overlay/RPMS/noarch",
 		   'workflowManager' => "trunk/workflow-manager/target/rpm/mpf-workflowManager/RPMS/noarch",
-		   'java-component-api' => "../openmpf-java-component-sdk/java-component-api/target/rpm/mpf-java-component-api/RPMS/noarch",
+		   'java-component-api' => "../openmpf-java-component-sdk/detection/java-component-api/target/rpm/mpf-java-component-api/RPMS/noarch",
 		   'java-component-executor' => "trunk/detection/executor/java/target/rpm/mpf-java-component-executor/RPMS/noarch");
 
 my %mpfCoreTars = ('mpf-install-dep' => "trunk/mpf-install/target");
@@ -94,7 +94,7 @@ print "\nCreating Custom package: Package Tag = " . $packageTag . "\n";
 my @tokens = split /\//, $gitBranch;
 $gitBranch = $tokens[$#tokens];
 	
-my $workspace = "/mpfdata/mpf-$packageTag-package/mpf-release";
+my $workspace = "/mpfdata/openmpf-$packageTag-package/mpf-release";
 my $rpmDest = "$workspace/install/repo/rpms/mpf";
 my $tarDest = "$workspace/install/repo/tars/mpf";
 
@@ -187,7 +187,7 @@ MPF::Jenkins::printInfo("Creating MPF admin python script tar.gz package.\n");
 		MPF::Jenkins::printFatal("The mpf-scripts folder ($mpfPath/trunk/bin/mpf-scripts) did not exist.\n");
 		MPF::Jenkins::fatalExit();
 	}
-	system "tar -C $mpfPath/trunk/bin -pczf $tarDest/mpf-admin-scripts-$mpfVersion.tar.gz mpf-scripts";
+	system "tar -C $mpfPath/trunk/bin -pczf $tarDest/mpf-admin-scripts.tar.gz mpf-scripts";
 
 system "cp -a $ansibleRepoPath/files $workspace/install/repo/";
 system "cp -a $ansibleRepoPath/rpms $workspace/install/repo/";
@@ -212,10 +212,9 @@ foreach $elem ( @{ $data->{'MPF_Core_Tars'} }) {
 
 # Process the MPF Component Tars
 MPF::Jenkins::printInfo("Copying plugin packages from $mpfPath/mpf-component-build/plugin-packages.\n");
-my @plugins = glob("$mpfPath/mpf-component-build/plugin-packages/*.tar.gz");
-foreach my $plugin (@plugins) {
-    my($filename, $dirs, $suffix) = fileparse($plugin, ".tar.gz");
-    system "cp $dirs$filename.tar.gz $tarDest/$filename-$mpfVersion.tar.gz";
+foreach $elem ( @{ $data->{'MPF_Components'} }) {
+    print "MPF Component tar = $elem->{name}\n";
+    system "cp $mpfPath/mpf-component-build/plugin-packages/$elem->{name}*.tar.gz $tarDest";
 }
 
 # Tar everything up!
@@ -230,17 +229,17 @@ if (!(-d "mpf-release")) {
 my $release_tree = `tree mpf-release`;
 MPF::Jenkins::printDebug("Ansible release directory structure:'\n$release_tree\n");
 
-system "sudo tar -pczf /mpfdata/releases/mpf-$packageTag-$mpfVersion+$gitBranch-$buildNum.tar.gz mpf-release";	
+system "sudo tar -pczf /mpfdata/releases/openmpf-$packageTag-$mpfVersion+$gitBranch-$buildNum.tar.gz mpf-release";	
 	
 # Remove the workspace.
 MPF::Jenkins::printInfo("Removing the workspace.\n");
 system "sudo rm -rf $workspace";
 chdir $pwd;
 	
-if(-f "/mpfdata/releases/mpf-$packageTag-$mpfVersion+$gitBranch-$buildNum.tar.gz") {
-    MPF::Jenkins::printInfo("Successfully generated /mpfdata/releases/mpf-$data->{'packageTag'}-$mpfVersion+$gitBranch-$buildNum.tar.gz.\n");
+if(-f "/mpfdata/releases/openmpf-$packageTag-$mpfVersion+$gitBranch-$buildNum.tar.gz") {
+    MPF::Jenkins::printInfo("Successfully generated /mpfdata/releases/openmpf-$data->{'packageTag'}-$mpfVersion+$gitBranch-$buildNum.tar.gz.\n");
 } else {
-    MPF::Jenkins::printFatal("\n\nFailed to generate /mpfdata/releases/mpf-$packageTag-$mpfVersion+$gitBranch-$buildNum.tar.gz.\n\n\n");
+    MPF::Jenkins::printFatal("\n\nFailed to generate /mpfdata/releases/openmpf-$packageTag-$mpfVersion+$gitBranch-$buildNum.tar.gz.\n\n\n");
     MPF::Jenkins::fatalExit();
 }
 

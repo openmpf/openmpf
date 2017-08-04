@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -25,14 +25,18 @@
  ******************************************************************************/
 package org.mitre.mpf.nms;
 
-import java.io.*;
-import java.util.Map;
-
+import org.apache.commons.lang3.text.StrLookup;
+import org.apache.commons.lang3.text.StrSubstitutor;
 import org.mitre.mpf.nms.xml.EnvironmentVariable;
 import org.mitre.mpf.nms.xml.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.commons.lang3.text.StrSubstitutor;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Map;
 
 /**
  * Abstract base launcher.
@@ -122,8 +126,12 @@ public abstract class BaseServiceLauncher implements Runnable {
     	restarts = desc.getRestarts();
     	
         this.mServiceDesc = desc;
-        this.mStrSub = new StrSubstitutor(System.getenv());
-                
+        this.mStrSub = new StrSubstitutor(new StrLookup<String>() {
+            public String lookup(String key) {
+                return System.getenv().getOrDefault(key, "");
+            }
+        });
+
         if (LOG.isDebugEnabled()) {
             // redirects to LOG debug
             this.outReceiver = new OutputReceiver() {

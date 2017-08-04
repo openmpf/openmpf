@@ -1,7 +1,7 @@
 {
   "componentName" : "CplusplusHelloCustomPipelinesComponent",
-  "componentVersion" : "0.9.0",
-  "middlewareVersion" :  "0.9.0",
+  "componentVersion" : "0.10.0",
+  "middlewareVersion" :  "0.10.0",
   "sourceLanguage" : "c++",
   "pathName" : "amq_detection_component",
   "launchArgs" : ["${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so"],

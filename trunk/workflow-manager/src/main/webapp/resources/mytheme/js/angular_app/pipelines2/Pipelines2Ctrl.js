@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -37,12 +37,14 @@
  *      description:  description of pipeline
  *      taskRef:  array of tasks, which are of the form:
  *          name: name of task
- *
+ *  Pipelines2Ctrl publishes 'PP2_xxx' messages via $scope.$broadcast(); this assumes that
+ *  descendants will process these messages in a $scope.$on() handler:
+ *      'PIPELINE_ENTER_EDIT_MODE'
+ *      'PIPELINE_EXIT_EDIT_MODE'
+ *      'ACTION_ENTER_EDIT_MODE'
+ *      'ACTION_EXIT_EDIT_MODE'
  */
 
-var global_p2 = null;
-var global_var = null;
-var global_var2 = null;
 
 (function () {
 
@@ -52,78 +54,71 @@ var global_var2 = null;
         'ngResource', 'simplePipeline',
         'mpf.wfm.pipeline2.task', 'mpf.wfm.pipeline2.action', 'mpf.wfm.pipeline2.algorithm']);
 
-    module.factory('Pipelines2Service',
-    ['$q', '$resource', 'ActionService', 'TaskService',
-    function ($q, $resource, ActionService, TaskService) {
+    module.factory('Pipelines2Service', [
+        '$q', '$resource', 'ActionService', 'TaskService',
+        function ($q, $resource, ActionService, TaskService) {
 
-        var pipelineResource = $resource('pipelines/:name');
+            var pipelineResource = $resource('pipelines/:name');
 
-        var getPipeline = function (pipelineName) {
-            return pipelineResource.get({name: pipelineName})
-                .$promise
-                .then(function (pipelineDetail) {
+            var getPipeline = function (pipelineName) {
+                return pipelineResource.get({name: pipelineName})
+                    .$promise
+                    .then(function (pipelineDetail) {
 
-                    var taskPromises = pipelineDetail.taskRefs.map(function (t) {
-                        return TaskService.get( t.name );
+                        var taskPromises = pipelineDetail.taskRefs.map(function (t) {
+                            return TaskService.get(t.name);
+                        });
+
+                        return $q.all(taskPromises).then(function (tasks) {
+                            pipelineDetail.vmTasks = tasks;
+                            return pipelineDetail;
+                        });
                     });
+            };
 
-                    return $q.all(taskPromises).then(function (tasks) {
-                        pipelineDetail.vmTasks = tasks;
-                        return pipelineDetail;
+
+            return {
+                getCompletePipelineDetails: function (pipelineName) {
+                    if ( pipelineName ) {
+                        var pipeline = new pipelineResource({
+                            $resolved: false,
+                            $promise: getPipeline(pipelineName)
+                                .then(function (pipelineData) {
+                                    angular.forEach(pipelineData, function (value, key) {
+                                        if (key !== '$resolved' && key !== '$promise') {
+                                            pipeline[key] = value;
+                                        }
+                                    });
+                                    pipeline.$resolved = true;
+                                    return pipeline;
+                                })
+                        });
+                        return pipeline;
+                    }
+                },
+                query: function () {
+                    return pipelineResource.query();
+                },
+                save: function (pipeline) {
+                    // console.log("PipelineResource.save( pipeline-> )");
+                    // console.log(pipeline);
+                    var pack = {
+                        name: pipeline.name,
+                        description: pipeline.description,
+                        tasksToAdd: _.pluck(pipeline.taskRefs, "name")
+                    };
+                    return pipelineResource.save(pack, function () {
+                        // console.log("saved pack")
                     });
-                });
-        };
-
-
-        return {
-            getCompletePipelineDetails: function (pipelineName) {
-                var pipeline = new pipelineResource({
-                    $resolved: false,
-                    $promise: getPipeline(pipelineName)
-                        .then(function (pipelineData) {
-                            angular.forEach(pipelineData, function (value, key) {
-                                console.log("pipelineData->");
-                                console.log(pipelineData);
-                                if (key !== '$resolved' && key !== '$promise') {
-                                    pipeline[key] = value;
-                                    console.log("pipeline[key->]->");
-                                    console.log(key);
-                                    console.log(pipeline[key]);
-                                }
-                            });
-                            pipeline.$resolved = true;
-                            return pipeline;
-                        })
-                });
-                return pipeline;
-            },
-            query: function () {
-                return pipelineResource.query();
-            },
-            save: function (pipeline) {
-                console.log("PipelineResource.save( pipeline-> )");
-                console.log(pipeline);
-                var pack = {
-                    name: pipeline.name,
-                    description: pipeline.description,
-                    tasksToAdd: _.pluck(pipeline.taskRefs, "name")
-                };
-                console.log("pack->");
-                console.log(pack);
-                return pipelineResource.save(pack, function () {
-                    console.log("saved pack")
-                });
-            },
-            delete: function (pipeline) {
-                console.log("PipelineResource.delete( pipeline -> )");
-                console.log(pipeline);
-                return pipelineResource.delete({name: pipeline.name}, function () {
-                    console.log("deleted " + pipeline.name);
-                });
-            }
-        };
-    }]
-    );
+                },
+                delete: function (pipeline) {
+                    return pipelineResource.delete({name: pipeline.name}, function () {
+                        // console.log("deleted " + pipeline.name);
+                    });
+                }
+            };
+        }
+    ]);
 
 
     module.controller('Pipelines2Ctrl', [
@@ -133,7 +128,33 @@ var global_var2 = null;
                    Pipelines2Service, TaskService, ActionService, AlgorithmService) {
 
 
+            /* *****
+             *    UTILITIES
+             * *****
+             */
+
+
+            var renderAsCustomName = function(name, suffix) {
+                var prefix = "CUSTOM ";
+                var renderedName = name.trim().toUpperCase();
+                var newSuffix = ' ' + suffix.trim().toUpperCase();
+                if (!renderedName.startsWith(prefix)) {
+                    renderedName = prefix + renderedName;
+                }
+                if (!renderedName.endsWith(newSuffix)) {
+                    renderedName = renderedName + newSuffix;
+                }
+                return renderedName;
+            };
+
+
+            /* *****
+             *    PIPELINE VIEW MANIPULATION OBJECT
+             * *****
+             */
+
             var pipes2 = this;
+            $scope.pipes2 = pipes2;
 
 
             /** create new pipeline */
@@ -144,8 +165,19 @@ var global_var2 = null;
                     taskRefs: [],
                     vmTasks: []
                 };
-                $scope.editMode = true;
-                console.log("newPipeline");
+                pipes2.enterEditMode();
+            };
+
+
+            /** properly reformat custom names */
+            pipes2.renderAsCustomName = function( name ) {
+                return renderAsCustomName( name, "PIPELINE" )
+            };
+
+
+            /** returns the number of tasks in the pipeline */
+            pipes2.getNumTasks = function() {
+                return $scope.currentPipeline.vmTasks.length;
             };
 
 
@@ -167,8 +199,6 @@ var global_var2 = null;
                             }
                         });
                 }
-                console.log("addTaskToCurrentPipeline | $scope.currentPipeline ->");
-                console.log($scope.currentPipeline);
             };
 
 
@@ -176,25 +206,26 @@ var global_var2 = null;
              *  Note this updates the view and model, but does not save to the server*/
             pipes2.removeTaskFromPipeline = function( index )
             {
-                console.log("removeTaskFromPipeline("+index+")");
+                // console.log("removeTaskFromPipeline("+index+")");
                 if ( index ) {
                     $scope.currentPipeline.vmTasks.splice(index, 1);
                     $scope.currentPipeline.taskRefs.splice(index, 1);
                 }
-                console.log("removeTaskFromPipeline | $scope.currentPipeline ->");
-                console.log($scope.currentPipeline);
+                // console.log("removeTaskFromPipeline | $scope.currentPipeline ->");
+                // console.log($scope.currentPipeline);
             };
 
 
             /** save current pipeline to server */
             pipes2.savePipeline = function( pipeline ) {
+                pipeline.name = pipes2.renderAsCustomName( $scope.currentPipeline.name );
                 Pipelines2Service.save( pipeline )
                     .$promise
                     .then( function() {
                         $confirm({
                             title: 'Success',
                             text: '"' + pipeline.name + '" was successfully saved.'});
-                        initPipelinesList();
+                        initPipelinesList( pipeline );
                     })
                     .catch( function( error ) {
                         // todo: P038: should display actual error to user, but need the server to return the error in JSON format;
@@ -227,9 +258,146 @@ var global_var2 = null;
             };
 
 
+            pipes2.editMode = false;
 
-            $scope.editMode = false;
+
+            /* returns true iff pipeline is in edit mode */
+            pipes2.inEditMode = function() {
+                return ( pipes2.editMode === true );
+            };
+
+
+            /* sets editing on pipeline */
+            pipes2.enterEditMode = function()  {
+                // $scope.$broadcast(
+                //     "PIPELINE_ENTER_EDIT_MODE", {
+                //         pipeline: $scope.currentPipeline,
+                //         state: pipes2,
+                //         type: 'NEW_PIPELINE' } );
+                pipes2.editMode = true;
+            };
+
+
+            /* sets read-only mode on pipeline */
+            pipes2.exitEditMode = function()  {
+                // $scope.$broadcast(
+                //     "PIPELINE_EXIT_EDIT_MODE", { pipeline: $scope.currentPipeline } );
+                pipes2.editMode = false;
+            };
+
+
+            /* *****
+             *    TASK VIEW MANIPULATION OBJECT
+             *    Note: currently, this is only useful for tasks with parallel actions
+             * *****
+             */
+
+
+            var tasks2 = {};
+            $scope.tasks2 = tasks2;
+
+
+            /** properly reformat custom name
+             *  Note that for tasks, if you use the action name for the name parameter
+             *  this method properly recognizes it and does the right thing
+             */
+            tasks2.renderAsCustomName = function(name) {
+                // basically, trim off ACTION if it exists, then call renderCustomName
+                var renderedTaskName = name.toLocaleUpperCase();
+                var actionSubStringIndex = renderedTaskName.lastIndexOf("ACTION");
+                if (actionSubStringIndex >= 0) {
+                    renderedTaskName = renderedTaskName.substring(0, actionSubStringIndex);
+                }
+                return renderAsCustomName(renderedTaskName, "TASK");
+            };
+
+
+            // returns true iff this task contains parallel actions
+            tasks2.containsParallelActions = function()  {
+                console.log("tasks2.containsParallelActions");
+                var actions = $scope.currentPipeline.tasks[0].actions;
+                var retval = false;
+                if ( actions )
+                {
+                    retval = ( actions.length > 1 )
+                }
+                console.log(" -> returning " + retval );
+                return retval;
+            };
+
+
+            // note that edit mode for tasks is automatically entered
+            //  after selecting "add parallel action task" from the dropdown menu
+            tasks2.editMode = false;
+
+
+            /* returns true iff pipeline is in edit mode */
+            tasks2.inEditMode = function() {
+                return ( tasks2.editMode === true );
+            };
+
+
+            /* sets editing on pipeline */
+            tasks2.enterEditMode = function()  {
+                tasks2.editMode = true;
+            };
+
+
+            /* sets read-only mode on pipeline */
+            tasks2.exitEditMode = function()  {
+                tasks2.editMode = false;
+            };
+
+            // tasks2.removeActionFromTask = function( task, index ) {
+            //     console.log("removeActionFromTask(task---v,"+index+")")
+            //     console.log(task);
+            // };
+
+
+            /* *****
+             *    ACTION VIEW MANIPULATION OBJECT
+             * *****
+             */
+
+            var actions2 = {};
+            $scope.actions2 = actions2;
+
+
+            actions2.editMode = false;
+
+
+            /* returns true iff pipeline is in edit mode */
+            actions2.inEditMode = function() {
+                return ( actions2.editMode === true );
+            };
+
+
+            /* sets editing on pipeline */
+            actions2.enterEditMode = function()  {
+                actions2.editMode = true;
+            };
+
+
+            /* sets read-only mode on pipeline */
+            actions2.exitEditMode = function()  {
+                actions2.editMode = false;
+            };
+
+
             $scope.userShowAllProperties = false;
+
+
+            /** properly reformat custom names */
+            actions2.renderAsCustomName = function( name ) {
+                return renderAsCustomName( name, "ACTION" )
+            };
+
+
+            /* *****
+             *    PIPELINE CONTROLLER
+             * *****
+             */
+
 
             $scope.pipelines = [];  // all the pipelines from the server (only name and description are received)
             $scope.tasks = [];  // all tasks from the server
@@ -240,18 +408,17 @@ var global_var2 = null;
             $scope.currentAction = {} ; // the algorithm currently selected
 
             /** retrieves and re-renders the actions list */
-            var initActionsList = function( selectActionName ) {
+            var initActionsList = function( selectAction ) {
                 $scope.actions = ActionService.query();
                 $scope.actions.$promise.then(function () {
                     $scope.actions = orderByFilter( $scope.actions, '+name');
-                    if ( selectActionName ) {
-                        $scope.selectAction( selectActionName );
+                    if ( selectAction ) {
+                        $scope.selectAction( selectAction );
                     }
                     else if ( $scope.actions.length > 0 ) {
-                        $scope.selectAction($scope.actions[0].name);
-                        $scope.editMode = false;
+                        $scope.selectAction($scope.actions[0]);
                     }
-                    global_var = $scope.actions[0];
+                    actions2.exitEditMode();
                 });
             };
 
@@ -265,7 +432,7 @@ var global_var2 = null;
                     }
                     else if ($scope.pipelines.length > 0) {
                         $scope.selectPipeline($scope.pipelines[0]);
-                        $scope.editMode = false;
+                        pipes2.exitEditMode();
                     }
                 });
             };
@@ -281,7 +448,7 @@ var global_var2 = null;
             };
 
             /** initializes this page */
-            var init = function () {
+            $scope.init = function () {
                 initPipelinesList();
                 initTasksList();
                 initActionsList();
@@ -304,23 +471,25 @@ var global_var2 = null;
 
 
             /** called when the user selects a pipeline from the pipeline list */
-            $scope.selectPipeline = function( pipeline ) {
-                $scope.editMode = false;
-                $scope.currentPipeline = Pipelines2Service.getCompletePipelineDetails(pipeline.name);
-                global_var2 = $scope.currentPipeline;
+            $scope.selectPipeline = function( item, model ) {
+                // console.log("selectPipeline(item---v,model---v)");
+                // console.log(item);
+                // console.log(model);
+                pipes2.exitEditMode();
+                $scope.currentPipeline = Pipelines2Service.getCompletePipelineDetails(item.name);
             };
 
 
             /** create new action */
             $scope.newAction = function() {
                 $scope.currentAction = {};
-                $scope.editMode = true;
+                actions2.enterEditMode();
             };
 
 
             /** sets the algorithmRef for an action */
             $scope.setAlgorithmRef = function( alg ) {
-                if ( $scope.editMode ) {
+                if ( actions2.inEditMode() ) {
                     $scope.currentAction.algorithmRef = alg;
                     $scope.currentAction.algorithm = AlgorithmService.get( alg )
                         .$promise
@@ -335,6 +504,7 @@ var global_var2 = null;
 
             /** saves the action and task to the server */
             $scope.saveActionAndTask = function( action ) {
+                action.name = actions2.renderAsCustomName( action.name );
                 saveAction( action )
                     .then( function() {
                         saveTaskFromAction( action );
@@ -342,33 +512,25 @@ var global_var2 = null;
             };
 
 
-            var makeCustomActionName = function( action ) {
-                return "CUSTOM " + action.name.toUpperCase() + " ACTION"
-            };
-
-
             /** saves action and returns the promise from the service */
             var saveAction = function( action ) {
-                console.log("saveAction( action -> )");
-                console.log(action);
 
-                var actionName = makeCustomActionName( action );
+                action.name = actions2.renderAsCustomName( action.name );
                 var actionObj = {
                     algorithmName: action.algorithmRef,
-                    actionName: actionName,
+                    actionName: action.name,
                     actionDescription: action.description,
                     properties: JSON.stringify( getChangedActionProperties( action ) )
                 };
-
-                console.log("actionObj="+JSON.stringify(actionObj));
 
                 var opPromise = ActionService.save( actionObj )
                     .$promise
                     .then( function() {
                         $confirm({
                             title: 'Success',
-                            text: '"' + actionName + '" was successfully saved.'});
-                        initActionsList( actionName );
+                            text: '"' + action.name + '" was successfully saved.'});
+                        actionObj.name = action.name;   // needed because the REST service expects actionName in the POST, but name in the GET
+                        initActionsList( actionObj );
                     })
                     .catch( function( error ) {
                         // todo: P038: should display actual error to user, but need the server to return the error in JSON format;
@@ -383,22 +545,15 @@ var global_var2 = null;
             };
 
 
-            var makeCustomTaskName = function( task ) {
-                return "CUSTOM " + task.name.toUpperCase() + " TASK"
-            };
-
-
             /** saves a single action task from the specified action */
             var saveTaskFromAction = function( action ) {
-                console.log("saveTaskFromAction( action -> )");
-                console.log(action);
-
+                var actionName = actions2.renderAsCustomName( action.name );
                 var taskObj = {
-                    name: makeCustomTaskName( action ),
+                    name: tasks2.renderAsCustomName( actionName ),
                     description: action.description,
-                    actionsToAdd: [ makeCustomActionName( action ) ]
+                    actionsToAdd: [ actionName ]
                 };
-                console.log("taskObj="+JSON.stringify(taskObj));
+                // console.log("taskObj="+JSON.stringify(taskObj));
 
                 TaskService.save( taskObj )
                     .$promise
@@ -453,13 +608,14 @@ var global_var2 = null;
 
 
             /** selects the actions */
-            $scope.selectAction = function( actionName ) {
-                $scope.editMode = false;
-                $scope.currentAction = ActionService.get(actionName);
-                $scope.currentAction.$promise.then(function () {
-                    $scope.setViewProperties();
-                });
-                global_var = $scope.currentAction;
+            $scope.selectAction = function( item, model ) {
+                actions2.exitEditMode();
+                if ( item.name ) {
+                    $scope.currentAction = ActionService.get(item.name);
+                    $scope.currentAction.$promise.then(function () {
+                        $scope.setViewProperties();
+                    });
+                }
             };
 
 
@@ -469,8 +625,7 @@ var global_var2 = null;
             };
 
 
-            init();
-            global_p2 = $scope;
+            $scope.init();
             // return p2Ctrl;
         }
     ]);

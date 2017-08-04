@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,7 +29,7 @@ var ServerMediaPage = function() {
     // ----- Constants -----
     this.URL = browser.baseUrl + '#/server_media';
     this.TEST_PIPELINE_NAME = "OCV FACE DETECTION PIPELINE";
-    this.TEST_PIPELINE_LONG_NAME = "OCV PERSON DETECTION (WITH MOTION PREPROCESSOR) PIPELINE";// "UNIVERSAL DETECTION PIPELINE";
+    this.TEST_PIPELINE_LONG_NAME = "OCV PERSON DETECTION (WITH MOTION PREPROCESSOR) PIPELINE";
     this.pageName = "Create Job";
 
     // ----- Page Objects -----
@@ -62,7 +62,7 @@ var ServerMediaPage = function() {
         browser.ignoreSynchronization = true;
         return browser.wait(function() {
             return element(by.css('.localName p')).isPresent();
-        },30000,'file Upload wait').then(function(){
+        },60000,'file Upload wait').then(function(){
             element(by.css('.localName p')).getText().then(function(text){
                 var isValid = (text.replace("Uploaded : ","").indexOf(media_url) > -1);
                 expect(isValid);

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,17 +26,19 @@
 
 package org.mitre.mpf.mst;
 
-import com.google.common.base.Joiner;
-import org.junit.Assert;
-import org.mitre.mpf.interop.*;
 import org.junit.rules.ErrorCollector;
+import org.mitre.mpf.interop.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.greaterThan;
 
 public class OutputChecker {
 
@@ -209,8 +211,8 @@ public class OutputChecker {
                 case "TEST DEFAULT SPHINX SPEECH DETECTION PIPELINE":
                     break;
                 default:
-                    _errorCollector.checkThat("BestFrame Confidence", actExtrResult.getExemplar().getConfidence(),
-                                              is(expExtrResult.getExemplar().getConfidence()));
+                    _errorCollector.checkThat("BestFrame Confidence", (double) actExtrResult.getExemplar().getConfidence(),
+                                              closeTo(expExtrResult.getExemplar().getConfidence(), delta));
             }
         }
     }
@@ -239,7 +241,8 @@ public class OutputChecker {
                 double overlap = calculateOverlap(expObjLocation.getX(), expObjLocation.getY(),
                         expObjLocation.getWidth(), expObjLocation.getHeight(), actObjLocation.getX(),
                         actObjLocation.getY(), actObjLocation.getWidth(), actObjLocation.getHeight());
-                _errorCollector.checkThat("Overlap", overlap, closeTo(100, comparison_delta));
+                _errorCollector.checkThat("Overlap", overlap, greaterThan(0.0));
+
 
                 _errorCollector.checkThat("Confidence", (double) actObjLocation.getConfidence(),
                         closeTo(expObjLocation.getConfidence(), deltaFuzzy));

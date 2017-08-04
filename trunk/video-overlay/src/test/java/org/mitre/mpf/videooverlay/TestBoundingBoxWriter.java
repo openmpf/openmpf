@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.frameextractor;
+package org.mitre.mpf.videooverlay;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,10 +32,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.UUID;
 
-public class FrameExtractorTests {
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(FrameExtractorTests.class);
+public class TestBoundingBoxWriter {
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(TestBoundingBoxWriter.class);
 
     static {
         String libraryFile = new File("install/lib/libmpfopencvjni.so").getAbsolutePath();
@@ -44,27 +43,47 @@ public class FrameExtractorTests {
     }
 
     @Test
-    public void testFrameExtractor() {
-        try {
-            File sourceFile = new File("video-overlay/src/test/resources/samples/five-second-marathon-clip.mkv");
+    public void testWriterOnVideo() {
+        writeBoxOnFrames("video-overlay/src/test/resources/samples/five-second-marathon-clip.mkv");
+    }
 
-            if(!sourceFile.exists()) {
+    @Test
+    public void testWriterOnGif() {
+        writeBoxOnFrames("video-overlay/src/test/resources/samples/face-morphing.gif");
+    }
+
+    private void writeBoxOnFrames(String filePath) {
+        try {
+            File sourceFile = new File(filePath);
+
+            if (!sourceFile.exists()) {
                 throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
             }
 
-            File outputDirectory = new File("/tmp", UUID.randomUUID().toString());
-            outputDirectory.mkdir();
+            File destinationFile = File.createTempFile("markedup", ".avi");
+            destinationFile.deleteOnExit();
 
-            FrameExtractor extractor = new FrameExtractor(sourceFile.toURI(), outputDirectory.toURI());
-            extractor.getFrames().add(2);
-            extractor.getFrames().add(4);
-            extractor.getFrames().add(8);
-            extractor.execute();
-            // Assert.assertTrue("The size of the output video must be greater than 4096.", destinationFile.length() > 4096);
+            BoundingBoxMap map = new BoundingBoxMap();
 
-        } catch(IOException ioe) {
+            BoundingBox box = new BoundingBox();
+            box.setX(5);
+            box.setY(5);
+            box.setWidth(15);
+            box.setHeight(15);
+            box.setColor(255, 0, 0);
+            map.putOnFrames(1, 20, box);
+
+            BoundingBoxWriter writer = new BoundingBoxWriter();
+            writer.setSourceMedium(sourceFile.toURI());
+            writer.setDestinationMedium(destinationFile.toURI());
+            writer.setBoundingBoxMap(map);
+            writer.markupVideo();
+
+            // Test that something was written.
+            Assert.assertTrue("The size of the output video must be greater than 4096.", destinationFile.length() > 4096);
+
+        } catch (IOException ioe) {
             Assert.fail(String.format("Encountered an exception when none was expected. %s", ioe));
         }
     }
-
 }

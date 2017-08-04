@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -31,8 +31,8 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.protobuf.ProtobufDataFormat;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.*;
-import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessor;
-import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionSplitter;
+import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessorImpl;
+import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionSplitterImpl;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
@@ -96,7 +96,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 					.completionPredicate(new SplitCompletedPredicate(true)) // We need to forward the body of the last message on to the next processor.
 					.removeHeader(MpfHeaders.SPLIT_COMPLETED)
 					.processRef(TrackMergingProcessor.REF) // Track merging is trivial. If it becomes a heavy lift, put in a splitter/aggregator to divide the work.
-					.split().method(ArtifactExtractionSplitter.REF, "split")
+					.split().method(ArtifactExtractionSplitterImpl.REF, "split")
 						.parallelProcessing() // Create work units and process them in any order.
 						.streaming() // Aggregate responses in any order.
 						.choice()
@@ -110,7 +110,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 			.end();
 
 		from(MpfEndpoints.ARTIFACT_EXTRACTION_WORK_QUEUE)
-			.processRef(ArtifactExtractionProcessor.REF)
+			.processRef(ArtifactExtractionProcessorImpl.REF)
 			.setExchangePattern(ExchangePattern.InOnly)
 			.setHeader(MpfHeaders.SUPPRESS_BROADCAST, constant(Boolean.TRUE))
 			.to(exitPoint);

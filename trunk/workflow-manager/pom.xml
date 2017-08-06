@@ -6,11 +6,11 @@
   ~ under contract, and is subject to the Rights in Data-General Clause       ~
   ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
   ~                                                                           ~
-  ~ Copyright 2016 The MITRE Corporation. All Rights Reserved.                ~
+  ~ Copyright 2017 The MITRE Corporation. All Rights Reserved.                ~
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright 2016 The MITRE Corporation                                      ~
+  ~ Copyright 2017 The MITRE Corporation                                      ~
   ~                                                                           ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
   ~ you may not use this file except in compliance with the License.          ~
@@ -33,7 +33,7 @@
     <parent>
         <groupId>org.mitre.mpf</groupId>
         <artifactId>mpf-project</artifactId>
-        <version>0.9.0</version>
+        <version>0.10.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -45,9 +45,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.rpm.prefix>/opt/apache-tomcat/webapps</maven.rpm.prefix>
-        <node.manager.hostname>localhost.localdomain</node.manager.hostname>
         <tomcat.port>8080</tomcat.port>
-        <json.output.object.schema.version>2.0</json.output.object.schema.version>
     </properties>
 
     <repositories>
@@ -120,6 +118,13 @@
         <dependency>
             <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-java-test-components</artifactId>
+            <version>${project.parent.version}</version>
+            <type>pom</type>
+        </dependency>
+        <!-- needed for IT tests -->
+        <dependency>
+            <groupId>org.mitre.mpf</groupId>
+            <artifactId>mpf-install</artifactId>
             <version>${project.parent.version}</version>
             <type>pom</type>
         </dependency>
@@ -836,7 +841,6 @@
         <profile>
             <id>jenkins</id>
             <properties>
-                <node.manager.hostname>jenkins-mpf-1.mitre.org</node.manager.hostname>
                 <tomcat.port>8181</tomcat.port>
             </properties>
             <build>
@@ -885,7 +889,7 @@
                     <repackJars>false</repackJars>
                     <needarch>false</needarch>
                     <vendor>The MITRE Corporation</vendor>
-                    <license>COPYRIGHT 2013,2014,2015,2016 MITRE CORPORATION, all rights reserved.</license>
+                    <license>COPYRIGHT 2013-2017 MITRE CORPORATION, all rights reserved.</license>
                     <distribution>MPF</distribution>
                     <group>Application</group>
                     <version>${project.version}</version>

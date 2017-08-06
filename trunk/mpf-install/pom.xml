@@ -5,11 +5,11 @@
   ~ under contract, and is subject to the Rights in Data-General Clause       ~
   ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
   ~                                                                           ~
-  ~ Copyright 2016 The MITRE Corporation. All Rights Reserved.                ~
+  ~ Copyright 2017 The MITRE Corporation. All Rights Reserved.                ~
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright 2016 The MITRE Corporation                                      ~
+  ~ Copyright 2017 The MITRE Corporation                                      ~
   ~                                                                           ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
   ~ you may not use this file except in compliance with the License.          ~
@@ -29,149 +29,15 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.mitre.mpf</groupId>
-        <artifactId>mpf-project</artifactId>
-        <version>0.9.0</version>
-	<relativePath>../../pom.xml</relativePath>
+        <artifactId>mpf-install-base</artifactId>
+        <version>0.10.0</version>
+	    <relativePath>base-pom.xml</relativePath>
     </parent>
 
     <groupId>org.mitre.mpf</groupId>
     <artifactId>mpf-install</artifactId>
     <packaging>pom</packaging>
     <name>MPF Install</name>
-
-    <build>
-        <plugins>
-            <!-- assemble all the java (maven) parts -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>distro-assemble</id>
-                        <phase>package</phase>
-                        <goals>
-                            <!-- created as part of normal build process: runs during 'assembly:single' goal -->
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <escapeString>\</escapeString>
-                            <descriptors>
-                                <descriptor>src/main/assembly/dist.xml</descriptor>
-                            </descriptors>
-                            <tarLongFileMode>gnu</tarLongFileMode>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <!-- copy all the assembled parts to top-level install -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.7</version>
-                <executions>
-                    <execution>
-                        <id>copy-assembly-install-files</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target name="copy assembled install files to top-level install">
-                                <copy todir="${basedir}/../install">
-                                    <fileset dir="${project.build.directory}/${project.build.finalName}-dist/install"/>
-                                </copy>
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>chmod-assembly-install-files</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target name="fix permissions because ant copy can't do this">
-                                <!-- Need to set maxparallel or else stress tests fail due to
-                                the argument list being too long. 
-                                maxparallel is the max number of arguments to chmod,
-                                not the number of chmod processes.
-                                See https://ant.apache.org/manual/Tasks/chmod.html -->
-                                <chmod perm="755" verbose="true" maxparallel="100">
-                                    <fileset dir="${basedir}/../install" includes="**/*"/>
-                                </chmod>
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>make empty log directory under install</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <mkdir dir="${basedir}/../install/log"/>
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>make empty tmp directory under install</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <mkdir dir="${basedir}/../install/tmp/web"/>
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>make empty data directory under install</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <mkdir dir="${basedir}/../install/data"/>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-
-    <profiles>
-      <profile>
-        <id>create-tar</id>
-        <build>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-assembly-plugin</artifactId>
-              <executions>
-                <!-- Create the tar containing the cross-module dependencies and config files -->
-                <execution>
-                  <id>mpf-install-dep</id>
-                  <goals><goal>single</goal></goals>
-                  <phase>package</phase>
-                  <configuration>
-                    <finalName>mpf-install-dep-${project.version}</finalName>
-                    <appendAssemblyId>false</appendAssemblyId>
-                    <descriptors>
-                      <descriptor>src/main/assembly/mpf-install-dep-assembly.xml</descriptor>
-                    </descriptors>
-                    <tarLongFileMode>gnu</tarLongFileMode>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </build>
-      </profile>
-    </profiles>
 
     <!-- our jar modules and their dependencies: the one found first wins even over a newer version -->
     <dependencies>
@@ -200,20 +66,13 @@
             <artifactId>mpf-java-component-executor</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- needed to populate $MPF_HOME/bin -->
         <dependency>
             <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-project</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
         </dependency>
-        <!-- this is a war
-            <dependency>
-              <groupId>org.mitre.mpf</groupId>
-              <artifactId>workflow-manager</artifactId>
-              <version>${project.version}</version>
-              <type>war</type>
-            </dependency>
-        -->
     </dependencies>
 
 </project>

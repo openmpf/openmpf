@@ -121,6 +121,7 @@
             <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-install</artifactId>
             <version>${project.parent.version}</version>
+            <type>pom</type>
             <scope>test</scope>
         </dependency>
         <dependency>

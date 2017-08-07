@@ -109,6 +109,8 @@
             <artifactId>mpf-rest-api</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+
+        <!-- needed for IT tests -->
         <dependency>
             <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-rest-client</artifactId>
@@ -117,17 +119,18 @@
         </dependency>
         <dependency>
             <groupId>org.mitre.mpf</groupId>
-            <artifactId>mpf-java-test-components</artifactId>
-            <version>${project.parent.version}</version>
-            <type>pom</type>
-        </dependency>
-        <!-- needed for IT tests -->
-        <dependency>
-            <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-install</artifactId>
             <version>${project.parent.version}</version>
-            <type>pom</type>
+            <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mitre.mpf</groupId>
+            <artifactId>mpf-java-test-detection-component</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- / needed for IT tests -->
+
         <!-- / MPF -->
 
         <!-- added for REST web services -->

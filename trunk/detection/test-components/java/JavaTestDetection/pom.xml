@@ -39,7 +39,6 @@
     <artifactId>mpf-java-test-detection-component</artifactId>
     <name>MPF Java Test Detection Component</name>
 
-
     <dependencies>
         <dependency>
             <groupId>org.mitre.mpf</groupId>
@@ -47,7 +46,6 @@
             <version>0.10.0</version>
         </dependency>
     </dependencies>
-
 
     <build>
         <plugins>

@@ -70,6 +70,7 @@ public class JsonJobRequest {
 	@JsonPropertyDescription("The relative priority of the job which may be in the range 1-9.")
 	private int priority;
 	public int getPriority() { return priority; }
+	public void setPriority(int priority) { this.priority = priority; }
 
 	@JsonProperty("callbackURL")
 	@JsonPropertyDescription("The OPTIONAL URL to make a callback of the completed job.")

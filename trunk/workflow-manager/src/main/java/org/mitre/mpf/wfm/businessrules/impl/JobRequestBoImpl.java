@@ -234,20 +234,8 @@ public class JobRequestBoImpl implements JobRequestBo {
 			JsonJobRequest jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
 
 			// If the priority should be changed during resubmission, make that change now.
-			if(priorityPolicy == PriorityPolicy.PROVIDED) {
-
-				// Create a copy of this job's media in order to add it to the new instance we're about to create.
-				final List<JsonMediaInputObject> originalMedia = new LinkedList<>();
-				for (JsonMediaInputObject media : jsonJobRequest.getMedia()) {
-					JsonMediaInputObject originalMedium = new JsonMediaInputObject(media.getMediaUri());
-					originalMedium.getProperties().putAll(media.getProperties());
-					originalMedia.add(originalMedium);
-				};
-
-				jsonJobRequest = new JsonJobRequest(jsonJobRequest.getExternalId(), jsonJobRequest.isOutputObjectEnabled(), jsonJobRequest.getPipeline(), priority) {{
-					getMedia().addAll(originalMedia);
-				}};
-
+			if (priorityPolicy == PriorityPolicy.PROVIDED) {
+				jsonJobRequest.setPriority(priority);
 			}
 
 			jobRequest = initializeInternal(jobRequest, jsonJobRequest);

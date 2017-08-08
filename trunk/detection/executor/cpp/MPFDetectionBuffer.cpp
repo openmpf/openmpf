@@ -102,7 +102,7 @@ void MPFDetectionBuffer::GetVideoRequest(MPFDetectionVideoRequest &video_request
         for (auto prop : detection_request.video_request().feed_forward_track().detection_properties()) {
             video_request.feed_forward_track.detection_properties[prop.key()] = prop.value();
         }
-        for ( auto loc : detection_request.video_request().feed_forward_track().frame_locations()) {
+        for (auto loc : detection_request.video_request().feed_forward_track().frame_locations()) {
             Properties tmp_props;
             for (auto prop : loc.image_location().detection_properties()) {
                 tmp_props[prop.key()] = tmp_props[prop.value()];
@@ -141,6 +141,8 @@ void MPFDetectionBuffer::GetAudioRequest(MPFDetectionAudioRequest &audio_request
 
 void MPFDetectionBuffer::GetImageRequest(MPFDetectionImageRequest &image_request) {
     image_request.has_feed_forward_location = false;
+    //If there is a feed-forward location in the request, copy it into an
+    //MPFImageLocation
     if (detection_request.image_request().has_feed_forward_location()) {
         image_request.has_feed_forward_location = true;
         image_request.feed_forward_location.x_left_upper =
@@ -154,6 +156,7 @@ void MPFDetectionBuffer::GetImageRequest(MPFDetectionImageRequest &image_request
         image_request.feed_forward_location.confidence =
                 detection_request.image_request().feed_forward_location().confidence();
     }
+    // Copy the image location properties
     for (auto prop : detection_request.image_request().feed_forward_location().detection_properties()) {
         image_request.feed_forward_location.detection_properties[prop.key()] = prop.value();
     }

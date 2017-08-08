@@ -277,7 +277,8 @@ int main(int argc, char* argv[]) {
                             else {
                                 // Invoke the detection component
                                 // without a feed-forward track
-                                MPFVideoJob video_job(job_name.str(), data_uri,
+                                MPFVideoJob video_job(job_name.str(),
+                                                      data_uri,
                                                       video_request.start_frame,
                                                       video_request.stop_frame,
                                                       algorithm_properties,
@@ -337,9 +338,9 @@ int main(int argc, char* argv[]) {
                         } else if (data_type == MPFDetectionDataType::IMAGE) {
                             vector <MPFImageLocation> locations;
                             if (image_request.has_feed_forward_location) {
-                                LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing feed-forward location on " << service_name << ".");
                                 // Invoke the detection component with
                                 // a feed-forward location
+                                LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing feed-forward location on " << service_name << ".");
                                 MPFImageJob image_job(job_name.str(),
                                                       data_uri,
                                                       image_request.feed_forward_location,

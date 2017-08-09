@@ -99,23 +99,13 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
                         MPFDetectionAudioRequest audioRequest = detectionBuffer.getAudioRequest();
                         try {
                             List<MPFAudioTrack> tracks = new ArrayList<>();
-                            if (audioRequest.hasFeedForwardTrack()) {
-                                tracks = detector.getDetections(new MPFAudioJob(msgMetadata.getJobName(),
-                                                                                msgMetadata.getDataUri(),
-                                                                                msgMetadata.getAlgorithmProperties(),
-                                                                                msgMetadata.getMediaProperties(),
-                                                                                audioRequest.getStartTime(),
-                                                                                audioRequest.getStopTime(),
-                                                                                audioRequest.getFeedForwardTrack()));
-                            }
-                            else {
-                                tracks = detector.getDetections(new MPFAudioJob(msgMetadata.getJobName(),
-                                                                                msgMetadata.getDataUri(),
-                                                                                msgMetadata.getAlgorithmProperties(),
-                                                                                msgMetadata.getMediaProperties(),
-                                                                                audioRequest.getStartTime(),
-                                                                                audioRequest.getStopTime()));
-                            }
+                            tracks = detector.getDetections(new MPFAudioJob(msgMetadata.getJobName(),
+                                                                            msgMetadata.getDataUri(),
+                                                                            msgMetadata.getAlgorithmProperties(),
+                                                                            msgMetadata.getMediaProperties(),
+                                                                            audioRequest.getStartTime(),
+                                                                            audioRequest.getStopTime(),
+                                                                            audioRequest.getFeedForwardTrack()));
                             responseBytes = detectionBuffer.createAudioResponseMessage(msgMetadata, detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS);
                         } catch (MPFComponentDetectionError e) {
                             responseBytes = detectionBuffer.createAudioResponseMessage(msgMetadata, detectionType, Collections.<MPFAudioTrack>emptyList(), e.getDetectionError());
@@ -124,19 +114,11 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
                         MPFDetectionImageRequest imageRequest = detectionBuffer.getImageRequest();
                         List<MPFImageLocation> locations = new ArrayList<>();
                         try {
-                            if (imageRequest.hasFeedForwardLocation()) {
-                                locations = detector.getDetections(new MPFImageJob(msgMetadata.getJobName(),
-                                                                                   msgMetadata.getDataUri(),
-                                                                                   msgMetadata.getAlgorithmProperties(),
-                                                                                   msgMetadata.getMediaProperties(),
-                                                                                   imageRequest.getFeedForwardLocation()));
-                            }
-                            else {
-                                locations = detector.getDetections(new MPFImageJob(msgMetadata.getJobName(),
-                                                                                   msgMetadata.getDataUri(),
-                                                                                   msgMetadata.getAlgorithmProperties(),
-                                                                                   msgMetadata.getMediaProperties()));
-                            }
+                            locations = detector.getDetections(new MPFImageJob(msgMetadata.getJobName(),
+                                                                               msgMetadata.getDataUri(),
+                                                                               msgMetadata.getAlgorithmProperties(),
+                                                                               msgMetadata.getMediaProperties(),
+                                                                               imageRequest.getFeedForwardLocation()));
                             responseBytes = detectionBuffer.createImageResponseMessage(msgMetadata, detectionType, locations, MPFDetectionError.MPF_DETECTION_SUCCESS);
                         } catch (MPFComponentDetectionError e) {
                             responseBytes = detectionBuffer.createImageResponseMessage(msgMetadata, detectionType, locations, e.getDetectionError());
@@ -146,23 +128,13 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
                         MPFDetectionVideoRequest videoRequest = detectionBuffer.getVideoRequest();
                         List<MPFVideoTrack> tracks = new ArrayList<>();
                         try {
-                            if (videoRequest.hasFeedForwardTrack()) {
-                                tracks = detector.getDetections(new MPFVideoJob(msgMetadata.getJobName(),
-                                                                                msgMetadata.getDataUri(),
-                                                                                msgMetadata.getAlgorithmProperties(),
-                                                                                msgMetadata.getMediaProperties(),
-                                                                                videoRequest.getStartFrame(),
-                                                                                videoRequest.getStopFrame(),
-                                                                                videoRequest.getFeedForwardTrack()));
-                            }
-                            else {
-                                tracks = detector.getDetections(new MPFVideoJob(msgMetadata.getJobName(),
-                                                                                msgMetadata.getDataUri(),
-                                                                                msgMetadata.getAlgorithmProperties(),
-                                                                                msgMetadata.getMediaProperties(),
-                                                                                videoRequest.getStartFrame(),
-                                                                                videoRequest.getStopFrame()));
-                            }
+                            tracks = detector.getDetections(new MPFVideoJob(msgMetadata.getJobName(),
+                                                                            msgMetadata.getDataUri(),
+                                                                            msgMetadata.getAlgorithmProperties(),
+                                                                            msgMetadata.getMediaProperties(),
+                                                                            videoRequest.getStartFrame(),
+                                                                            videoRequest.getStopFrame(),
+                                                                            videoRequest.getFeedForwardTrack()));
                             responseBytes = detectionBuffer.createVideoResponseMessage(msgMetadata, detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS);
                         } catch (MPFComponentDetectionError e) {
                             responseBytes = detectionBuffer.createVideoResponseMessage(msgMetadata, detectionType, tracks, e.getDetectionError());

@@ -99,7 +99,7 @@
                     <workingDirectory>../</workingDirectory>
                 </configuration>
             </plugin>
-            <!-- Build the video-overlay RPM -->
+            <!-- Build the interop RPM -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>rpm-maven-plugin</artifactId>

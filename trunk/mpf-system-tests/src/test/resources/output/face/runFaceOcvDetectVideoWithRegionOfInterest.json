@@ -54,6 +54,71 @@
             "source": "+#TEST OCV FACE WITH ROI ACTION",
             "tracks": [
               {
+                "id": "80d1ce9737563d00695956a330cb5ac40adefd9ce11ee8ee71c4636ef59034cc",
+                "startOffsetFrame": 110,
+                "stopOffsetFrame": 112,
+                "startOffsetTime": 3670,
+                "stopOffsetTime": 3737,
+                "type": "FACE",
+                "source": "+#TEST OCV FACE WITH ROI ACTION",
+                "exemplar": {
+                  "x": 344,
+                  "y": 92,
+                  "width": 251,
+                  "height": 251,
+                  "confidence": 17.0,
+                  "detectionProperties": {},
+                  "offsetFrame": 110,
+                  "offsetTime": 3670,
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "/home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/142/0/0/frame-110.png",
+                  "offset": 110
+                },
+                "detections": [
+                  {
+                    "x": 344,
+                    "y": 92,
+                    "width": 251,
+                    "height": 251,
+                    "confidence": 17.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 110,
+                    "offsetTime": 3670,
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "/home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/142/0/0/frame-110.png",
+                    "offset": 110
+                  },
+                  {
+                    "x": 314,
+                    "y": 126,
+                    "width": 208,
+                    "height": 208,
+                    "confidence": 6.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 111,
+                    "offsetTime": 3704,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 111
+                  },
+                  {
+                    "x": 310,
+                    "y": 100,
+                    "width": 208,
+                    "height": 208,
+                    "confidence": 0.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 112,
+                    "offsetTime": 3737,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 112
+                  }
+                ],
+                "startOffset": 110,
+                "stopOffset": 112
+              },
+              {
                 "id": "a577db846e68c6e4e481f1babe69445976162f45c664fd32aae1ee49c998956f",
                 "startOffsetFrame": 243,
                 "stopOffsetFrame": 251,

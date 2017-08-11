@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -31,26 +31,28 @@ public class MpfEndpoints {
   // TODO need to add the queue for accepting summary reports
   // TODO need to add the queue for accepting new track alerts.
 
-  public static final String
-			ARTIFACT_EXTRACTION_WORK_QUEUE= "jms:MPF.ARTIFACT_EXTRACTION_WORK_QUEUE",
-        MEDIA_INSPECTION_ENTRY_POINT = "jms:MPF.MEDIA_INSPECTION",
+  public class MpfEndpoints {
+    public static final String
+            ARTIFACT_EXTRACTION_WORK_QUEUE = "jms:MPF.ARTIFACT_EXTRACTION_WORK_QUEUE",
+            MEDIA_INSPECTION_ENTRY_POINT = "jms:MPF.MEDIA_INSPECTION",
 
-			MEDIA_INSPECTION_WORK_QUEUE = "jms:MPF.MEDIA_INSPECTION_WORK_QUEUE",
-		    MEDIA_RETRIEVAL_ENTRY_POINT = "jms:MPF.MEDIA_RETRIEVAL",
-		    MEDIA_RETRIEVAL_WORK_QUEUE = "jms:MPF.MEDIA_RETRIEVAL_WORK_QUEUE",
+            MEDIA_INSPECTION_WORK_QUEUE = "jms:MPF.MEDIA_INSPECTION_WORK_QUEUE",
+            MEDIA_RETRIEVAL_ENTRY_POINT = "jms:MPF.MEDIA_RETRIEVAL",
+            MEDIA_RETRIEVAL_WORK_QUEUE = "jms:MPF.MEDIA_RETRIEVAL_WORK_QUEUE",
 
-			CANCELLED_DETECTIONS_QUEUE_NAME = "MPF.CANCELLED_DETECTIONS",
-			CANCELLED_DETECTIONS = "jms:" + CANCELLED_DETECTIONS_QUEUE_NAME,
-			COMPLETED_DETECTIONS = "jms:MPF.COMPLETED_DETECTIONS",
+            CANCELLED_DETECTIONS = "jms:MPF.CANCELLED_DETECTIONS",
 
-			CANCELLED_MARKUPS_QUEUE_NAME = "MPF.CANCELLED_MARKUPS",
-			CANCELLED_MARKUPS = "jms:" + CANCELLED_MARKUPS_QUEUE_NAME,
-			COMPLETED_MARKUP = "jms:MPF.COMPLETED_MARKUP",
+            COMPLETED_DETECTIONS = "jms:MPF.COMPLETED_DETECTIONS",
+            COMPLETED_DETECTIONS_REPLY_TO = "queue://MPF.COMPLETED_DETECTIONS",
 
-			JOB_REQUESTS = "jms:MPF.JOB_REQUESTS",
+            CANCELLED_MARKUPS = "jms:MPF.CANCELLED_MARKUPS",
+            COMPLETED_MARKUP = "jms:MPF.COMPLETED_MARKUP",
 
-			STAGE_RESULTS_AGGREGATOR = "direct:jobRouterStageAggregator",
+            JOB_REQUESTS = "jms:MPF.JOB_REQUESTS",
+            STAGE_RESULTS_AGGREGATOR = "direct:jobRouterStageAggregator",
 
-			UNSOLICITED_MESSAGES_QUEUE_NAME = "MPF.UNSOLICITED_MESSAGES",
-			UNSOLICITED_MESSAGES = "jms:"+UNSOLICITED_MESSAGES_QUEUE_NAME;
+            UNSOLICITED_MESSAGES = "jms:MPF.UNSOLICITED_MESSAGES",
+
+            DEAD_LETTER_QUEUE = "activemq:ActiveMQ.DLQ",
+            PROCESSED_DLQ_MESSAGES_QUEUE = "jms:MPF.PROCESSED_DLQ_MESSAGES";
 }

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -77,7 +77,7 @@ public class MediaRetrieverRouteBuilder extends RouteBuilder {
 					.to(JobCompletedRouteBuilder.ENTRY_POINT)
 				.when(header(MpfHeaders.EMPTY_SPLIT).isEqualTo(Boolean.TRUE))
 					.removeHeader(MpfHeaders.EMPTY_SPLIT)
-					.processRef(JobRetrievalProcessor.REF)
+					.process(JobRetrievalProcessor.REF)
 					.to(exitPoint)
 				.otherwise()
 					.to(MpfEndpoints.MEDIA_RETRIEVAL_WORK_QUEUE)
@@ -85,11 +85,11 @@ public class MediaRetrieverRouteBuilder extends RouteBuilder {
 
 		from(MpfEndpoints.MEDIA_RETRIEVAL_WORK_QUEUE)
 			.setExchangePattern(ExchangePattern.InOnly)
-			.processRef(RemoteMediaProcessor.REF)
+			.process(RemoteMediaProcessor.REF)
 			.aggregate(header(MpfHeaders.CORRELATION_ID), stringCountBasedAggregator)
 			.completionPredicate(new SplitCompletedPredicate())
 			.removeHeader(MpfHeaders.SPLIT_COMPLETED)
-			.processRef(JobRetrievalProcessor.REF)
+			.process(JobRetrievalProcessor.REF)
 			.to(exitPoint);
 	}
 }

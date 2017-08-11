@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -87,7 +87,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
 			.unmarshal(new ProtobufDataFormat(DetectionProtobuf.DetectionResponse.getDefaultInstance())) // Unpack the protobuf response.
-			.processRef(DetectionResponseProcessor.REF) // Run the response through the response processor.
+			.process(DetectionResponseProcessor.REF) // Run the response through the response processor.
 			.choice()
 				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(Boolean.TRUE.toString()))
 					.to(MpfEndpoints.UNSOLICITED_MESSAGES)
@@ -95,7 +95,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 					.aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)
 					.completionPredicate(new SplitCompletedPredicate(true)) // We need to forward the body of the last message on to the next processor.
 					.removeHeader(MpfHeaders.SPLIT_COMPLETED)
-					.processRef(TrackMergingProcessor.REF) // Track merging is trivial. If it becomes a heavy lift, put in a splitter/aggregator to divide the work.
+					.process(TrackMergingProcessor.REF) // Track merging is trivial. If it becomes a heavy lift, put in a splitter/aggregator to divide the work.
 					.split().method(ArtifactExtractionSplitterImpl.REF, "split")
 						.parallelProcessing() // Create work units and process them in any order.
 						.streaming() // Aggregate responses in any order.
@@ -110,7 +110,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 			.end();
 
 		from(MpfEndpoints.ARTIFACT_EXTRACTION_WORK_QUEUE)
-			.processRef(ArtifactExtractionProcessorImpl.REF)
+			.process(ArtifactExtractionProcessorImpl.REF)
 			.setExchangePattern(ExchangePattern.InOnly)
 			.setHeader(MpfHeaders.SUPPRESS_BROADCAST, constant(Boolean.TRUE))
 			.to(exitPoint);

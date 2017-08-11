@@ -32,7 +32,6 @@ import java.nio.file.Paths;
 
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.*;
-import org.mitre.mpf.rest.api.StreamingJobInfoResponse;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
@@ -125,13 +124,13 @@ public class ModelUtils {
 				jobRequest.getTimeCompleted(), jobRequest.getOutputObjectPath(), isTerminal);
 	}
 
-	public static StreamingJobInfoResponse convertJobRequest(StreamingJobRequest streamingJobRequest,
+	public static StreamingJobInfo convertJobRequest(StreamingJobRequest streamingJobRequest,
 			float jobContainerProgress) {
 		JobStatus jobStatus = streamingJobRequest.getStatus();
 		// some job status' may be terminal
 		boolean isTerminal = (jobStatus != null && jobStatus.isTerminal());
 
-		return new StreamingJobInfoResponse(streamingJobRequest.getId(), streamingJobRequest.getExternalId(),
+		return new StreamingJobInfo(streamingJobRequest.getId(), streamingJobRequest.getExternalId(),
 				streamingJobRequest.getPipeline(),
 				streamingJobRequest.getPriority(),
 				streamingJobRequest.getStatus().toString(), jobContainerProgress, streamingJobRequest.getTimeReceived(),

@@ -69,7 +69,7 @@ public class SystemMessageController {
 
     @RequestMapping(value = {"/system-message"}, method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE )
     @ResponseBody
-    public List<SystemMessage> getAllMessagesInternal() {
+    public List<SystemMessage> getAllSystemMessages() {
         return mpfService.getSystemMessagesByType( "all" );
     }
 
@@ -81,7 +81,7 @@ public class SystemMessageController {
             @ApiResponse(code = 200, message = "Successful response"),
             @ApiResponse(code = 401, message = "Bad credentials") })
     @ResponseBody
-    public List<SystemMessage> getAllMessages() { return getAllMessagesInternal(); }
+    public List<SystemMessage> getAllSystemMessagesRest() { return getAllSystemMessages(); }
 
     @RequestMapping(value = {"/rest/system-message/type/{typeFilter}"}, method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE )
     @ApiOperation(value="Retrieves all system messages of the given type.",
@@ -91,7 +91,7 @@ public class SystemMessageController {
             @ApiResponse(code = 200, message = "Successful response"),
             @ApiResponse(code = 401, message = "Bad credentials") })
     @ResponseBody
-    public List<SystemMessage>  getFilteredMessages(
+    public List<SystemMessage>  getFilteredSystemMessagesRest(
             @ApiParam(value = "The message type to find", allowableValues = "all,admin,login", required = true) @PathVariable("typeFilter") String typeFilter ) {
         return mpfService.getSystemMessagesByType( typeFilter );
     }
@@ -176,7 +176,7 @@ public class SystemMessageController {
             @ApiImplicitParam(name = "severity", value = "Severity of the message (defaults to 'info')", allowableValues = "info,warning,error", required = false, dataType = "string", paramType = "query")
     })
     @ResponseBody
-    public ResponseEntity<MpfResponse> postMessage(
+    public ResponseEntity<MpfResponse> postSystemMessageRest(
             @RequestBody String msg,
             @QueryParam("msgType") String msgType,
             @QueryParam ("removeStrategy") String removeStrategy,
@@ -209,7 +209,7 @@ public class SystemMessageController {
 //            @ApiResponse(code = 400, message = "Malformed JSON input, especially incorrect date format"),
 //            @ApiResponse(code = 401, message = "Bad credentials") })
 //    @ResponseBody
-//    public ResponseEntity<MpfResponse> addMessage(
+//    public ResponseEntity<MpfResponse> addSystemMessageRest(
 //            @ApiParam(value = "The message in JSON format", required = true) @RequestBody SystemMessage systemMessage,
 //            HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse )
 //            throws InterruptedException, IOException
@@ -225,7 +225,7 @@ public class SystemMessageController {
 //            @ApiResponse(code = 201, message = "Successfully added"),
 //            @ApiResponse(code = 401, message = "Bad credentials") })
 //    @ResponseBody
-//    public ResponseEntity<MpfResponse> addMessage(
+//    public ResponseEntity<MpfResponse> addSystemMessageRest(
 //            @ApiParam(value = "message ID (currently, only 'eServerPropertiesChanged' is supported", required = true) @PathVariable("msgID") String msgID,
 //            HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse )
 //            throws InterruptedException, IOException
@@ -241,7 +241,7 @@ public class SystemMessageController {
             @ApiResponse(code = 200, message = "Successfully deleted"),
             @ApiResponse(code = 401, message = "Bad credentials") })
     @ResponseBody
-    public ResponseEntity<MpfResponse> deleteMessage( @PathVariable("id") long id,
+    public ResponseEntity<MpfResponse> deleteSystemMessageRest( @PathVariable("id") long id,
                                HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse )
             throws InterruptedException, IOException
     {

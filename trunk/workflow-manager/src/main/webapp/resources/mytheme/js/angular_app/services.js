@@ -252,7 +252,6 @@ AppServices.service('JobsService', function ($http) {
         var promise = $http({
             url: 'jobs',
             method: "GET",
-            params: {'useSession': isSession}
         }).then(function (response) {
             return response.data;
         });
@@ -277,7 +276,6 @@ AppServices.service('JobsService', function ($http) {
         var promise = $http({
             url: url,
             method: "GET",
-            params: {'useSession': isSession}
         }).then(function (response) {
             //returns one job info object
             return response.data;

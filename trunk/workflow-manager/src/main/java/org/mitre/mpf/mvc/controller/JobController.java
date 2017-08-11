@@ -44,12 +44,10 @@ import io.swagger.annotations.*;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -78,7 +76,7 @@ import static java.util.stream.Collectors.joining;
 // swagger includes
 
 @Api(value = "Jobs",
-        description = "Job status, cancel, resubmit, output")
+        description = "Job create, status, cancel, resubmit, output")
 @Controller
 @Scope("request")
 @Profile("website")
@@ -90,9 +88,6 @@ public class JobController {
 
     @Autowired //will grab the impl
     private MpfService mpfService;
-
-    @Autowired
-    private SessionModel sessionModel;
 
     @Autowired
     private JobProgress jobProgress;
@@ -119,16 +114,22 @@ public class JobController {
             @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
     @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
-    public JobCreationResponse processMediaRest(@ApiParam(required = true, value = "JobCreationRequest") @RequestBody JobCreationRequest jobCreationRequest) {
-        return processMediaVersionOne(jobCreationRequest);
+    public ResponseEntity<JobCreationResponse> createJobRest(@ApiParam(required = true, value = "JobCreationRequest") @RequestBody JobCreationRequest jobCreationRequest) {
+        JobCreationResponse createResponse = createJobInternal(jobCreationRequest);
+        if (createResponse.getMpfResponse().getResponseCode() == 0) {
+            return new ResponseEntity<>(createResponse, HttpStatus.CREATED);
+        } else {
+            log.error("Error creating job");
+            return new ResponseEntity<>(createResponse, HttpStatus.BAD_REQUEST);
+        }
     }
 
     //INTERNAL
     @RequestMapping(value = {"/jobs"}, method = RequestMethod.POST)
     @ResponseBody
     @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
-    public JobCreationResponse processMediaSession(@RequestBody JobCreationRequest jobCreationRequest) {
-        return processMediaVersionOne(jobCreationRequest);
+    public JobCreationResponse createJob(@RequestBody JobCreationRequest jobCreationRequest) {
+        return createJobInternal(jobCreationRequest);
     }
 
     /*
@@ -137,22 +138,21 @@ public class JobController {
     //INTERNAL
     @RequestMapping(value = "/jobs", method = RequestMethod.GET)
     @ResponseBody
-    public List<SingleJobInfo> getJobStatusSession(@RequestParam(value = "useSession", required = false) boolean useSession) {
-        return getJobStatusVersionOne(null, useSession);
+    public List<SingleJobInfo> getJobStatus() {
+        return getJobStatusInternal(null);
     }
 
-
+    //INTERNAL
     @RequestMapping(value = {"/jobs-paged"}, method = RequestMethod.POST)
     @ResponseBody
-    public JobPageListModel getJobStatusSessionFiltered(@RequestParam(value = "useSession", required = false) boolean useSession,
-                                                        @RequestParam(value = "draw", required = false) int draw,
-                                                        @RequestParam(value = "start", required = false) int start,
-                                                        @RequestParam(value = "length", required = false) int length,
-                                                        @RequestParam(value = "search", required = false) String search,
-                                                        @RequestParam(value = "sort", required = false) String sort) {
-        log.debug("Params useSession:{} draw:{} start:{},length:{},search:{},sort:{} ", useSession, draw, start, length, search, sort);
+    public JobPageListModel getJobStatusFiltered(@RequestParam(value = "draw", required = false) int draw,
+                                                 @RequestParam(value = "start", required = false) int start,
+                                                 @RequestParam(value = "length", required = false) int length,
+                                                 @RequestParam(value = "search", required = false) String search,
+                                                 @RequestParam(value = "sort", required = false) String sort) {
+        log.debug("Params draw:{} start:{},length:{},search:{},sort:{} ", draw, start, length, search, sort);
 
-        List<SingleJobInfo> jobInfoModels = getJobStatusVersionOne(null, useSession);
+        List<SingleJobInfo> jobInfoModels = getJobStatusInternal(null);
         Collections.reverse(jobInfoModels);//newest first
 
         //handle search
@@ -212,36 +212,30 @@ public class JobController {
             @ApiResponse(code = 400, message = "Invalid id"),
             @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
-    public ResponseEntity<SingleJobInfo> getJobStatusRest(/* @ApiParam(value="The version of this request - NOT IMPLEMENTED - NOT REQUIRED") 
-            @RequestParam(value = "v", required = false) String v, */
-                                                          @ApiParam(required = true, value = "Job Id") @PathVariable("id") long jobIdPathVar) {
-        SingleJobInfo singleJobInfoModel = null;
-        List<SingleJobInfo> jobInfoModels = getJobStatusVersionOne(jobIdPathVar, false);
+    public ResponseEntity<SingleJobInfo> getJobStatusRest(@ApiParam(required = true, value = "Job Id") @PathVariable("id") long jobId) {
+        List<SingleJobInfo> jobInfoModels = getJobStatusInternal(jobId);
         if (jobInfoModels != null && jobInfoModels.size() == 1) {
-            singleJobInfoModel = jobInfoModels.get(0);
+            return new ResponseEntity<>(jobInfoModels.get(0), HttpStatus.OK);
         } else {
-            log.error("Error retrieving the SingleJobInfo model for the job with id '{}'", jobIdPathVar);
+            log.error("Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
+            return new ResponseEntity<>((SingleJobInfo) null, HttpStatus.BAD_REQUEST);
         }
-
-        //return 200 for successful GET and object, 401 for bad credentials, 400 for bad id
-        return new ResponseEntity<>(singleJobInfoModel, (singleJobInfoModel != null) ? HttpStatus.OK : HttpStatus.BAD_REQUEST);
     }
 
     //INTERNAL
     @RequestMapping(value = "/jobs/{id}", method = RequestMethod.GET)
     @ResponseBody
-    public SingleJobInfo getJobStatusWithIdSession(@PathVariable("id") long jobIdPathVar,
-                                                   @RequestParam(value = "useSession", required = false) boolean useSession) {
-        List<SingleJobInfo> jobInfoModels = getJobStatusVersionOne(jobIdPathVar, useSession);
+    public SingleJobInfo getJobStatus(@PathVariable("id") long jobId) {
+        List<SingleJobInfo> jobInfoModels = getJobStatusInternal(jobId);
         if (jobInfoModels != null && jobInfoModels.size() == 1) {
             return jobInfoModels.get(0);
         }
-        log.error("Error retrieving the SingleJobInfo model for the job with id '{}'", jobIdPathVar);
+        log.error("Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
         return null;
     }
 
     /*
-     * /jobs/{id}/output/detection
+     * GET /jobs/{id}/output/detection
      */
     //EXTERNAL
     @RequestMapping(value = "/rest/jobs/{id}/output/detection", method = RequestMethod.GET)
@@ -252,22 +246,20 @@ public class JobController {
             @ApiResponse(code = 401, message = "Bad credentials"),
             @ApiResponse(code = 404, message = "Invalid id")})
     @ResponseBody
-    public ResponseEntity<?> getSerializedDetectionOutputRest(
-            @ApiParam(required = true, value = "Job id") @PathVariable("id") long idPathVar) throws IOException {
-        //return 200 for successful GET and object, 401 for bad credentials, 404 for bad id
-        return getJobOutputObjectAsString(idPathVar)
+    public ResponseEntity<?> getSerializedDetectionOutputRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) throws IOException {
+        //return 200 for successful GET and object; 404 for bad id
+        return getJobOutputObjectAsString(jobId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-
+    //INTERNAL
     @RequestMapping(value = "/jobs/output-object", method = RequestMethod.GET)
     public ModelAndView getOutputObject(@RequestParam(value = "id", required = true) long idParam) throws IOException {
         return getJobOutputObjectAsString(idParam)
                 .map(jsonStr -> new ModelAndView("output_object", "jsonObj", jsonStr))
                 .orElseThrow(() -> new IllegalStateException(idParam + " does not appear to be a valid Job Id."));
     }
-
 
     private Optional<String> getJobOutputObjectAsString(long jobId) throws IOException {
         JobRequest jobRequest = mpfService.getJobRequest(jobId);
@@ -279,9 +271,8 @@ public class JobController {
         }
     }
 
-
     /*
-     * /jobs/{id}/resubmit
+     * POST /jobs/{id}/resubmit
      */
     //EXTERNAL
     @RequestMapping(value = "/rest/jobs/{id}/resubmit", method = RequestMethod.POST)
@@ -293,28 +284,28 @@ public class JobController {
             @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
-    public ResponseEntity<JobCreationResponse> resubmitJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobIdPathVar,
+    public ResponseEntity<JobCreationResponse> resubmitJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId,
                                                                @ApiParam(value = "Job priority (0-9 with 0 being the lowest) - OPTIONAL") @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam) {
-        JobCreationResponse jobCreationResponse = resubmitJobVersionOne(jobIdPathVar, jobPriorityParam);
-
-        //return 200 for successful GET and object, 401 for bad credentials, 400 for bad id
-        //	job id will be -1 in the jobCreationResponse if there was an error cancelling the job
-        return new ResponseEntity<>(jobCreationResponse, (jobCreationResponse.getJobId() == -1) ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
+        JobCreationResponse resubmitResponse = resubmitJobInternal(jobId, jobPriorityParam);
+        if (resubmitResponse.getMpfResponse().getResponseCode() == 0) {
+            return new ResponseEntity<>(resubmitResponse, HttpStatus.OK);
+        } else {
+            log.error("Error resubmitting job with id '{}'", jobId);
+            return new ResponseEntity<>(resubmitResponse, HttpStatus.BAD_REQUEST);
+        }
     }
 
     //INTERNAL
     @RequestMapping(value = "/jobs/{id}/resubmit", method = RequestMethod.POST)
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
-    public JobCreationResponse resubmitJobSession(@PathVariable("id") long jobIdPathVar,
-                                                  @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam) {
-        JobCreationResponse response = resubmitJobVersionOne(jobIdPathVar, jobPriorityParam);
-        addJobToSession(response.getJobId());
-        return response;
+    public JobCreationResponse resubmitJob(@PathVariable("id") long jobId,
+                                           @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam) {
+        return resubmitJobInternal(jobId, jobPriorityParam);
     }
 
     /*
-     * /jobs/{id}/cancel
+     * POST /jobs/{id}/cancel
      */
     //EXTERNAL
     @RequestMapping(value = "/rest/jobs/{id}/cancel", method = RequestMethod.POST)
@@ -327,30 +318,30 @@ public class JobController {
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<MpfResponse> cancelJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) {
-        MpfResponse mpfResponse = cancelJobVersionOne(jobId);
-
-        //return 200 for successful GET and object, 401 for bad credentials, 400 for bad id
-        return new ResponseEntity<>(mpfResponse, (mpfResponse.getResponseCode() == 0) ? HttpStatus.OK : HttpStatus.BAD_REQUEST);
+        MpfResponse mpfResponse = cancelJobInternal(jobId);
+        if (mpfResponse.getResponseCode() == 0) {
+            return new ResponseEntity<>(mpfResponse, HttpStatus.OK);
+        } else {
+            log.error("Error cancelling job with id '{}'", jobId);
+            return new ResponseEntity<>(mpfResponse, HttpStatus.BAD_REQUEST);
+        }
     }
 
     //INTERNAL
     @RequestMapping(value = "/jobs/{id}/cancel", method = RequestMethod.POST)
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
-    public MpfResponse cancelJobSession(@PathVariable("id") long jobId) {
-        return cancelJobVersionOne(jobId);
+    public MpfResponse cancelJob(@PathVariable("id") long jobId) {
+        return cancelJobInternal(jobId);
     }
 
-    /*
-     * Private methods
-     */
-    private JobCreationResponse processMediaVersionOne(JobCreationRequest jobCreationRequest) {
+    private JobCreationResponse createJobInternal(JobCreationRequest jobCreationRequest) {
         try {
-            boolean fromExternalRestClient = true;
+            // boolean fromExternalRestClient = true;
             //hack of using 'from_mpf_web_app' as the externalId to prevent duplicating a method and keeping jobs
-            //from the web app in the session jobs collections
+            //from the web app in the session jobs collections (TODO: fix this)
             if (jobCreationRequest.getExternalId() != null && jobCreationRequest.getExternalId().equals("from_mpf_web_app")) {
-                fromExternalRestClient = false;
+                // fromExternalRestClient = false;
                 jobCreationRequest.setExternalId(null);
             }
             boolean buildOutput = propertiesUtil.isOutputObjectsEnabled();
@@ -397,48 +388,37 @@ public class JobController {
             long jobId = mpfService.submitJob(jsonJobRequest);
             log.debug("Successful creation of JobId: {}", jobId);
 
-            if (!fromExternalRestClient) {
-                addJobToSession(jobId);
-            }
+            // TODO: fix this
+            // if (!fromExternalRestClient) {
+            //    addJobToSession(jobId);
+            // }
 
             return new JobCreationResponse(jobId);
         } catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
-            log.error("Failure creating job due to an exception.", ex);
-            return new JobCreationResponse(-1, String.format("Failure creating job with External Id '%s' due to an exception. Please check server logs for more detail.", jobCreationRequest.getExternalId()));
+            StringBuilder errBuilder = new StringBuilder("Failure creating job");
+            if (jobCreationRequest.getExternalId() != null) {
+                errBuilder.append(String.format(" with external id '%s'", jobCreationRequest.getExternalId()));
+            }
+            errBuilder.append(" due to an exception. Please check server logs for more detail.");
+            String err = errBuilder.toString();
+
+            log.error(err, ex);
+            return new JobCreationResponse(1, err);
         }
     }
 
-    private void addJobToSession(long jobId) {
-        JobRequest submittedJobRequest = mpfService.getJobRequest(jobId);
-        boolean isComplete = submittedJobRequest.getStatus() == JobStatus.COMPLETE;
-        sessionModel.getSessionJobsMap().put(submittedJobRequest.getId(), isComplete);
-
-    }
-
-    private List<SingleJobInfo> getJobStatusVersionOne(Long jobId, boolean useSession) {
+    private List<SingleJobInfo> getJobStatusInternal(Long jobId) {
         List<SingleJobInfo> jobInfoList = new ArrayList<SingleJobInfo>();
         try {
             List<JobRequest> jobs = new ArrayList<JobRequest>();
             if (jobId != null) {
                 JobRequest job = mpfService.getJobRequest(jobId);
                 if (job != null) {
-                    if (useSession) {
-                        if (sessionModel.getSessionJobsMap().containsKey(jobId)) {
-                            jobs.add(job);
-                        }
-                    } else {
-                        jobs.add(job);
-                    }
+                    jobs.add(job);
                 }
             } else {
-                if (useSession) {
-                    for (Long keyId : sessionModel.getSessionJobsMap().keySet()) {
-                        jobs.add(mpfService.getJobRequest(keyId));
-                    }
-                } else {
-                    //get all of the jobs
-                    jobs = mpfService.getAllJobRequests();
-                }
+                //get all of the jobs
+                jobs = mpfService.getAllJobRequests();
             }
 
             for (JobRequest job : jobs) {
@@ -457,26 +437,26 @@ public class JobController {
         return jobInfoList;
     }
 
-    private JobCreationResponse resubmitJobVersionOne(long jobIdParam, Integer jobPriorityParam) {
-        log.debug("Attempting to resubmit job with id: {}.", jobIdParam);
+    private JobCreationResponse resubmitJobInternal(long jobId, Integer jobPriorityParam) {
+        log.debug("Attempting to resubmit job with id: {}.", jobId);
         //if there is a priority param passed then use it, if not, use the default
         int jobPriority = (jobPriorityParam != null) ? jobPriorityParam : propertiesUtil.getJmsPriority();
-        long newJobId = mpfService.resubmitJob(jobIdParam, jobPriority);
-        //newJobId should be equal to jobIdParam if there are no issues and -1 if there is a problem
-        if (newJobId != -1 && newJobId == jobIdParam) {
+        long newJobId = mpfService.resubmitJob(jobId, jobPriority);
+        //newJobId should be equal to jobId if there are no issues and -1 if there is a problem
+        if (newJobId != -1 && newJobId == jobId) {
             //make sure to reset the value in the job progress map to handle manual refreshes that will display
             //the old progress value (100 in most cases converted to 99 because of the INCOMPLETE STATE)!
             jobProgress.setJobProgress(newJobId, 0.0f);
-            log.debug("Successful resubmission of Job Id: {} as new JobId: {}", jobIdParam, newJobId);
+            log.debug("Successful resubmission of Job Id: {} as new JobId: {}", jobId, newJobId);
             return new JobCreationResponse(newJobId);
         }
-        String errorStr = "Failed to resubmit the job with id '" + Long.toString(jobIdParam) + "'. Please check to make sure the job exists before submitting a resubmit request. "
+        String errorStr = "Failed to resubmit the job with id '" + Long.toString(jobId) + "'. Please check to make sure the job exists before submitting a resubmit request. "
                 + "Also consider checking the server logs for more information on this error.";
         log.error(errorStr);
         return new JobCreationResponse(1, errorStr);
     }
 
-    private MpfResponse cancelJobVersionOne(long jobId) {
+    private MpfResponse cancelJobInternal(long jobId) {
         log.debug("Attempting to cancel job with id: {}.", jobId);
         if (mpfService.cancel(jobId)) {
             log.debug("Successful cancellation of job with id: {}");
@@ -487,15 +467,4 @@ public class JobController {
         log.error(errorStr);
         return new MpfResponse(1, errorStr);
     }
-
-    //TODO: bring back once the JobProgress code is completely updated and working
-	/*@RequestMapping(value = "/jobs/detailed-progress", method = RequestMethod.GET)
-	@ResponseBody
-    public JobContainerProgressInfo getDetailedJobProgress(@RequestParam(value = "id", required = false) Long idParam) {
-		if(idParam != null) {
-			return jobContainerProgress.getJobContainerProgressInfo(idParam);
-		}
-		log.error("no id parameter set!");
-		return new JobContainerProgressInfo();
-	}*/
 }

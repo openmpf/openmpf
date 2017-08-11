@@ -60,7 +60,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
-import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.NIOUtils;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
@@ -94,12 +93,9 @@ public class MarkupController {
     private MpfService mpfService;
 
     @Autowired
-    private SessionModel sessionModel;
-
-    @Autowired
     private JsonUtils jsonUtils;
 
-    private List<MarkupResultModel> getMarkupResultsJsonVersionOne(Long jobId) {
+    private List<MarkupResultModel> getMarkupResultsJson(Long jobId) {
         //all MarkupResult objects
         List<MarkupResultModel> markupResultModels = new ArrayList<MarkupResultModel>();
         for (MarkupResult markupResult : mpfService.getAllMarkupResults()) {
@@ -117,7 +113,7 @@ public class MarkupController {
     @RequestMapping(value = "/markup/results", method = RequestMethod.GET)
     @ResponseBody
     public List<MarkupResultModel> getMarkupResultsJsonSession(@ApiParam(value = "Job id - OPTIONAL") @RequestParam(value = "jobId", required = false) Long jobId) {
-        return getMarkupResultsJsonVersionOne(jobId);
+        return getMarkupResultsJson(jobId);
     }
 
     //https://datatables.net/manual/server-side#Sent-parameters

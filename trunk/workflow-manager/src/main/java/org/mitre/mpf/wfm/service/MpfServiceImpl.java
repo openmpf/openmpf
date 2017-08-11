@@ -242,7 +242,7 @@ public class MpfServiceImpl implements MpfService {
 	 * @return
 	 */
 	@Override
-	public boolean cancelStreamingJob(long jobId, Boolean doCleanup) {
+	public boolean cancelStreamingJob(long jobId, boolean doCleanup) {
 		try {
 			log.debug(this.getClass().getName()+":cancelStreamingJob: jobId="+jobId+", doCleanup="+doCleanup+" - don't know what to do with doCleanup TODO");
 			boolean status = streamingJobRequestBo.cancel(jobId, doCleanup);

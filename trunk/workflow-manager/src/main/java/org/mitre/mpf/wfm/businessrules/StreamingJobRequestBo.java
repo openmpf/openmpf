@@ -78,5 +78,5 @@ public interface StreamingJobRequestBo {
 	 * @return
 	 * @throws WfmProcessingException
 	 */
-	boolean cancel(long jobId, Boolean doCleanup) throws WfmProcessingException;
+	boolean cancel(long jobId, boolean doCleanup) throws WfmProcessingException;
 }

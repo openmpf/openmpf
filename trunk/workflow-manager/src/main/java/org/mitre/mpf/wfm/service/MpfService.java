@@ -149,7 +149,7 @@ public interface MpfService {
 	 * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job
 	 * @return {@literal true} iff the streaming job exists and was cancelled successfully.
 	 */
-	boolean cancelStreamingJob(long jobId, Boolean doCleanup);
+	boolean cancelStreamingJob(long jobId, boolean doCleanup);
 
 	/** Gets the marked-up media with the specified (batch job) id. */
 	public MarkupResult getMarkupResult(long id);

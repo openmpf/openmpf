@@ -28,7 +28,7 @@ package org.mitre.mpf.rest.api;
 
 import java.util.Date;
 
-public class StreamingJobInfoResponse {
+public class StreamingJobInfo {
 	private Long jobId;
 	public Long getJobId() {
 		return jobId;
@@ -71,17 +71,7 @@ public class StreamingJobInfoResponse {
 		return terminal;
 	}
 
-	private MpfResponse mpfResponse = new MpfResponse();
-	public MpfResponse getMpfResponse() {
-		return mpfResponse;
-	}
-
-	public StreamingJobInfoResponse() {}
-
-	public StreamingJobInfoResponse(int errorCode, String errorMessage) {
-		this.mpfResponse.setMessage(errorCode, errorMessage);
-		this.jobId = -1L;
-	}
+	public StreamingJobInfo() {}
 
 	/** Constructor
 	 * @param jobId job id of this streaming job
@@ -95,10 +85,9 @@ public class StreamingJobInfoResponse {
 	 * @param streamUri URI of the streaming data
 	 * @param terminal if true, marks a terminal error
 	 */
-	public StreamingJobInfoResponse(Long jobId, String externalId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus, float jobProgress,
+	public StreamingJobInfo(Long jobId, String externalId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus, float jobProgress,
 									Date startDate, Date endDate, String outputObjectDirectory,
 									String streamUri, boolean terminal) {
-		this.mpfResponse.setMessage(0, "success");
 		this.jobId = jobId;
 		this.externalId = externalId;
 		this.pipelineName = pipelineName;

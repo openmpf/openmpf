@@ -53,7 +53,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.*;
 
-// NOTE: Don't use @Scope("request") because we don't need to access to the sessionModel
+// NOTE: Don't use @Scope("request") because we don't need to access to the session
 // and the additional overhead associated with creating the log file maps per request.
 
 @Controller

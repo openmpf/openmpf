@@ -156,9 +156,8 @@ public class AtmosphereController {
 	
 	/** very generic wrapper to Braodcaster.broadcast()
 	 *  	this method should be called when an event has happened that needs to be broadcasted to the clients */
-	public static void broadcast( AtmosphereChannel channel, String event, HashMap content )
-	{
-		broadcast(new AtmosphereMessage( channel, event, content));
+	public static void broadcast(AtmosphereChannel channel, String event, HashMap content) {
+		broadcast(new AtmosphereMessage(channel, event, content));
 	}
 
 }

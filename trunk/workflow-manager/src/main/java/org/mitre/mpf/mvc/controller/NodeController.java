@@ -99,14 +99,14 @@ public class NodeController {
 			@ApiResponse(code = 401, message = "Bad credentials") })
 	@ResponseBody
 	public DeployedNodeManagerModel getNodeManagerInfoRest() {
-		return getNodeManagerInfoVersionOne();
+		return getNodeManagerInfo();
 	}
 
 	// INTERNAL
 	@RequestMapping(value = "/nodes/info", method = RequestMethod.GET)
 	@ResponseBody
 	public DeployedNodeManagerModel getNodeManagerInfoSession() {
-		return getNodeManagerInfoVersionOne();
+		return getNodeManagerInfo();
 	}
 
 	/*
@@ -120,14 +120,14 @@ public class NodeController {
 			@ApiResponse(code = 401, message = "Bad credentials") })
 	@ResponseBody
 	public Map<String, Boolean> getNodeManagerHostsRest() {
-		return getNodeManagerHostsVersionOne();
+		return getNodeManagerHosts();
 	}
 
 	// INTERNAL
 	@RequestMapping(value = "/nodes/hosts", method = RequestMethod.GET)
 	@ResponseBody
 	public Map<String, Boolean> getNodeManagerHostsSession() {
-		return getNodeManagerHostsVersionOne();
+		return getNodeManagerHosts();
 	}
 
 	/*
@@ -208,14 +208,14 @@ public class NodeController {
 			@ApiResponse(code = 401, message = "Bad credentials") })
 	@ResponseBody
 	public List<NodeManagerModel> getNodeManagerConfigRest() {
-		return getNodeManagerConfigVersionOne();
+		return getNodeManagerConfig();
 	}
 
 	// INTERNAL
 	@RequestMapping(value = "/nodes/config", method = RequestMethod.GET)
 	@ResponseBody
 	public List<NodeManagerModel> getNodeManagerConfigSession() {
-		return getNodeManagerConfigVersionOne();
+		return getNodeManagerConfig();
 	}
 
 	/*
@@ -254,7 +254,7 @@ public class NodeController {
 				// saveNodeConfigSuccess will be set to true in the method below
 				// if successful
 				validAuth = true;
-				saveNodeManagerConfigVersionOne(nodeManagerModels, mpfResponse);
+				saveNodeManagerConfig(nodeManagerModels, mpfResponse);
 			} else {
 				log.error("Invalid/non-admin user with name '{}' is attempting to save a new node configuration.",
 						authenticationModel.getUserPrincipalName());
@@ -280,7 +280,7 @@ public class NodeController {
 	public MpfResponse saveNodeManagerConfigSession(@RequestBody List<NodeManagerModel> nodeManagerModels)
 			throws InterruptedException, IOException {
 		MpfResponse mpfResponse = new MpfResponse(1, "Error while saving the node configuration - please check server logs.");
-		saveNodeManagerConfigVersionOne(nodeManagerModels, mpfResponse);
+		saveNodeManagerConfig(nodeManagerModels, mpfResponse);
 		return mpfResponse;
 	}
 
@@ -295,7 +295,7 @@ public class NodeController {
 	@ResponseBody
 	public Map<String, ServiceModel> getNodeManagerServicePaletteRest()
 			throws JsonGenerationException, JsonMappingException, IOException {
-		return getNodeManagerServicePaletteVersionOne();
+		return getNodeManagerServicePalette();
 	}
 
 	// INTERNAL
@@ -303,7 +303,7 @@ public class NodeController {
 	@ResponseBody
 	public Map<String, ServiceModel> getNodeManagerServicePaletteSession()
 			throws JsonGenerationException, JsonMappingException, IOException {
-		return getNodeManagerServicePaletteVersionOne();
+		return getNodeManagerServicePalette();
 	}	
 
 	/*
@@ -323,7 +323,7 @@ public class NodeController {
 		// admin
 		MpfResponse mpfResponse = new MpfResponse(1, "Error while starting service - please check server logs.");
 
-		boolean validAuth = startStopNodeServiceVersionOne(httpServletRequest, "start", serviceName,
+		boolean validAuth = startStopNodeService(httpServletRequest, "start", serviceName,
 				mpfResponse);
 
 		//return 200 for successful post (there still could be an error in the
@@ -346,7 +346,7 @@ public class NodeController {
 		// admin
 		MpfResponse mpfResponse = new MpfResponse(1, "Error while stopping service - please check server logs.");
 
-		boolean validAuth = startStopNodeServiceVersionOne(httpServletRequest, "stop", serviceName,
+		boolean validAuth = startStopNodeService(httpServletRequest, "stop", serviceName,
 				mpfResponse);
 
 		//return 200 for successful post (there still could be an error in the
@@ -365,9 +365,9 @@ public class NodeController {
 		MpfResponse mpfResponse = new MpfResponse(1, "Error while chaning service state - please check server logs.");
 
 		if (startOrStopStr.equals("start")) {
-			startServiceVersionOne(serviceName, mpfResponse);
+			startService(serviceName, mpfResponse);
 		} else if (startOrStopStr.equals("stop")) {
-			shutdownServiceVersionOne(serviceName, mpfResponse);
+			shutdownService(serviceName, mpfResponse);
 		} else {
 			String errorStr = "Invalid start or stop path variable of '" + startOrStopStr
 					+ "', the first path variable must be 'start' or 'stop'.";
@@ -378,11 +378,7 @@ public class NodeController {
 		return mpfResponse;
 	}
 
-	/*
-	 * Private Methods These methods all should end with the version of the API
-	 * they were designed for
-	 */
-	private DeployedNodeManagerModel getNodeManagerInfoVersionOne() {
+	private DeployedNodeManagerModel getNodeManagerInfo() {
 		// This grabs all of the services and does not organize them into a
 		// specific host/target
 		DeployedNodeManagerModel deployedNodeManagerModel = new DeployedNodeManagerModel();
@@ -395,7 +391,7 @@ public class NodeController {
 		return deployedNodeManagerModel;
 	}
 
-	private Map<String, Boolean> getNodeManagerHostsVersionOne() {
+	private Map<String, Boolean> getNodeManagerHosts() {
 		// note that this is configured not necessarily operational
 		// TODO: need to check what happens when a host is not available
 		return nodeManagerStatus.getConfiguredManagerHosts();
@@ -403,13 +399,13 @@ public class NodeController {
 		// configuration loaded)
 	}
 
-	private List<NodeManagerModel> getNodeManagerConfigVersionOne() {
+	private List<NodeManagerModel> getNodeManagerConfig() {
 		return nodeManagerService.getNodeManagerModels();
 	}
 
-	private Map<String, ServiceModel> getNodeManagerServicePaletteVersionOne()
+	private Map<String, ServiceModel> getNodeManagerServicePalette()
 			throws JsonGenerationException, JsonMappingException, IOException {
-		nodeManagerPaletteMap = getServiceModelsVersionOne();
+		nodeManagerPaletteMap = getServiceModels();
 		// set the service counts to 1 to be consistent with the hardcoded json
 		// file
 		for (ServiceModel serviceModel : nodeManagerPaletteMap.values()) {
@@ -418,7 +414,7 @@ public class NodeController {
 		return nodeManagerPaletteMap;
 	}
 
-	private void saveNodeManagerConfigVersionOne(List<NodeManagerModel> nodeManagerModels,
+	private void saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels,
 			final MpfResponse mpfResponse) throws IOException, InterruptedException {
 
 		if (nodeManagerService.saveNodeManagerConfig(nodeManagerModels)) {
@@ -436,7 +432,7 @@ public class NodeController {
 	 * nodeServiceStatusChangeResult object is also updated with a node service
 	 * status change success or failure boolean and an error message
 	 */
-	private boolean startStopNodeServiceVersionOne(HttpServletRequest httpServletRequest, String startOrStopStr,
+	private boolean startStopNodeService(HttpServletRequest httpServletRequest, String startOrStopStr,
 			String serviceName, MpfResponse mpfResponse) {
 		boolean validAuth = false;
 
@@ -471,9 +467,9 @@ public class NodeController {
 		// if we would like to start or stop the service
 		if (validAuth) {
 			if (startOrStopStr.equalsIgnoreCase("start")) {
-				startServiceVersionOne(serviceName, mpfResponse);
+				startService(serviceName, mpfResponse);
 			} else if (startOrStopStr.equalsIgnoreCase("stop")) {
-				shutdownServiceVersionOne(serviceName, mpfResponse);
+				shutdownService(serviceName, mpfResponse);
 			} else {
 				String errorStr = "Invalid start or stop option of '" + startOrStopStr
 						+ "', the option must be case insensitive 'start' or 'stop'.";
@@ -486,8 +482,7 @@ public class NodeController {
 		return validAuth;
 	}
 
-	private void startServiceVersionOne(String serviceName,
-			final MpfResponse mpfResponse) {
+	private void startService(String serviceName, final MpfResponse mpfResponse) {
 		log.debug("Try to start sevice with name: '{}'" + serviceName);
 		boolean result = nodeManagerStatus.startService(serviceName);
 		if (!result) {
@@ -498,8 +493,7 @@ public class NodeController {
 		mpfResponse.setResponseCode((result) ? 0 : 1);
 	}
 
-	private void shutdownServiceVersionOne(String serviceName,
-			final MpfResponse mpfResponse) {
+	private void shutdownService(String serviceName, final MpfResponse mpfResponse) {
 		log.debug("Try to shut down sevice with name: '{}'" + serviceName);
 		boolean result = nodeManagerStatus.shutdownService(serviceName);
 		if (!result) {
@@ -510,7 +504,7 @@ public class NodeController {
 		mpfResponse.setResponseCode((result) ? 0 : 1);
 	}
 
-	private Map<String, ServiceModel> getServiceModelsVersionOne() {
+	private Map<String, ServiceModel> getServiceModels() {
 		return nodeManagerService.getServiceModels();
 	}
 

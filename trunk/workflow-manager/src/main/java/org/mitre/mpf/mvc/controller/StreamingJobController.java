@@ -169,13 +169,6 @@ public class StreamingJobController {
 
         try {
             if ( streamingJobCreationRequest.isValidRequest() ) {
-                boolean fromExternalRestClient = true;
-                //hack of using 'from_mpf_web_app' as the externalId to prevent duplicating a method and keeping streaming jobs
-                //from the web app in the session jobs collections
-                if ( streamingJobCreationRequest.getExternalId() != null && streamingJobCreationRequest.getExternalId().equals("from_mpf_web_app") ) {
-                    fromExternalRestClient = false;
-                    streamingJobCreationRequest.setExternalId(null);
-                }
                 boolean enableOutputToDisk = propertiesUtil.isOutputObjectsEnabled();
                 if ( streamingJobCreationRequest.getEnableOutputToDisk() != null ) {
                   enableOutputToDisk = streamingJobCreationRequest.getEnableOutputToDisk();
@@ -215,12 +208,17 @@ public class StreamingJobController {
                 // streaming job creation response.
                 StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
                 return new StreamingJobCreationResponse( jobId, jsonStreamingJobRequest.getExternalId(), streamingJobRequest.getOutputObjectDirectory() );
-
             } else {
-                log.error("Failure creating streaming job due to a malformed request, check the request parameters against the constraints defined in the REST API");
-                return new StreamingJobCreationResponse(1, String.format("Failure creating streaming job with External Id '%s'.  Request was not valid. Confirm the job parameter constraints and resend the request.", streamingJobCreationRequest.getExternalId()));
-            }
+                StringBuilder errBuilder = new StringBuilder("Failure creating streaming job");
+                if (streamingJobCreationRequest.getExternalId() != null) {
+                    errBuilder.append(String.format(" with external id '%s'", streamingJobCreationRequest.getExternalId()));
+                }
+                errBuilder.append(" due to a malformed request. Please check the request parameters against the constraints defined in the REST API.");
+                String err = errBuilder.toString();
 
+                log.error(err);
+                return new StreamingJobCreationResponse(1, err);
+            }
         } catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
             StringBuilder errBuilder = new StringBuilder("Failure creating streaming job");
             if (streamingJobCreationRequest.getExternalId() != null) {

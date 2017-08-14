@@ -323,13 +323,6 @@ public class JobController {
 
     private JobCreationResponse createJobInternal(JobCreationRequest jobCreationRequest) {
         try {
-            // boolean fromExternalRestClient = true;
-            //hack of using 'from_mpf_web_app' as the externalId to prevent duplicating a method and keeping jobs
-            //from the web app in the session jobs collections (TODO: fix this)
-            if (jobCreationRequest.getExternalId() != null && jobCreationRequest.getExternalId().equals("from_mpf_web_app")) {
-                // fromExternalRestClient = false;
-                jobCreationRequest.setExternalId(null);
-            }
             boolean buildOutput = propertiesUtil.isOutputObjectsEnabled();
             if (jobCreationRequest.getBuildOutput() != null) {
                 buildOutput = jobCreationRequest.getBuildOutput();
@@ -373,11 +366,6 @@ public class JobController {
             }
             long jobId = mpfService.submitJob(jsonJobRequest);
             log.debug("Successful creation of JobId: {}", jobId);
-
-            // TODO: fix this
-            // if (!fromExternalRestClient) {
-            //    addJobToSession(jobId);
-            // }
 
             return new JobCreationResponse(jobId);
         } catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned

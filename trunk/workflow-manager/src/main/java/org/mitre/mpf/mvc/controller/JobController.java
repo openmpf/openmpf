@@ -30,6 +30,7 @@ import io.swagger.annotations.*;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
@@ -76,6 +77,9 @@ public class JobController {
     private MpfService mpfService;
 
     @Autowired
+    private SessionModel sessionModel;
+
+    @Autowired
     private JobProgress jobProgress;
 
     /*
@@ -101,7 +105,7 @@ public class JobController {
     @ResponseBody
     @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
     public ResponseEntity<JobCreationResponse> createJobRest(@ApiParam(required = true, value = "JobCreationRequest") @RequestBody JobCreationRequest jobCreationRequest) {
-        JobCreationResponse createResponse = createJobInternal(jobCreationRequest);
+        JobCreationResponse createResponse = createJobInternal(jobCreationRequest, false);
         if (createResponse.getMpfResponse().getResponseCode() == 0) {
             return new ResponseEntity<>(createResponse, HttpStatus.CREATED);
         } else {
@@ -115,7 +119,7 @@ public class JobController {
     @ResponseBody
     @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
     public JobCreationResponse createJob(@RequestBody JobCreationRequest jobCreationRequest) {
-        return createJobInternal(jobCreationRequest);
+        return createJobInternal(jobCreationRequest, true);
     }
 
     /*
@@ -124,8 +128,8 @@ public class JobController {
     //INTERNAL
     @RequestMapping(value = "/jobs", method = RequestMethod.GET)
     @ResponseBody
-    public List<SingleJobInfo> getJobStatus() {
-        return getJobStatusInternal(null);
+    public List<SingleJobInfo> getJobStatus(@RequestParam(value = "useSession", required = false) boolean useSession) {
+        return getJobStatusInternal(null, useSession);
     }
 
     //INTERNAL
@@ -138,7 +142,7 @@ public class JobController {
                                                  @RequestParam(value = "sort", required = false) String sort) {
         log.debug("Params draw:{} start:{},length:{},search:{},sort:{} ", draw, start, length, search, sort);
 
-        List<SingleJobInfo> jobInfoModels = getJobStatusInternal(null);
+        List<SingleJobInfo> jobInfoModels = getJobStatusInternal(null, false);
         Collections.reverse(jobInfoModels);//newest first
 
         //handle search
@@ -199,7 +203,7 @@ public class JobController {
             @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
     public ResponseEntity<SingleJobInfo> getJobStatusRest(@ApiParam(required = true, value = "Job Id") @PathVariable("id") long jobId) {
-        List<SingleJobInfo> jobInfoModels = getJobStatusInternal(jobId);
+        List<SingleJobInfo> jobInfoModels = getJobStatusInternal(jobId, false);
         if (jobInfoModels != null && jobInfoModels.size() == 1) {
             return new ResponseEntity<>(jobInfoModels.get(0), HttpStatus.OK);
         } else {
@@ -211,8 +215,9 @@ public class JobController {
     //INTERNAL
     @RequestMapping(value = "/jobs/{id}", method = RequestMethod.GET)
     @ResponseBody
-    public SingleJobInfo getJobStatus(@PathVariable("id") long jobId) {
-        List<SingleJobInfo> jobInfoModels = getJobStatusInternal(jobId);
+    public SingleJobInfo getJobStatus(@PathVariable("id") long jobId,
+                                      @RequestParam(value = "useSession", required = false) boolean useSession) {
+        List<SingleJobInfo> jobInfoModels = getJobStatusInternal(jobId, useSession);
         if (jobInfoModels != null && jobInfoModels.size() == 1) {
             return jobInfoModels.get(0);
         }
@@ -287,7 +292,9 @@ public class JobController {
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public JobCreationResponse resubmitJob(@PathVariable("id") long jobId,
                                            @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam) {
-        return resubmitJobInternal(jobId, jobPriorityParam);
+        JobCreationResponse response = resubmitJobInternal(jobId, jobPriorityParam);
+        sessionModel.getSessionJobs().add(response.getJobId());
+        return response;
     }
 
     /*
@@ -321,7 +328,7 @@ public class JobController {
         return cancelJobInternal(jobId);
     }
 
-    private JobCreationResponse createJobInternal(JobCreationRequest jobCreationRequest) {
+    private JobCreationResponse createJobInternal(JobCreationRequest jobCreationRequest, boolean useSession) {
         try {
             boolean buildOutput = propertiesUtil.isOutputObjectsEnabled();
             if (jobCreationRequest.getBuildOutput() != null) {
@@ -367,6 +374,10 @@ public class JobController {
             long jobId = mpfService.submitJob(jsonJobRequest);
             log.debug("Successful creation of JobId: {}", jobId);
 
+            if (useSession) {
+                sessionModel.getSessionJobs().add(jobId);
+            }
+
             return new JobCreationResponse(jobId);
         } catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
             StringBuilder errBuilder = new StringBuilder("Failure creating job");
@@ -381,18 +392,30 @@ public class JobController {
         }
     }
 
-    private List<SingleJobInfo> getJobStatusInternal(Long jobId) {
+    private List<SingleJobInfo> getJobStatusInternal(Long jobId, boolean useSession) {
         List<SingleJobInfo> jobInfoList = new ArrayList<SingleJobInfo>();
         try {
             List<JobRequest> jobs = new ArrayList<JobRequest>();
             if (jobId != null) {
                 JobRequest job = mpfService.getJobRequest(jobId);
                 if (job != null) {
-                    jobs.add(job);
+                    if (useSession) {
+                        if (sessionModel.getSessionJobs().contains(jobId)) {
+                            jobs.add(job);
+                        }
+                    } else {
+                        jobs.add(job);
+                    }
                 }
             } else {
-                //get all of the jobs
-                jobs = mpfService.getAllJobRequests();
+                if (useSession) {
+                    for (Long keyId : sessionModel.getSessionJobs()) {
+                        jobs.add(mpfService.getJobRequest(keyId));
+                    }
+                } else {
+                    //get all of the jobs
+                    jobs = mpfService.getAllJobRequests();
+                }
             }
 
             for (JobRequest job : jobs) {

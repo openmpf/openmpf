@@ -248,10 +248,11 @@ AppServices.service('JobPriorityService', function ($http) {
 
 AppServices.service('JobsService', function ($http) {
 
-    this.getJobsList = function () {
+    this.getJobsList = function (isSession) {
         var promise = $http({
             url: 'jobs',
-            method: "GET"
+            method: "GET",
+            params: {'useSession': isSession}
         }).then(function (response) {
             return response.data;
         });
@@ -265,13 +266,18 @@ AppServices.service('JobsService', function ($http) {
         return url;
     }
 
-    this.getJob = function (id) {
+    this.getJob = function (id, isSession) {
+        if (isSession === undefined) {
+            isSession = false;
+        }
+
         // jobs
         var url = this.resolveUrlWithId('jobs', id);
 
         var promise = $http({
             url: url,
-            method: "GET"
+            method: "GET",
+            params: {'useSession': isSession}
         }).then(function (response) {
             //returns one job info object
             return response.data;
@@ -307,7 +313,7 @@ AppServices.service('JobsService', function ($http) {
     this.getStats = function () {
         var promise = $http({
             url: 'jobs/stats',
-            method: "GET",
+            method: "GET"
         }).then(function (response) {
             //there is only one job, but it will still be returned in array
             //... because it is using the same jobs method
@@ -319,7 +325,7 @@ AppServices.service('JobsService', function ($http) {
     this.getOutputObject = function (jobId) {
         var promise = $http({
             url: 'jobs/output-object?id='+jobId,
-            method: "GET",
+            method: "GET"
         }).then(function (response) {
             return response.data;
         });
@@ -568,7 +574,8 @@ AppServices.factory('ServerSidePush',
                                         msg.jobStatus == 'COMPLETE_WITH_ERRORS' ||
                                         msg.jobStatus == 'COMPLETE_WITH_WARNINGS') {
 
-                                        JobsService.getJob(msg.id).then(function (job) {
+                                        // ensure job is part of session to avoid flooding the UI with notifications
+                                        JobsService.getJob(msg.id, true).then(function (job) {
                                             if (job) {
                                                 if (msg.jobStatus == 'COMPLETE') {
                                                     console.log('job complete for id: ' + msg.id);

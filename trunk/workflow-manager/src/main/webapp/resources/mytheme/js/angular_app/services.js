@@ -248,10 +248,10 @@ AppServices.service('JobPriorityService', function ($http) {
 
 AppServices.service('JobsService', function ($http) {
 
-    this.getJobsList = function (isSession) {
+    this.getJobsList = function () {
         var promise = $http({
             url: 'jobs',
-            method: "GET",
+            method: "GET"
         }).then(function (response) {
             return response.data;
         });
@@ -265,17 +265,13 @@ AppServices.service('JobsService', function ($http) {
         return url;
     }
 
-    this.getJob = function (id, isSession) {
-        if (isSession === undefined) {
-            isSession = false;
-        }
-
+    this.getJob = function (id) {
         // jobs
         var url = this.resolveUrlWithId('jobs', id);
 
         var promise = $http({
             url: url,
-            method: "GET",
+            method: "GET"
         }).then(function (response) {
             //returns one job info object
             return response.data;
@@ -572,8 +568,7 @@ AppServices.factory('ServerSidePush',
                                         msg.jobStatus == 'COMPLETE_WITH_ERRORS' ||
                                         msg.jobStatus == 'COMPLETE_WITH_WARNINGS') {
 
-                                        // ensure job is part of session
-                                        JobsService.getJob(msg.id, true).then(function (job) {
+                                        JobsService.getJob(msg.id).then(function (job) {
                                             if (job) {
                                                 if (msg.jobStatus == 'COMPLETE') {
                                                     console.log('job complete for id: ' + msg.id);

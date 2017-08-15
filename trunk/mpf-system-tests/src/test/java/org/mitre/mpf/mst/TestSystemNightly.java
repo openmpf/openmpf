@@ -299,16 +299,19 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
 
         // an assumption failure causes the test to be ignored;
         // only run this test on a machine where /mpfdata/datasets is mapped
-        Assume.assumeTrue("Skipping test. It should only run on Jenkins.", jenkins);
+        // Assume.assumeTrue("Skipping test. It should only run on Jenkins.", jenkins);
 
         log.info("Beginning testPriorities()");
 
         int TIMEOUT_MILLIS = 15*MINUTES;
         ExecutorService executor = Executors.newFixedThreadPool(4);
 
-        PriorityRunner busyWorkRunner = new PriorityRunner(9);
-        PriorityRunner lowRunner = new PriorityRunner(1);
-        PriorityRunner highRunner = new PriorityRunner(9);
+        String path = "/mpfdata/datasets/mugshots_2000";
+        Assert.assertTrue(String.format("%s does not exist.", path), new File(path).exists());
+
+        PriorityRunner busyWorkRunner = new PriorityRunner(path, 9);
+        PriorityRunner lowRunner = new PriorityRunner(path, 1);
+        PriorityRunner highRunner = new PriorityRunner(path, 9);
 
         // wait until busy work is in progress; fill service message queue(s)
         executor.submit(busyWorkRunner);
@@ -345,10 +348,8 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     }
 
     class PriorityRunner implements Runnable {
+        public String path;
         public int priority;
-        public PriorityRunner(int priority) {
-            this.priority = priority;
-        }
 
         public long jobRequestId = -1;
         public long elapsed = 0;
@@ -356,6 +357,11 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         public boolean hadError = false;
 
         private Stopwatch stopWatch = null;
+
+        public PriorityRunner(String path, int priority) {
+            this.priority = priority;
+            this.path = path;
+        }
 
         @Override
         public void run() {
@@ -365,10 +371,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                 // one update after each image is processed.
                 List<JsonMediaInputObject> media = new LinkedList<>();
 
-                String path = "/mpfdata/datasets/mugshots_2000";
                 File dir = new File(path);
-                Assert.assertTrue(String.format("%s does not exist.", path), dir.exists());
-
                 for (File file : dir.listFiles()) {
                     media.add(new JsonMediaInputObject(ioUtils.findFile(file.getAbsolutePath()).toString()));
                 }

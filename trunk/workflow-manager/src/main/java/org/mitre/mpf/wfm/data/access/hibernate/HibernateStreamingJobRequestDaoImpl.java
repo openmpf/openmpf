@@ -24,34 +24,34 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.wfm.data.access.hibernate;
 
-public class MpfEndpoints {
+import org.hibernate.Query;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
+import org.mitre.mpf.wfm.enums.JobStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
-    // TODO need to add the queue for accepting summary reports
-    // TODO need to add the queue for accepting new track alerts.
+@Repository(HibernateStreamingJobRequestDaoImpl.REF)
+@Transactional(propagation = Propagation.REQUIRED)
+public class HibernateStreamingJobRequestDaoImpl extends AbstractHibernateDao<StreamingJobRequest> implements HibernateStreamingJobRequestDao {
+	private static final Logger log = LoggerFactory.getLogger(HibernateStreamingJobRequestDaoImpl.class);
 
-    public static final String
-            ARTIFACT_EXTRACTION_WORK_QUEUE = "jms:MPF.ARTIFACT_EXTRACTION_WORK_QUEUE",
-            MEDIA_INSPECTION_ENTRY_POINT = "jms:MPF.MEDIA_INSPECTION",
+	public static final String REF = "hibernateStreamingJobRequestDaoImpl";
+	public HibernateStreamingJobRequestDaoImpl() { this.clazz = StreamingJobRequest.class; }
 
-            MEDIA_INSPECTION_WORK_QUEUE = "jms:MPF.MEDIA_INSPECTION_WORK_QUEUE",
-            MEDIA_RETRIEVAL_ENTRY_POINT = "jms:MPF.MEDIA_RETRIEVAL",
-            MEDIA_RETRIEVAL_WORK_QUEUE = "jms:MPF.MEDIA_RETRIEVAL_WORK_QUEUE",
-
-            CANCELLED_DETECTIONS = "jms:MPF.CANCELLED_DETECTIONS",
-
-            COMPLETED_DETECTIONS = "jms:MPF.COMPLETED_DETECTIONS",
-            COMPLETED_DETECTIONS_REPLY_TO = "queue://MPF.COMPLETED_DETECTIONS",
-
-            CANCELLED_MARKUPS = "jms:MPF.CANCELLED_MARKUPS",
-            COMPLETED_MARKUP = "jms:MPF.COMPLETED_MARKUP",
-
-            JOB_REQUESTS = "jms:MPF.JOB_REQUESTS",
-            STAGE_RESULTS_AGGREGATOR = "direct:jobRouterStageAggregator",
-
-            UNSOLICITED_MESSAGES = "jms:MPF.UNSOLICITED_MESSAGES",
-
-            DEAD_LETTER_QUEUE = "activemq:ActiveMQ.DLQ",
-            PROCESSED_DLQ_MESSAGES_QUEUE = "jms:MPF.PROCESSED_DLQ_MESSAGES";
+	@Override
+	public void cancelJobsInNonTerminalState() {
+		Query query = getCurrentSession().
+				createQuery("UPDATE StreamingJobRequest set status = :newStatus where status in (:nonTerminalStatuses)");
+		query.setParameter("newStatus", JobStatus.CANCELLED_BY_SHUTDOWN);
+		query.setParameterList("nonTerminalStatuses", JobStatus.getNonTerminalStatuses());
+		int updatedRows = query.executeUpdate();
+		if ( updatedRows >= 0 ) {
+			log.warn("{} streaming jobs were in a non-terminal state and have been marked as {}", updatedRows, JobStatus.CANCELLED_BY_SHUTDOWN);
+		}
+	}
 }

@@ -24,34 +24,51 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.rest.api;
 
-public class MpfEndpoints {
+public class StreamingJobCancelResponse {
+	private Long jobId;
+	private boolean doCleanup = false;
+	private String externalId = null;
+	private String outputObjectDirectory;
+	private MpfResponse mpfResponse = new MpfResponse();
 
-    // TODO need to add the queue for accepting summary reports
-    // TODO need to add the queue for accepting new track alerts.
+	public StreamingJobCancelResponse() {}
 
-    public static final String
-            ARTIFACT_EXTRACTION_WORK_QUEUE = "jms:MPF.ARTIFACT_EXTRACTION_WORK_QUEUE",
-            MEDIA_INSPECTION_ENTRY_POINT = "jms:MPF.MEDIA_INSPECTION",
+	public StreamingJobCancelResponse(boolean doCleanup, int errorCode, String errorMessage) {
+		this.mpfResponse.setMessage(errorCode, errorMessage);
+		this.jobId = -1L;
+		this.doCleanup = doCleanup;
+	}
 
-            MEDIA_INSPECTION_WORK_QUEUE = "jms:MPF.MEDIA_INSPECTION_WORK_QUEUE",
-            MEDIA_RETRIEVAL_ENTRY_POINT = "jms:MPF.MEDIA_RETRIEVAL",
-            MEDIA_RETRIEVAL_WORK_QUEUE = "jms:MPF.MEDIA_RETRIEVAL_WORK_QUEUE",
+	/** Constructor
+	 * @param jobId job id of this streaming job
+	 * @param externalId external id of this streaming job, may be null
+	 * @param outputObjectDirectory root directory for output objects created during this streaming job
+	 * @param doCleanup if true, then the caller is requesting that the output object directory is cleaned up prior to cancelling this job
+	 */
+	public StreamingJobCancelResponse(Long jobId, String externalId, String outputObjectDirectory, boolean doCleanup) {
+		this.jobId = jobId;
+		this.externalId = externalId;
+		this.outputObjectDirectory = outputObjectDirectory;
+		this.doCleanup = doCleanup;
+		this.mpfResponse.setMessage(0,"success");
+	}
+	
+	public Long getJobId() {
+		return jobId;
+	}
 
-            CANCELLED_DETECTIONS = "jms:MPF.CANCELLED_DETECTIONS",
+	public String getExternalId() { return externalId; }
 
-            COMPLETED_DETECTIONS = "jms:MPF.COMPLETED_DETECTIONS",
-            COMPLETED_DETECTIONS_REPLY_TO = "queue://MPF.COMPLETED_DETECTIONS",
+	public boolean getDoCleanup() { return doCleanup; }
 
-            CANCELLED_MARKUPS = "jms:MPF.CANCELLED_MARKUPS",
-            COMPLETED_MARKUP = "jms:MPF.COMPLETED_MARKUP",
+	public String getOutputObjectDirectory() {
+		return outputObjectDirectory;
+	}
 
-            JOB_REQUESTS = "jms:MPF.JOB_REQUESTS",
-            STAGE_RESULTS_AGGREGATOR = "direct:jobRouterStageAggregator",
+	public MpfResponse getMpfResponse() {
+		return mpfResponse;
+	}
 
-            UNSOLICITED_MESSAGES = "jms:MPF.UNSOLICITED_MESSAGES",
-
-            DEAD_LETTER_QUEUE = "activemq:ActiveMQ.DLQ",
-            PROCESSED_DLQ_MESSAGES_QUEUE = "jms:MPF.PROCESSED_DLQ_MESSAGES";
 }

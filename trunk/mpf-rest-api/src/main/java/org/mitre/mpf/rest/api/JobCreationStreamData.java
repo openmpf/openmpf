@@ -24,34 +24,49 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.rest.api;
 
-public class MpfEndpoints {
+import java.util.HashMap;
+import java.util.Map;
 
-    // TODO need to add the queue for accepting summary reports
-    // TODO need to add the queue for accepting new track alerts.
+public class JobCreationStreamData {
 
-    public static final String
-            ARTIFACT_EXTRACTION_WORK_QUEUE = "jms:MPF.ARTIFACT_EXTRACTION_WORK_QUEUE",
-            MEDIA_INSPECTION_ENTRY_POINT = "jms:MPF.MEDIA_INSPECTION",
+    private String streamUri;
+    public JobCreationStreamData() {}
+    public JobCreationStreamData(String uri) {
+        this.streamUri=uri;
+    }
+    public String getStreamUri() {
+        return streamUri;
+    }
+    public void setStreamUri(String streamUri) {
+        this.streamUri = streamUri;
+    }
 
-            MEDIA_INSPECTION_WORK_QUEUE = "jms:MPF.MEDIA_INSPECTION_WORK_QUEUE",
-            MEDIA_RETRIEVAL_ENTRY_POINT = "jms:MPF.MEDIA_RETRIEVAL",
-            MEDIA_RETRIEVAL_WORK_QUEUE = "jms:MPF.MEDIA_RETRIEVAL_WORK_QUEUE",
+    private Map<String,String> mediaProperties = new HashMap<>();
+    public Map<String, String> getMediaProperties() {
+        return mediaProperties;
+    }
+    public void setMediaProperties(Map<String, String> mediaProperties) {
+        this.mediaProperties = mediaProperties;
+    }
 
-            CANCELLED_DETECTIONS = "jms:MPF.CANCELLED_DETECTIONS",
+    private int segmentSize = 0;
+    public void setSegmentSize(int seg_size) { this.segmentSize=seg_size; }
+    public int getSegmentSize() { return segmentSize; }
 
-            COMPLETED_DETECTIONS = "jms:MPF.COMPLETED_DETECTIONS",
-            COMPLETED_DETECTIONS_REPLY_TO = "queue://MPF.COMPLETED_DETECTIONS",
+    /** this method will check the current settings within this job creation stream data,
+     * and will return true if the current settings are set within the constraints defined for
+     * streaming job data, false otherwise
+     * @return true if settings define a valid streaming job data, false otherwise.
+     */
+    public boolean isValidStreamData() {
+        // do error checks on the streaming job data
+        if ( getSegmentSize() >= 10 && getStreamUri() != null ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
-            CANCELLED_MARKUPS = "jms:MPF.CANCELLED_MARKUPS",
-            COMPLETED_MARKUP = "jms:MPF.COMPLETED_MARKUP",
-
-            JOB_REQUESTS = "jms:MPF.JOB_REQUESTS",
-            STAGE_RESULTS_AGGREGATOR = "direct:jobRouterStageAggregator",
-
-            UNSOLICITED_MESSAGES = "jms:MPF.UNSOLICITED_MESSAGES",
-
-            DEAD_LETTER_QUEUE = "activemq:ActiveMQ.DLQ",
-            PROCESSED_DLQ_MESSAGES_QUEUE = "jms:MPF.PROCESSED_DLQ_MESSAGES";
 }

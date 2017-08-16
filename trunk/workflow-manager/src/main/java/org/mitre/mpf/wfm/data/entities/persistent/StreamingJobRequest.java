@@ -32,43 +32,43 @@ import javax.persistence.*;
 import java.util.Date;
 
 /**
- * This class includes the essential information which describes a batch job. Instances of this class are stored in a
+ * This class includes the essential information which describes a streaming job. Instances of this class are stored in a
  * persistent data store (as opposed to a transient data store).
  */
 @Entity
-public class JobRequest {
+public class StreamingJobRequest {
 
-	public JobRequest() { }
+	public StreamingJobRequest() { }
 
 	/** The unique numeric identifier for this job.
-	 * Using SEQUENCE rather than IDENTITY to avoid conflicts between batch and streaming job Ids
+	 * 	Using SEQUENCE rather than IDENTITY to avoid conflicts between batch and streaming job Ids
 	 * */
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE)
 	private long id;
 	public long getId() { return id; }
 
-	/** The timestamp indicating when the server received this job. */
+	/** The timestamp indicating when the server received this streaming job. */
 	@Column
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date timeReceived;
 	public Date getTimeReceived() { return timeReceived; }
 	public void setTimeReceived(Date timeReceived) { this.timeReceived = timeReceived; }
 
-	/** The timestamp indicating when the server completed this job.*/
+	/** The timestamp indicating when the server completed this streaming job.*/
 	@Column
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date timeCompleted;
 	public Date getTimeCompleted() { return timeCompleted; }
 	public void setTimeCompleted(Date timeCompleted) { this.timeCompleted = timeCompleted; }
 	
-	/** The priority of the job set when creating the job.*/
+	/** The priority of the job set when creating the streaming job.*/
 	@Column	
 	private int priority;
 	public int getPriority() { return  priority; }
 	public void setPriority(int priority) { this.priority = priority; }
 
-	/** The current status of this job. */
+	/** The current status of this streaming job. */
 	@Column
 	@Enumerated(EnumType.STRING)
 	private JobStatus status;
@@ -82,14 +82,39 @@ public class JobRequest {
 	public void setInputObject(byte[] inputObject) { this.inputObject = inputObject; }
 
 	@Column
-	private String outputObjectPath;
-	public String getOutputObjectPath() { return outputObjectPath; }
-	public void setOutputObjectPath(String outputObjectPath) { this.outputObjectPath = outputObjectPath; }
+	private String outputObjectDirectory;
+	public String getOutputObjectDirectory() { return outputObjectDirectory; }
+	public void setOutputObjectDirectory(String outputObjectDirectory) { this.outputObjectDirectory = outputObjectDirectory; }
 
 	@Column
 	private String pipeline;
 	public String getPipeline() { return pipeline; }
 	public void setPipeline(String pipeline) { this.pipeline = pipeline; }
+
+	@Column
+	private String externalId;
+	public String getExternalId() { return externalId; }
+	public void setExternalId(String externalId) { this.externalId = externalId; }
+
+	@Column
+	private String streamUri;
+	public String getStreamUri() { return streamUri; }
+	public void setStreamUri(String streamUri) { this.streamUri = streamUri; }
+
+	@Column
+	private String healthReportCallbackUri;
+	public String getHealthReportCallbackUri() { return healthReportCallbackUri; }
+	public void setHealthReportCallbackUri(String healthReportCallbackUri) { this.healthReportCallbackUri = healthReportCallbackUri; }
+
+	@Column
+	private String summaryReportCallbackUri;
+	public String getSummaryReportCallbackUri() { return summaryReportCallbackUri; }
+	public void setSummaryReportCallbackUri(String summaryReportCallbackUri) { this.summaryReportCallbackUri = summaryReportCallbackUri; }
+
+	@Column
+	private String newTrackAlertCallbackUri;
+	public String getNewTrackAlertCallbackUri() { return newTrackAlertCallbackUri; }
+	public void setNewTrackAlertCallbackUri(String newTrackAlertCallbackUri) { this.newTrackAlertCallbackUri = newTrackAlertCallbackUri; }
 
 	/** The version of the output object. */
 	@Column

@@ -313,7 +313,7 @@ AppServices.service('JobsService', function ($http) {
     this.getStats = function () {
         var promise = $http({
             url: 'jobs/stats',
-            method: "GET",
+            method: "GET"
         }).then(function (response) {
             //there is only one job, but it will still be returned in array
             //... because it is using the same jobs method
@@ -325,7 +325,7 @@ AppServices.service('JobsService', function ($http) {
     this.getOutputObject = function (jobId) {
         var promise = $http({
             url: 'jobs/output-object?id='+jobId,
-            method: "GET",
+            method: "GET"
         }).then(function (response) {
             return response.data;
         });
@@ -574,7 +574,7 @@ AppServices.factory('ServerSidePush',
                                         msg.jobStatus == 'COMPLETE_WITH_ERRORS' ||
                                         msg.jobStatus == 'COMPLETE_WITH_WARNINGS') {
 
-                                        // ensure job is part of session
+                                        // ensure job is part of session to avoid flooding the UI with notifications
                                         JobsService.getJob(msg.id, true).then(function (job) {
                                             if (job) {
                                                 if (msg.jobStatus == 'COMPLETE') {

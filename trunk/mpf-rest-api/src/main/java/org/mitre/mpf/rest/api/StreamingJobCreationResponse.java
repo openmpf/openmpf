@@ -24,34 +24,40 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.rest.api;
 
-public class MpfEndpoints {
+public class StreamingJobCreationResponse {
+	private long jobId = -1L; //will be -1 if there is an error creating the job
+	private String outputObjectDirectory = null;
+	private String externalId = null;
+	private MpfResponse mpfResponse = new MpfResponse();
 
-    // TODO need to add the queue for accepting summary reports
-    // TODO need to add the queue for accepting new track alerts.
+	/*
+	 * Constructors
+	 */
+	public StreamingJobCreationResponse() { }
 
-    public static final String
-            ARTIFACT_EXTRACTION_WORK_QUEUE = "jms:MPF.ARTIFACT_EXTRACTION_WORK_QUEUE",
-            MEDIA_INSPECTION_ENTRY_POINT = "jms:MPF.MEDIA_INSPECTION",
+	public StreamingJobCreationResponse(int errorCode, String errorMessage) {
+		this.mpfResponse.setMessage(errorCode, errorMessage);
+		this.jobId = -1L;
+	}
 
-            MEDIA_INSPECTION_WORK_QUEUE = "jms:MPF.MEDIA_INSPECTION_WORK_QUEUE",
-            MEDIA_RETRIEVAL_ENTRY_POINT = "jms:MPF.MEDIA_RETRIEVAL",
-            MEDIA_RETRIEVAL_WORK_QUEUE = "jms:MPF.MEDIA_RETRIEVAL_WORK_QUEUE",
-
-            CANCELLED_DETECTIONS = "jms:MPF.CANCELLED_DETECTIONS",
-
-            COMPLETED_DETECTIONS = "jms:MPF.COMPLETED_DETECTIONS",
-            COMPLETED_DETECTIONS_REPLY_TO = "queue://MPF.COMPLETED_DETECTIONS",
-
-            CANCELLED_MARKUPS = "jms:MPF.CANCELLED_MARKUPS",
-            COMPLETED_MARKUP = "jms:MPF.COMPLETED_MARKUP",
-
-            JOB_REQUESTS = "jms:MPF.JOB_REQUESTS",
-            STAGE_RESULTS_AGGREGATOR = "direct:jobRouterStageAggregator",
-
-            UNSOLICITED_MESSAGES = "jms:MPF.UNSOLICITED_MESSAGES",
-
-            DEAD_LETTER_QUEUE = "activemq:ActiveMQ.DLQ",
-            PROCESSED_DLQ_MESSAGES_QUEUE = "jms:MPF.PROCESSED_DLQ_MESSAGES";
+	public StreamingJobCreationResponse(long jobId, String externalId, String outputObjectDirectory) {
+		this.mpfResponse.setMessage(0, "success");
+		this.jobId = jobId;
+		this.externalId = externalId;
+		this.outputObjectDirectory = outputObjectDirectory;
+	}
+	
+	/*
+	 * Getters
+	 */
+	public long getJobId() {
+		return jobId;
+	}
+	public String getExternalId() { return externalId; }
+	public String getOutputObjectDirectory() { return outputObjectDirectory; }
+	public MpfResponse getMpfResponse() {
+		return mpfResponse;
+	}
 }

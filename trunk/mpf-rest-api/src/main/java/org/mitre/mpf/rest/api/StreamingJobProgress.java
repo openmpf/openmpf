@@ -24,34 +24,23 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.rest.api;
 
-public class MpfEndpoints {
+// TODO: finalize implementation of, usage of, StreamingJobProgress once the response from streaming components is better defined
+public class StreamingJobProgress {
+	/*
+	 * Fields and getters
+	 */
+	private int numberOfSegmentsProcessed = 0;
+	public void setNumberOfSegmentsProcessed(int value) { this.numberOfSegmentsProcessed = value; }
+	public int getNumberOfSegmentsProcessed() {
+		return numberOfSegmentsProcessed;
+	}
 
-    // TODO need to add the queue for accepting summary reports
-    // TODO need to add the queue for accepting new track alerts.
-
-    public static final String
-            ARTIFACT_EXTRACTION_WORK_QUEUE = "jms:MPF.ARTIFACT_EXTRACTION_WORK_QUEUE",
-            MEDIA_INSPECTION_ENTRY_POINT = "jms:MPF.MEDIA_INSPECTION",
-
-            MEDIA_INSPECTION_WORK_QUEUE = "jms:MPF.MEDIA_INSPECTION_WORK_QUEUE",
-            MEDIA_RETRIEVAL_ENTRY_POINT = "jms:MPF.MEDIA_RETRIEVAL",
-            MEDIA_RETRIEVAL_WORK_QUEUE = "jms:MPF.MEDIA_RETRIEVAL_WORK_QUEUE",
-
-            CANCELLED_DETECTIONS = "jms:MPF.CANCELLED_DETECTIONS",
-
-            COMPLETED_DETECTIONS = "jms:MPF.COMPLETED_DETECTIONS",
-            COMPLETED_DETECTIONS_REPLY_TO = "queue://MPF.COMPLETED_DETECTIONS",
-
-            CANCELLED_MARKUPS = "jms:MPF.CANCELLED_MARKUPS",
-            COMPLETED_MARKUP = "jms:MPF.COMPLETED_MARKUP",
-
-            JOB_REQUESTS = "jms:MPF.JOB_REQUESTS",
-            STAGE_RESULTS_AGGREGATOR = "direct:jobRouterStageAggregator",
-
-            UNSOLICITED_MESSAGES = "jms:MPF.UNSOLICITED_MESSAGES",
-
-            DEAD_LETTER_QUEUE = "activemq:ActiveMQ.DLQ",
-            PROCESSED_DLQ_MESSAGES_QUEUE = "jms:MPF.PROCESSED_DLQ_MESSAGES";
+	/*
+	 * Constructor
+	 */
+	public StreamingJobProgress(int numberOfSegmentsProcessed) {
+		this.numberOfSegmentsProcessed = numberOfSegmentsProcessed;
+	}
 }

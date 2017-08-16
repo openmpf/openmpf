@@ -24,34 +24,41 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.interop;
 
-public class MpfEndpoints {
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
-    // TODO need to add the queue for accepting summary reports
-    // TODO need to add the queue for accepting new track alerts.
+import java.util.HashMap;
+import java.util.Map;
 
-    public static final String
-            ARTIFACT_EXTRACTION_WORK_QUEUE = "jms:MPF.ARTIFACT_EXTRACTION_WORK_QUEUE",
-            MEDIA_INSPECTION_ENTRY_POINT = "jms:MPF.MEDIA_INSPECTION",
+@JsonTypeName("StreamingInputObject")
+public class JsonStreamingInputObject {
 
-            MEDIA_INSPECTION_WORK_QUEUE = "jms:MPF.MEDIA_INSPECTION_WORK_QUEUE",
-            MEDIA_RETRIEVAL_ENTRY_POINT = "jms:MPF.MEDIA_RETRIEVAL",
-            MEDIA_RETRIEVAL_WORK_QUEUE = "jms:MPF.MEDIA_RETRIEVAL_WORK_QUEUE",
+    @JsonPropertyDescription("The URI for this stream object.")
+    private String streamUri;
+    public String getStreamUri() { return streamUri; }
 
-            CANCELLED_DETECTIONS = "jms:MPF.CANCELLED_DETECTIONS",
+    @JsonPropertyDescription("The segment size to be applied to this stream.")
+    private int segmentSize;
+    public int getSegmentSize() { return segmentSize; }
 
-            COMPLETED_DETECTIONS = "jms:MPF.COMPLETED_DETECTIONS",
-            COMPLETED_DETECTIONS_REPLY_TO = "queue://MPF.COMPLETED_DETECTIONS",
+    @JsonPropertyDescription("A map of medium-specific properties that override algorithm properties.")
+    private Map<String,String> mediaProperties;
+    public Map<String,String> getMediaProperties() { return mediaProperties; }
+    public void addProperty(String key, String value){
+        mediaProperties.put(key, value);
+    }
 
-            CANCELLED_MARKUPS = "jms:MPF.CANCELLED_MARKUPS",
-            COMPLETED_MARKUP = "jms:MPF.COMPLETED_MARKUP",
+    @JsonCreator
+    public JsonStreamingInputObject(@JsonProperty("streamUri") String streamUri, @JsonProperty("segmentSize") int segmentSize,
+        @JsonProperty("mediaProperties") Map<String, String> mediaProperties) {
 
-            JOB_REQUESTS = "jms:MPF.JOB_REQUESTS",
-            STAGE_RESULTS_AGGREGATOR = "direct:jobRouterStageAggregator",
+        this.streamUri = streamUri;
+        this.segmentSize = segmentSize;
+        this.mediaProperties = mediaProperties;
+    }
 
-            UNSOLICITED_MESSAGES = "jms:MPF.UNSOLICITED_MESSAGES",
-
-            DEAD_LETTER_QUEUE = "activemq:ActiveMQ.DLQ",
-            PROCESSED_DLQ_MESSAGES_QUEUE = "jms:MPF.PROCESSED_DLQ_MESSAGES";
 }

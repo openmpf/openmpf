@@ -59,11 +59,16 @@ App.config(['$stateProvider', '$urlRouterProvider','$httpProvider' ,function ($s
 		  controller: HomeCtrl
 	  });
 
-	$stateProvider.state('/about', {
-		url: '/about',
-		templateUrl: 'about/layout.html',
-		controller: AboutCtrl
-	});
+	  $stateProvider.state('/about', {
+		  url: '/about',
+		  templateUrl: 'about/layout.html',
+		  controller: AboutCtrl,
+		  resolve: {
+		  	depPromise: function($http) {
+                return $http.get("resources/json/dependencies.json");
+            }
+		  }
+	  });
 
 	  $stateProvider.state('/server_media', {
 		  url: '/server_media',

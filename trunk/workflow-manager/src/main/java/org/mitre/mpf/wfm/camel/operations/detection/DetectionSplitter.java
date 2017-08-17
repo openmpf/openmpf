@@ -210,6 +210,7 @@ public class DetectionSplitter implements StageSplitter {
 				SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
 				List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
 
+				// get detection request messages from ActiveMQ
 				List<Message> detectionRequestMessages = getSegmenter(transientMedia.getMediaType()).createDetectionRequestMessages(transientMedia, new DetectionContext(transientJob.getId(), transientJob.getCurrentStage(), transientStage.getName(), actionIndex, transientAction.getName(), isFirstDetectionStage, algorithmProperties, previousTrackTimePairs, segmentingPlan));
 				for(Message message : detectionRequestMessages) {
 					message.setHeader(MpfHeaders.RECIPIENT_QUEUE, String.format("jms:MPF.%s_%s_REQUEST", transientStage.getActionType(), transientAction.getAlgorithm()));

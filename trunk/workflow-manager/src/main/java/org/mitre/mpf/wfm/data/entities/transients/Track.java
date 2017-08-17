@@ -86,7 +86,7 @@ public class Track implements Comparable<Track> {
 	/** The ordered (by start index) collection of detections which correspond to the position of the object as it moves through the track. */
 	private SortedSet<Detection> detections;
 	public SortedSet<Detection> getDetections() { return detections; }
-	private void setDetections(SortedSet<Detection> detections) { this.detections = (detections == null) ? new TreeSet<Detection>() : detections; }
+	public void setDetections(SortedSet<Detection> detections) { this.detections = (detections == null) ? new TreeSet<Detection>() : detections; }
 
 	/** The detection with the highest confidence in the track. */
 	private Detection exemplar;

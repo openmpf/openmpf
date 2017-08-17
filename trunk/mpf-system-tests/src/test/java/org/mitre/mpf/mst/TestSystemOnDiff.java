@@ -28,7 +28,6 @@ package org.mitre.mpf.mst;
 
 import com.google.common.collect.ImmutableMap;
 import org.junit.FixMethodOrder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -129,7 +128,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     @Test(timeout = 20 * MINUTES)
     public void runMotionSubsenseTrackingVideo() throws Exception {
         runSystemTest("SUBSENSE MOTION DETECTION (WITH TRACKING) PIPELINE", "output/motion/runMotionSubsenseTrackingVideo.json",
-                "/samples/motion/STRUCK_Test_720p.mov");
+                "/samples/motion/STRUCK_Test_720p.mp4");
     }
     
     @Test(timeout = 5 * MINUTES)

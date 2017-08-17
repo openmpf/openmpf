@@ -142,7 +142,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     @Test(timeout = 5*MINUTES)
     public void runMotionTracking2() throws Exception {
         runSystemTest("MOG MOTION DETECTION (WITH TRACKING) PIPELINE", "output/motion/runMotionTracking.json",
-                "/samples/motion/STRUCK_Test_720p.mov");
+                "/samples/motion/STRUCK_Test_720p.mp4");
     }
 
     @Test(timeout = 4*MINUTES)

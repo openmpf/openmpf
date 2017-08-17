@@ -1,6 +1,6 @@
 {
   "jobId": 1,
-  "objectId": "fe11fa6f-7379-4bbe-9979-98cac536c877",
+  "objectId": "1e4d3c2a-0b5c-4db6-9de3-42b3b4568186",
   "pipeline": {
     "name": "OCV FACE DETECTION (WITH MARKUP) PIPELINE",
     "description": "Performs OpenCV face detection and marks up the results.",
@@ -35,16 +35,16 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "894ca330-0995-4adc-9e24-0d0ea379c5e4",
-  "timeStart": "2017-06-15 23:14:51.0",
-  "timeStop": "2017-06-15 23:15:42.0",
+  "externalJobId": "acbfa741-02b7-4aec-bfff-100f4ddfe936",
+  "timeStart": "2017-08-13 20:54:59.0",
+  "timeStop": "2017-08-13 20:55:52.0",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
   "media": [
     {
       "mediaId": 3,
-      "path": "file:/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/meds-aa-S001-01.jpg",
+      "path": "file:/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/meds-aa-S001-01.jpg",
       "mimeType": "image/jpeg",
       "length": 1,
       "sha256": "c067e7eed23a0fe022140c30dbfa993ae720309d6567a803d111ecec739a6713",
@@ -54,7 +54,7 @@
       "mediaProperties": {},
       "markupResult": {
         "id": 2,
-        "path": "file:///var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/markup/1/3/12b05630-e1ea-4fef-aa77-39c6abc0a73c.png",
+        "path": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/markup/1/3/c6764748-cddf-4958-b9e9-b7616f51e23a.png",
         "status": "COMPLETE",
         "message": null
       },
@@ -81,7 +81,7 @@
                   "offsetFrame": 0,
                   "offsetTime": 0,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/3/0/meds-aa-S001-01.jpg",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/3/0/meds-aa-S001-01.jpg",
                   "offset": 0
                 },
                 "detections": [
@@ -95,7 +95,7 @@
                     "offsetFrame": 0,
                     "offsetTime": 0,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/3/0/meds-aa-S001-01.jpg",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/3/0/meds-aa-S001-01.jpg",
                     "offset": 0
                   }
                 ],
@@ -116,7 +116,7 @@
     },
     {
       "mediaId": 4,
-      "path": "file:/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/meds-aa-S029-01.jpg",
+      "path": "file:/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/meds-aa-S029-01.jpg",
       "mimeType": "image/jpeg",
       "length": 1,
       "sha256": "874c83c5d02c2ddf8f223a229fbf954ca14f1680c155ddfce780c11bff83d584",
@@ -126,7 +126,7 @@
       "mediaProperties": {},
       "markupResult": {
         "id": 1,
-        "path": "file:///var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/markup/1/4/20d39396-2d14-46fc-b9d1-50ec6f084c5b.png",
+        "path": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/markup/1/4/a5b5fa30-ee62-4a04-a9a1-11bfcab6b1dc.png",
         "status": "COMPLETE",
         "message": null
       },
@@ -153,7 +153,7 @@
                   "offsetFrame": 0,
                   "offsetTime": 0,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/4/0/meds-aa-S029-01.jpg",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/4/0/meds-aa-S029-01.jpg",
                   "offset": 0
                 },
                 "detections": [
@@ -167,7 +167,7 @@
                     "offsetFrame": 0,
                     "offsetTime": 0,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/4/0/meds-aa-S029-01.jpg",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/4/0/meds-aa-S029-01.jpg",
                     "offset": 0
                   }
                 ],
@@ -188,7 +188,7 @@
     },
     {
       "mediaId": 2,
-      "path": "file:/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/new_face_video.avi",
+      "path": "file:/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/new_face_video.avi",
       "mimeType": "video/x-msvideo",
       "length": 511,
       "sha256": "7acdf25b2f577c7f1128b9569cebfbcabd13cd0f45e90b51bb67b243a0a56f41",
@@ -202,7 +202,7 @@
       "mediaProperties": {},
       "markupResult": {
         "id": 4,
-        "path": "file:///var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/markup/1/2/4f9eaa8c-2f53-44cf-9f94-d9639ee848c4.avi",
+        "path": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/markup/1/2/45267c98-88d0-47f9-b21b-f2ebe5aea091.avi",
         "status": "COMPLETE",
         "message": null
       },
@@ -229,7 +229,7 @@
                   "offsetFrame": 48,
                   "offsetTime": 1602,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-48.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-48.png",
                   "offset": 48
                 },
                 "detections": [
@@ -295,7 +295,7 @@
                     "offsetFrame": 48,
                     "offsetTime": 1602,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-48.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-48.png",
                     "offset": 48
                   },
                   {
@@ -593,7 +593,7 @@
                   "offsetFrame": 96,
                   "offsetTime": 3203,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-96.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-96.png",
                   "offset": 96
                 },
                 "detections": [
@@ -906,7 +906,7 @@
                     "offsetFrame": 96,
                     "offsetTime": 3203,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-96.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-96.png",
                     "offset": 96
                   },
                   {
@@ -1022,7 +1022,7 @@
                   "offsetFrame": 130,
                   "offsetTime": 4338,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-130.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-130.png",
                   "offset": 130
                 },
                 "detections": [
@@ -1309,7 +1309,7 @@
                     "offsetFrame": 130,
                     "offsetTime": 4338,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-130.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-130.png",
                     "offset": 130
                   },
                   {
@@ -1412,7 +1412,7 @@
                   "offsetFrame": 138,
                   "offsetTime": 4605,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-138.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-138.png",
                   "offset": 138
                 },
                 "detections": [
@@ -1426,7 +1426,7 @@
                     "offsetFrame": 138,
                     "offsetTime": 4605,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-138.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-138.png",
                     "offset": 138
                   },
                   {
@@ -1841,7 +1841,7 @@
                   "offsetFrame": 227,
                   "offsetTime": 7574,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-227.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-227.png",
                   "offset": 227
                 },
                 "detections": [
@@ -1920,7 +1920,7 @@
                     "offsetFrame": 227,
                     "offsetTime": 7574,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-227.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-227.png",
                     "offset": 227
                   }
                 ],
@@ -1945,7 +1945,7 @@
                   "offsetFrame": 247,
                   "offsetTime": 8242,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-247.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-247.png",
                   "offset": 247
                 },
                 "detections": [
@@ -2154,7 +2154,7 @@
                     "offsetFrame": 247,
                     "offsetTime": 8242,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-247.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-247.png",
                     "offset": 247
                   },
                   {
@@ -2296,7 +2296,7 @@
                   "offsetFrame": 275,
                   "offsetTime": 9176,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-275.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-275.png",
                   "offset": 275
                 },
                 "detections": [
@@ -2479,7 +2479,7 @@
                     "offsetFrame": 275,
                     "offsetTime": 9176,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-275.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-275.png",
                     "offset": 275
                   },
                   {
@@ -2621,7 +2621,7 @@
                   "offsetFrame": 287,
                   "offsetTime": 9576,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-287.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-287.png",
                   "offset": 287
                 },
                 "detections": [
@@ -2635,7 +2635,7 @@
                     "offsetFrame": 287,
                     "offsetTime": 9576,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/2/0/frame-287.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/2/0/frame-287.png",
                     "offset": 287
                   },
                   {
@@ -3137,7 +3137,7 @@
     },
     {
       "mediaId": 0,
-      "path": "file:/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/motion/five-second-marathon-clip.mkv",
+      "path": "file:/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/mpf-system-tests/target/test-classes/samples/motion/five-second-marathon-clip.mkv",
       "mimeType": "video/x-matroska",
       "length": 154,
       "sha256": "b807f7077e7b2a845ec1a2a9bb12712a050d0c54cc5cf0faeb1660111ad78c4d",
@@ -3150,17 +3150,111 @@
       },
       "mediaProperties": {},
       "markupResult": {
-        "id": 3,
-        "path": "file:///var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/markup/1/0/b8407bfd-1ed8-4b25-abee-af74e6d0bb68.mkv",
+        "id": 5,
+        "path": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/markup/1/0/3dfcd428-4098-4a9e-b973-f0741e3e547a.avi",
         "status": "COMPLETE",
         "message": null
       },
       "output": {
-        "NO TRACKS": [
+        "FACE": [
           {
             "source": "+#OCV FACE DETECTION ACTION",
-            "tracks": []
-          },
+            "tracks": [
+              {
+                "id": "7050492e2f4d874767998ff37c2d913c9aa5f1142c987ff51181c43faa5e1a1c",
+                "startOffsetFrame": 1,
+                "stopOffsetFrame": 5,
+                "startOffsetTime": 33,
+                "stopOffsetTime": 167,
+                "type": "FACE",
+                "source": "+#OCV FACE DETECTION ACTION",
+                "exemplar": {
+                  "x": 872,
+                  "y": 419,
+                  "width": 55,
+                  "height": 55,
+                  "confidence": 25.0,
+                  "detectionProperties": {},
+                  "offsetFrame": 3,
+                  "offsetTime": 100,
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/0/0/frame-3.png",
+                  "offset": 3
+                },
+                "detections": [
+                  {
+                    "x": 839,
+                    "y": 409,
+                    "width": 54,
+                    "height": 54,
+                    "confidence": 21.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 1,
+                    "offsetTime": 33,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 1
+                  },
+                  {
+                    "x": 855,
+                    "y": 417,
+                    "width": 53,
+                    "height": 53,
+                    "confidence": 22.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 2,
+                    "offsetTime": 67,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 2
+                  },
+                  {
+                    "x": 872,
+                    "y": 419,
+                    "width": 55,
+                    "height": 55,
+                    "confidence": 25.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 3,
+                    "offsetTime": 100,
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/0/0/frame-3.png",
+                    "offset": 3
+                  },
+                  {
+                    "x": 891,
+                    "y": 420,
+                    "width": 54,
+                    "height": 54,
+                    "confidence": 25.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 4,
+                    "offsetTime": 133,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 4
+                  },
+                  {
+                    "x": 908,
+                    "y": 421,
+                    "width": 50,
+                    "height": 50,
+                    "confidence": 8.0,
+                    "detectionProperties": {},
+                    "offsetFrame": 5,
+                    "offsetTime": 167,
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null,
+                    "offset": 5
+                  }
+                ],
+                "stopOffset": 5,
+                "startOffset": 1
+              }
+            ]
+          }
+        ],
+        "NO TRACKS": [
           {
             "source": "+#OCV FACE DETECTION ACTION#OCV GENERIC MARKUP ACTION",
             "tracks": []
@@ -3171,7 +3265,7 @@
     },
     {
       "mediaId": 1,
-      "path": "file:/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/video_02.mp4",
+      "path": "file:/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/video_02.mp4",
       "mimeType": "video/mp4",
       "length": 521,
       "sha256": "6d794a2d5be1645b605c61d89c26d00b4e326fea2cf62035d78ceda82539d32a",
@@ -3184,8 +3278,8 @@
       },
       "mediaProperties": {},
       "markupResult": {
-        "id": 5,
-        "path": "file:///var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/markup/1/1/9819395a-5c9d-4b92-a492-60c45ec39e65.avi",
+        "id": 3,
+        "path": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/markup/1/1/aae489fa-d454-480b-9229-d6430c459ccc.avi",
         "status": "COMPLETE",
         "message": null
       },
@@ -3212,7 +3306,7 @@
                   "offsetFrame": 115,
                   "offsetTime": 3837,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/1/0/frame-115.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/1/0/frame-115.png",
                   "offset": 115
                 },
                 "detections": [
@@ -3837,7 +3931,7 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/1/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/1/0/frame-113.png",
                     "offset": 113
                   },
                   {
@@ -3863,7 +3957,7 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/1/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/1/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -4044,7 +4138,7 @@
                   "offsetFrame": 113,
                   "offsetTime": 3770,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/1/0/frame-113.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/1/0/frame-113.png",
                   "offset": 113
                 },
                 "detections": [
@@ -4188,7 +4282,7 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/1/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/1/0/frame-113.png",
                     "offset": 113
                   },
                   {
@@ -4214,7 +4308,7 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/1/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/1/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -4304,7 +4398,7 @@
                   "offsetFrame": 429,
                   "offsetTime": 14314,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/1/0/frame-429.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/1/0/frame-429.png",
                   "offset": 429
                 },
                 "detections": [
@@ -4578,7 +4672,7 @@
                     "offsetFrame": 429,
                     "offsetTime": 14314,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/1/0/frame-429.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/1/0/frame-429.png",
                     "offset": 429
                   },
                   {
@@ -4811,7 +4905,7 @@
                   "offsetFrame": 447,
                   "offsetTime": 14915,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/1/0/frame-447.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/1/0/frame-447.png",
                   "offset": 447
                 },
                 "detections": [
@@ -4890,7 +4984,7 @@
                     "offsetFrame": 447,
                     "offsetTime": 14915,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/1/1/0/frame-447.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/1/1/0/frame-447.png",
                     "offset": 447
                   },
                   {

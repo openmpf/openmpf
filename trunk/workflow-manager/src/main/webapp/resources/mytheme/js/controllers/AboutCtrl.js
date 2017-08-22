@@ -27,7 +27,7 @@
 'use strict';
 /* global $, angular */
 
-var AboutCtrl = function($scope, $location, $interpolate, depPromise, MetadataService) {
+var AboutCtrl = function($scope, $location, $interpolate, depResponse, MetadataService) {
 
     $scope.text_detection_filepath = "resources/downloads/OalprLicensePlateTextDetection.tar.gz";
 
@@ -44,7 +44,7 @@ var AboutCtrl = function($scope, $location, $interpolate, depPromise, MetadataSe
     };
 
     var loadDependencyGroups = function () {
-        $scope.depGroups = angular.fromJson(depPromise.data).groups;
+        $scope.depGroups = depResponse.data.groups;
         $scope.renderCustomLicense = function (dep) {
             makeLinksOpenInNewTab();
             if (!dep.customLicenseId) {

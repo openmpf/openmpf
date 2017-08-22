@@ -64,7 +64,7 @@ App.config(['$stateProvider', '$urlRouterProvider','$httpProvider' ,function ($s
 		  templateUrl: 'about/layout.html',
 		  controller: AboutCtrl,
 		  resolve: {
-		  	depPromise: function($http) {
+            depResponse: function($http) {
                 return $http.get("resources/json/dependencies.json");
             }
 		  }

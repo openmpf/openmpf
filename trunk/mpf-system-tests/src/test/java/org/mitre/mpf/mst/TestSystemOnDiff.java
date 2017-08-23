@@ -1,29 +1,15 @@
 /******************************************************************************
  * NOTICE                                                                     *
- * *
+ *                                                                            *
  * This software (or technical data) was produced for the U.S. Government     *
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
- * *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
- * <p>
- * Copyright 2016 The MITRE Corporation                                       *
- * *
- * Licensed under the Apache License, Version 2.0 (the "License");            *
- * you may not use this file except in compliance with the License.           *
- * You may obtain a copy of the License at                                    *
- * *
- * http://www.apache.org/licenses/LICENSE-2.0                              *
- * *
- * Unless required by applicable law or agreed to in writing, software        *
- * distributed under the License is distributed on an "AS IS" BASIS,          *
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
- * See the License for the specific language governing permissions and        *
- * limitations under the License.                                             *
+ *                                                                            *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -42,7 +28,6 @@ package org.mitre.mpf.mst;
 
 import com.google.common.collect.ImmutableMap;
 import org.junit.FixMethodOrder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -143,7 +128,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     @Test(timeout = 20 * MINUTES)
     public void runMotionSubsenseTrackingVideo() throws Exception {
         runSystemTest("SUBSENSE MOTION DETECTION (WITH TRACKING) PIPELINE", "output/motion/runMotionSubsenseTrackingVideo.json",
-                "/samples/motion/STRUCK_Test_720p.mov");
+                "/samples/motion/STRUCK_Test_720p.mp4");
     }
     
     @Test(timeout = 5 * MINUTES)

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -69,12 +69,12 @@ public class TestPipelineController extends TestCase {
         mockMvc = MockMvcBuilders.standaloneSetup(mockPipelineController).build();
 
         // Setup dummy algorithms
-        AlgorithmDefinition def1 = new AlgorithmDefinition(ActionType.DETECTION, "TEST_DETECTION_ALG", "Test algorithm for detection.");
+        AlgorithmDefinition def1 = new AlgorithmDefinition(ActionType.DETECTION, "TEST_DETECTION_ALG", "Test algorithm for detection.", true, false);
         def1.getProvidesCollection().getAlgorithmProperties().add(
                 new PropertyDefinition("TESTPROP", ValueType.BOOLEAN, "Test property", "TRUE", null)
             );
         pipelineService.saveAlgorithm(def1);
-        pipelineService.saveAlgorithm(new AlgorithmDefinition(ActionType.MARKUP, "TEST_MARKUP_ALG", "Test algorithm for markup."));
+        pipelineService.saveAlgorithm(new AlgorithmDefinition(ActionType.MARKUP, "TEST_MARKUP_ALG", "Test algorithm for markup.", true, false));
 
         // Setup dummy actions
         HashMap<String, String> props = new HashMap();

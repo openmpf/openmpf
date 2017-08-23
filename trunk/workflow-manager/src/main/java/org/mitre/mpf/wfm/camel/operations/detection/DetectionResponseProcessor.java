@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -171,7 +171,7 @@ public class DetectionResponseProcessor
 		// Iterate through the videoResponse
 		for (DetectionProtobuf.DetectionResponse.VideoResponse videoResponse : detectionResponse.getVideoResponsesList()) {
 			// Begin iterating through the tracks that were found by the detector.
-			for (DetectionProtobuf.DetectionResponse.VideoResponse.VideoTrack objectTrack : videoResponse.getVideoTracksList()) {
+			for (DetectionProtobuf.VideoTrack objectTrack : videoResponse.getVideoTracksList()) {
 
 				int startOffsetTime = (fps == null ? 0 : Math.round(objectTrack.getStartFrame() * 1000 / fps));
 				int stopOffsetTime  = (fps == null ? 0 : Math.round(objectTrack.getStopFrame()  * 1000 / fps));
@@ -190,8 +190,8 @@ public class DetectionResponseProcessor
 
 
 				// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
-				for (DetectionProtobuf.DetectionResponse.VideoResponse.VideoTrack.FrameLocationMap locationMap : objectTrack.getFrameLocationsList()) {
-					DetectionProtobuf.DetectionResponse.ImageLocation location = locationMap.getImageLocation();
+				for (DetectionProtobuf.VideoTrack.FrameLocationMap locationMap : objectTrack.getFrameLocationsList()) {
+					DetectionProtobuf.ImageLocation location = locationMap.getImageLocation();
 
 					if (location.getConfidence() >= confidenceThreshold) {
 
@@ -216,7 +216,7 @@ public class DetectionResponseProcessor
 		// Iterate through the videoResponse
 		for (DetectionProtobuf.DetectionResponse.AudioResponse audioResponse : detectionResponse.getAudioResponsesList()) {
 			// Begin iterating through the tracks that were found by the detector.
-			for (DetectionProtobuf.DetectionResponse.AudioResponse.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
+			for (DetectionProtobuf.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
 
 				int startOffsetFrame = (fps == null ? 0 : Math.round(objectTrack.getStartTime() * fps / 1000));
 				int stopOffsetFrame  = (fps == null ? 0 : Math.round(objectTrack.getStopTime()  * fps / 1000));
@@ -269,7 +269,7 @@ public class DetectionResponseProcessor
 
 
 				// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
-				for (DetectionProtobuf.DetectionResponse.ImageLocation location : imageResponse.getImageLocationsList()) {
+				for (DetectionProtobuf.ImageLocation location : imageResponse.getImageLocationsList()) {
 					if (location.getConfidence() >= confidenceThreshold) {
 						// Create a new Track object.
 						Track track = new Track(
@@ -310,7 +310,7 @@ public class DetectionResponseProcessor
 		return exemplar;
 	}
 
-	private Detection generateTrack(DetectionProtobuf.DetectionResponse.ImageLocation location, int frameNumber, int time) {
+	private Detection generateTrack(DetectionProtobuf.ImageLocation location, int frameNumber, int time) {
 		TreeMap<String, String> detectionProperties = new TreeMap<>();
 		for (DetectionProtobuf.PropertyMap item : location.getDetectionPropertiesList()) {
 			detectionProperties.put(item.getKey(), item.getValue());

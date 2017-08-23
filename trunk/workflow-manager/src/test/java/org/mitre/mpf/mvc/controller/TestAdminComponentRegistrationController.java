@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -104,7 +104,7 @@ public class TestAdminComponentRegistrationController {
         when(_mockStateService.get())
                 .thenReturn(_models);
 
-        List<RegisterComponentModel> result = _controller.getComponents();
+        List<RegisterComponentModel> result = _controller.getComponentsRest();
 
         assertEquals(new HashSet<>(_models), new HashSet<>(result));
     }
@@ -114,7 +114,7 @@ public class TestAdminComponentRegistrationController {
         when(_mockStateService.get())
                 .thenReturn(Collections.emptyList());
 
-        List<RegisterComponentModel> result = _controller.getComponents();
+        List<RegisterComponentModel> result = _controller.getComponentsRest();
 
         assertTrue(result.isEmpty());
     }
@@ -125,7 +125,7 @@ public class TestAdminComponentRegistrationController {
         when(_mockStateService.getByPackageFile(_testPackageName))
                 .thenReturn(Optional.of(_testModel));
 
-        ResponseEntity<RegisterComponentModel> result = _controller.getComponent(_testPackageName);
+        ResponseEntity<RegisterComponentModel> result = _controller.getComponentRest(_testPackageName);
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
         assertCorrectModel(result.getBody());
@@ -137,7 +137,7 @@ public class TestAdminComponentRegistrationController {
         when(_mockStateService.getByPackageFile(_testPackageName))
                 .thenReturn(Optional.empty());
 
-        ResponseEntity<RegisterComponentModel> result = _controller.getComponent(_testPackageName);
+        ResponseEntity<RegisterComponentModel> result = _controller.getComponentRest(_testPackageName);
         assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
     }
 
@@ -147,7 +147,7 @@ public class TestAdminComponentRegistrationController {
         when(_mockStateService.getByPackageFile(_testPackageName))
                 .thenReturn(Optional.of(_testModel));
 
-        ResponseEntity<?> result = _controller.registerComponent(_testPackageName);
+        ResponseEntity<?> result = _controller.registerComponentRest(_testPackageName);
         assertEquals(HttpStatus.OK, result.getStatusCode());
         assertCorrectModel((RegisterComponentModel) result.getBody());
 
@@ -161,7 +161,7 @@ public class TestAdminComponentRegistrationController {
         when(_mockReRegisterService.reRegisterComponent(_testPackageName))
                 .thenReturn(_testModel);
 
-        ResponseEntity<?> result = _controller.reRegister(_testPackageName);
+        ResponseEntity<?> result = _controller.reRegisterRest(_testPackageName);
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
         assertSame(_testModel, result.getBody());
@@ -174,7 +174,7 @@ public class TestAdminComponentRegistrationController {
         when(_mockReRegisterService.getReRegistrationOrder("Component1.tar.gz"))
                 .thenReturn(Arrays.asList(component1, component2));
 
-        ResponseEntity<?> response = _controller.getReRegisterOrder("Component1.tar.gz");
+        ResponseEntity<?> response = _controller.getReRegisterOrderRest("Component1.tar.gz");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         List<String> reRegisterOrder = (List<String>) response.getBody();
@@ -190,7 +190,7 @@ public class TestAdminComponentRegistrationController {
                 .when(_mockAddComponentService)
                 .registerComponent(_testPackageName);
 
-        ResponseEntity<?> result = _controller.registerComponent(_testPackageName);
+        ResponseEntity<?> result = _controller.registerComponentRest(_testPackageName);
         assertEquals(HttpStatus.CONFLICT, result.getStatusCode());
     }
 
@@ -201,7 +201,7 @@ public class TestAdminComponentRegistrationController {
                 .when(_mockAddComponentService)
                 .registerComponent(_testPackageName);
 
-        ResponseEntity<?> result = _controller.registerComponent(_testPackageName);
+        ResponseEntity<?> result = _controller.registerComponentRest(_testPackageName);
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
     }
 
@@ -212,7 +212,7 @@ public class TestAdminComponentRegistrationController {
                 .when(_mockAddComponentService)
                 .registerComponent(_testPackageName);
 
-        ResponseEntity<?> result = _controller.registerComponent(_testPackageName);
+        ResponseEntity<?> result = _controller.registerComponentRest(_testPackageName);
         assertEquals(HttpStatus.CONFLICT, result.getStatusCode());
     }
 
@@ -221,7 +221,7 @@ public class TestAdminComponentRegistrationController {
     public void canRegisterViaFile() throws ComponentRegistrationException {
         String filePath = "/tmp/TestComponent/descriptor/descriptor.json";
 
-        ResponseMessage result = _controller.registerViaFile(filePath);
+        ResponseMessage result = _controller.registerViaFileRest(filePath);
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
         verify(_mockAddComponentService)
@@ -234,7 +234,7 @@ public class TestAdminComponentRegistrationController {
         when(_mockStateService.getByComponentName(_testComponentName))
                 .thenReturn(Optional.empty());
 
-        ResponseEntity<?> result = _controller.removeComponent(_testComponentName);
+        ResponseEntity<?> result = _controller.removeComponentRest(_testComponentName);
 
         assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
     }
@@ -245,7 +245,7 @@ public class TestAdminComponentRegistrationController {
         when(_mockStateService.getByComponentName(_testComponentName))
                 .thenReturn(Optional.of(_testModel));
 
-        ResponseEntity<?> result = _controller.removeComponent(_testComponentName);
+        ResponseEntity<?> result = _controller.removeComponentRest(_testComponentName);
 
         assertEquals(HttpStatus.NO_CONTENT, result.getStatusCode());
         verify(_mockRemoveComponentService)
@@ -254,7 +254,7 @@ public class TestAdminComponentRegistrationController {
 
     @Test
     public void canRemoveComponentByPackageName() {
-        _controller.removeComponentPackage(_testPackageName);
+        _controller.removeComponentPackageRest(_testPackageName);
         verify(_mockRemoveComponentService)
                 .removePackage(_testPackageName);
     }
@@ -268,7 +268,7 @@ public class TestAdminComponentRegistrationController {
         when(mockFile.getOriginalFilename())
                 .thenReturn(file.getName());
 
-        ResponseEntity<?> result = _controller.uploadComponent(mockFile);
+        ResponseEntity<?> result = _controller.uploadComponentRest(mockFile);
 
         assertEquals(HttpStatus.CONFLICT, result.getStatusCode());
         verifyNotSaved(mockFile);
@@ -284,7 +284,7 @@ public class TestAdminComponentRegistrationController {
         when(mockFile.getContentType())
                 .thenReturn(null);
 
-        ResponseEntity<?> result = _controller.uploadComponent(mockFile);
+        ResponseEntity<?> result = _controller.uploadComponentRest(mockFile);
 
         assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
         verifyNotSaved(mockFile);
@@ -300,7 +300,7 @@ public class TestAdminComponentRegistrationController {
         when(mockFile.getContentType())
                 .thenReturn("foo");
 
-        ResponseEntity<?> result = _controller.uploadComponent(mockFile);
+        ResponseEntity<?> result = _controller.uploadComponentRest(mockFile);
         assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
         verifyNotSaved(mockFile);
     }
@@ -318,7 +318,7 @@ public class TestAdminComponentRegistrationController {
                 .when(mockFile)
                 .transferTo(any());
 
-        ResponseEntity<?> result = _controller.uploadComponent(mockFile);
+        ResponseEntity<?> result = _controller.uploadComponentRest(mockFile);
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
 
@@ -336,7 +336,7 @@ public class TestAdminComponentRegistrationController {
         when(mockFile.getContentType())
                 .thenReturn("application/gzip");
 
-        ResponseEntity<?> result = _controller.uploadComponent(mockFile);
+        ResponseEntity<?> result = _controller.uploadComponentRest(mockFile);
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
         verify(mockFile)

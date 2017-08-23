@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -223,10 +223,23 @@ public class TestDescriptorValidator {
         assertValidationErrors(descriptor, isNull("algorithm"));
 
         descriptor.algorithm = new JsonComponentDescriptor.Algorithm();
-        assertFieldValid(descriptor, "algorithm");
         assertValidationErrors(descriptor,
                 isNull("algorithm.actionType"),
-                isNull("algorithm.requiresCollection"));
+                isNull("algorithm.requiresCollection"),
+                doesNotSupportBatchOrStream());
+
+	    descriptor.algorithm.supportsStreamProcessing = true;
+	    descriptor.algorithm.supportsBatchProcessing = false;
+        assertFieldValid(descriptor, "algorithm");
+
+	    descriptor.algorithm.supportsStreamProcessing = false;
+	    descriptor.algorithm.supportsBatchProcessing = true;
+	    assertFieldValid(descriptor, "algorithm");
+
+	    descriptor.algorithm.supportsStreamProcessing = true;
+	    descriptor.algorithm.supportsBatchProcessing = true;
+	    assertFieldValid(descriptor, "algorithm");
+
 
         descriptor.algorithm.actionType = ActionType.DETECTION;
         assertFieldValid(descriptor, "algorithm.actionType");
@@ -383,5 +396,10 @@ public class TestDescriptorValidator {
 
     private static String hasInvalidProvidesProp(String field) {
         return field + " must provide either a defaultValue or propertiesKey, but not both.";
+    }
+
+
+    private static String doesNotSupportBatchOrStream() {
+    	return "must contain supportsBatchProcessing, supportsStreamProcessing, or both.";
     }
 }

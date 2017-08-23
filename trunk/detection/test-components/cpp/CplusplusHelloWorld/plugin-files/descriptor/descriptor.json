@@ -1,7 +1,7 @@
 {
   "componentName" : "CplusplusHelloWorld",
-  "componentVersion" : "0.9.0",
-  "middlewareVersion" :  "0.9.0",
+  "componentVersion" : "0.10.0",
+  "middlewareVersion" :  "0.10.0",
   "sourceLanguage" : "c++",
   "pathName" : "amq_detection_component",
   "launchArgs" : ["${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so"],
@@ -14,6 +14,7 @@
     "name" : "CplusplusHelloWorld",
     "description" : "A dummy C++ detection component.",
     "actionType" : "DETECTION",
+    "supportsBatchProcessing": true,
     "requiresCollection" : {
       "states" : []
     },

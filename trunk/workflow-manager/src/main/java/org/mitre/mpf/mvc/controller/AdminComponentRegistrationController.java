@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -95,23 +95,23 @@ public class AdminComponentRegistrationController {
 
 
     /*
-     * GET all component info as a list - INTERNAL
+     * GET all component info as a list
      */
     @RequestMapping(value = {"/components", "/rest/components"}, method = RequestMethod.GET)
     @ResponseBody
-	public List<RegisterComponentModel> getComponents() {
+	public List<RegisterComponentModel> getComponentsRest() {
         return withReadLock(_componentState::get);
     }
     
     /*
-     * GET single component info - INTERNAL
+     * GET single component info
      */
     //the componentPackageFileName is the filename of the tar.gz file submitted - will require the ending '/'
     @RequestMapping(value = {"/components/{componentPackageFileName:.+}",
             "/rest/components/{componentPackageFileName:.+}"},
             method = RequestMethod.GET)
     @ResponseBody
-    public ResponseEntity<RegisterComponentModel> getComponent(
+    public ResponseEntity<RegisterComponentModel> getComponentRest(
             @PathVariable("componentPackageFileName") String componentPackageFileName)
     {
         return withReadLock(() ->
@@ -122,13 +122,13 @@ public class AdminComponentRegistrationController {
 
 
     /*
-     * POST - register component - INTERNAL
+     * POST - register component
      */
     @RequestMapping(value = {"/components/{componentPackageFileName:.+}/register",
             "/rest/components/{componentPackageFileName:.+}/register"},
             method = RequestMethod.POST)
     @ResponseBody
-    public ResponseEntity<?> registerComponent(
+    public ResponseEntity<?> registerComponentRest(
             @PathVariable("componentPackageFileName") String componentPackageFileName) {
         return withWriteLock(() -> {
             try {
@@ -194,7 +194,7 @@ public class AdminComponentRegistrationController {
 
     @RequestMapping(value = {"/components", "/rest/components"}, method = RequestMethod.POST)
     @ResponseBody
-    public ResponseEntity<?> uploadComponent(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadComponentRest(@RequestParam("file") MultipartFile file) {
         return withWriteLock(() -> {
 
             String componentPackageName = file.getOriginalFilename();
@@ -245,7 +245,7 @@ public class AdminComponentRegistrationController {
             @ApiResponse(code = 401, message = "Bad credentials") }) */
     @RequestMapping(value = {"/component/registerViaFile", "/rest/component/registerViaFile"}, method = RequestMethod.GET)
     @ResponseBody
-    public ResponseMessage registerViaFile(
+    public ResponseMessage registerViaFileRest(
             /*@ApiParam(required = true, defaultValue = "",
                       value = "The path to the JSON component descriptor file")*/
             @RequestParam String filePath
@@ -273,7 +273,7 @@ public class AdminComponentRegistrationController {
     @RequestMapping(value = {"/component/unregisterViaFile", "/rest/component/unregisterViaFile"}, method = RequestMethod.GET)
     @ResponseBody
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void unregister(
+    public void unregisterRest(
             /*@ApiParam(required = true, value = "The path to the JSON component descriptor file")*/
             @RequestParam String filePath
     ) {
@@ -283,7 +283,7 @@ public class AdminComponentRegistrationController {
     @RequestMapping(value = {"/components/{componentName}", "/rest/components/{componentName}"},
             method=RequestMethod.DELETE)
     @ResponseBody
-    public ResponseEntity<Void> removeComponent(@PathVariable("componentName") String componentName) {
+    public ResponseEntity<Void> removeComponentRest(@PathVariable("componentName") String componentName) {
         return withWriteLock(() -> {
             Optional<RegisterComponentModel> existingRegisterModel = _componentState.getByComponentName(componentName);
             if (!existingRegisterModel.isPresent()) {
@@ -300,7 +300,7 @@ public class AdminComponentRegistrationController {
             method = RequestMethod.DELETE)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @ResponseBody
-    public void removeComponentPackage(
+    public void removeComponentPackageRest(
             @PathVariable("componentPackageFileName") String componentPackageFileName) {
         withWriteLock(() -> _removeComponentService.removePackage(componentPackageFileName));
     }
@@ -310,7 +310,7 @@ public class AdminComponentRegistrationController {
             "/rest/components/{componentPackageFileName:.+}/reRegister"},
             method = RequestMethod.POST)
     @ResponseBody
-    public ResponseEntity<?> reRegister(@PathVariable("componentPackageFileName") String componentPackageFileName) {
+    public ResponseEntity<?> reRegisterRest(@PathVariable("componentPackageFileName") String componentPackageFileName) {
     	return withWriteLock(() -> {
             try {
                 RegisterComponentModel componentModel = _reRegisterService
@@ -328,7 +328,7 @@ public class AdminComponentRegistrationController {
             "/rest/components/{componentPackageFileName:.+}/reRegisterOrder"},
             method = RequestMethod.GET)
     @ResponseBody
-    public ResponseEntity<?> getReRegisterOrder(
+    public ResponseEntity<?> getReRegisterOrderRest(
             @PathVariable("componentPackageFileName") String componentPackageFileName) {
 
         return withReadLock(() -> {

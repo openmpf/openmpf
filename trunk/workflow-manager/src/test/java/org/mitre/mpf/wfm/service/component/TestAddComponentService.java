@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -33,11 +33,8 @@ import org.junit.Test;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.service.PipelineService;
-import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.service.NodeManagerService;
-import org.mitre.mpf.wfm.util.Tuple;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -84,10 +81,6 @@ public class TestAddComponentService {
     private ObjectMapper _mockObjectMapper;
 
     private static final String _testPackageName = "test-package.tar.gz";
-
-    private static final Tuple<Boolean, String> _successTuple = new Tuple<>(true, null);
-
-    private static final Tuple<Boolean, String> _failureTuple = new Tuple<>(false, "fail");
 
 
     @Before
@@ -175,8 +168,6 @@ public class TestAddComponentService {
         registerModel.setComponentState(ComponentState.UPLOADED);
         registerModel.setPackageFileName(_testPackageName);
 
-        AlgorithmDefinition algoDef = new AlgorithmDefinition(
-                ActionType.DETECTION, descriptor.algorithm.name.toUpperCase(), descriptor.algorithm.description);
 
         when(_mockStateService.getByPackageFile(_testPackageName))
                 .thenReturn(Optional.of(registerModel));
@@ -209,17 +200,20 @@ public class TestAddComponentService {
                         && rcm.getActions().size() == 1
                         && rcm.getTasks().size() == 1));
 
+
         // Verify mocked methods
-        verify(_mockPipelineService)
-                .saveAlgorithm(algoDef);
+
+	    String expectedAlgoName = descriptor.algorithm.name.toUpperCase();
+
+	    verifyDescriptorAlgoSaved(descriptor);
 
 	    verify(_mockPipelineService)
-                .saveAction(whereArg(ad -> ad.getName().contains(algoDef.getName())
-                        && ad.getAlgorithmRef().equals(algoDef.getName())
+                .saveAction(whereArg(ad -> ad.getName().contains(expectedAlgoName)
+                        && ad.getAlgorithmRef().equals(expectedAlgoName)
                         && ad.getProperties().isEmpty() ));
 
         verify(_mockPipelineService)
-                .saveTask(whereArg(td -> td.getName().contains(algoDef.getName())));
+                .saveTask(whereArg(td -> td.getName().contains(expectedAlgoName)));
 
         verify(_mockDeploymentService)
                 .deployComponent(_testPackageName);
@@ -228,6 +222,14 @@ public class TestAddComponentService {
                 .addService(whereArg(s -> s.getName().equals(COMPONENT_NAME)));
 
         assertNeverUndeployed();
+    }
+
+    private void verifyDescriptorAlgoSaved(JsonComponentDescriptor descriptor) {
+        verify(_mockPipelineService)
+                .saveAlgorithm(whereArg(algo -> algo.getName().equals(descriptor.algorithm.name.toUpperCase())
+                        && algo.getSupportsBatchProcessing() == descriptor.algorithm.supportsBatchProcessing
+                        && algo.getSupportsStreamProcessing() == descriptor.algorithm.supportsStreamProcessing));
+
     }
 
 
@@ -275,9 +277,6 @@ public class TestAddComponentService {
         JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();
         setUpMocksForDescriptor(descriptor);
 
-        AlgorithmDefinition algoDef = new AlgorithmDefinition(
-                ActionType.DETECTION, descriptor.algorithm.name.toUpperCase(), descriptor.algorithm.description);
-
         when(_mockNodeManager.getServiceModels())
                 .thenReturn(Collections.singletonMap("fake name", null));
 
@@ -297,8 +296,8 @@ public class TestAddComponentService {
                                 && rcm.getTasks().containsAll(TASK_NAMES)
                                 && rcm.getPipelines().contains(PIPELINE_NAME)));
 
-        verify(_mockPipelineService)
-                .saveAlgorithm(algoDef);
+
+        verifyDescriptorAlgoSaved(descriptor);
 
         verify(_mockPipelineService, times(3))
                 .saveAction(whereArg(ad -> ad.getAlgorithmRef().equals(REFERENCED_ALGO_NAME)));

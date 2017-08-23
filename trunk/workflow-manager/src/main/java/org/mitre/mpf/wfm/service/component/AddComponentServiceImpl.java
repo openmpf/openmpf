@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -245,7 +245,9 @@ public class AddComponentServiceImpl implements AddComponentService {
         AlgorithmDefinition algoDef = new AlgorithmDefinition(
                 jsonAlgo.actionType,
                 descriptor.algorithm.name.toUpperCase(),
-                jsonAlgo.description);
+                jsonAlgo.description,
+                jsonAlgo.supportsBatchProcessing,
+                jsonAlgo.supportsStreamProcessing);
 
         jsonAlgo
                 .requiresCollection

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -98,10 +98,6 @@ public class HomeController
 		return "index";
 	}
 
-	private InfoModel getInfoVersionOne() {
-		return modelUtils.getInfoModel();
-	}
-
 	@RequestMapping(value = "/rest/info", method = RequestMethod.GET, 
 			produces = "application/json;charset=UTF-8")
 	@ApiOperation(value="Returns metadata about the Workflow Manager, such as version and build number",
@@ -112,14 +108,14 @@ public class HomeController
 			@ApiResponse(code = 401, message = "Bad credentials") })
 	@ResponseBody
 	public InfoModel getInfoRest() {
-		return getInfoVersionOne();
+		return modelUtils.getInfoModel();
 	}
 
 	@RequestMapping(value = "/info", method = RequestMethod.GET, 
 			produces = "application/json;charset=UTF-8")	
 	@ResponseBody
-	public InfoModel getInfoSession() {
-		return getInfoVersionOne();
+	public InfoModel getInfo() {
+		return modelUtils.getInfoModel();
 	}
 
 	//for non-admin angular layout pages

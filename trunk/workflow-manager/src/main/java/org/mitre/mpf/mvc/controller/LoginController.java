@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,7 +27,6 @@
 package org.mitre.mpf.mvc.controller;
 
 import org.mitre.mpf.mvc.model.AuthenticationModel;
-import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.rest.api.InfoModel;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.slf4j.Logger;
@@ -59,9 +58,6 @@ import java.util.Map;
 public class LoginController {
 
     private static final Logger log = LoggerFactory.getLogger(LoginController.class);
-
-    @Autowired
-    private SessionModel sessionModel;
 
     @Autowired
     private ModelUtils modelUtils;
@@ -130,8 +126,8 @@ public class LoginController {
             @RequestParam(value = "timeout", required = false) String timeout,
             HttpSession session, HttpServletRequest servletRequest) {
 
-        // clear sessionModel fields on logout or timeout for extra security
-        boolean clearSessionModel = false;
+        // invalidate session on logout or timeout for extra security
+        boolean clearSession = false;
 
         ModelAndView model = new ModelAndView("login_view");
         if (error != null) {
@@ -146,12 +142,12 @@ public class LoginController {
         } else if (logout != null) {
             log.debug("User logged out");
             model.addObject("msg", "You've been logged out successfully.");
-            clearSessionModel = true;
+            clearSession = true;
         } else if (timeout != null) {
             log.debug("Session timed out");
             model.addObject("msg", "Session timed out or expired.");
-            clearSessionModel = true;
-        } 
+            clearSession = true;
+        }
         
         //reset the first login of the user back to true here!
         AuthenticationModel authenticationModel = getAuthenticationModel(servletRequest);
@@ -160,13 +156,11 @@ public class LoginController {
         	firstLoginMap.put(authenticationModel.getUserPrincipalName(), true);
         }
         
-        if(clearSessionModel) {
+        if(clearSession) {
             session.invalidate();
 
             //necessary to prevent a user from recovering a session
             SecurityContextHolder.clearContext();
-
-        	sessionModel.getSessionJobsMap().clear();
         }
 
         // get version info
@@ -177,9 +171,9 @@ public class LoginController {
         return model;
     }
     
-	@RequestMapping(value = "/user/role-info", method = RequestMethod.GET)
-	@ResponseBody
+    @RequestMapping(value = "/user/role-info", method = RequestMethod.GET)
+    @ResponseBody
     public AuthenticationModel getSecurityCredentials(HttpServletRequest request /*needed for UserPrincipal*/) {
         return getAuthenticationModel(request);
-	}
+    }
 }

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -53,7 +53,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.*;
 
-// NOTE: Don't use @Scope("request") because we don't need to access to the sessionModel
+// NOTE: Don't use @Scope("request") because we don't need to access to the session
 // and the additional overhead associated with creating the log file maps per request.
 
 @Controller

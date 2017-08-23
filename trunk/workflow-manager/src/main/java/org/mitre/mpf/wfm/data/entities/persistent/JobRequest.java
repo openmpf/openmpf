@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -32,7 +32,7 @@ import javax.persistence.*;
 import java.util.Date;
 
 /**
- * This class includes the essential information which describes a job. Instances of this class are stored in a
+ * This class includes the essential information which describes a batch job. Instances of this class are stored in a
  * persistent data store (as opposed to a transient data store).
  */
 @Entity
@@ -40,9 +40,11 @@ public class JobRequest {
 
 	public JobRequest() { }
 
-	/** The unique numeric identifier for this job. */
+	/** The unique numeric identifier for this job.
+	 * Using SEQUENCE rather than IDENTITY to avoid conflicts between batch and streaming job Ids
+	 * */
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@GeneratedValue(strategy = GenerationType.SEQUENCE)
 	private long id;
 	public long getId() { return id; }
 

@@ -29,6 +29,8 @@ package org.mitre.mpf.wfm.data.entities.transients;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Joiner;
+import java.util.Comparator;
+import java.util.Comparator;
 import org.apache.commons.lang3.ObjectUtils;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.util.TextUtils;
@@ -47,8 +49,36 @@ import java.util.SortedMap;
  *
  * In the context of audio files, detections are not yet well-defined.
  * */
-public class Detection implements Comparable<Detection> {
-	private int x;
+public class Detection implements Comparable<Detection>, Comparator<Detection> {
+
+  /** Alternative Comparator developed for prioritizing Detections by (1) descending confidence, (2) ascending media frame offset, (3) ascending media time offset */
+  public static final Comparator<Detection> DetectionConfidenceComparator = new Comparator<Detection> () {
+    @Override
+    public int compare(Detection d1, Detection d2) {
+      // want to prioritize based on highest confidence, so we are sorting from high to low (i.e. descending) confidence
+      // by using diff of d2(confidence) minus d1(confidence)
+      // note importance of using the Detection.equals method for checking equivalency within this Comparator
+      float diff = d2.getConfidence() - d1.getConfidence();
+      if ( diff < 0 ) {
+        return -1;
+      } else if ( diff == 0 ) {
+        // if confidence is equal, then return using the natural order for Detections
+        return d1.compareTo(d2);
+      } else {
+        return 1;
+      }
+    }
+    @Override
+    public boolean equals(Object o) {
+      if ( o instanceof Detection ) {
+        return(this.equals((Detection)o));
+      } else {
+        return false;
+      }
+    }
+  };
+
+  private int x;
 	public int getX() { return x; }
 
 	private int y;
@@ -107,10 +137,23 @@ public class Detection implements Comparable<Detection> {
 		}
 	}
 
+  /** Define natural order Comparator for Detections to be sorted by (1) ascending media frame offset, (2) ascending media time offset
+   * @param d1 Detection to test
+   * @param d2 Detection to be compared to d1
+   */
+  @Override
+  public int compare(Detection d1, Detection d2) {
+    return d1.compareTo(d2);
+  }
+
+  /** Define natural order Comparable for Detections to be sorted by (1) ascending media frame offset, (2) ascending media time offset
+   * @param other Detection to be compared to this Detection
+   */
 	@Override
 	public int compareTo(Detection other) {
 		int comparison;
 		if(other == null) {
+      // kept original assumption that the other Detection is after this Detection if the other Detection is null
 			comparison = 1;
 		} else if((comparison = Integer.compare(mediaOffsetFrame, other.mediaOffsetFrame)) == 0 &&
 				(comparison = Integer.compare(mediaOffsetTime, other.mediaOffsetTime)) == 0 &&
@@ -122,6 +165,21 @@ public class Detection implements Comparable<Detection> {
 				(comparison = TextUtils.nullSafeCompare(artifactPath, other.artifactPath)) == 0 &&
 				(comparison = compareMap(detectionProperties,other.detectionProperties)) == 0) {
 			comparison = 0;
+    } else if ( this.mediaOffsetFrame < other.mediaOffsetFrame ) {
+      // This Detection is before the other Detection if this mediaOffsetFrame is less than the other mediaOffsetFrame
+      comparison = -1;
+    } else if ( this.mediaOffsetFrame > other.mediaOffsetFrame ) {
+      // This Detection is after the other Detection if this mediaOffsetFrame is greater than the other mediaOffsetFrame
+      comparison = 1;
+    } else if ( this.mediaOffsetTime < other.mediaOffsetTime ) {
+      // Secondary comparison, this Detection is before the other Detection if this mediaOffsetTime is less than the other mediaOffsetTime
+      comparison = -1;
+    } else if ( this.mediaOffsetTime > other.mediaOffsetTime ) {
+      // Secondary comparison, this Detection is after the other Detection if this mediaOffsetTime is greater than the other mediaOffsetTime
+      comparison = 1;
+    } else {
+      // If mediaOffsetFrame and mediaOffsetTime are equal, keep the original greater than assumption
+      comparison = 1;
 		}
 		return comparison;
 	}

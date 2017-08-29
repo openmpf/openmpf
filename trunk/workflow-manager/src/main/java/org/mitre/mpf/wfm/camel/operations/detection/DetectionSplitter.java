@@ -40,6 +40,7 @@ import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.segmenting.*;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.TimePair;
+import org.mitre.mpf.wfm.util.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +58,10 @@ public class DetectionSplitter implements StageSplitter {
 	private static final Logger log = LoggerFactory.getLogger(DetectionSplitter.class);
 	public static final String REF = "detectionStageSplitter";
 
-	@Autowired
+  @Autowired
+  protected TimeUtils timeUtils;
+
+  @Autowired
 	protected PropertiesUtil propertiesUtil;
 
 	@Autowired
@@ -133,7 +137,7 @@ public class DetectionSplitter implements StageSplitter {
 			List<TimePair> previousTrackTimePairs =
 					isFirstDetectionStage ?
 							Collections.singletonList(new TimePair(0, (transientMedia.getMediaType() == MediaType.AUDIO ? -1 : transientMedia.getLength() - 1))) :
-							createTimePairsForTracks(
+							timeUtils.createTimePairsForTracks(
 									redis.getTracks(transientJob.getId(), transientMedia.getId(), transientJob.getCurrentStage() - 1, 0));
 
 			// Iterate through each of the actions and segment the media using the properties provided in that action.
@@ -308,16 +312,6 @@ public class DetectionSplitter implements StageSplitter {
 			}
 		}
 		return isFirst;
-	}
-
-
-	private List<TimePair> createTimePairsForTracks(SortedSet<Track> tracks) {
-		List<TimePair> timePairs = new ArrayList<>();
-		for (Track track : tracks) {
-			timePairs.add(new TimePair(track.getStartOffsetFrameInclusive(), track.getEndOffsetFrameInclusive() + 1));
-		}
-		Collections.sort(timePairs);
-		return timePairs;
 	}
 
 	private Map<String, String> getAlgorithmProperties(String algorithmName) {

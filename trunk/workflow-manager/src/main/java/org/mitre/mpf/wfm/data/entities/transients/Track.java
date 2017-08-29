@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
+import java.util.Comparator;
 import org.apache.commons.lang3.StringUtils;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -34,6 +35,7 @@ import org.mitre.mpf.wfm.util.TextUtils;
 import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import org.mitre.mpf.wfm.util.TimePair;
 
 /**
  * A track is the logical grouping of detections of the same object as it appears at different offsets in a medium.
@@ -83,7 +85,7 @@ public class Track implements Comparable<Track> {
 	private String type;
 	public String getType() { return type; }
 
-	/** The ordered (by start index) collection of detections which correspond to the position of the object as it moves through the track. */
+	/** The natural ordered (by start index) collection of detections which correspond to the position of the object as it moves through the track. */
 	private SortedSet<Detection> detections;
 	public SortedSet<Detection> getDetections() { return detections; }
 	public void setDetections(SortedSet<Detection> detections) { this.detections = (detections == null) ? new TreeSet<Detection>() : detections; }
@@ -222,6 +224,49 @@ public class Track implements Comparable<Track> {
 			return comparisonResult;
 		}
 	}
+
+  /** Find the index of the specified detection when the Detection data is sorted by descending confidence
+   * Since a Detection Set may be sorted in various ways, and Sets don't naturally allow for indexing, this method provides that support for this usage.
+   * @param searchDetection Detection to search for after the Detection Set is sorted in the specified manner.
+   * @return index to the specified detection in the set of detections stored within this track, or -1 if the specified detection is not in the set of detections stored within this track
+   */
+  public int getDetectionIndexSortByConfidence(Detection searchDetection) {
+    SortedSet <Detection> sortedDetections = new TreeSet<Detection>(Detection.DetectionConfidenceComparator);
+    sortedDetections.addAll(getDetections());
+    return getDetectionIndex(searchDetection,sortedDetections);
+  }
+
+  /** Find the index of the specified detection when the Detection data is natively sorted by the Track
+   * Since a Detection Set may be sorted in various ways, and Sets don't naturally allow for indexing, this method provides that support for this usage.
+   * @param searchDetection Detection to search for after the Detection Set is sorted in the specified manner.
+   * @return index to the specified detection in the set of detections stored within this track, or -1 if the specified detection is not in the set of detections stored within this track
+   */
+  public int getDetectionIndexSortByNativeMethod(Detection searchDetection) {
+    return getDetectionIndex(searchDetection,getDetections());
+  }
+
+  /** Find the index of the specified detection when the Detection data has been previously sorted by a Comparator
+   * Since a Detection Set may be sorted in various ways, and Sets don't naturally allow for indexing, this method provides that support for this usage.
+   * @param searchDetection Detection to search for after the Detection Set is sorted in the specified manner.
+   * @param sortedDetections Detection data previously sorted by a Comparator
+   * @return index to the specified detection in the set of detections stored within this track, or -1 if the specified detection is not in the set of detections stored within this track
+   */
+	private int getDetectionIndex(Detection searchDetection, SortedSet <Detection> sortedDetections) {
+	  int index = -1;
+    Iterator <Detection> it = sortedDetections.iterator();
+    boolean found = false;
+    while ( it.hasNext() && !found ) {
+      index += 1;
+      if ( it.next().equals(searchDetection) ) {
+        found = true;
+      }
+    }
+    if ( !found ) {
+      return -1;
+    } else {
+      return index;
+    }
+  }
 
 	@Override
 	public String toString() {

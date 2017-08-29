@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.util;
 
-
 import org.javasimon.aop.Monitored;
 
 import org.slf4j.Logger;
@@ -34,54 +33,141 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.PriorityBlockingQueue;
 
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.FeedForwardTopConfidenceCountType;
 
 @Component(value = TimeUtils.REF)
 @Monitored
 public class TimeUtils {
+
 	public static final String REF = "timeUtils";
 	private static Logger log = LoggerFactory.getLogger(TimeUtils.class);
 
-	// TODO there might be a bug in this method, when forming the TimePair for the last segment it looks like TimePair:endOffsetFrameInclusive is too large (by 1)
-  // to support the feed-forward unit tests, had to copy method createTimePairsForTracks from DetectionSplitter, needed to form TimePair list from a set of sorted Tracks
-  private List<TimePair> createTimePairsForTracks(SortedSet<Track> tracks) {
+  /** Generate a sorted list of TimePairs from a set of sorted Tracks.
+   * This version of the method is generally used when feed-forward track is not enabled.
+   * @param tracks sorted Tracks
+   * @return sorted TimePair list
+   */
+  public List<TimePair> createTimePairsForTracks(SortedSet<Track> tracks) {
     List<TimePair> timePairs = new ArrayList<>();
     for (Track track : tracks) {
-      timePairs.add(new TimePair(track.getStartOffsetFrameInclusive(), track.getEndOffsetFrameInclusive() + 1));
+      // form TimePairs for the set of tracks. Note that frame offsets are inclusive so no adjustments are necessary
+      timePairs.add(new TimePair(track.getStartOffsetFrameInclusive(), track.getEndOffsetFrameInclusive()));
     }
     Collections.sort(timePairs);
     return timePairs;
   }
 
+  /** Generate a sorted list of TimePairs from a set of sorted Tracks, considering only those frames/detections within each track as specified by the topConfidenceCount value.
+   * This version of the method is generally used when feed-forward track is enabled.
+   * @param topConfidenceCount specification of which detections are to be used from the feed forward track.  Valid values are:
+   *  <ul>
+   *    <li>If topConfidenceCount is null or <=0, this method will use all of the detections in the feed-forward track.</li>
+   *    <li>If topConfidenceCount is equal to 1, this method will only use the exemplar in the feed-forward track (which, by definition, is the detection with the highest confidence).</li>
+   *    <li>If topConfidenceCount >1, this method will only use that many detections from the feed-forward track with the highest confidence. If the number
+   *    of Detections in the Track are less than or equal to topConfidenceCount, then all Detections will be used.</li>
+   *  </ul>
+   * @param targetSegmentLength preferred target segment length
+   * @param tracks sorted Tracks
+   * @return sorted TimePair list
+   */
+  public List<TimePair> createTimePairsForTracks(Integer topConfidenceCount, int targetSegmentLength, SortedSet<Track> tracks) {
+    List<TimePair> timePairs = new ArrayList<>();
+    for (Track track : tracks) {
+      // form TimePairs for the set of tracks. Note that frame offsets are inclusive so no adjustments are necessary
+      if ( topConfidenceCount == null || topConfidenceCount.intValue()<=0 || track.getDetections().size() < topConfidenceCount.intValue() ) {
+        // If topConfidenceCount is not set, or <= 0, or if number of detections in the track < topConfidenceCount, then use all of the detections in the feed-forward track.
+        timePairs.add(new TimePair(track.getStartOffsetFrameInclusive(), track.getEndOffsetFrameInclusive()));
+      } else if ( topConfidenceCount.intValue() == 1 ) {
+        // only use the exemplar to form the TimePair for the feed-forward track
+        Detection exemplarDetection = track.getExemplar();
+        int exemplarFrameOffsetInclusive = track.getStartOffsetFrameInclusive() + exemplarDetection.getMediaOffsetFrame();
+        timePairs.add(new TimePair(exemplarFrameOffsetInclusive,exemplarFrameOffsetInclusive));
+      } else {
+        // only use that many detections from the feed-forward track with the highest confidence
+        // the priority queue prioritizes Detections based on confidence, sorting high to low.
+        SortedSet<Detection> detections = track.getDetections();
+        PriorityQueue <Detection> priorityQueue = new PriorityQueue(detections.size(), Detection.DetectionConfidenceComparator);
+        priorityQueue.addAll(detections);
+
+        // Get the top <topConfidenceCount> detections from the priority queue or all detections from the priority queue if less than topConfidenceCount.
+        // Also, allow for creation of multiple TimePairs if topConfidenceCount>targetSegmentLength.
+
+        // First, poll highest confidence Detection from priority queue and remove it from the queue.  Initiate an unbounded TimePair from this Detection.
+        Detection highestConfidenceDetection = priorityQueue.poll();
+        int detectionCounter = 1;
+        TimePair timePair = new TimePair(track.getStartOffsetFrameInclusive() + highestConfidenceDetection.getMediaOffsetFrame());
+        Detection nextTopDetection = null;
+        // Process the remaining high confidence Detections, processing from highest to lowest confidence order
+        while (!priorityQueue.isEmpty() && detectionCounter < topConfidenceCount.intValue()) {
+          // poll from highest to lowest confidence Detection from priority queue until we process <topConfidenceCount> blocks of the top detections.
+          // Note that polling seems to be our only option,
+          // Iterator doesn't guarantee ordering and there isn't a "get" method offered for Set.
+          nextTopDetection = priorityQueue.poll();
+          detectionCounter += 1;
+          if ( timePair.isClosedTimePair() ) {
+            // if the last current TimePair was closed during the last iteration, start a new TimePair using this Detection.
+            timePair = new TimePair(track.getStartOffsetFrameInclusive() + nextTopDetection.getMediaOffsetFrame());
+          }
+          if (detectionCounter % targetSegmentLength == 0) {
+            // close a current TimePair if unbounded, otherwise start a new TimePair.
+            if (timePair.isUnboundedTimePair()) {
+              // close the current TimePair and add it to the set of TimePairs
+              timePair.setEndInclusive(track.getStartOffsetFrameInclusive() + nextTopDetection.getMediaOffsetFrame());
+              timePairs.add(timePair);
+              // Do an early break if topConfidenceCount<=targetSegmentLength, we only want to form a single TimePair in this case
+              if ( topConfidenceCount.intValue() <= targetSegmentLength ) {
+                break;
+              }
+            }
+          }
+        }
+        // check the last TimePair that was created, and close it if unbounded.
+        if (timePair.isUnboundedTimePair()) {
+          // close the last TimePair using the last top detection and add it to the set of TimePairs
+          timePair.setEndInclusive(track.getStartOffsetFrameInclusive() + nextTopDetection.getMediaOffsetFrame());
+          timePairs.add(timePair);
+
+        }
+      }
+    }
+    Collections.sort(timePairs);
+    return timePairs;
+  }
+
+
+
   /** Generate the segments for the next stage. This version of the method should be called when feed-forward is enabled, as it
    * will prevent overlapping TimePairs from being merged and will use the confidence available in the Track Detections
    * in conjunction with feedForwardTopConfidenceCount to form the TimePair segments for the next stage.
    * These segments which will each be fed into a subjob for the next stage.
+   * @param topConfidenceCount specification of which detections are to be used from the feed forward track.  Valid values are:
+   *  <ul>
+   *    <li>If topConfidenceCount is null or <=0, this method will use all of the detections in the feed-forward track.</li>
+   *    <li>If topConfidenceCount is equal to 1, this method will only use the exemplar in the feed-forward track (which, by definition, is the detection with the highest confidence).</li>
+   *    <li>If topConfidenceCount >1, this method will only use that many detections from the feed-forward track with the highest confidence.</li>
+   *  </ul>
    * @param trackSet Collection of feed forward tracks
-   * @param feedForwardTopConfidenceCount selection of which detections are to be used from the feed forward track
    * @param targetSegmentLength The preferred size of each segment. If this value is less than or equal to 0, no segmenting will be performed.
-   * When the feed-forward option is used, the segment size may exceed this length, This is because only the frames associated with
+   * Note that when the feed-forward option is used, the segment size may exceed this length, This is because only the frames associated with
    * top-confidence detections will be processed, so only those frames will count against the desired segment size.
    * @param minSegmentLength  The minimum size of a segment.
    * @return returns the list of segment TimePairs.  The list may be empty if the input collection is empty or null.
    */
-  public List<TimePair> createSegments(SortedSet<Track> trackSet, FeedForwardTopConfidenceCountType feedForwardTopConfidenceCount, int targetSegmentLength, int minSegmentLength) {
+  public List<TimePair> createSegments(Integer topConfidenceCount, SortedSet<Track> trackSet, int targetSegmentLength, int minSegmentLength) {
     if (trackSet == null || trackSet.size() == 0) {
       // If the input collection was empty (or null), no segments should be returned.
       return new ArrayList<TimePair>();
     }
 
-    // form collection of start and stop times for each track
-    List<TimePair> timePairs = createTimePairsForTracks(trackSet);
+    // form collection of start and stop times for each track, using topConfidenceCount to reduce the set of frames within each track as specified by the topConfidenceCount value
+    List<TimePair> timePairs = createTimePairsForTracks(topConfidenceCount, targetSegmentLength, trackSet);
 
     // Create a copy of the input timePairs list and sort it.
     List<TimePair> tracks = new ArrayList<TimePair>(timePairs);
     Collections.sort(tracks);
-
-    // TODO add processing required for handling feedForwardTopConfidenceCount options
 
     // Begin building the result list.
     List<TimePair> result = new ArrayList<TimePair>();
@@ -91,18 +177,35 @@ public class TimeUtils {
       if (current == null) {
         current = nextTrack;
       } else {
-        // this version of the method (i.e. for usage with feed-forward) differs from the other implementation,
-        // in that segments are not checked for overlaps, and are not merged
-        result.addAll(segment(current, targetSegmentLength, minSegmentLength));
+        // this version of createSegments differs from the other implementation,
+        // in that segments are not checked for overlap so they are not merged.
+        // Also for feed-forward, if topConfidenceCount>1 then only the <topConfidenceCount> detections with the highest confidence will be processed, so we
+        // can effectively just process the track as a single segment containing all of the top detections, since the lower confidence detections should be ignored.
+        // To do this, we can adjust the requested target signal length to be the index to the last high confidence detection
+        if ( topConfidenceCount.intValue() > 1 && topConfidenceCount.intValue() >= targetSegmentLength ) {
+          result.addAll(segment(current, current.getEndInclusive()-current.getStartInclusive(), minSegmentLength));
+        } else {
+          result.addAll(segment(current, targetSegmentLength, minSegmentLength));
+        }
         current = nextTrack;
       }
     }
 
-    result.addAll(segment(current, targetSegmentLength, minSegmentLength));
+    // this version of createSegments differs from the other implementation,
+    // in that segments are not checked for overlap so they are not merged.
+    // Also for feed-forward, if topConfidenceCount>1 then only the <topConfidenceCount> detections with the highest confidence will be processed, so we
+    // can effectively just process the track as a single segment containing all of the top detections, since the lower confidence detections should be ignored.
+    // To do this, we can adjust the requested target signal length to be the index to the last high confidence detection
+    if ( topConfidenceCount.intValue() > 1 && topConfidenceCount.intValue() >= targetSegmentLength ) {
+      result.addAll(segment(current, current.getEndInclusive()-current.getStartInclusive(), minSegmentLength));
+    } else {
+      result.addAll(segment(current, targetSegmentLength, minSegmentLength));
+    }
+
     return result;
   }
 
-	/** Generate the segments for the next stage. This version of the method will merge overlapping time pairs and is typically used when feed-forward is not enabled.
+	/** Generate the segments for the next stage. This version of the method will merge overlapping time pairs and should be used when feed-forward is not enabled.
 	 * @param inputs Collection of start and stop times for each track
    * @param targetSegmentLength The preferred size of each segment. If this value is less than or equal to 0, no segmenting will be performed.
    * When the feed-forward option is used, the segment size may exceed this length, This is because only the frames associated with

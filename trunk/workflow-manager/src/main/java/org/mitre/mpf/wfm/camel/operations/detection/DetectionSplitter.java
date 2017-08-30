@@ -133,7 +133,8 @@ public class DetectionSplitter implements StageSplitter {
 
 			// If this is the first detection stage in the pipeline, we should segment the entire media for detection.
 			// If this is not the first detection stage, we should build segments based off of the previous stage's
-			// tracks.
+			// tracks. Note that the TimePairs created for these Tracks use the non-feed-forward version of timeUtils.createTimePairsForTracks
+      // TODO look here for any modifications required to be made to support feed-forward
 			List<TimePair> previousTrackTimePairs =
 					isFirstDetectionStage ?
 							Collections.singletonList(new TimePair(0, (transientMedia.getMediaType() == MediaType.AUDIO ? -1 : transientMedia.getLength() - 1))) :
@@ -169,38 +170,38 @@ public class DetectionSplitter implements StageSplitter {
 				}
 				modifiedMap.putAll(transientJob.getOverriddenJobProperties());
 
-				// overriding by AlgorithmProperties.  Note that algorithm-properties are of type
-                // Map<String,Map>, so the transform properties to be overridden are actually in the value section of the Map returned
-                // by transientJob.getOverriddenAlgorithmProperties().  This is handled here.
-                // Note that the intent is to override ALL transform properties if ANY single transform properties is overridden
+        // overriding by AlgorithmProperties.  Note that algorithm-properties are of type
+        // Map<String,Map>, so the transform properties to be overridden are actually in the value section of the Map returned
+        // by transientJob.getOverriddenAlgorithmProperties().  This is handled here.
+        // Note that the intent is to override ALL transform properties if ANY single transform properties is overridden
 
-                // If ANY transform setting is provided at a given level, all transform settings for lower levels are overridden.
-				// The reason is that transform settings interact oddly with each other sometimes.  In the case where auto-flip is
-				// turned on, for instance, a region of interest provided without that in mind might be looking in the wrong area
-				// of a flipped image.
+        // If ANY transform setting is provided at a given level, all transform settings for lower levels are overridden.
+        // The reason is that transform settings interact oddly with each other sometimes.  In the case where auto-flip is
+        // turned on, for instance, a region of interest provided without that in mind might be looking in the wrong area
+        // of a flipped image.
 
-                // By policy, we say that if any transform settings are defined in a given properties map,
-                // all applicable transform properties must be defined there
+        // By policy, we say that if any transform settings are defined in a given properties map,
+        // all applicable transform properties must be defined there
 
-                // Note: only want to consider the algorithm from algorithm properties that corresponds to the current
-                // action being processed.  Which algorithm (i.e. action) that is being processed
-                // is available using transientAction.getAlgorithm().  So, see if our algorithm properties include
-                // override of the action (i.e. algorithm) that we are currently processing
-                // Note that this implementation depends on algorithm property keys matching what would be returned by transientAction.getAlgorithm()
-                if ( transientJob.getOverriddenAlgorithmProperties().keySet().contains(transientAction.getAlgorithm()) ) {
-                    // this transient job contains the a algorithm property which may override what is in our current action
-                    Map job_alg_m =  transientJob.getOverriddenAlgorithmProperties().get(transientAction.getAlgorithm());
-                    // see if any of these algorithm properties are transform properties.  If so, clear the
-                    // current set of transform properties from the map to allow for this algorithm properties to
-                    // override the current settings
-                    for (String key : transformProperties) {
-                        if ( job_alg_m.keySet().contains(key) ) {
-                            clearTransformPropertiesFromMap(modifiedMap);
-                            break;
-                        }
-                    }
-                    modifiedMap.putAll(job_alg_m);
-                }
+        // Note: only want to consider the algorithm from algorithm properties that corresponds to the current
+        // action being processed.  Which algorithm (i.e. action) that is being processed
+        // is available using transientAction.getAlgorithm().  So, see if our algorithm properties include
+        // override of the action (i.e. algorithm) that we are currently processing
+        // Note that this implementation depends on algorithm property keys matching what would be returned by transientAction.getAlgorithm()
+        if (transientJob.getOverriddenAlgorithmProperties().keySet().contains(transientAction.getAlgorithm())) {
+          // this transient job contains the a algorithm property which may override what is in our current action
+          Map job_alg_m = transientJob.getOverriddenAlgorithmProperties().get(transientAction.getAlgorithm());
+          // see if any of these algorithm properties are transform properties.  If so, clear the
+          // current set of transform properties from the map to allow for this algorithm properties to
+          // override the current settings
+          for (String key : transformProperties) {
+            if (job_alg_m.keySet().contains(key)) {
+              clearTransformPropertiesFromMap(modifiedMap);
+              break;
+            }
+          }
+          modifiedMap.putAll(job_alg_m);
+        }
 
 				for (String key : transformProperties) {
 					if (transientMedia.getMediaSpecificProperties().containsKey(key)) {
@@ -209,7 +210,6 @@ public class DetectionSplitter implements StageSplitter {
 					}
 				}
 				modifiedMap.putAll(transientMedia.getMediaSpecificProperties());
-
 
 				SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
 				List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);

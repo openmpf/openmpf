@@ -80,10 +80,10 @@ public class TestSegmenting {
     int targetSegmentLength = 10;
     int minSegmentLength = 1;
     Track testTrack = new Track(jobId,mediaId,stageIndex,actionIndex,startOffsetFrameInclusive,endOffsetFrameInclusive,type);
-    SortedSet<Detection> testDetections = new TreeSet<Detection>();
     SortedMap<String, String> detectionProperties = new TreeMap<String,String>();
-    Integer topConfidenceCount = 10;
+    Integer topConfidenceCount = 10; // specify that 10 of the top confidence detections should be used for feed-forward
     int confidence; // for this test, variation of confidence does matter.  In Example 1, the top confidence detections are in the first <targetSegmentLength> frames
+    SortedSet<Detection> testDetections = new TreeSet<Detection>();
     for ( int i=startOffsetFrameInclusive; i<=endOffsetFrameInclusive; i++ ) {
       int x=i;
       int y=i;
@@ -151,10 +151,75 @@ public class TestSegmenting {
       TimePair timePair = resultsEx.get(i);
       expectedStartIndex = i*targetSegmentLength;
       expectedEndIndex = expectedStartIndex + targetSegmentLength - 1;
-      Assert.assertTrue("FeedForward check Ex1a assertion failed, segment number "+i+" timePair="+timePair,timePair.getStartInclusive() == expectedStartIndex && timePair.getEndInclusive() == expectedEndIndex);
+      Assert.assertTrue("FeedForward check Ex1b assertion failed, segment number "+i+" timePair="+timePair,timePair.getStartInclusive() == expectedStartIndex && timePair.getEndInclusive() == expectedEndIndex);
+    }
+
+    // Example 1c, move top detections to middle of detection set, starting at Detection offset 8 (less than targetSegmentLength).
+    topConfidenceCount = 10; // specify that 10 of the top confidence detections should be used for feed-forward in this test
+    testDetections = new TreeSet<Detection>();
+    boolean isRemoved = testTrackSet.remove(testTrack); // remove the testTrack placed for the last set of tests so we can re-add it to run this test.
+    Assert.assertTrue("FeedForward check Ex1c assertion failed, removal of the testTrack from the testTrackSet failed",isRemoved);
+    testTrack.setDetections(null); // clear out old Detections from the testTrack
+    int detectionShift = 8;
+    for ( int i=startOffsetFrameInclusive; i<=endOffsetFrameInclusive; i++ ) {
+      int x=i;
+      int y=1000+i;
+      int offsetFrame=i;
+      int offsetTime=i;
+      if ( i >= (detectionShift-1) && i < (detectionShift+targetSegmentLength-1) ) {
+        confidence = 60 + i; // high confidence, increasing with the number of detections for the first <targetSegmentLength> frames
+      } else {
+        confidence = i < 30 ? 30 - i : 0; // low confidence, decreasing with the number of detections for the remainder of the frames
+      }
+      // add the detection to the frame, in Example 1c all frames have a detection, and the top confidence <topConfidenceCount> detections are the 8-18 <topConfidenceCount> detections
+      Detection testDetection = new Detection(x,y,offsetFrame,offsetTime,confidence,i,i,detectionProperties);
+      if ( i == (detectionShift+targetSegmentLength-1) ) {
+        // save the Detection at index 8+targetSegmentLength as the Exemplar
+        testTrack.setExemplar(testDetection);
+      }
+      testDetections.add(testDetection);
+    }
+
+    // store the detections in the Track
+    testTrack.setDetections(testDetections);
+
+    // form collection of start and stop times for each track using the feed-forward enabled version of TimeUtils.createSegments.
+    testTrackSet.add(testTrack);
+    resultsEx = timeUtils.createSegments(topConfidenceCount, testTrackSet, targetSegmentLength, minSegmentLength);
+
+    expectedNumSegments = 1; // for this test, the top <topConfidenceCount> == <targetSegmentLength}, we expect to only get 1 segment
+    Assert.assertTrue("FeedForward check Ex1c assertion failed, expected "+expectedNumSegments+" segments, but got "+resultsEx.size()+" segments",resultsEx.size()==expectedNumSegments);
+
+    // there should be frames 7-16 in the single segment,
+    expectedStartIndex = detectionShift-1;
+    expectedEndIndex = expectedStartIndex + targetSegmentLength - 1;
+    if ( resultsEx.size() == 1) {
+      TimePair timePair = resultsEx.get(0);
+      Assert.assertTrue("FeedForward check Ex1c assertion failed, for single segment timePair="+timePair,timePair.getStartInclusive() == expectedStartIndex && timePair.getEndInclusive() == expectedEndIndex);
+    }
+
+    // Test Ex1d, where targetSegmentLength>1 and targetSegmentLength>topConfidenceCount
+    targetSegmentLength = 9;
+    topConfidenceCount = 3;
+    // form collection of start and stop times for each track using the feed-forward enabled version of TimeUtils.createSegments.
+    testTrackSet.add(testTrack);
+    resultsEx = timeUtils.createSegments(topConfidenceCount, testTrackSet, targetSegmentLength, minSegmentLength);
+
+    expectedNumSegments = 1; // for this test, we expect to only get 1 segment
+    Assert.assertTrue("FeedForward check Ex1d assertion failed, expected "+expectedNumSegments+" segments, but got "+resultsEx.size()+" segments",resultsEx.size()==expectedNumSegments);
+
+    // since Detection confidence is increasing in Detections (detectionShift-1):(detectionShift-1+targetSegmentLength),
+    // there should be frames (detectionShift+(targetSegmentLength-topConfidenceCount)):(detectionShift-1+targetSegmentLength) in the single segment for this test
+    expectedStartIndex = detectionShift+(targetSegmentLength-topConfidenceCount);
+    expectedEndIndex = detectionShift+targetSegmentLength-1;
+    if ( resultsEx.size() == 1 ) {
+      TimePair timePair = resultsEx.get(0);
+      Assert.assertTrue("FeedForward check Ex1d assertion failed, for single segment with timePair="+timePair,timePair.getStartInclusive() == expectedStartIndex && timePair.getEndInclusive() == expectedEndIndex);
     }
 
     // Example 2: segments to include frames that don't have missing detections,  Frames containing detections with top confidence are evenly dispersed within the track
+    targetSegmentLength = 10;
+    topConfidenceCount = 10;
     testTrackSet = new TreeSet<>();
     jobId = 2;
     mediaId = 2L;
@@ -183,7 +248,6 @@ public class TestSegmenting {
     testTrack.setDetections(testDetections);
     testTrackSet.add(testTrack);
 
-    topConfidenceCount = 10;
     resultsEx = timeUtils.createSegments(topConfidenceCount, testTrackSet, targetSegmentLength, minSegmentLength);
 
     // for this test, the top <topConfidenceCount> == <targetSegmentLength}, we expect to only get 1 segment but the length of that segment should be > targetSegmentLength

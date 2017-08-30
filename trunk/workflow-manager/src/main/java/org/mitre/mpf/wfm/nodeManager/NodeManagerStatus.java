@@ -26,19 +26,20 @@
 
 package org.mitre.mpf.wfm.nodeManager;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
 import org.jgroups.Address;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.AtmosphereChannel;
 import org.mitre.mpf.nms.*;
-import org.mitre.mpf.nms.ChannelReceiver.NodeTypes;
 import org.mitre.mpf.nms.NodeManagerConstants.States;
+import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -47,21 +48,20 @@ import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
 
 @Component
 public class NodeManagerStatus implements ClusterChangeNotifier {
 
 	private static final Logger log = LoggerFactory.getLogger(NodeManagerStatus.class);
 
-	@Value("${activemq.hostname}")
-	private String activeMqHostname;
-
 	@Autowired
 	private PropertiesUtil propertiesUtil;
 
 	@Autowired
 	private MasterNode masterNode;
+
+	@Autowired
+	private StreamingJobRequestBo streamingJobRequestBo;
 
 	private volatile boolean isRunning = false;
 
@@ -74,7 +74,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 			isRunning = true;
 		}
 		try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
-			if (masterNode.loadConfigFile(inStream, activeMqHostname)) {
+			if (masterNode.loadConfigFile(inStream, propertiesUtil.getActiveMqUri())) {
 				masterNode.launchAllNodes();
 			}
 		}
@@ -132,15 +132,13 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 		for (Address addr : masterNode.getCurrentNodeManagerHosts()) {
 			String name = addr.toString();
 			//If it's a node manager then track it, it's name contains the machine name upon which it resides
-			Matcher mo = ChannelReceiver.FQN_PATTERN.matcher(name);
-			if (!mo.matches()) {
-				log.debug("\tNot well formed name, skipping {}", name);
+			Pair<String, NodeTypes> hostNodeTypePair = AddressParser.parse(addr);
+			if (hostNodeTypePair == null) {
 				continue;
 			}
 			//see if we know what type this is
-			NodeTypes ntype = NodeTypes.lookup(mo.group(1));
-			if(ntype != null && ntype == NodeTypes.NodeManager) {
-				String mgrHost = mo.group(2);
+			if(hostNodeTypePair.getRight() == NodeTypes.NodeManager) {
+				String mgrHost = hostNodeTypePair.getLeft();
 				availableNodeManagerHostsAddressMap.put(mgrHost, addr);
 			}
 		}
@@ -294,5 +292,11 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 			serviceDescriptorMap.remove(serviceDescriptor.getName());
 			broadcast( serviceDescriptor, "OnServiceReadyToRemove" );
 		}
-	}	
+	}
+
+	@Override
+	public void streamingJobExited(StreamingJobExitedMessage message) {
+		// TODO: Determine appropriate JobStatus
+//		streamingJobRequestBo.jobCompleted(message.jobId, JobStatus.CANCELLED);
+	}
 }

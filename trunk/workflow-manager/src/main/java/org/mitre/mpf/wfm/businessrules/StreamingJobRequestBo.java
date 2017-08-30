@@ -26,15 +26,15 @@
 
 package org.mitre.mpf.wfm.businessrules;
 
-import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
+import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-
-import java.util.List;
-import java.util.Map;
+import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
+
+import java.util.Map;
 
 public interface StreamingJobRequestBo {
 
@@ -79,4 +79,7 @@ public interface StreamingJobRequestBo {
 	 * @throws WfmProcessingException
 	 */
 	boolean cancel(long jobId, boolean doCleanup) throws WfmProcessingException;
+
+
+	public void jobCompleted(long jobId, JobStatus jobStatus);
 }

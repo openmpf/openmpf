@@ -27,6 +27,10 @@
 package org.mitre.mpf.nms;
 
 import org.jgroups.Message;
+import org.mitre.mpf.nms.streaming.MasterStreamingJobManager;
+import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
+import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
+import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,16 +42,26 @@ public class MasterNodeStateManager extends ChannelReceiver {
 
     private static final Logger LOG = LoggerFactory.getLogger(MasterNodeStateManager.class);
 
+    private final MasterStreamingJobManager streamingJobManager;
+
+
     @Autowired
-    public MasterNodeStateManager(NodeManagerProperties properties, ChannelNode channelNode) {
+    public MasterNodeStateManager(NodeManagerProperties properties, ChannelNode channelNode,
+                                  MasterStreamingJobManager streamingJobManager) {
         super(properties, channelNode);
+        this.streamingJobManager = streamingJobManager;
     }
 
 
     @Override
     public void receive(Message msg) {
         Object obj = msg.getObject();
-        if (obj instanceof ServiceStatusUpdate) {
+        if (obj instanceof StreamingJobExitedMessage) {
+            StreamingJobExitedMessage exitMessage = (StreamingJobExitedMessage) obj;
+            streamingJobManager.streamingJobExited(exitMessage);
+            getNotifier().streamingJobExited(exitMessage);
+        }
+        else if (obj instanceof ServiceStatusUpdate) {
             ServiceStatusUpdate nsu = (ServiceStatusUpdate) obj;
             //System.out.println("I received a node status update: " + nsu.getNodeName() + " : " + nsu.getTheNode().getLastKnownState());
 
@@ -217,5 +231,15 @@ public class MasterNodeStateManager extends ChannelReceiver {
             LOG.error("Received interrupt during shutdown. Ignoring interrupt since already shutting down", e);
             Thread.currentThread().interrupt();
         }
+    }
+
+
+    public void startStreamingJob(StreamingJobLaunchMessage launchMessage) {
+        streamingJobManager.startJob(launchMessage, getRunningNodes());
+    }
+
+
+    public void stopStreamingJob(StopStreamingJobMessage message) {
+        streamingJobManager.stopJob(message);
     }
 }

@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.nms;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Receiver;
@@ -33,6 +34,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.io.Serializable;
+import java.util.List;
 
 /**
  * Light-weight access class for connecting to a JGroups channel
@@ -82,7 +86,7 @@ public class ChannelNode {
      * @param address : dest address or NULL for bcast
      * @param object : object to send (any serializeable)
      */
-    public void send(Address address, Object object) {
+    public void send(Address address, Serializable object) {
         // send
         try {
             channel.send(address, object);
@@ -91,7 +95,7 @@ public class ChannelNode {
         }
     }
 
-    public void broadcast(Object object) {
+    public void broadcast(Serializable object) {
         send(null, object);
     }
 
@@ -104,6 +108,45 @@ public class ChannelNode {
     }
 
     public boolean isConnected() { return isConnected; }
+
+
+
+    public void sendToChild(String hostname, Serializable message) {
+        Address nodeAddress = getNodeAddress(hostname, NodeTypes.NodeManager);
+        send(nodeAddress, message);
+    }
+
+    private Address getNodeAddress(String hostname, NodeTypes nodeType) {
+        Pair<String, NodeTypes> searchPair = Pair.of(hostname, nodeType);
+        return getChannel().getView().getMembers().stream()
+                .filter(addr -> searchPair.equals(AddressParser.parse(addr)))
+                .findAny()
+                .orElse(null);
+    }
+
+
+    public void sendToMaster(Serializable message) {
+        try {
+            channel.send(getMasterNodeAddress(), message);
+        }
+        catch (Exception e) {
+        	throw new IllegalStateException(e);
+        }
+    }
+
+
+    private Address getMasterNodeAddress() {
+        List<Address> memberAddresses = getChannel().getView().getMembers();
+        for (Address address : memberAddresses) {
+            Pair<String, NodeTypes> hostType = AddressParser.parse(address);
+            if (hostType != null && hostType.getRight() == NodeTypes.MasterNode) {
+                return address;
+            }
+        }
+        throw new IllegalStateException("Unable to locate master node.");
+    }
+
+
 
     /**
      * Shut down the baseNode cleanly

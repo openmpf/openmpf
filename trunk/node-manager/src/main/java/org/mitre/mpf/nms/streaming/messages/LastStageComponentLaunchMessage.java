@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2016 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,55 +24,43 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.nms;
+package org.mitre.mpf.nms.streaming.messages;
 
-import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
+import java.io.Serializable;
+import java.util.Map;
 
-public interface ClusterChangeNotifier {
+public class LastStageComponentLaunchMessage extends ComponentLaunchMessage implements Serializable {
 
-    /**
-     * Called when a new node-manager appears on the network
-     *
-     * @param hostname
-     */
-    public void newManager(String hostname);
+	public final String newTrackAlertQueue;
 
-    /**
-     * Called when a known node-manager is shutdown
-     *
-     * @param hostname
-     */
-    public void managerDown(String hostname);
+	public final String summaryReportQueue;
 
-    /**
-     * Called when a new processing service (process) appears on the network
-     *
-     * @param service
-     */
-    public void newService(ServiceDescriptor service);
+	public LastStageComponentLaunchMessage(
+			long jobId,
+			String componentName,
+			int stage,
+			String libraryPath,
+			Map<String, String> environmentVariables,
+			int numInstances,
+			Map<String, String> jobProperties,
+			String segmentInputQueue,
+			String frameInputQueue,
+			String frameOutputQueue,
+			String newTrackAlertQueue,
+			String summaryReportQueue) {
 
-    /**
-     * Called when an existing service (process) on a node is shutdown
-     *
-     * @param service
-     */
-    public void serviceDown(ServiceDescriptor service);
+		super(jobId,
+		      componentName,
+		      stage,
+		      libraryPath,
+		      environmentVariables,
+		      numInstances,
+		      jobProperties,
+		      segmentInputQueue,
+		      frameInputQueue,
+		      frameOutputQueue);
 
-    /**
-     * Called when an existing service (process) on a node changes state somehow (e.g. launching or running)
-     *
-     * @param service
-     */
-    public void serviceChange(ServiceDescriptor service);
-
-    /**
-     * Called when an existing service (process) has been removed from the node manager config via the master node, 
-     * has been shut down, and ready to be removed from the service table if desired
-     *
-     * @param service
-     */
-	public void serviceReadyToRemove(ServiceDescriptor serviceDescriptor);
-
-
-	public void streamingJobExited(StreamingJobExitedMessage message);
+		this.newTrackAlertQueue = newTrackAlertQueue;
+		this.summaryReportQueue = summaryReportQueue;
+	}
 }

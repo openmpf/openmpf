@@ -63,6 +63,10 @@ public class StreamingJobCreationRequest {
 		return stream.getSegmentSize();
 	}
 
+	public int getFrameDataBufferSize() {
+		return stream.getFrameDataBufferSize();
+	}
+
 	public Map<String, String> getJobProperties() {
 		return jobProperties;
 	}

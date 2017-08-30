@@ -199,8 +199,11 @@ public class StreamingJobController {
                     priority = streamingJobCreationRequest.getPriority();
                 }
               
-                JsonStreamingInputObject json_stream = new JsonStreamingInputObject(streamingJobCreationRequest.getStreamUri(),
-                        streamingJobCreationRequest.getSegmentSize(), streamingJobCreationRequest.getMediaProperties());
+                JsonStreamingInputObject json_stream = new JsonStreamingInputObject(
+                        streamingJobCreationRequest.getStreamUri(),
+                        streamingJobCreationRequest.getSegmentSize(),
+                        streamingJobCreationRequest.getFrameDataBufferSize(),
+                        streamingJobCreationRequest.getMediaProperties());
 
                 JsonStreamingJobRequest jsonStreamingJobRequest = mpfService.createStreamingJob(json_stream,
                         streamingJobCreationRequest.getAlgorithmProperties(),

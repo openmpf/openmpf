@@ -24,53 +24,61 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api;
+package org.mitre.mpf.nms.streaming;
 
-import java.util.HashMap;
+import org.mitre.mpf.nms.NodeManagerProperties;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
-public class JobCreationStreamData {
+@Component
+public class StreamingProcessFactory {
 
-    private String streamUri;
-    public JobCreationStreamData() {}
-    public JobCreationStreamData(String uri) {
-        setStreamUri(uri);
-    }
-    public String getStreamUri() {
-        return streamUri;
-    }
-    public void setStreamUri(String streamUri) {
-        this.streamUri = streamUri;
-    }
+	private final NodeManagerProperties _properties;
 
-    private Map<String,String> mediaProperties = new HashMap<>();
-    public Map<String, String> getMediaProperties() {
-        return mediaProperties;
-    }
-    public void setMediaProperties(Map<String, String> mediaProperties) {
-        this.mediaProperties = mediaProperties;
-    }
+	@Autowired
+	public StreamingProcessFactory(NodeManagerProperties properties) {
+		_properties = properties;
+	}
 
-    private int segmentSize = 0;
-    public void setSegmentSize(int segmentSize) { this.segmentSize=segmentSize; }
-    public int getSegmentSize() { return segmentSize; }
 
-    private int frameDataBufferSize;
-    public void setFrameDataBufferSize(int frameDataBufferSize) { this.frameDataBufferSize = frameDataBufferSize; }
-    public int getFrameDataBufferSize() { return frameDataBufferSize; }
+	public StreamingProcess createFrameReaderProcess(Path iniPath) {
+		return createProcess("FrameReader", _properties.getStreamingFrameReaderExecutable(), iniPath);
+	}
 
-    /** this method will check the current settings within this job creation stream data,
-     * and will return true if the current settings are set within the constraints defined for
-     * streaming job data, false otherwise
-     * @return true if settings define a valid streaming job data, false otherwise.
-     */
-    public boolean isValidStreamData() {
-        // do error checks on the streaming job data
-        if ( getSegmentSize() >= 10 && getStreamUri() != null ) {
-            return true;
-        } else {
-            return false;
-        }
-    }
 
+	public StreamingProcess createVideoWriterProcess(Path iniPath) {
+		return createProcess("VideoWriter", _properties.getStreamingVideoWriterExecutable(), iniPath);
+	}
+
+	public StreamingProcess createComponentProcess(Path iniPath, Map<String, String> environmentVariables) {
+		return createProcess("Component", _properties.getStreamingComponentExecutor(), iniPath,
+		                     environmentVariables);
+	}
+
+
+
+	private StreamingProcess createProcess(String name, String executable, Path iniPath) {
+		return createProcess(name, executable, iniPath, Collections.emptyMap());
+	}
+
+
+	private StreamingProcess createProcess(String name, String executable, Path iniPath,
+	                                       Map<String, String> environmentVariables) {
+		// TODO: Remove python as first command line argument
+		List<String> cmdlineArgs = Arrays.asList("python", executable, name, iniPath.toString());
+//		List<String> cmdlineArgs = Arrays.asList(executable, name, iniPath.toString());
+
+
+		ProcessBuilder processBuilder = new ProcessBuilder(cmdlineArgs)
+				.redirectErrorStream(true);
+		processBuilder.environment().putAll(environmentVariables);
+
+		return new StreamingProcess(name, processBuilder, _properties.getStreamingProcessMaxRestarts());
+	}
 }

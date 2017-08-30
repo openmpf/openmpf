@@ -121,8 +121,8 @@ public class PropertiesUtil {
 	public boolean isAmqBrokerEnabled() { return amqBrokerEnabled; }
 
 	@Value("${jmx.amq.broker.uri}")
-	private String amqBrokerUri;
-	public String getAmqBrokerUri() { return amqBrokerUri; }
+	private String amqBrokerJmxUri;
+	public String getAmqBrokerJmxUri() { return amqBrokerJmxUri; }
 
 	@Value("${jmx.amq.broker.admin.username}")
 	private String amqBrokerAdminUsername;
@@ -498,6 +498,14 @@ public class PropertiesUtil {
 	public FileSystemResource getCustomPropertiesFile() {
 		return customPropertiesFile;
 	}
+
+
+	@Value("${mpf.output.objects.activemq.hostname}")
+	private String activeMqUri;
+	public String getActiveMqUri() {
+		return activeMqUri;
+	}
+
 
 	private void createConfigFiles() throws IOException {
 		if (!mediaTypesFile.exists()) {

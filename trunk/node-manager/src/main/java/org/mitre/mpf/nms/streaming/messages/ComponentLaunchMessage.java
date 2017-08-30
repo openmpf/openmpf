@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2016 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,48 +24,56 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.interop;
+package org.mitre.mpf.nms.streaming.messages;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-@JsonTypeName("StreamingInputObject")
-public class JsonStreamingInputObject {
+@SuppressWarnings("PublicField")
+public class ComponentLaunchMessage implements Serializable {
 
-    @JsonPropertyDescription("The URI for this stream object.")
-    private String streamUri;
-    public String getStreamUri() { return streamUri; }
+	public final long jobId;
 
-    @JsonPropertyDescription("The segment size to be applied to this stream.")
-    private int segmentSize;
-    public int getSegmentSize() { return segmentSize; }
+	public final String componentName;
 
-    private int frameDataBufferSize;
-    public int getFrameDataBufferSize() { return frameDataBufferSize; }
+	public final int stage;
 
-    @JsonPropertyDescription("A map of medium-specific properties that override algorithm properties.")
-    private Map<String,String> mediaProperties;
-    public Map<String,String> getMediaProperties() { return mediaProperties; }
-    public void addProperty(String key, String value){
-        mediaProperties.put(key, value);
-    }
+	public final String libraryPath;
 
-    @JsonCreator
-    public JsonStreamingInputObject(
-            @JsonProperty("streamUri") String streamUri,
-            @JsonProperty("segmentSize") int segmentSize,
-            @JsonProperty("frameDataBufferSize") int frameDataBufferSize,
-            @JsonProperty("mediaProperties") Map<String, String> mediaProperties) {
+	public final Map<String, String> environmentVariables;
 
-        this.streamUri = streamUri;
-        this.segmentSize = segmentSize;
-        this.frameDataBufferSize = frameDataBufferSize;
-        this.mediaProperties = mediaProperties;
-    }
+	public final int numInstances;
 
+	public final Map<String, String> jobProperties;
+
+	public final String segmentInputQueue;
+
+	public final String frameInputQueue;
+
+	public final String frameOutputQueue;
+
+	public ComponentLaunchMessage(
+			long jobId,
+			String componentName,
+			int stage,
+			String libraryPath,
+			Map<String, String> environmentVariables,
+			int numInstances,
+			Map<String, String> jobProperties,
+			String segmentInputQueue,
+			String frameInputQueue,
+			String frameOutputQueue) {
+
+		this.jobId = jobId;
+		this.componentName = componentName;
+		this.stage = stage;
+		this.libraryPath = libraryPath;
+		this.environmentVariables = new HashMap<>(environmentVariables);
+		this.numInstances = numInstances;
+		this.jobProperties = new HashMap<>(jobProperties);
+		this.segmentInputQueue = segmentInputQueue;
+		this.frameInputQueue = frameInputQueue;
+		this.frameOutputQueue = frameOutputQueue;
+	}
 }

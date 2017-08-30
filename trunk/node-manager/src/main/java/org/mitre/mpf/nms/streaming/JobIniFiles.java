@@ -24,48 +24,47 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.interop;
+package org.mitre.mpf.nms.streaming;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.google.common.collect.ImmutableTable;
+import com.google.common.collect.Table;
+import org.springframework.util.FileSystemUtils;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.file.Path;
 
-@JsonTypeName("StreamingInputObject")
-public class JsonStreamingInputObject {
+public class JobIniFiles {
 
-    @JsonPropertyDescription("The URI for this stream object.")
-    private String streamUri;
-    public String getStreamUri() { return streamUri; }
+	private final Path _jobIniDir;
 
-    @JsonPropertyDescription("The segment size to be applied to this stream.")
-    private int segmentSize;
-    public int getSegmentSize() { return segmentSize; }
+	private final Path _frameReaderIniPath;
 
-    private int frameDataBufferSize;
-    public int getFrameDataBufferSize() { return frameDataBufferSize; }
+	private final Path _videoWriterIniPath;
 
-    @JsonPropertyDescription("A map of medium-specific properties that override algorithm properties.")
-    private Map<String,String> mediaProperties;
-    public Map<String,String> getMediaProperties() { return mediaProperties; }
-    public void addProperty(String key, String value){
-        mediaProperties.put(key, value);
-    }
+	private final ImmutableTable<String, Integer, Path> _componentIniPaths;
 
-    @JsonCreator
-    public JsonStreamingInputObject(
-            @JsonProperty("streamUri") String streamUri,
-            @JsonProperty("segmentSize") int segmentSize,
-            @JsonProperty("frameDataBufferSize") int frameDataBufferSize,
-            @JsonProperty("mediaProperties") Map<String, String> mediaProperties) {
 
-        this.streamUri = streamUri;
-        this.segmentSize = segmentSize;
-        this.frameDataBufferSize = frameDataBufferSize;
-        this.mediaProperties = mediaProperties;
-    }
+	public JobIniFiles(Path jobIniDir, Path frameReaderIniPath, Path videoWriterIniPath,
+	                   Table<String, Integer, Path> componentIniPaths) {
+		_jobIniDir = jobIniDir;
+		_frameReaderIniPath = frameReaderIniPath;
+		_videoWriterIniPath = videoWriterIniPath;
+		_componentIniPaths = ImmutableTable.copyOf(componentIniPaths);
+	}
 
+
+	public Path getFrameReaderIniPath() {
+		return _frameReaderIniPath;
+	}
+
+	public Path getVideoWriterIniPath() {
+		return _videoWriterIniPath;
+	}
+
+	public Path getComponentIniPath(String componentName, int stage) {
+		return _componentIniPaths.get(componentName, stage);
+	}
+
+	public void deleteIniFiles() {
+		FileSystemUtils.deleteRecursively(_jobIniDir.toFile());
+	}
 }

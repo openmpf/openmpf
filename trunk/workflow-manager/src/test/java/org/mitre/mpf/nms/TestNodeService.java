@@ -31,18 +31,25 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
+import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
-import org.mitre.mpf.nms.xml.Service;
+import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.nodeManager.NodeManagerStatus;
 import org.mitre.mpf.wfm.service.NodeManagerService;
+import org.mitre.mpf.wfm.service.StreamingJobMessageSenderImpl;
 import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import java.util.*;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -60,6 +67,38 @@ public class TestNodeService {
 
     @Autowired
     private NodeManagerStatus nodeManagerStatus;
+
+    @Autowired
+    private StreamingJobMessageSenderImpl jobSender;
+
+
+
+    @Test
+    public void testMessageSend() throws InterruptedException {
+        TransientStage stage1 = new TransientStage("stage1", "description", ActionType.DETECTION);
+        stage1.getActions().add(new TransientAction("Action1", "descrption", "FACECV"));
+
+        TransientStage stage2 = new TransientStage("stage2", "description", ActionType.DETECTION);
+        stage2.getActions().add(new TransientAction("Action2", "descrption", "FACECV"));
+
+        TransientPipeline pipeline = new TransientPipeline("PipelineNAme", "desc");
+        pipeline.getStages().add(stage1);
+        pipeline.getStages().add(stage2);
+
+
+        TransientStream stream = new TransientStream(124, "stream://thestream");
+        TransientStreamingJob streamingJob = new TransientStreamingJob(
+                123, "ext id", pipeline, 1, 1, false, "mydir",
+                false);
+        streamingJob.setStream(stream);
+
+        jobSender.launchJob(streamingJob);
+        Thread.sleep(1000);
+        jobSender.stopJob(123);
+
+        Thread.sleep(30000);
+    }
+
 
     @Test
     public void testAddAndRemoveNode() throws Exception {

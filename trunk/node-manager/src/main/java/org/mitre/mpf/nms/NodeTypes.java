@@ -24,48 +24,25 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.interop;
+package org.mitre.mpf.nms;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
+public enum NodeTypes {
 
-@JsonTypeName("StreamingInputObject")
-public class JsonStreamingInputObject {
+	ReceiverNode, NodeManager, MasterNode;
 
-    @JsonPropertyDescription("The URI for this stream object.")
-    private String streamUri;
-    public String getStreamUri() { return streamUri; }
 
-    @JsonPropertyDescription("The segment size to be applied to this stream.")
-    private int segmentSize;
-    public int getSegmentSize() { return segmentSize; }
+	private static final Logger LOG = LoggerFactory.getLogger(NodeTypes.class);
 
-    private int frameDataBufferSize;
-    public int getFrameDataBufferSize() { return frameDataBufferSize; }
 
-    @JsonPropertyDescription("A map of medium-specific properties that override algorithm properties.")
-    private Map<String,String> mediaProperties;
-    public Map<String,String> getMediaProperties() { return mediaProperties; }
-    public void addProperty(String key, String value){
-        mediaProperties.put(key, value);
-    }
-
-    @JsonCreator
-    public JsonStreamingInputObject(
-            @JsonProperty("streamUri") String streamUri,
-            @JsonProperty("segmentSize") int segmentSize,
-            @JsonProperty("frameDataBufferSize") int frameDataBufferSize,
-            @JsonProperty("mediaProperties") Map<String, String> mediaProperties) {
-
-        this.streamUri = streamUri;
-        this.segmentSize = segmentSize;
-        this.frameDataBufferSize = frameDataBufferSize;
-        this.mediaProperties = mediaProperties;
-    }
-
+	public static NodeTypes lookup(String name) {
+		try {
+			return NodeTypes.valueOf(name);
+		} catch (IllegalArgumentException iae) {
+			LOG.warn(String.format("Failed to lookup node type with name: %s", name), iae);
+			return null;
+		}
+	}
 }

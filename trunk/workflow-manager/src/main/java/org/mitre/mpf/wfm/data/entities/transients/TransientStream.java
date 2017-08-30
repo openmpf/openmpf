@@ -87,8 +87,12 @@ public class TransientStream {
 	public String getMediaProperty(String key) { return mediaProperties.get(key); }
 
 	private int segmentSize;
-	public void setSegmentSize(int segment_size) { segmentSize = segment_size; }
+	public void setSegmentSize(int segmentSize) { this.segmentSize = segmentSize; }
 	public int getSegmentSize() { return segmentSize; }
+
+	private int frameDataBufferSize;
+	public void setFrameDataBufferSize(int frameDataBufferSize) { this.frameDataBufferSize = frameDataBufferSize; }
+	public int getFrameDataBufferSize() { return frameDataBufferSize; }
 
 	@JsonIgnore
 	public MediaType getMediaType() { return MediaType.VIDEO; }

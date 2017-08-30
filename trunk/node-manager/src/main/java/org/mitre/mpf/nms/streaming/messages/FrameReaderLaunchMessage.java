@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2016 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -23,56 +23,59 @@
  * See the License for the specific language governing permissions and        *
  * limitations under the License.                                             *
  ******************************************************************************/
-package org.mitre.mpf.nms;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.stereotype.Component;
+package org.mitre.mpf.nms.streaming.messages;
 
-@Component
-public class NodeManager implements Runnable {
+import java.io.Serializable;
 
-    private static final Logger LOG = LoggerFactory.getLogger(NodeManager.class);
+public class FrameReaderLaunchMessage implements Serializable {
 
-    private final ChildNodeStateManager nodeStateManager;
+	public final long jobId;
 
+	public final String streamUri;
 
-    @Autowired
-    public NodeManager(ChildNodeStateManager nodeStateManager) {
-        this.nodeStateManager = nodeStateManager;
-    }
+	public final int segmentSize;
 
+	public final int frameDataBufferSize;
 
-    @Override
-    public void run() {
-        nodeStateManager.startReceiving(NodeTypes.NodeManager, "NodeManager");
-        nodeStateManager.run();
+	public final long stallTimeout;
 
-        nodeStateManager.shutdown();
-    }
+	public final String messageBrokerUri;
 
+	public final String segmentOutputQueue;
+
+	public final String componentFrameQueue;
+
+	public final String videoWriterFrameQueue;
+
+	public final String releaseFrameQueue;
+
+	public final String stallAlertQueue;
 
 
-    public static void main(String[] args) {
-        LOG.info("NodeManager started");
+	public FrameReaderLaunchMessage(
+			long jobId,
+			String streamUri,
+			int segmentSize,
+			int frameDataBufferSize,
+			long stallTimeout,
+			String messageBrokerUri,
+			String segmentOutputQueue,
+			String componentFrameQueue,
+			String videoWriterFrameQueue,
+			String releaseFrameQueue,
+			String stallAlertQueue) {
 
-        // Log that we are being shutdown, but more hooks are found during process launches in BaseNodeLauncher
-        Runtime.getRuntime().addShutdownHook(new Thread(
-                () -> LOG.info("NodeManager shutdown")));
-
-
-        try (ClassPathXmlApplicationContext context
-                     = new ClassPathXmlApplicationContext("applicationContext-nm.xml")) {
-            context.registerShutdownHook();
-
-            NodeManagerProperties properties = context.getBean(NodeManagerProperties.class);
-            if (properties.isNodeStatusPageEnabled()) {
-                context.getBean(NodeStatusHttpServer.class).start();
-            }
-
-            context.getBean(NodeManager.class).run();
-        }
-    }
+		this.jobId = jobId;
+		this.streamUri = streamUri;
+		this.segmentSize = segmentSize;
+		this.frameDataBufferSize = frameDataBufferSize;
+		this.stallTimeout = stallTimeout;
+		this.messageBrokerUri = messageBrokerUri;
+		this.segmentOutputQueue = segmentOutputQueue;
+		this.componentFrameQueue = componentFrameQueue;
+		this.videoWriterFrameQueue = videoWriterFrameQueue;
+		this.releaseFrameQueue = releaseFrameQueue;
+		this.stallAlertQueue = stallAlertQueue;
+	}
 }

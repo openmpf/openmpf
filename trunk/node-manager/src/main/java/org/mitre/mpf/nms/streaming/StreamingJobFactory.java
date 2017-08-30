@@ -24,48 +24,47 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.interop;
+package org.mitre.mpf.nms.streaming;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.mitre.mpf.nms.streaming.messages.ComponentLaunchMessage;
+import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
-@JsonTypeName("StreamingInputObject")
-public class JsonStreamingInputObject {
+@Component
+public class StreamingJobFactory {
 
-    @JsonPropertyDescription("The URI for this stream object.")
-    private String streamUri;
-    public String getStreamUri() { return streamUri; }
+	private final StreamingProcessFactory _processFactory;
+	private final IniManager _iniManager;
 
-    @JsonPropertyDescription("The segment size to be applied to this stream.")
-    private int segmentSize;
-    public int getSegmentSize() { return segmentSize; }
+	@Autowired
+	public StreamingJobFactory(StreamingProcessFactory processFactory, IniManager iniManager) {
+		_processFactory = processFactory;
+		_iniManager = iniManager;
+	}
 
-    private int frameDataBufferSize;
-    public int getFrameDataBufferSize() { return frameDataBufferSize; }
 
-    @JsonPropertyDescription("A map of medium-specific properties that override algorithm properties.")
-    private Map<String,String> mediaProperties;
-    public Map<String,String> getMediaProperties() { return mediaProperties; }
-    public void addProperty(String key, String value){
-        mediaProperties.put(key, value);
-    }
+	public StreamingJob createJob(StreamingJobLaunchMessage launchMessage) {
+		JobIniFiles jobIniFiles = _iniManager.createJobIniFiles(launchMessage);
+		StreamingProcess frameReader = _processFactory.createFrameReaderProcess(jobIniFiles.getFrameReaderIniPath());
+		StreamingProcess videoWriter = _processFactory.createVideoWriterProcess(jobIniFiles.getVideoWriterIniPath());
 
-    @JsonCreator
-    public JsonStreamingInputObject(
-            @JsonProperty("streamUri") String streamUri,
-            @JsonProperty("segmentSize") int segmentSize,
-            @JsonProperty("frameDataBufferSize") int frameDataBufferSize,
-            @JsonProperty("mediaProperties") Map<String, String> mediaProperties) {
+		List<StreamingProcess> componentProcesses = new ArrayList<>();
+		for (ComponentLaunchMessage componentMessage : launchMessage.componentLaunchMessages) {
+			for (int i = 0; i < componentMessage.numInstances; i++) {
+				Path componentIniPath = jobIniFiles.getComponentIniPath(componentMessage.componentName,
+				                                                        componentMessage.stage);
+				componentProcesses.add(_processFactory.createComponentProcess(
+						componentIniPath, componentMessage.environmentVariables));
 
-        this.streamUri = streamUri;
-        this.segmentSize = segmentSize;
-        this.frameDataBufferSize = frameDataBufferSize;
-        this.mediaProperties = mediaProperties;
-    }
+			}
+		}
 
+		return new StreamingJob(launchMessage.jobId, jobIniFiles, frameReader, videoWriter, componentProcesses);
+
+	}
 }

@@ -24,48 +24,49 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.interop;
+package org.mitre.mpf.nms;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.apache.commons.lang3.tuple.Pair;
+import org.jgroups.Address;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-@JsonTypeName("StreamingInputObject")
-public class JsonStreamingInputObject {
 
-    @JsonPropertyDescription("The URI for this stream object.")
-    private String streamUri;
-    public String getStreamUri() { return streamUri; }
+public class AddressParser {
 
-    @JsonPropertyDescription("The segment size to be applied to this stream.")
-    private int segmentSize;
-    public int getSegmentSize() { return segmentSize; }
+	private static final Logger LOG = LoggerFactory.getLogger(AddressParser.class);
 
-    private int frameDataBufferSize;
-    public int getFrameDataBufferSize() { return frameDataBufferSize; }
+	public static final char FQN_SEP = ':';
 
-    @JsonPropertyDescription("A map of medium-specific properties that override algorithm properties.")
-    private Map<String,String> mediaProperties;
-    public Map<String,String> getMediaProperties() { return mediaProperties; }
-    public void addProperty(String key, String value){
-        mediaProperties.put(key, value);
-    }
+	private static final Pattern FQN_PATTERN = Pattern.compile("^([^:]+):([^:]+):(.*)");
 
-    @JsonCreator
-    public JsonStreamingInputObject(
-            @JsonProperty("streamUri") String streamUri,
-            @JsonProperty("segmentSize") int segmentSize,
-            @JsonProperty("frameDataBufferSize") int frameDataBufferSize,
-            @JsonProperty("mediaProperties") Map<String, String> mediaProperties) {
+	private AddressParser() {
+	}
 
-        this.streamUri = streamUri;
-        this.segmentSize = segmentSize;
-        this.frameDataBufferSize = frameDataBufferSize;
-        this.mediaProperties = mediaProperties;
-    }
 
+	public static Pair<String, NodeTypes> parse(Address address) {
+		String addrString = address.toString();
+		Matcher matcher = FQN_PATTERN.matcher(addrString);
+
+		if (!matcher.matches() || matcher.groupCount() < 3) {
+			LOG.warn("Address {} is not well formed.", address);
+			return null;
+		}
+
+		NodeTypes nodeType = NodeTypes.lookup(matcher.group(1));
+		if (nodeType == null) {
+			LOG.warn("Unknown Node Type: {}", matcher.group(1));
+			return null;
+		}
+		String addrHost = matcher.group(2);
+		return Pair.of(addrHost, nodeType);
+	}
+
+
+	public static String createFqn(NodeTypes nodeType, String host, String description) {
+		return nodeType.name() + FQN_SEP + host + FQN_SEP + description;
+	}
 }

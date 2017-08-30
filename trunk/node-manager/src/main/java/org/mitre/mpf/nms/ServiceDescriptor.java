@@ -26,14 +26,14 @@
 
 package org.mitre.mpf.nms;
 
+import org.mitre.mpf.nms.NodeManagerConstants.ServiceTypes;
+import org.mitre.mpf.nms.xml.Service;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import static org.mitre.mpf.nms.ChannelReceiver.FQN_SEP;
 
-import org.mitre.mpf.nms.NodeManagerConstants.ServiceTypes;
-import org.mitre.mpf.nms.xml.Service;
+import static org.mitre.mpf.nms.AddressParser.FQN_SEP;
 
 
 /**

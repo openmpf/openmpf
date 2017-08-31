@@ -55,7 +55,6 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                     url: "jobs-paged",
                     type: "POST",
                     data: function (d) {//extra params
-                        d.useSession = false;
                         d.search = d.search.value;
                     }
                 },

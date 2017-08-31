@@ -27,6 +27,10 @@
 package org.mitre.mpf.wfm.enums;
 
 public class MpfEndpoints {
+
+    // TODO need to add the queue for accepting summary reports
+    // TODO need to add the queue for accepting new track alerts.
+
     public static final String
             ARTIFACT_EXTRACTION_WORK_QUEUE = "jms:MPF.ARTIFACT_EXTRACTION_WORK_QUEUE",
             MEDIA_INSPECTION_ENTRY_POINT = "jms:MPF.MEDIA_INSPECTION",

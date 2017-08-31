@@ -33,12 +33,16 @@ import org.junit.Rule;
 import org.junit.rules.ErrorCollector;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
+import org.mitre.mpf.interop.*;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
@@ -96,13 +100,17 @@ public abstract class TestSystem {
 	@Qualifier(JobRequestBoImpl.REF)
 	protected JobRequestBo jobRequestBo;
 
+	@Autowired
+	@Qualifier(StreamingJobRequestBoImpl.REF)
+	protected StreamingJobRequestBo streamingJobRequestBo;
+
     @Autowired
     private MpfService mpfService;
 
     @Autowired
     protected PipelineService pipelineService;
 
-    @Autowired
+	@Autowired
 	@Qualifier(JobCompleteProcessorImpl.REF)
 	private JobCompleteProcessor jobCompleteProcessor;
 
@@ -249,6 +257,18 @@ public abstract class TestSystem {
                 buildOutput, priority);
         long jobRequestId = mpfService.submitJob(jsonJobRequest);
         Assert.assertTrue(waitFor(jobRequestId));
+		return jobRequestId;
+	}
+
+	protected long runPipelineOnStream(String pipelineName, JsonStreamingInputObject stream, Map<String, String> jobProperties, boolean buildOutput, int priority,
+									   long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout) throws Exception {
+		JsonStreamingJobRequest jsonStreamingJobRequest = streamingJobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, stream,
+				Collections.emptyMap(), jobProperties,
+				buildOutput, priority,
+				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
+				null,null,null,null);
+		long jobRequestId = mpfService.submitJob(jsonStreamingJobRequest);
+		Assert.assertTrue(waitFor(jobRequestId));
 		return jobRequestId;
 	}
 

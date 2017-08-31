@@ -1,25 +1,11 @@
 /******************************************************************************
  * NOTICE                                                                     *
- * *
+ *                                                                            *
  * This software (or technical data) was produced for the U.S. Government     *
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
- * *
+ *                                                                            *
  * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
- * <p>
- * Copyright 2017 The MITRE Corporation                                       *
- * *
- * Licensed under the Apache License, Version 2.0 (the "License");            *
- * you may not use this file except in compliance with the License.           *
- * You may obtain a copy of the License at                                    *
- * *
- * http://www.apache.org/licenses/LICENSE-2.0                              *
- * *
- * Unless required by applicable law or agreed to in writing, software        *
- * distributed under the License is distributed on an "AS IS" BASIS,          *
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
- * See the License for the specific language governing permissions and        *
- * limitations under the License.                                             *
  ******************************************************************************/
 
 /******************************************************************************
@@ -60,7 +46,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
-import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.NIOUtils;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
@@ -94,12 +79,9 @@ public class MarkupController {
     private MpfService mpfService;
 
     @Autowired
-    private SessionModel sessionModel;
-
-    @Autowired
     private JsonUtils jsonUtils;
 
-    private List<MarkupResultModel> getMarkupResultsJsonVersionOne(Long jobId) {
+    private List<MarkupResultModel> getMarkupResultsJson(Long jobId) {
         //all MarkupResult objects
         List<MarkupResultModel> markupResultModels = new ArrayList<MarkupResultModel>();
         for (MarkupResult markupResult : mpfService.getAllMarkupResults()) {
@@ -117,7 +99,7 @@ public class MarkupController {
     @RequestMapping(value = "/markup/results", method = RequestMethod.GET)
     @ResponseBody
     public List<MarkupResultModel> getMarkupResultsJsonSession(@ApiParam(value = "Job id - OPTIONAL") @RequestParam(value = "jobId", required = false) Long jobId) {
-        return getMarkupResultsJsonVersionOne(jobId);
+        return getMarkupResultsJson(jobId);
     }
 
     //https://datatables.net/manual/server-side#Sent-parameters

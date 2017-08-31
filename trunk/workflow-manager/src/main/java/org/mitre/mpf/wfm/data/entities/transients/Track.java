@@ -96,17 +96,16 @@ public class Track implements Comparable<Track> {
 	/**
 	 * Creates a new track instance with the given immutable parameters.
 	 *
-	 * @param jobId                     The job with which this track is associated.
-	 * @param mediaId                   The medium with which this track is associated.
-	 * @param stageIndex                The stage of the pipeline containing the action with which
-	 *                                     this track is associated.
-	 * @param actionIndex               The index of the action in the stage of the pipeline which created this track.
+	 * @param jobId The job with which this track is associated.
+	 * @param mediaId The medium with which this track is associated.
+	 * @param stageIndex The stage of the pipeline containing the action with which this track is associated.
+	 * @param actionIndex The index of the action in the stage of the pipeline which created this track.
 	 * @param startOffsetFrameInclusive The zero-based index where the track begins in the medium.
 	 *                                     Frame number is relevant for image and video files.
-	 * @param endOffsetFrameInclusive   The zero-based and inclusive stop index where the track ends in the medium.
+	 * @param endOffsetFrameInclusive The zero-based and inclusive stop index where the track ends in the medium.
 	 *                                     Frame number is relevant for image and video files.
-	 * @param type                      The type of object associated with this track. This value is trimmed (to null)
-	 *                                     and converted to uppercase for convenience.
+	 * @param type The type of object associated with this track. This value is trimmed (to null)
+	 *                  and converted to uppercase for convenience.
 	 */
 	public Track(
 			long jobId,
@@ -123,21 +122,20 @@ public class Track implements Comparable<Track> {
 	/**
 	 * Creates a new track instance with the given immutable parameters.
 	 *
-	 * @param jobId                     The job with which this track is associated.
-	 * @param mediaId                   The medium with which this track is associated.
-	 * @param stageIndex                The stage of the pipeline containing the action with which this
-	 *                                     track is associated.
-	 * @param actionIndex               The index of the action in the stage of the pipeline which created this track.
+	 * @param jobId The job with which this track is associated.
+	 * @param mediaId The medium with which this track is associated.
+	 * @param stageIndex The stage of the pipeline containing the action with which this track is associated.
+	 * @param actionIndex The index of the action in the stage of the pipeline which created this track.
 	 * @param startOffsetFrameInclusive The zero-based index where the track begins in the medium.
-	 *                                     Frame number is relevant for image and video files.
-	 * @param endOffsetFrameInclusive   The zero-based and inclusive stop index where the track ends in the medium.
-	 *                                     Frame number is relevant for image and video files.
-	 * @param startOffsetTimeInclusive  The zero-based index where the track begins in the medium.
-	 *                                     Time is given in milliseconds, and is relevant for video and audio files.
-	 * @param endOffsetTimeInclusive    The zero-based and inclusive stop index where the track ends in the medium.
-	 *                                     Time is given in milliseconds, and is relevant for video and audio files.
-	 * @param type                      The type of object associated with this track.
-	 *                                     This value is trimmed (to null) and converted to uppercase for convenience.
+	 *                                      Frame number is relevant for image and video files.
+	 * @param endOffsetFrameInclusive The zero-based and inclusive stop index where the track ends in the medium.
+	 *                                      Frame number is relevant for image and video files.
+	 * @param startOffsetTimeInclusive The zero-based index where the track begins in the medium.
+	 *                                      Time is given in milliseconds, and is relevant for video and audio files.
+	 * @param endOffsetTimeInclusive The zero-based and inclusive stop index where the track ends in the medium.
+	 *                                      Time is given in milliseconds, and is relevant for video and audio files.
+	 * @param type The type of object associated with this track.
+	 *                  This value is trimmed (to null) and converted to uppercase for convenience.
 	 */
 	@JsonCreator
 	public Track(

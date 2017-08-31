@@ -27,16 +27,13 @@
 package org.mitre.mpf.wfm.util;
 
 import org.javasimon.aop.Monitored;
-
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.concurrent.PriorityBlockingQueue;
-
-import org.mitre.mpf.wfm.data.entities.transients.Detection;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
 
 @Component(value = TimeUtils.REF)
 @Monitored
@@ -90,7 +87,10 @@ public class TimeUtils {
         // only use that many detections from the feed-forward track with the highest confidence
         // the priority queue prioritizes Detections based on confidence, sorting high to low.
         SortedSet<Detection> detections = track.getDetections();
-        PriorityQueue <Detection> priorityQueue = new PriorityQueue(detections.size(), Detection.DetectionConfidenceComparator);
+        PriorityQueue <Detection> priorityQueue = new PriorityQueue<>(
+        		detections.size(),
+		        Comparator.comparingDouble(Detection::getConfidence).reversed()
+				        .thenComparing(Comparator.naturalOrder()));
         priorityQueue.addAll(detections);
 
         // Get the top <topConfidenceCount> detections from the priority queue or all detections from the priority queue if less than topConfidenceCount.

@@ -28,24 +28,21 @@ package org.mitre.mpf.wfm.data.entities.transients;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.commons.lang3.ObjectUtils;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.util.TextUtils;
 
-import java.util.Comparator;
-import java.util.Objects;
-import java.util.SortedMap;
+import java.util.*;
 
 /**
  * A Detection is the representation of an object which was found at a certain "position" in a medium.
  *
- * In the context of videos, a detection includes the frame number (mediaOffsetFrame) of the video where the object appears
- * as well as the bounding box of the object in the frame.
+ * In the context of videos, a detection includes the frame number (mediaOffsetFrame) of the video where the object
+ * appears as well as the bounding box of the object in the frame.
  *
  * In the context of images, detections are effectively treated as if they originated from a single-frame video.
  *
  * In the context of audio files, detections are not yet well-defined.
- * */
+ */
 public class Detection implements Comparable<Detection> {
 
 	private final int x;
@@ -78,10 +75,20 @@ public class Detection implements Comparable<Detection> {
 
 	private ArtifactExtractionStatus artifactExtractionStatus = ArtifactExtractionStatus.NOT_ATTEMPTED;
 	public ArtifactExtractionStatus getArtifactExtractionStatus() { return artifactExtractionStatus; }
-	public void setArtifactExtractionStatus(ArtifactExtractionStatus artifactExtractionStatus) { this.artifactExtractionStatus = artifactExtractionStatus; }
+	public void setArtifactExtractionStatus(ArtifactExtractionStatus artifactExtractionStatus) {
+		this.artifactExtractionStatus = artifactExtractionStatus;
+	}
 
 	@JsonCreator
-	public Detection(@JsonProperty("x") int x, @JsonProperty("y") int y, @JsonProperty("width") int width, @JsonProperty("height") int height, @JsonProperty("confidence") float confidence, @JsonProperty("mediaOffsetFrame") int mediaOffsetFrame, @JsonProperty("mediaOffsetTime") int mediaOffsetTime, @JsonProperty("detectionProperties") SortedMap<String, String> detectionProperties) {
+	public Detection(
+			@JsonProperty("x") int x,
+			@JsonProperty("y") int y,
+			@JsonProperty("width") int width,
+			@JsonProperty("height") int height,
+			@JsonProperty("confidence") float confidence,
+			@JsonProperty("mediaOffsetFrame") int mediaOffsetFrame,
+			@JsonProperty("mediaOffsetTime") int mediaOffsetTime,
+			@JsonProperty("detectionProperties") SortedMap<String, String> detectionProperties) {
 		this.x = x;
 		this.y = y;
 		this.width = width;
@@ -94,33 +101,56 @@ public class Detection implements Comparable<Detection> {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(x,y,width,height,confidence,mediaOffsetFrame,mediaOffsetTime,detectionProperties);
+		return Objects.hash(x, y, width, height, confidence, mediaOffsetFrame, mediaOffsetTime, detectionProperties);
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if(!(obj instanceof Detection)) {
+		if (!(obj instanceof Detection)) {
 			return false;
 		}
-		Detection casted = (Detection)obj;
+		Detection casted = (Detection) obj;
 		return compareTo(casted) == 0;
 	}
 
 
 
-  private static final Comparator<Detection> DEFAULT_COMPARATOR = Comparator
-		  .nullsFirst(Comparator
-				  .comparingInt(Detection::getMediaOffsetFrame)
-				  .thenComparingInt(Detection::getMediaOffsetTime)
-				  .thenComparingInt(Detection::getX)
-				  .thenComparingInt(Detection::getY)
-				  .thenComparingInt(Detection::getWidth)
-				  .thenComparingInt(Detection::getHeight)
-				  .thenComparingDouble(Detection::getConfidence)
-				  .thenComparing(Detection::getArtifactPath, TextUtils::nullSafeCompare)
-				  .thenComparing(Detection::getDetectionProperties, Detection::compareMap));
+	private static final Comparator<Map.Entry<String, String>> ENTRY_COMPARATOR =
+			Map.Entry.<String, String>comparingByKey()
+					.thenComparing(Map.Entry.comparingByValue());
 
-	/** Define natural order Comparable for Detections to be sorted by (1) ascending media frame offset, (2) ascending media time offset
+	private static final Comparator<Map<String, String>> MAP_COMPARATOR = Comparator
+		.nullsFirst(Comparator
+			.<Map<String, String>>comparingInt(Map::size)
+			.thenComparing((m1, m2) -> {
+
+				Iterator<Map.Entry<String, String>> iter1 = m1.entrySet().iterator();
+				Iterator<Map.Entry<String, String>> iter2 = m2.entrySet().iterator();
+				while (iter1.hasNext()) {
+					int entryCompare = ENTRY_COMPARATOR.compare(iter1.next(), iter2.next());
+					if (entryCompare != 0) {
+						return entryCompare;
+					}
+				}
+				return 0;
+			}));
+
+	private static final Comparator<Detection> DEFAULT_COMPARATOR = Comparator
+		.nullsFirst(Comparator
+			.comparingInt(Detection::getMediaOffsetFrame)
+			.thenComparingInt(Detection::getMediaOffsetTime)
+			.thenComparingInt(Detection::getX)
+			.thenComparingInt(Detection::getY)
+			.thenComparingInt(Detection::getWidth)
+			.thenComparingInt(Detection::getHeight)
+			.thenComparingDouble(Detection::getConfidence)
+			.thenComparing(Detection::getArtifactPath, TextUtils::nullSafeCompare)
+			.thenComparing(Detection::getDetectionProperties, MAP_COMPARATOR));
+
+	/**
+	 * Define natural order Comparable for Detections to be sorted by (1) ascending media frame offset, (2) ascending
+	 * media time offset
+	 *
 	 * @param other Detection to be compared to this Detection
 	 */
 	@Override
@@ -129,36 +159,16 @@ public class Detection implements Comparable<Detection> {
 	}
 
 	public String toString() {
-		return String.format("%s#<bounds=(%d, %d, %d, %d), confidence=%f, mediaOffsetFrame=%d, mediaOffsetTime=%d, detection properties='%s'>",
-				this.getClass().getName(), x, y, (x + width), (y + width), confidence, mediaOffsetFrame, mediaOffsetTime,
-				TextUtils.mapToStringValues(detectionProperties));
-	}
-
-
-	private static int compareMap(SortedMap<String, String> map1, SortedMap<String, String> map2) {
-		if (map1 == null && map2 == null) {
-			return 0;
-		} else if (map1 == null) {
-			return -1;
-		} else if (map2 == null) {
-			return 1;
-		} else {
-			int result = 0;
-			if ((result = Integer.compare(map1.size(),map2.size())) != 0) {
-				return result;
-			}
-			StringBuilder map1Str = new StringBuilder();
-			for (String key : map1.keySet()) {
-				map1Str.append(key).append(map1.get(key));
-			}
-			StringBuilder map2Str = new StringBuilder();
-			for (String key : map2.keySet()) {
-				map2Str.append(key).append(map2.get(key));
-			}
-			if ((result = ObjectUtils.compare(map1Str.toString(),map2Str.toString())) != 0) {
-				return result;
-			}
-		}
-		return 0;
+		return String.format(
+			"%s#<bounds=(%d, %d, %d, %d), confidence=%f, mediaOffsetFrame=%d, mediaOffsetTime=%d, detection properties='%s'>",
+			getClass().getName(),
+			x,
+			y,
+			(x + width),
+			(y + width),
+			confidence,
+			mediaOffsetFrame,
+			mediaOffsetTime,
+			TextUtils.mapToStringValues(detectionProperties));
 	}
 }

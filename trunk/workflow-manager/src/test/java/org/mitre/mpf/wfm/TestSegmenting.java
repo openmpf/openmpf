@@ -26,9 +26,6 @@
 
 package org.mitre.mpf.wfm;
 
-import java.util.stream.IntStream;
-import java.util.stream.Collectors;
-
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -41,6 +38,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -104,7 +103,7 @@ public class TestSegmenting {
     }
 
     // store the detections in the Track
-    testTrack.setDetections(testDetections);
+    testTrack.getDetections().addAll(testDetections);
 
     // run preliminary tests
     Assert.assertTrue("FeedForward check Ex1 assertion failed, start frame offset is not "+startOffsetFrameInclusive,testTrack.getStartOffsetFrameInclusive()==startOffsetFrameInclusive);
@@ -159,7 +158,7 @@ public class TestSegmenting {
     testDetections = new TreeSet<Detection>();
     boolean isRemoved = testTrackSet.remove(testTrack); // remove the testTrack placed for the last set of tests so we can re-add it to run this test.
     Assert.assertTrue("FeedForward check Ex1c assertion failed, removal of the testTrack from the testTrackSet failed",isRemoved);
-    testTrack.setDetections(null); // clear out old Detections from the testTrack
+    testTrack.getDetections().clear();
     int detectionShift = 8;
     for ( int i=startOffsetFrameInclusive; i<=endOffsetFrameInclusive; i++ ) {
       int x=i;
@@ -181,7 +180,7 @@ public class TestSegmenting {
     }
 
     // store the detections in the Track
-    testTrack.setDetections(testDetections);
+    testTrack.getDetections().addAll(testDetections);
 
     // form collection of start and stop times for each track using the feed-forward enabled version of TimeUtils.createSegments.
     testTrackSet.add(testTrack);
@@ -245,7 +244,7 @@ public class TestSegmenting {
       testDetections.add(testDetection);
     }
     // set set of detections in the test track
-    testTrack.setDetections(testDetections);
+    testTrack.getDetections().addAll(testDetections);
     testTrackSet.add(testTrack);
 
     resultsEx = timeUtils.createSegments(topConfidenceCount, testTrackSet, targetSegmentLength, minSegmentLength);
@@ -292,7 +291,7 @@ public class TestSegmenting {
       testDetections.add(testDetection);
     }
     // save set of detections in the test track
-    testTrack.setDetections(testDetections);
+    testTrack.getDetections().addAll(testDetections);
     testTrackSet.add(testTrack);
 
     topConfidenceCount = 20;
@@ -351,7 +350,7 @@ public class TestSegmenting {
       testDetectionsEx1.add(testDetection);
     }
     testTrackEx1.setExemplar(testDetectionsEx1.first());
-    testTrackEx1.setDetections(testDetectionsEx1);
+    testTrackEx1.getDetections().addAll(testDetectionsEx1);
     Assert.assertTrue("NoFeedForward check Ex1 assertion failed, start frame offset is not "+startOffsetFrameInclusive,testTrackEx1.getStartOffsetFrameInclusive()==startOffsetFrameInclusive);
     Assert.assertTrue("NoFeedForward check Ex1 assertion failed, end frame offset is not "+endOffsetFrameInclusive,testTrackEx1.getEndOffsetFrameInclusive()==endOffsetFrameInclusive);
     Assert.assertTrue("NoFeedForward check Ex1 assertion failed, not "+(endOffsetFrameInclusive+1)+" frames in track",testTrackEx1.getDetections().size()==endOffsetFrameInclusive+1);
@@ -398,7 +397,7 @@ public class TestSegmenting {
       }
     }
     testTrackEx2.setExemplar(testDetectionsEx2.first());
-    testTrackEx2.setDetections(testDetectionsEx2);
+    testTrackEx2.getDetections().addAll(testDetectionsEx2);
     Assert.assertTrue("NoFeedForward check Ex2 assertion failed, start frame offset is not "+startOffsetFrameInclusive,testTrackEx2.getStartOffsetFrameInclusive()==startOffsetFrameInclusive);
     Assert.assertTrue("NoFeedForward check Ex2 assertion failed, end frame offset is not "+endOffsetFrameInclusive,testTrackEx2.getEndOffsetFrameInclusive()==endOffsetFrameInclusive);
     // small adjustment for Example2, need to account for the missing detections in the frame count

@@ -114,13 +114,13 @@ public class TimeUtils {
           nextTopDetection = priorityQueue.poll();
           detectionCounter += 1;
           // if the last current TimePair was closed during the last iteration, start a new TimePair using this next Detection.
-          if ( timePair.isClosedTimePair() ) {
+          if ( timePair.isClosed() ) {
             timePair = new TimePair(track.getStartOffsetFrameInclusive() + nextTopDetection.getMediaOffsetFrame());
           }
           // once the counter has reached the target segment length, do TimePair processing.
           if (detectionCounter % targetSegmentLength == 0) {
             // close a current TimePair if unbounded, otherwise start a new TimePair.
-            if (timePair.isUnboundedTimePair()) {
+            if (timePair.isUnbounded()) {
               // close the current TimePair and add it to the list of TimePairs
               timePair.setEndInclusive(track.getStartOffsetFrameInclusive() + nextTopDetection.getMediaOffsetFrame());
               timePairs.add(timePair);
@@ -134,7 +134,7 @@ public class TimeUtils {
         } // end of processing from priority queue loop
 
         // check the last TimePair that was created, close it if it is unbounded and add it to the list of TimePairs.
-        if (timePair.isUnboundedTimePair()) {
+        if (timePair.isUnbounded()) {
           // close the last TimePair using the last top detection and add it to the set of TimePairs
           timePair.setEndInclusive(track.getStartOffsetFrameInclusive() + nextTopDetection.getMediaOffsetFrame());
           timePairs.add(timePair);

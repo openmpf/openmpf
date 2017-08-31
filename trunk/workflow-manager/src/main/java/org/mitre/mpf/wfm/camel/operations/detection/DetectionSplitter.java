@@ -58,10 +58,10 @@ public class DetectionSplitter implements StageSplitter {
 	private static final Logger log = LoggerFactory.getLogger(DetectionSplitter.class);
 	public static final String REF = "detectionStageSplitter";
 
-  @Autowired
-  protected TimeUtils timeUtils;
+	@Autowired
+	protected TimeUtils timeUtils;
 
-  @Autowired
+	@Autowired
 	protected PropertiesUtil propertiesUtil;
 
 	@Autowired

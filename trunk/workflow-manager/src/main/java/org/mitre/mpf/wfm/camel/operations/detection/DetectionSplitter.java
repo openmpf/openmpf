@@ -59,14 +59,14 @@ public class DetectionSplitter implements StageSplitter {
 	public static final String REF = "detectionStageSplitter";
 
 	@Autowired
-	protected TimeUtils timeUtils;
+	private TimeUtils timeUtils;
 
 	@Autowired
-	protected PropertiesUtil propertiesUtil;
+	private PropertiesUtil propertiesUtil;
 
 	@Autowired
 	@Qualifier(RedisImpl.REF)
-	protected Redis redis;
+	private Redis redis;
 
 	@Autowired
 	@Qualifier(ImageMediaSegmenter.REF)
@@ -87,7 +87,7 @@ public class DetectionSplitter implements StageSplitter {
 	@Autowired
 	private PipelineService pipelineService;
 
-	private static final String[] transformProperties = new String[]{
+	private static final String[] transformProperties = {
 			MpfConstants.ROTATION_PROPERTY,
 			MpfConstants.HORIZONTAL_FLIP_PROPERTY,
 			MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY,
@@ -98,14 +98,24 @@ public class DetectionSplitter implements StageSplitter {
 			MpfConstants.AUTO_ROTATE_PROPERTY,
 			MpfConstants.AUTO_FLIP_PROPERTY};
 
-	/** Translates a collection of properties into a collection of AlgorithmProperty ProtoBuf messages. If the input is null or empty, an empty collection is returned. */
-	private List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> convertPropertiesMapToAlgorithmPropertiesList(Map<String, String> propertyMessages) {
-		if(propertyMessages == null || propertyMessages.size() == 0) {
+	/**
+	 * Translates a collection of properties into a collection of AlgorithmProperty ProtoBuf messages.
+	 * If the input is null or empty, an empty collection is returned.
+	 */
+	private static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty>
+	convertPropertiesMapToAlgorithmPropertiesList(Map<String, String> propertyMessages) {
+
+		if (propertyMessages == null || propertyMessages.isEmpty()) {
 			return new ArrayList<>(0);
-		} else {
-			List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties = new ArrayList<>(propertyMessages.size());
-			for(Map.Entry<String, String> entry : propertyMessages.entrySet()) {
-				algorithmProperties.add(AlgorithmPropertyProtocolBuffer.AlgorithmProperty.newBuilder().setPropertyName(entry.getKey()).setPropertyValue(entry.getValue()).build());
+		}
+		else {
+			List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
+					= new ArrayList<>(propertyMessages.size());
+			for (Map.Entry<String, String> entry : propertyMessages.entrySet()) {
+				algorithmProperties.add(AlgorithmPropertyProtocolBuffer.AlgorithmProperty.newBuilder()
+						                        .setPropertyName(entry.getKey())
+						                        .setPropertyValue(entry.getValue())
+						                        .build());
 			}
 			return algorithmProperties;
 		}
@@ -114,7 +124,7 @@ public class DetectionSplitter implements StageSplitter {
 	// property priorities are assigned in this method.  The property priorities are defined as:
 	// action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
 	@Override
-	public final List<Message> performSplit(TransientJob transientJob, TransientStage transientStage) throws Exception {
+	public final List<Message> performSplit(TransientJob transientJob, TransientStage transientStage) {
 		assert transientJob != null : "The provided transientJob must not be null.";
 		assert transientStage != null : "The provided transientStage must not be null.";
 
@@ -123,26 +133,39 @@ public class DetectionSplitter implements StageSplitter {
 		// Is this the first detection stage in the pipeline?
 		boolean isFirstDetectionStage = isFirstDetectionOperation(transientJob);
 
-		for(TransientMedia transientMedia : transientJob.getMedia()) {
+		for (TransientMedia transientMedia : transientJob.getMedia()) {
 
-			if(transientMedia.isFailed()) {
+			if (transientMedia.isFailed()) {
 				// If a media is in a failed state (it couldn't be retrieved, it couldn't be inspected, etc.), do nothing with it.
-				log.debug("[Job {}:{}:*] Skipping Media #{} - it is in an error state.", transientJob.getId(), transientJob.getCurrentStage(), transientMedia.getId());
+				log.debug("[Job {}:{}:*] Skipping Media #{} - it is in an error state.",
+				          transientJob.getId(),
+				          transientJob.getCurrentStage(),
+				          transientMedia.getId());
 				continue;
 			}
 
 			// If this is the first detection stage in the pipeline, we should segment the entire media for detection.
 			// If this is not the first detection stage, we should build segments based off of the previous stage's
 			// tracks. Note that the TimePairs created for these Tracks use the non-feed-forward version of timeUtils.createTimePairsForTracks
-      // TODO look here for any modifications required to be made to support feed-forward
-			List<TimePair> previousTrackTimePairs =
-					isFirstDetectionStage ?
-							Collections.singletonList(new TimePair(0, (transientMedia.getMediaType() == MediaType.AUDIO ? -1 : transientMedia.getLength() - 1))) :
-							timeUtils.createTimePairsForTracks(
-									redis.getTracks(transientJob.getId(), transientMedia.getId(), transientJob.getCurrentStage() - 1, 0));
+			// TODO look here for any modifications required to be made to support feed-forward
+			List<TimePair> previousTrackTimePairs;
+			if (isFirstDetectionStage) {
+				int end = transientMedia.getMediaType() == MediaType.AUDIO
+						? -1
+						: transientMedia.getLength() - 1;
+				previousTrackTimePairs = Collections.singletonList(new TimePair(0, end));
+			}
+			else {
+				SortedSet<Track> tracks = redis.getTracks(transientJob.getId(),
+				                                          transientMedia.getId(),
+				                                          transientJob.getCurrentStage() - 1,
+				                                          0);
+				previousTrackTimePairs = timeUtils.createTimePairsForTracks(tracks);
+			}
+
 
 			// Iterate through each of the actions and segment the media using the properties provided in that action.
-			for(int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
+			for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
 
 				// starting setting of priorities here:  getting action property defaults
 				TransientAction transientAction = transientStage.getActions().get(actionIndex);
@@ -170,38 +193,38 @@ public class DetectionSplitter implements StageSplitter {
 				}
 				modifiedMap.putAll(transientJob.getOverriddenJobProperties());
 
-        // overriding by AlgorithmProperties.  Note that algorithm-properties are of type
-        // Map<String,Map>, so the transform properties to be overridden are actually in the value section of the Map returned
-        // by transientJob.getOverriddenAlgorithmProperties().  This is handled here.
-        // Note that the intent is to override ALL transform properties if ANY single transform properties is overridden
+				// overriding by AlgorithmProperties.  Note that algorithm-properties are of type
+				// Map<String,Map>, so the transform properties to be overridden are actually in the value section of the Map returned
+				// by transientJob.getOverriddenAlgorithmProperties().  This is handled here.
+				// Note that the intent is to override ALL transform properties if ANY single transform properties is overridden
 
-        // If ANY transform setting is provided at a given level, all transform settings for lower levels are overridden.
-        // The reason is that transform settings interact oddly with each other sometimes.  In the case where auto-flip is
-        // turned on, for instance, a region of interest provided without that in mind might be looking in the wrong area
-        // of a flipped image.
+				// If ANY transform setting is provided at a given level, all transform settings for lower levels are overridden.
+				// The reason is that transform settings interact oddly with each other sometimes.  In the case where auto-flip is
+				// turned on, for instance, a region of interest provided without that in mind might be looking in the wrong area
+				// of a flipped image.
 
-        // By policy, we say that if any transform settings are defined in a given properties map,
-        // all applicable transform properties must be defined there
+				// By policy, we say that if any transform settings are defined in a given properties map,
+				// all applicable transform properties must be defined there
 
-        // Note: only want to consider the algorithm from algorithm properties that corresponds to the current
-        // action being processed.  Which algorithm (i.e. action) that is being processed
-        // is available using transientAction.getAlgorithm().  So, see if our algorithm properties include
-        // override of the action (i.e. algorithm) that we are currently processing
-        // Note that this implementation depends on algorithm property keys matching what would be returned by transientAction.getAlgorithm()
-        if (transientJob.getOverriddenAlgorithmProperties().keySet().contains(transientAction.getAlgorithm())) {
-          // this transient job contains the a algorithm property which may override what is in our current action
-          Map job_alg_m = transientJob.getOverriddenAlgorithmProperties().get(transientAction.getAlgorithm());
-          // see if any of these algorithm properties are transform properties.  If so, clear the
-          // current set of transform properties from the map to allow for this algorithm properties to
-          // override the current settings
-          for (String key : transformProperties) {
-            if (job_alg_m.keySet().contains(key)) {
-              clearTransformPropertiesFromMap(modifiedMap);
-              break;
-            }
-          }
-          modifiedMap.putAll(job_alg_m);
-        }
+				// Note: only want to consider the algorithm from algorithm properties that corresponds to the current
+				// action being processed.  Which algorithm (i.e. action) that is being processed
+				// is available using transientAction.getAlgorithm().  So, see if our algorithm properties include
+				// override of the action (i.e. algorithm) that we are currently processing
+				// Note that this implementation depends on algorithm property keys matching what would be returned by transientAction.getAlgorithm()
+				if (transientJob.getOverriddenAlgorithmProperties().keySet().contains(transientAction.getAlgorithm())) {
+					// this transient job contains the a algorithm property which may override what is in our current action
+					Map job_alg_m = transientJob.getOverriddenAlgorithmProperties().get(transientAction.getAlgorithm());
+					// see if any of these algorithm properties are transform properties.  If so, clear the
+					// current set of transform properties from the map to allow for this algorithm properties to
+					// override the current settings
+					for (String key : transformProperties) {
+						if (job_alg_m.keySet().contains(key)) {
+							clearTransformPropertiesFromMap(modifiedMap);
+							break;
+						}
+					}
+					modifiedMap.putAll(job_alg_m);
+				}
 
 				for (String key : transformProperties) {
 					if (transientMedia.getMediaSpecificProperties().containsKey(key)) {
@@ -212,34 +235,57 @@ public class DetectionSplitter implements StageSplitter {
 				modifiedMap.putAll(transientMedia.getMediaSpecificProperties());
 
 				SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
-				List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
+				List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
+						= convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
 
 				// get detection request messages from ActiveMQ
-				List<Message> detectionRequestMessages = getSegmenter(transientMedia.getMediaType()).createDetectionRequestMessages(transientMedia, new DetectionContext(transientJob.getId(), transientJob.getCurrentStage(), transientStage.getName(), actionIndex, transientAction.getName(), isFirstDetectionStage, algorithmProperties, previousTrackTimePairs, segmentingPlan));
-				for(Message message : detectionRequestMessages) {
-					message.setHeader(MpfHeaders.RECIPIENT_QUEUE, String.format("jms:MPF.%s_%s_REQUEST", transientStage.getActionType(), transientAction.getAlgorithm()));
-					message.setHeader(MpfHeaders.JMS_REPLY_TO, StringUtils.replace(MpfEndpoints.COMPLETED_DETECTIONS, "jms:", ""));
+				DetectionContext detectionContext = new DetectionContext(
+						transientJob.getId(),
+						transientJob.getCurrentStage(),
+						transientStage.getName(),
+						actionIndex,
+						transientAction.getName(),
+						isFirstDetectionStage,
+						algorithmProperties,
+						previousTrackTimePairs,
+						segmentingPlan);
+				List<Message> detectionRequestMessages
+						= createDetectionRequestMessages(transientMedia, detectionContext);
+
+				for (Message message : detectionRequestMessages) {
+					message.setHeader(MpfHeaders.RECIPIENT_QUEUE,
+					                  String.format("jms:MPF.%s_%s_REQUEST",
+					                                transientStage.getActionType(),
+					                                transientAction.getAlgorithm()));
+					message.setHeader(MpfHeaders.JMS_REPLY_TO,
+					                  StringUtils.replace(MpfEndpoints.COMPLETED_DETECTIONS, "jms:", ""));
 				}
 				messages.addAll(detectionRequestMessages);
 				log.debug("[Job {}|{}|{}] Created {} work units for Media #{}.",
-						transientJob.getId(),
-						transientJob.getCurrentStage(),
-						actionIndex,
-						detectionRequestMessages.size(), transientMedia.getId());
+				          transientJob.getId(),
+				          transientJob.getCurrentStage(),
+				          actionIndex,
+				          detectionRequestMessages.size(), transientMedia.getId());
 			}
 		}
 
 		return messages;
 	}
 
-	private void clearTransformPropertiesFromMap(Map<String, String> modifiedMap) {
+	private static void clearTransformPropertiesFromMap(Map<String, String> modifiedMap) {
 		for (String propertyName : transformProperties) {
 			modifiedMap.remove(propertyName);
 		}
 	}
 
+
+	private List<Message> createDetectionRequestMessages(TransientMedia media, DetectionContext detectionContext) {
+		MediaSegmenter segmenter = getSegmenter(media.getMediaType());
+		return segmenter.createDetectionRequestMessages(media, detectionContext);
+	}
+
 	private MediaSegmenter getSegmenter(MediaType mediaType) {
-		switch(mediaType) {
+		switch (mediaType) {
 			case IMAGE:
 				return imageMediaSegmenter;
 			case VIDEO:
@@ -251,7 +297,7 @@ public class DetectionSplitter implements StageSplitter {
 		}
 	}
 
-	protected SegmentingPlan createSegmentingPlan(Map<String, String> properties) {
+	private SegmentingPlan createSegmentingPlan(Map<String, String> properties) {
 		int targetSegmentLength = propertiesUtil.getTargetSegmentLength();
 		int minSegmentLength = propertiesUtil.getMinSegmentLength();
 		int samplingInterval = propertiesUtil.getSamplingInterval();
@@ -264,15 +310,27 @@ public class DetectionSplitter implements StageSplitter {
 				if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY)) {
 					try {
 						targetSegmentLength = Integer.valueOf(property.getValue());
-					} catch (NumberFormatException exception) {
-						log.warn("Attempted to parse " + MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY + " value of '{}' but encountered an exception. Defaulting to '{}'.", property.getValue(), targetSegmentLength, exception);
+					}
+					catch (NumberFormatException exception) {
+						log.warn(
+							"Attempted to parse {} value of '{}' but encountered an exception. Defaulting to '{}'.",
+							MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY,
+							property.getValue(),
+							targetSegmentLength,
+							exception);
 					}
 				}
 				if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY)) {
 					try {
 						minSegmentLength = Integer.valueOf(property.getValue());
-					} catch (NumberFormatException exception) {
-						log.warn("Attempted to parse " + MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY + " value of '{}' but encountered an exception. Defaulting to '{}'.", property.getValue(), minSegmentLength, exception);
+					}
+					catch (NumberFormatException exception) {
+						log.warn(
+							"Attempted to parse {} value of '{}' but encountered an exception. Defaulting to '{}'.",
+							MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY,
+							property.getValue(),
+							minSegmentLength,
+							exception);
 					}
 				}
 				if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)) {
@@ -280,17 +338,32 @@ public class DetectionSplitter implements StageSplitter {
 						samplingInterval = Integer.valueOf(property.getValue());
 						if (samplingInterval < 1) {
 							samplingInterval = propertiesUtil.getSamplingInterval();
-							log.warn("'{}' is not an acceptable " + MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY + " value. Defaulting to '{}'.", property.getValue(), samplingInterval);
+							log.warn("'{}' is not an acceptable {} value. Defaulting to '{}'.",
+							         MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
+							         property.getValue(),
+							         samplingInterval);
 						}
-					} catch (NumberFormatException exception) {
-						log.warn("Attempted to parse " + MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY + " value of '{}' but encountered an exception. Defaulting to '{}'.", property.getValue(), samplingInterval, exception);
+					}
+					catch (NumberFormatException exception) {
+						log.warn(
+							"Attempted to parse {} value of '{}' but encountered an exception. Defaulting to '{}'.",
+							 MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
+							 property.getValue(),
+							 samplingInterval,
+							 exception);
 					}
 				}
 				if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.MINIMUM_GAP_BETWEEN_SEGMENTS)) {
 					try {
 						minGapBetweenSegments = Integer.valueOf(property.getValue());
-					} catch (NumberFormatException exception) {
-						log.warn("Attempted to parse " + MpfConstants.MINIMUM_GAP_BETWEEN_SEGMENTS + " value of '{}' but encountered an exception. Defaulting to '{}'.", property.getValue(), minGapBetweenSegments, exception);
+					}
+					catch (NumberFormatException exception) {
+						log.warn(
+							"Attempted to parse {} value of '{}' but encountered an exception. Defaulting to '{}'.",
+							MpfConstants.MINIMUM_GAP_BETWEEN_SEGMENTS,
+							property.getValue(),
+							minGapBetweenSegments,
+							exception);
 					}
 				}
 			}
@@ -299,13 +372,15 @@ public class DetectionSplitter implements StageSplitter {
 		return new SegmentingPlan(targetSegmentLength, minSegmentLength, samplingInterval, minGapBetweenSegments);
 	}
 
-	 /** Returns {@literal true} iff the current stage of this job is the first detection stage in the job. */
-	 private boolean isFirstDetectionOperation(TransientJob transientJob) {
+	/**
+	 * Returns {@literal true} iff the current stage of this job is the first detection stage in the job.
+	 */
+	private static boolean isFirstDetectionOperation(TransientJob transientJob) {
 		boolean isFirst = false;
-		for(int i = 0; i < transientJob.getPipeline().getStages().size(); i++) {
+		for (int i = 0; i < transientJob.getPipeline().getStages().size(); i++) {
 
 			// This is a detection stage.
-			if(transientJob.getPipeline().getStages().get(i).getActionType() == ActionType.DETECTION) {
+			if (transientJob.getPipeline().getStages().get(i).getActionType() == ActionType.DETECTION) {
 				// If this is the first detection stage, it must be true that the current stage's index is at most the current job stage's index.
 				isFirst = (i >= transientJob.getCurrentStage());
 				break;
@@ -314,12 +389,13 @@ public class DetectionSplitter implements StageSplitter {
 		return isFirst;
 	}
 
+
 	private Map<String, String> getAlgorithmProperties(String algorithmName) {
 		AlgorithmDefinition algorithm = pipelineService.getAlgorithm(algorithmName);
 		if (algorithm == null) {
 			return Collections.emptyMap();
 		}
 		return algorithm.getProvidesCollection().getAlgorithmProperties().stream()
-			    .collect(toMap(PropertyDefinition::getName, PropertyDefinition::getDefaultValue));
+				.collect(toMap(PropertyDefinition::getName, PropertyDefinition::getDefaultValue));
 	}
 }

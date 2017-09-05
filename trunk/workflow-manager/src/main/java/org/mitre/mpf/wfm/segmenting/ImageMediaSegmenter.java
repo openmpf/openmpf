@@ -63,7 +63,8 @@ public class ImageMediaSegmenter implements MediaSegmenter {
 			segments = new ArrayList<>(1);
 			segments.add(new TimePair(0, 0));
 		} else {
-			segments = timeUtils.createSegments(detectionContext.getPreviousTrackTimePairs(), 1, 1, 1);
+			List<TimePair> trackTimePairs = timeUtils.createTimePairsForTracks(detectionContext.getPreviousTrack());
+			segments = timeUtils.createSegments(trackTimePairs, 1, 1, 1);
 		}
 
 		messages.addAll(createDetectionRequestMessages(transientMedia, detectionContext, segments));

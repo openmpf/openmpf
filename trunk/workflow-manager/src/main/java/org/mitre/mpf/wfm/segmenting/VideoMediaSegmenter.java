@@ -64,7 +64,12 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 					detectionContext.getSegmentingPlan().getMinSegmentLength(),
 					detectionContext.getSegmentingPlan().getMinGapBetweenSegments());
 		} else {
-			segments = timeUtils.createSegments(detectionContext.getPreviousTrackTimePairs(), detectionContext.getSegmentingPlan().getTargetSegmentLength(), detectionContext.getSegmentingPlan().getMinSegmentLength(), detectionContext.getSegmentingPlan().getMinGapBetweenSegments());
+			List<TimePair> trackTimePairs = timeUtils.createTimePairsForTracks(detectionContext.getPreviousTrack());
+			segments = timeUtils.createSegments(
+					trackTimePairs,
+					detectionContext.getSegmentingPlan().getTargetSegmentLength(),
+					detectionContext.getSegmentingPlan().getMinSegmentLength(),
+					detectionContext.getSegmentingPlan().getMinGapBetweenSegments());
 		}
 
 		messages.addAll(createDetectionRequestMessages(transientMedia, detectionContext, segments));

@@ -47,7 +47,7 @@ public class TimeUtils {
    * @param tracks sorted set of Tracks.
    * @return sorted list of TimePairs.
    */
-  public List<TimePair> createTimePairsForTracks(SortedSet<Track> tracks) {
+  public List<TimePair> createTimePairsForTracks(Set<Track> tracks) {
     List<TimePair> timePairs = new ArrayList<>();
     for (Track track : tracks) {
       // form TimePairs for the set of tracks. Note that frame offsets are inclusive so no adjustments are necessary

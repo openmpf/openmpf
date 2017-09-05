@@ -34,12 +34,11 @@ import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.*;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.segmenting.*;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.TimePair;
 import org.mitre.mpf.wfm.util.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,19 +147,15 @@ public class DetectionSplitter implements StageSplitter {
 			// If this is not the first detection stage, we should build segments based off of the previous stage's
 			// tracks. Note that the TimePairs created for these Tracks use the non-feed-forward version of timeUtils.createTimePairsForTracks
 			// TODO look here for any modifications required to be made to support feed-forward
-			List<TimePair> previousTrackTimePairs;
+			SortedSet<Track> previousTrack;
 			if (isFirstDetectionStage) {
-				int end = transientMedia.getMediaType() == MediaType.AUDIO
-						? -1
-						: transientMedia.getLength() - 1;
-				previousTrackTimePairs = Collections.singletonList(new TimePair(0, end));
+				previousTrack = Collections.emptySortedSet();
 			}
 			else {
-				SortedSet<Track> tracks = redis.getTracks(transientJob.getId(),
-				                                          transientMedia.getId(),
-				                                          transientJob.getCurrentStage() - 1,
-				                                          0);
-				previousTrackTimePairs = timeUtils.createTimePairsForTracks(tracks);
+				previousTrack = redis.getTracks(transientJob.getId(),
+				                                transientMedia.getId(),
+				                                transientJob.getCurrentStage() - 1,
+				                                0);
 			}
 
 
@@ -247,7 +242,7 @@ public class DetectionSplitter implements StageSplitter {
 						transientAction.getName(),
 						isFirstDetectionStage,
 						algorithmProperties,
-						previousTrackTimePairs,
+						previousTrack,
 						segmentingPlan);
 				List<Message> detectionRequestMessages
 						= createDetectionRequestMessages(transientMedia, detectionContext);

@@ -29,9 +29,11 @@ package org.mitre.mpf.wfm.segmenting;
 import com.google.common.collect.ImmutableSortedMap;
 import org.apache.camel.Message;
 import org.junit.Test;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.ImageLocation;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf.PropertyMap;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
@@ -112,12 +114,12 @@ public class TestMediaSegmenter {
 
 	protected static boolean confidenceIsEqualToDimensions(float confidence, ImageLocation imageLocation) {
 		int dimensions = (int) confidence;
-		return (Math.abs(imageLocation.getConfidence() - confidence) < 0.01)
+		return TestUtil.almostEqual(imageLocation.getConfidence(), confidence)
 				&& dimensions == imageLocation.getXLeftUpper()
 				&& dimensions == imageLocation.getYLeftUpper()
 				&& dimensions == imageLocation.getWidth()
-				&& dimensions == imageLocation.getHeight();
-
+				&& dimensions == imageLocation.getHeight()
+				&& containsExpectedDetectionProperties(dimensions, imageLocation.getDetectionPropertiesList());
 	}
 
 	protected static DetectionContext createTestDetectionContext(int stage, Map<String, String> additionalAlgoProps,
@@ -151,10 +153,34 @@ public class TestMediaSegmenter {
 	}
 
 
+
+	protected static SortedMap<String, String> createDetectionProperties(int detectionNumber) {
+		return ImmutableSortedMap.of("detectionKey" + detectionNumber, "detectionValue" + detectionNumber);
+	}
+
+
+	protected static boolean containsExpectedDetectionProperties(
+			int detectionNumber, Collection<PropertyMap> properties) {
+
+		SortedMap<String, String> expectedProperties = createDetectionProperties(detectionNumber);
+		if (expectedProperties.size() != properties.size()) {
+			return false;
+		}
+
+		for (PropertyMap property : properties) {
+			String expectedValue = expectedProperties.get(property.getKey());
+			if (!expectedValue.equals(property.getValue())) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+
 	protected static Detection createDetection(int frame, float confidence) {
 		int dimensions = (int) confidence;
 		return new Detection(dimensions, dimensions, dimensions, dimensions, confidence, frame, 1,
-		                     ImmutableSortedMap.of("detectionKey1", "detectionValue1"));
+		                     createDetectionProperties(dimensions));
 	}
 
 

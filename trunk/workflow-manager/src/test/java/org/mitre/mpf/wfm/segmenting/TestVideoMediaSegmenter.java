@@ -132,9 +132,13 @@ public class TestVideoMediaSegmenter {
 		assertContainsFrameLocation(2, longTrack);
 		assertContainsFrameLocation(20, longTrack);
 		assertContainsFrameLocation(40, longTrack);
+		assertEquals(2, longTrack.getStartFrame());
+		assertEquals(40, longTrack.getStopFrame());
 
 		assertEquals(1, shortTrack.getFrameLocationsCount());
 		assertContainsFrameLocation(5, shortTrack);
+		assertEquals(5, shortTrack.getStartFrame());
+		assertEquals(5, shortTrack.getStopFrame());
 	}
 
 
@@ -175,9 +179,13 @@ public class TestVideoMediaSegmenter {
 		assertEquals(2, longTrack.getFrameLocationsCount());
 		assertContainsFrameLocation(20, longTrack);
 		assertContainsFrameLocation(40, longTrack);
+		assertEquals(20, longTrack.getStartFrame());
+		assertEquals(40, longTrack.getStopFrame());
 
 		assertEquals(1, shortTrack.getFrameLocationsCount());
 		assertContainsFrameLocation(5, shortTrack);
+		assertEquals(5, shortTrack.getStartFrame());
+		assertEquals(5, shortTrack.getStopFrame());
 	}
 
 

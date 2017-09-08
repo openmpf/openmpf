@@ -28,18 +28,19 @@ package org.mitre.mpf.wfm.segmenting;
 
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf.AudioTrack;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.AudioRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.util.TimePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -48,42 +49,57 @@ public class AudioMediaSegmenter implements MediaSegmenter {
 	private static final Logger log = LoggerFactory.getLogger(VideoMediaSegmenter.class);
 	public static final String REF = "audioMediaSegmenter";
 
+
 	@Override
-	public List<Message> createDetectionRequestMessages(TransientMedia transientMedia, DetectionContext detectionContext) throws WfmProcessingException {
-		log.warn("[Job {}:{}:{}] Media #{} is an audio file and will not be segmented.", detectionContext.getJobId(), detectionContext.getStageIndex(), detectionContext.getActionIndex(), transientMedia.getId());
-		return createDetectionRequestMessages(transientMedia, detectionContext, Arrays.asList(new TimePair(0, -1)));
+	public List<Message> createDetectionRequestMessages(TransientMedia media, DetectionContext context) {
+		log.warn("[Job {}:{}:{}] Media #{} is an audio file and will not be segmented.", context.getJobId(),
+		         context.getStageIndex(), context.getActionIndex(), media.getId());
+
+		if (!context.isFirstDetectionStage() && MediaSegmenter.feedForwardIsEnabled(context)) {
+			return createFeedForwardMessages(media, context);
+		}
+
+		return Collections.singletonList(
+				createProtobufMessage(media, context,
+				                      AudioRequest.newBuilder().setStartTime(0).setStopTime(-1).build()));
 	}
 
-	private List<Message> createDetectionRequestMessages(TransientMedia transientMedia, DetectionContext detectionContext, List<TimePair> segments) {
-		List<Message> messages = new ArrayList<Message>(segments.size());
-		for(TimePair segment : segments) {
-                    assert segment.getStartInclusive() >= 0 :
-                                           String.format("Segment start must always be GTE 0. Actual: %d", segment.getStartInclusive());
-			Message message = new DefaultMessage();
-			DetectionProtobuf.DetectionRequest.Builder requestBuilder =
-					DetectionProtobuf.DetectionRequest.newBuilder()
-							.setDataType(DetectionProtobuf.DetectionRequest.DataType.AUDIO)
-							.setRequestId(0)
-							.setMediaId(transientMedia.getId())
-							.setStageIndex(detectionContext.getStageIndex())
-							.setStageName(detectionContext.getStageName())
-							.setActionIndex(detectionContext.getActionIndex())
-							.setActionName(detectionContext.getActionName())
-							.setDataUri(transientMedia.getLocalPath())
-							.addAllAlgorithmProperty(detectionContext.getAlgorithmProperties())
-							.setAudioRequest(DetectionProtobuf.DetectionRequest.AudioRequest.newBuilder()
-									.setStartTime(segment.getStartInclusive())
-									.setStopTime(segment.getEndInclusive()));
 
+	private static Message createProtobufMessage(TransientMedia media, DetectionContext context,
+	                                             AudioRequest audioRequest) {
+		DetectionProtobuf.DetectionRequest request = MediaSegmenter
+				.initializeRequest(media, context)
+				.setDataType(DetectionProtobuf.DetectionRequest.DataType.AUDIO)
+				.setAudioRequest(audioRequest)
+				.build();
 
-			for (Map.Entry<String,String> entry : transientMedia.getMetadata().entrySet()) {
-				requestBuilder.addMediaMetadata(DetectionProtobuf.PropertyMap.newBuilder()
+		Message message = new DefaultMessage();
+		message.setBody(request);
+		return message;
+	}
+
+	private static List<Message> createFeedForwardMessages(TransientMedia media, DetectionContext context) {
+		List<Message> messages = new ArrayList<>();
+		for (Track track : context.getPreviousTracks()) {
+
+			AudioRequest.Builder audioRequest = AudioRequest.newBuilder()
+					.setStartTime(track.getStartOffsetTimeInclusive())
+					.setStopTime(track.getStartOffsetTimeInclusive());
+
+			Detection exemplar = track.getExemplar();
+
+			AudioTrack.Builder audioTrackBuilder = audioRequest.getFeedForwardTrackBuilder()
+					.setConfidence(exemplar.getConfidence())
+					.setStartTime(exemplar.getMediaOffsetTime())
+					.setStopTime(exemplar.getMediaOffsetTime());
+
+			for (Map.Entry<String, String> entry : exemplar.getDetectionProperties().entrySet()) {
+				audioTrackBuilder.addDetectionPropertiesBuilder()
 						.setKey(entry.getKey())
-						.setValue(entry.getValue()));
+						.setValue(entry.getValue());
 			}
 
-			message.setBody(requestBuilder.build());
-			messages.add(message);
+			messages.add(createProtobufMessage(media, context, audioRequest.build()));
 		}
 		return messages;
 	}

@@ -101,6 +101,7 @@ public class JobController {
             produces = "application/json", response = JobCreationResponse.class)
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "Job created"),
+            @ApiResponse(code = 400, message = "Bad request"),
             @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
     @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post

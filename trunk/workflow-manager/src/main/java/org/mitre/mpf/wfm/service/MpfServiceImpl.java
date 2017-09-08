@@ -192,8 +192,6 @@ public class MpfServiceImpl implements MpfService {
 	 * @param externalId A user-defined and optional external identifier for the job.
 	 * @param buildOutput {@literal true} to build output objects, {@literal false} to suppress output objects.
 	 * @param priority The priority to assign to this job.
-	 * @param stallAlertDetectionThreshold
-	 * @param stallAlertRate
 	 * @param stallTimeout
 	 * @param healthReportCallbackURI The health report callback URI or null to disable health reports
 	 * @param summaryReportCallbackURI The summary callback URI or null to disable summary reports
@@ -206,8 +204,6 @@ public class MpfServiceImpl implements MpfService {
 													  Map<String,Map<String,String>> algorithmProperties,
 													  Map<String,String> jobProperties, String pipelineName, String externalId,
 													  boolean buildOutput, int priority,
-													  long stallAlertDetectionThreshold,
-													  long stallAlertRate,
 													  long stallTimeout,
 													  String healthReportCallbackURI,
 													  String summaryReportCallbackURI, String newTrackAlertCallbackURI,
@@ -216,7 +212,7 @@ public class MpfServiceImpl implements MpfService {
 		log.debug("createStreamingJob: stream: {}, Pipeline: {}, Build Output: {}, Priority: {}, healthReportCallbackUri: {}, summaryReportCallbackUri: {}, newTrackAlertCallbackUri: {}, Method: {}", json_stream,
 				pipelineName, buildOutput, priority, healthReportCallbackURI, summaryReportCallbackURI, newTrackAlertCallbackURI, method);
 		return streamingJobRequestBo.createRequest(externalId, pipelineName, json_stream, algorithmProperties, jobProperties, buildOutput, priority,
-				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
+				stallTimeout,
 				healthReportCallbackURI, summaryReportCallbackURI, newTrackAlertCallbackURI, method);
 	}
 

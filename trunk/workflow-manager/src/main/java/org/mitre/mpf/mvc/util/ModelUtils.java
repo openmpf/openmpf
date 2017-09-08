@@ -130,7 +130,7 @@ public class ModelUtils {
 		// some job status' may be terminal
 		boolean isTerminal = (jobStatus != null && jobStatus.isTerminal());
 
-		return new StreamingJobInfo(streamingJobRequest.getId(), streamingJobRequest.getExternalId(),
+		return new StreamingJobInfo(streamingJobRequest.getId(),
 				streamingJobRequest.getPipeline(),
 				streamingJobRequest.getPriority(),
 				streamingJobRequest.getStatus().toString(), jobContainerProgress, streamingJobRequest.getTimeReceived(),

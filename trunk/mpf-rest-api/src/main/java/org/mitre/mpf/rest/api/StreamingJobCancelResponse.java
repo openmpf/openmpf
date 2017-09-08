@@ -29,7 +29,6 @@ package org.mitre.mpf.rest.api;
 public class StreamingJobCancelResponse {
 	private Long jobId;
 	private boolean doCleanup = false;
-	private String externalId = null;
 	private String outputObjectDirectory;
 	private MpfResponse mpfResponse = new MpfResponse();
 
@@ -43,13 +42,11 @@ public class StreamingJobCancelResponse {
 
 	/** Constructor
 	 * @param jobId job id of this streaming job
-	 * @param externalId external id of this streaming job, may be null
 	 * @param outputObjectDirectory root directory for output objects created during this streaming job
 	 * @param doCleanup if true, then the caller is requesting that the output object directory is cleaned up prior to cancelling this job
 	 */
-	public StreamingJobCancelResponse(Long jobId, String externalId, String outputObjectDirectory, boolean doCleanup) {
+	public StreamingJobCancelResponse(Long jobId, String outputObjectDirectory, boolean doCleanup) {
 		this.jobId = jobId;
-		this.externalId = externalId;
 		this.outputObjectDirectory = outputObjectDirectory;
 		this.doCleanup = doCleanup;
 		this.mpfResponse.setMessage(0,"success");
@@ -58,8 +55,6 @@ public class StreamingJobCancelResponse {
 	public Long getJobId() {
 		return jobId;
 	}
-
-	public String getExternalId() { return externalId; }
 
 	public boolean getDoCleanup() { return doCleanup; }
 

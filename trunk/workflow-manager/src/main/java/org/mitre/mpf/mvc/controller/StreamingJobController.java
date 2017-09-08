@@ -189,8 +189,6 @@ public class StreamingJobController {
                         streamingJobCreationRequest.getExternalId(), //TODO: what do we do with this from the UI?
                         enableOutputToDisk, // Use the buildOutput value if it is provided with the streaming job, otherwise use the default value from the properties file.,
                         priority,// Use the priority value if it is provided, otherwise use the default value from the properties file.
-                        streamingJobCreationRequest.getStallAlertDetectionThreshold(),
-                        streamingJobCreationRequest.getStallAlertRate(),
                         streamingJobCreationRequest.getStallTimeout(),
                         streamingJobCreationRequest.getHealthReportCallbackUri(),
                         streamingJobCreationRequest.getSummaryReportCallbackUri(),
@@ -207,7 +205,7 @@ public class StreamingJobController {
                 // get the streamingJobRequest so we can pass along the output object directory in the
                 // streaming job creation response.
                 StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
-                return new StreamingJobCreationResponse( jobId, jsonStreamingJobRequest.getExternalId(), streamingJobRequest.getOutputObjectDirectory() );
+                return new StreamingJobCreationResponse( jobId, streamingJobRequest.getOutputObjectDirectory() );
             } else {
                 StringBuilder errBuilder = new StringBuilder("Failure creating streaming job");
                 if (streamingJobCreationRequest.getExternalId() != null) {
@@ -273,8 +271,7 @@ public class StreamingJobController {
         StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
         if ( mpfService.cancelStreamingJob(jobId, doCleanup ) ) {
             log.debug("Successful cancellation of streaming job with id: {}",jobId);
-            return new StreamingJobCancelResponse(jobId,streamingJobRequest.getExternalId(),
-                    streamingJobRequest.getOutputObjectDirectory(), doCleanup);
+            return new StreamingJobCancelResponse(jobId,streamingJobRequest.getOutputObjectDirectory(), doCleanup);
         }
         String errorStr = "Failed to cancel the streaming job with id '" + Long.toString(jobId)
                 + "'. Please check to make sure the streaming job exists before submitting a cancel request. "

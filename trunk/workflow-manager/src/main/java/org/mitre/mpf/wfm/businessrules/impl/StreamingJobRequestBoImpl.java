@@ -210,8 +210,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * @param jobProperties
      * @param buildOutput                  if true, output objects will be stored and this method will assign the output object directory
      * @param priority
-     * @param stallAlertDetectionThreshold
-     * @param stallAlertRate
      * @param stallTimeout
      * @param healthReportCallbackUri      callback for health reports, pass null to disable health reports
      * @param summaryReportCallbackUri     callback for summary reports, pass null to disable summary reports
@@ -223,7 +221,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     public JsonStreamingJobRequest createRequest(String externalId, String pipelineName, JsonStreamingInputObject stream,
                                                  Map<String, Map<String, String>> algorithmProperties,
                                                  Map<String, String> jobProperties, boolean buildOutput, int priority,
-                                                 long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout,
+                                                 long stallTimeout,
                                                  String healthReportCallbackUri, String summaryReportCallbackUri, String newTrackAlertCallbackUri, String callbackMethod) {
         log.debug("[streaming createRequest] externalId:" + externalId + ", pipeline:" + pipelineName + ", buildOutput:" + buildOutput + ", priority:" + priority +
                 ", healthReportCallbackUri:" + healthReportCallbackUri + ", summaryReportCallbackUri:" + summaryReportCallbackUri +
@@ -248,7 +246,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         String outputObjectPath = ""; // initialize output output object to empty string, the path will be set after the streaming job is submitted
         JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(TextUtils.trim(externalId), buildOutput, outputObjectPath,
                 pipelineService.createJsonPipeline(pipelineName), priority, stream,
-                stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
+                stallTimeout,
                 jsonHealthReportCallbackUri, jsonSummaryReportCallbackUri, jsonNewTrackAlertCallbackUri, jsonCallbackMethod,
                 algorithmProperties, jobProperties);
 
@@ -495,8 +493,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 streamingJobRequestEntity.getId(),
                 jsonStreamingJobRequest.getExternalId(), transientPipeline,
                 jsonStreamingJobRequest.getPriority(),
-                jsonStreamingJobRequest.getStallAlertDetectionThreshold(),
-                jsonStreamingJobRequest.getStallAlertRate(), jsonStreamingJobRequest.getStallTimeout(),
+                jsonStreamingJobRequest.getStallTimeout(),
                 jsonStreamingJobRequest.isOutputObjectEnabled(),
                 jsonStreamingJobRequest.getOutputObjectDirectory(),
                 false,

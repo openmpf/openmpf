@@ -115,7 +115,7 @@ public class Detection implements Comparable<Detection> {
 
 
 
-	private static final Comparator<Map.Entry<String, String>> ENTRY_COMPARATOR =
+	private static final Comparator<Map.Entry<String, String>> MAP_ENTRY_COMPARATOR =
 			Map.Entry.<String, String>comparingByKey()
 					.thenComparing(Map.Entry.comparingByValue());
 
@@ -127,7 +127,7 @@ public class Detection implements Comparable<Detection> {
 				Iterator<Map.Entry<String, String>> iter1 = m1.entrySet().iterator();
 				Iterator<Map.Entry<String, String>> iter2 = m2.entrySet().iterator();
 				while (iter1.hasNext()) {
-					int entryCompare = ENTRY_COMPARATOR.compare(iter1.next(), iter2.next());
+					int entryCompare = MAP_ENTRY_COMPARATOR.compare(iter1.next(), iter2.next());
 					if (entryCompare != 0) {
 						return entryCompare;
 					}

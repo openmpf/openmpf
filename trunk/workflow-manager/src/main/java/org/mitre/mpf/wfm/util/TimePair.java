@@ -57,69 +57,26 @@ import java.util.Objects;
 
 public class TimePair implements Comparable<TimePair> {
 
-	private int startInclusive;
+	private final int startInclusive;
 
 	public int getStartInclusive() { return startInclusive; }
 
-	private int endInclusive = -1;
+	private final int endInclusive;
 
 	public int getEndInclusive() { return endInclusive; }
 
-	/**
-	 * Set the ending value for an unbounded TimePair.
-	 * This method supports Objects which may have been ordered by some other parameter besides time or frame offset.
-	 *
-	 * @param endInclusive inclusive value when this TimePair ends.  May be less than startInclusive,
-	 *                        if so the values will be adjusted such that startInclusive <= endInclusive
-	 */
-	public void setEndInclusive(int endInclusive) {
-		// supporting construction from Objects who may have been ordered by some other parameter besides time or frame offset.
-		if (endInclusive >= startInclusive) {
-			this.endInclusive = endInclusive;
-		}
-		else {
-			this.endInclusive = startInclusive;
-			startInclusive = endInclusive;
-		}
-	}
-
-	/**
-	 * Constructor allows for creation of an unbounded TimePair.
-	 * An unbounded TimePair will have the endInclusive value set at some later time.
-	 *
-	 * @param startInclusive inclusive value when this TimePair starts.
-	 */
-	public TimePair(int startInclusive) {
-		this.startInclusive = startInclusive;
-	}
 
 	public TimePair(int startInclusive, int endInclusive) {
 		this.startInclusive = startInclusive;
 		this.endInclusive = endInclusive;
 	}
 
-	/**
-	 * Tests if this TimePair is unbounded.
-	 *
-	 * @return Returns true if this TimePair is unbounded (i.e. endInclusive has not been set)
-	 */
-	public boolean isUnbounded() {
-		return endInclusive == -1;
-	}
-
-	/**
-	 * Tests if this TimePair is closed.
-	 *
-	 * @return Returns true if this TimePair is closed (i.e. it is not unbounded)
-	 */
-	public boolean isClosed() {
-		return !isUnbounded();
-	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(startInclusive, endInclusive);
 	}
+
 
 	@Override
 	public boolean equals(Object other) {
@@ -141,9 +98,11 @@ public class TimePair implements Comparable<TimePair> {
 		return DEFAULT_COMPARATOR.compare(this, other);
 	}
 
+
 	public int length() {
 		return endInclusive - startInclusive + 1;
 	}
+
 
 	@Override
 	public String toString() {

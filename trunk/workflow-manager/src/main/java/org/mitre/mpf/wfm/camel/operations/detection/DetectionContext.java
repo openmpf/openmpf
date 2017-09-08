@@ -60,8 +60,8 @@ public class DetectionContext {
 		return algorithmProperties;
 	}
 
-	private final Set<Track> previousTrack;
-	public Set<Track> getPreviousTrack() { return previousTrack; }
+	private final Set<Track> previousTracks;
+	public Set<Track> getPreviousTracks() { return previousTracks; }
 
 	public DetectionContext(
 			long jobId,
@@ -71,7 +71,7 @@ public class DetectionContext {
 			String actionName,
 			boolean isFirstDetectionStage,
 			List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties,
-			Set<Track> previousTrack,
+			Set<Track> previousTracks,
 			SegmentingPlan segmentingPlan) {
 		this.jobId = jobId;
 		this.stageIndex = stageIndex;
@@ -80,7 +80,7 @@ public class DetectionContext {
 		this.actionName = actionName;
 		this.isFirstDetectionStage = isFirstDetectionStage;
 		this.algorithmProperties = algorithmProperties;
-		this.previousTrack = previousTrack;
+		this.previousTracks = previousTracks;
 		this.segmentingPlan = segmentingPlan;
 	}
 }

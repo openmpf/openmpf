@@ -39,7 +39,6 @@ import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.segmenting.*;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,9 +55,6 @@ import static java.util.stream.Collectors.toMap;
 public class DetectionSplitter implements StageSplitter {
 	private static final Logger log = LoggerFactory.getLogger(DetectionSplitter.class);
 	public static final String REF = "detectionStageSplitter";
-
-	@Autowired
-	private TimeUtils timeUtils;
 
 	@Autowired
 	private PropertiesUtil propertiesUtil;

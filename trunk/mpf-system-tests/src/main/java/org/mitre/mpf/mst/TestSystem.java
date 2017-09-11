@@ -34,14 +34,10 @@ import org.junit.rules.ErrorCollector;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.mitre.mpf.interop.*;
-import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.interop.JsonJobRequest;
-import org.mitre.mpf.interop.JsonMediaInputObject;
-import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
-import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
@@ -70,6 +66,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -248,11 +245,12 @@ public abstract class TestSystem {
 		return media;
 	}
 
-	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, boolean buildOutput, int priority) throws Exception {
-		return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), buildOutput, priority);
+	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media) {
+		return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), true,
+		                          propertiesUtil.getJmsPriority());
 	}
 
-	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, Map<String, String> jobProperties, boolean buildOutput, int priority) throws Exception {
+	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, Map<String, String> jobProperties, boolean buildOutput, int priority) {
 		JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media, Collections.emptyMap(), jobProperties,
                 buildOutput, priority);
         long jobRequestId = mpfService.submitJob(jsonJobRequest);
@@ -261,7 +259,7 @@ public abstract class TestSystem {
 	}
 
 	protected long runPipelineOnStream(String pipelineName, JsonStreamingInputObject stream, Map<String, String> jobProperties, boolean buildOutput, int priority,
-									   long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout) throws Exception {
+									   long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout) {
 		JsonStreamingJobRequest jsonStreamingJobRequest = streamingJobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, stream,
 				Collections.emptyMap(), jobProperties,
 				buildOutput, priority,
@@ -312,6 +310,11 @@ public abstract class TestSystem {
 		log.info("Finished test {}()", testName.getMethodName());
 	}
 
+
+	protected JsonOutputObject getJobOutputObject(long jobId) throws IOException {
+		File outputObjectFile = propertiesUtil.createDetectionOutputObjectFile(jobId);
+		return OBJECT_MAPPER.readValue(outputObjectFile, JsonOutputObject.class);
+	}
 
 
 	/**

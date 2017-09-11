@@ -143,15 +143,15 @@ public class DetectionSplitter implements StageSplitter {
 			// If this is not the first detection stage, we should build segments based off of the previous stage's
 			// tracks. Note that the TimePairs created for these Tracks use the non-feed-forward version of timeUtils.createTimePairsForTracks
 			// TODO look here for any modifications required to be made to support feed-forward
-			SortedSet<Track> previousTrack;
+			SortedSet<Track> previousTracks;
 			if (isFirstDetectionStage) {
-				previousTrack = Collections.emptySortedSet();
+				previousTracks = Collections.emptySortedSet();
 			}
 			else {
-				previousTrack = redis.getTracks(transientJob.getId(),
-				                                transientMedia.getId(),
-				                                transientJob.getCurrentStage() - 1,
-				                                0);
+				previousTracks = redis.getTracks(transientJob.getId(),
+				                                 transientMedia.getId(),
+				                                 transientJob.getCurrentStage() - 1,
+				                                 0);
 			}
 
 
@@ -238,7 +238,7 @@ public class DetectionSplitter implements StageSplitter {
 						transientAction.getName(),
 						isFirstDetectionStage,
 						algorithmProperties,
-						previousTrack,
+						previousTracks,
 						segmentingPlan);
 				List<Message> detectionRequestMessages
 						= createDetectionRequestMessages(transientMedia, detectionContext);

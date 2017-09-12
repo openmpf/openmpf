@@ -1,8 +1,8 @@
 # OpenMPF - _Bridging the Gap in Media Analytics_
 
-## What is The OpenMPF?
+## What is the OpenMPF?
 
-OpenMPF performs content detection and extraction (such as face detection, text extraction, and object classification) on bulk image, video, and audio files, enabling content analysis and search through the extraction of objects, keywords, thumbnails, and other contextual information.
+The OpenMPF performs content detection and extraction (such as face detection, text extraction, and object classification) on bulk image, video, and audio files, enabling content analysis and search through the extraction of objects, keywords, thumbnails, and other contextual information.
 
 This scalable, web-friendly platform enables users to build configurable multimedia processing pipelines, enabling the rapid development and deployment of analytic algorithms and large-scale media processing applications.
 
@@ -35,7 +35,8 @@ A Modern Web UI enables users to:
 Additionally, the REST API exposes the same core functionality as the Web UI and enables applications to be built on top of OpenMPF.
 
 ### Component Plugin Architecture
-![Plugin Architecture](README-images/component-architecture.png)
+
+![Component Architecture](README-images/component-architecture.png)
 
 The OpenMPF Plugin Architecture provides the ability to seamlessly integrate **detection** , **tracking** , and **classification** algorithms in both C++ and Java. New processing nodes can easily be added to increase processing throughput and new algorithms can be dynamically loaded and scaled to meet user needs.
 
@@ -52,7 +53,6 @@ Built on **FFMPEG** and **OpenCV** , OpenMPF supports the processing of standard
 - WAV
 - MPEG4
 - And many more
-
 
 ### Customizable Pipelines
 
@@ -87,3 +87,31 @@ OpenMPF provides the ability to organize algorithms sequentially or in parallel.
 This repository contains source code for the OpenMPF core, including the majority of the back-end and user interface code. Components (the code that performs the actual processing) can be found in other  [repositories](https://github.com/openmpf/).
 
 This repository is divided into various maven modules, including the node manager, which controls the OpenMPF services running on a given node, and the workflow manager, which is the web application server that manages routing messages and jobs.
+
+## Where Am I?
+
+- [Parent OpenMPF Project](https://github.com/openmpf/openmpf-projects)
+- [OpenMPF Core](https://github.com/openmpf/openmpf) ( **You are here** )
+- Components
+    * [Openmpf Standard Components](https://github.com/openmpf/openmpf-components)
+    * [Openmpf Contributed Components](https://github.com/openmpf/openmpf-contrib-components)
+- Component APIs:
+    * [Openmpf C++ Component sdk](https://github.com/openmpf/openmpf-cpp-component-sdk)
+    * [Openmpf Java Component sdk](https://github.com/openmpf/openmpf-java-component-sdk)
+- [Openmpf Build Tools](https://github.com/openmpf/openmpf-build-tools)
+- [OpenMPF Web Site Source](https://github.com/openmpf/openmpf.github.io)
+
+## Getting Started
+
+### To start using OpenMPF
+
+1. Download and build the source using the [OpenMPF Build Guide](https://openmpf.github.io/docs/site/Build-Environment-Setup-Guide/)
+2. Follow the OpenMPF [Installation Guide](https://openmpf.github.io/docs/site/Installation-Guide/)
+
+### Project Website
+
+For more information about OpenMPF, including documentation, guides, and other material, visit our [website](https://openmpf.github.io/)
+
+### Project Workboard
+
+For a latest snapshot of what tasks are being worked on, what's available to pick up, and where the project stands as a whole, check out our   [workboard](https://overv.io/~/openmpf/).

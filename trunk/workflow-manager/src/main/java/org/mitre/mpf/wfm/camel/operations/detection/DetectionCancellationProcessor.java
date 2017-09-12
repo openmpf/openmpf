@@ -27,7 +27,6 @@
 package org.mitre.mpf.wfm.camel.operations.detection;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.springframework.stereotype.Component;
 
@@ -36,32 +35,10 @@ import org.springframework.stereotype.Component;
  * request which was cancelled by the user. The returned response indicates that the request was cancelled.
  */
 @Component(DetectionCancellationProcessor.REF)
-public class DetectionCancellationProcessor implements Processor {
+public class DetectionCancellationProcessor extends BaseDetectionStatusProcessor {
 	public static final String REF = "detectionCancellationProcessor";
 
 	public void process(Exchange exchange) throws Exception {
-		// Copy the headers from the incoming message to the outgoing message.
-		exchange.getOut().getHeaders().putAll(exchange.getIn().getHeaders());
-
-		DetectionProtobuf.DetectionRequest extractionRequest = DetectionProtobuf.DetectionRequest.parseFrom(exchange.getIn().getBody(byte[].class));
-
-		// Create a simple response based on the request and indicate that the request was cancelled.
-		exchange.getOut().setBody(
-			DetectionProtobuf.DetectionResponse.newBuilder()
-				.setActionIndex(extractionRequest.getActionIndex())
-				.setActionName(extractionRequest.getActionName())
-				.setDataType(DetectionProtobuf.DetectionResponse.DataType.valueOf(extractionRequest.getDataType().name()))
-				.setError(DetectionProtobuf.DetectionError.REQUEST_CANCELLED)
-				.setMediaId(extractionRequest.getMediaId())
-				.setRequestId(extractionRequest.getRequestId())
-				.setStageIndex(extractionRequest.getStageIndex())
-				.setStageName(extractionRequest.getStageName())
-
-				// Build the response...
-				.build()
-
-				// ...then convert it to a byte array.
-				.toByteArray());
-
+		process(exchange, DetectionProtobuf.DetectionError.REQUEST_CANCELLED);
 	}
 }

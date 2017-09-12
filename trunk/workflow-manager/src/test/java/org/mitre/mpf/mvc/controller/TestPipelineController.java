@@ -27,47 +27,27 @@
 package org.mitre.mpf.mvc.controller;
 
 import junit.framework.TestCase;
-import org.apache.camel.CamelContext;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
-import org.mitre.mpf.mvc.model.ActionModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.camel.JobStatusCalculator;
-import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.pipeline.PipelineManager;
-import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.PipelineService;
-import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mockito.InjectMocks;
+import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.ResultHandler;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
 
-import java.util.Collections;
 import java.util.HashMap;
 
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.Matchers.is;
-import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
@@ -80,8 +60,6 @@ public class TestPipelineController extends TestCase {
     private PipelineService pipelineService;
 
     @Autowired
-    private PipelineManager pipelineManager;
-    @Autowired
     private MockPipelineController mockPipelineController;
 
     private MockMvc mockMvc;
@@ -91,47 +69,50 @@ public class TestPipelineController extends TestCase {
         mockMvc = MockMvcBuilders.standaloneSetup(mockPipelineController).build();
 
         // Setup dummy algorithms
-        AlgorithmDefinition def1 = new AlgorithmDefinition(ActionType.DETECTION, "TEST_DETECTION_ALG", "Test algorithm for detection.");
+        AlgorithmDefinition def1 = new AlgorithmDefinition(ActionType.DETECTION, "TEST_DETECTION_ALG", "Test algorithm for detection.", true, false);
         def1.getProvidesCollection().getAlgorithmProperties().add(
                 new PropertyDefinition("TESTPROP", ValueType.BOOLEAN, "Test property", "TRUE", null)
             );
-        pipelineService.addAndSaveAlgorithm(def1);
-        pipelineService.addAndSaveAlgorithm(new AlgorithmDefinition(ActionType.MARKUP, "TEST_MARKUP_ALG", "Test algorithm for markup."));
+        pipelineService.saveAlgorithm(def1);
+        pipelineService.saveAlgorithm(new AlgorithmDefinition(ActionType.MARKUP, "TEST_MARKUP_ALG", "Test algorithm for markup.", true, false));
 
         // Setup dummy actions
         HashMap<String, String> props = new HashMap();
         props.put("TESTPROP", "FALSE");
-        pipelineService.addAndSaveAction("TEST_DETECTION_ACTION1", "Test action for detection.", "TEST_DETECTION_ALG", props);
-        pipelineService.addAndSaveAction("TEST_DETECTION_ACTION2", "Second test action for detection.", "TEST_DETECTION_ALG", Collections.emptyMap());
-        pipelineService.addAndSaveAction("TEST_MARKUP_ACTION1", "Test action for markup.", "TEST_MARKUP_ALG", Collections.emptyMap());
+        pipelineService.saveAction(
+                new ActionDefinition("TEST_DETECTION_ACTION1", "TEST_DETECTION_ALG", "Test action for detection."));
+        pipelineService.saveAction(
+                new ActionDefinition("TEST_DETECTION_ACTION2", "TEST_DETECTION_ALG", "Second test action for detection."));
+        pipelineService.saveAction(
+                new ActionDefinition("TEST_MARKUP_ACTION1", "TEST_MARKUP_ALG", "Test action for markup."));
 
 
         // Setup dummy tasks
         TaskDefinition td = new TaskDefinition("TEST_DETECTION_TASK1", "Test task for detection.");
         td.getActions().add(0, new ActionDefinitionRef("TEST_DETECTION_ACTION1"));
-        pipelineService.addAndSaveTask(td);
+        pipelineService.saveTask(td);
 
         td = new TaskDefinition("TEST_DETECTION_TASK2", "Test task for detection.");
         td.getActions().add(0, new ActionDefinitionRef("TEST_DETECTION_ACTION2"));
-        pipelineService.addAndSaveTask(td);
+        pipelineService.saveTask(td);
 
         td = new TaskDefinition("TEST_MARKUP_TASK1", "Test task for markup.");
         td.getActions().add(0, new ActionDefinitionRef("TEST_MARKUP_ACTION1"));
-        pipelineService.addAndSaveTask(td);
+        pipelineService.saveTask(td);
     }
 
     @After
     public void tearDown() throws WfmProcessingException {
-        pipelineService.removeAndDeleteTask("TEST_DETECTION_TASK1");
-        pipelineService.removeAndDeleteTask("TEST_DETECTION_TASK2");
-        pipelineService.removeAndDeleteTask("TEST_MARKUP_TASK1");
+        pipelineService.deleteTask("TEST_DETECTION_TASK1");
+        pipelineService.deleteTask("TEST_DETECTION_TASK2");
+        pipelineService.deleteTask("TEST_MARKUP_TASK1");
 
-        pipelineService.removeAndDeleteAction("TEST_DETECTION_ACTION1");
-        pipelineService.removeAndDeleteAction("TEST_DETECTION_ACTION2");
-        pipelineService.removeAndDeleteAction("TEST_MARKUP_ACTION1");
+        pipelineService.deleteAction("TEST_DETECTION_ACTION1");
+        pipelineService.deleteAction("TEST_DETECTION_ACTION2");
+        pipelineService.deleteAction("TEST_MARKUP_ACTION1");
 
-        pipelineService.removeAndDeleteAlgorithm("TEST_MARKUP_ALG");
-        pipelineService.removeAndDeleteAlgorithm("TEST_DETECTION_ALG");
+        pipelineService.deleteAlgorithm("TEST_MARKUP_ALG");
+        pipelineService.deleteAlgorithm("TEST_DETECTION_ALG");
     }
 
 

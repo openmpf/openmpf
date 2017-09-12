@@ -76,7 +76,7 @@ public class JobCreatorRouteBuilder extends RouteBuilder {
 				.handled(true) // Don't let this bubble up. It is sufficient that we caught it.
 				.to(String.format("class:%s", DefaultJobErrorHandler.class.getName()))
 			.end()
-			.processRef(JobCreationProcessor.REF)
+			.process(JobCreationProcessor.REF)
 			.choice()
 				.when(header(MpfHeaders.JOB_CREATION_ERROR).isEqualTo(Boolean.TRUE))
 				.removeHeader(MpfHeaders.JOB_CREATION_ERROR)

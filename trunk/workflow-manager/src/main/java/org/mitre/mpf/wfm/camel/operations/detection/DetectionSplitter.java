@@ -34,9 +34,10 @@ import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.*;
+import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.segmenting.*;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.TimePair;
 import org.slf4j.Logger;
@@ -319,7 +320,11 @@ public class DetectionSplitter implements StageSplitter {
 	}
 
 	private Map<String, String> getAlgorithmProperties(String algorithmName) {
-	 	return pipelineService.getAlgorithmProperties(algorithmName).stream()
+		AlgorithmDefinition algorithm = pipelineService.getAlgorithm(algorithmName);
+		if (algorithm == null) {
+			return Collections.emptyMap();
+		}
+		return algorithm.getProvidesCollection().getAlgorithmProperties().stream()
 			    .collect(toMap(PropertyDefinition::getName, PropertyDefinition::getDefaultValue));
 	}
 }

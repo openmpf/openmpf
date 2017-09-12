@@ -57,7 +57,7 @@ public class TransientMedia {
                 this.localPath = Paths.get(uriInstance).toAbsolutePath().toString();
             } else if(uriScheme == UriScheme.UNDEFINED) {
                 failed = true;
-                message = "Unsupported URI sceheme.";
+                message = "Unsupported URI scheme.";
             }
         } catch(URISyntaxException use) {
             uriScheme = UriScheme.UNDEFINED;

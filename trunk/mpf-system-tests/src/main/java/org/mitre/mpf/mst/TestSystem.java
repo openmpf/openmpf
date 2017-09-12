@@ -33,21 +33,21 @@ import org.junit.Rule;
 import org.junit.rules.ErrorCollector;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
+import org.mitre.mpf.interop.*;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.pipeline.xml.ActionDefinitionRef;
-import org.mitre.mpf.wfm.pipeline.xml.PipelineDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.TaskDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.TaskDefinitionRef;
+import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.IoUtils;
@@ -100,13 +100,17 @@ public abstract class TestSystem {
 	@Qualifier(JobRequestBoImpl.REF)
 	protected JobRequestBo jobRequestBo;
 
+	@Autowired
+	@Qualifier(StreamingJobRequestBoImpl.REF)
+	protected StreamingJobRequestBo streamingJobRequestBo;
+
     @Autowired
     private MpfService mpfService;
 
     @Autowired
     protected PipelineService pipelineService;
 
-    @Autowired
+	@Autowired
 	@Qualifier(JobCompleteProcessorImpl.REF)
 	private JobCompleteProcessor jobCompleteProcessor;
 
@@ -190,29 +194,34 @@ public abstract class TestSystem {
 	}
 
 
-	protected void addAction(String actionName, String algorithmName, Map<String, String> propertySettings) throws WfmProcessingException {
+	protected void addAction(String actionName, String algorithmName, Map<String, String> propertySettings) {
 		if (!pipelineService.getActionNames().contains(actionName)) {
-			pipelineService.addAndSaveAction(actionName, actionName, algorithmName, propertySettings);
+			ActionDefinition actionDef = new ActionDefinition(actionName, algorithmName, actionName);
+			for (Map.Entry<String, String> entry : propertySettings.entrySet()) {
+				actionDef.getProperties().add(new PropertyDefinitionRef(entry.getKey(), entry.getValue()));
+			}
+			pipelineService.saveAction(actionDef);
 		}
 	}
 
-	protected void addTask(String taskName, String... actions) throws WfmProcessingException {
+
+	protected void addTask(String taskName, String... actions) {
 		if (!pipelineService.getTaskNames().contains(taskName)) {
 			TaskDefinition taskDef = new TaskDefinition(taskName, taskName);
 			for (String actionName : actions) {
 				taskDef.getActions().add(new ActionDefinitionRef(actionName));
 			}
-			pipelineService.addAndSaveTask(taskDef);
+			pipelineService.saveTask(taskDef);
 		}
 	}
 
-	protected void addPipeline(String pipelineName, String... tasks) throws WfmProcessingException {
+	protected void addPipeline(String pipelineName, String... tasks) {
 		if (!pipelineService.getPipelineNames().contains(pipelineName)) {
 			PipelineDefinition pipelineDef = new PipelineDefinition(pipelineName, pipelineName);
 			for (String taskName : tasks) {
 				pipelineDef.getTaskRefs().add(new TaskDefinitionRef(taskName));
 			}
-			pipelineService.addAndSavePipeline(pipelineDef);
+			pipelineService.savePipeline(pipelineDef);
 		}
 	}
 
@@ -248,6 +257,18 @@ public abstract class TestSystem {
                 buildOutput, priority);
         long jobRequestId = mpfService.submitJob(jsonJobRequest);
         Assert.assertTrue(waitFor(jobRequestId));
+		return jobRequestId;
+	}
+
+	protected long runPipelineOnStream(String pipelineName, JsonStreamingInputObject stream, Map<String, String> jobProperties, boolean buildOutput, int priority,
+									   long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout) throws Exception {
+		JsonStreamingJobRequest jsonStreamingJobRequest = streamingJobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, stream,
+				Collections.emptyMap(), jobProperties,
+				buildOutput, priority,
+				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
+				null,null,null,null);
+		long jobRequestId = mpfService.submitJob(jsonStreamingJobRequest);
+		Assert.assertTrue(waitFor(jobRequestId));
 		return jobRequestId;
 	}
 

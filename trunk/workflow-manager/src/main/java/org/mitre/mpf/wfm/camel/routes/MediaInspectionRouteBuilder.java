@@ -96,7 +96,7 @@ public class MediaInspectionRouteBuilder extends RouteBuilder {
 			.choice()
 				.when(header(MpfHeaders.EMPTY_SPLIT).isEqualTo(Boolean.TRUE))
 					.removeHeader(MpfHeaders.EMPTY_SPLIT)
-					.processRef(JobRetrievalProcessor.REF)
+					.process(JobRetrievalProcessor.REF)
 					.to(exitPoint)
 				.otherwise()
 					.to(MpfEndpoints.MEDIA_INSPECTION_WORK_QUEUE)
@@ -104,11 +104,11 @@ public class MediaInspectionRouteBuilder extends RouteBuilder {
 
 		from(MpfEndpoints.MEDIA_INSPECTION_WORK_QUEUE)
 			.setExchangePattern(ExchangePattern.InOnly)
-			.processRef(MediaInspectionProcessor.REF)
+			.process(MediaInspectionProcessor.REF)
 			.aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)
 			.completionPredicate(new SplitCompletedPredicate())
 			.removeHeader(MpfHeaders.SPLIT_COMPLETED)
-			.processRef(JobRetrievalProcessor.REF)
+			.process(JobRetrievalProcessor.REF)
 			.to(exitPoint);
 	}
 }

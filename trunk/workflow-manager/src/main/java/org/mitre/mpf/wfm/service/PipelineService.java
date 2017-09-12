@@ -26,85 +26,79 @@
 
 package org.mitre.mpf.wfm.service;
 
-import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.PipelineDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.TaskDefinition;
-import org.mitre.mpf.wfm.util.Tuple;
+import org.mitre.mpf.interop.JsonPipeline;
+import org.mitre.mpf.wfm.pipeline.xml.*;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
 
 public interface PipelineService {
+	JsonPipeline createJsonPipeline(String pipeline);
 
-	// =========================
-	// Pipeline service methods.
-	// =========================
+	SortedSet<String> getPipelineNames();
 
-	/** Gets the ordered listing of pipelines supported by the system. */
-	public List<String> getPipelineNames();
+	SortedSet<String> getActionNames();
 
-	/** Gets the ordered listing of tasks supported by the system. */
-	public List<String> getTaskNames();
+	SortedSet<String> getAlgorithmNames();
 
-	/** Gets the ordered listing of actions supported by the system. */
-	public List<String> getActionNames();
+	SortedSet<String> getTaskNames();
 
-	/** Gets the ordered listing of algorithms supported by the system */
-	public List<String> getAlgorithmNames();
+	String getPipelineDefinitionAsJson();
 
-	/** Gets the properties associated with the given algorithm. If no such algorithm exists, an empty collection is returned. */
-	public List<PropertyDefinition> getAlgorithmProperties(String algorithmName);
+	Set<AlgorithmDefinition> getAlgorithms();
 
-	/** Gets the pipelines definition XML as an JSON string */
-	public String getPipelineDefinitionAsJson();
-	
-	/** Creates a new algorithm based on the provided algorithm definition */
-	public boolean addAlgorithm(AlgorithmDefinition algorithm);
+	AlgorithmDefinition getAlgorithm(String name);
 
-	/** Creates a new algorithm based on the provided algorithm definition and saves it to XML */
-	public Tuple<Boolean, String> addAndSaveAlgorithm(AlgorithmDefinition algorithm);
+	AlgorithmDefinition getAlgorithm(ActionDefinition actionDefinition);
 
-	/** Creates a new action with the given name and description based on the provided algorithm and using the specified properties. */
-	@Deprecated
-	public Tuple<Boolean,String> addAndSaveActionDeprecated(String actionName, String actionDescription, String algorithmName, Map<String, String> propertySettings);
+	AlgorithmDefinition getAlgorithm(ActionDefinitionRef actionDefinitionRef);
 
-	/** Creates a new action with the given name and description based on the provided algorithm and using the specified properties. */
-	public void addAndSaveAction(String actionName, String actionDescription, String algorithmName, Map<String, String> propertySettings) throws WfmProcessingException;
+	Set<ActionDefinition> getActions();
 
-	/** Creates a new task based on the provided definition. */
-	@Deprecated
-	public boolean addTaskDeprecated(TaskDefinition task);
+	ActionDefinition getAction(String name);
 
-	/** Creates a new task based on the provided task definition and saves it to XML */
-	@Deprecated
-	public Tuple<Boolean, String> addAndSaveTaskDeprecated(TaskDefinition task);
+	ActionDefinition getAction(ActionDefinitionRef name);
 
-	/** Creates a new task based on the provided task definition and saves it to XML */
-	public void addAndSaveTask(TaskDefinition task) throws WfmProcessingException;
+	Set<TaskDefinition> getTasks();
 
-	/** Creates a new pipeline from the provided definition. */
-	public boolean addPipeline(PipelineDefinition pipeline);
+	List<TaskDefinition> getTasks(String pipelineName);
 
-	/** Creates a new pipeline based on the provided pipeline definition and saves it to XML */
-	@Deprecated
-	public Tuple<Boolean, String> addAndSavePipelineDeprecated(PipelineDefinition pipeline);
+	TaskDefinition getTask(String name);
 
-	/** Creates a new pipeline based on the provided pipeline definition and saves it to XML */
-	public void addAndSavePipeline(PipelineDefinition pipeline) throws WfmProcessingException;
+	TaskDefinition getTask(TaskDefinitionRef taskDefinitionRef);
 
-	/** Removes the algorithm with the provided name from both memory and XML */
-	public void removeAndDeleteAlgorithm(String algorithmName);
+	Set<PipelineDefinition> getPipelines();
 
-	/** Removes the action with the provided name from both memory and XML */
-	public void removeAndDeleteAction(String actionName) throws WfmProcessingException;
+	PipelineDefinition getPipeline(String name);
 
-	/** Removes the task with the provided name from both memory and XML */
-	public void removeAndDeleteTask(String taskName);
+	boolean pipelineSupportsBatch(String pipelineName);
 
-	/** Removes the pipeline with the provided name from both memory and XML */
-	public void removeAndDeletePipeline(String pipelineName);
+	boolean pipelineSupportsStreaming(String pipelineName);
 
-	public Tuple<Boolean,String> savePipelineChanges(String type);
+	boolean taskSupportsBatch(String taskName);
+
+	boolean taskSupportsStreaming(String taskName);
+
+	boolean actionSupportsBatch(String actionName);
+
+	boolean actionSupportsStreaming(String actionName);
+
+	void reset();
+
+	void deleteAlgorithm(String algorithmName);
+
+	void saveAlgorithm(AlgorithmDefinition algorithmDefinition);
+
+	void deleteAction(String actionName);
+
+	void saveAction(ActionDefinition action);
+
+	void deleteTask(String taskName);
+
+	void saveTask(TaskDefinition task);
+
+	void deletePipeline(String pipelineName);
+
+	void savePipeline(PipelineDefinition pipeline);
 }

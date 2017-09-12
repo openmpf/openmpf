@@ -69,11 +69,20 @@ public enum JobStatus {
 	/** Indicates the job was cancelled as a result of a system shutdown. */
 	CANCELLED_BY_SHUTDOWN(true),
 
-	/** Indicates the job was cancelled. */
+	/** Indicates the job was cancelled by a user-initiated process. */
 	CANCELLED(true),
 
 	/** Indicates the job is in an error state. */
-	ERROR(true);
+	ERROR(true),
+
+	/** Indicates the streaming job was terminated due to being stalled for too long. */
+	TERMINATED(true),
+
+	/** Indicates the streaming job is paused. */
+	PAUSED(false),
+
+	/** Indicates the streaming job is stalled */
+	STALLED(false);
 
 	public static final JobStatus DEFAULT = COMPLETE;
 
@@ -89,8 +98,8 @@ public enum JobStatus {
 
 	public static JobStatus parse(String input, JobStatus defaultValue) {
 		String trimmed = StringUtils.trimToNull(input);
-		for(JobStatus jobStatus : JobStatus.values()) {
-			if(StringUtils.equalsIgnoreCase(jobStatus.name(), trimmed)) {
+		for ( JobStatus jobStatus : JobStatus.values() ) {
+			if ( StringUtils.equalsIgnoreCase(jobStatus.name(), trimmed) ) {
 				return jobStatus;
 			}
 		}
@@ -99,8 +108,8 @@ public enum JobStatus {
 
 	public static Collection<JobStatus> getNonTerminalStatuses() {
 		List<JobStatus> jobStatuses = new ArrayList<>();
-		for(JobStatus jobStatus : values()) {
-			if(!jobStatus.isTerminal()) {
+		for ( JobStatus jobStatus : values() ) {
+			if (!jobStatus.isTerminal() ) {
 				jobStatuses.add(jobStatus);
 			}
 		}

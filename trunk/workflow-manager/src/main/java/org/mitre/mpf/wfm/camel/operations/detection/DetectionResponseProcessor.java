@@ -33,21 +33,21 @@ import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingCon
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.pipeline.PipelineManager;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinitionRef;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 
 /** Processes the responses which have been returned from a detection component. */
 @Component(DetectionResponseProcessor.REF)
@@ -57,8 +57,7 @@ public class DetectionResponseProcessor
 	private static final Logger log = LoggerFactory.getLogger(DetectionResponseProcessor.class);
 
 	@Autowired
-	@Qualifier(PipelineManager.REF)
-	private PipelineManager pipelineManager;
+	private PipelineService pipelineService;
 
 	@Autowired
 	private PropertiesUtil propertiesUtil;
@@ -118,7 +117,7 @@ public class DetectionResponseProcessor
 
 		} else {
 			// Look for a confidence threshold.  If confidence threshold is defined, only return detections above the threshold.
-			ActionDefinition action = pipelineManager.getAction(detectionResponse.getActionName());
+			ActionDefinition action = pipelineService.getAction(detectionResponse.getActionName());
 			TransientJob job = redis.getJob(jobId, detectionResponse.getMediaId());
 
 			double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
@@ -141,7 +140,7 @@ public class DetectionResponseProcessor
 				media.getMediaSpecificProperties());
 
 		if (confidenceThresholdProperty == null) {
-			AlgorithmDefinition algorithm = pipelineManager.getAlgorithm(action);
+			AlgorithmDefinition algorithm = pipelineService.getAlgorithm(action);
 			PropertyDefinition confidenceAlgorithmDef = algorithm.getProvidesCollection().getAlgorithmProperty(MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY);
 			if (confidenceAlgorithmDef != null) {
 				confidenceThresholdProperty = confidenceAlgorithmDef.getDefaultValue();
@@ -172,7 +171,7 @@ public class DetectionResponseProcessor
 		// Iterate through the videoResponse
 		for (DetectionProtobuf.DetectionResponse.VideoResponse videoResponse : detectionResponse.getVideoResponsesList()) {
 			// Begin iterating through the tracks that were found by the detector.
-			for (DetectionProtobuf.DetectionResponse.VideoResponse.VideoTrack objectTrack : videoResponse.getVideoTracksList()) {
+			for (DetectionProtobuf.VideoTrack objectTrack : videoResponse.getVideoTracksList()) {
 
 				int startOffsetTime = (fps == null ? 0 : Math.round(objectTrack.getStartFrame() * 1000 / fps));
 				int stopOffsetTime  = (fps == null ? 0 : Math.round(objectTrack.getStopFrame()  * 1000 / fps));
@@ -191,8 +190,8 @@ public class DetectionResponseProcessor
 
 
 				// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
-				for (DetectionProtobuf.DetectionResponse.VideoResponse.VideoTrack.FrameLocationMap locationMap : objectTrack.getFrameLocationsList()) {
-					DetectionProtobuf.DetectionResponse.ImageLocation location = locationMap.getImageLocation();
+				for (DetectionProtobuf.VideoTrack.FrameLocationMap locationMap : objectTrack.getFrameLocationsList()) {
+					DetectionProtobuf.ImageLocation location = locationMap.getImageLocation();
 
 					if (location.getConfidence() >= confidenceThreshold) {
 
@@ -217,7 +216,7 @@ public class DetectionResponseProcessor
 		// Iterate through the videoResponse
 		for (DetectionProtobuf.DetectionResponse.AudioResponse audioResponse : detectionResponse.getAudioResponsesList()) {
 			// Begin iterating through the tracks that were found by the detector.
-			for (DetectionProtobuf.DetectionResponse.AudioResponse.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
+			for (DetectionProtobuf.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
 
 				int startOffsetFrame = (fps == null ? 0 : Math.round(objectTrack.getStartTime() * fps / 1000));
 				int stopOffsetFrame  = (fps == null ? 0 : Math.round(objectTrack.getStopTime()  * fps / 1000));
@@ -270,7 +269,7 @@ public class DetectionResponseProcessor
 
 
 				// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
-				for (DetectionProtobuf.DetectionResponse.ImageLocation location : imageResponse.getImageLocationsList()) {
+				for (DetectionProtobuf.ImageLocation location : imageResponse.getImageLocationsList()) {
 					if (location.getConfidence() >= confidenceThreshold) {
 						// Create a new Track object.
 						Track track = new Track(
@@ -311,7 +310,7 @@ public class DetectionResponseProcessor
 		return exemplar;
 	}
 
-	private Detection generateTrack(DetectionProtobuf.DetectionResponse.ImageLocation location, int frameNumber, int time) {
+	private Detection generateTrack(DetectionProtobuf.ImageLocation location, int frameNumber, int time) {
 		TreeMap<String, String> detectionProperties = new TreeMap<>();
 		for (DetectionProtobuf.PropertyMap item : location.getDetectionPropertiesList()) {
 			detectionProperties.put(item.getKey(), item.getValue());

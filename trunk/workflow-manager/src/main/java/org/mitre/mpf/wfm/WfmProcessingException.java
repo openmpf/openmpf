@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.wfm;
 
-public class WfmProcessingException extends Exception {
+public class WfmProcessingException extends RuntimeException {
     public WfmProcessingException() { super(); }
 
     public WfmProcessingException(Throwable cause) { super(cause); }

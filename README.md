@@ -29,6 +29,7 @@ A Modern Web UI enables users to:
 - Monitor system logs and node status
 - Administer configuration properties
 - View processing statistics
+
 ![Web UI](README-images/web-ui.png)
 
 Additionally, the REST API exposes the same core functionality as the Web UI and enables applications to be built on top of OpenMPF.

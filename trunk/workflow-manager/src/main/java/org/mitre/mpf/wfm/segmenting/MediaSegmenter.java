@@ -47,6 +47,14 @@ import static java.util.stream.Collectors.toList;
 public interface MediaSegmenter {
 	static final Logger log = LoggerFactory.getLogger(MediaSegmenter.class);
 
+	public static final String FEED_FORWARD_TYPE = "FEED_FORWARD_TYPE";
+
+	public static final String FEED_FORWARD_TOP_CONFIDENCE_COUNT = "FEED_FORWARD_TOP_CONFIDENCE_COUNT";
+
+	static final Set<String> FEED_FORWARD_TYPES = ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION");
+
+
+
 	List<Message> createDetectionRequestMessages(TransientMedia transientMedia, DetectionContext detectionContext);
 
 
@@ -78,20 +86,19 @@ public interface MediaSegmenter {
 	static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> getAlgoProps(DetectionContext context) {
 		if (context.isFirstDetectionStage()) {
 			return context.getAlgorithmProperties().stream()
-					.filter(ap -> !ap.getPropertyName().equalsIgnoreCase("FEED_FORWARD_TYPE"))
+					.filter(ap -> !ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TYPE))
+					.filter(ap -> !ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TOP_CONFIDENCE_COUNT))
 					.collect(toList());
 		}
 		return context.getAlgorithmProperties();
 	}
 
 
-	static final Set<String> FEED_FORWARD_TYPES
-			= ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION");
 
 	public static boolean feedForwardIsEnabled(DetectionContext context) {
 		String feedForwardType = context.getAlgorithmProperties()
 				.stream()
-				.filter(ap -> ap.getPropertyName().equalsIgnoreCase("FEED_FORWARD_TYPE"))
+				.filter(ap -> ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TYPE))
 				.findAny()
 				.map(ap -> ap.getPropertyValue().toUpperCase())
 				.orElse("NONE");

@@ -186,7 +186,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 	private static int getTopConfidenceCount(DetectionContext context) {
 		return context.getAlgorithmProperties()
 				.stream()
-				.filter(ap -> ap.getPropertyName().equalsIgnoreCase("FEED_FORWARD_TOP_CONFIDENCE_COUNT"))
+				.filter(ap -> ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TOP_CONFIDENCE_COUNT))
 				.mapToInt(ap -> Integer.parseInt(ap.getPropertyValue()))
 				.findAny()
 				.orElse(0);

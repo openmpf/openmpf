@@ -46,7 +46,7 @@ import java.util.Map;
 
 @Component(AudioMediaSegmenter.REF)
 public class AudioMediaSegmenter implements MediaSegmenter {
-	private static final Logger log = LoggerFactory.getLogger(VideoMediaSegmenter.class);
+	private static final Logger log = LoggerFactory.getLogger(AudioMediaSegmenter.class);
 	public static final String REF = "audioMediaSegmenter";
 
 
@@ -84,14 +84,14 @@ public class AudioMediaSegmenter implements MediaSegmenter {
 
 			AudioRequest.Builder audioRequest = AudioRequest.newBuilder()
 					.setStartTime(track.getStartOffsetTimeInclusive())
-					.setStopTime(track.getStartOffsetTimeInclusive());
+					.setStopTime(track.getEndOffsetTimeInclusive());
 
 			Detection exemplar = track.getExemplar();
 
 			AudioTrack.Builder audioTrackBuilder = audioRequest.getFeedForwardTrackBuilder()
 					.setConfidence(exemplar.getConfidence())
-					.setStartTime(exemplar.getMediaOffsetTime())
-					.setStopTime(exemplar.getMediaOffsetTime());
+					.setStartTime(track.getStartOffsetTimeInclusive())
+					.setStopTime(track.getEndOffsetTimeInclusive());
 
 			for (Map.Entry<String, String> entry : exemplar.getDetectionProperties().entrySet()) {
 				audioTrackBuilder.addDetectionPropertiesBuilder()

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -104,8 +104,8 @@ public class TestAudioMediaSegmenter {
 		assertContainsAlgoProperty("FEED_FORWARD_TYPE", "FRAME", detectionRequests);
 
 
-		assertContainsExpectedTrack(5, detectionRequests);
-		assertContainsExpectedTrack(10, detectionRequests);
+		assertContainsExpectedTrack(5, 5, 10, detectionRequests);
+		assertContainsExpectedTrack(15, 15, 30, detectionRequests);
 	}
 
 
@@ -125,22 +125,22 @@ public class TestAudioMediaSegmenter {
 	}
 
 
-	private static void assertContainsExpectedTrack(float confidence, Collection<DetectionRequest> requests) {
-		int times = (int) confidence;
+	private static void assertContainsExpectedTrack(float confidence, int startTime, int stopTime,
+	                                                Collection<DetectionRequest> requests) {
 		DetectionRequest.AudioRequest audioRequest = requests.stream()
 				.map(DetectionRequest::getAudioRequest)
-				.filter(ar -> ar.getStartTime() == times)
+				.filter(ar -> ar.getStartTime() == startTime)
 				.findAny()
 				.get();
 
-		assertEquals(times, audioRequest.getStopTime());
+		assertEquals(stopTime, audioRequest.getStopTime());
 
 		DetectionProtobuf.AudioTrack track = audioRequest.getFeedForwardTrack();
 		assertEquals(confidence, track.getConfidence(), 0.01);
-		assertEquals(times, track.getStartTime());
-		assertEquals(times, track.getStopTime());
+		assertEquals(startTime, track.getStartTime());
+		assertEquals(stopTime, track.getStopTime());
 
-		assertTrue(containsExpectedDetectionProperties(times, track.getDetectionPropertiesList()));
+		assertTrue(containsExpectedDetectionProperties((int) confidence, track.getDetectionPropertiesList()));
 	}
 
 
@@ -155,13 +155,13 @@ public class TestAudioMediaSegmenter {
 	private static Set<Track> createTestTracks() {
 		Detection detection1 = createDetection(5, 5);
 		Track track1 = new Track(1, 1, 0, 0, 0,
-		                         -1, 5, 5, "");
+		                         -1, 5, 10, "");
 		track1.setExemplar(detection1);
 		track1.getDetections().add(detection1);
 
-		Detection detection2 = createDetection(10, 10);
+		Detection detection2 = createDetection(15, 15);
 		Track track2 = new Track(1, 1, 0, 0, 0,
-		                         -1, 10, 10, "");
+		                         -1, 15, 30, "");
 		track2.setExemplar(detection2);
 		track2.getDetections().add(detection2);
 

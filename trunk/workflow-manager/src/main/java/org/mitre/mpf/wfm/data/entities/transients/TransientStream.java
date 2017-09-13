@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
+import org.mitre.mpf.wfm.util.StreamResource;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -39,36 +40,31 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /** transient stream data. Note that currently, only the RTSP and HTTP protocols for streams is currently supported */
 public class TransientStream {
 
-	/** The unique identifier for this stream. */
+    /** The unique identifier for this stream. */
 	private long id;
 	public long getId() { return id; }
 
-	/** The URI of the source stream, currently only supporting the RTSP and the HTTP protocols. */
-	private String uri;
-	public String getUri() { return uri; }
+	/** The stream resource used to construct this transient stream, Error may occur if the URI of the stream isn't a OpenMPF supported protocol. */
+	private StreamResource streamResource = null;
+	public String getUri() { return streamResource.getUri(); }
 	private void setUri(String uri) {
-		this.uri = uri;
-        try {
-            URI uriInstance = new URI(uri);
-            this.uriScheme = UriScheme.parse(uriInstance.getScheme());
-            if ( uriScheme != UriScheme.RTSP && uriScheme != UriScheme.HTTP ) {
-                failed = true;
-                message = "URI scheme "+uriScheme+" is not supported, only supporting RTSP and HTTP protocols at this time.";
-            }
-        } catch ( URISyntaxException use ) {
-            uriScheme = UriScheme.UNDEFINED;
+	    streamResource = new StreamResource(uri);
+        if ( !streamResource.isValidResource() ) {
             failed = true;
-            message = use.getMessage();
+            message = streamResource.getResourceStatusMessage();
+        } else if ( !streamResource.isSupportedUriScheme() ) {
+            failed = true;
+            message = "URI scheme " + streamResource.getUriScheme() + " is not supported for streams.  Check OpenMPF documentation for the list of supported protocols.";
         }
 	}
 
 	/** The URI scheme (protocol) associated with the input stream URI. */
-	private UriScheme uriScheme = null;
-	public UriScheme getUriScheme() { return uriScheme == null ? UriScheme.UNDEFINED : uriScheme; }
+	public UriScheme getUriScheme() { return streamResource == null ? UriScheme.UNDEFINED : streamResource.getUriScheme(); }
 
 	/** A flag indicating if the medium has encountered an error during processing. */
 	private boolean failed;
@@ -132,8 +128,8 @@ public class TransientStream {
 	public boolean equalsAllFields(Object other) {
 		if ( other instanceof TransientStream ) {
 			TransientStream otherTransientStream = (TransientStream) other;
-			return ( id == otherTransientStream.id && uri.equals(otherTransientStream.uri) &&
-					uriScheme == otherTransientStream.uriScheme &&
+			return ( id == otherTransientStream.id && getUri().equals(otherTransientStream.getUri()) &&
+					getUriScheme() == otherTransientStream.getUriScheme() &&
 					failed == otherTransientStream.failed &&
 					( ( message == null && otherTransientStream.message == null ) ||
 							message.equals(otherTransientStream.message) ) &&
@@ -172,11 +168,24 @@ public class TransientStream {
 		return String.format("%s#<id=%d, uri='%s', uriScheme='%s', failed=%s, message='%s', type='%s'>",
 				this.getClass().getSimpleName(),
 				id,
-				uri,
-				uriScheme,
+				getUri(),
+				getUriScheme(),
 				Boolean.toString(failed),
 				message,
 				type);
+	}
+
+
+	/** Check to see if the specified URI is one of the supported stream protocols.
+	 * OpenMPF currently only supports the RTSP and HTTP protocols for streams.
+	 * @return true if the URI scheme is one of the supported stream protocols, false otherwise.
+	 */
+	public boolean isSupportedStreamUriScheme() {
+		if ( streamResource != null && streamResource.isSupportedUriScheme() ) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 }

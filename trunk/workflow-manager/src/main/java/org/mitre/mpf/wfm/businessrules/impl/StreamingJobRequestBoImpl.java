@@ -350,23 +350,26 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                         // TODO some extra validation should be added here for security to ensure that the output object directory identified is of valid syntax (i.e. error out if equal to "/", etc)
                         // TODO need to define naming convention for VidoeWriter output files.
                         // TODO extra validation should be added here for security to ensure that only VideoWriter output files are deleted.
-                        // TODO not sure if we want to allow for following symbolic links here
                         // TODO the software that actually deletes the output object file system is commented out until the security filters can be enforced
                         // TODO what extra handling needs to be added if the cleanup fails?  How to notify the user?
                         log.warn("[Job {}:*:*] doCleanup is enabled but cleanup of the output object directory associated with this streaming job isn't yet implemented, pending the addition of the directory/file validation filters.", jobId);
-//            try {
-//              Files.walk(outputObjectDirectoryFileRootPath, FileVisitOption.FOLLOW_LINKS)
-//                  .sorted(Comparator.reverseOrder())
-//                  .map(Path::toFile)
-//                  .peek(System.out::println)
-//                  .forEach(File::delete);
-//            } catch (IOException ioe) {
-//              String errorMessage =
-//                  "Failed to cleanup the output object file directory for streaming job " + jobId
-//                      + " due to IO exception.";
-//              log.error(errorMessage);
-//              throw new WfmProcessingException(errorMessage, ioe);
-//            }
+                        try {
+                            // Walk through the files in the streaming job directory, deleting all files under the outputObjectDirectoryFileRootPath.
+                            // We intentionally don't enable follow links option in the walk, there shouldn't be any symbolic links in the output object file system.
+                            log.warn("[Job {}:*:*] doCleanup is enabled. Deleteing all streaming job files under {}",jobId,outputObjectDirectoryFileRootPath);
+                            Files.walk(outputObjectDirectoryFileRootPath)
+                                .sorted(Comparator.reverseOrder())
+                                .map(Path::toFile)
+                                .peek(System.out::println)
+                                .forEach(File::delete);
+                        } catch (IOException ioe) {
+                            String errorMessage =
+                                "Failed to cleanup the output object file directory for streaming job "
+                                    + jobId
+                                    + " due to IO exception.";
+                            log.error(errorMessage);
+                            throw new WfmProcessingException(errorMessage, ioe);
+                        }
 
                     } else {
                         log.warn("[Job {}:*:*] doCleanup is enabled but the output object directory associated with this streaming job isn't a viable directory. Can't cleanup the output object directory for this job.", jobId);

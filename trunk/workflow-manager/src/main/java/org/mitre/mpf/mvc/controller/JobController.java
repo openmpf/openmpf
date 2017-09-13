@@ -37,6 +37,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.MpfService;
+import org.mitre.mpf.wfm.util.MediaResource;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -343,14 +344,27 @@ public class JobController {
 
             JsonJobRequest jsonJobRequest;
             List<JsonMediaInputObject> media = new ArrayList<>();
+            // Iterate over all media in the batch job creation request.  If for any media, the media protocol check fails, then
+            // that media will be ignored from the batch job
             for (JobCreationMediaData mediaRequest : jobCreationRequest.getMedia()) {
-                JsonMediaInputObject medium = new JsonMediaInputObject(mediaRequest.getMediaUri());
-                if (mediaRequest.getProperties() != null) {
-                    for (Map.Entry<String, String> property : mediaRequest.getProperties().entrySet()) {
-                        medium.getProperties().put(property.getKey().toUpperCase(), property.getValue());
+                // Add a protocol check against each requested media.
+                if ( !MediaResource.isSupportedUriScheme(mediaRequest.getMediaUri()) ) {
+                    // This media within the batch job failed the supported protocol check against the medias URI.
+                    // OpenMPF can't process the requested media so it will be ignored, just log the error.  Note that the job hasn't
+                    // yet been submitted, so the jobId/Stage/mediaId/etc can't be recorded.
+                    log.debug("createJob: Skipping Media with URI {} - invalid protocol.");
+                } else {
+                    JsonMediaInputObject medium = new JsonMediaInputObject(
+                        mediaRequest.getMediaUri());
+                    if (mediaRequest.getProperties() != null) {
+                        for (Map.Entry<String, String> property : mediaRequest.getProperties()
+                            .entrySet()) {
+                            medium.getProperties()
+                                .put(property.getKey().toUpperCase(), property.getValue());
+                        }
                     }
+                    media.add(medium);
                 }
-                media.add(medium);
             }
             if (jobCreationRequest.getCallbackURL() != null && jobCreationRequest.getCallbackURL().length() > 0) {
                 jsonJobRequest = mpfService.createJob(media,
@@ -378,7 +392,7 @@ public class JobController {
             if (useSession) {
                 sessionModel.getSessionJobs().add(jobId);
             }
-
+            // the job request has been successfully parsed, construct the job creation response
             return new JobCreationResponse(jobId);
         } catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
             StringBuilder errBuilder = new StringBuilder("Failure creating job");
@@ -387,8 +401,8 @@ public class JobController {
             }
             errBuilder.append(" due to an exception. Please check server logs for more detail.");
             String err = errBuilder.toString();
-
             log.error(err, ex);
+            // the job request did not parse successfully, construct the job creation response describing the error that occurred.
             return new JobCreationResponse(1, err);
         }
     }

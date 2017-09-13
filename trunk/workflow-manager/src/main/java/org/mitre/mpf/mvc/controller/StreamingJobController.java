@@ -38,6 +38,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.StreamResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -165,10 +166,29 @@ public class StreamingJobController {
         return cancelStreamingJobInternal(jobId, doCleanup);
     }
 
+    private StreamingJobCreationResponse createStreamingJobCreationErrorResponse(String streamingJobExternalId,
+                                                                                 String errorReason) {
+        StringBuilder errBuilder = new StringBuilder("Failure creating streaming job");
+        if ( streamingJobExternalId != null ) {
+            errBuilder.append(String.format(" with external id '%s'", streamingJobExternalId));
+        }
+        errBuilder.append(" due to "+errorReason+". Please check the request parameters against the constraints defined in the REST API.");
+        String err = errBuilder.toString();
+        log.error(err);
+        return new StreamingJobCreationResponse(1, err);
+    }
+
     private StreamingJobCreationResponse createStreamingJobInternal(StreamingJobCreationRequest streamingJobCreationRequest) {
 
         try {
-            if ( streamingJobCreationRequest.isValidRequest() ) {
+            if ( !streamingJobCreationRequest.isValidRequest() ) {
+                // The streaming job failed the API syntax check, the job request is malformed.
+                return(createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),"malformed request"));
+            } else if ( !StreamResource.isSupportedUriScheme(streamingJobCreationRequest.getStreamUri()) ) {
+                // The streaming job failed the check for supported protocols check, so OpenMPF can't process the requested stream URI.
+                return(createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),
+                                                               "unsupported protocol for stream: "+streamingJobCreationRequest.getStreamUri()));
+            } else {
                 boolean enableOutputToDisk = propertiesUtil.isOutputObjectsEnabled();
                 if ( streamingJobCreationRequest.getEnableOutputToDisk() != null ) {
                   enableOutputToDisk = streamingJobCreationRequest.getEnableOutputToDisk();
@@ -206,16 +226,6 @@ public class StreamingJobController {
                 // streaming job creation response.
                 StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
                 return new StreamingJobCreationResponse( jobId, streamingJobRequest.getOutputObjectDirectory() );
-            } else {
-                StringBuilder errBuilder = new StringBuilder("Failure creating streaming job");
-                if (streamingJobCreationRequest.getExternalId() != null) {
-                    errBuilder.append(String.format(" with external id '%s'", streamingJobCreationRequest.getExternalId()));
-                }
-                errBuilder.append(" due to a malformed request. Please check the request parameters against the constraints defined in the REST API.");
-                String err = errBuilder.toString();
-
-                log.error(err);
-                return new StreamingJobCreationResponse(1, err);
             }
         } catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
             StringBuilder errBuilder = new StringBuilder("Failure creating streaming job");

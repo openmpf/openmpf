@@ -159,13 +159,15 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 				.collect(toList());
 
 		assertFalse(detections.isEmpty());
-		int firstMotionFrame = 31;
-		assertTrue(detections.stream()
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		assertTrue("Found detection before first frame with motion.",
+		           detections.stream()
 				           .allMatch(d -> d.getOffsetFrame() >= firstMotionFrame));
 
-		int maxXMotion = 320;
-		assertTrue(detections.stream()
-				.allMatch(d -> d.getX() + d.getWidth() < maxXMotion));
+		int maxXMotion = 640 / 2; // Video is 640 x 480 and only the face on the left side of the frame moves.
+		assertTrue("Found detection in region without motion.",
+		           detections.stream()
+				           .allMatch(d -> d.getX() + d.getWidth() < maxXMotion));
 	}
 
 
@@ -205,18 +207,20 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 				.collect(toList());
 
 		assertFalse(detections.isEmpty());
-		int firstMotionFrame = 31;
-		assertTrue(detections.stream()
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		assertTrue("Found detection before first frame with motion.",
+		           detections.stream()
 				           .allMatch(d -> d.getOffsetFrame() >= firstMotionFrame));
 
+		int frameWidth = 640; // Video is 640 x 480
 		boolean foundLeftFace = detections.stream()
-				.anyMatch(d -> d.getX() + d.getWidth() < 320);
-		assertTrue(foundLeftFace);
+				.anyMatch(d -> d.getX() + d.getWidth() < frameWidth / 2);
+		assertTrue("Did not detect face on left side of frame that had motion.", foundLeftFace);
 
 
 		boolean foundRightFace = detections.stream()
-				.anyMatch(d -> d.getX() > 320);
-		assertTrue(foundRightFace);
+				.anyMatch(d -> d.getX() > frameWidth / 2);
+		assertTrue("Did not detect face on right side of frame that had motion.", foundRightFace);
 	}
 
 

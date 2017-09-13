@@ -250,6 +250,13 @@ public abstract class TestSystem {
 		                          propertiesUtil.getJmsPriority());
 	}
 
+
+	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, boolean buildOutput,
+	                                  int priority) {
+		return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), buildOutput, priority);
+	}
+
+
 	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, Map<String, String> jobProperties, boolean buildOutput, int priority) {
 		JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media, Collections.emptyMap(), jobProperties,
                 buildOutput, priority);
@@ -299,11 +306,10 @@ public abstract class TestSystem {
 				propertiesUtil.getJmsPriority());
 		if (jenkins) {
 			URL expectedOutputPath = getClass().getClassLoader().getResource(expectedOutputJsonPath);
-			URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
-			log.info("Deserializing expected output {} and actual output {}", expectedOutputPath, actualOutputPath);
+			log.info("Deserializing expected output {} and actual output for job {}", expectedOutputPath, jobId);
 
 			JsonOutputObject expectedOutputJson = OBJECT_MAPPER.readValue(expectedOutputPath, JsonOutputObject.class);
-			JsonOutputObject actualOutputJson = OBJECT_MAPPER.readValue(actualOutputPath.toURL(), JsonOutputObject.class);
+			JsonOutputObject actualOutputJson = getJobOutputObject(jobId);
 
 			outputChecker.compareJsonOutputObjects(expectedOutputJson, actualOutputJson, pipelineName);
 		}

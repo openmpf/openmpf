@@ -234,10 +234,9 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         // Compare the normal Ocv pipeline output with this output.  The custom pipeline output should have fewer track sets
         // on this video (requires a video with some small faces)
         URI defaultOutputPath = (getClass().getClassLoader().getResource("output/face/runFaceOcvCustomDetectVideo-defaultCompare.json")).toURI();
-        URI customOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
 
         JsonOutputObject defaultOutput = OBJECT_MAPPER.readValue(Files.readAllBytes(Paths.get(defaultOutputPath)), JsonOutputObject.class);
-        JsonOutputObject customOutput = OBJECT_MAPPER.readValue(Files.readAllBytes(Paths.get(customOutputPath)), JsonOutputObject.class);
+        JsonOutputObject customOutput = getJobOutputObject(jobId);
 
         Set<JsonMediaOutputObject> defMedias = defaultOutput.getMedia();
         Set<JsonMediaOutputObject> custMedias = customOutput.getMedia();

@@ -123,6 +123,16 @@ public class TestUtil {
         redis.persistJob(dummyJob);
         return dummyJob;
     }
+
+
+    public static boolean almostEqual(double x, double y, double epsilon) {
+        return Math.abs(x - y) < epsilon;
+    }
+
+
+    public static boolean almostEqual(double x, double y) {
+        return almostEqual(x, y, 0.01);
+    }
 }
 
 

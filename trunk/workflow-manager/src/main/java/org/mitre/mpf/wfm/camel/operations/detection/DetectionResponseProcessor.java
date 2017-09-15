@@ -124,7 +124,7 @@ public class DetectionResponseProcessor
 
 			// Process each type of response individually.
 			processVideoResponses(jobId, detectionResponse, fps, confidenceThreshold);
-			processAudioResponses(jobId, detectionResponse, fps, confidenceThreshold);
+			processAudioResponses(jobId, detectionResponse, confidenceThreshold);
 			processImageResponses(jobId, detectionResponse, confidenceThreshold);
 
 		}
@@ -212,23 +212,19 @@ public class DetectionResponseProcessor
 		}
 	}
 
-	private void processAudioResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, Float fps, double confidenceThreshold) {
+	private void processAudioResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, double confidenceThreshold) {
 		// Iterate through the videoResponse
 		for (DetectionProtobuf.DetectionResponse.AudioResponse audioResponse : detectionResponse.getAudioResponsesList()) {
 			// Begin iterating through the tracks that were found by the detector.
 			for (DetectionProtobuf.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
-
-				int startOffsetFrame = (fps == null ? 0 : Math.round(objectTrack.getStartTime() * fps / 1000));
-				int stopOffsetFrame  = (fps == null ? 0 : Math.round(objectTrack.getStopTime()  * fps / 1000));
-
 				// Create a new Track object.
 				Track track = new Track(
 						jobId,
 						detectionResponse.getMediaId(),
 						detectionResponse.getStageIndex(),
 						detectionResponse.getActionIndex(),
-						startOffsetFrame,
-						stopOffsetFrame,
+						0,
+						0,
 						objectTrack.getStartTime(),
 						objectTrack.getStopTime(),
 						audioResponse.getDetectionType());
@@ -246,7 +242,7 @@ public class DetectionResponseProcessor
 										0,
 										0,
 										objectTrack.getConfidence(),
-										startOffsetFrame,
+										0,
 										objectTrack.getStartTime(),
 										detectionProperties));
 					}

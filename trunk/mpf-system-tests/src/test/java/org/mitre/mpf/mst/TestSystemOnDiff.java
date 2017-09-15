@@ -30,9 +30,16 @@ import com.google.common.collect.ImmutableMap;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.mitre.mpf.interop.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 
+import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
+import java.util.SortedSet;
+
+import static java.util.stream.Collectors.toList;
+import static org.junit.Assert.*;
 
 /**
  *
@@ -114,6 +121,109 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                 "output/face/runFaceOcvDetectVideoWithRegionOfInterest.json",
                 "/samples/face/new_face_video.avi");
     }
+
+
+
+	@Test(timeout = 5 * MINUTES)
+    public void runMogThenOcvFaceFeedForwardRegionTest() throws IOException {
+		String actionTaskName = "TEST OCV FACE WITH FEED FORWARD SUPERSET REGION";
+
+		String actionName = actionTaskName + " ACTION";
+	    addAction(actionName, "FACECV",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION"));
+
+	    String taskName = actionTaskName + " TASK";
+	    addTask(taskName, actionName);
+
+	    String pipelineName = "MOG FEED SUPERSET REGION TO OCVFACE PIPELINE";
+	    addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile(
+				"/samples/face/ff-region-motion-face.avi"));
+
+		long jobId = runPipelineOnMedia(pipelineName, media);
+		JsonOutputObject outputObject = getJobOutputObject(jobId);
+
+		assertEquals(1, outputObject.getMedia().size());
+		JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
+
+		SortedSet<JsonActionOutputObject> faceDetections = outputMedia.getTypes().get("FACE");
+		assertNotNull(faceDetections);
+
+		List<JsonDetectionOutputObject> detections = outputMedia
+				.getTypes()
+				.get("FACE")
+				.stream()
+				.flatMap(fd -> fd.getTracks().stream())
+				.flatMap(t -> t.getDetections().stream())
+				.collect(toList());
+
+		assertFalse(detections.isEmpty());
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		assertTrue("Found detection before first frame with motion.",
+		           detections.stream()
+				           .allMatch(d -> d.getOffsetFrame() >= firstMotionFrame));
+
+		int maxXMotion = 640 / 2; // Video is 640 x 480 and only the face on the left side of the frame moves.
+		assertTrue("Found detection in region without motion.",
+		           detections.stream()
+				           .allMatch(d -> d.getX() + d.getWidth() < maxXMotion));
+	}
+
+
+
+	@Test(timeout = 5 * MINUTES)
+	public void runMogThenOcvFaceFeedForwardFullFrameTest() throws IOException {
+		String actionTaskName = "TEST OCV FACE WITH FEED FORWARD FULL FRAME";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "FACECV",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED FULL FRAME TO OCVFACE PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile(
+				"/samples/face/ff-region-motion-face.avi"));
+
+		long jobId = runPipelineOnMedia(pipelineName, media);
+		JsonOutputObject outputObject = getJobOutputObject(jobId);
+
+		assertEquals(1, outputObject.getMedia().size());
+		JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
+
+		SortedSet<JsonActionOutputObject> faceDetections = outputMedia.getTypes().get("FACE");
+		assertNotNull(faceDetections);
+
+		List<JsonDetectionOutputObject> detections = outputMedia
+				.getTypes()
+				.get("FACE")
+				.stream()
+				.flatMap(fd -> fd.getTracks().stream())
+				.flatMap(t -> t.getDetections().stream())
+				.collect(toList());
+
+		assertFalse(detections.isEmpty());
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		assertTrue("Found detection before first frame with motion.",
+		           detections.stream()
+				           .allMatch(d -> d.getOffsetFrame() >= firstMotionFrame));
+
+		int frameWidth = 640; // Video is 640 x 480
+		boolean foundLeftFace = detections.stream()
+				.anyMatch(d -> d.getX() + d.getWidth() < frameWidth / 2);
+		assertTrue("Did not detect face on left side of frame that had motion.", foundLeftFace);
+
+
+		boolean foundRightFace = detections.stream()
+				.anyMatch(d -> d.getX() > frameWidth / 2);
+		assertTrue("Did not detect face on right side of frame that had motion.", foundRightFace);
+	}
+
+
 
     @Test(timeout = 5 * MINUTES)
     public void runMotionMogDetectVideo() throws Exception {

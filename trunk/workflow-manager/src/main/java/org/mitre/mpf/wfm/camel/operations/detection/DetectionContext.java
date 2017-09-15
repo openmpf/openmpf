@@ -27,49 +27,60 @@
 package org.mitre.mpf.wfm.camel.operations.detection;
 
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.segmenting.SegmentingPlan;
-import org.mitre.mpf.wfm.util.TimePair;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class DetectionContext {
-	private SegmentingPlan segmentingPlan;
+	private final SegmentingPlan segmentingPlan;
 	public SegmentingPlan getSegmentingPlan() { return segmentingPlan; }
 
-	private long jobId;
+	private final long jobId;
 	public long getJobId() { return jobId; }
 
-	private int stageIndex;
+	private final int stageIndex;
 	public int getStageIndex() { return stageIndex; }
 
-	private String stageName;
+	private final String stageName;
 	public String getStageName() { return stageName; }
 
-	private int actionIndex;
+	private final int actionIndex;
 	public int getActionIndex() { return actionIndex; }
 
-	private String actionName;
+	private final String actionName;
 	public String getActionName() { return actionName; }
 
-	private boolean isFirstDetectionStage;
+	private final boolean isFirstDetectionStage;
 	public boolean isFirstDetectionStage() { return isFirstDetectionStage; }
 
-	private List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties;
-	public List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> getAlgorithmProperties() { return algorithmProperties; }
+	private final List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties;
+	public List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> getAlgorithmProperties() {
+		return algorithmProperties;
+	}
 
-	private List<TimePair> previousTrackTimePairs;
-	public List<TimePair> getPreviousTrackTimePairs() { return previousTrackTimePairs; }
+	private final Set<Track> previousTracks;
+	public Set<Track> getPreviousTracks() { return previousTracks; }
 
-	public DetectionContext(long jobId, int stageIndex, String stageName, int actionIndex, String actionName, boolean isFirstDetectionStage, List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties, List<TimePair> previousTrackTimePairs, SegmentingPlan segmentingPlan) {
+	public DetectionContext(
+			long jobId,
+			int stageIndex,
+			String stageName,
+			int actionIndex,
+			String actionName,
+			boolean isFirstDetectionStage,
+			List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties,
+			Set<Track> previousTracks,
+			SegmentingPlan segmentingPlan) {
 		this.jobId = jobId;
 		this.stageIndex = stageIndex;
 		this.stageName = stageName;
 		this.actionIndex = actionIndex;
 		this.actionName = actionName;
 		this.isFirstDetectionStage = isFirstDetectionStage;
-		this.algorithmProperties = (algorithmProperties != null) ? algorithmProperties : new ArrayList<AlgorithmPropertyProtocolBuffer.AlgorithmProperty>();
-		this.previousTrackTimePairs = (previousTrackTimePairs != null) ? previousTrackTimePairs : new ArrayList<TimePair>();
+		this.algorithmProperties = algorithmProperties;
+		this.previousTracks = previousTracks;
 		this.segmentingPlan = segmentingPlan;
 	}
 }

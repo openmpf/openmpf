@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -352,16 +353,11 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                         // TODO the software that actually deletes the output object file system is commented out until the security filters can be enforced
                         // TODO what extra handling needs to be added if the cleanup fails?  How to notify the user?
                         log.warn("[Job {}:*:*] doCleanup is enabled but output object directory validation filters haven't yet been added.", jobId);
-                        try {
-                            // Walk through the files in the streaming job directory, deleting all files under the outputObjectDirectoryFileRootPath.
-                            // We intentionally don't enable follow links option in the walk, there shouldn't be any symbolic links in the output object file system.
-                            log.warn("[Job {}:*:*] doCleanup is enabled. Deleting all streaming job files under {}",jobId,outputObjectDirectoryFileRootPath);
-                            Files.walk(outputObjectDirectoryFileRootPath)
-                                .sorted(Comparator.reverseOrder())
-                                .map(Path::toFile)
-                                .peek(cleanupFilename -> System.out.println("StreamingJob: "+jobId+", cancel cleanup deleting file "+cleanupFilename))
-                                .forEach(File::delete);
-                        } catch (IOException ioe) {
+
+                        try (Stream<Path> paths = Files.walk(outputObjectDirectoryFileRootPath)) {
+                            paths.forEach(p -> p.toFile().delete());
+                        }
+                        catch (IOException ioe) {
                             String errorMessage =
                                 "Failed to cleanup the output object file directory for streaming job "
                                     + jobId

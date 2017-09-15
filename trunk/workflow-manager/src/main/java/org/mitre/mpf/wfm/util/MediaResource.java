@@ -72,7 +72,7 @@ public class MediaResource {
     /** Check to see if this is a correctly defined media resource.
      * @return true if the URI scheme of this media resource is correctly constructed, false otherwise.
      */
-    public boolean isDefinedUriScheme() { return uriScheme == UriScheme.UNDEFINED; }
+    public boolean isDefinedUriScheme() { return uriScheme != null && uriScheme != UriScheme.UNDEFINED; }
 
      /** Get the status message associated with this media resource.
       * @return Status message associated with this media resource.
@@ -114,11 +114,7 @@ public class MediaResource {
      * @return true if the specified URI scheme is any defined protocol, false otherwise.
      */
     public boolean isSupportedUriScheme() {
-        if ( isSupportedUriScheme(getUriScheme()) ) {
-            return true;
-        } else {
-            return false;
-        }
+        return isSupportedUriScheme(getUriScheme());
     }
 
     /** Check to see if the passed URI scheme is one of the supported protocols.

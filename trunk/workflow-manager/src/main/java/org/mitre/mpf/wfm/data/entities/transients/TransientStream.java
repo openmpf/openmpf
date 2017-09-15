@@ -169,11 +169,7 @@ public class TransientStream {
 	 */
 	@JsonIgnore
 	public boolean isSupportedUriScheme() {
-		if ( streamResource != null && streamResource.isDefinedUriScheme() && streamResource.isSupportedUriScheme() ) {
-			return true;
-		} else {
-			return false;
-		}
+		return streamResource != null && streamResource.isDefinedUriScheme() && streamResource.isSupportedUriScheme();
 	}
 
 }

@@ -97,7 +97,7 @@ public class StreamResource {
      * @return true if the URI scheme for this stream resource is one of the supported stream protocols, false otherwise.
      */
     public boolean isSupportedUriScheme() {
-        return ( isSupportedUriScheme(uriScheme) );
+        return isSupportedUriScheme(uriScheme);
     }
 
     /** Check to see if the URI scheme for this stream resource is one of the supported stream protocols.
@@ -106,7 +106,7 @@ public class StreamResource {
      * @return true if the specified URI scheme is one of the supported stream protocols, false otherwise.
      */
     private static boolean isSupportedUriScheme(UriScheme localUriScheme) {
-        return ( localUriScheme != null && localUriScheme == UriScheme.RTSP || localUriScheme == UriScheme.HTTP );
+        return localUriScheme != null && ( localUriScheme == UriScheme.RTSP || localUriScheme == UriScheme.HTTP );
     }
 
     /** Check to see if the URI scheme for this stream resource is one of the supported stream protocols.

@@ -47,16 +47,6 @@ public class TransientStream {
 	/** The stream resource used to construct this transient stream, Error may occur if the URI of the stream isn't a OpenMPF supported protocol. */
 	private StreamResource streamResource = null;
 	public String getUri() { return streamResource.getUri(); }
-	private void setUri(String uri) {
-	    streamResource = new StreamResource(uri);
-        if ( !streamResource.isValidResource() ) {
-            failed = true;
-            message = streamResource.getResourceStatusMessage();
-        } else if ( !streamResource.isSupportedUriScheme() ) {
-            failed = true;
-            message = "URI scheme " + streamResource.getUriScheme() + " is not supported for streams.  Check OpenMPF documentation for the list of supported protocols.";
-        }
-	}
 
 	/** The URI scheme (protocol) associated with the input stream URI. */
 	public UriScheme getUriScheme() { return streamResource == null ? UriScheme.UNDEFINED : streamResource.getUriScheme(); }
@@ -102,14 +92,21 @@ public class TransientStream {
 	@JsonIgnore
 	public MediaType getMediaType() { return MediaType.VIDEO; }
 
-	/** Constructor
-	 * @param id unique identifier for this stream
-	 * @param uri URI for this stream
+	/** Constructor of a transient stream.
+	 * @param id unique identifier for this stream.
+	 * @param uri URI for this stream.
 	 */
 	@JsonCreator
 	public TransientStream(@JsonProperty("id") long id, @JsonProperty("uri") String uri) {
 		this.id = id;
-		setUri(uri);
+        streamResource = new StreamResource(uri);
+
+        assert streamResource != null : "Stream resource must not be null, check construction for id="+id+" and uri="+uri;
+
+        if ( !isSupportedUriScheme() ) {
+            failed = true;
+            message = "URI scheme " + streamResource.getUriScheme() + " is not valid for stream, error is "+streamResource.getResourceStatusMessage()+".  Check OpenMPF documentation for the list of supported protocols.";
+        }
 	}
 
 	/** Deep level equality test
@@ -166,14 +163,13 @@ public class TransientStream {
 				type);
 	}
 
-
-	/** Check to see if the specified URI is one of the supported stream protocols.
+	/** Check to see if the specified URI is correctly defined and is one of the supported stream protocols.
 	 * OpenMPF currently only supports the RTSP and HTTP protocols for streams.
-	 * @return true if the URI scheme is one of the supported stream protocols, false otherwise.
+	 * @return true if the URI scheme is well defined and is one of the supported stream protocols, false otherwise.
 	 */
 	@JsonIgnore
 	public boolean isSupportedUriScheme() {
-		if ( streamResource != null && streamResource.isSupportedUriScheme() ) {
+		if ( streamResource != null && streamResource.isDefinedUriScheme() && streamResource.isSupportedUriScheme() ) {
 			return true;
 		} else {
 			return false;

@@ -347,12 +347,12 @@ public class JobController {
             // Iterate over all media in the batch job creation request.  If for any media, the media protocol check fails, then
             // that media will be ignored from the batch job
             for (JobCreationMediaData mediaRequest : jobCreationRequest.getMedia()) {
-                // Add a protocol check against each requested media.
+                // Add a early check against each requested media, to make sure that the URI is correctly defined and specifies valid media.
                 if ( !MediaResource.isSupportedUriScheme(mediaRequest.getMediaUri()) ) {
                     // This media within the batch job failed the supported protocol check against the medias URI.
                     // OpenMPF can't process the requested media so it will be ignored, just log the error.  Note that the job hasn't
                     // yet been submitted, so the jobId/Stage/mediaId/etc can't be recorded.
-                    log.debug("createJob: Skipping Media with URI {} - invalid protocol.");
+                    log.warn("createJob: Skipping Media with URI {} - invalid protocol.",mediaRequest.getMediaUri());
                 } else {
                     JsonMediaInputObject medium = new JsonMediaInputObject(
                         mediaRequest.getMediaUri());

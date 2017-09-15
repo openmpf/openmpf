@@ -182,12 +182,13 @@ public class StreamingJobController {
 
         try {
             if ( !streamingJobCreationRequest.isValidRequest() ) {
-                // The streaming job failed the API syntax check, the job request is malformed.
+                // The streaming job failed the API syntax check, the job request is malformed. Reject the job and send an error response.
                 return(createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),"malformed request"));
             } else if ( !StreamResource.isSupportedUriScheme(streamingJobCreationRequest.getStreamUri()) ) {
-                // The streaming job failed the check for supported protocols check, so OpenMPF can't process the requested stream URI.
+                // The streaming job failed the check for supported stream protocol check, so OpenMPF can't process the requested stream URI.
+                // Reject the job and send an error response.
                 return(createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),
-                                                               "unsupported protocol for stream: "+streamingJobCreationRequest.getStreamUri()));
+                                                               "malformed or unsupported stream URI: "+streamingJobCreationRequest.getStreamUri()));
             } else {
                 boolean enableOutputToDisk = propertiesUtil.isOutputObjectsEnabled();
                 if ( streamingJobCreationRequest.getEnableOutputToDisk() != null ) {

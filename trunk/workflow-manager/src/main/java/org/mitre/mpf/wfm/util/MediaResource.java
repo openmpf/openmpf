@@ -13,10 +13,11 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 public class MediaResource {
 
     public static final String NO_ERROR = "NO ERROR";
+    public static final String NOT_DEFINED_URI_SCHEME = "URI scheme not well defined";
     public static final String NOT_SUPPORTED_URI_SCHEME = "Unsupported URI scheme";
 
     private String uri;
-    private String resourceStatusMessage = NO_ERROR;
+    private String resourceStatusMessage = null;
 
     /** The URI associated with this piece of media.
      * @return The URI associated with this piece of media.
@@ -43,9 +44,9 @@ public class MediaResource {
     public boolean isFileMedia() { return uriScheme == UriScheme.FILE; }
 
     /** Check to see if this is a correctly defined media resource.
-     * @return true if the URI scheme of this media resource is correctly constructed and is of the file, http, https, or other protocol, false otherwise.
+     * @return true if the URI scheme of this media resource is correctly constructed, false otherwise.
      */
-    public boolean isValidResource() { return uriScheme == UriScheme.UNDEFINED; }
+    public boolean isDefinedUriScheme() { return uriScheme == UriScheme.UNDEFINED; }
 
      /** Get the status message associated with this media resource.
       * @return Status message associated with this media resource.
@@ -56,30 +57,9 @@ public class MediaResource {
         return resourceStatusMessage;
     }
 
-//    /** JSON constructor, legacy form of the constructor that is required for use by Camel.
-//     * @param uri URI of the media
-//     * @param uriScheme UriScheme constructed by the URI
-//     */
-//    @JsonCreator
-//    public MediaResource(@JsonProperty("uri") String uri, @JsonProperty("uriScheme") UriScheme uriScheme) {
-//        this.uri = uri;
-//        this.uriScheme = uriScheme;
-//        try {
-//            if (uriScheme == UriScheme.FILE) {
-//                URI uriInstance = new URI(uri);
-//                localFilePath = Paths.get(uriInstance).toAbsolutePath().toString();
-//            } else if ( uriScheme == UriScheme.UNDEFINED ) {
-//                resourceStatusMessage = NOT_SUPPORTED_URI_SCHEME;
-//            }
-//        } catch (URISyntaxException use) {
-//            this.uriScheme = UriScheme.UNDEFINED;
-//            resourceStatusMessage = use.getMessage();
-//        }
-//    }
-
     /** Construct media resource from the specified URI. If the media resource is not successfully constructed,
-     * then the mediaResourceStatusMessage may be used to return the reason why the construction was not successful.
-     * @param uri The URI of the source file which may use the file, http, https, or other protocol.
+     * then the mediaResourceStatusMessage may be used to return the reason why the construction failed.
+     * @param uri The URI of the media, defined using one of the media protocols supported by OpenMPF.
      */
     @JsonCreator
     public MediaResource(@JsonProperty("uri") String uri) {
@@ -87,10 +67,15 @@ public class MediaResource {
         try {
             URI uriInstance = new URI(uri);
             uriScheme = UriScheme.parse(uriInstance.getScheme());
-            if (uriScheme == UriScheme.FILE) {
-                localFilePath = Paths.get(uriInstance).toAbsolutePath().toString();
-            } else if ( uriScheme == UriScheme.UNDEFINED ) {
+            if ( !isDefinedUriScheme() ) {
+                resourceStatusMessage = NOT_DEFINED_URI_SCHEME;
+            } else if ( !isSupportedUriScheme() ) {
                 resourceStatusMessage = NOT_SUPPORTED_URI_SCHEME;
+            } else if (uriScheme == UriScheme.FILE) {
+                localFilePath = Paths.get(uriInstance).toAbsolutePath().toString();
+                resourceStatusMessage = NO_ERROR;
+            } else {
+                resourceStatusMessage = NO_ERROR;
             }
         } catch (URISyntaxException use) {
             uriScheme = UriScheme.UNDEFINED;
@@ -98,9 +83,9 @@ public class MediaResource {
         }
     }
 
-    /** Check to see if the URI scheme for this media is one of the media protocols supported by OpenMPF.
-     * OpenMPF supports the file, http, https, or other protocol for media
-     * @return true if the URI scheme for this media is one of the supported media protocols, false otherwise.
+    /** Check to see if the URI scheme for this media is one of the protocols OpenMPF supports for media.
+     * For media, OpenMPF supports the file, http, https, or any other protocol.
+     * @return true if the specified URI scheme is any defined protocol, false otherwise.
      */
     public boolean isSupportedUriScheme() {
         if ( isSupportedUriScheme(getUriScheme()) ) {
@@ -110,17 +95,17 @@ public class MediaResource {
         }
     }
 
-    /** Check to see if the URI scheme for this media resource is one of the supported protocols.
-     * OpenMPF supports the file, http, https, or other protocol for media
-     * @param localUriScheme URI scheme to test
-     * @return true if the specified URI scheme is one of the supported protocols, false otherwise.
+    /** Check to see if the passed URI scheme is one of the supported protocols.
+     * For media, OpenMPF supports the file, http, https, or any other protocol.
+     * @param localUriScheme URI scheme to test.
+     * @return true if the specified URI scheme is any defined protocol, false otherwise.
      */
     private static boolean isSupportedUriScheme(UriScheme localUriScheme) {
         return ( localUriScheme != null && localUriScheme != UriScheme.UNDEFINED );
     }
 
     /** Check to see if the URI scheme for this media resource is one of the supported stream protocols.
-     * OpenMPF supports the file, http, https, or other protocol for media
+     * OpenMPF supports the file, http, https, or other protocol for media.
      * @param uri The URI of the source file which may use any of the supported protocols.
      * @return true if the URI scheme for this media resource is one of the supported protocols, false otherwise.
      */

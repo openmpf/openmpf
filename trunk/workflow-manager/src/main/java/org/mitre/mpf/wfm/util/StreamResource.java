@@ -12,10 +12,11 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 public class StreamResource {
 
     public static final String NO_ERROR = "NO ERROR";
+    public static final String NOT_DEFINED_URI_SCHEME = "URI scheme not well defined";
     public static final String NOT_SUPPORTED_URI_SCHEME = "Unsupported URI scheme";
 
     private String uri;
-    private String resourceStatusMessage = NO_ERROR;
+    private String resourceStatusMessage = null;
 
     /** The URI associated with this stream.
      * @return The URI associated with this stream.
@@ -29,9 +30,9 @@ public class StreamResource {
     public UriScheme getUriScheme() {return this.uriScheme;}
 
     /** Check to see if this is a correctly defined stream resource.
-     * @return true if the URI scheme of this stream resource is correctly constructed and is of the file, http, https, or other protocol, false otherwise.
+     * @return true if this stream resource is correctly constructed, false otherwise.
      */
-    public boolean isValidResource() { return uriScheme == UriScheme.UNDEFINED; }
+    public boolean isDefinedUriScheme() { return uriScheme == UriScheme.UNDEFINED; }
 
      /** Get the status message associated with this stream resource.
       * @return Status message associated with this stream resource.
@@ -52,8 +53,12 @@ public class StreamResource {
         try {
             URI uriInstance = new URI(uri);
             uriScheme = UriScheme.parse(uriInstance.getScheme());
-            if ( uriScheme == UriScheme.UNDEFINED ) {
+            if ( !isDefinedUriScheme() ) {
+                resourceStatusMessage = NOT_DEFINED_URI_SCHEME;
+            } else if ( !isSupportedUriScheme() ) {
                 resourceStatusMessage = NOT_SUPPORTED_URI_SCHEME;
+            } else {
+                resourceStatusMessage = NO_ERROR;
             }
         } catch (URISyntaxException use) {
             uriScheme = UriScheme.UNDEFINED;
@@ -66,7 +71,7 @@ public class StreamResource {
      * @return true if the URI scheme for this stream resource is one of the supported stream protocols, false otherwise.
      */
     public boolean isSupportedUriScheme() {
-        return ( uriScheme != null && isSupportedUriScheme(uriScheme) );
+        return ( isSupportedUriScheme(uriScheme) );
     }
 
     /** Check to see if the URI scheme for this stream resource is one of the supported stream protocols.
@@ -75,7 +80,7 @@ public class StreamResource {
      * @return true if the specified URI scheme is one of the supported stream protocols, false otherwise.
      */
     private static boolean isSupportedUriScheme(UriScheme localUriScheme) {
-        return ( localUriScheme == UriScheme.RTSP || localUriScheme == UriScheme.HTTP );
+        return ( localUriScheme != null && localUriScheme == UriScheme.RTSP || localUriScheme == UriScheme.HTTP );
     }
 
     /** Check to see if the URI scheme for this stream resource is one of the supported stream protocols.

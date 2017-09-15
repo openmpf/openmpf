@@ -351,15 +351,15 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                         // TODO extra validation should be added here for security to ensure that only VideoWriter output files are deleted.
                         // TODO the software that actually deletes the output object file system is commented out until the security filters can be enforced
                         // TODO what extra handling needs to be added if the cleanup fails?  How to notify the user?
-                        log.warn("[Job {}:*:*] doCleanup is enabled but cleanup of the output object directory associated with this streaming job isn't yet implemented, pending the addition of the directory/file validation filters.", jobId);
+                        log.warn("[Job {}:*:*] doCleanup is enabled but output object directory validation filters haven't yet been added.", jobId);
                         try {
                             // Walk through the files in the streaming job directory, deleting all files under the outputObjectDirectoryFileRootPath.
                             // We intentionally don't enable follow links option in the walk, there shouldn't be any symbolic links in the output object file system.
-                            log.warn("[Job {}:*:*] doCleanup is enabled. Deleteing all streaming job files under {}",jobId,outputObjectDirectoryFileRootPath);
+                            log.warn("[Job {}:*:*] doCleanup is enabled. Deleting all streaming job files under {}",jobId,outputObjectDirectoryFileRootPath);
                             Files.walk(outputObjectDirectoryFileRootPath)
                                 .sorted(Comparator.reverseOrder())
                                 .map(Path::toFile)
-                                .peek(System.out::println)
+                                .peek(cleanupFilename -> System.out.println("StreamingJob: "+jobId+", cancel cleanup deleting file "+cleanupFilename))
                                 .forEach(File::delete);
                         } catch (IOException ioe) {
                             String errorMessage =

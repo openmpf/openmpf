@@ -52,24 +52,7 @@ public class TransientMedia {
 	private MediaResource mediaResource = null;
 	public String getUri() { return mediaResource.getUri(); }
 
-//	/** Identify the URI of the transient media. Note that OpenMPF provides support for protocols as
-//     * listed by {@link #isSupportedMediaUriScheme}.  If the protocol is not supported, the message from this
-//     * transient media will be that the URI scheme is not supported.
-//	 * @param uri The URI of the source file which may use the file, http, https, or other protocol
-//	 */
-//	private void setUri(String uri) {
-//        mediaResource = new MediaResource(uri);
-//        if ( !mediaResource.isValidResource() ) {
-//            failed = true;
-//            message = mediaResource.getResourceStatusMessage();
-//        } else if ( !isSupportedMediaUriScheme() ) {
-//            failed = true;
-//            setMessage(MediaResource.NOT_SUPPORTED_URI_SCHEME);
-//         }
-//	}
-
-	/** The URI scheme (protocol) associated with the input URI. */
-	// djvp: added JsonIgnore to uriScheme to avoid tomcat error 9/14/17
+	/** The URI scheme (protocol) associated with the input URI, as obtained from the media resource. */
 	@JsonIgnore
 	public UriScheme getUriScheme() { return mediaResource == null ? UriScheme.UNDEFINED : mediaResource.getUriScheme(); }
 
@@ -126,33 +109,21 @@ public class TransientMedia {
 	public String getSha256() { return sha256; }
 	public void setSha256(String sha256) { this.sha256 = sha256; }
 
-//
-//     uriScheme no longer needs to be passed to the constructor, but when uriScheme is not provided in the @JsonCreator constructor we get an
-//     Caused by: com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException: Unrecognized field "uriScheme" (class org.mitre.mpf.wfm.data.entities.transients.TransientMedia), not marked as ignorable (11 known properties: "localPath", "length", "message", "mediaSpecificProperties", "type", "id", "uri", "failed", "metadata", "sha256", "fps"])
-//     at [Source: [B@461f7ae0; line: -1, column: 297] (through reference chain: org.mitre.mpf.wfm.data.entities.transients.TransientMedia["uriScheme"])
-//     that seems to be triggered from org.mitre.mpf.wfm.data.RedisImpl.getJob(RedisImpl.java:450).  Adding @JsonIgnoreProperties(ignoreUnknown = true)
-//     annotation to this class seems to take care of this issue.  Is this acceptable?  If not, assistance is requested in trying to find where
-//     to better clean this up.  Tried flushing REDIS (i.e. redis-cli flushall) but that did not work djvp
-//
-//    /** JSON constructor, this legacy version of the constructor seems to be required for use by Camel.
-//     * @param id media id
-//     * @param uri URI of the media
-//     * @param uriScheme UriScheme constructed by the URI
-//     */
-//	@JsonCreator
-//    public TransientMedia(@JsonProperty("id") long id, @JsonProperty("uri") String uri, @JsonProperty("uriScheme") UriScheme uriScheme) {
-//        this.id = id;
-//        this.mediaResource = new MediaResource(uri,uriScheme);
-//    }
-
-    /** JSON constructor
-     * @param id unique media id
-     * @param uri URI of the media
+    /** JSON constructor.
+     * @param id unique media id.
+     * @param uri URI of the media, used to construct the media resource.
      */
     @JsonCreator
 	public TransientMedia(@JsonProperty("id") long id, @JsonProperty("uri") String uri) {
         this.id = id;
-		this.mediaResource = new MediaResource(uri);
+		mediaResource = new MediaResource(uri);
+
+        assert mediaResource != null : "Media resource must not be null, check construction for id="+id+" and uri="+uri;
+
+        if ( !isSupportedUriScheme() ) {
+            failed = true;
+            message = "URI scheme " + mediaResource.getUriScheme() + " is not valid for media, error is "+mediaResource.getResourceStatusMessage()+".  Check OpenMPF documentation for the list of supported protocols.";
+        }
 	}
 
 	public String toString() {
@@ -174,8 +145,8 @@ public class TransientMedia {
      * @return true if the URI scheme for this transient media is one of the supported media protocols, false otherwise.
      */
 	@JsonIgnore
-    public boolean isSupportedMediaUriScheme() {
-        return mediaResource != null && mediaResource.isSupportedUriScheme();
+    public boolean isSupportedUriScheme() {
+        return mediaResource != null && mediaResource.isDefinedUriScheme() && mediaResource.isSupportedUriScheme();
     }
 
 }

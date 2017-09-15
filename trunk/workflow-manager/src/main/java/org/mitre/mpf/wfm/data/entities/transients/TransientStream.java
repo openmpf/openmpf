@@ -31,16 +31,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
-import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.mitre.mpf.wfm.util.StreamResource;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /** transient stream data. Note that currently, only the RTSP and HTTP protocols for streams is currently supported */
 public class TransientStream {
@@ -107,16 +102,12 @@ public class TransientStream {
 	@JsonIgnore
 	public MediaType getMediaType() { return MediaType.VIDEO; }
 
-	/** Default constructor for use with serialize and deserialize methods
-	 */
-	public TransientStream() {
-	}
-
 	/** Constructor
 	 * @param id unique identifier for this stream
 	 * @param uri URI for this stream
 	 */
-	public TransientStream(long id, String uri) {
+	@JsonCreator
+	public TransientStream(@JsonProperty("id") long id, @JsonProperty("uri") String uri) {
 		this.id = id;
 		setUri(uri);
 	}
@@ -180,7 +171,8 @@ public class TransientStream {
 	 * OpenMPF currently only supports the RTSP and HTTP protocols for streams.
 	 * @return true if the URI scheme is one of the supported stream protocols, false otherwise.
 	 */
-	public boolean isSupportedStreamUriScheme() {
+	@JsonIgnore
+	public boolean isSupportedUriScheme() {
 		if ( streamResource != null && streamResource.isSupportedUriScheme() ) {
 			return true;
 		} else {

@@ -1,8 +1,9 @@
 package org.mitre.mpf.wfm.util;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import org.mitre.mpf.wfm.enums.UriScheme;
 
 /**
@@ -45,7 +46,8 @@ public class StreamResource {
      * then the streamResourceStatusMessage may be used to return the reason why the construction was not successful.
      * @param uri The URI of the source file which may use the rtsp, http, or other protocol.
      */
-    public StreamResource(String uri) {
+    @JsonCreator
+    public StreamResource(@JsonProperty("uri") String uri) {
         this.uri = uri;
         try {
             URI uriInstance = new URI(uri);
@@ -69,7 +71,7 @@ public class StreamResource {
 
     /** Check to see if the URI scheme for this stream resource is one of the supported stream protocols.
      * OpenMPF currently only supports the RTSP and HTTP protocols for streams.
-     * @oaran localUriScheme URI scheme to test
+     * @param localUriScheme URI scheme to test.
      * @return true if the specified URI scheme is one of the supported stream protocols, false otherwise.
      */
     private static boolean isSupportedUriScheme(UriScheme localUriScheme) {

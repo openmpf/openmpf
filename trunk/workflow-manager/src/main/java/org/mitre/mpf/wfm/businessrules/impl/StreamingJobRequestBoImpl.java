@@ -312,10 +312,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * Cancel a streaming job.
      * Mark the job as cancelled in both REDIS and in the long-term database.
      * // TODO The streaming job cancel request must also be sent to the components via the Master Node Manager
-     *
      * @param jobId     The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
-     * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job
-     * @return true if the streaming job was successfully cancelled, false otherwise
+     * @param doCleanup if true, delete the streaming job files from disk as part of cancelling the streaming job.
+     * @return true if the streaming job was successfully cancelled, false otherwise.
      * @throws WfmProcessingException
      */
     @Override
@@ -339,8 +338,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             if (doCleanup) {
                 // delete the output object directory as part of the job cancellation
                 String outputObjectDirectory = streamingJobRequest.getOutputObjectDirectory();
-                if (outputObjectDirectory == null) {
-                    log.warn("[Job {}:*:*] doCleanup is enabled but the streaming job output object directory is null. Can't cleanup the output object directory for this job.", jobId);
+                if (outputObjectDirectory == null || outputObjectDirectory.isEmpty()) {
+                    log.warn("[Job {}:*:*] doCleanup is enabled but the streaming job output object directory is null or empty. Can't cleanup the output object directory for this job.", jobId);
                 } else {
                     // before we start deleting any file system, double check that this is the root directory of the
                     // streaming job's output object directory.

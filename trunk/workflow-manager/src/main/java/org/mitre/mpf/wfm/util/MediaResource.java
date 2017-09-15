@@ -3,6 +3,8 @@ package org.mitre.mpf.wfm.util;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import org.codehaus.jackson.annotate.JsonCreator;
+import org.codehaus.jackson.annotate.JsonProperty;
 import org.mitre.mpf.wfm.enums.UriScheme;
 
 /**
@@ -54,11 +56,33 @@ public class MediaResource {
         return resourceStatusMessage;
     }
 
+//    /** JSON constructor, legacy form of the constructor that is required for use by Camel.
+//     * @param uri URI of the media
+//     * @param uriScheme UriScheme constructed by the URI
+//     */
+//    @JsonCreator
+//    public MediaResource(@JsonProperty("uri") String uri, @JsonProperty("uriScheme") UriScheme uriScheme) {
+//        this.uri = uri;
+//        this.uriScheme = uriScheme;
+//        try {
+//            if (uriScheme == UriScheme.FILE) {
+//                URI uriInstance = new URI(uri);
+//                localFilePath = Paths.get(uriInstance).toAbsolutePath().toString();
+//            } else if ( uriScheme == UriScheme.UNDEFINED ) {
+//                resourceStatusMessage = NOT_SUPPORTED_URI_SCHEME;
+//            }
+//        } catch (URISyntaxException use) {
+//            this.uriScheme = UriScheme.UNDEFINED;
+//            resourceStatusMessage = use.getMessage();
+//        }
+//    }
+
     /** Construct media resource from the specified URI. If the media resource is not successfully constructed,
      * then the mediaResourceStatusMessage may be used to return the reason why the construction was not successful.
      * @param uri The URI of the source file which may use the file, http, https, or other protocol.
      */
-    public MediaResource(String uri) {
+    @JsonCreator
+    public MediaResource(@JsonProperty("uri") String uri) {
         this.uri = uri;
         try {
             URI uriInstance = new URI(uri);
@@ -88,7 +112,7 @@ public class MediaResource {
 
     /** Check to see if the URI scheme for this media resource is one of the supported protocols.
      * OpenMPF supports the file, http, https, or other protocol for media
-     * @oaran localUriScheme URI scheme to test
+     * @param localUriScheme URI scheme to test
      * @return true if the specified URI scheme is one of the supported protocols, false otherwise.
      */
     private static boolean isSupportedUriScheme(UriScheme localUriScheme) {

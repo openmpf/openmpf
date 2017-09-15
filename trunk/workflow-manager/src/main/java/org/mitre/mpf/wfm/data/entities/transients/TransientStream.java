@@ -49,6 +49,7 @@ public class TransientStream {
 	public String getUri() { return streamResource.getUri(); }
 
 	/** The URI scheme (protocol) associated with the input stream URI. */
+	@JsonIgnore
 	public UriScheme getUriScheme() { return streamResource == null ? UriScheme.UNDEFINED : streamResource.getUriScheme(); }
 
 	/** A flag indicating if the medium has encountered an error during processing. */

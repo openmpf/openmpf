@@ -58,7 +58,7 @@ public class StreamResource {
     /** Check to see if this is a correctly defined stream resource.
      * @return true if this stream resource is correctly constructed, false otherwise.
      */
-    public boolean isDefinedUriScheme() { return uriScheme == UriScheme.UNDEFINED; }
+    public boolean isDefinedUriScheme() { return uriScheme != null && uriScheme != UriScheme.UNDEFINED; }
 
      /** Get the status message associated with this stream resource.
       * @return Status message associated with this stream resource.

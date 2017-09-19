@@ -66,10 +66,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.annotation.PostConstruct;
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
 import java.net.URI;
 import java.net.URL;
 import java.util.*;
@@ -317,9 +314,14 @@ public abstract class TestSystem {
 	}
 
 
-	protected JsonOutputObject getJobOutputObject(long jobId) throws IOException {
-		File outputObjectFile = propertiesUtil.createDetectionOutputObjectFile(jobId);
-		return OBJECT_MAPPER.readValue(outputObjectFile, JsonOutputObject.class);
+	protected JsonOutputObject getJobOutputObject(long jobId) {
+    	try {
+		    File outputObjectFile = propertiesUtil.createDetectionOutputObjectFile(jobId);
+		    return OBJECT_MAPPER.readValue(outputObjectFile, JsonOutputObject.class);
+	    }
+	    catch (IOException e) {
+    		throw new UncheckedIOException(e);
+	    }
 	}
 
 

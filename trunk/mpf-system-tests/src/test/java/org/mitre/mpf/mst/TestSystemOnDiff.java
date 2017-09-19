@@ -168,6 +168,50 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
 	@Test(timeout = 5 * MINUTES)
+	public void runOcvFaceThenMogFeedForwardRegionTest() {
+		String actionTaskName = "TEST MOG WITH FEED FORWARD SUPERSET REGION";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "MOG",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION", "USE_MOTION_TRACKING", "1"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "OCVFACE FEED SUPERSET REGION TO MOG PIPELINE";
+		addPipeline(pipelineName, "OCV FACE DETECTION TASK", taskName);
+
+		int firstFaceFrame = 31; // The first 30 frames of the video do not contains any faces
+		int maxXDetection = 640 / 2; // Video is 640 x 480 and only the left side of the frame contains a face.
+
+		runFeedForwardRegionTest(pipelineName, "/samples/motion/ff-region-face-motion.avi",
+		                         "MOTION", firstFaceFrame, maxXDetection);
+	}
+
+
+	@Test(timeout = 5 * MINUTES)
+	public void runOcvFaceThenSubsenseFeedForwardRegionTest() {
+		String actionTaskName = "TEST SUBSENSE WITH FEED FORWARD SUPERSET REGION";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "SUBSENSE",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION", "USE_MOTION_TRACKING", "1"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "OCVFACE FEED SUPERSET REGION TO SUBSENSE PIPELINE";
+		addPipeline(pipelineName, "OCV FACE DETECTION TASK", taskName);
+
+		int firstFaceFrame = 31; // The first 30 frames of the video do not contains any faces
+		int maxXDetection = 640 / 2; // Video is 640 x 480 and only the left side of the frame contains a face.
+
+		runFeedForwardRegionTest(pipelineName, "/samples/motion/ff-region-face-motion.avi",
+		                         "MOTION", firstFaceFrame, maxXDetection);
+	}
+
+
+	@Test(timeout = 5 * MINUTES)
 	public void runMogThenOcvFaceFeedForwardFullFrameTest() {
 		String actionTaskName = "TEST OCV FACE WITH FEED FORWARD FULL FRAME";
 
@@ -209,6 +253,51 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 		runFeedForwardFullFrameTest(pipelineName, "/samples/text/ff-region-motion-lp.avi",
 		                            "TEXT", firstMotionFrame, maxXLeftDetection, minXRightDetection);
 	}
+
+
+	@Test(timeout = 5 * MINUTES)
+	public void runOcvFaceThenMogFeedForwardFullFrameTest() {
+		String actionTaskName = "TEST MOG WITH FEED FORWARD FULL FRAME";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "MOG",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME", "USE_MOTION_TRACKING", "1"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "OCVFACE FEED FULL FRAME TO MOG PIPELINE";
+		addPipeline(pipelineName, "OCV FACE DETECTION TASK", taskName);
+
+		int firstFaceFrame = 31; // The first 30 frames of the video do not contains any faces
+		int maxXLeftDetection = 640 / 2;  // Video is 640x480 and there is motion on the left side of the frame.
+		int minXRightDetection = 640 / 2;  // Video is 640x480 and there is motion on the right side of the frame.
+		runFeedForwardFullFrameTest(pipelineName, "/samples/motion/ff-region-face-motion.avi",
+		                            "MOTION", firstFaceFrame, maxXLeftDetection, minXRightDetection);
+	}
+
+
+	@Test(timeout = 5 * MINUTES)
+	public void runOcvFaceThenSubsenseFeedForwardFullFrameTest() {
+		String actionTaskName = "TEST SUBSENSE WITH FEED FORWARD FULL FRAME";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "SUBSENSE",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME", "USE_MOTION_TRACKING", "1"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "OCVFACE FEED FULL FRAME TO SUBSENSE PIPELINE";
+		addPipeline(pipelineName, "OCV FACE DETECTION TASK", taskName);
+
+		int firstFaceFrame = 31; // The first 30 frames of the video do not contains any faces
+		int maxXLeftDetection = 640 / 2;  // Video is 640x480 and there is motion on the left side of the frame.
+		int minXRightDetection = 640 / 2;  // Video is 640x480 and there is motion on the right side of the frame.
+		runFeedForwardFullFrameTest(pipelineName, "/samples/motion/ff-region-face-motion.avi",
+		                            "MOTION", firstFaceFrame, maxXLeftDetection, minXRightDetection);
+	}
+
 
 	private void runFeedForwardRegionTest(String pipelineName, String mediaPath, String detectionType,
 	                                      int firstDetectionFrame, int maxXDetection) {

@@ -3,3 +3,15 @@ YouTube: https://www.youtube.com/watch?v=6eOak-gJkt4 - About - “A Man walking 
 
 # five-second-marathon-clip.mkv
 Public Domain
+
+# ff-region-face-motion.avi
+Based on meds-aa-S029-01.jpg from the MEDS-II dataset.
+The dataset and other related information can be acquired at http://www.nist.gov/itl/iad/ig/sd32.cfm
+
+From the Dataset Acknowledgement from the NIST Special Database 32 Multiple Encounter Dataset II (MEDS-II) Data Description Document
+"This dataset is being released (as prepared by MITRE Corporation) to support the NIST MultipleBiometric
+Evaluation 2010 (MBE). In addition, this dataset is available to any user interested in
+biometric research."
+For first 30 frames two white rectangles move vertically. One is in left half of frame the other in the right half.
+At frame 31 the white rectangle on the left side is replaced by a face that continues moving vertically.
+

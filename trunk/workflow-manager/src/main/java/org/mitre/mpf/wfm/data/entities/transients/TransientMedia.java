@@ -123,7 +123,7 @@ public class TransientMedia {
 
         if ( !mediaResource.isSupportedUriScheme() ) {
             failed = true;
-            message = "URI scheme " + mediaResource.getUriScheme() + " is not valid for media, error is "+mediaResource.getResourceStatusMessage()+".  Check OpenMPF documentation for the list of supported protocols.";
+            message = "URI " + mediaResource.getUri() + " is not valid for media, error is "+mediaResource.getResourceStatusMessage()+".  Check OpenMPF documentation for the list of supported protocols.";
         } else if ( mediaResource.isFileMedia() && !mediaResource.isExistingReadableFileMedia() ) {
             failed = true;
             message = "File "+mediaResource.getUri()+" does not exist or isn't readable.";

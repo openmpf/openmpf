@@ -348,32 +348,16 @@ public class JobController {
             // Iterate over all media in the batch job creation request.  If for any media, the media protocol check fails, then
             // that media will be ignored from the batch job
             for (JobCreationMediaData mediaRequest : jobCreationRequest.getMedia()) {
-                // Add a early check against each requested media, to make sure that the URI is correctly defined and specifies valid media.
-                MediaResourceContainer mediaResourceContainer = MediaResource.getMediaResourceContainer(mediaRequest.getMediaUri());
-//                if ( !MediaResource.isSupportedUriScheme(mediaRequest.getMediaUri()) ) {
-                if ( !mediaResourceContainer.isResourceOfSupportedUriScheme() ) {
-                    // This media within the batch job failed the supported protocol check against the media's URI.
-                    // OpenMPF can't process the requested media so it will be ignored, just log the error.  Note that the job hasn't
-                    // yet been submitted, so the jobId/Stage/mediaId/etc can't be recorded.
-                    log.warn("createJob: Skipping Media with URI {} - invalid protocol.",
-                        mediaRequest.getMediaUri());
-                } else if ( mediaResourceContainer.isFileResource() && !mediaResourceContainer.isFileResourceReadable() ) {
-                        // This media within the batch job doesn't exist or isn't readable
-                        // OpenMPF can't process the requested media so it will be ignored, just log the error.  Note that the job hasn't
-                        // yet been submitted, so the jobId/Stage/mediaId/etc can't be recorded.
-                        log.warn("createJob: Skipping Media with URI {} - the file doesn't exist or isn't readable.",mediaRequest.getMediaUri());
-                } else {
-                    JsonMediaInputObject medium = new JsonMediaInputObject(
-                        mediaRequest.getMediaUri());
-                    if (mediaRequest.getProperties() != null) {
-                        for (Map.Entry<String, String> property : mediaRequest.getProperties()
-                            .entrySet()) {
-                            medium.getProperties()
-                                .put(property.getKey().toUpperCase(), property.getValue());
-                        }
+                JsonMediaInputObject medium = new JsonMediaInputObject(
+                    mediaRequest.getMediaUri());
+                if (mediaRequest.getProperties() != null) {
+                    for (Map.Entry<String, String> property : mediaRequest.getProperties()
+                        .entrySet()) {
+                        medium.getProperties()
+                            .put(property.getKey().toUpperCase(), property.getValue());
                     }
-                    media.add(medium);
                 }
+                media.add(medium);
             }
             if (jobCreationRequest.getCallbackURL() != null && jobCreationRequest.getCallbackURL().length() > 0) {
                 jsonJobRequest = mpfService.createJob(media,

@@ -121,11 +121,14 @@ public class TransientMedia {
 
         assert mediaResource != null : "Media resource must not be null, check construction for id="+id+" and uri="+uri;
 
-        if ( !isSupportedUriScheme() ) {
+        if ( !mediaResource.isSupportedUriScheme() ) {
             failed = true;
             message = "URI scheme " + mediaResource.getUriScheme() + " is not valid for media, error is "+mediaResource.getResourceStatusMessage()+".  Check OpenMPF documentation for the list of supported protocols.";
+        } else if ( mediaResource.isFileMedia() && !mediaResource.isExistingReadableFileMedia() ) {
+            failed = true;
+            message = "File "+mediaResource.getUri()+" does not exist or isn't readable.";
         }
-	}
+    }
 
 	public String toString() {
 		return String.format("%s#<id=%d, uri='%s', uriScheme='%s', localPath='%s', failed=%s, message='%s', type='%s', length=%d, sha256='%s'>",
@@ -140,14 +143,5 @@ public class TransientMedia {
 				length,
 				sha256);
 	}
-
-    /** Check to see if the URI scheme for this transient media is one of the media protocols supported by OpenMPF.
-     * OpenMPF supports the file, http, https, or other protocol for transient media
-     * @return true if the URI scheme for this transient media is one of the supported media protocols, false otherwise.
-     */
-	@JsonIgnore
-    public boolean isSupportedUriScheme() {
-        return mediaResource != null && mediaResource.isDefinedUriScheme() && mediaResource.isSupportedUriScheme();
-    }
 
 }

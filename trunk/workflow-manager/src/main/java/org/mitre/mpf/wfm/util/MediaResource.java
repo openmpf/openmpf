@@ -78,7 +78,11 @@ public class MediaResource {
      */
     public UriScheme getUriScheme() {return mediaResourceContainer.getUriScheme();}
 
-    /** Check to see if this is a piece of file media, which exists and is readable
+    /** Check to see if this is file media.
+     * @return true if this is file media, false otherwise.
+     */
+    public boolean isFileMedia() { return mediaResourceContainer.isFileResource(); }
+    /** Check to see if this is file media, which exists and is readable.
      * @return true if this is existing, readable file media, false otherwise.
      */
     public boolean isExistingReadableFileMedia() { return mediaResourceContainer.isFileResourceReadable(); }

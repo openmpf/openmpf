@@ -28,51 +28,65 @@ package org.mitre.mpf.wfm.util;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Paths;
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonProperty;
+import java.util.Arrays;
+import java.util.List;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.mitre.mpf.wfm.enums.ListFilterType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 
 /**
  * Contains properties used to identify a piece of media.  The media may or may not have a local file path associated with it.
+ * This class also defines the protocols that openmpf supports for media resources
  */
 public class MediaResource {
 
     public static final String NO_ERROR = "NO ERROR";
     public static final String NOT_DEFINED_URI_SCHEME = "URI scheme not defined";
     public static final String NOT_SUPPORTED_URI_SCHEME = "Unsupported URI scheme";
+    public static final String LOCAL_FILE_DOES_NOT_EXIST = "File does not exist";
+    public static final String LOCAL_FILE_NOT_READABLE = "File is not readable";
 
-    private String uri;
-    private String resourceStatusMessage = null;
+    // define the UriSchemes that are not supported by openmpf for media resources.
+    // Note that openmpf supports everything except UriScheme.UNDEFINED, so we use an unsupported (i.e. exclusive) list of protocols here.
+    public static final List<UriScheme> unsupportedUriSchemeList = Arrays.asList(UriScheme.UNDEFINED);
 
-    /** The URI associated with this piece of media.
-     * @return The URI associated with this piece of media.
-     */
-    public String getUri() { return uri; }
+    private MediaResourceContainer mediaResourceContainer = null;
 
-    private UriScheme uriScheme = null;
-    /** The URI scheme (protocol) associated with this media resource, may include the file, http, https, or some other protocol.
-     * @return The URI scheme (protocol) associated with this media resource.
-     */
-    public UriScheme getUriScheme() {return this.uriScheme;}
-
+    // Local file path (i.e. absolute file path) being kept as a separate property, allowing for overriding file info in mediaResourceContainer.
+    // Support for this is required by RemoteMediaSplitter//TransientMedia
     private String localFilePath = null;
 
     /** The local file path of this piece of media, if this is file media, null otherwise.
      * @return If this is file media, returns the absolute path to the local file for this piece of media, null otherwise.
      */
-    public String getLocalFilePath() { return this.localFilePath; }
+    public String getLocalFilePath() { return localFilePath; }
+
+    // Note: need to support this method for use by RemoteMediaSplitter//TransientMedia.  Usage of this method will override
+    // local file path as obtained from mediaResourceContainer
     public void setLocalFilePath (String localFilePath) { this.localFilePath = localFilePath; }
 
-    /** Check to see if this is a piece of file media.
-     * @return true if this is file media, false otherwise.
+    private String resourceStatusMessage = null;
+
+    /** The URI associated with this piece of media.
+     * @return The URI associated with this piece of media.
      */
-    public boolean isFileMedia() { return uriScheme == UriScheme.FILE; }
+    public String getUri() { return mediaResourceContainer.getUri(); }
+
+    /** The URI scheme (protocol) associated with this media resource, may include the file, http, https, or some other protocol.
+     * @return The URI scheme (protocol) associated with this media resource.
+     */
+    public UriScheme getUriScheme() {return mediaResourceContainer.getUriScheme();}
+
+    /** Check to see if this is a piece of file media, which exists and is readable
+     * @return true if this is existing, readable file media, false otherwise.
+     */
+    public boolean isExistingReadableFileMedia() { return mediaResourceContainer.isFileResourceReadable(); }
 
     /** Check to see if this is a correctly defined media resource.
      * @return true if the URI scheme of this media resource is correctly constructed, false otherwise.
      */
-    public boolean isDefinedUriScheme() { return uriScheme != null && uriScheme != UriScheme.UNDEFINED; }
+    public boolean isDefinedUriScheme() { return mediaResourceContainer.isResourceOfDefinedUriScheme(); }
 
      /** Get the status message associated with this media resource.
       * @return Status message associated with this media resource.
@@ -89,23 +103,24 @@ public class MediaResource {
      */
     @JsonCreator
     public MediaResource(@JsonProperty("uri") String uri) {
-        this.uri = uri;
-        try {
-            URI uriInstance = new URI(uri);
-            uriScheme = UriScheme.parse(uriInstance.getScheme());
-            if ( !isDefinedUriScheme() ) {
-                resourceStatusMessage = NOT_DEFINED_URI_SCHEME;
-            } else if ( !isSupportedUriScheme() ) {
-                resourceStatusMessage = NOT_SUPPORTED_URI_SCHEME;
-            } else if (uriScheme == UriScheme.FILE) {
-                localFilePath = Paths.get(uriInstance).toAbsolutePath().toString();
-                resourceStatusMessage = NO_ERROR;
-            } else {
-                resourceStatusMessage = NO_ERROR;
-            }
-        } catch (URISyntaxException use) {
-            uriScheme = UriScheme.UNDEFINED;
-            resourceStatusMessage = use.getMessage();
+        // construct the media resource info container, passing along the URI schemes that aren't supported by openmpf for this type of media.
+        mediaResourceContainer = new MediaResourceContainer(uri, ListFilterType.EXCLUSION_LIST, unsupportedUriSchemeList);
+        if ( mediaResourceContainer.isMediaResourceInError() ) {
+            resourceStatusMessage = mediaResourceContainer.getResourceErrorMessage();
+        } else if ( !mediaResourceContainer.isResourceOfDefinedUriScheme() ) {
+            resourceStatusMessage = NOT_DEFINED_URI_SCHEME;
+        } else if ( !mediaResourceContainer.isResourceOfSupportedUriScheme() ) {
+            resourceStatusMessage = NOT_SUPPORTED_URI_SCHEME;
+        } else if ( mediaResourceContainer.isFileResource() && !mediaResourceContainer.isFileResourceExisting() ) {
+            resourceStatusMessage = LOCAL_FILE_DOES_NOT_EXIST;
+        } else if ( mediaResourceContainer.isFileResource() && !mediaResourceContainer.isFileResourceReadable() ) {
+            resourceStatusMessage = LOCAL_FILE_NOT_READABLE;
+        } else if ( mediaResourceContainer.isFileResource() ) {
+            // localFilePath maintained separately allows for override of file path in mediaResourceContainer via method setLocalFilePath
+            localFilePath = mediaResourceContainer.getResourceFile().getAbsolutePath();
+            resourceStatusMessage = NO_ERROR;
+        } else {
+            resourceStatusMessage = NO_ERROR;
         }
     }
 
@@ -123,7 +138,8 @@ public class MediaResource {
      * @return true if the specified URI scheme is any defined protocol, false otherwise.
      */
     private static boolean isSupportedUriScheme(UriScheme localUriScheme) {
-        return ( localUriScheme != null && localUriScheme != UriScheme.UNDEFINED );
+        // check the localUriScheme to see if it is in the list of unsupported uriSchemes, if so that the uriScheme is NOT supported by openmpf
+        return localUriScheme != null && unsupportedUriSchemeList.stream().noneMatch(unsupportedUriScheme -> localUriScheme == unsupportedUriScheme);
     }
 
     /** Check to see if the URI scheme for this media resource is one of the supported stream protocols.
@@ -139,6 +155,14 @@ public class MediaResource {
         } catch (URISyntaxException use) {
             return false;
         }
+    }
+
+    /** Collect media resource info for the specified URI.
+     * @param uri URI to be evaluated.
+     * @return Information about the media resource, including UriScheme, protocol support, file status (if applicable)
+     */
+    public static MediaResourceContainer getMediaResourceContainer(String uri) {
+        return new MediaResourceContainer(uri, ListFilterType.EXCLUSION_LIST, unsupportedUriSchemeList);
     }
 
 }

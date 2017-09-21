@@ -58,6 +58,7 @@ public class TransientMedia {
 
 	/** The local file path of the file once it has been retrieved. May be null if the media is not a file, or the file path has not been externally set. */
 	public String getLocalPath() { return mediaResource.getLocalFilePath(); }
+	// Note: need to support the setLocalPath method for RemoteMediaSplitter
 	public void setLocalPath(String localPath) { mediaResource.setLocalFilePath(localPath); }
 
 	/** A flag indicating if the medium has encountered an error during processing. Will be false if no error occurred. */

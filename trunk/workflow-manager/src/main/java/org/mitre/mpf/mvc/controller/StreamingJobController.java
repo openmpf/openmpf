@@ -78,8 +78,8 @@ public class StreamingJobController {
     @RequestMapping(value = {"/rest/streaming/jobs"}, method = RequestMethod.POST)
     @ApiOperation(value = "Creates and submits a streaming job using a JSON StreamingJobCreationRequest object as the request body.",
             notes = "The pipelineName should be one of the values in 'rest/pipelines'. The stream should contain a valid streamUri, " +
-                    "for example: rtsp://example.com/media.mp4.  Optional segmentSize, mediaProperties, stallAlertDetectionThreshold, "+
-                    "stallAlertRate, stallTimeout and stallCallbackUri may also be defined for the stream. " +
+                    "for example: rtsp://example.com/media.mp4.  Optional segmentSize, mediaProperties, "+
+                    "stallTimeout and stallCallbackUri may also be defined for the stream. " +
                     "Additional streaming job options include summaryReportCallbackUri, healthReportCallbackUri, newTrackAlertCallbackUri and " +
                     "callbackMethod (GET or POST). " +
                     "Other streaming job options include jobProperties object which contains String key-value pairs which override the pipeline's job properties for this streaming job. " +

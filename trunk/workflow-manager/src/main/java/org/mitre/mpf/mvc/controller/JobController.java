@@ -38,6 +38,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.MediaResource;
+import org.mitre.mpf.wfm.util.MediaResourceContainer;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -348,11 +349,19 @@ public class JobController {
             // that media will be ignored from the batch job
             for (JobCreationMediaData mediaRequest : jobCreationRequest.getMedia()) {
                 // Add a early check against each requested media, to make sure that the URI is correctly defined and specifies valid media.
-                if ( !MediaResource.isSupportedUriScheme(mediaRequest.getMediaUri()) ) {
-                    // This media within the batch job failed the supported protocol check against the medias URI.
+                MediaResourceContainer mediaResourceContainer = MediaResource.getMediaResourceContainer(mediaRequest.getMediaUri());
+//                if ( !MediaResource.isSupportedUriScheme(mediaRequest.getMediaUri()) ) {
+                if ( !mediaResourceContainer.isResourceOfSupportedUriScheme() ) {
+                    // This media within the batch job failed the supported protocol check against the media's URI.
                     // OpenMPF can't process the requested media so it will be ignored, just log the error.  Note that the job hasn't
                     // yet been submitted, so the jobId/Stage/mediaId/etc can't be recorded.
-                    log.warn("createJob: Skipping Media with URI {} - invalid protocol.",mediaRequest.getMediaUri());
+                    log.warn("createJob: Skipping Media with URI {} - invalid protocol.",
+                        mediaRequest.getMediaUri());
+                } else if ( mediaResourceContainer.isFileResource() && !mediaResourceContainer.isFileResourceReadable() ) {
+                        // This media within the batch job doesn't exist or isn't readable
+                        // OpenMPF can't process the requested media so it will be ignored, just log the error.  Note that the job hasn't
+                        // yet been submitted, so the jobId/Stage/mediaId/etc can't be recorded.
+                        log.warn("createJob: Skipping Media with URI {} - the file doesn't exist or isn't readable.",mediaRequest.getMediaUri());
                 } else {
                     JsonMediaInputObject medium = new JsonMediaInputObject(
                         mediaRequest.getMediaUri());

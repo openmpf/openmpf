@@ -30,6 +30,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.List;
+import org.mitre.mpf.wfm.enums.ListFilterType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 
 /**
@@ -41,24 +44,27 @@ public class StreamResource {
     public static final String NOT_DEFINED_URI_SCHEME = "URI scheme not defined";
     public static final String NOT_SUPPORTED_URI_SCHEME = "Unsupported URI scheme";
 
-    private String uri;
+    // define the UriSchemes that are supported by openmpf for stream resources.
+    // Note that openmpf supports only RTSP and HTTP protocols for stream, so we use an supported (i.e. inclusive) list of protocols here.
+    public static final List<UriScheme> supportedUriSchemeList = Arrays.asList(UriScheme.RTSP, UriScheme.HTTP);
+
+    private StreamResourceContainer streamResourceContainer = null;
     private String resourceStatusMessage = null;
 
     /** The URI associated with this stream.
      * @return The URI associated with this stream.
      */
-    public String getUri() { return uri; }
+    public String getUri() { return streamResourceContainer.getUri(); }
 
-    private UriScheme uriScheme = null;
-    /** The URI scheme (protocol) associated with this stream resource, may include the file, http, https, or some other protocol.
+    /** The URI scheme (protocol) associated with this stream resource. OpenMPF only supports the http and rtsp protocols for streams.
      * @return The URI scheme (protocol) associated with this stream resource.
      */
-    public UriScheme getUriScheme() {return this.uriScheme;}
+    public UriScheme getUriScheme() {return streamResourceContainer.getUriScheme();}
 
     /** Check to see if this is a correctly defined stream resource.
      * @return true if this stream resource is correctly constructed, false otherwise.
      */
-    public boolean isDefinedUriScheme() { return uriScheme != null && uriScheme != UriScheme.UNDEFINED; }
+    public boolean isDefinedUriScheme() { return streamResourceContainer.isResourceOfDefinedUriScheme(); }
 
      /** Get the status message associated with this stream resource.
       * @return Status message associated with this stream resource.
@@ -75,29 +81,25 @@ public class StreamResource {
      */
     @JsonCreator
     public StreamResource(@JsonProperty("uri") String uri) {
-        this.uri = uri;
-        try {
-            URI uriInstance = new URI(uri);
-            uriScheme = UriScheme.parse(uriInstance.getScheme());
-            if ( !isDefinedUriScheme() ) {
-                resourceStatusMessage = NOT_DEFINED_URI_SCHEME;
-            } else if ( !isSupportedUriScheme() ) {
-                resourceStatusMessage = NOT_SUPPORTED_URI_SCHEME;
-            } else {
-                resourceStatusMessage = NO_ERROR;
-            }
-        } catch (URISyntaxException use) {
-            uriScheme = UriScheme.UNDEFINED;
-            resourceStatusMessage = use.getMessage();
+
+        streamResourceContainer = new StreamResourceContainer(uri, ListFilterType.INCLUSION_LIST, supportedUriSchemeList);
+        if ( streamResourceContainer.isStreamResourceInError() ) {
+            resourceStatusMessage = streamResourceContainer.getResourceErrorMessage();
+        } else if ( !streamResourceContainer.isResourceOfDefinedUriScheme() ) {
+            resourceStatusMessage = NOT_DEFINED_URI_SCHEME;
+        } else if ( !streamResourceContainer.isResourceOfSupportedUriScheme() ) {
+            resourceStatusMessage = NOT_SUPPORTED_URI_SCHEME;
+        } else {
+            resourceStatusMessage = NO_ERROR;
         }
-    }
+     }
 
     /** Check to see if the URI scheme for this stream resource is one of the supported stream protocols.
      * OpenMPF currently only supports the RTSP and HTTP protocols for streams.
      * @return true if the URI scheme for this stream resource is one of the supported stream protocols, false otherwise.
      */
     public boolean isSupportedUriScheme() {
-        return isSupportedUriScheme(uriScheme);
+        return streamResourceContainer.isResourceOfSupportedUriScheme();
     }
 
     /** Check to see if the URI scheme for this stream resource is one of the supported stream protocols.
@@ -106,7 +108,7 @@ public class StreamResource {
      * @return true if the specified URI scheme is one of the supported stream protocols, false otherwise.
      */
     private static boolean isSupportedUriScheme(UriScheme localUriScheme) {
-        return localUriScheme != null && ( localUriScheme == UriScheme.RTSP || localUriScheme == UriScheme.HTTP );
+        return localUriScheme != null && supportedUriSchemeList.stream().anyMatch(supportedUriScheme -> localUriScheme == supportedUriScheme);
     }
 
     /** Check to see if the URI scheme for this stream resource is one of the supported stream protocols.

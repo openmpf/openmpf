@@ -146,6 +146,28 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
 	@Test(timeout = 5 * MINUTES)
+	public void runMogThenOcvPersonFeedForwardRegionTest() {
+		String actionTaskName = "TEST OCV PERSON WITH FEED FORWARD SUPERSET REGION";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "PERSONCV",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED SUPERSET REGION TO OCV PERSON PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		int maxXMotion = 320 / 2; // Video is 320 x 300 and only the person on the left side of the frame moves.
+
+		runFeedForwardRegionTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
+		                         "PERSON", firstMotionFrame, maxXMotion);
+	}
+
+
+	@Test(timeout = 5 * MINUTES)
 	public void runMogThenOalprFeedForwardRegionTest() {
 		String actionTaskName = "TEST OALPR WITH FEED FORWARD SUPERSET REGION";
 
@@ -230,6 +252,28 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 		int minXRightDetection = 640 / 2;  // Video is 640x480 and there is face on the right side of the frame.
 		runFeedForwardFullFrameTest(pipelineName, "/samples/face/ff-region-motion-face.avi",
 		                            "FACE", firstMotionFrame, maxXLeftDetection, minXRightDetection);
+	}
+
+
+	@Test(timeout = 5 * MINUTES)
+	public void runMogThenOcvPersonFeedForwardFullFrameTest() {
+		String actionTaskName = "TEST OCV PERSON WITH FEED FORWARD FULL FRAME";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "PERSONCV",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED FULL FRAME TO OCV PERSON PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		int maxXLeftDetection = 320 / 2;  // Video is 320x300 and there is a person on the left side of the frame.
+		int minXRightDetection = 320 / 2;  // Video is 320x300 and there is a person on the right side of the frame.
+		runFeedForwardFullFrameTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
+		                            "PERSON", firstMotionFrame, maxXLeftDetection, minXRightDetection);
 	}
 
 

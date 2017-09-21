@@ -33,7 +33,6 @@ import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
@@ -125,7 +124,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
 	@Test(timeout = 5 * MINUTES)
-    public void runMogThenOcvFaceFeedForwardRegionTest() throws IOException {
+    public void runMogThenOcvFaceFeedForwardRegionTest() {
 		String actionTaskName = "TEST OCV FACE WITH FEED FORWARD SUPERSET REGION";
 
 		String actionName = actionTaskName + " ACTION";
@@ -138,42 +137,38 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 	    String pipelineName = "MOG FEED SUPERSET REGION TO OCVFACE PIPELINE";
 	    addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
 
-		List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile(
-				"/samples/face/ff-region-motion-face.avi"));
-
-		long jobId = runPipelineOnMedia(pipelineName, media);
-		JsonOutputObject outputObject = getJobOutputObject(jobId);
-
-		assertEquals(1, outputObject.getMedia().size());
-		JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
-
-		SortedSet<JsonActionOutputObject> faceDetections = outputMedia.getTypes().get("FACE");
-		assertNotNull(faceDetections);
-
-		List<JsonDetectionOutputObject> detections = outputMedia
-				.getTypes()
-				.get("FACE")
-				.stream()
-				.flatMap(fd -> fd.getTracks().stream())
-				.flatMap(t -> t.getDetections().stream())
-				.collect(toList());
-
-		assertFalse(detections.isEmpty());
 		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
-		assertTrue("Found detection before first frame with motion.",
-		           detections.stream()
-				           .allMatch(d -> d.getOffsetFrame() >= firstMotionFrame));
-
 		int maxXMotion = 640 / 2; // Video is 640 x 480 and only the face on the left side of the frame moves.
-		assertTrue("Found detection in region without motion.",
-		           detections.stream()
-				           .allMatch(d -> d.getX() + d.getWidth() < maxXMotion));
+
+	    runFeedForwardRegionTest(pipelineName, "/samples/face/ff-region-motion-face.avi",
+	                             "FACE", firstMotionFrame, maxXMotion);
 	}
 
 
+	@Test(timeout = 5 * MINUTES)
+	public void runMogThenOalprFeedForwardRegionTest() {
+		String actionTaskName = "TEST OALPR WITH FEED FORWARD SUPERSET REGION";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "OALPR",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED SUPERSET REGION TO OALPR PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		int maxXMotion = 800 / 2; // Video is 800 x 400 and only the license plate on the left side of the frame moves.
+
+		runFeedForwardRegionTest(pipelineName, "/samples/text/ff-region-motion-lp.avi",
+		                         "TEXT", firstMotionFrame, maxXMotion);
+	}
+
 
 	@Test(timeout = 5 * MINUTES)
-	public void runMogThenOcvFaceFeedForwardFullFrameTest() throws IOException {
+	public void runMogThenOcvFaceFeedForwardFullFrameTest() {
 		String actionTaskName = "TEST OCV FACE WITH FEED FORWARD FULL FRAME";
 
 		String actionName = actionTaskName + " ACTION";
@@ -186,8 +181,67 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 		String pipelineName = "MOG FEED FULL FRAME TO OCVFACE PIPELINE";
 		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
 
-		List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile(
-				"/samples/face/ff-region-motion-face.avi"));
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		int maxXLeftDetection = 640 / 2;  // Video is 640x480 and there is face on the left side of the frame.
+		int minXRightDetection = 640 / 2;  // Video is 640x480 and there is face on the right side of the frame.
+		runFeedForwardFullFrameTest(pipelineName, "/samples/face/ff-region-motion-face.avi",
+		                            "FACE", firstMotionFrame, maxXLeftDetection, minXRightDetection);
+	}
+
+
+	@Test(timeout = 5 * MINUTES)
+	public void runMogThenOalprFeedForwardFullFrameTest() {
+		String actionTaskName = "TEST OALPR WITH FEED FORWARD FULL FRAME";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "OALPR",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED FULL FRAME TO OALPR PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		int maxXLeftDetection = 800 / 2;  // Video is 800x400 and there is license plate on the left side of the frame.
+		int minXRightDetection = 800 / 2;  // Video is 800x400 and there is license plate on the right side of the frame.
+		runFeedForwardFullFrameTest(pipelineName, "/samples/text/ff-region-motion-lp.avi",
+		                            "TEXT", firstMotionFrame, maxXLeftDetection, minXRightDetection);
+	}
+
+	private void runFeedForwardRegionTest(String pipelineName, String mediaPath, String detectionType,
+	                                      int firstDetectionFrame, int maxXDetection) {
+
+		List<JsonDetectionOutputObject> detections = runFeedForwardTest(pipelineName, mediaPath, detectionType,
+		                                                                firstDetectionFrame);
+
+		assertTrue("Found detection in stage 2 in region without a detection from stage 1.",
+		           detections.stream()
+				           .allMatch(d -> d.getX() + d.getWidth() < maxXDetection));
+	}
+
+
+	private void runFeedForwardFullFrameTest(String pipelineName, String mediaPath, String detectionType,
+	                                         int firstDetectionFrame, int maxXLeftDetection, int minXRightDetection) {
+
+		List<JsonDetectionOutputObject> detections = runFeedForwardTest(pipelineName, mediaPath, detectionType,
+		                                                                firstDetectionFrame);
+		boolean foundLeftDetection = detections.stream()
+				.anyMatch(d -> d.getX() + d.getWidth() < maxXLeftDetection);
+
+		assertTrue("Did not find expected detection on left side on frame.", foundLeftDetection);
+
+		boolean foundRightDetection = detections.stream()
+				.anyMatch(d -> d.getX() > minXRightDetection);
+		assertTrue("Did not find expected detection on right side on frame.", foundRightDetection);
+	}
+
+
+	private List<JsonDetectionOutputObject> runFeedForwardTest(
+			String pipelineName, String mediaPath, String detectionType, int firstDetectionFrame) {
+
+		List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile(mediaPath));
 
 		long jobId = runPipelineOnMedia(pipelineName, media);
 		JsonOutputObject outputObject = getJobOutputObject(jobId);
@@ -195,33 +249,24 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 		assertEquals(1, outputObject.getMedia().size());
 		JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
 
-		SortedSet<JsonActionOutputObject> faceDetections = outputMedia.getTypes().get("FACE");
-		assertNotNull(faceDetections);
+		SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTypes().get(detectionType);
+		assertNotNull("Output object did not contain expected detection type: " + detectionType,
+		              actionOutputObjects);
 
-		List<JsonDetectionOutputObject> detections = outputMedia
-				.getTypes()
-				.get("FACE")
-				.stream()
-				.flatMap(fd -> fd.getTracks().stream())
-				.flatMap(t -> t.getDetections().stream())
+		List<JsonDetectionOutputObject> detections = actionOutputObjects.stream()
+				.flatMap(outputObj -> outputObj.getTracks().stream())
+				.flatMap(track -> track.getDetections().stream())
 				.collect(toList());
 
 		assertFalse(detections.isEmpty());
-		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
-		assertTrue("Found detection before first frame with motion.",
+
+		assertTrue("Found detection in stage 2 before first frame with a detection from stage 1.",
 		           detections.stream()
-				           .allMatch(d -> d.getOffsetFrame() >= firstMotionFrame));
+				           .allMatch(d -> d.getOffsetFrame() >= firstDetectionFrame));
 
-		int frameWidth = 640; // Video is 640 x 480
-		boolean foundLeftFace = detections.stream()
-				.anyMatch(d -> d.getX() + d.getWidth() < frameWidth / 2);
-		assertTrue("Did not detect face on left side of frame that had motion.", foundLeftFace);
-
-
-		boolean foundRightFace = detections.stream()
-				.anyMatch(d -> d.getX() > frameWidth / 2);
-		assertTrue("Did not detect face on right side of frame that had motion.", foundRightFace);
+		return detections;
 	}
+
 
 
 

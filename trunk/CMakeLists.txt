@@ -55,10 +55,6 @@ add_subdirectory(protobuf)
 # Tell cmake these will exist at build time
 set_source_files_properties(${MPF_PROTO_HEADERS} PROPERTIES GENERATED TRUE)
 
-# Include the following file to find and install the core set of OpenCV libraries
-# and their media processing library dependencies
-include(${CMAKE_CURRENT_LIST_DIR}/cmake/dependent_libraries_lists.cmake)
-
 # The qmake program needs to be on the path in order for find_package to work for
 # the Qt package.
 set(ENV{PATH} "$ENV{PATH}:/usr/local/Trolltech/Qt-4.8.5/bin")
@@ -91,7 +87,6 @@ macro(install_log4cxx component_install_dir)
 endmacro(install_log4cxx)
 
 install_qt("lib")
-install_opencv("lib" "${OpenCV_CORE_LIBS}")
 install_log4cxx("lib")
 
 # Build the common detection component executable amq_detection_component

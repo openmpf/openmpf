@@ -29,21 +29,13 @@ aux_source_directory(./src/main/cpp SRC)
 
 find_package(OpenCV 3.3 EXACT REQUIRED PATHS /opt/opencv-3.3.0)
 
-if(DEFINED ENV{MPF_SDK_INSTALL_PATH})
-    list(APPEND CMAKE_PREFIX_PATH $ENV{MPF_SDK_INSTALL_PATH}/lib/cmake)
-endif()
-
-list(APPEND CMAKE_PREFIX_PATH $ENV{HOME}/mpf-sdk-install/lib/cmake)
-
-find_package(mpfCMakeHelpers REQUIRED)
-
 include_directories(${JNI_INCLUDE_DIRS} ${LOG4CXX_LIBS} ${OpenCV_INCLUDE_DIRS})
 add_library(mpfopencvjni SHARED ${SRC})
 
 set(JNI_LIBRARIES_WITHOUT_AWT ${JNI_LIBRARIES})
 list(REMOVE_AT JNI_LIBRARIES_WITHOUT_AWT 0)
 
-target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${MediaFiles_LINK} ${JNI_LIBRARIES_WITHOUT_AWT} ${Log_LIBS})
+target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${JNI_LIBRARIES_WITHOUT_AWT} ${Log_LIBS})
 
 add_custom_command(TARGET mpfopencvjni POST_BUILD
     COMMAND ${CMAKE_COMMAND} -D TARGET_BINARY_LOCATION="$<TARGET_FILE:mpfopencvjni>"

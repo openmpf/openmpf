@@ -37,7 +37,7 @@
 
 - name: Get the ffmpeg top level directory
   find:
-    paths="{{ mpf_home }}/bin/"
+    paths="{{ mpf_home }}/bin"
     patterns="ffmpeg"
     file_type=directory
     recurse=no

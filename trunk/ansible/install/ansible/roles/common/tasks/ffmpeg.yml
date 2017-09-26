@@ -79,20 +79,6 @@
     force="yes"
   when: ffmpeg_version is defined
 
-- name: Remove existing link to ffprobe-10bit
-  file:
-    dest="/usr/bin/ffmpeg-10bit"
-    state="absent"
-  when: ffmpeg_version is defined
-
-- name: Ensure link to ffprobe-10bit
-  file:
-    src="{{ mpf_home }}/bin/ffmpeg/{{ ffmpeg_version }}/ffmpeg-10bit"
-    dest="/usr/bin/ffmpeg-10bit"
-    state="link"
-    force="yes"
-  when: ffmpeg_version is defined
-
 - name: Remove existing link to ffserver
   file:
     dest="/usr/bin/ffserver"

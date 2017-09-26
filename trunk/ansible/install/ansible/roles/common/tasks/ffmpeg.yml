@@ -26,13 +26,10 @@
 ---
 #file: roles/master/tasks/ffmpeg.yml
 
-- name: Ensure ffmpeg directory exists
-  file: path={{ mpf_home }}/bin/ffmpeg/ state=directory
-
 - name: Unarchive ffmpeg
   unarchive:
     src=http://{{ repo_host }}/repo/tars/ffmpeg.tar.gz
-    dest={{mpf_home}}/bin/ffmpeg/
+    dest={{mpf_home}}/bin/
     copy=no
     list_files=yes
   environment:
@@ -40,7 +37,7 @@
 
 - name: Get the ffmpeg top level directory
   find:
-    paths="{{ mpf_home }}/bin/ffmpeg"
+    paths="{{ mpf_home }}/bin/"
     patterns="ffmpeg"
     file_type=directory
     recurse=no
@@ -48,47 +45,47 @@
 
 - name: "Set the ffmpeg version to {{ ffmpeg_tld.files[0].path | basename }}"
   set_fact:
-    ffmpeg_version: "{{ ffmpeg_tld.files[0].path | basename }}"
+    ffmpeg_base: "{{ ffmpeg_tld.files[0].path | basename }}"
   when: ffmpeg_tld is defined
 
 - name: Remove existing link to ffprobe
   file:
     dest="/usr/bin/ffprobe"
     state="absent"
-  when: ffmpeg_version is defined
+  when: ffmpeg_base is defined
 
 - name: Ensure link to ffprobe
   file:
-    src="{{ mpf_home }}/bin/ffmpeg/{{ ffmpeg_version }}/ffprobe"
+    src="{{ mpf_home }}/bin/{{ ffmpeg_base }}/ffprobe"
     dest="/usr/bin/ffprobe"
     state="link"
     force="yes"
-  when: ffmpeg_version is defined
+  when: ffmpeg_base is defined
 
 - name: Remove existing link to ffmpeg
   file:
     dest="/usr/bin/ffmpeg"
     state="absent"
-  when: ffmpeg_version is defined
+  when: ffmpeg_base is defined
 
 - name: Ensure link to ffmpeg
   file:
-    src="{{ mpf_home }}/bin/ffmpeg/{{ ffmpeg_version }}/ffmpeg"
+    src="{{ mpf_home }}/bin/{{ ffmpeg_base }}/ffmpeg"
     dest="/usr/bin/ffmpeg"
     state="link"
     force="yes"
-  when: ffmpeg_version is defined
+  when: ffmpeg_base is defined
 
 - name: Remove existing link to ffserver
   file:
     dest="/usr/bin/ffserver"
     state="absent"
-  when: ffmpeg_version is defined
+  when: ffmpeg_base is defined
 
 - name: Ensure link to ffserver
   file:
-    src="{{ mpf_home }}/bin/ffmpeg/{{ ffmpeg_version }}/ffserver"
+    src="{{ mpf_home }}/bin/{{ ffmpeg_base }}/ffserver"
     dest="/usr/bin/ffserver"
     state="link"
     force="yes"
-  when: ffmpeg_version is defined
+  when: ffmpeg_base is defined

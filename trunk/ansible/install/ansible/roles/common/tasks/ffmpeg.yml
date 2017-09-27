@@ -26,6 +26,9 @@
 ---
 #file: roles/master/tasks/ffmpeg.yml
 
+- name: Ensure bin directory exists
+  file: path={{ mpf_home }}/bin/ state=directory
+
 # Remove old files in case we're upgrading
 - name: Remove existing ffmpeg top level directory
   file:

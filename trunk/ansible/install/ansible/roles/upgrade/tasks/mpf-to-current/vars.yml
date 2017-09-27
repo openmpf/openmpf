@@ -1,4 +1,3 @@
-#!/bin/bash
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,12 +23,8 @@
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
-
-# Run the mpf-clean ansible playbook, used to cleanup previously deployed mpf executables, jars and libs
-
-# Run the deployment python script
-python /opt/mpf/manage/run-install.py
-
-# Source the MPF profile script
-source /etc/profile.d/mpf.sh
-
+---
+#file: roles/upgrade/tasks/mpf-to-current/vars.yml
+r8OutputObjectVersion: "1.0"
+mpf_home: "{{ lookup('env','MPF_HOME') | default('/opt/mpf', true) }}"
+tomcat_home: "/opt/apache-tomcat"

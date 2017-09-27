@@ -92,14 +92,14 @@ def get_reference_aatp():
     action_names.append(u'OCV GENERIC MARKUP ACTION')
     task_names.append(u'OCV GENERIC MARKUP TASK')
 
-    # TODO: Remove these SPHINX append items for the R0.9 to R0.10 upgrade path.
-    # Sphinx Speech Detection always exists in an MPF R0.8 install.
-    # This will NOT be the case with MPF R0.9 and subsequent releases.
-    algorithm_names.append(u'SPHINX')
-    action_names.append(u'SPHINX SPEECH DETECTION ACTION')
-    task_names.append(u'SPHINX SPEECH DETECTION TASK')
-    pipeline_names.append(u'SPHINX SPEECH DETECTION (WITH MARKUP) PIPELINE')
-    pipeline_names.append(u'SPHINX SPEECH DETECTION PIPELINE')
+#    # TODO: Remove these SPHINX append items for the R0.9 to R0.10 upgrade path.
+    #    # Sphinx Speech Detection always exists in an MPF R0.8 install.
+    #    # This will NOT be the case with MPF R0.9 and subsequent releases.
+    #    algorithm_names.append(u'SPHINX')
+    #    action_names.append(u'SPHINX SPEECH DETECTION ACTION')
+    #   task_names.append(u'SPHINX SPEECH DETECTION TASK')
+    #   pipeline_names.append(u'SPHINX SPEECH DETECTION (WITH MARKUP) PIPELINE')
+    #   pipeline_names.append(u'SPHINX SPEECH DETECTION PIPELINE')
 
     # Iterate through descriptors of installed components to determine baseline Algorithms, Actions, Tasks, Pipelines
     # Set path to search for component descriptors
@@ -124,11 +124,8 @@ def get_reference_aatp():
                     referenceList.append(part['name'].upper())
 
     # Load the components.json file and to get Algorithms, Actions, Tasks, Pipelines from registered components
-
-    component_data = load_json_from_file(''.join([mpf_home, '/share/components/components.json']))
-
-    # TODO: The path '$MPF_HOME/share/components/components.json' is only valid for the R0.8 to R0.9 upgrade path.
-    # TODO: Future upgrade paths will use '$MPF_HOME/data/components.json'.
+    # Previous releases of openmpf used path $MPF_HOME/share/components/components.json, releases 0.9+ use $MPF_HOME/data/components.json
+    component_data = load_json_from_file(''.join([mpf_home, '/data/components.json']))
 
     # Scan through the component.json file to add any missing external component Algorithms, Actions, Tasks, Pipelines
     for component in component_data:

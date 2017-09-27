@@ -1,4 +1,3 @@
-#!/bin/bash
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,12 +23,31 @@
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
+---
+#file: roles/upgrade/tasks/mpf-to-current/mysql.yml
 
-# Run the mpf-clean ansible playbook, used to cleanup previously deployed mpf executables, jars and libs
+  - name: Ensure MySQL is started
+    service:
+      name: mysqld
+      state: started
 
-# Run the deployment python script
-python /opt/mpf/manage/run-install.py
+  # revise MySQL for mpf release 0.8 to 0.9 changes
+  - name: Check for output_object_version column in mpf.job_request table
+    shell: >
+      mysql --execute="show columns from mpf.job_request like 'output_object_version';" | grep 'output_object_version'
+    register: check_output_object_version
+    failed_when:
+      - "'ERROR 2002' in check_output_object_version.stderr"
 
-# Source the MPF profile script
-source /etc/profile.d/mpf.sh
+  - name: Add output_object_version column to mpf.job_request table
+    command: >
+      mysql --execute="alter table mpf.job_request add output_object_version varchar(255);"
+    when: "check_output_object_version.rc == 1 and 'output_object_version' not in check_output_object_version.stdout"
 
+  # this statement needs to be changed for mpf 1.0.0 (TODO)
+  - name: Set output_object_version for existing entries in mpf.job_request table
+    command: >
+      mysql --execute="update mpf.job_request set output_object_version = '{{ r8OutputObjectVersion }}' where output_object_version is NULL;"
+    when: check_output_object_version|succeeded
+
+    # revise MySQL for mpf release 0.9 to 1.0.0 changes (TODO)

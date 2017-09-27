@@ -189,3 +189,7 @@
       file:
         path="/tmp/update_wfm_pw.sql"
         state=absent
+
+    # this task must run after workflow-manager has started
+    - name: Update the mpf hibernate_sequence in mysql, as needed for upgrade to mpf Release 1.0.0
+      shell: mysql --execute="update mpf.hibernate_sequence set next_val=(SELECT IFNULL( (SELECT max(id)+1 FROM mpf.job_request), 1));"

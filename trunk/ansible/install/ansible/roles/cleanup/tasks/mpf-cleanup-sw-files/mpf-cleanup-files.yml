@@ -24,26 +24,58 @@
 # limitations under the License.                                            #
 #############################################################################
 ---
-#file: roles/upgrade/tasks/8to9/customProperties.yml
+#file: roles/cleanup/tasks/mpf-cleanup-sw-files/mpf-cleanup-files.yml
+  - name: Load MPF cleanup variables for cleaning up old mpf files
+    include_vars: mpf-cleanup-sw-files/vars.yml
 
-  - name: Check for mpf-custom.properties file
-    stat:
-      path="{{ tomcat_home }}/webapps/workflow-manager/WEB-INF/classes/properties/mpf-custom.properties"
-    register: custom_properties_st
+  - name: Find old mpf files in the jars directory
+    find:
+      paths: "{{ mpf_home }}/jars"
+      patterns: "*"
+    register: oldjar_find
 
-  - name: Check for mpf-custom.properties symlink
-    stat:
-      path="{{ mpf_home }}/config/mpf-custom.properties"
-    register: custom_properties_lnk_st
-
-  - name: "Remove {{ mpf_home }}/config/mpf-custom.properties symlink"
+  - name: Remove old mpf files in the jars directory
     file:
-      path="{{ mpf_home }}/config/mpf-custom.properties"
+      path="{{ item.path }}"
       state=absent
-    when: custom_properties_lnk_st.stat.islnk is defined and custom_properties_lnk_st.stat.islnk
+    with_items: "{{ oldjar_find.files }}"
+    when: "{{ oldjar_find.matched|int|default(0) }} > 0"
 
-  - name: "Copy mpf-custom.properties to {{ mpf_home }}/config/mpf-custom.properties"
-    copy:
-      src="{{ tomcat_home }}/webapps/workflow-manager/WEB-INF/classes/properties/mpf-custom.properties"
-      dest="{{ mpf_home }}/config/mpf-custom.properties"
-    when: custom_properties_st.stat.exists
+  - name: Find old mpf files in the lib directory
+    find:
+      paths: "{{ mpf_home }}/lib"
+      patterns: "*"
+    register: oldlib_find
+
+  - name: Remove old mpf files in the lib directory
+    file:
+      path="{{ item.path }}"
+      state=absent
+    with_items: "{{ oldlib_find.files }}"
+    when: "{{ oldlib_find.matched|int|default(0) }} > 0"
+
+  - name: Find old mpf files in the libdata directory
+    find:
+      paths: "{{ mpf_home }}/libdata"
+      patterns: "*"
+    register: oldlibdata_find
+
+  - name: Remove old mpf files in the libdat directory
+    file:
+      path="{{ item.path }}"
+      state=absent
+    with_items: "{{ oldlibdata_find.files }}"
+    when: "{{ oldlibdata_find.matched|int|default(0) }} > 0"
+
+  - name: Find old mpf files in the bin directory
+    find:
+      paths: "{{ mpf_home }}/bin"
+      patterns: "*"
+    register: oldbin_find
+
+  - name: Remove old mpf files in the bin directory
+    file:
+      path="{{ item.path }}"
+      state=absent
+    with_items: "{{ oldbin_find.files }}"
+    when: "{{ oldbin_find.matched|int|default(0) }} > 0"

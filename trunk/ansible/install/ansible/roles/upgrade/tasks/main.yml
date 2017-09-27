@@ -26,9 +26,6 @@
 ---
 #file: roles/upgrade/tasks/main.yml
 
-  - name: Run MPF R0.8 -> MPF R0.9 Upgrade
-    include: 8to9.yml
+  - name: Run Upgrade OpenMPF to Current Release
+    include: mpf_to_current.yml
 
-# Need to determine installed MPF version so upgrades can be run in series (8 -> 9 -> 10)
-#  - name: Run MPF R0.9 -> MPF R0.10 Upgrade
-#    include: 9to10.yml

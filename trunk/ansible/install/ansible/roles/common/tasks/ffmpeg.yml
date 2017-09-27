@@ -29,7 +29,7 @@
 # Remove old files in case we're upgrading
 - name: Remove existing ffmpeg top level directory
   file:
-    dest=""{{ mpf_home }}/bin/ffmpeg"
+    dest="{{ mpf_home }}/bin/ffmpeg"
     state="absent"
 
 - name: Unarchive ffmpeg

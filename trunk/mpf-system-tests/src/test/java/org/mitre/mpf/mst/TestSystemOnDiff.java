@@ -273,6 +273,28 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
 	@Test(timeout = 5 * MINUTES)
+	public void runMogThenCaffeFeedForwardRegionTest() {
+		String actionTaskName = "TEST CAFFE WITH FEED FORWARD SUPERSET REGION";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "CAFFE",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED SUPERSET REGION TO CAFFE PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		int maxXMotion = 680 / 2; // Video is 680 x 320 and only the object on the left side of the frame moves.
+
+		runFeedForwardRegionTest(pipelineName, "/samples/object/ff-region-object-motion.avi",
+		                         "CLASS", firstMotionFrame, maxXMotion);
+	}
+
+
+	@Test(timeout = 5 * MINUTES)
 	public void runMogThenOcvFaceFeedForwardFullFrameTest() {
 		String actionTaskName = "TEST OCV FACE WITH FEED FORWARD FULL FRAME";
 
@@ -339,6 +361,28 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
 	@Test(timeout = 5 * MINUTES)
+	public void runMogThenCaffeFeedForwardFullFrameTest() {
+		String actionTaskName = "TEST CAFFE WITH FEED FORWARD FULL FRAME";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "CAFFE",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED FULL FRAME TO CAFFE PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		int maxXLeftDetection = 680;  // Video is 680x320 and Caffe reports entire frame.
+		int minXRightDetection = 0;  //  Video is 680x320 and Caffe reports entire frame.
+		runFeedForwardFullFrameTest(pipelineName, "/samples/object/ff-region-object-motion.avi",
+		                            "CLASS", firstMotionFrame, maxXLeftDetection, minXRightDetection);
+	}
+
+
+	@Test(timeout = 5 * MINUTES)
 	public void runOcvFaceThenMogFeedForwardFullFrameTest() {
 		String actionTaskName = "TEST MOG WITH FEED FORWARD FULL FRAME";
 
@@ -400,12 +444,12 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 		List<JsonDetectionOutputObject> detections = runFeedForwardTest(pipelineName, mediaPath, detectionType,
 		                                                                firstDetectionFrame);
 		boolean foundLeftDetection = detections.stream()
-				.anyMatch(d -> d.getX() + d.getWidth() < maxXLeftDetection);
+				.anyMatch(d -> d.getX() + d.getWidth() <= maxXLeftDetection);
 
 		assertTrue("Did not find expected detection on left side on frame.", foundLeftDetection);
 
 		boolean foundRightDetection = detections.stream()
-				.anyMatch(d -> d.getX() > minXRightDetection);
+				.anyMatch(d -> d.getX() >= minXRightDetection);
 		assertTrue("Did not find expected detection on right side on frame.", foundRightDetection);
 	}
 

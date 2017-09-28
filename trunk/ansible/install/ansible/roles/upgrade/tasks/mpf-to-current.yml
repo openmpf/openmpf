@@ -64,16 +64,3 @@
     delegate_to: "{{ master_host }}"
     run_once: true
     when: old_components_st.stat.exists
-
-  - name: Find old .jar files
-    find:
-      paths: "{{ mpf_home }}/jars"
-      patterns: "mpf*-0.8.0.jar"
-    register: oldjar_find
-
-  - name: Remove old .jar files
-    file:
-      path="{{ item.path }}"
-      state=absent
-    with_items: "{{ oldjar_find.files }}"
-    when: "{{ oldjar_find.matched|int|default(0) }} > 0"

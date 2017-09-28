@@ -31,7 +31,7 @@
       name: mysqld
       state: started
 
-  # revise MySQL for mpf release 0.8 to 0.9 changes
+  # make sure mpf release 0.8 to 0.9 changes have been applied to MySQL schema.  Leave this check in, because the next line includes the handling commands
   - name: Check for output_object_version column in mpf.job_request table
     shell: >
       mysql --execute="show columns from mpf.job_request like 'output_object_version';" | grep 'output_object_version'
@@ -43,11 +43,3 @@
     command: >
       mysql --execute="alter table mpf.job_request add output_object_version varchar(255);"
     when: "check_output_object_version.rc == 1 and 'output_object_version' not in check_output_object_version.stdout"
-
-  # this statement needs to be changed for mpf 1.0.0 (TODO)
-  - name: Set output_object_version for existing entries in mpf.job_request table
-    command: >
-      mysql --execute="update mpf.job_request set output_object_version = '{{ r8OutputObjectVersion }}' where output_object_version is NULL;"
-    when: check_output_object_version|succeeded
-
-    # revise MySQL for mpf release 0.9 to 1.0.0 changes (TODO)

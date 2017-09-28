@@ -25,55 +25,55 @@
 #############################################################################
 ---
 #file: roles/cleanup/tasks/mpf-cleanup-sw-files/mpf-cleanup-files.yml
-  - name: Load MPF cleanup variables for cleaning up old mpf files
+  - name: Load MPF cleanup variables needed for cleaning up files from previous mpf releases
     include_vars: mpf-cleanup-sw-files/vars.yml
 
-  - name: Find old mpf files in the jars directory
+  - name: MPF cleanup, find old mpf files in the jars directory
     find:
       paths: "{{ mpf_home }}/jars"
       patterns: "*"
     register: oldjar_find
 
-  - name: Remove old mpf files in the jars directory
+  - name: MPF cleanup, remove old mpf files in the jars directory
     file:
       path="{{ item.path }}"
       state=absent
     with_items: "{{ oldjar_find.files }}"
     when: "{{ oldjar_find.matched|int|default(0) }} > 0"
 
-  - name: Find old mpf files in the lib directory
+  - name: MPF cleanup, find old mpf files in the lib directory
     find:
       paths: "{{ mpf_home }}/lib"
       patterns: "*"
     register: oldlib_find
 
-  - name: Remove old mpf files in the lib directory
+  - name: MPF cleanup, remove old mpf files in the lib directory
     file:
       path="{{ item.path }}"
       state=absent
     with_items: "{{ oldlib_find.files }}"
     when: "{{ oldlib_find.matched|int|default(0) }} > 0"
 
-  - name: Find old mpf files in the libdata directory
+  - name: MPF cleanup, find old mpf files in the libdata directory
     find:
       paths: "{{ mpf_home }}/libdata"
       patterns: "*"
     register: oldlibdata_find
 
-  - name: Remove old mpf files in the libdat directory
+  - name: MPF cleanup, remove old mpf files in the libdat directory
     file:
       path="{{ item.path }}"
       state=absent
     with_items: "{{ oldlibdata_find.files }}"
     when: "{{ oldlibdata_find.matched|int|default(0) }} > 0"
 
-  - name: Find old mpf files in the bin directory
+  - name: MPF cleanup, find old mpf files in the bin directory
     find:
       paths: "{{ mpf_home }}/bin"
       patterns: "*"
     register: oldbin_find
 
-  - name: Remove old mpf files in the bin directory
+  - name: MPF cleanup, remove old mpf files in the bin directory
     file:
       path="{{ item.path }}"
       state=absent

@@ -92,15 +92,6 @@ def get_reference_aatp():
     action_names.append(u'OCV GENERIC MARKUP ACTION')
     task_names.append(u'OCV GENERIC MARKUP TASK')
 
-#    # TODO: Remove these SPHINX append items for the R0.9 to R0.10 upgrade path.
-    #    # Sphinx Speech Detection always exists in an MPF R0.8 install.
-    #    # This will NOT be the case with MPF R0.9 and subsequent releases.
-    #    algorithm_names.append(u'SPHINX')
-    #    action_names.append(u'SPHINX SPEECH DETECTION ACTION')
-    #   task_names.append(u'SPHINX SPEECH DETECTION TASK')
-    #   pipeline_names.append(u'SPHINX SPEECH DETECTION (WITH MARKUP) PIPELINE')
-    #   pipeline_names.append(u'SPHINX SPEECH DETECTION PIPELINE')
-
     # Iterate through descriptors of installed components to determine baseline Algorithms, Actions, Tasks, Pipelines
     # Set path to search for component descriptors
     descriptor_dirs = ''.join([mpf_home, '/plugins/*/descriptor/descriptor.json'])

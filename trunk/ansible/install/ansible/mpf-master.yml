@@ -190,6 +190,16 @@
         path="/tmp/update_wfm_pw.sql"
         state=absent
 
-    # this task must run after workflow-manager has started
+    # make sure mpf release 1.0.0+ changes have been applied to MySQL schema.  Leave this check in, because the next line includes the handling commands
+    # Note that this task must run after workflow-manager has started
+    - name: Check for hibernate_sequence table in mpf database
+      shell: >
+        mysql --execute="use mpf;SHOW TABLES LIKE 'hibernate_sequence';" | grep 'hibernate_sequence'
+      register: check_hibernate_sequence
+      failed_when:
+        - "'ERROR 2002' in check_hibernate_sequence.stderr"
+
     - name: Update the mpf hibernate_sequence in mysql, as needed for upgrade to mpf Release 1.0.0
-      shell: mysql --execute="update mpf.hibernate_sequence set next_val=(SELECT IFNULL( (SELECT max(id)+1 FROM mpf.job_request), 1));"
+      command: >
+        mysql --execute="update mpf.hibernate_sequence set next_val=(SELECT IFNULL( (SELECT max(id)+1 FROM mpf.job_request), 1));"
+      when: "check_hibernate_sequence.rc == 1 and 'hibernate_sequence' not in check_hibernate_sequence.stdout"

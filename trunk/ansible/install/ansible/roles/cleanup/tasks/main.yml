@@ -27,5 +27,5 @@
 #file: roles/cleanup/tasks/main.yml
 
   - name: Run Cleanup of Previously Deployed MPF software, including executable, lib and jar files
-    include: mpf_cleanup_sw_files.yml
+    include: mpf-cleanup-sw-files.yml
 

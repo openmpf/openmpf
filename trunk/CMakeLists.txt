@@ -38,7 +38,7 @@ set(Protobuf_LIBRARY /apps/install/lib/libprotobuf.so)
 set(FIND_LIBRARY_USE_LIB64_PATHS true)
 
 MESSAGE("CURRENT CMAKE CXX vars")
-#if empty or "Debug", the "-g" flag will be added
+# if empty or "Debug", the "-g" flag will be added
 if(CMAKE_BUILD_TYPE STREQUAL "" OR CMAKE_BUILD_TYPE STREQUAL "Debug")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 	MESSAGE("Configuring as DEBUG build")
@@ -47,52 +47,59 @@ else()
     MESSAGE("Configuring as RELEASE build")
 endif()
 
+
+if(DEFINED ENV{MPF_SDK_INSTALL_PATH})
+    list(APPEND CMAKE_PREFIX_PATH $ENV{MPF_SDK_INSTALL_PATH}/lib/cmake)
+endif()
+
+list(APPEND CMAKE_PREFIX_PATH $ENV{HOME}/mpf-sdk-install/lib/cmake)
+
+find_package(mpfCMakeHelpers REQUIRED)
+
+
 # Find JNI
 find_package(JNI)
 
-## Build ProtoBufs
+
+# Build ProtoBufs
 add_subdirectory(protobuf)
+
 # Tell cmake these will exist at build time
 set_source_files_properties(${MPF_PROTO_HEADERS} PROPERTIES GENERATED TRUE)
 
-# Include the following file to find and install the core set of OpenCV libraries
-# and their media processing library dependencies
-include(${CMAKE_CURRENT_LIST_DIR}/cmake/dependent_libraries_lists.cmake)
 
 # The qmake program needs to be on the path in order for find_package to work for
 # the Qt package.
 set(ENV{PATH} "$ENV{PATH}:/usr/local/Trolltech/Qt-4.8.5/bin")
 find_package(Qt4 COMPONENTS QtCore REQUIRED)
 
-# Use the following macro if the project being built needs to find and install
-# the QtCore library.
 
-macro(install_Qt component_install_dir)
+# Find and install the QtCore libs
+include(${QT_USE_FILE})
+set(QT_LIBS ${QT_LIBRARIES})
+add_definitions(${QT_DEFINITIONS})
 
-   include(${QT_USE_FILE})
-   set(QT_LIBS ${QT_LIBRARIES})
-   add_definitions(${QT_DEFINITIONS})
-
-   foreach(module QtCore)
-     file(GLOB_RECURSE MATCHING_FILES
-	 ${QT_LIBRARY_DIR}/*${module}${CMAKE_SHARED_LIBRARY_SUFFIX}*)
-     install(FILES ${MATCHING_FILES} DESTINATION ${component_install_dir})
+foreach(module QtCore)
+   file(GLOB_RECURSE MATCHING_FILES
+      ${QT_LIBRARY_DIR}/*${module}${CMAKE_SHARED_LIBRARY_SUFFIX}*)
+      install(FILES ${MATCHING_FILES} DESTINATION "lib")
    endforeach(module)
-endmacro(install_Qt)
+
 
 find_package(PkgConfig)
 pkg_search_module(LOG4CXX REQUIRED liblog4cxx)
 
-# Use the following macro if the project being built needs to find and install the
-# log4cxx package
-macro(install_log4cxx component_install_dir)
-   file(GLOB MATCHING_FILES ${LOG4CXX_LIBDIR}/liblog4cxx${CMAKE_SHARED_LIBRARY_SUFFIX}* )
-   install(FILES ${MATCHING_FILES} DESTINATION  ${component_install_dir})
-endmacro(install_log4cxx)
+# Find and install the log4cxx libs
+file(GLOB MATCHING_FILES ${LOG4CXX_LIBDIR}/liblog4cxx${CMAKE_SHARED_LIBRARY_SUFFIX}* )
+install(FILES ${MATCHING_FILES} DESTINATION "lib")
 
-install_qt("lib")
-install_opencv("lib" "${OpenCV_CORE_LIBS}")
-install_log4cxx("lib")
+
+# Find and install the FFmpeg libs
+find_program(FFMPEG_BINARY_PATH NAMES ffmpeg)
+execute_process(COMMAND ${CMAKE_COMMAND} -D TARGET_BINARY_LOCATION=${FFMPEG_BINARY_PATH}
+   -D DEP_LIBS_INSTALL_LOCATION=${CMAKE_INSTALL_PREFIX}/lib
+   -P ${CopySharedLibDependencies_LOCATION})
+
 
 # Build the common detection component executable amq_detection_component
 add_subdirectory(detection/executor/cpp)

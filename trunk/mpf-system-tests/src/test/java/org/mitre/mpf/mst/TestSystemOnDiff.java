@@ -27,6 +27,7 @@
 package org.mitre.mpf.mst;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -35,6 +36,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 
 import static java.util.stream.Collectors.toList;
@@ -119,6 +121,43 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         runSystemTest(pipelineName,
                 "output/face/runFaceOcvDetectVideoWithRegionOfInterest.json",
                 "/samples/face/new_face_video.avi");
+    }
+
+
+    @Test
+    public void runOcvFaceWithUseKeyFrames() {
+		String baseName = "TEST OCV FACE WITH USE_KEY_FRAMES";
+		String actionName = baseName + " ACTION";
+		addAction(actionName, "FACECV", ImmutableMap.of("USE_KEY_FRAMES", "true"));
+
+	    String taskName = baseName + " TASK";
+	    addTask(taskName, actionName);
+
+	    String pipelineName = baseName + " PIPELINE";
+	    addPipeline(pipelineName, taskName);
+
+	    List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01.mp4"));
+
+	    long jobId = runPipelineOnMedia(pipelineName, media);
+	    JsonOutputObject outputObject = getJobOutputObject(jobId);
+
+	    assertEquals(1, outputObject.getMedia().size());
+	    JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
+
+	    SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTypes().get("FACE");
+	    assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
+
+	    List<JsonDetectionOutputObject> detections = actionOutputObjects.stream()
+			    .flatMap(outputObj -> outputObj.getTracks().stream())
+			    .flatMap(track -> track.getDetections().stream())
+			    .collect(toList());
+
+	    assertFalse(detections.isEmpty());
+
+	    Set<Integer> keyFrames = ImmutableSet.of(0, 30, 60);
+
+	    assertTrue("Found detection in non-keyframe", detections.stream()
+			               .allMatch(o -> keyFrames.contains(o.getOffset())));
     }
 
 
@@ -502,7 +541,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
     @Test(timeout = 10 * MINUTES)
-        public void runTextOalprDetectVideo() throws Exception {
+    public void runTextOalprDetectVideo() throws Exception {
 	    String pipelineName = addDefaultOalprPipeline();
         runSystemTest(pipelineName, "output/text/runTextOalprDetectVideo.json",
                 "/samples/text/lp-ferrari-texas.mp4",

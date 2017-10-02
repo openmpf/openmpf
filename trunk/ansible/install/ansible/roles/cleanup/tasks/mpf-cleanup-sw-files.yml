@@ -30,4 +30,4 @@
     include_vars: mpf-cleanup-sw-files/vars.yml
 
   - include: mpf-cleanup-sw-files/mpf-cleanup-files.yml
-    run_once: true
+

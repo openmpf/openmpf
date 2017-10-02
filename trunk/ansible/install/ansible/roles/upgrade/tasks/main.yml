@@ -27,5 +27,5 @@
 #file: roles/upgrade/tasks/main.yml
 
   - name: Run Upgrade OpenMPF to Current Release
-    include: mpf_to_current.yml
+    include: mpf-to-current.yml
 

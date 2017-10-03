@@ -199,7 +199,7 @@
       failed_when:
         - "'ERROR 2002' in check_hibernate_sequence.stderr"
 
-    - name: Update the mpf hibernate_sequence in mysql, as needed for upgrade to mpf Release 1.0.0
+    - name: Update the mpf hibernate_sequence in mysql, as needed for upgrade to mpf R1.0.0+
       command: >
         mysql --execute="update mpf.hibernate_sequence set next_val=(SELECT IFNULL( (SELECT max(id)+1 FROM mpf.job_request), 1));"
-      when: "check_hibernate_sequence.rc == 1 and 'hibernate_sequence' not in check_hibernate_sequence.stdout"
+      when: "check_hibernate_sequence.rc == 1 and 'hibernate_sequence' in check_hibernate_sequence.stdout"

@@ -191,7 +191,7 @@
         state=absent
 
     # make sure mpf release 1.0.0+ changes have been applied to MySQL schema.  Leave this check in, because the next line includes the handling commands
-    # Note that this task must run after workflow-manager has started
+    # Note that this task must run after workflow-manager has started. If the mysql command is successful, the return code (rc) should be 0.
     - name: Check for hibernate_sequence table in mpf database
       shell: >
         mysql --execute="use mpf;SHOW TABLES LIKE 'hibernate_sequence';" | grep 'hibernate_sequence'
@@ -202,4 +202,4 @@
     - name: Update the mpf hibernate_sequence in mysql, as needed for upgrade to mpf R1.0.0+
       command: >
         mysql --execute="update mpf.hibernate_sequence set next_val=(SELECT IFNULL( (SELECT max(id)+1 FROM mpf.job_request), 1));"
-      when: "check_hibernate_sequence.rc == 1 and 'hibernate_sequence' in check_hibernate_sequence.stdout"
+      when: "check_hibernate_sequence.rc == 0 and 'hibernate_sequence' in check_hibernate_sequence.stdout"

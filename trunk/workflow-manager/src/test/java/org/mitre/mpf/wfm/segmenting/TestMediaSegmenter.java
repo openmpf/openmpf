@@ -43,6 +43,7 @@ import java.util.*;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TestMediaSegmenter {
@@ -73,8 +74,25 @@ public class TestMediaSegmenter {
 
 	@Test
 	public void testOverlap() throws Exception {
-		int minGapBetweenSegments = 1;
-		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(10, 20), minGapBetweenSegments));
+		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(10, 20), 0));
+		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(10, 20), 1));
+		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(10, 20), 10));
+
+		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(15, 20), 0));
+		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(15, 20), 1));
+		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(15, 20), 10));
+
+		assertFalse(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(16, 20), 0));
+		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(16, 20), 1));
+		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(16, 20), 10));
+
+
+		assertFalse(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(20, 40), 0));
+		assertFalse(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(20, 40), 1));
+		assertFalse(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(20, 40), 4));
+		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(20, 40), 5));
+		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(20, 40), 6));
+		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(20, 40), 10));
 	}
 
 	@Test

@@ -218,9 +218,9 @@ public interface MediaSegmenter {
 	 */
 	public static boolean overlaps(TimePair current, TimePair target, int minGapBetweenSegments) {
 		// Current spans [S, E], Target spans  [S*, E*], and it is known that S <= S*.
-		// The tracks overlap if S <= S* <= E or E < (S* - G)
+		// The tracks overlap if S <= S* <= E or (S* - E) <= G
 		return (current.getStartInclusive() <= target.getStartInclusive() && target.getStartInclusive() <= current.getEndInclusive()) ||
-				current.getEndInclusive() <= target.getStartInclusive() - minGapBetweenSegments;
+				target.getStartInclusive() - current.getEndInclusive() <= minGapBetweenSegments;
 	}
 
 	/**

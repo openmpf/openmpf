@@ -145,12 +145,15 @@ public class MarkupStageSplitter implements StageSplitter {
 						// last frame in the interval, the bounding box is very close to the position given by the object
 						// location of the next result. Consequently, the original bounding box appears to resize
 						// and translate to the position and size of the next result's bounding box.
+						Detection nextDetection = orderedDetections.get(i + 1);
 						BoundingBox nextBoundingBox = new BoundingBox();
-						nextBoundingBox.setWidth(detection.getWidth());
-						nextBoundingBox.setHeight(detection.getHeight());
-						nextBoundingBox.setX(detection.getX());
-						nextBoundingBox.setY(detection.getY());
-						boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, orderedDetections.get(i + 1).getMediaOffsetFrame() - currentFrame);
+						nextBoundingBox.setWidth(nextDetection.getWidth());
+						nextBoundingBox.setHeight(nextDetection.getHeight());
+						nextBoundingBox.setX(nextDetection.getX());
+						nextBoundingBox.setY(nextDetection.getY());
+						nextBoundingBox.setColor(boundingBox.getColor());
+						boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame,
+						                       nextDetection.getMediaOffsetFrame() - currentFrame);
 					}
 				} // end foreach ObjectLocation
 			} // end foreach Track

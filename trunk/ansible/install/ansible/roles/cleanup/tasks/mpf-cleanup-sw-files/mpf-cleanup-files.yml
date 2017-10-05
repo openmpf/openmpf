@@ -60,7 +60,7 @@
       patterns: "*"
     register: oldlibdata_find
 
-  - name: MPF cleanup, remove old mpf files in the libdat directory
+  - name: MPF cleanup, remove old mpf files in the libdata directory
     file:
       path="{{ item.path }}"
       state=absent

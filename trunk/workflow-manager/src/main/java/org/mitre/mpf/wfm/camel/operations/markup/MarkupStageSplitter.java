@@ -129,7 +129,7 @@ public class MarkupStageSplitter implements StageSplitter {
 				break;
 			}
 
-			boolean isLastDetection = i == (orderedDetections.size() - 1);
+			boolean isLastDetection = (i == (orderedDetections.size() - 1));
 			if (isLastDetection) {
 				boundingBoxMap.putOnFrame(currentFrame, boundingBox);
 				break;
@@ -138,11 +138,10 @@ public class MarkupStageSplitter implements StageSplitter {
 			Detection nextDetection = orderedDetections.get(i + 1);
 			int gapBetweenNextDetection = nextDetection.getMediaOffsetFrame() - detection.getMediaOffsetFrame();
 			if (gapBetweenNextDetection == 1) {
-				// If frames were processed individually, all we need to do is draw this frame's box.
 				boundingBoxMap.putOnFrame(currentFrame, boundingBox);
 			}
 			else {
-				// Finally, since the gap between frames is greater than 1 and we are not at the last result in the
+				// Since the gap between frames is greater than 1 and we are not at the last result in the
 				// collection, we draw bounding boxes on each frame in the collection such that on the
 				// first frame, the bounding box is at the position given by the object location, and on the
 				// last frame in the interval, the bounding box is very close to the position given by the object

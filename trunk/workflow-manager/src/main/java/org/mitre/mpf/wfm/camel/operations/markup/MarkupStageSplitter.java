@@ -50,8 +50,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.awt.*;
 import java.io.File;
 import java.util.*;
+import java.util.List;
+import java.util.stream.DoubleStream;
 
 @Component(MarkupStageSplitter.REF)
 public class MarkupStageSplitter implements StageSplitter {
@@ -102,9 +105,7 @@ public class MarkupStageSplitter implements StageSplitter {
 
 
 	private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap) {
-		Random random = new Random(track.hashCode());
-		int[] randomColor = { 56 + random.nextInt(200), 56 + random.nextInt(200),
-								56 + random.nextInt(200) };
+		Color trackColor = getRandomColor();
 
 		List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
 		Collections.sort(orderedDetections);
@@ -118,7 +119,7 @@ public class MarkupStageSplitter implements StageSplitter {
 			boundingBox.setHeight(detection.getHeight());
 			boundingBox.setX(detection.getX());
 			boundingBox.setY(detection.getY());
-			boundingBox.setColor(randomColor[0], randomColor[1], randomColor[2]);
+			boundingBox.setColor(trackColor.getRed(), trackColor.getBlue(), trackColor.getGreen());
 
 			String objectType = track.getType();
 			if ("SPEECH".equalsIgnoreCase(objectType) || "AUDIO".equalsIgnoreCase(objectType)) {
@@ -227,5 +228,21 @@ public class MarkupStageSplitter implements StageSplitter {
 			log.warn("Failed to map the MIME type '{}' to an extension. Defaulting to .bin.", mimeType);
 			return ".bin";
 		}
+	}
+
+	private static final double GOLDEN_RATIO_CONJUGATE = 2 / (1 + Math.sqrt(5));
+
+	// Uses method described in https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
+	// to create an infinite iterator of randomish colors.
+	// The article says to use the HSV color space, but HSB is identical.
+	private static final Iterator<Color> COLORS = DoubleStream
+			.iterate(Math.random(),
+			         x -> (x + GOLDEN_RATIO_CONJUGATE) % 1)
+			.mapToObj(x -> Color.getHSBColor((float) x, 0.5f, 0.95f))
+			.iterator();
+
+
+	private static Color getRandomColor() {
+		return COLORS.next();
 	}
 }

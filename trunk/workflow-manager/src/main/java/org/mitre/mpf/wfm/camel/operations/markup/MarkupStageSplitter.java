@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.camel.operations.markup;
 
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
+import org.apache.commons.lang.mutable.MutableDouble;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.mime.MimeTypes;
 import org.mitre.mpf.videooverlay.BoundingBox;
@@ -71,8 +72,64 @@ public class MarkupStageSplitter implements StageSplitter {
 	@Autowired
 	private PropertiesUtil propertiesUtil;
 
-	@Autowired
-	private IoUtils ioUtils;
+	// Based on: https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
+	private int[] hsvToRgb(double hue, double saturation, double value) {
+		int h = (int)(hue * 6);
+
+		double f = (hue * 6) - h;
+		double p = value * (1 - saturation);
+		double q = value * (1 - f * saturation);
+		double t = value * (1 - (1 - f) * saturation);
+
+		double r = 0.0;
+		double g = 0.0;
+		double b = 0.0;
+
+		switch (h) {
+			case 0:
+				r = value;
+				g = t;
+				b = p;
+				break;
+			case 1:
+				r = q;
+				g = value;
+				b = p;
+				break;
+			case 2:
+				r = p;
+				g = value;
+				b = t;
+				break;
+			case 3:
+				r = p;
+				g = q;
+				b = value;
+				break;
+			case 4:
+				r = t;
+				g = p;
+				b = value;
+				break;
+			case 5:
+				r = value;
+				g = p;
+				b = q;
+				break;
+		}
+
+		return new int[]{
+				(int)(r * 256),
+				(int)(g * 256),
+				(int)(b * 256)};
+	}
+
+	// Based on: https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
+	private int[] generateRandomColor(MutableDouble hue) {
+		hue.add(0.618033988749895); // golden ratio conjugate
+		hue.subtract(hue.intValue());
+		return hsvToRgb(hue.doubleValue(), 0.5, 0.95);
+	}
 
 	/**
 	 * Returns the last task in the pipeline containing a detection action. This effectively filters preprocessor
@@ -104,12 +161,10 @@ public class MarkupStageSplitter implements StageSplitter {
 					media.getMediaSpecificProperties());
 			int samplingInterval = getSamplingInterval(samplingIntervalProperty);
 
-
+			MutableDouble hue = new MutableDouble(Math.random()); // keep track of hue used to generate the last color so we can have spread distribution
 
 			for (Track track : tracks) {
-				String objectType = track.getType();
-				Random random = new Random(track.hashCode());
-				int[] randomColor = new int[]{56 + random.nextInt(200), 56 + random.nextInt(200), 56 + random.nextInt(200)};
+				int[] randomColor = generateRandomColor(hue);
 
 				List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
 				Collections.sort(orderedDetections);

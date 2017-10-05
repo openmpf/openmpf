@@ -131,16 +131,7 @@ public class MarkupStageSplitter implements StageSplitter {
 
 			boolean isLastDetection = i == (orderedDetections.size() - 1);
 			if (isLastDetection) {
-				if (currentFrame == track.getEndOffsetFrameInclusive()) {
-					// If frames were processed individually, all we need to do is draw this frame's box.
-					boundingBoxMap.putOnFrame(currentFrame, boundingBox);
-				}
-				else {
-					// Otherwise, frames were not processed individually. In this case, this result is
-					// the last result in the video/segment, so we can't (easily) calculate a trajectory.
-					// Therefore, we simply draw the bounding box in the same location on all frames in this interval.
-					boundingBoxMap.putOnFrames(currentFrame, track.getEndOffsetFrameInclusive(), boundingBox);
-				}
+				boundingBoxMap.putOnFrame(currentFrame, boundingBox);
 				break;
 			}
 

@@ -102,6 +102,15 @@
     - name: Add localhost to repo inventory
       add_host: name={{ inventory_hostname }} groups=mpf-repo
 
+    # make sure mpf release 1.0.0+ changes have been applied to {{ mpf_home }}/data/Algorithms.xml.
+    # if the regular expression is satisfied, then the algorithm attributes are appended, otherwise no change
+    - debug: msg="Updating {{ mpf_home }}/data/Algorithms.xml to conform with MPF R1.0.0+ algorithm attributes"
+    - replace:
+        destfile: "{{ mpf_home }}/data/Algorithms.xml"
+        regexp: '(<algorithm\s+name="\w+"\s+actionType="\w+")\s*>'
+        replace: '\1 supportsBatchProcessing="true" supportsStreamProcessing="true">'
+        backup: yes
+            
   post_tasks:
     - name: Start ActiveMQ
       service:

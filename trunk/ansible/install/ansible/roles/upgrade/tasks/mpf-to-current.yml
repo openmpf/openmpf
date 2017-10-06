@@ -37,10 +37,6 @@
     delegate_to: "{{ master_host }}"
     run_once: true
 
-  - include: mpf-to-current/customProperties.yml
-    delegate_to: "{{ master_host }}"
-    run_once: true
-
   # Previous releases of openmpf used path $MPF_HOME/share/components/components.json,
   # releases 0.9+ use $MPF_HOME/data/components.json
   - name: Check for previous version of components JSON file

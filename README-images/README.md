@@ -6,16 +6,16 @@ The Open Media Processing Framework provides a platform to perform content detec
 
 OpenMPF enables users to build configurable media processing pipelines, enabling the rapid development and deployment of analytic algorithms and large-scale media processing applications.
 
+![Web UI](README-images/iconmonstr-cloud-32-72.png)
 ### Search and Share
-
 Simplify large-scale media processing and enable the extraction of meaningful content
 
+![Web UI](README-images/iconmonstr-idea-12-72.png)
 ### Open API
-
 Apply cutting-edge algorithms such as face detection and object classification
 
+![Web UI](README-images/iconmonstr-sitemap-14-72.png)
 ### Flexible Architecture
-
 Integrate into your existing environment or use OpenMPF as a standalone application
 
 ## Who is it for?
@@ -80,11 +80,11 @@ Built on **FFMPEG** and **OpenCV** , OpenMPF supports the processing of standard
 
 ### Customizable Pipelines
 
-OpenMPF provides the ability to to combine multiple algorithms in a single pipeline. Algorithms can be organized sequentially or in parallel.
+OpenMPF provides the ability to organize algorithms sequentially or in parallel. This enables users to create pipelines based on performance (fast -&gt; slow) to increase throughput on large datasets or run multiple concurrent algorithms (e.g., two competing face detection algorithms) to compare performance.
 
 ![Pipelines](README-images/pipelines.png)
 
-This enables users to create pipelines based on performance (fast -&gt; slow) to increase throughput on large datasets or run multiple concurrent algorithms (e.g., two competing face detection algorithms) to compare performance.
+Customizable pipelines allow users to combine multiple algorithms based on performance (fast to slow) to increase throughput on large datasets
 
 #### For Algorithm Developers - _You focus on the algorithms, we'll focus on the rest_
 

@@ -28,7 +28,7 @@
 
   - name: Check for mpf-custom.properties file
     stat:
-      path="{{ tomcat_home }}/webapps/workflow-manager/WEB-INF/classes/properties/mpf-custom.properties"
+      path="{{ mpf_home }}/config/mpf-custom.properties"
     register: custom_properties_st
 
   - name: Check for mpf-custom.properties symlink
@@ -44,6 +44,6 @@
 
   - name: "Copy mpf-custom.properties to {{ mpf_home }}/config/mpf-custom.properties"
     copy:
-      src="{{ tomcat_home }}/webapps/workflow-manager/WEB-INF/classes/properties/mpf-custom.properties"
+      src="{{ mpf_home }}/config/mpf-custom.properties"
       dest="{{ mpf_home }}/config/mpf-custom.properties"
     when: custom_properties_st.stat.exists

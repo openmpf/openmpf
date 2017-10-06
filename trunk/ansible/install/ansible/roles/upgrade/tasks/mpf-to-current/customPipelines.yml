@@ -54,7 +54,7 @@
 
   - name: Check for Algorithms, Actions, Tasks, and Pipelines files
     stat:
-      path: "{{ tomcat_home }}/webapps/workflow-manager/WEB-INF/classes/{{ item.item }}.xml"
+      path: "{{ mpf_home }}/data/{{ item.item }}.xml"
     with_items: "{{ custom_files_check_st.results }}"
     register: files_check_st
     when: "not {{ item.stat.exists }}"

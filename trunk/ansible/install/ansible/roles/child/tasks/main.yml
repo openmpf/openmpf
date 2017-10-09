@@ -61,6 +61,11 @@
 - name: Load component package descriptor
   include_vars: "{{ mpf_home }}/{{ deployment_config.package_descriptor | basename }}"
 
+- name: Remove MPF Node Manager
+  yum:
+    name=mpf-nodeManager
+    state=absent
+
 - name: Install MPF Node Manager
   yum:
     name=mpf-nodeManager
@@ -72,6 +77,11 @@
   environment:
     no_proxy: "{{repo_host}}"
 
+- name: Remove MPF Media Markup Component
+  yum:
+    name=mpf-markup
+    state=absent
+
 - name: Install MPF Media Markup Component
   yum:
     name=mpf-markup
@@ -80,6 +90,11 @@
     disablerepo=*
     enablerepo=mpf-repo
   register: markup
+
+- name: Remove MPF Protocol Buffers
+  yum:
+    name=mpf-protobuf
+    state=absent
 
 - name: Install MPF Protocol Buffers
   yum:
@@ -96,6 +111,11 @@
 - name: Process MPF Components
   include: mpfcomponents.yml
 
+- name: Remove MPF Java Component Package
+  yum:
+    name=mpf-java-component-api
+    state=absent
+
 - name: Install MPF Java Component API
   yum:
     name=mpf-java-component-api
@@ -104,6 +124,11 @@
     disablerepo=*
     enablerepo=mpf-repo
   register: java_component_api
+
+- name: Remove MPF Java Component Executor Package
+  yum:
+    name=mpf-java-component-executor
+    state=absent
 
 - name: Install MPF Java Component Executor
   yum:
@@ -115,6 +140,11 @@
   register: java_component_executor
 
 - debug: msg="debug in mpf-child after Install MPF Java Component Executor, java_component_executor is {{ java_component_executor }} "
+
+- name: Remove MPF Video Overlay
+  yum:
+    name=mpf-video-overlay
+    state=absent
 
 - name: Install MPF Video Overlay
   yum: >

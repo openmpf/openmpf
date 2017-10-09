@@ -25,9 +25,80 @@
 #############################################################################
 ---
 #file: roles/cleanup/tasks/mpf-cleanup-sw-files.yml
+  - name: MPF cleanup, find old mpf files in the jars directory
+    find:
+      paths: "{{ mpf_home }}/jars"
+      patterns: "*"
+    register: oldjar_find
 
-  - name: Load MPF Cleanup variables
-    include_vars: mpf-cleanup-sw-files/vars.yml
+  - name: MPF cleanup, remove old mpf files in the jars directory
+    file:
+      path="{{ item.path }}"
+      state=absent
+    with_items: "{{ oldjar_find.files }}"
+    when: "{{ oldjar_find.matched|int|default(0) }} > 0"
 
-  - include: mpf-cleanup-sw-files/mpf-cleanup-files.yml
+  - name: MPF cleanup, find old mpf files in the lib directory
+    find:
+      paths: "{{ mpf_home }}/lib"
+      patterns: "*"
+    register: oldlib_find
 
+  - name: MPF cleanup, remove old mpf files in the lib directory
+    file:
+      path="{{ item.path }}"
+      state=absent
+    with_items: "{{ oldlib_find.files }}"
+    when: "{{ oldlib_find.matched|int|default(0) }} > 0"
+
+  - name: MPF cleanup, find old mpf files in the libdata directory
+    find:
+      paths: "{{ mpf_home }}/libdata"
+      patterns: "*"
+    register: oldlibdata_find
+
+  - name: MPF cleanup, remove old mpf files in the libdata directory
+    file:
+      path="{{ item.path }}"
+      state=absent
+    with_items: "{{ oldlibdata_find.files }}"
+    when: "{{ oldlibdata_find.matched|int|default(0) }} > 0"
+
+  - name: MPF cleanup, find old mpf files in the bin directory
+    find:
+      paths: "{{ mpf_home }}/bin"
+      patterns: "*"
+    register: oldbin_find
+
+  - name: MPF cleanup, remove old mpf files in the bin directory
+    file:
+      path="{{ item.path }}"
+      state=absent
+    with_items: "{{ oldbin_find.files }}"
+    when: "{{ oldbin_find.matched|int|default(0) }} > 0"
+
+  - name: MPF cleanup, find old mpf nodeServicesPalette.json file in the data directory
+    find:
+      paths: "{{ mpf_home }}/data"
+      patterns: "nodeServicesPalette.json"
+    register: oldNodePallet_find
+
+  - name: MPF cleanup, remove old mpf nodeServicesPalette.json file in the data directory
+    file:
+      path="{{ item.path }}"
+      state=absent
+    with_items: "{{ oldNodePallet_find.files }}"
+    when: "{{ oldNodePallet_find.matched|int|default(0) }} > 0"
+
+  - name: MPF cleanup, find old mpf nodeManagerConfig.xml file in the data directory
+    find:
+      paths: "{{ mpf_home }}/data"
+      patterns: "nodeManagerConfig.xml"
+    register: oldNodeConfig_find
+
+  - name: MPF cleanup, remove old mpf nodeManagerConfig.xml file in the data directory
+    file:
+      path="{{ item.path }}"
+      state=absent
+    with_items: "{{ oldNodeConfig_find.files }}"
+    when: "{{ oldNodeConfig_find.matched|int|default(0) }} > 0"

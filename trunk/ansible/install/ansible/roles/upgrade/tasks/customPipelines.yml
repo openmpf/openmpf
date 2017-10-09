@@ -79,54 +79,24 @@
     delegate_to: "{{ master_host }}"
     run_once: true
 
-  - name: After backuping existing Algorithms, Actions, Tasks, and Pipelines files - find original Algorithms.xml
-    find:
-      paths: "{{ mpf_home }}/data"
-      patterns: "Algorithms.xml"
-    register: oldAlgorithmsXml_find
+  - name: After backup of existing Algorithms, Actions, Tasks, and Pipelines files - find original .xml files
+    stat:
+      path: "{{ mpf_home }}/data/{{ item }}.xml"
+    with_items:
+      - Algorithms
+      - Actions
+      - Tasks
+      - Pipelines
+    register: original_xml_files_check_st
+    delegate_to: "{{ master_host }}"
+    run_once: true
 
-  - name: After backuping existing Algorithms, Actions, Tasks, and Pipelines files - delete original Algorithms.xml
+  - name: After backup of existing Algorithms, Actions, Tasks, and Pipelines files - delete original .xml files
     file:
-      path="{{ item.path }}"
+      path="{{ item.stat.path }}"
       state=absent
-    with_items: "{{ oldAlgorithmsXml_find.files }}"
-    when: "{{ oldAlgorithmsXml_find.matched|int|default(0) }} > 0"
+    with_items: "{{ original_xml_files_check_st.results }}"
+    when: "original_xml_files_check_st is defined and {{ item.stat.exists }}"
+    delegate_to: "{{ master_host }}"
+    run_once: true
 
-  - name: After backuping existing Algorithms, Actions, Tasks, and Pipelines files - find original Actions.xml
-    find:
-      paths: "{{ mpf_home }}/data"
-      patterns: "Actions.xml"
-    register: oldActionsXml_find
-
-  - name: After backuping existing Algorithms, Actions, Tasks, and Pipelines files - delete original Actions.xml
-    file:
-      path="{{ item.path }}"
-      state=absent
-    with_items: "{{ oldActionsXml_find.files }}"
-    when: "{{ oldActionsXml_find.matched|int|default(0) }} > 0"
-
-  - name: After backuping existing Algorithms, Actions, Tasks, and Pipelines files - find original Tasks.xml
-    find:
-      paths: "{{ mpf_home }}/data"
-      patterns: "Tasks.xml"
-    register: oldTasksXml_find
-
-  - name: After backuping existing Algorithms, Actions, Tasks, and Pipelines files - delete original Tasks.xml
-    file:
-      path="{{ item.path }}"
-      state=absent
-    with_items: "{{ oldTasksXml_find.files }}"
-    when: "{{ oldTasksXml_find.matched|int|default(0) }} > 0"
-
-  - name: After backuping existing Algorithms, Actions, Tasks, and Pipelines files - find original Pipelines.xml
-    find:
-      paths: "{{ mpf_home }}/data"
-      patterns: "Pipelines.xml"
-    register: oldPipelinesXml_find
-
-  - name: After backuping existing Algorithms, Actions, Tasks, and Pipelines files - delete original Pipelines.xml
-    file:
-      path="{{ item.path }}"
-      state=absent
-    with_items: "{{ oldPipelinesXml_find.files }}"
-    when: "{{ oldPipelinesXml_find.matched|int|default(0) }} > 0"

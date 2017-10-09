@@ -108,9 +108,9 @@
     - replace:
         destfile: "{{ mpf_home }}/data/Algorithms.xml"
         regexp: '(<algorithm\s+name="\w+"\s+actionType="\w+")\s*>'
-        replace: '\1 supportsBatchProcessing="true" supportsStreamProcessing="true">'
+        replace: '\1 supportsBatchProcessing="true" supportsStreamProcessing="false">'
         backup: yes
-            
+
   post_tasks:
     - name: Start ActiveMQ
       service:

@@ -26,14 +26,11 @@
 ---
 #file: roles/upgrade/tasks/mpf-to-current.yml
 
-  - name: Load MPF to Current Release variables
-    include_vars: mpf-to-current/vars.yml
-
-  - include: mpf-to-current/mysql.yml
+  - include: mysql.yml
     delegate_to: "{{ master_host }}"
     run_once: true
 
-  - include: mpf-to-current/customPipelines.yml
+  - include: customPipelines.yml
     delegate_to: "{{ master_host }}"
     run_once: true
 

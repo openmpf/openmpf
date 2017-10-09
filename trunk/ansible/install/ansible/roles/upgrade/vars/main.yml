@@ -25,7 +25,6 @@
 #############################################################################
 ---
 #file: roles/upgrade/vars/main.yml
-- name: Load MPF to Current Release variables
 tomcat_home: "/opt/apache-tomcat"
 mpf_home: "{{ lookup('env','MPF_HOME') | default('/opt/mpf', true) }}"
 

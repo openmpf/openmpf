@@ -25,5 +25,4 @@
 #############################################################################
 ---
 #file: roles/cleanup/vars/main.yml
-- name: Load MPF Cleanup variables
 mpf_home: "{{ lookup('env','MPF_HOME') | default('/opt/mpf', true) }}"

@@ -51,9 +51,6 @@
     with_items: "{{ oldlib_find.files }}"
     when: "{{ oldlib_find.matched|int|default(0) }} > 0"
 
-  - name: Run ldconfig after removal of old mpf files in the lib directory
-    command: ldconfig
-
   - name: MPF cleanup, find old mpf files in the libdata directory
     find:
       paths: "{{ mpf_home }}/libdata"
@@ -106,3 +103,5 @@
     with_items: "{{ oldNodeConfig_find.files }}"
     when: "{{ oldNodeConfig_find.matched|int|default(0) }} > 0"
 
+  - name: Run ldconfig after MPF cleanup
+    command: ldconfig

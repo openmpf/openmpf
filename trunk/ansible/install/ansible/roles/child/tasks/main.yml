@@ -114,6 +114,8 @@
     enablerepo=mpf-repo
   register: java_component_executor
 
+- debug: msg="debug in mpf-child after Install MPF Java Component Executor, java_component_executor is {{ java_component_executor }} "
+
 - name: Install MPF Video Overlay
   yum: >
     name=mpf-video-overlay

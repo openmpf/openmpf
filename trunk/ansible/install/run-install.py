@@ -491,6 +491,7 @@ if not (os.path.isfile(ansible_vault)):
 
 # Setup the Ansible playbook command
 ansible_cmd = ['ansible-playbook',
+               '-vvv',
                '{0}/manage/ansible/mpf-site.yml'.format(mpf_home),
                '--user=mpf',
                '--ask-pass',

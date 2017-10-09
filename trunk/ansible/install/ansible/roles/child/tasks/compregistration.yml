@@ -56,6 +56,11 @@
 
 - name: Show component registration error message
   debug: msg="Could not register component {{ item.componentName }} . Error message was {{ registration_results.content }}"
+  debug: msg="Could not register component, mpf_component_setup is {{ mpf_component_setup }}"
+  debug: msg="Could not register component, registration_results is {{ registration_results }}"
+  debug: msg="Could not register component, component_uri is {{ component_uri }}"
+  debug: msg="Could not register component, plugins_dir is {{ plugins_dir }}"
+  debug: msg="Could not register component, can_register_components is {{ can_register_components }}"
   when: item.register and registration_results.status != 200
   run_once: true
   delegate_to: "{{ master_host }}"

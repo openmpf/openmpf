@@ -38,57 +38,25 @@
     with_items: "{{ oldMpfConf_find.files }}"
     when: "{{ oldMpfConf_find.matched|int|default(0) }} > 0"
 
-  - name: MPF cleanup, find old mpf files in the jars directory
-    find:
-      paths: "{{ mpf_home }}/jars"
-      patterns: "*"
-    register: oldjar_find
-
-  - name: MPF cleanup, remove old mpf files in the jars directory
+  - name: MPF cleanup, delete the mpf jars directory with contents
     file:
-      path="{{ item.path }}"
-      state=absent
-    with_items: "{{ oldjar_find.files }}"
-    when: "{{ oldjar_find.matched|int|default(0) }} > 0"
+      state: absent
+      path: "{{ mpf_home }}/jars"
 
-  - name: MPF cleanup, find old mpf files in the lib directory
-    find:
-      paths: "{{ mpf_home }}/lib"
-      patterns: "*"
-    register: oldlib_find
-
-  - name: MPF cleanup, remove old mpf files in the lib directory
+  - name: MPF cleanup, delete the mpf lib directory with contents
     file:
-      path="{{ item.path }}"
-      state=absent
-    with_items: "{{ oldlib_find.files }}"
-    when: "{{ oldlib_find.matched|int|default(0) }} > 0"
+      state: absent
+      path: "{{ mpf_home }}/lib"
 
-  - name: MPF cleanup, find old mpf files in the libdata directory
-    find:
-      paths: "{{ mpf_home }}/libdata"
-      patterns: "*"
-    register: oldlibdata_find
-
-  - name: MPF cleanup, remove old mpf files in the libdata directory
+  - name: MPF cleanup, delete the mpf libdata directory with contents
     file:
-      path="{{ item.path }}"
-      state=absent
-    with_items: "{{ oldlibdata_find.files }}"
-    when: "{{ oldlibdata_find.matched|int|default(0) }} > 0"
+      state: absent
+      path: "{{ mpf_home }}/libdata"
 
-  - name: MPF cleanup, find old mpf files in the bin directory
-    find:
-      paths: "{{ mpf_home }}/bin"
-      patterns: "*"
-    register: oldbin_find
-
-  - name: MPF cleanup, remove old mpf files in the bin directory
+  - name: MPF cleanup, delete the mpf bin directory with contents
     file:
-      path="{{ item.path }}"
-      state=absent
-    with_items: "{{ oldbin_find.files }}"
-    when: "{{ oldbin_find.matched|int|default(0) }} > 0"
+      state: absent
+      path: "{{ mpf_home }}/bin"
 
   - name: MPF cleanup, find old mpf nodeServicesPalette.json file in the data directory
     find:

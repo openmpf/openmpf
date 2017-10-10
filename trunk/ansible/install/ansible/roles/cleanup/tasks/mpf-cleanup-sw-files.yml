@@ -25,6 +25,19 @@
 #############################################################################
 ---
 #file: roles/cleanup/tasks/mpf-cleanup-sw-files.yml
+  - name: MPF cleanup, find old mpf.conf file in the /etc/ld.so.conf.d directory
+    find:
+      paths: "/etc/ld.so.conf.d"
+      patterns: "mpf.conf"
+    register: oldMpfConf_find
+
+  - name: MPF cleanup, remove old mpf.conf file in the /etc/ld.so.conf.d directory
+    file:
+      path="{{ item.path }}"
+      state=absent
+    with_items: "{{ oldMpfConf_find.files }}"
+    when: "{{ oldMpfConf_find.matched|int|default(0) }} > 0"
+
   - name: MPF cleanup, find old mpf files in the jars directory
     find:
       paths: "{{ mpf_home }}/jars"
@@ -103,5 +116,3 @@
     with_items: "{{ oldNodeConfig_find.files }}"
     when: "{{ oldNodeConfig_find.matched|int|default(0) }} > 0"
 
-  - name: Run ldconfig after MPF cleanup
-    command: ldconfig

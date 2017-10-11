@@ -36,7 +36,7 @@
 # only register components that have no setup file or successfully completed their setup
 - name: "Register {{ item.componentName }} component"
   uri:
-    url: "{{ component_uri }}{{ plugins_dir }}/{{ item.componentDescriptorPath }}"
+    url: "{{ register_component_uri }}{{ plugins_dir }}/{{ item.componentDescriptorPath }}"
     method: GET
     follow_redirects: all
     force_basic_auth: yes
@@ -54,9 +54,9 @@
   failed_when: registration_results.status == 404
   delegate_to: "{{ master_host }}"
 
-- name: Show component registration error message
-  debug: msg="Could not register component {{ item.componentName }} . Error message was {{ registration_results.content }}"
-  when: item.register and registration_results.status != 200
+- name: Show component registration message
+  debug: msg="Registration message was {{ registration_results.content }}"
+  when: item.register
   run_once: true
   delegate_to: "{{ master_host }}"
 

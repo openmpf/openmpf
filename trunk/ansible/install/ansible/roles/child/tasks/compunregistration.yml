@@ -24,28 +24,34 @@
 # limitations under the License.                                            #
 #############################################################################
 ---
-#file: roles/upgrade/tasks/mpf-to-current.yml
+#file: roles/child/tasks/compunregistration.yml
 
-  - include: mysql.yml
-    delegate_to: "{{ master_host }}"
-    run_once: true
+# TODO: check if component was previously installed before doing this
+- name: "Unregister old {{ item.componentName }} component"
+  uri:
+    url: "{{ unregister_component_uri }}{{ mpf_home }}/plugins/{{ item.componentDescriptorPath }}&deletePackage=false&recursive=false"
+    method: GET
+    follow_redirects: all
+    force_basic_auth: yes
+    user: "admin"
+    password: "{{ admin_wfm_pw }}"
+    status_code: 200
+    return_content: yes
+    timeout: 150
+    validate_certs: no
+  environment:
+    no_proxy: "{{ master_host }}"
+  run_once: true
+  when: can_register_components and item.register and item.componentDescriptorPath
+  register: unregistration_results
+  failed_when: unregistration_results.status == 404
+  delegate_to: "{{ master_host }}"
 
-  - include: customPipelines.yml
-    delegate_to: "{{ master_host }}"
-    run_once: true
+- name: Show component unregistration message
+  debug: msg="Unregistration message was {{ unregistration_results.content }}"
+  when: item.register
+  run_once: true
+  delegate_to: "{{ master_host }}"
 
-  # Previous releases of openmpf used path $MPF_HOME/share/components/components.json,
-  # releases 0.9+ use $MPF_HOME/data/components.json
-  - name: Check for previous version of components JSON file
-    stat:
-      path: "{{ mpf_home }}/data/components.json"
-    register: old_components_st
-    run_once: true
-
-  - name: Backup previous version of components.json file
-    copy:
-      src: "{{ mpf_home }}/data/components.json"
-      dest: "{{ mpf_home }}/data/components.json.bak"
-    delegate_to: "{{ master_host }}"
-    run_once: true
-    when: old_components_st.stat.exists
+- pause:
+    prompt: "DEBUG: Unregister old {{ item.componentName }} component!"

@@ -57,14 +57,7 @@
       delegate_to: "{{ master_host }}"
       run_once: true
 
-    - name: Set MPF component registration information
-      set_fact:
-        can_register_components: "{% if deployment_config.https.install and keystore_filest.stat.exists == False %}False{% else %}True{% endif %}"
-        component_uri: "{% if deployment_config.https.install %}https://{{ master_host }}:8443/workflow-manager/rest/component/registerViaFile?filePath={% else %}http://{{ master_host }}:8080/workflow-manager/rest/component/registerViaFile?filePath={% endif %}"
-      delegate_to: "{{ master_host }}"
-      run_once: true
-
-    - name: Process MPF components
+    - name: Register MPF components
       include: "{{ mpf_home }}/manage/ansible/roles/child/tasks/compregistration.yml"
       with_items:
         - "{{ deployment_config.mpf_components }}"

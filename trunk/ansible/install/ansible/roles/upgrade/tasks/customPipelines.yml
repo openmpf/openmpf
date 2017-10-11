@@ -90,13 +90,3 @@
     register: original_xml_files_check_st
     delegate_to: "{{ master_host }}"
     run_once: true
-
-  - name: After backup of existing Algorithms, Actions, Tasks, and Pipelines files - delete original .xml files
-    file:
-      path="{{ item.stat.path }}"
-      state=absent
-    with_items: "{{ original_xml_files_check_st.results }}"
-    when: "original_xml_files_check_st is defined and {{ item.stat.exists }}"
-    delegate_to: "{{ master_host }}"
-    run_once: true
-

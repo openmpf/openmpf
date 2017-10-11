@@ -26,10 +26,6 @@
 ---
 #file: roles/upgrade/handlers/main.yml
 
-#############################################################################
-# 8to9
-#############################################################################
-
 - name: Check for generated custom Algorithms, Actions, Tasks, and Pipelines files
   find:
     paths: "{{ mpf_home }}/data"

@@ -57,6 +57,19 @@
   with_items: "{{ MPF_Core_Tars }}"
   when: "'mpf-master' not in group_names"
 
+- name: Set MPF component un/registration information
+  set_fact:
+    can_register_components: "{% if deployment_config.https.install and keystore_filest.stat.exists == False %}False{% else %}True{% endif %}"
+    unregister_component_uri: "{% if deployment_config.https.install %}https://{{ master_host }}:8443/workflow-manager/rest/component/unregisterViaFile?filePath={% else %}http://{{ master_host }}:8080/workflow-manager/rest/component/unregisterViaFile?filePath={% endif %}"
+    register_component_uri: "{% if deployment_config.https.install %}https://{{ master_host }}:8443/workflow-manager/rest/component/registerViaFile?filePath={% else %}http://{{ master_host }}:8080/workflow-manager/rest/component/registerViaFile?filePath={% endif %}"
+  delegate_to: "{{ master_host }}"
+  run_once: true
+
+- name: Unregister MPF components
+  include: "{{ mpf_home }}/manage/ansible/roles/child/tasks/compunregistration.yml"
+  with_items:
+    - "{{ deployment_config.mpf_components }}"
+
 - name: Download MPF Component Archives
   get_url:
     url="http://{{ repo_host }}/repo/tars/mpf/{{ item.packageFilePath | basename }}"
@@ -66,6 +79,7 @@
   with_items: "{{ deployment_config.mpf_components }}"
   when: item.packageFilePath
 
+# TODO: see if we can do an in-place replacement and preserve existing licenses and data files
 - name: Remove existing extracted MPF Components
   file:
     path="{{ mpf_home }}/plugins/{{ item.componentTLD }}"

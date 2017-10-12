@@ -2,20 +2,35 @@
 
 ## What is the OpenMPF?
 
-The OpenMPF performs content detection and extraction (such as face detection, text extraction, and object classification) on bulk image, video, and audio files, enabling content analysis and search through the extraction of objects, keywords, thumbnails, and other contextual information.
+The Open Media Processing Framework provides a platform to perform content detection and extraction on bulk multimedia, enabling users to analyze, search, and share information through the extraction of objects, keywords, thumbnails, and other contextual data.
 
-This scalable, web-friendly platform enables users to build configurable multimedia processing pipelines, enabling the rapid development and deployment of analytic algorithms and large-scale media processing applications.
+OpenMPF enables users to build configurable media processing pipelines, enabling the rapid development and deployment of analytic algorithms and large-scale media processing applications.
+
+### Search and Share
+
+Simplify large-scale media processing and enable the extraction of meaningful content
+
+### Open API
+
+Apply cutting-edge algorithms such as face detection and object classification
+
+### Flexible Architecture
+
+Integrate into your existing environment or use OpenMPF as a standalone application
 
 ## Who is it for?
 
 ### Algorithm Developers
-If you are developing an algorithm and want to test it in conjunction with other algorithms or compare performance to other algorithms, the OpenMPF is the tool for you.
+If you are developing an algorithm and want to test it in conjunction with other algorithms or compare performance to other algorithms, OpenMPF is the tool for you.
+
 ### Intelligence Analysts
-If you have digital media to analyze, the OpenMPF allows you to apply state of the art algorithms in order to identify features like faces, people or motion.
+If you have digital media to analyze, OpenMPF allows you to apply state of the art algorithms in order to identify features like faces, people or motion.
+
 ### Data Scientists
-If your company has a lot of digital media that needs to be analyzed, the OpenMPF's scalable architecture makes it possible for you to get the job done quickly by adding more processing power as needed.       
+If your company has a lot of digital media that needs to be analyzed, OpenMPF's scalable architecture makes it possible for you to get the job done quickly by adding more processing power as needed.   
+
 ### Enterprise Media Processing Users
-If you need to process digital media at the enterprise scale, the OpenMPF will scale with your needs and permit you to add your own custom algorithms.
+If you need to process digital media at the enterprise scale, OpenMPF will scale with your needs and permit you to add your own custom algorithms.
 
 ## Features
 
@@ -36,11 +51,20 @@ Additionally, the REST API exposes the same core functionality as the Web UI and
 
 ### Component Plugin Architecture
 
+The OpenMPF Plugin Architecture provides the ability to seamlessly integrate **detection**, **tracking**, and **classification** algorithms in both C++ and Java.
+
+New processing nodes can easily be added to increase processing throughput and new algorithms can be dynamically loaded and scaled to meet user needs.
+
 ![Component Architecture](README-images/component-architecture.png)
 
-The OpenMPF Plugin Architecture provides the ability to seamlessly integrate **detection** , **tracking** , and **classification** algorithms in both C++ and Java. New processing nodes can easily be added to increase processing throughput and new algorithms can be dynamically loaded and scaled to meet user needs.
+OpenMPF includes open-source algorithms for detecting and tracking:
 
-OpenMPF includes open-source algorithms for **Object** Classification as well as **Face** , **Person** , **Text** , **Speech** , and **Motion** Detection and Tracking.
+- Objects - Caffe
+- Faces - Dlib, LBP-Based OpenCV
+- People - HOG-Based OpenCV
+- Text - OpenALPR
+- Speech - Sphinx
+- Motion - STRUCK, MOG, SuBSENSE
 
 ### Tailored Framework for Media Analytics
 
@@ -56,9 +80,11 @@ Built on **FFMPEG** and **OpenCV** , OpenMPF supports the processing of standard
 
 ### Customizable Pipelines
 
-OpenMPF provides the ability to organize algorithms sequentially or in parallel. This enables users to create pipelines based on performance (fast -&gt; slow) to increase throughput on large datasets or run multiple concurrent algorithms (e.g., two competing face detection algorithms) to compare performance.
+OpenMPF provides the ability to to combine multiple algorithms in a single pipeline. Algorithms can be organized sequentially or in parallel.
 
 ![Pipelines](README-images/pipelines.png)
+
+This enables users to create pipelines based on performance (fast -&gt; slow) to increase throughput on large datasets or run multiple concurrent algorithms (e.g., two competing face detection algorithms) to compare performance.
 
 #### For Algorithm Developers - _You focus on the algorithms, we'll focus on the rest_
 

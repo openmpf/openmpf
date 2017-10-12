@@ -14,6 +14,7 @@
     "name" : "JavaTest",
     "description" : "A dummy Java detection component.",
     "actionType" : "DETECTION",
+    "supportsBatchProcessing": true,
     "requiresCollection" : {
       "states" : []
     },

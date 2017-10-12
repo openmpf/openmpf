@@ -62,7 +62,7 @@ public class MarkupCancellationRouteBuilder extends RouteBuilder {
         from(entryPoint)
             .routeId(routeId)
             .setExchangePattern(ExchangePattern.InOnly)
-            .processRef(MarkupCancellationProcessor.REF)
+            .process(MarkupCancellationProcessor.REF)
             .to(exitPoint);
     }
 }

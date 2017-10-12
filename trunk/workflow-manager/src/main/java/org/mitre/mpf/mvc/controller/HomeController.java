@@ -98,10 +98,6 @@ public class HomeController
 		return "index";
 	}
 
-	private InfoModel getInfoVersionOne() {
-		return modelUtils.getInfoModel();
-	}
-
 	@RequestMapping(value = "/rest/info", method = RequestMethod.GET, 
 			produces = "application/json;charset=UTF-8")
 	@ApiOperation(value="Returns metadata about the Workflow Manager, such as version and build number",
@@ -112,14 +108,14 @@ public class HomeController
 			@ApiResponse(code = 401, message = "Bad credentials") })
 	@ResponseBody
 	public InfoModel getInfoRest() {
-		return getInfoVersionOne();
+		return modelUtils.getInfoModel();
 	}
 
 	@RequestMapping(value = "/info", method = RequestMethod.GET, 
 			produces = "application/json;charset=UTF-8")	
 	@ResponseBody
-	public InfoModel getInfoSession() {
-		return getInfoVersionOne();
+	public InfoModel getInfo() {
+		return modelUtils.getInfoModel();
 	}
 
 	//for non-admin angular layout pages

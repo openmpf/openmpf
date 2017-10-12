@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.mst;
 
-import org.junit.rules.ErrorCollector;
 import org.mitre.mpf.interop.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,9 +56,9 @@ public class OutputChecker {
     private static final int subsenseFudgeFactor = 40;
 //    private static final int fudgeFactor = 40;     // for when running on local VM & comparing with jenkins run
 
-    private final ErrorCollector _errorCollector;
+    private final MpfErrorCollector _errorCollector;
 
-    public OutputChecker(ErrorCollector errorCollector) {
+    public OutputChecker(MpfErrorCollector errorCollector) {
         _errorCollector = errorCollector;
     }
 
@@ -105,7 +104,8 @@ public class OutputChecker {
 
         Map<String, SortedSet<JsonActionOutputObject>> expExtrResults = expMedia.getTypes();
         Map<String, SortedSet<JsonActionOutputObject>> actExtrResults = actMedia.getTypes();
-        _errorCollector.checkThat("ActionOutputs size", actExtrResults.size(), is(expExtrResults.size()));
+        // Check now to avoid NoSuchElementException during iteration
+        _errorCollector.checkNowThat("ActionOutputs size", actExtrResults.size(), is(expExtrResults.size()));
 
         Iterator<Map.Entry<String,SortedSet<JsonActionOutputObject>>> expectedEntries = expExtrResults.entrySet().iterator();
         Iterator<Map.Entry<String,SortedSet<JsonActionOutputObject>>> actualEntries = actExtrResults.entrySet().iterator();
@@ -181,7 +181,9 @@ public class OutputChecker {
 
             //log.info("expObjLocations size is {}", expObjLocations.size());
             //log.info("actObjLocations size is {}", actObjLocations.size());
-            _errorCollector.checkThat("ObjectLocations size", actObjLocations.size(), is(expObjLocations.size()));
+
+            // Check now to avoid NoSuchElementException during iteration
+            _errorCollector.checkNowThat("ObjectLocations size", actObjLocations.size(), is(expObjLocations.size()));
 
             // compare exemplar frames
             switch(pipeline) {

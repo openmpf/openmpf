@@ -66,6 +66,7 @@ public class TestDescriptorFactory {
         descriptor.algorithm.name = "Test Algorithm Name";
         descriptor.algorithm.actionType = ActionType.DETECTION;
         descriptor.algorithm.description = "Test Algorithm Description";
+        descriptor.algorithm.supportsBatchProcessing = true;
 
         descriptor.algorithm.requiresCollection = new JsonComponentDescriptor.AlgoRequires();
         descriptor.algorithm.requiresCollection.states = Arrays.asList("r-state1", "r-state2");

@@ -44,6 +44,7 @@ public class InvalidCustomPipelinesException extends ComponentRegistrationExcept
     private final Set<String> _invalidActionRefs;
     private final Set<String> _invalidTaskRefs;
     private final Map<String, Set<String>> _actionsWithInvalidProps;
+    private final Set<String> _pipelinesWithInvalidProcessingType;
 
     public InvalidCustomPipelinesException(
             Set<String> dupActions,
@@ -52,7 +53,8 @@ public class InvalidCustomPipelinesException extends ComponentRegistrationExcept
             Set<String> invalidAlgorithmRefs,
             Set<String> invalidActionRefs,
             Set<String> invalidTaskRefs,
-            Map<String, Set<String>> actionsWithInvalidProps) {
+            Map<String, Set<String>> actionsWithInvalidProps,
+            Set<String> pipelinesWithInvalidProcessingType) {
         super(createMessage(
                 dupActions,
                 dupTasks,
@@ -60,7 +62,8 @@ public class InvalidCustomPipelinesException extends ComponentRegistrationExcept
                 invalidAlgorithmRefs,
                 invalidActionRefs,
                 invalidTaskRefs,
-                actionsWithInvalidProps));
+                actionsWithInvalidProps,
+                pipelinesWithInvalidProcessingType));
 
         _dupActions = ImmutableSet.copyOf(dupActions);
         _dupTasks = ImmutableSet.copyOf(dupTasks);
@@ -69,6 +72,7 @@ public class InvalidCustomPipelinesException extends ComponentRegistrationExcept
         _invalidActionRefs = ImmutableSet.copyOf(invalidActionRefs);
         _invalidTaskRefs = ImmutableSet.copyOf(invalidTaskRefs);
         _actionsWithInvalidProps = ImmutableMap.copyOf(actionsWithInvalidProps);
+        _pipelinesWithInvalidProcessingType = ImmutableSet.copyOf(pipelinesWithInvalidProcessingType);
     }
 
     private static String createMessage(
@@ -78,7 +82,8 @@ public class InvalidCustomPipelinesException extends ComponentRegistrationExcept
             Set<String> invalidAlgorithmRefs,
             Set<String> invalidActionRefs,
             Set<String> invalidTaskRefs,
-            Map<String, Set<String>> actionsWithInvalidProps) {
+            Map<String, Set<String>> actionsWithInvalidProps,
+            Set<String> pipelinesWithInvalidProcessingType) {
 
         String duplicatesMsg = ImmutableMap.of("action", dupActions, "task", dupTasks, "pipeline", dupPipelines)
                 .entrySet()
@@ -97,7 +102,9 @@ public class InvalidCustomPipelinesException extends ComponentRegistrationExcept
 
         String invalidActionPropsMsg = createInvalidPropsMessage(actionsWithInvalidProps);
 
-        return Stream.of(duplicatesMsg, invalidRefsMsg, invalidActionPropsMsg)
+        String invalidProcessingTypeMessage = createInvalidProcessingTypeMessage(pipelinesWithInvalidProcessingType);
+
+        return Stream.of(duplicatesMsg, invalidRefsMsg, invalidActionPropsMsg, invalidProcessingTypeMessage)
                 .filter(s -> !s.isEmpty())
                 .collect(joining("\n"));
     }
@@ -120,6 +127,16 @@ public class InvalidCustomPipelinesException extends ComponentRegistrationExcept
                 .map(x -> String.format("The \"%s\" action contains the following invalid properties: %s.",
                         x.getKey(), String.join(", ", x.getValue())))
                 .collect(joining("\n"));
+    }
+
+    private static String createInvalidProcessingTypeMessage(Set<String> pipelinesWithInvalidProcessingType) {
+        if (pipelinesWithInvalidProcessingType.isEmpty()) {
+            return "";
+        }
+        String pipelinesString = String.join(", ", pipelinesWithInvalidProcessingType);
+        return String.format(
+                "The algorithms utilized in the following pipelines either do not all support batch processing or do not all support stream processing: %s",
+                pipelinesString);
     }
 
     public Set<String> getDupActions() {
@@ -148,5 +165,9 @@ public class InvalidCustomPipelinesException extends ComponentRegistrationExcept
 
     public Map<String, Set<String>> getActionsWithInvalidProps() {
         return _actionsWithInvalidProps;
+    }
+
+    public Set<String> getPipelinesWithInvalidProcessingType() {
+        return _pipelinesWithInvalidProcessingType;
     }
 }

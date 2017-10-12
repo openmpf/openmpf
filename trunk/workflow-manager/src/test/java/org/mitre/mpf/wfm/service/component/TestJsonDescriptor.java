@@ -49,6 +49,9 @@ public class TestJsonDescriptor {
                 "${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so"),
                 descriptor.launchArgs);
 
+        assertTrue(descriptor.algorithm.supportsBatchProcessing);
+        assertFalse(descriptor.algorithm.supportsStreamProcessing);
+
         assertEquals(3, descriptor.algorithm.providesCollection.properties.size());
 
         boolean propertiesLoaded = descriptor.algorithm.providesCollection.properties
@@ -71,6 +74,9 @@ public class TestJsonDescriptor {
         assertEquals(Collections.singletonList(
                 "${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so"),
                 descriptor.launchArgs);
+
+        assertTrue(descriptor.algorithm.supportsBatchProcessing);
+        assertFalse(descriptor.algorithm.supportsStreamProcessing);
 
         assertEquals(3, descriptor.algorithm.providesCollection.properties.size());
 
@@ -128,6 +134,9 @@ public class TestJsonDescriptor {
         assertTrue(envVar.name.equals("DUMMY_VAR")
                 && envVar.value.equals("nothing")
                 && envVar.sep == null);
+
+        assertTrue(descriptor.algorithm.supportsBatchProcessing);
+        assertFalse(descriptor.algorithm.supportsStreamProcessing);
 
         assertEquals(3, descriptor.algorithm.providesCollection.properties.size());
 

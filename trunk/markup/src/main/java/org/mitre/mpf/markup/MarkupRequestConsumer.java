@@ -106,7 +106,7 @@ public class MarkupRequestConsumer implements MessageListener {
             boxesAdded++;
         }
 
-	    log.info("[Markup Request #{}] Marking up {} tracks on '{}'.", markupRequest.getRequestId(), markupRequest.getMapEntriesCount(), markupRequest.getDestinationUri());
+	    log.info("[Markup Request #{}] Marking up {} detections on '{}'.", markupRequest.getRequestId(), markupRequest.getMapEntriesCount(), markupRequest.getDestinationUri());
 	    if(boxesAdded > 0) {
 		    writer.setBoundingBoxMap(map);
 		    writer.markupVideo();
@@ -134,7 +134,7 @@ public class MarkupRequestConsumer implements MessageListener {
 		    boxesAdded++;
 	    }
 
-	    log.info("[Markup Request #{}] Marking up {} tracks on '{}'.", markupRequest.getRequestId(), markupRequest.getMapEntriesCount(), markupRequest.getDestinationUri());
+	    log.info("[Markup Request #{}] Marking up {} detections on '{}'.", markupRequest.getRequestId(), markupRequest.getMapEntriesCount(), markupRequest.getDestinationUri());
 	    if(boxesAdded > 0) {
 		    writer.setBoundingBoxMap(map);
 		    writer.markupImage();

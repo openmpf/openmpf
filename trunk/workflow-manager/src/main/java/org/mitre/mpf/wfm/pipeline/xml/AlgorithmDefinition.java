@@ -64,18 +64,30 @@ public class AlgorithmDefinition {
     private RequiresCollection requiresCollection;
 	public RequiresCollection getRequiresCollection() { return requiresCollection; }
 
+
+	@XStreamAsAttribute
+	private boolean supportsBatchProcessing;
+	public boolean getSupportsBatchProcessing() { return supportsBatchProcessing; }
+
+	@XStreamAsAttribute
+	private boolean supportsStreamProcessing;
+	public boolean getSupportsStreamProcessing() { return supportsStreamProcessing; }
+
 	/** Creates a new instance of this class using the specified parameters.
 	 *
 	 * @param actionType The REQUIRED non-null type of operation performed by this algorithm.
 	 * @param name The REQUIRED non-null name of the algorithm. This is preprocessed using {@link org.mitre.mpf.wfm.util.TextUtils#trimAndUpper(String)}.
 	 * @param description The REQUIRED non-null description of the algorithm. This is preprocessed using {@link org.mitre.mpf.wfm.util.TextUtils#trim(String)}.
 	 */
-    public AlgorithmDefinition(ActionType actionType, String name, String description) {
+    public AlgorithmDefinition(ActionType actionType, String name, String description,
+                               boolean supportsBatchProcessing, boolean supportsStreamProcessing) {
         this.actionType = actionType;
 	    this.name = TextUtils.trimAndUpper(name);
         this.description = TextUtils.trim(description);
 	    this.providesCollection = new ProvidesCollection();
 	    this.requiresCollection = new RequiresCollection();
+	    this.supportsBatchProcessing = supportsBatchProcessing;
+	    this.supportsStreamProcessing = supportsStreamProcessing;
     }
 
     @Override
@@ -126,7 +138,10 @@ public class AlgorithmDefinition {
             log.error("{}: the providesCollection is not valid.", name);
             return false;
         } else if(!requiresCollection.isValid()) {
-            log.error("{}: the requiresCollection is not valid.", name);
+	        log.error("{}: the requiresCollection is not valid.", name);
+	        return false;
+        } else if(!supportsBatchProcessing && !supportsStreamProcessing) {
+	        log.error("{}: does not support batch or streaming processing.", name);
             return false;
         } else {
             return true;

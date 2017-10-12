@@ -27,7 +27,6 @@
 package org.mitre.mpf.mvc.controller;
 
 import javax.servlet.http.HttpServletRequest;
-import org.mitre.mpf.mvc.model.SessionModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,13 +46,8 @@ public class AdminErrorsController
 
 	public static final String DEFAULT_ERROR_VIEW = "error";
 
-	@Autowired
-	private SessionModel sessionModel;
-
 	@RequestMapping(value = "/adminErrors", method = RequestMethod.GET)
 	public ModelAndView adminErrors(HttpServletRequest request) {
-		ModelAndView mv = new ModelAndView("admin_errors");
-		return mv;
+		return new ModelAndView("admin_errors");
 	}
-
 }

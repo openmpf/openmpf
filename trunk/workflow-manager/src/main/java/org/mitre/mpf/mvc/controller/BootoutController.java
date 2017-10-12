@@ -25,17 +25,14 @@
  ******************************************************************************/
 
 package org.mitre.mpf.mvc.controller;
-import org.mitre.mpf.mvc.model.SessionModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
@@ -52,12 +49,8 @@ public class BootoutController {
 
     public static final int CUSTOM_SESSION_BOOTOUT_ERROR_CODE = 902;
 
-    @Autowired
-    private SessionModel sessionModel;
-
     @RequestMapping(value = "/bootout", method = RequestMethod.GET)
-    public ModelAndView timeout(@RequestParam(value="useSession", required = false) boolean useSession,
-                                HttpServletRequest request, HttpServletResponse response, HttpSession session)
+    public ModelAndView timeout(HttpServletRequest request, HttpServletResponse response, HttpSession session)
             throws IOException {
 
         log.info("session {} booted out", session);

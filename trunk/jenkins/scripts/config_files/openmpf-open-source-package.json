@@ -1,0 +1,52 @@
+{
+	"packageTag":"open-source",
+
+	"MPF_Core_RPMs": [
+		"markup",
+		"nodeManager",
+		"protobuf",
+		"video-overlay",
+		"workflowManager",
+		"java-component-api",
+		"java-component-executor"
+	],
+
+	"MPF_Core_Tars": [
+		"mpf-install-dep"
+	],
+
+    "MPF_Components": [
+        {
+            "name": "MogMotionDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/motion/MogMotionDetection"
+        },
+        {
+            "name": "SubsenseMotionDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/motion/SubsenseMotionDetection"
+        },
+        {
+            "name": "DlibFaceDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/DlibFaceDetection"
+        },
+        {
+            "name": "OcvFaceDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/OcvFaceDetection"
+        },
+        {
+            "name": "OcvPersonDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/OcvPersonDetection"
+        },
+        {
+            "name": "OalprLicensePlateTextDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/OalprLicensePlateTextDetection"
+        },
+        {
+            "name": "SphinxSpeechDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/java/SphinxSpeechDetection"
+        },
+        {
+            "name": "CaffeDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/CaffeDetection"
+        }
+    ]
+}

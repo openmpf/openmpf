@@ -738,7 +738,6 @@
                 if (files.length > 0) {
                     var jobCreationRequest = {
                         media: files,
-                        externalId: 'from_mpf_web_app', //hack to get jobs to session jobs
                         pipelineName: $scope.selectedPipelineServer.selected,
                         priority: $scope.selectedJobPriorityServer.selected.priority
                     };

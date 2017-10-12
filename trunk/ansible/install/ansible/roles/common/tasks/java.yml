@@ -25,10 +25,10 @@
 #############################################################################
 ---
 - name: Install JDK
-  yum: name=jdk1.8.0_60 state=latest disablerepo=* enablerepo=mpf-repo
+  yum: name=jdk1.8.0_144 state=latest disablerepo=* enablerepo=mpf-repo
 
 - name: Install JRE
-  yum: name=jre1.8.0_60 state=latest disablerepo=* enablerepo=mpf-repo
+  yum: name=jre1.8.0_144 state=latest disablerepo=* enablerepo=mpf-repo
 
 #Configure alternatives to point at latest java
 - name: Setup alternatives for java

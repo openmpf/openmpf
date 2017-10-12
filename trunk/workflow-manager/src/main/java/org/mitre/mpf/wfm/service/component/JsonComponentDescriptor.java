@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.service.component;
 
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.NotEmpty;
+import org.hibernate.validator.constraints.ScriptAssert;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.pipeline.xml.ValueType;
 import org.mitre.mpf.wfm.util.AllNotBlank;
@@ -44,6 +45,7 @@ import java.util.List;
  * This intentionally does not use getters and setters. Adding getters and setters to this class
  * would only make it harder to figure out the structure of the descriptor.
  */
+@SuppressWarnings("PublicField")
 public class JsonComponentDescriptor {
 
     @NotBlank
@@ -97,6 +99,8 @@ public class JsonComponentDescriptor {
         public String sep;
     }
 
+    @ScriptAssert(lang = "javascript", script = "_this.supportsBatchProcessing || _this.supportsStreamProcessing",
+            message = "must contain supportsBatchProcessing, supportsStreamProcessing, or both.")
     public static class Algorithm {
         @NotBlank
         public String name;
@@ -115,6 +119,10 @@ public class JsonComponentDescriptor {
         @NotNull
         @Valid
         public AlgoProvides providesCollection;
+
+        public boolean supportsBatchProcessing;
+
+        public boolean supportsStreamProcessing;
     }
 
     public static class AlgoRequires {

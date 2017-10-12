@@ -34,20 +34,15 @@ import org.mitre.mpf.videooverlay.BoundingBox;
 import org.mitre.mpf.videooverlay.BoundingBoxMap;
 import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.camel.StageSplitter;
+import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
-import org.mitre.mpf.wfm.data.entities.transients.Detection;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MediaType;
-import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,9 +50,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-
+import java.awt.*;
 import java.io.File;
 import java.util.*;
+import java.util.List;
+import java.util.stream.DoubleStream;
 
 @Component(MarkupStageSplitter.REF)
 public class MarkupStageSplitter implements StageSplitter {
@@ -72,7 +69,9 @@ public class MarkupStageSplitter implements StageSplitter {
 	private PropertiesUtil propertiesUtil;
 
 	@Autowired
-	private IoUtils ioUtils;
+	@Qualifier(HibernateMarkupResultDaoImpl.REF)
+	private MarkupResultDao hibernateMarkupResultDao;
+
 
 	/**
 	 * Returns the last task in the pipeline containing a detection action. This effectively filters preprocessor
@@ -92,76 +91,74 @@ public class MarkupStageSplitter implements StageSplitter {
 	}
 
 	/** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
-	private BoundingBoxMap createMap(TransientJob job, TransientMedia media, int stageIndex, TransientStage transientStaqe) {
+	private BoundingBoxMap createMap(TransientJob job, TransientMedia media, int stageIndex, TransientStage transientStage) {
 		BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
 		long mediaId = media.getId();
-		for(int actionIndex = 0; actionIndex < transientStaqe.getActions().size(); actionIndex++) {
+		for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
 			SortedSet<Track> tracks = redis.getTracks(job.getId(), mediaId, stageIndex, actionIndex);
-			String samplingIntervalProperty = AggregateJobPropertiesUtil.calculateValue(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
-					transientStaqe.getActions().get(actionIndex).getProperties(), job.getOverriddenJobProperties(),
-					transientStaqe.getActions().get(actionIndex),
-					job.getOverriddenAlgorithmProperties(),
-					media.getMediaSpecificProperties());
-			int samplingInterval = getSamplingInterval(samplingIntervalProperty);
-
-
-
 			for (Track track : tracks) {
-				String objectType = track.getType();
-				Random random = new Random(track.hashCode());
-				int[] randomColor = new int[]{56 + random.nextInt(200), 56 + random.nextInt(200), 56 + random.nextInt(200)};
-
-				List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
-				Collections.sort(orderedDetections);
-				for(int i = 0; i < orderedDetections.size(); i++) {
-					Detection detection = orderedDetections.get(i);
-					int currentFrame = detection.getMediaOffsetFrame();
-
-					// Create a bounding box at the location.
-					BoundingBox boundingBox = new BoundingBox();
-					boundingBox.setWidth(detection.getWidth());
-					boundingBox.setHeight(detection.getHeight());
-					boundingBox.setX(detection.getX());
-					boundingBox.setY(detection.getY());
-					boundingBox.setColor(randomColor[0], randomColor[1], randomColor[2]);
-
-					if (StringUtils.equalsIgnoreCase(track.getType(), "SPEECH") || StringUtils.equalsIgnoreCase(track.getType(), "AUDIO")) {
-						// Special case: Speech doesn't populate object locations for each frame in the video, so you have to
-						// go by the track start and stop frames.
-						boundingBoxMap.putOnFrames(Math.round(track.getStartOffsetFrameInclusive()), Math.round(track.getEndOffsetFrameInclusive()), boundingBox);
-						break;
-					} else if (samplingInterval <= 1) {
-						// If frames were processed individually, all we need to do is draw this frame's box.
-						boundingBoxMap.putOnFrame(currentFrame, boundingBox);
-					} else if (i == (track.getDetections().size() - 1)) {
-						// Otherwise, frames were not processed individually. In this case, this result is
-						// the last result in the video/segment, so we can't (easily) calculate a trajectory.
-						// Therefore, we simply draw the bounding box in the same location on all frames in this interval.
-						boundingBoxMap.putOnFrames(currentFrame, track.getEndOffsetFrameInclusive(), boundingBox);
-					} else {
-						// Finally, since the interval is greater than 1 and we are not at the last result in the
-						// collection, we draw bounding boxes on each frame in the collection such that on the
-						// first frame, the bounding box is at the position given by the object location, and on the
-						// last frame in the interval, the bounding box is very close to the position given by the object
-						// location of the next result. Consequently, the original bounding box appears to resize
-						// and translate to the position and size of the next result's bounding box.
-						BoundingBox nextBoundingBox = new BoundingBox();
-						nextBoundingBox.setWidth(detection.getWidth());
-						nextBoundingBox.setHeight(detection.getHeight());
-						nextBoundingBox.setX(detection.getX());
-						nextBoundingBox.setY(detection.getY());
-						boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, orderedDetections.get(i + 1).getMediaOffsetFrame() - currentFrame);
-					}
-				} // end foreach ObjectLocation
-			} // end foreach Track
-		} // end foreach action key
-
+				addTrackToBoundingBoxMap(track, boundingBoxMap);
+			}
+		}
 		return boundingBoxMap;
 	}
 
-	@Autowired
-	@Qualifier(HibernateMarkupResultDaoImpl.REF)
-	private MarkupResultDao hibernateMarkupResultDao;
+
+	private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap) {
+		Color trackColor = getRandomColor();
+
+		List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
+		Collections.sort(orderedDetections);
+		for (int i = 0; i < orderedDetections.size(); i++) {
+			Detection detection = orderedDetections.get(i);
+			int currentFrame = detection.getMediaOffsetFrame();
+
+			// Create a bounding box at the location.
+			BoundingBox boundingBox = new BoundingBox();
+			boundingBox.setWidth(detection.getWidth());
+			boundingBox.setHeight(detection.getHeight());
+			boundingBox.setX(detection.getX());
+			boundingBox.setY(detection.getY());
+			boundingBox.setColor(trackColor.getRed(), trackColor.getBlue(), trackColor.getGreen());
+
+			String objectType = track.getType();
+			if ("SPEECH".equalsIgnoreCase(objectType) || "AUDIO".equalsIgnoreCase(objectType)) {
+				// Special case: Speech doesn't populate object locations for each frame in the video, so you have to
+				// go by the track start and stop frames.
+				boundingBoxMap.putOnFrames(track.getStartOffsetFrameInclusive(),
+				                           track.getEndOffsetFrameInclusive(), boundingBox);
+				break;
+			}
+
+			boolean isLastDetection = (i == (orderedDetections.size() - 1));
+			if (isLastDetection) {
+				boundingBoxMap.putOnFrame(currentFrame, boundingBox);
+				break;
+			}
+
+			Detection nextDetection = orderedDetections.get(i + 1);
+			int gapBetweenNextDetection = nextDetection.getMediaOffsetFrame() - detection.getMediaOffsetFrame();
+			if (gapBetweenNextDetection == 1) {
+				boundingBoxMap.putOnFrame(currentFrame, boundingBox);
+			}
+			else {
+				// Since the gap between frames is greater than 1 and we are not at the last result in the
+				// collection, we draw bounding boxes on each frame in the collection such that on the
+				// first frame, the bounding box is at the position given by the object location, and on the
+				// last frame in the interval, the bounding box is very close to the position given by the object
+				// location of the next result. Consequently, the original bounding box appears to resize
+				// and translate to the position and size of the next result's bounding box.
+				BoundingBox nextBoundingBox = new BoundingBox();
+				nextBoundingBox.setWidth(nextDetection.getWidth());
+				nextBoundingBox.setHeight(nextDetection.getHeight());
+				nextBoundingBox.setX(nextDetection.getX());
+				nextBoundingBox.setY(nextDetection.getY());
+				nextBoundingBox.setColor(boundingBox.getColor());
+				boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection);
+			}
+		}
+	}
+
 
 	@Override
 	public final List<Message> performSplit(TransientJob transientJob, TransientStage transientStage) throws Exception {
@@ -233,18 +230,19 @@ public class MarkupStageSplitter implements StageSplitter {
 		}
 	}
 
-	private int getSamplingInterval(String samplingIntervalProperty) {
-		if (samplingIntervalProperty != null) {
-			try {
-				Integer parsedPropertyValue = Integer.parseInt(samplingIntervalProperty);
-				return Math.max(parsedPropertyValue, 1); // Return at least 1.
-			} catch (NumberFormatException nfe) {
-				log.warn("The sampling interval property value of '{}' cannot be parsed as an integer. Defaulting to 1.", samplingIntervalProperty); // Let this loop continue. Maybe we'll find the other property and it'll be a more appropriate value.
-			}
-		}
+	private static final double GOLDEN_RATIO_CONJUGATE = 2 / (1 + Math.sqrt(5));
 
-		return 1; // If we couldn't find a suitable property, or if the properties couldn't be parsed to meaningful values, we return 1.
+	// Uses method described in https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
+	// to create an infinite iterator of randomish colors.
+	// The article says to use the HSV color space, but HSB is identical.
+	private static final Iterator<Color> COLORS = DoubleStream
+			.iterate(Math.random(),
+			         x -> (x + GOLDEN_RATIO_CONJUGATE) % 1)
+			.mapToObj(x -> Color.getHSBColor((float) x, 0.5f, 0.95f))
+			.iterator();
+
+
+	private static Color getRandomColor() {
+		return COLORS.next();
 	}
-
-
 }

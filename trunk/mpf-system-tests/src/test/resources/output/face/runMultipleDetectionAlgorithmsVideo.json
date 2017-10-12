@@ -1,6 +1,6 @@
 {
   "jobId": 16,
-  "objectId": "8a1a49a7-d8e1-41f6-a868-02c8bd27b4b0",
+  "objectId": "6dbf089c-9c7d-4079-9d0d-f769efbd9d0f",
   "pipeline": {
     "name": "TEST MULTIPLE FACE DETECTION PIPELINE 2",
     "description": "TEST MULTIPLE FACE DETECTION PIPELINE 2",
@@ -34,16 +34,16 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "57c77a22-fb83-4ada-860e-f2bfebd6941a",
-  "timeStart": "2017-06-27 00:28:57.0",
-  "timeStop": "2017-06-27 00:30:24.0",
+  "externalJobId": "b4e6d74b-651b-4871-aaec-5868c3d9941f",
+  "timeStart": "2017-09-19 13:18:58.0",
+  "timeStop": "2017-09-19 13:20:40.0",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
   "media": [
     {
       "mediaId": 14,
-      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/video_02.mp4",
+      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/video_02.mp4",
       "mimeType": "video/mp4",
       "length": 521,
       "sha256": "6d794a2d5be1645b605c61d89c26d00b4e326fea2cf62035d78ceda82539d32a",
@@ -74,12 +74,12 @@
                   "y": 76,
                   "width": 97,
                   "height": 98,
-                  "confidence": 1.7440995,
+                  "confidence": 1.7441,
                   "detectionProperties": {},
                   "offsetFrame": 116,
                   "offsetTime": 3871,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                   "offset": 116
                 },
                 "detections": [
@@ -88,7 +88,7 @@
                     "y": 130,
                     "width": 38,
                     "height": 38,
-                    "confidence": 0.1779185,
+                    "confidence": 0.17791826,
                     "detectionProperties": {},
                     "offsetFrame": 24,
                     "offsetTime": 801,
@@ -249,7 +249,7 @@
                     "offsetFrame": 36,
                     "offsetTime": 1201,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-36.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-36.png",
                     "offset": 36
                   },
                   {
@@ -283,12 +283,12 @@
                     "y": 134,
                     "width": 40,
                     "height": 40,
-                    "confidence": 0.42342955,
+                    "confidence": 0.4234293,
                     "detectionProperties": {},
                     "offsetFrame": 39,
                     "offsetTime": 1301,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-39.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-39.png",
                     "offset": 39
                   },
                   {
@@ -340,7 +340,7 @@
                     "offsetFrame": 43,
                     "offsetTime": 1435,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
                     "offset": 43
                   },
                   {
@@ -452,7 +452,7 @@
                     "y": 134,
                     "width": 40,
                     "height": 40,
-                    "confidence": 0.58011323,
+                    "confidence": 0.58011276,
                     "detectionProperties": {},
                     "offsetFrame": 52,
                     "offsetTime": 1735,
@@ -478,7 +478,7 @@
                     "y": 136,
                     "width": 40,
                     "height": 40,
-                    "confidence": 0.6526435,
+                    "confidence": 0.652643,
                     "detectionProperties": {},
                     "offsetFrame": 54,
                     "offsetTime": 1802,
@@ -543,7 +543,7 @@
                     "y": 122,
                     "width": 45,
                     "height": 47,
-                    "confidence": 0.36700204,
+                    "confidence": 0.36700252,
                     "detectionProperties": {},
                     "offsetFrame": 59,
                     "offsetTime": 1969,
@@ -660,7 +660,7 @@
                     "y": 124,
                     "width": 46,
                     "height": 46,
-                    "confidence": 1.05238,
+                    "confidence": 1.0523795,
                     "detectionProperties": {},
                     "offsetFrame": 68,
                     "offsetTime": 2269,
@@ -699,7 +699,7 @@
                     "y": 123,
                     "width": 47,
                     "height": 46,
-                    "confidence": 1.0570458,
+                    "confidence": 1.0570453,
                     "detectionProperties": {},
                     "offsetFrame": 71,
                     "offsetTime": 2369,
@@ -756,7 +756,7 @@
                     "offsetFrame": 75,
                     "offsetTime": 2503,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
                     "offset": 75
                   },
                   {
@@ -790,7 +790,7 @@
                     "y": 105,
                     "width": 47,
                     "height": 47,
-                    "confidence": 1.2217339,
+                    "confidence": 1.2217335,
                     "detectionProperties": {},
                     "offsetFrame": 78,
                     "offsetTime": 2603,
@@ -834,7 +834,7 @@
                     "offsetFrame": 81,
                     "offsetTime": 2703,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
                     "offset": 81
                   },
                   {
@@ -912,7 +912,7 @@
                     "offsetFrame": 87,
                     "offsetTime": 2903,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
                     "offset": 87
                   },
                   {
@@ -972,7 +972,7 @@
                     "y": 102,
                     "width": 57,
                     "height": 58,
-                    "confidence": 0.61949474,
+                    "confidence": 0.6194945,
                     "detectionProperties": {},
                     "offsetFrame": 92,
                     "offsetTime": 3070,
@@ -998,7 +998,7 @@
                     "y": 102,
                     "width": 57,
                     "height": 58,
-                    "confidence": 0.50451595,
+                    "confidence": 0.5045164,
                     "detectionProperties": {},
                     "offsetFrame": 94,
                     "offsetTime": 3136,
@@ -1037,7 +1037,7 @@
                     "y": 108,
                     "width": 58,
                     "height": 57,
-                    "confidence": 0.41631848,
+                    "confidence": 0.416318,
                     "detectionProperties": {},
                     "offsetFrame": 97,
                     "offsetTime": 3237,
@@ -1120,7 +1120,7 @@
                     "offsetFrame": 103,
                     "offsetTime": 3437,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
                     "offset": 103
                   },
                   {
@@ -1128,7 +1128,7 @@
                     "y": 128,
                     "width": 68,
                     "height": 68,
-                    "confidence": 0.22580916,
+                    "confidence": 0.22580892,
                     "detectionProperties": {},
                     "offsetFrame": 104,
                     "offsetTime": 3470,
@@ -1180,7 +1180,7 @@
                     "y": 116,
                     "width": 82,
                     "height": 82,
-                    "confidence": 0.18888956,
+                    "confidence": 0.18888909,
                     "detectionProperties": {},
                     "offsetFrame": 108,
                     "offsetTime": 3604,
@@ -1224,7 +1224,7 @@
                     "offsetFrame": 111,
                     "offsetTime": 3704,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
                     "offset": 111
                   },
                   {
@@ -1232,7 +1232,7 @@
                     "y": 97,
                     "width": 82,
                     "height": 82,
-                    "confidence": 1.0555047,
+                    "confidence": 1.0555052,
                     "detectionProperties": {},
                     "offsetFrame": 112,
                     "offsetTime": 3737,
@@ -1250,7 +1250,7 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
                     "offset": 113
                   },
                   {
@@ -1276,7 +1276,7 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -1284,12 +1284,12 @@
                     "y": 76,
                     "width": 97,
                     "height": 98,
-                    "confidence": 1.7440995,
+                    "confidence": 1.7441,
                     "detectionProperties": {},
                     "offsetFrame": 116,
                     "offsetTime": 3871,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                     "offset": 116
                   },
                   {
@@ -1444,7 +1444,7 @@
                   "offsetFrame": 111,
                   "offsetTime": 3704,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
                   "offset": 111
                 },
                 "detections": [
@@ -1653,7 +1653,7 @@
                     "offsetFrame": 103,
                     "offsetTime": 3437,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
                     "offset": 103
                   },
                   {
@@ -1687,7 +1687,7 @@
                     "y": 64,
                     "width": 57,
                     "height": 56,
-                    "confidence": 0.4654327,
+                    "confidence": 0.46543294,
                     "detectionProperties": {},
                     "offsetFrame": 106,
                     "offsetTime": 3537,
@@ -1726,7 +1726,7 @@
                     "y": 55,
                     "width": 57,
                     "height": 57,
-                    "confidence": 0.5387033,
+                    "confidence": 0.53870285,
                     "detectionProperties": {},
                     "offsetFrame": 109,
                     "offsetTime": 3637,
@@ -1757,7 +1757,7 @@
                     "offsetFrame": 111,
                     "offsetTime": 3704,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
                     "offset": 111
                   },
                   {
@@ -1783,7 +1783,7 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
                     "offset": 113
                   },
                   {
@@ -1804,12 +1804,12 @@
                     "y": 48,
                     "width": 58,
                     "height": 58,
-                    "confidence": 0.38890606,
+                    "confidence": 0.38890654,
                     "detectionProperties": {},
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -1822,7 +1822,7 @@
                     "offsetFrame": 116,
                     "offsetTime": 3871,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                     "offset": 116
                   },
                   {
@@ -1860,7 +1860,7 @@
                   "offsetFrame": 426,
                   "offsetTime": 14214,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-426.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-426.png",
                   "offset": 426
                 },
                 "detections": [
@@ -2017,7 +2017,7 @@
                     "offsetFrame": 426,
                     "offsetTime": 14214,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-426.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-426.png",
                     "offset": 426
                   },
                   {
@@ -2056,7 +2056,7 @@
                     "offsetFrame": 429,
                     "offsetTime": 14314,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-429.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-429.png",
                     "offset": 429
                   },
                   {
@@ -2290,7 +2290,7 @@
                     "offsetFrame": 447,
                     "offsetTime": 14915,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-447.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-447.png",
                     "offset": 447
                   },
                   {
@@ -2398,7 +2398,7 @@
                   "offsetFrame": 115,
                   "offsetTime": 3837,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
                   "offset": 115
                 },
                 "detections": [
@@ -2529,7 +2529,7 @@
                     "offsetFrame": 75,
                     "offsetTime": 2503,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
                     "offset": 75
                   },
                   {
@@ -2607,7 +2607,7 @@
                     "offsetFrame": 81,
                     "offsetTime": 2703,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
                     "offset": 81
                   },
                   {
@@ -2685,7 +2685,7 @@
                     "offsetFrame": 87,
                     "offsetTime": 2903,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
                     "offset": 87
                   },
                   {
@@ -2893,7 +2893,7 @@
                     "offsetFrame": 103,
                     "offsetTime": 3437,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
                     "offset": 103
                   },
                   {
@@ -2997,7 +2997,7 @@
                     "offsetFrame": 111,
                     "offsetTime": 3704,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
                     "offset": 111
                   },
                   {
@@ -3023,7 +3023,7 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
                     "offset": 113
                   },
                   {
@@ -3049,7 +3049,7 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -3062,7 +3062,7 @@
                     "offsetFrame": 116,
                     "offsetTime": 3871,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                     "offset": 116
                   },
                   {
@@ -3230,7 +3230,7 @@
                   "offsetFrame": 113,
                   "offsetTime": 3770,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
                   "offset": 113
                 },
                 "detections": [
@@ -3244,7 +3244,7 @@
                     "offsetFrame": 103,
                     "offsetTime": 3437,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
                     "offset": 103
                   },
                   {
@@ -3348,7 +3348,7 @@
                     "offsetFrame": 111,
                     "offsetTime": 3704,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
                     "offset": 111
                   },
                   {
@@ -3374,7 +3374,7 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
                     "offset": 113
                   },
                   {
@@ -3400,7 +3400,7 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -3413,7 +3413,7 @@
                     "offsetFrame": 116,
                     "offsetTime": 3871,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                     "offset": 116
                   },
                   {
@@ -3490,7 +3490,7 @@
                   "offsetFrame": 429,
                   "offsetTime": 14314,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-429.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-429.png",
                   "offset": 429
                 },
                 "detections": [
@@ -3725,7 +3725,7 @@
                     "offsetFrame": 426,
                     "offsetTime": 14214,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-426.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-426.png",
                     "offset": 426
                   },
                   {
@@ -3764,7 +3764,7 @@
                     "offsetFrame": 429,
                     "offsetTime": 14314,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-429.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-429.png",
                     "offset": 429
                   },
                   {
@@ -3997,7 +3997,7 @@
                   "offsetFrame": 447,
                   "offsetTime": 14915,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-447.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-447.png",
                   "offset": 447
                 },
                 "detections": [
@@ -4076,7 +4076,7 @@
                     "offsetFrame": 447,
                     "offsetTime": 14915,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-447.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-447.png",
                     "offset": 447
                   },
                   {
@@ -4329,7 +4329,7 @@
                   "offsetFrame": 4,
                   "offsetTime": 133,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-4.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-4.png",
                   "offset": 4
                 },
                 "detections": [
@@ -4343,7 +4343,7 @@
                     "offsetFrame": 4,
                     "offsetTime": 133,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-4.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-4.png",
                     "offset": 4
                   },
                   {
@@ -4486,7 +4486,7 @@
                     "offsetFrame": 15,
                     "offsetTime": 501,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-15.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-15.png",
                     "offset": 15
                   },
                   {
@@ -4759,7 +4759,7 @@
                     "offsetFrame": 36,
                     "offsetTime": 1201,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-36.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-36.png",
                     "offset": 36
                   },
                   {
@@ -4798,7 +4798,7 @@
                     "offsetFrame": 39,
                     "offsetTime": 1301,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-39.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-39.png",
                     "offset": 39
                   },
                   {
@@ -4850,7 +4850,7 @@
                     "offsetFrame": 43,
                     "offsetTime": 1435,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
                     "offset": 43
                   },
                   {
@@ -5266,7 +5266,7 @@
                     "offsetFrame": 75,
                     "offsetTime": 2503,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
                     "offset": 75
                   },
                   {
@@ -5344,7 +5344,7 @@
                     "offsetFrame": 81,
                     "offsetTime": 2703,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
                     "offset": 81
                   },
                   {
@@ -5422,7 +5422,7 @@
                     "offsetFrame": 87,
                     "offsetTime": 2903,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
                     "offset": 87
                   },
                   {
@@ -5630,7 +5630,7 @@
                     "offsetFrame": 103,
                     "offsetTime": 3437,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
                     "offset": 103
                   },
                   {
@@ -5734,7 +5734,7 @@
                     "offsetFrame": 111,
                     "offsetTime": 3704,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
                     "offset": 111
                   },
                   {
@@ -5760,7 +5760,7 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
                     "offset": 113
                   },
                   {
@@ -5786,7 +5786,7 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -5799,7 +5799,7 @@
                     "offsetFrame": 116,
                     "offsetTime": 3871,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                     "offset": 116
                   },
                   {
@@ -5902,7 +5902,7 @@
                   "offsetFrame": 4,
                   "offsetTime": 133,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-4.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-4.png",
                   "offset": 4
                 },
                 "detections": [
@@ -5916,7 +5916,7 @@
                     "offsetFrame": 4,
                     "offsetTime": 133,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-4.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-4.png",
                     "offset": 4
                   },
                   {
@@ -6059,7 +6059,7 @@
                     "offsetFrame": 15,
                     "offsetTime": 501,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-15.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-15.png",
                     "offset": 15
                   },
                   {
@@ -6332,7 +6332,7 @@
                     "offsetFrame": 36,
                     "offsetTime": 1201,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-36.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-36.png",
                     "offset": 36
                   },
                   {
@@ -6371,7 +6371,7 @@
                     "offsetFrame": 39,
                     "offsetTime": 1301,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-39.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-39.png",
                     "offset": 39
                   },
                   {
@@ -6423,7 +6423,7 @@
                     "offsetFrame": 43,
                     "offsetTime": 1435,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
                     "offset": 43
                   },
                   {
@@ -6623,7 +6623,7 @@
                   },
                   {
                     "x": 93,
-                    "y": 131,
+                    "y": 132,
                     "width": 44,
                     "height": 90,
                     "confidence": -1.0,
@@ -6636,7 +6636,7 @@
                   },
                   {
                     "x": 93,
-                    "y": 129,
+                    "y": 130,
                     "width": 44,
                     "height": 90,
                     "confidence": -1.0,
@@ -6649,7 +6649,7 @@
                   },
                   {
                     "x": 93,
-                    "y": 129,
+                    "y": 130,
                     "width": 44,
                     "height": 90,
                     "confidence": -1.0,
@@ -6662,7 +6662,7 @@
                   },
                   {
                     "x": 93,
-                    "y": 128,
+                    "y": 129,
                     "width": 44,
                     "height": 90,
                     "confidence": -1.0,
@@ -6688,7 +6688,7 @@
                   },
                   {
                     "x": 95,
-                    "y": 126,
+                    "y": 127,
                     "width": 44,
                     "height": 92,
                     "confidence": -1.0,
@@ -6701,7 +6701,7 @@
                   },
                   {
                     "x": 100,
-                    "y": 129,
+                    "y": 130,
                     "width": 44,
                     "height": 92,
                     "confidence": -1.0,
@@ -6714,7 +6714,7 @@
                   },
                   {
                     "x": 99,
-                    "y": 129,
+                    "y": 130,
                     "width": 44,
                     "height": 92,
                     "confidence": -1.0,
@@ -6726,8 +6726,8 @@
                     "offset": 66
                   },
                   {
-                    "x": 100,
-                    "y": 134,
+                    "x": 101,
+                    "y": 133,
                     "width": 44,
                     "height": 92,
                     "confidence": -1.0,
@@ -6739,7 +6739,7 @@
                     "offset": 67
                   },
                   {
-                    "x": 100,
+                    "x": 101,
                     "y": 135,
                     "width": 44,
                     "height": 90,
@@ -6753,7 +6753,7 @@
                   },
                   {
                     "x": 100,
-                    "y": 135,
+                    "y": 136,
                     "width": 46,
                     "height": 92,
                     "confidence": -1.0,
@@ -6766,7 +6766,7 @@
                   },
                   {
                     "x": 101,
-                    "y": 134,
+                    "y": 135,
                     "width": 44,
                     "height": 90,
                     "confidence": -1.0,
@@ -6778,7 +6778,7 @@
                     "offset": 70
                   },
                   {
-                    "x": 101,
+                    "x": 102,
                     "y": 134,
                     "width": 44,
                     "height": 90,
@@ -6792,7 +6792,7 @@
                   },
                   {
                     "x": 101,
-                    "y": 130,
+                    "y": 131,
                     "width": 46,
                     "height": 92,
                     "confidence": -1.0,
@@ -6804,7 +6804,7 @@
                     "offset": 72
                   },
                   {
-                    "x": 100,
+                    "x": 101,
                     "y": 131,
                     "width": 46,
                     "height": 92,
@@ -6817,7 +6817,7 @@
                     "offset": 73
                   },
                   {
-                    "x": 100,
+                    "x": 101,
                     "y": 130,
                     "width": 46,
                     "height": 92,
@@ -6830,7 +6830,7 @@
                     "offset": 74
                   },
                   {
-                    "x": 99,
+                    "x": 100,
                     "y": 129,
                     "width": 46,
                     "height": 92,
@@ -6839,11 +6839,11 @@
                     "offsetFrame": 75,
                     "offsetTime": 2503,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
                     "offset": 75
                   },
                   {
-                    "x": 98,
+                    "x": 99,
                     "y": 129,
                     "width": 46,
                     "height": 92,
@@ -6856,7 +6856,7 @@
                     "offset": 76
                   },
                   {
-                    "x": 98,
+                    "x": 99,
                     "y": 128,
                     "width": 46,
                     "height": 92,
@@ -6869,7 +6869,7 @@
                     "offset": 77
                   },
                   {
-                    "x": 98,
+                    "x": 99,
                     "y": 127,
                     "width": 46,
                     "height": 92,
@@ -6882,7 +6882,7 @@
                     "offset": 78
                   },
                   {
-                    "x": 98,
+                    "x": 99,
                     "y": 126,
                     "width": 46,
                     "height": 92,
@@ -6909,7 +6909,7 @@
                   },
                   {
                     "x": 100,
-                    "y": 121,
+                    "y": 122,
                     "width": 46,
                     "height": 94,
                     "confidence": -1.0,
@@ -6917,12 +6917,12 @@
                     "offsetFrame": 81,
                     "offsetTime": 2703,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
                     "offset": 81
                   },
                   {
                     "x": 100,
-                    "y": 121,
+                    "y": 122,
                     "width": 46,
                     "height": 94,
                     "confidence": -1.0,
@@ -6986,7 +6986,7 @@
                     "offset": 86
                   },
                   {
-                    "x": 105,
+                    "x": 104,
                     "y": 121,
                     "width": 46,
                     "height": 92,
@@ -6995,12 +6995,12 @@
                     "offsetFrame": 87,
                     "offsetTime": 2903,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
                     "offset": 87
                   },
                   {
                     "x": 105,
-                    "y": 120,
+                    "y": 121,
                     "width": 46,
                     "height": 92,
                     "confidence": -1.0,
@@ -7013,7 +7013,7 @@
                   },
                   {
                     "x": 104,
-                    "y": 119,
+                    "y": 120,
                     "width": 46,
                     "height": 92,
                     "confidence": -1.0,
@@ -7026,7 +7026,7 @@
                   },
                   {
                     "x": 104,
-                    "y": 117,
+                    "y": 118,
                     "width": 46,
                     "height": 92,
                     "confidence": -1.0,
@@ -7038,7 +7038,7 @@
                     "offset": 90
                   },
                   {
-                    "x": 103,
+                    "x": 102,
                     "y": 117,
                     "width": 46,
                     "height": 92,
@@ -7051,7 +7051,7 @@
                     "offset": 91
                   },
                   {
-                    "x": 103,
+                    "x": 102,
                     "y": 117,
                     "width": 46,
                     "height": 94,
@@ -7065,7 +7065,7 @@
                   },
                   {
                     "x": 102,
-                    "y": 117,
+                    "y": 118,
                     "width": 46,
                     "height": 94,
                     "confidence": -1.0,
@@ -7077,8 +7077,8 @@
                     "offset": 93
                   },
                   {
-                    "x": 102,
-                    "y": 115,
+                    "x": 101,
+                    "y": 116,
                     "width": 46,
                     "height": 96,
                     "confidence": -1.0,
@@ -7091,7 +7091,7 @@
                   },
                   {
                     "x": 100,
-                    "y": 115,
+                    "y": 116,
                     "width": 48,
                     "height": 96,
                     "confidence": -1.0,
@@ -7103,8 +7103,8 @@
                     "offset": 95
                   },
                   {
-                    "x": 100,
-                    "y": 114,
+                    "x": 106,
+                    "y": 116,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7116,8 +7116,8 @@
                     "offset": 96
                   },
                   {
-                    "x": 102,
-                    "y": 115,
+                    "x": 104,
+                    "y": 117,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7130,7 +7130,7 @@
                   },
                   {
                     "x": 105,
-                    "y": 116,
+                    "y": 117,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7168,7 +7168,7 @@
                     "offset": 100
                   },
                   {
-                    "x": 101,
+                    "x": 102,
                     "y": 115,
                     "width": 48,
                     "height": 98,
@@ -7181,8 +7181,8 @@
                     "offset": 101
                   },
                   {
-                    "x": 101,
-                    "y": 115,
+                    "x": 102,
+                    "y": 116,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7194,8 +7194,8 @@
                     "offset": 102
                   },
                   {
-                    "x": 101,
-                    "y": 116,
+                    "x": 102,
+                    "y": 117,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7203,7 +7203,7 @@
                     "offsetFrame": 103,
                     "offsetTime": 3437,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
                     "offset": 103
                   },
                   {
@@ -7220,8 +7220,8 @@
                     "offset": 104
                   },
                   {
-                    "x": 103,
-                    "y": 122,
+                    "x": 102,
+                    "y": 121,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7233,8 +7233,8 @@
                     "offset": 105
                   },
                   {
-                    "x": 102,
-                    "y": 123,
+                    "x": 101,
+                    "y": 122,
                     "width": 48,
                     "height": 96,
                     "confidence": -1.0,
@@ -7247,7 +7247,7 @@
                   },
                   {
                     "x": 102,
-                    "y": 124,
+                    "y": 123,
                     "width": 48,
                     "height": 96,
                     "confidence": -1.0,
@@ -7260,7 +7260,7 @@
                   },
                   {
                     "x": 102,
-                    "y": 124,
+                    "y": 123,
                     "width": 48,
                     "height": 96,
                     "confidence": -1.0,
@@ -7273,7 +7273,7 @@
                   },
                   {
                     "x": 102,
-                    "y": 125,
+                    "y": 124,
                     "width": 48,
                     "height": 96,
                     "confidence": -1.0,
@@ -7286,7 +7286,7 @@
                   },
                   {
                     "x": 102,
-                    "y": 126,
+                    "y": 124,
                     "width": 48,
                     "height": 96,
                     "confidence": -1.0,
@@ -7307,12 +7307,12 @@
                     "offsetFrame": 111,
                     "offsetTime": 3704,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
                     "offset": 111
                   },
                   {
-                    "x": 103,
-                    "y": 124,
+                    "x": 102,
+                    "y": 123,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7325,7 +7325,7 @@
                   },
                   {
                     "x": 102,
-                    "y": 124,
+                    "y": 123,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7333,12 +7333,12 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
                     "offset": 113
                   },
                   {
                     "x": 103,
-                    "y": 123,
+                    "y": 122,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7359,7 +7359,7 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -7372,7 +7372,7 @@
                     "offsetFrame": 116,
                     "offsetTime": 3871,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                     "offset": 116
                   },
                   {
@@ -7390,7 +7390,7 @@
                   },
                   {
                     "x": 100,
-                    "y": 118,
+                    "y": 117,
                     "width": 48,
                     "height": 100,
                     "confidence": -1.0,
@@ -7402,8 +7402,8 @@
                     "offset": 118
                   },
                   {
-                    "x": 100,
-                    "y": 118,
+                    "x": 99,
+                    "y": 117,
                     "width": 48,
                     "height": 100,
                     "confidence": -1.0,
@@ -7416,7 +7416,7 @@
                   },
                   {
                     "x": 99,
-                    "y": 118,
+                    "y": 117,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7429,7 +7429,7 @@
                   },
                   {
                     "x": 97,
-                    "y": 119,
+                    "y": 118,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7442,7 +7442,7 @@
                   },
                   {
                     "x": 97,
-                    "y": 120,
+                    "y": 119,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7455,7 +7455,7 @@
                   },
                   {
                     "x": 95,
-                    "y": 119,
+                    "y": 118,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7468,7 +7468,7 @@
                   },
                   {
                     "x": 96,
-                    "y": 118,
+                    "y": 117,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7481,7 +7481,7 @@
                   },
                   {
                     "x": 97,
-                    "y": 116,
+                    "y": 115,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7494,7 +7494,7 @@
                   },
                   {
                     "x": 98,
-                    "y": 116,
+                    "y": 115,
                     "width": 48,
                     "height": 100,
                     "confidence": -1.0,
@@ -7507,7 +7507,7 @@
                   },
                   {
                     "x": 99,
-                    "y": 120,
+                    "y": 118,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7520,7 +7520,7 @@
                   },
                   {
                     "x": 98,
-                    "y": 119,
+                    "y": 118,
                     "width": 48,
                     "height": 98,
                     "confidence": -1.0,
@@ -7533,7 +7533,7 @@
                   },
                   {
                     "x": 99,
-                    "y": 117,
+                    "y": 116,
                     "width": 48,
                     "height": 100,
                     "confidence": -1.0,
@@ -7545,8 +7545,8 @@
                     "offset": 129
                   },
                   {
-                    "x": 99,
-                    "y": 117,
+                    "x": 98,
+                    "y": 116,
                     "width": 50,
                     "height": 100,
                     "confidence": -1.0,
@@ -7559,7 +7559,7 @@
                   },
                   {
                     "x": 99,
-                    "y": 116,
+                    "y": 115,
                     "width": 50,
                     "height": 102,
                     "confidence": -1.0,
@@ -7571,8 +7571,8 @@
                     "offset": 131
                   },
                   {
-                    "x": 99,
-                    "y": 118,
+                    "x": 98,
+                    "y": 117,
                     "width": 48,
                     "height": 100,
                     "confidence": -1.0,
@@ -7585,7 +7585,7 @@
                   },
                   {
                     "x": 99,
-                    "y": 118,
+                    "y": 117,
                     "width": 48,
                     "height": 100,
                     "confidence": -1.0,
@@ -7598,7 +7598,7 @@
                   },
                   {
                     "x": 101,
-                    "y": 119,
+                    "y": 118,
                     "width": 48,
                     "height": 100,
                     "confidence": -1.0,
@@ -7610,7 +7610,7 @@
                     "offset": 134
                   },
                   {
-                    "x": 102,
+                    "x": 103,
                     "y": 119,
                     "width": 48,
                     "height": 100,
@@ -7623,7 +7623,7 @@
                     "offset": 135
                   },
                   {
-                    "x": 105,
+                    "x": 107,
                     "y": 124,
                     "width": 48,
                     "height": 100,
@@ -7636,8 +7636,8 @@
                     "offset": 136
                   },
                   {
-                    "x": 106,
-                    "y": 125,
+                    "x": 107,
+                    "y": 123,
                     "width": 50,
                     "height": 102,
                     "confidence": -1.0,
@@ -7649,8 +7649,8 @@
                     "offset": 137
                   },
                   {
-                    "x": 104,
-                    "y": 121,
+                    "x": 105,
+                    "y": 120,
                     "width": 52,
                     "height": 104,
                     "confidence": -1.0,
@@ -7663,7 +7663,7 @@
                   },
                   {
                     "x": 105,
-                    "y": 123,
+                    "y": 122,
                     "width": 52,
                     "height": 104,
                     "confidence": -1.0,
@@ -7676,7 +7676,7 @@
                   },
                   {
                     "x": 105,
-                    "y": 122,
+                    "y": 121,
                     "width": 52,
                     "height": 106,
                     "confidence": -1.0,
@@ -7689,7 +7689,7 @@
                   },
                   {
                     "x": 106,
-                    "y": 123,
+                    "y": 121,
                     "width": 52,
                     "height": 106,
                     "confidence": -1.0,
@@ -7701,8 +7701,8 @@
                     "offset": 141
                   },
                   {
-                    "x": 105,
-                    "y": 125,
+                    "x": 106,
+                    "y": 123,
                     "width": 52,
                     "height": 106,
                     "confidence": -1.0,
@@ -7714,8 +7714,8 @@
                     "offset": 142
                   },
                   {
-                    "x": 105,
-                    "y": 123,
+                    "x": 106,
+                    "y": 122,
                     "width": 52,
                     "height": 106,
                     "confidence": -1.0,
@@ -7727,8 +7727,8 @@
                     "offset": 143
                   },
                   {
-                    "x": 104,
-                    "y": 123,
+                    "x": 105,
+                    "y": 121,
                     "width": 52,
                     "height": 106,
                     "confidence": -1.0,
@@ -7740,8 +7740,8 @@
                     "offset": 144
                   },
                   {
-                    "x": 106,
-                    "y": 124,
+                    "x": 107,
+                    "y": 122,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -7753,8 +7753,8 @@
                     "offset": 145
                   },
                   {
-                    "x": 105,
-                    "y": 123,
+                    "x": 106,
+                    "y": 121,
                     "width": 52,
                     "height": 106,
                     "confidence": -1.0,
@@ -7767,7 +7767,7 @@
                   },
                   {
                     "x": 105,
-                    "y": 123,
+                    "y": 121,
                     "width": 52,
                     "height": 106,
                     "confidence": -1.0,
@@ -7779,7 +7779,7 @@
                     "offset": 147
                   },
                   {
-                    "x": 103,
+                    "x": 104,
                     "y": 122,
                     "width": 52,
                     "height": 104,
@@ -7792,8 +7792,8 @@
                     "offset": 148
                   },
                   {
-                    "x": 100,
-                    "y": 116,
+                    "x": 101,
+                    "y": 114,
                     "width": 52,
                     "height": 106,
                     "confidence": -1.0,
@@ -7806,7 +7806,7 @@
                   },
                   {
                     "x": 96,
-                    "y": 120,
+                    "y": 119,
                     "width": 52,
                     "height": 106,
                     "confidence": -1.0,
@@ -7819,7 +7819,7 @@
                   },
                   {
                     "x": 95,
-                    "y": 120,
+                    "y": 121,
                     "width": 54,
                     "height": 108,
                     "confidence": -1.0,
@@ -7831,8 +7831,8 @@
                     "offset": 151
                   },
                   {
-                    "x": 94,
-                    "y": 120,
+                    "x": 95,
+                    "y": 121,
                     "width": 54,
                     "height": 110,
                     "confidence": -1.0,
@@ -7844,7 +7844,7 @@
                     "offset": 152
                   },
                   {
-                    "x": 93,
+                    "x": 95,
                     "y": 120,
                     "width": 54,
                     "height": 110,
@@ -7871,7 +7871,7 @@
                   },
                   {
                     "x": 86,
-                    "y": 121,
+                    "y": 120,
                     "width": 54,
                     "height": 110,
                     "confidence": -1.0,
@@ -7883,8 +7883,8 @@
                     "offset": 155
                   },
                   {
-                    "x": 84,
-                    "y": 122,
+                    "x": 85,
+                    "y": 121,
                     "width": 54,
                     "height": 112,
                     "confidence": -1.0,
@@ -7897,7 +7897,7 @@
                   },
                   {
                     "x": 81,
-                    "y": 118,
+                    "y": 117,
                     "width": 56,
                     "height": 114,
                     "confidence": -1.0,
@@ -7923,7 +7923,7 @@
                   },
                   {
                     "x": 79,
-                    "y": 111,
+                    "y": 107,
                     "width": 56,
                     "height": 114,
                     "confidence": -1.0,
@@ -7936,7 +7936,7 @@
                   },
                   {
                     "x": 76,
-                    "y": 114,
+                    "y": 111,
                     "width": 56,
                     "height": 114,
                     "confidence": -1.0,
@@ -7948,8 +7948,8 @@
                     "offset": 160
                   },
                   {
-                    "x": 77,
-                    "y": 112,
+                    "x": 76,
+                    "y": 110,
                     "width": 56,
                     "height": 114,
                     "confidence": -1.0,
@@ -7961,8 +7961,8 @@
                     "offset": 161
                   },
                   {
-                    "x": 78,
-                    "y": 112,
+                    "x": 77,
+                    "y": 110,
                     "width": 56,
                     "height": 114,
                     "confidence": -1.0,
@@ -7974,8 +7974,8 @@
                     "offset": 162
                   },
                   {
-                    "x": 78,
-                    "y": 109,
+                    "x": 77,
+                    "y": 107,
                     "width": 56,
                     "height": 116,
                     "confidence": -1.0,
@@ -7987,8 +7987,8 @@
                     "offset": 163
                   },
                   {
-                    "x": 80,
-                    "y": 110,
+                    "x": 79,
+                    "y": 107,
                     "width": 56,
                     "height": 116,
                     "confidence": -1.0,
@@ -8001,7 +8001,7 @@
                   },
                   {
                     "x": 81,
-                    "y": 107,
+                    "y": 106,
                     "width": 56,
                     "height": 116,
                     "confidence": -1.0,
@@ -8014,7 +8014,7 @@
                   },
                   {
                     "x": 82,
-                    "y": 111,
+                    "y": 109,
                     "width": 56,
                     "height": 114,
                     "confidence": -1.0,
@@ -8026,8 +8026,8 @@
                     "offset": 166
                   },
                   {
-                    "x": 85,
-                    "y": 112,
+                    "x": 84,
+                    "y": 110,
                     "width": 56,
                     "height": 114,
                     "confidence": -1.0,
@@ -8039,8 +8039,8 @@
                     "offset": 167
                   },
                   {
-                    "x": 87,
-                    "y": 110,
+                    "x": 86,
+                    "y": 109,
                     "width": 58,
                     "height": 116,
                     "confidence": -1.0,
@@ -8052,8 +8052,8 @@
                     "offset": 168
                   },
                   {
-                    "x": 87,
-                    "y": 115,
+                    "x": 85,
+                    "y": 113,
                     "width": 56,
                     "height": 114,
                     "confidence": -1.0,
@@ -8065,8 +8065,8 @@
                     "offset": 169
                   },
                   {
-                    "x": 87,
-                    "y": 113,
+                    "x": 85,
+                    "y": 111,
                     "width": 58,
                     "height": 116,
                     "confidence": -1.0,
@@ -8078,8 +8078,8 @@
                     "offset": 170
                   },
                   {
-                    "x": 88,
-                    "y": 114,
+                    "x": 86,
+                    "y": 113,
                     "width": 58,
                     "height": 116,
                     "confidence": -1.0,
@@ -8091,8 +8091,8 @@
                     "offset": 171
                   },
                   {
-                    "x": 86,
-                    "y": 111,
+                    "x": 83,
+                    "y": 109,
                     "width": 58,
                     "height": 118,
                     "confidence": -1.0,
@@ -8104,8 +8104,8 @@
                     "offset": 172
                   },
                   {
-                    "x": 85,
-                    "y": 109,
+                    "x": 83,
+                    "y": 107,
                     "width": 58,
                     "height": 118,
                     "confidence": -1.0,
@@ -8117,8 +8117,8 @@
                     "offset": 173
                   },
                   {
-                    "x": 87,
-                    "y": 108,
+                    "x": 86,
+                    "y": 107,
                     "width": 58,
                     "height": 118,
                     "confidence": -1.0,
@@ -8130,8 +8130,8 @@
                     "offset": 174
                   },
                   {
-                    "x": 95,
-                    "y": 110,
+                    "x": 93,
+                    "y": 107,
                     "width": 60,
                     "height": 120,
                     "confidence": -1.0,
@@ -8143,8 +8143,8 @@
                     "offset": 175
                   },
                   {
-                    "x": 99,
-                    "y": 113,
+                    "x": 97,
+                    "y": 111,
                     "width": 58,
                     "height": 118,
                     "confidence": -1.0,
@@ -8156,8 +8156,8 @@
                     "offset": 176
                   },
                   {
-                    "x": 102,
-                    "y": 115,
+                    "x": 100,
+                    "y": 110,
                     "width": 58,
                     "height": 116,
                     "confidence": -1.0,
@@ -8169,8 +8169,8 @@
                     "offset": 177
                   },
                   {
-                    "x": 102,
-                    "y": 114,
+                    "x": 103,
+                    "y": 111,
                     "width": 58,
                     "height": 118,
                     "confidence": -1.0,
@@ -8182,8 +8182,8 @@
                     "offset": 178
                   },
                   {
-                    "x": 103,
-                    "y": 116,
+                    "x": 104,
+                    "y": 114,
                     "width": 58,
                     "height": 118,
                     "confidence": -1.0,
@@ -8209,7 +8209,7 @@
                   },
                   {
                     "x": 102,
-                    "y": 113,
+                    "y": 115,
                     "width": 58,
                     "height": 118,
                     "confidence": -1.0,
@@ -8235,7 +8235,7 @@
                   },
                   {
                     "x": 104,
-                    "y": 118,
+                    "y": 116,
                     "width": 58,
                     "height": 118,
                     "confidence": -1.0,
@@ -8247,8 +8247,8 @@
                     "offset": 183
                   },
                   {
-                    "x": 103,
-                    "y": 117,
+                    "x": 104,
+                    "y": 118,
                     "width": 58,
                     "height": 118,
                     "confidence": -1.0,
@@ -8260,8 +8260,8 @@
                     "offset": 184
                   },
                   {
-                    "x": 102,
-                    "y": 115,
+                    "x": 104,
+                    "y": 116,
                     "width": 58,
                     "height": 118,
                     "confidence": -1.0,
@@ -8273,8 +8273,8 @@
                     "offset": 185
                   },
                   {
-                    "x": 102,
-                    "y": 115,
+                    "x": 104,
+                    "y": 117,
                     "width": 58,
                     "height": 118,
                     "confidence": -1.0,
@@ -8286,8 +8286,8 @@
                     "offset": 186
                   },
                   {
-                    "x": 100,
-                    "y": 115,
+                    "x": 102,
+                    "y": 117,
                     "width": 60,
                     "height": 120,
                     "confidence": -1.0,
@@ -8299,8 +8299,8 @@
                     "offset": 187
                   },
                   {
-                    "x": 101,
-                    "y": 117,
+                    "x": 103,
+                    "y": 118,
                     "width": 60,
                     "height": 120,
                     "confidence": -1.0,
@@ -8312,8 +8312,8 @@
                     "offset": 188
                   },
                   {
-                    "x": 103,
-                    "y": 120,
+                    "x": 105,
+                    "y": 122,
                     "width": 58,
                     "height": 118,
                     "confidence": -1.0,
@@ -8325,8 +8325,8 @@
                     "offset": 189
                   },
                   {
-                    "x": 102,
-                    "y": 120,
+                    "x": 104,
+                    "y": 125,
                     "width": 58,
                     "height": 118,
                     "confidence": -1.0,
@@ -8338,8 +8338,8 @@
                     "offset": 190
                   },
                   {
-                    "x": 100,
-                    "y": 118,
+                    "x": 103,
+                    "y": 124,
                     "width": 60,
                     "height": 120,
                     "confidence": -1.0,
@@ -8351,8 +8351,8 @@
                     "offset": 191
                   },
                   {
-                    "x": 99,
-                    "y": 116,
+                    "x": 102,
+                    "y": 121,
                     "width": 60,
                     "height": 122,
                     "confidence": -1.0,
@@ -8364,8 +8364,8 @@
                     "offset": 192
                   },
                   {
-                    "x": 100,
-                    "y": 116,
+                    "x": 103,
+                    "y": 121,
                     "width": 60,
                     "height": 122,
                     "confidence": -1.0,
@@ -8377,8 +8377,8 @@
                     "offset": 193
                   },
                   {
-                    "x": 99,
-                    "y": 116,
+                    "x": 102,
+                    "y": 121,
                     "width": 60,
                     "height": 122,
                     "confidence": -1.0,
@@ -8390,8 +8390,8 @@
                     "offset": 194
                   },
                   {
-                    "x": 100,
-                    "y": 118,
+                    "x": 102,
+                    "y": 120,
                     "width": 60,
                     "height": 124,
                     "confidence": -1.0,
@@ -8403,8 +8403,8 @@
                     "offset": 195
                   },
                   {
-                    "x": 98,
-                    "y": 115,
+                    "x": 101,
+                    "y": 119,
                     "width": 62,
                     "height": 126,
                     "confidence": -1.0,
@@ -8412,12 +8412,12 @@
                     "offsetFrame": 196,
                     "offsetTime": 6540,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
                     "offset": 196
                   },
                   {
-                    "x": 97,
-                    "y": 111,
+                    "x": 98,
+                    "y": 117,
                     "width": 64,
                     "height": 130,
                     "confidence": -1.0,
@@ -8429,8 +8429,8 @@
                     "offset": 197
                   },
                   {
-                    "x": 97,
-                    "y": 111,
+                    "x": 98,
+                    "y": 115,
                     "width": 64,
                     "height": 130,
                     "confidence": -1.0,
@@ -8443,7 +8443,7 @@
                   },
                   {
                     "x": 99,
-                    "y": 110,
+                    "y": 115,
                     "width": 64,
                     "height": 130,
                     "confidence": -1.0,
@@ -8476,7 +8476,7 @@
                   "offsetFrame": 15,
                   "offsetTime": 501,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-15.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-15.png",
                   "offset": 15
                 },
                 "detections": [
@@ -8490,7 +8490,7 @@
                     "offsetFrame": 15,
                     "offsetTime": 501,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-15.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-15.png",
                     "offset": 15
                   },
                   {
@@ -8763,7 +8763,7 @@
                     "offsetFrame": 36,
                     "offsetTime": 1201,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-36.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-36.png",
                     "offset": 36
                   },
                   {
@@ -8802,7 +8802,7 @@
                     "offsetFrame": 39,
                     "offsetTime": 1301,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-39.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-39.png",
                     "offset": 39
                   },
                   {
@@ -8854,7 +8854,7 @@
                     "offsetFrame": 43,
                     "offsetTime": 1435,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
                     "offset": 43
                   },
                   {
@@ -9270,7 +9270,7 @@
                     "offsetFrame": 75,
                     "offsetTime": 2503,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
                     "offset": 75
                   },
                   {
@@ -9348,7 +9348,7 @@
                     "offsetFrame": 81,
                     "offsetTime": 2703,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
                     "offset": 81
                   },
                   {
@@ -9426,7 +9426,7 @@
                     "offsetFrame": 87,
                     "offsetTime": 2903,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
                     "offset": 87
                   },
                   {
@@ -9634,7 +9634,7 @@
                     "offsetFrame": 103,
                     "offsetTime": 3437,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
                     "offset": 103
                   },
                   {
@@ -9738,7 +9738,7 @@
                     "offsetFrame": 111,
                     "offsetTime": 3704,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
                     "offset": 111
                   },
                   {
@@ -9764,7 +9764,7 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
                     "offset": 113
                   },
                   {
@@ -9790,7 +9790,7 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -9803,7 +9803,7 @@
                     "offsetFrame": 116,
                     "offsetTime": 3871,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                     "offset": 116
                   },
                   {
@@ -10179,7 +10179,7 @@
                   "offsetFrame": 36,
                   "offsetTime": 1201,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-36.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-36.png",
                   "offset": 36
                 },
                 "detections": [
@@ -10193,7 +10193,7 @@
                     "offsetFrame": 36,
                     "offsetTime": 1201,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-36.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-36.png",
                     "offset": 36
                   },
                   {
@@ -10232,7 +10232,7 @@
                     "offsetFrame": 39,
                     "offsetTime": 1301,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-39.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-39.png",
                     "offset": 39
                   },
                   {
@@ -10284,7 +10284,7 @@
                     "offsetFrame": 43,
                     "offsetTime": 1435,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
                     "offset": 43
                   },
                   {
@@ -10700,7 +10700,7 @@
                     "offsetFrame": 75,
                     "offsetTime": 2503,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
                     "offset": 75
                   },
                   {
@@ -10778,7 +10778,7 @@
                     "offsetFrame": 81,
                     "offsetTime": 2703,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
                     "offset": 81
                   },
                   {
@@ -10856,7 +10856,7 @@
                     "offsetFrame": 87,
                     "offsetTime": 2903,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
                     "offset": 87
                   },
                   {
@@ -11064,7 +11064,7 @@
                     "offsetFrame": 103,
                     "offsetTime": 3437,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
                     "offset": 103
                   },
                   {
@@ -11168,7 +11168,7 @@
                     "offsetFrame": 111,
                     "offsetTime": 3704,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
                     "offset": 111
                   },
                   {
@@ -11194,7 +11194,7 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
                     "offset": 113
                   },
                   {
@@ -11220,7 +11220,7 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -11233,7 +11233,7 @@
                     "offsetFrame": 116,
                     "offsetTime": 3871,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                     "offset": 116
                   },
                   {
@@ -11557,7 +11557,7 @@
                   "offsetFrame": 39,
                   "offsetTime": 1301,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-39.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-39.png",
                   "offset": 39
                 },
                 "detections": [
@@ -11571,7 +11571,7 @@
                     "offsetFrame": 39,
                     "offsetTime": 1301,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-39.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-39.png",
                     "offset": 39
                   },
                   {
@@ -11623,7 +11623,7 @@
                     "offsetFrame": 43,
                     "offsetTime": 1435,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
                     "offset": 43
                   },
                   {
@@ -12039,7 +12039,7 @@
                     "offsetFrame": 75,
                     "offsetTime": 2503,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
                     "offset": 75
                   },
                   {
@@ -12117,7 +12117,7 @@
                     "offsetFrame": 81,
                     "offsetTime": 2703,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
                     "offset": 81
                   },
                   {
@@ -12195,7 +12195,7 @@
                     "offsetFrame": 87,
                     "offsetTime": 2903,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
                     "offset": 87
                   },
                   {
@@ -12272,7 +12272,7 @@
                   "offsetFrame": 43,
                   "offsetTime": 1435,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
                   "offset": 43
                 },
                 "detections": [
@@ -12286,7 +12286,7 @@
                     "offsetFrame": 43,
                     "offsetTime": 1435,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-43.png",
                     "offset": 43
                   },
                   {
@@ -12702,7 +12702,7 @@
                     "offsetFrame": 75,
                     "offsetTime": 2503,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
                     "offset": 75
                   },
                   {
@@ -12780,7 +12780,7 @@
                     "offsetFrame": 81,
                     "offsetTime": 2703,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
                     "offset": 81
                   },
                   {
@@ -12858,7 +12858,7 @@
                     "offsetFrame": 87,
                     "offsetTime": 2903,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
                     "offset": 87
                   },
                   {
@@ -13066,7 +13066,7 @@
                     "offsetFrame": 103,
                     "offsetTime": 3437,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
                     "offset": 103
                   },
                   {
@@ -13170,7 +13170,7 @@
                     "offsetFrame": 111,
                     "offsetTime": 3704,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
                     "offset": 111
                   },
                   {
@@ -13196,7 +13196,7 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
                     "offset": 113
                   },
                   {
@@ -13222,7 +13222,7 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -13235,7 +13235,7 @@
                     "offsetFrame": 116,
                     "offsetTime": 3871,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                     "offset": 116
                   },
                   {
@@ -14275,7 +14275,7 @@
                     "offsetFrame": 196,
                     "offsetTime": 6540,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
                     "offset": 196
                   },
                   {
@@ -14339,7 +14339,7 @@
                   "offsetFrame": 75,
                   "offsetTime": 2503,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
                   "offset": 75
                 },
                 "detections": [
@@ -14353,7 +14353,7 @@
                     "offsetFrame": 75,
                     "offsetTime": 2503,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-75.png",
                     "offset": 75
                   },
                   {
@@ -14431,7 +14431,7 @@
                     "offsetFrame": 81,
                     "offsetTime": 2703,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
                     "offset": 81
                   },
                   {
@@ -14509,7 +14509,7 @@
                     "offsetFrame": 87,
                     "offsetTime": 2903,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
                     "offset": 87
                   },
                   {
@@ -14717,7 +14717,7 @@
                     "offsetFrame": 103,
                     "offsetTime": 3437,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
                     "offset": 103
                   },
                   {
@@ -14821,7 +14821,7 @@
                     "offsetFrame": 111,
                     "offsetTime": 3704,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
                     "offset": 111
                   },
                   {
@@ -14847,7 +14847,7 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
                     "offset": 113
                   },
                   {
@@ -14873,7 +14873,7 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -14886,7 +14886,7 @@
                     "offsetFrame": 116,
                     "offsetTime": 3871,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                     "offset": 116
                   },
                   {
@@ -15405,7 +15405,7 @@
                   "offsetFrame": 81,
                   "offsetTime": 2703,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
                   "offset": 81
                 },
                 "detections": [
@@ -15419,7 +15419,7 @@
                     "offsetFrame": 81,
                     "offsetTime": 2703,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-81.png",
                     "offset": 81
                   },
                   {
@@ -15497,7 +15497,7 @@
                     "offsetFrame": 87,
                     "offsetTime": 2903,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
                     "offset": 87
                   },
                   {
@@ -15705,7 +15705,7 @@
                     "offsetFrame": 103,
                     "offsetTime": 3437,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
                     "offset": 103
                   },
                   {
@@ -15809,7 +15809,7 @@
                     "offsetFrame": 111,
                     "offsetTime": 3704,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
                     "offset": 111
                   },
                   {
@@ -15835,7 +15835,7 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
                     "offset": 113
                   },
                   {
@@ -15861,7 +15861,7 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -15874,7 +15874,7 @@
                     "offsetFrame": 116,
                     "offsetTime": 3871,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                     "offset": 116
                   },
                   {
@@ -15944,7 +15944,7 @@
                   },
                   {
                     "x": 156,
-                    "y": 138,
+                    "y": 137,
                     "width": 46,
                     "height": 94,
                     "confidence": -1.0,
@@ -15957,7 +15957,7 @@
                   },
                   {
                     "x": 157,
-                    "y": 138,
+                    "y": 137,
                     "width": 46,
                     "height": 94,
                     "confidence": -1.0,
@@ -15970,7 +15970,7 @@
                   },
                   {
                     "x": 153,
-                    "y": 141,
+                    "y": 140,
                     "width": 46,
                     "height": 94,
                     "confidence": -1.0,
@@ -15996,7 +15996,7 @@
                   },
                   {
                     "x": 154,
-                    "y": 139,
+                    "y": 138,
                     "width": 46,
                     "height": 94,
                     "confidence": -1.0,
@@ -16255,7 +16255,7 @@
                     "offset": 145
                   },
                   {
-                    "x": 149,
+                    "x": 150,
                     "y": 121,
                     "width": 50,
                     "height": 102,
@@ -16282,7 +16282,7 @@
                   },
                   {
                     "x": 148,
-                    "y": 115,
+                    "y": 116,
                     "width": 50,
                     "height": 102,
                     "confidence": -1.0,
@@ -16295,7 +16295,7 @@
                   },
                   {
                     "x": 148,
-                    "y": 113,
+                    "y": 114,
                     "width": 50,
                     "height": 102,
                     "confidence": -1.0,
@@ -16528,8 +16528,8 @@
                     "offset": 166
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16541,8 +16541,8 @@
                     "offset": 167
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16554,8 +16554,8 @@
                     "offset": 168
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16567,8 +16567,8 @@
                     "offset": 169
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16580,8 +16580,8 @@
                     "offset": 170
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16593,8 +16593,8 @@
                     "offset": 171
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16606,8 +16606,8 @@
                     "offset": 172
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16619,8 +16619,8 @@
                     "offset": 173
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16632,8 +16632,8 @@
                     "offset": 174
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16645,8 +16645,8 @@
                     "offset": 175
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16658,8 +16658,8 @@
                     "offset": 176
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16671,8 +16671,8 @@
                     "offset": 177
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16684,8 +16684,8 @@
                     "offset": 178
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16697,8 +16697,8 @@
                     "offset": 179
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16710,8 +16710,8 @@
                     "offset": 180
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16723,8 +16723,8 @@
                     "offset": 181
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16736,8 +16736,8 @@
                     "offset": 182
                   },
                   {
-                    "x": 116,
-                    "y": 138,
+                    "x": 114,
+                    "y": 139,
                     "width": 50,
                     "height": 104,
                     "confidence": -1.0,
@@ -16749,10 +16749,10 @@
                     "offset": 183
                   },
                   {
-                    "x": 159,
-                    "y": 128,
-                    "width": 48,
-                    "height": 96,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 184,
@@ -16762,10 +16762,10 @@
                     "offset": 184
                   },
                   {
-                    "x": 155,
-                    "y": 125,
-                    "width": 54,
-                    "height": 110,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 185,
@@ -16775,10 +16775,10 @@
                     "offset": 185
                   },
                   {
-                    "x": 155,
-                    "y": 127,
-                    "width": 54,
-                    "height": 108,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 186,
@@ -16788,9 +16788,9 @@
                     "offset": 186
                   },
                   {
-                    "x": 157,
-                    "y": 131,
-                    "width": 52,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
                     "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
@@ -16801,9 +16801,9 @@
                     "offset": 187
                   },
                   {
-                    "x": 153,
-                    "y": 129,
-                    "width": 52,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
                     "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
@@ -16814,9 +16814,9 @@
                     "offset": 188
                   },
                   {
-                    "x": 152,
-                    "y": 129,
-                    "width": 52,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
                     "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
@@ -16827,9 +16827,9 @@
                     "offset": 189
                   },
                   {
-                    "x": 156,
-                    "y": 132,
-                    "width": 52,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
                     "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
@@ -16840,9 +16840,9 @@
                     "offset": 190
                   },
                   {
-                    "x": 160,
-                    "y": 133,
-                    "width": 52,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
                     "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
@@ -16853,9 +16853,9 @@
                     "offset": 191
                   },
                   {
-                    "x": 161,
-                    "y": 131,
-                    "width": 52,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
                     "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
@@ -16866,9 +16866,9 @@
                     "offset": 192
                   },
                   {
-                    "x": 159,
-                    "y": 131,
-                    "width": 52,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
                     "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
@@ -16879,9 +16879,9 @@
                     "offset": 193
                   },
                   {
-                    "x": 159,
-                    "y": 131,
-                    "width": 52,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
                     "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
@@ -16892,9 +16892,9 @@
                     "offset": 194
                   },
                   {
-                    "x": 159,
-                    "y": 131,
-                    "width": 52,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
                     "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
@@ -16905,23 +16905,23 @@
                     "offset": 195
                   },
                   {
-                    "x": 159,
-                    "y": 123,
-                    "width": 60,
-                    "height": 120,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 196,
                     "offsetTime": 6540,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
                     "offset": 196
                   },
                   {
-                    "x": 160,
-                    "y": 134,
-                    "width": 54,
-                    "height": 110,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 197,
@@ -16931,10 +16931,10 @@
                     "offset": 197
                   },
                   {
-                    "x": 157,
-                    "y": 130,
-                    "width": 56,
-                    "height": 112,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 198,
@@ -16944,10 +16944,10 @@
                     "offset": 198
                   },
                   {
-                    "x": 156,
-                    "y": 129,
-                    "width": 56,
-                    "height": 114,
+                    "x": 114,
+                    "y": 139,
+                    "width": 50,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 199,
@@ -16978,7 +16978,7 @@
                   "offsetFrame": 87,
                   "offsetTime": 2903,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
                   "offset": 87
                 },
                 "detections": [
@@ -16992,7 +16992,7 @@
                     "offsetFrame": 87,
                     "offsetTime": 2903,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
                     "offset": 87
                   },
                   {
@@ -17200,7 +17200,7 @@
                     "offsetFrame": 103,
                     "offsetTime": 3437,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
                     "offset": 103
                   },
                   {
@@ -17304,7 +17304,7 @@
                     "offsetFrame": 111,
                     "offsetTime": 3704,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
                     "offset": 111
                   },
                   {
@@ -17330,7 +17330,7 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
                     "offset": 113
                   },
                   {
@@ -17356,7 +17356,7 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -17369,7 +17369,7 @@
                     "offsetFrame": 116,
                     "offsetTime": 3871,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                     "offset": 116
                   },
                   {
@@ -17641,7 +17641,7 @@
                   "offsetFrame": 87,
                   "offsetTime": 2903,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
                   "offset": 87
                 },
                 "detections": [
@@ -17655,7 +17655,7 @@
                     "offsetFrame": 87,
                     "offsetTime": 2903,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-87.png",
                     "offset": 87
                   },
                   {
@@ -17863,7 +17863,7 @@
                     "offsetFrame": 103,
                     "offsetTime": 3437,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
                     "offset": 103
                   },
                   {
@@ -17967,7 +17967,7 @@
                     "offsetFrame": 111,
                     "offsetTime": 3704,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
                     "offset": 111
                   },
                   {
@@ -17993,7 +17993,7 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
                     "offset": 113
                   },
                   {
@@ -18019,7 +18019,7 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -18032,7 +18032,7 @@
                     "offsetFrame": 116,
                     "offsetTime": 3871,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                     "offset": 116
                   },
                   {
@@ -18842,7 +18842,7 @@
                     "offset": 178
                   },
                   {
-                    "x": 150,
+                    "x": 151,
                     "y": 137,
                     "width": 52,
                     "height": 104,
@@ -18907,10 +18907,10 @@
                     "offset": 183
                   },
                   {
-                    "x": 151,
-                    "y": 119,
-                    "width": 56,
-                    "height": 114,
+                    "x": 159,
+                    "y": 128,
+                    "width": 48,
+                    "height": 96,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 184,
@@ -18920,10 +18920,10 @@
                     "offset": 184
                   },
                   {
-                    "x": 151,
-                    "y": 119,
-                    "width": 56,
-                    "height": 114,
+                    "x": 160,
+                    "y": 121,
+                    "width": 50,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 185,
@@ -18933,10 +18933,10 @@
                     "offset": 185
                   },
                   {
-                    "x": 151,
-                    "y": 119,
-                    "width": 56,
-                    "height": 114,
+                    "x": 158,
+                    "y": 121,
+                    "width": 52,
+                    "height": 106,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 186,
@@ -18946,10 +18946,10 @@
                     "offset": 186
                   },
                   {
-                    "x": 151,
-                    "y": 119,
-                    "width": 56,
-                    "height": 114,
+                    "x": 158,
+                    "y": 126,
+                    "width": 52,
+                    "height": 106,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 187,
@@ -18959,10 +18959,10 @@
                     "offset": 187
                   },
                   {
-                    "x": 151,
-                    "y": 119,
-                    "width": 56,
-                    "height": 114,
+                    "x": 155,
+                    "y": 127,
+                    "width": 52,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 188,
@@ -18972,10 +18972,10 @@
                     "offset": 188
                   },
                   {
-                    "x": 151,
-                    "y": 119,
-                    "width": 56,
-                    "height": 114,
+                    "x": 153,
+                    "y": 126,
+                    "width": 52,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 189,
@@ -18985,10 +18985,10 @@
                     "offset": 189
                   },
                   {
-                    "x": 151,
-                    "y": 119,
-                    "width": 56,
-                    "height": 114,
+                    "x": 157,
+                    "y": 130,
+                    "width": 52,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 190,
@@ -18998,10 +18998,10 @@
                     "offset": 190
                   },
                   {
-                    "x": 151,
-                    "y": 119,
-                    "width": 56,
-                    "height": 114,
+                    "x": 162,
+                    "y": 131,
+                    "width": 52,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 191,
@@ -19011,10 +19011,10 @@
                     "offset": 191
                   },
                   {
-                    "x": 151,
-                    "y": 119,
-                    "width": 56,
-                    "height": 114,
+                    "x": 162,
+                    "y": 129,
+                    "width": 52,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 192,
@@ -19024,10 +19024,10 @@
                     "offset": 192
                   },
                   {
-                    "x": 151,
-                    "y": 119,
-                    "width": 56,
-                    "height": 114,
+                    "x": 162,
+                    "y": 129,
+                    "width": 52,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 193,
@@ -19037,10 +19037,10 @@
                     "offset": 193
                   },
                   {
-                    "x": 151,
-                    "y": 119,
-                    "width": 56,
-                    "height": 114,
+                    "x": 165,
+                    "y": 135,
+                    "width": 52,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 194,
@@ -19050,10 +19050,10 @@
                     "offset": 194
                   },
                   {
-                    "x": 151,
-                    "y": 119,
-                    "width": 56,
-                    "height": 114,
+                    "x": 161,
+                    "y": 133,
+                    "width": 52,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 195,
@@ -19063,23 +19063,23 @@
                     "offset": 195
                   },
                   {
-                    "x": 151,
-                    "y": 119,
-                    "width": 56,
-                    "height": 114,
+                    "x": 163,
+                    "y": 135,
+                    "width": 52,
+                    "height": 104,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 196,
                     "offsetTime": 6540,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
                     "offset": 196
                   },
                   {
-                    "x": 151,
-                    "y": 119,
-                    "width": 56,
-                    "height": 114,
+                    "x": 160,
+                    "y": 134,
+                    "width": 54,
+                    "height": 110,
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "offsetFrame": 197,
@@ -19089,8 +19089,8 @@
                     "offset": 197
                   },
                   {
-                    "x": 151,
-                    "y": 119,
+                    "x": 159,
+                    "y": 132,
                     "width": 56,
                     "height": 114,
                     "confidence": -1.0,
@@ -19102,8 +19102,8 @@
                     "offset": 198
                   },
                   {
-                    "x": 151,
-                    "y": 119,
+                    "x": 164,
+                    "y": 129,
                     "width": 56,
                     "height": 114,
                     "confidence": -1.0,
@@ -19136,7 +19136,7 @@
                   "offsetFrame": 103,
                   "offsetTime": 3437,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
                   "offset": 103
                 },
                 "detections": [
@@ -19150,7 +19150,7 @@
                     "offsetFrame": 103,
                     "offsetTime": 3437,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-103.png",
                     "offset": 103
                   },
                   {
@@ -19254,7 +19254,7 @@
                     "offsetFrame": 111,
                     "offsetTime": 3704,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-111.png",
                     "offset": 111
                   },
                   {
@@ -19280,7 +19280,7 @@
                     "offsetFrame": 113,
                     "offsetTime": 3770,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-113.png",
                     "offset": 113
                   },
                   {
@@ -19306,7 +19306,7 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-115.png",
                     "offset": 115
                   },
                   {
@@ -19319,7 +19319,7 @@
                     "offsetFrame": 116,
                     "offsetTime": 3871,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                     "offset": 116
                   },
                   {
@@ -20359,7 +20359,7 @@
                     "offsetFrame": 196,
                     "offsetTime": 6540,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
                     "offset": 196
                   },
                   {
@@ -20423,7 +20423,7 @@
                   "offsetFrame": 116,
                   "offsetTime": 3871,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                   "offset": 116
                 },
                 "detections": [
@@ -20437,7 +20437,7 @@
                     "offsetFrame": 116,
                     "offsetTime": 3871,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-116.png",
                     "offset": 116
                   },
                   {
@@ -21477,7 +21477,7 @@
                     "offsetFrame": 196,
                     "offsetTime": 6540,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
                     "offset": 196
                   },
                   {
@@ -21541,7 +21541,7 @@
                   "offsetFrame": 196,
                   "offsetTime": 6540,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
                   "offset": 196
                 },
                 "detections": [
@@ -21555,7 +21555,7 @@
                     "offsetFrame": 196,
                     "offsetTime": 6540,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-196.png",
                     "offset": 196
                   },
                   {
@@ -21619,7 +21619,7 @@
                   "offsetFrame": 204,
                   "offsetTime": 6807,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-204.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-204.png",
                   "offset": 204
                 },
                 "detections": [
@@ -21633,7 +21633,7 @@
                     "offsetFrame": 204,
                     "offsetTime": 6807,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-204.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-204.png",
                     "offset": 204
                   },
                   {
@@ -21646,7 +21646,7 @@
                     "offsetFrame": 205,
                     "offsetTime": 6840,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-205.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-205.png",
                     "offset": 205
                   },
                   {
@@ -22712,7 +22712,7 @@
                     "offsetFrame": 287,
                     "offsetTime": 9576,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-287.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-287.png",
                     "offset": 287
                   },
                   {
@@ -23010,7 +23010,7 @@
                   "offsetFrame": 204,
                   "offsetTime": 6807,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-204.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-204.png",
                   "offset": 204
                 },
                 "detections": [
@@ -23024,7 +23024,7 @@
                     "offsetFrame": 204,
                     "offsetTime": 6807,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-204.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-204.png",
                     "offset": 204
                   },
                   {
@@ -23037,7 +23037,7 @@
                     "offsetFrame": 205,
                     "offsetTime": 6840,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-205.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-205.png",
                     "offset": 205
                   },
                   {
@@ -24103,7 +24103,7 @@
                     "offsetFrame": 287,
                     "offsetTime": 9576,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-287.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-287.png",
                     "offset": 287
                   },
                   {
@@ -25221,7 +25221,7 @@
                     "offsetFrame": 373,
                     "offsetTime": 12446,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-373.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-373.png",
                     "offset": 373
                   },
                   {
@@ -25312,7 +25312,7 @@
                     "offsetFrame": 380,
                     "offsetTime": 12679,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-380.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-380.png",
                     "offset": 380
                   },
                   {
@@ -25584,7 +25584,7 @@
                   "offsetFrame": 205,
                   "offsetTime": 6840,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-205.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-205.png",
                   "offset": 205
                 },
                 "detections": [
@@ -25598,7 +25598,7 @@
                     "offsetFrame": 205,
                     "offsetTime": 6840,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-205.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-205.png",
                     "offset": 205
                   },
                   {
@@ -25909,7 +25909,7 @@
                   "offsetFrame": 287,
                   "offsetTime": 9576,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-287.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-287.png",
                   "offset": 287
                 },
                 "detections": [
@@ -25923,7 +25923,7 @@
                     "offsetFrame": 287,
                     "offsetTime": 9576,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-287.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-287.png",
                     "offset": 287
                   },
                   {
@@ -26572,7 +26572,7 @@
                   "offsetFrame": 373,
                   "offsetTime": 12446,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-373.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-373.png",
                   "offset": 373
                 },
                 "detections": [
@@ -26586,7 +26586,7 @@
                     "offsetFrame": 373,
                     "offsetTime": 12446,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-373.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-373.png",
                     "offset": 373
                   },
                   {
@@ -26677,7 +26677,7 @@
                     "offsetFrame": 380,
                     "offsetTime": 12679,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-380.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-380.png",
                     "offset": 380
                   },
                   {
@@ -26949,7 +26949,7 @@
                   "offsetFrame": 380,
                   "offsetTime": 12679,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-380.png",
+                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-380.png",
                   "offset": 380
                 },
                 "detections": [
@@ -26963,7 +26963,7 @@
                     "offsetFrame": 380,
                     "offsetTime": 12679,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/install/share/artifacts/16/14/0/frame-380.png",
+                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.3/openmpf/trunk/install/share/artifacts/16/14/0/frame-380.png",
                     "offset": 380
                   },
                   {

@@ -61,7 +61,7 @@ public class DetectionCancellationRouteBuilder extends RouteBuilder {
 		from(entryPoint)
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
-			.processRef(DetectionCancellationProcessor.REF)
+			.process(DetectionCancellationProcessor.REF)
 			.to(exitPoint);
 	}
 }

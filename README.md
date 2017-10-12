@@ -51,7 +51,7 @@ Additionally, the REST API exposes the same core functionality as the Web UI and
 
 ### Component Plugin Architecture
 
-The OpenMPF Plugin Architecture provides the ability to seamlessly integrate **detection** , **tracking** , and **classification** algorithms in both C++ and Java.
+The OpenMPF Plugin Architecture provides the ability to seamlessly integrate **detection**, **tracking**, and **classification** algorithms in both C++ and Java.
 
 New processing nodes can easily be added to increase processing throughput and new algorithms can be dynamically loaded and scaled to meet user needs.
 

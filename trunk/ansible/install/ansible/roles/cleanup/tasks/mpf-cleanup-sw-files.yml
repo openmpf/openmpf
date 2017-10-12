@@ -62,14 +62,14 @@
     find:
       paths: "{{ mpf_home }}/data"
       patterns: "nodeServicesPalette.json"
-    register: oldNodePallet_find
+    register: oldNodePallete_find
 
   - name: MPF cleanup, remove old mpf nodeServicesPalette.json file in the data directory
     file:
       path="{{ item.path }}"
       state=absent
-    with_items: "{{ oldNodePallet_find.files }}"
-    when: "{{ oldNodePallet_find.matched|int|default(0) }} > 0"
+    with_items: "{{ oldNodePallete_find.files }}"
+    when: "{{ oldNodePallete_find.matched|int|default(0) }} > 0"
 
   - name: MPF cleanup, find old mpf nodeManagerConfig.xml file in the data directory
     find:

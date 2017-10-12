@@ -57,6 +57,20 @@
   with_items: "{{ MPF_Core_Tars }}"
   when: "'mpf-master' not in group_names"
 
+- name: Backup previous version of MPF Component Archives
+  copy:
+    src: "{{ mpf_home }}/share/components/{{ item.packageFilePath | basename }}"
+    dest: "{{ mpf_home }}/share/components/{{ item.packageFilePath | basename }}.bak"
+  with_items: "{{ deployment_config.mpf_components }}"
+  when: item.packageFilePath
+
+- name: Remove previous version of MPF Component Archives
+  file:
+    path: "{{ mpf_home }}/share/components/{{ item.packageFilePath | basename }}"
+    state: absent
+  with_items: "{{ deployment_config.mpf_components }}"
+  when: item.packageFilePath
+
 - name: Download MPF Component Archives
   get_url:
     url="http://{{ repo_host }}/repo/tars/mpf/{{ item.packageFilePath | basename }}"

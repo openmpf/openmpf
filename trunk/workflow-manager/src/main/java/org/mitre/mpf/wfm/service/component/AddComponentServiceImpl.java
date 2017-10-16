@@ -212,7 +212,7 @@ public class AddComponentServiceImpl implements AddComponentService {
                 _log.warn("Component registration failed for {}. Removing child objects.",
                         descriptor.componentName);
             }
-            removeComponentService.recursivelyDeleteCustomPipelines(model);
+            removeComponentService.deleteCustomPipelines(model, true);
             throw ex;
         }
     }

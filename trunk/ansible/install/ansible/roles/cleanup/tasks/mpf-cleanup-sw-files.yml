@@ -58,19 +58,6 @@
       state: absent
       path: "{{ mpf_home }}/bin"
 
-  - name: MPF cleanup, find old mpf nodeServicesPalette.json file in the data directory
-    find:
-      paths: "{{ mpf_home }}/data"
-      patterns: "nodeServicesPalette.json"
-    register: oldNodePallete_find
-
-  - name: MPF cleanup, remove old mpf nodeServicesPalette.json file in the data directory
-    file:
-      path="{{ item.path }}"
-      state=absent
-    with_items: "{{ oldNodePallete_find.files }}"
-    when: "{{ oldNodePallete_find.matched|int|default(0) }} > 0"
-
   - name: MPF cleanup, find old mpf nodeManagerConfig.xml file in the data directory
     find:
       paths: "{{ mpf_home }}/data"

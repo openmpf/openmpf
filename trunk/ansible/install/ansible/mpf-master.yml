@@ -111,6 +111,12 @@
         replace: '\1 supportsBatchProcessing="true" supportsStreamProcessing="false">'
         backup: yes
 
+    - replace:
+        destfile: "{{ mpf_home }}/data/nodeServicesPalette.json"
+        regexp: 'mpf-markup-.*\.jar'
+        replace: 'mpf-markup-1.0.0.jar'
+        backup: yes
+
   post_tasks:
     - name: Start ActiveMQ
       service:

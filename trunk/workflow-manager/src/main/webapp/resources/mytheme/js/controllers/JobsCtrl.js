@@ -213,8 +213,7 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
             if (resp && resp.hasOwnProperty("mpfResponse") &&
                 resp.hasOwnProperty("jobId")) {
                 if (resp.mpfResponse.responseCode != 0) {
-                    NotificationSvc.error(
-                        'Error with resubmit request with message: ' + resp.mpfResponse.message);
+                    NotificationSvc.error(resp.mpfResponse.message);
                 } else {
                     NotificationSvc.success('Job ' + job.jobId + ' has been resubmitted!');
                 }

@@ -342,16 +342,22 @@ for component in package_data['MPF_Components']:
         # Check the component state and conditionally prompt to register it
         if component_archive_info.componentState == 'REGISTERED' and upgrade_choice and component_version_upgrade:
             register_component = yes_or_no_prompt('Upgrade and re-register component {0}{1}{2}?'.format(text_format.bold, component_archive_info.componentName, text_format.end), True)
+
         elif component_archive_info.componentState == 'REGISTERED' and upgrade_choice and not component_version_upgrade:
             print 'Component {0}{1}{2} is already registered and is the latest version.'.format(text_format.bold, component_archive_info.componentName, text_format.end)
+
         elif component_archive_info.componentState == 'REGISTERED' and not upgrade_choice and os.path.isfile(mpf_component_files.OldComponentFile) and not os.path.isfile(mpf_component_files.NewComponentFile):
             register_component = yes_or_no_prompt('Register pre-existing component {0}{1}{2}?'.format(text_format.bold, component_archive_info.componentName, text_format.end), True)
+
         elif component_archive_info.componentState == 'REGISTERED' and not upgrade_choice:
             print 'Component {0}{1}{2} is already registered.'.format(text_format.bold, component_archive_info.componentName, text_format.end)
+
         elif component_archive_info.componentState and component_archive_info.componentState != 'REGISTERED':
             print 'Component {0}{1}{2} is not registered and is in state: {3}'.format(text_format.bold, component_archive_info.componentName, text_format.end, component_archive_info.componentName)
+
         else:
             register_component = yes_or_no_prompt('Register new component {0}{1}{2}?'.format(text_format.bold, component_archive_info.componentName, text_format.end), True)
+
     else:
         # A component archive file was not found at $MPF_HOME/manage/repo/tars/mpf/<component_name>*.tar.gz
         component_archive_file = [False]
@@ -370,8 +376,10 @@ for component in package_data['MPF_Components']:
             component_archive_info.componentInstructionsFile))
 
 
+# TODO: this may not be necessary if we're no longer removing all pre-existing components
 # Check for components not in package configuration file but installed under $MPF_HOME/plugins/
 if upgrade_choice and os.path.isdir(''.join([mpf_home, '/plugins'])):
+
     # Set path to search for component descriptors
     descriptor_dirs = ''.join([mpf_home, '/plugins/*/descriptor/descriptor.json'])
 
@@ -380,6 +388,7 @@ if upgrade_choice and os.path.isdir(''.join([mpf_home, '/plugins'])):
 
     # Read each component descriptor
     for descriptor in descriptors:
+
         # Load descriptor json
         descriptor_data = load_json_from_file(descriptor)
 
@@ -399,10 +408,12 @@ if upgrade_choice and os.path.isdir(''.join([mpf_home, '/plugins'])):
             # Check for the original component archive file
             for component_archive_file in component_archive_files:
                 existing_component_archive = glob.glob(component_archive_file)
+
                 for archive in existing_component_archive:
                     # Prompt to upgrade and register the component
                     register_component = yes_or_no_prompt('Attempt to register existing component {0}{1}{2}?'.format(text_format.bold, descriptor_data['componentName'], text_format.end), False)
                     component_archive_info = get_component_info(archive)
+
                     # Append component information to the mpf_components dict for the deployment config
                     if register_component:
                         mpf_components.append(

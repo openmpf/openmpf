@@ -216,7 +216,7 @@ public class TestRemoveComponentService {
                 .thenReturn(Sets.newSet(task, componentTask));
 
         // Act
-        _removeComponentService.recursivelyDeleteCustomPipelines(rcm);
+        _removeComponentService.deleteCustomPipelines(rcm, true);
 
 
         verify(_mockPipelineService)

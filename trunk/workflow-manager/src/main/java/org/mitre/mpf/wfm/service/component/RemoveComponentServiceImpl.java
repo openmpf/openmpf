@@ -84,7 +84,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
                     .orElseThrow(() -> new IllegalStateException(String.format(
                             "Couldn't remove %s because it is not registered as a component", componentName)));
 
-            removeComponent(registerModel, true);
+            removeComponent(registerModel, true, true);
         }
         catch (Exception ex) {
             componentStateService.replaceComponentState(componentName, ComponentState.REGISTER_ERROR);
@@ -92,8 +92,8 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
         }
     }
 
-    private void removeComponent(RegisterComponentModel registerModel, boolean deletePackage) {
-        recursivelyDeleteCustomPipelines(registerModel);
+    private void removeComponent(RegisterComponentModel registerModel, boolean deletePackage, boolean recursive) {
+        deleteCustomPipelines(registerModel, recursive);
 
         if (registerModel.getJsonDescriptorPath() == null) {
             _log.warn("Couldn't find the JSON descriptor for {}", registerModel.getComponentName());
@@ -129,7 +129,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
     }
 
     @Override
-    public synchronized void unregisterViaFile(String jsonDescriptorPath) {
+    public synchronized void unregisterViaFile(String jsonDescriptorPath, boolean deletePackage, boolean recursive) {
         Optional<RegisterComponentModel> optRegisterModel = componentStateService.get()
                 .stream()
                 .filter(rcm -> jsonDescriptorPath.equals(rcm.getJsonDescriptorPath()))
@@ -137,7 +137,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
         if (optRegisterModel.isPresent()) {
             try {
-                removeComponent(optRegisterModel.get(), true);
+                removeComponent(optRegisterModel.get(), deletePackage, recursive);
             }
             catch (Exception ex) {
                componentStateService.replaceComponentState(
@@ -157,7 +157,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
                 componentStateService.getByPackageFile(componentPackageFileName);
 
         if (optRegisterModel.isPresent()) {
-            removeComponent(optRegisterModel.get(), true);
+            removeComponent(optRegisterModel.get(), true, true);
             return;
         }
 
@@ -181,51 +181,55 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 		componentStateService.getByPackageFile(componentPackageFileName)
                 .ifPresent(rcm -> {
                     Path pathToPackage = Paths.get(rcm.getFullUploadedFilePath());
-                    removeComponent(rcm, false);
+                    removeComponent(rcm, false, true);
                     componentStateService.addEntryForUploadedPackage(pathToPackage);
                 });
     }
 
 
     @Override
-    public void recursivelyDeleteCustomPipelines(RegisterComponentModel registrationModel) {
+    public void deleteCustomPipelines(RegisterComponentModel registrationModel, boolean recursive) {
         if (registrationModel.getServiceName() != null) {
             removeService(registrationModel.getServiceName());
         }
         if (registrationModel.getAlgorithmName() != null) {
-            removeAlgorithm(registrationModel.getAlgorithmName());
+            removeAlgorithm(registrationModel.getAlgorithmName(), recursive);
         }
 
         registrationModel.getPipelines()
                 .forEach(this::removePipeline);
 
         registrationModel.getTasks()
-                .forEach(this::removeTask);
+                .forEach(tn -> removeTask(tn, recursive));
 
         registrationModel.getActions()
-                .forEach(this::removeAction);
+                .forEach(an -> removeAction(an, recursive));
     }
 
     private void removePipeline(String pipelineName) {
         pipelineService.deletePipeline(pipelineName.toUpperCase());
     }
 
-    private void removeTask(String taskName) {
-        pipelineService.getPipelines()
-                .stream()
-                .filter(pd -> referencesTask(pd, taskName))
-                .map(PipelineDefinition::getName)
-                .forEach(this::removePipeline);
+    private void removeTask(String taskName, boolean recursive) {
+        if (recursive) {
+            pipelineService.getPipelines()
+                    .stream()
+                    .filter(pd -> referencesTask(pd, taskName))
+                    .map(PipelineDefinition::getName)
+                    .forEach(this::removePipeline);
+        }
 
         pipelineService.deleteTask(taskName.toUpperCase());
     }
 
-    private void removeAction(String actionName) {
-        pipelineService.getTasks()
-                .stream()
-                .filter(td -> referencesAction(td, actionName))
-                .map(TaskDefinition::getName)
-                .forEach(this::removeTask);
+    private void removeAction(String actionName, boolean recursive) {
+        if (recursive) {
+            pipelineService.getTasks()
+                    .stream()
+                    .filter(td -> referencesAction(td, actionName))
+                    .map(TaskDefinition::getName)
+                    .forEach(tn -> removeTask(tn, true));
+        }
 
         try {
             pipelineService.deleteAction(actionName.toUpperCase());
@@ -234,12 +238,14 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
         }
     }
 
-    private void removeAlgorithm(String algorithmName) {
-        pipelineService.getActions()
-                .stream()
-                .filter(ad -> ad.getAlgorithmRef().equalsIgnoreCase(algorithmName))
-                .map(ActionDefinition::getName)
-                .forEach(this::removeAction);
+    private void removeAlgorithm(String algorithmName, boolean recursive) {
+        if (recursive) {
+            pipelineService.getActions()
+                    .stream()
+                    .filter(ad -> ad.getAlgorithmRef().equalsIgnoreCase(algorithmName))
+                    .map(ActionDefinition::getName)
+                    .forEach(an -> removeAction(an, true));
+        }
 
         pipelineService.deleteAlgorithm(algorithmName.toUpperCase());
     }

@@ -52,6 +52,3 @@
   when: item.register
   run_once: true
   delegate_to: "{{ master_host }}"
-
-- pause:
-    prompt: "DEBUG: Unregister old {{ item.componentName }} component!"

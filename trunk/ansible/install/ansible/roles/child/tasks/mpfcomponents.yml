@@ -76,6 +76,8 @@
     dest: "{{ mpf_home }}/share/components/{{ item.packageFilePath | basename }}.bak"
   with_items: "{{ deployment_config.mpf_components }}"
   when: item.packageFilePath
+  delegate_to: "{{ master_host }}"
+  run_once: true
 
 - name: Remove previous version of MPF Component Archives
   file:
@@ -83,6 +85,8 @@
     state: absent
   with_items: "{{ deployment_config.mpf_components }}"
   when: item.packageFilePath
+  delegate_to: "{{ master_host }}"
+  run_once: true
 
 - name: Download MPF Component Archives
   get_url:
@@ -92,6 +96,8 @@
     timeout=30
   with_items: "{{ deployment_config.mpf_components }}"
   when: item.packageFilePath
+  delegate_to: "{{ master_host }}"
+  run_once: true
 
 # TODO: see if we can do an in-place replacement and preserve existing licenses and data files
 - name: Remove existing extracted MPF Components

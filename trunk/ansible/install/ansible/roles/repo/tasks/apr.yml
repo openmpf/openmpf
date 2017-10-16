@@ -27,10 +27,25 @@
 #file: roles/repo/tasks/apr.yml
 #TODO: The apr installs shouldn't be needed, but must take precedence over mpf-extraction's version.
 - name: Install apr
-  yum: name=apr state=present disablerepo=* enablerepo=mpf-local-repo
+  yum:
+    name=apr
+    state=present
+    update_cache=yes
+    disablerepo=*
+    enablerepo=mpf-local-repo
 
 - name: Install apr-util
-  yum: name=apr-util state=present disablerepo=* enablerepo=mpf-local-repo
+  yum:
+    name=apr-util
+    state=present
+    update_cache=yes
+    disablerepo=*
+    enablerepo=mpf-local-repo
 
 - name: Install apr-util-ldap
-  yum: name=apr-util-ldap state=present disablerepo=* enablerepo=mpf-local-repo
+  yum:
+    name=apr-util-ldap
+    state=present
+    update_cache=yes
+    disablerepo=*
+    enablerepo=mpf-local-repo

@@ -145,7 +145,7 @@
     state=absent
 
 - name: Install MPF Video Overlay
-  yum: >
+  yum:
     name=mpf-video-overlay
     state=latest
     update_cache=yes

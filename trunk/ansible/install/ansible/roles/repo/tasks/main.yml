@@ -41,7 +41,12 @@
   template: src=mpf.repo.j2 dest=/etc/yum.repos.d/mpf.repo
 
 - name: Upgrade openssh
-  yum: name=openssh state=latest disablerepo=* enablerepo=mpf-local-repo
+  yum:
+    name=openssh
+    state=latest
+    update_cache=yes
+    disablerepo=*
+    enablerepo=mpf-local-repo
 
 - name: Install APR libs
   include: apr.yml

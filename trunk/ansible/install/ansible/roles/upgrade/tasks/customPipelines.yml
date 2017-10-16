@@ -78,15 +78,3 @@
     when: "files_check_st is defined and {{ item.stat.exists | default(false)}}"
     delegate_to: "{{ master_host }}"
     run_once: true
-
-  - name: After backup of existing Algorithms, Actions, Tasks, and Pipelines files - find original .xml files
-    stat:
-      path: "{{ mpf_home }}/data/{{ item }}.xml"
-    with_items:
-      - Algorithms
-      - Actions
-      - Tasks
-      - Pipelines
-    register: original_xml_files_check_st
-    delegate_to: "{{ master_host }}"
-    run_once: true

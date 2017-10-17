@@ -25,16 +25,6 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Run the mpf-clean ansible playbook, used to cleanup previously deployed mpf executables, jars and libs
-echo "Performing cleanup of obsolete MPF software and data ..."
-echo ""
-echo "Please provide an existing priv. user that will be used to cleanup obsolete MPF software and data on the remote machines."
-echo -n "Username: "
-read USER_NAME
-#This touch is for an ansible bug... https://github.com/ansible/ansible/issues/10057
-touch ~/.ssh/known_hosts
-ansible-playbook /opt/mpf/manage/ansible/mpf-cleanup.yml --ask-pass --user $USER_NAME --become --ask-become-pass
-
 # Run the deployment python script
 python /opt/mpf/manage/run-install.py
 

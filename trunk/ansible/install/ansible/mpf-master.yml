@@ -111,6 +111,7 @@
         replace: '\1 supportsBatchProcessing="true" supportsStreamProcessing="false">'
         backup: yes
 
+    - debug: msg="Updating {{ mpf_home }}/data/nodeServicesPalette.json with markup version number"
     - replace:
         destfile: "{{ mpf_home }}/data/nodeServicesPalette.json"
         regexp: 'mpf-markup-.*\.jar'

@@ -101,7 +101,7 @@ def get_component_info(component_archive_full_path):
             component_version = value
 
     return ComponentInfo(component_descriptor_json['componentName'],
-                         set_component_state(component_descriptor_json['componentName'], mpf_component_files),
+                         get_component_state(cname, component_file),
                          component_archive_data.componentDescriptorFilepath,
                          component_archive_data.componentTLD,
                          component_setup_file,
@@ -133,24 +133,6 @@ def get_component_state(cname, cfile):
     else:
         state = False
     return state
-
-
-def set_component_state(cname, component_json_files):
-
-    # $MPF_HOME/data/components.json
-    mpf_component_file_1 = get_component_state(cname, component_json_files.NewComponentFile)
-
-    # $MPF_HOME/share/components/components.json
-    mpf_component_file_2 = get_component_state(cname, component_json_files.OldComponentFile)
-
-    if mpf_component_file_1 is False:
-        # $MPF_HOME/data/components.json doesn't exist
-        cstate = mpf_component_file_2
-    else:
-        # Use the state of the component from component_json_files.NewComponentFile
-        cstate = mpf_component_file_1
-
-    return cstate
 
 
 def get_instructions_info(name, path):
@@ -267,15 +249,7 @@ package_config_files = sorted(glob.glob(''.join([mpf_home, '/manage/repo/files/o
                               key=os.path.getmtime,
                               reverse=True)
 
-MPFComponentFiles = namedtuple('mpf_component_files', ['NewComponentFile', 'OldComponentFile'])
-
-mpf_component_files = MPFComponentFiles(NewComponentFile=''.join([mpf_home, '/data/components.json']),
-                                        OldComponentFile=''.join([mpf_home, '/share/components/components.json']))
-
-# Move back the previous components.json file from the backup if it exists
-if os.path.isfile(''.join([mpf_home, '/data/components.json.bak'])):
-    shutil.move(''.join([mpf_home, '/data/components.json.bak']),
-                ''.join([mpf_home, '/share/components/components.json']))
+component_file = ''.join([mpf_home, '/data/components.json'])
 
 # Initialize the deployment configuration structures
 deployment_configuration = {}
@@ -345,9 +319,6 @@ for component in package_data['MPF_Components']:
 
         elif component_archive_info.componentState == 'REGISTERED' and upgrade_choice and not component_version_upgrade:
             print 'Component {0}{1}{2} is already registered and is the latest version.'.format(text_format.bold, component_archive_info.componentName, text_format.end)
-
-        elif component_archive_info.componentState == 'REGISTERED' and not upgrade_choice and os.path.isfile(mpf_component_files.OldComponentFile) and not os.path.isfile(mpf_component_files.NewComponentFile):
-            register_component = yes_or_no_prompt('Register pre-existing component {0}{1}{2}?'.format(text_format.bold, component_archive_info.componentName, text_format.end), True)
 
         elif component_archive_info.componentState == 'REGISTERED' and not upgrade_choice:
             print 'Component {0}{1}{2} is already registered.'.format(text_format.bold, component_archive_info.componentName, text_format.end)
@@ -535,14 +506,14 @@ confirm_instructions = False
 
 # Load the MPF components file if it exists
 # If installation failed but components with instructions were registered, still show them
-if os.path.isfile(mpf_component_files.NewComponentFile):
-    mpf_components_data = load_json_from_file(mpf_component_files.NewComponentFile)
+if os.path.isfile(component_file):
+    mpf_components_data = load_json_from_file(component_file)
 
     # Check component descriptors for an instructionsFile value
     # Will only check components that were configured to be registered
     for component in deployment_configuration['mpf_components']:
         if component['register'] and get_component_state(component['componentName'],
-                                                         mpf_component_files.NewComponentFile) == 'REGISTERED':
+                                                         component_file) == 'REGISTERED':
 
             # Verify the component was successfully extracted and the descriptor file exists
             if os.path.isfile(''.join([mpf_home, '/plugins/', component['componentDescriptorPath']])):

@@ -81,7 +81,7 @@
 
 - name: Backup previous version of MPF Component Archives
   copy:
-    src: item
+    src: "{{ item.stat.path }}"
     dest: "{{ item.stat.path }}.bak"
   with_items: "{{ old_packages_st.results }}"
   when: "old_packages_st is defined and {{ item.stat.exists | default(false) }}"

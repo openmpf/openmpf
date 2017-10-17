@@ -109,14 +109,12 @@
         destfile: "{{ mpf_home }}/data/Algorithms.xml"
         regexp: '(<algorithm\s+name="\w+"\s+actionType="\w+")\s*>'
         replace: '\1 supportsBatchProcessing="true" supportsStreamProcessing="false">'
-        backup: yes
 
     - debug: msg="Updating {{ mpf_home }}/data/nodeServicesPalette.json with markup version number"
     - replace:
         destfile: "{{ mpf_home }}/data/nodeServicesPalette.json"
         regexp: 'mpf-markup-.*\.jar'
         replace: 'mpf-markup-1.0.0.jar'
-        backup: yes
 
   post_tasks:
     - name: Start ActiveMQ

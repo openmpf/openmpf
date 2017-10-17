@@ -70,12 +70,21 @@
   with_items:
     - "{{ deployment_config.mpf_components }}"
 
-- name: Backup previous version of MPF Component Archives
-  copy:
-    src: "{{ mpf_home }}/share/components/{{ item.packageFilePath | basename }}"
-    dest: "{{ mpf_home }}/share/components/{{ item.packageFilePath | basename }}.bak"
+- name: Check for previous version of MPF Component Archives
+  stat:
+    path="{{ mpf_home }}/share/components/{{ item.packageFilePath | basename }}"
   with_items: "{{ deployment_config.mpf_components }}"
   when: item.packageFilePath
+  register: old_packages_st
+  delegate_to: "{{ master_host }}"
+  run_once: true
+
+- name: Backup previous version of MPF Component Archives
+  copy:
+    src: item
+    dest: "{{ item.stat.path }}.bak"
+  with_items: "{{ old_packages_st.results }}"
+  when: "old_packages_st is defined and {{ item.stat.exists | default(false) }}"
   delegate_to: "{{ master_host }}"
   run_once: true
 

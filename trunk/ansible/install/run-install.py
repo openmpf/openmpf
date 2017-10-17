@@ -101,7 +101,7 @@ def get_component_info(component_archive_full_path):
             component_version = value
 
     return ComponentInfo(component_descriptor_json['componentName'],
-                         get_component_state(cname, component_file),
+                         get_component_state(component_descriptor_json['componentName'], component_file),
                          component_archive_data.componentDescriptorFilepath,
                          component_archive_data.componentTLD,
                          component_setup_file,

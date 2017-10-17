@@ -26,6 +26,9 @@
 
 package org.mitre.mpf.wfm.util;
 
+import java.util.Comparator;
+import java.util.Objects;
+
 /******************************************************************************
  * NOTICE                                                                     *
  *                                                                            *
@@ -53,45 +56,56 @@ package org.mitre.mpf.wfm.util;
  ******************************************************************************/
 
 public class TimePair implements Comparable<TimePair> {
-	private int startInclusive;
+
+	private final int startInclusive;
+
 	public int getStartInclusive() { return startInclusive; }
 
-	private int endInclusive;
+	private final int endInclusive;
+
 	public int getEndInclusive() { return endInclusive; }
+
 
 	public TimePair(int startInclusive, int endInclusive) {
 		this.startInclusive = startInclusive;
 		this.endInclusive = endInclusive;
 	}
 
+
+	@Override
 	public int hashCode() {
-		int result = 37;
-		result = 37 * result + startInclusive;
-		result = 37 * result + endInclusive;
-		return result;
+		return Objects.hash(startInclusive, endInclusive);
 	}
 
+
+	@Override
 	public boolean equals(Object other) {
-		if(other == null || !(other instanceof TimePair)) {
+		if (!(other instanceof TimePair)) {
 			return false;
-		} else {
-			TimePair casted = (TimePair)other;
-			return startInclusive == casted.startInclusive && endInclusive == casted.endInclusive;
 		}
+		TimePair casted = (TimePair) other;
+		return compareTo(casted) == 0;
 	}
 
+
+	private static final Comparator<TimePair> DEFAULT_COMPARATOR = Comparator
+			.nullsFirst(Comparator
+				.comparingInt(TimePair::getStartInclusive)
+				.thenComparingInt(TimePair::getEndInclusive));
+
+	@Override
 	public int compareTo(TimePair other) {
-		int result = 0;
-		if(other == null) {
-			result =  1;
-		} else if ( (result = Integer.compare(startInclusive, other.startInclusive)) == 0 &&
-				(result = Integer.compare(endInclusive, other.endInclusive)) == 0) {
-			result =  0;
-		}
-		return result;
+		return DEFAULT_COMPARATOR.compare(this, other);
 	}
+
 
 	public int length() {
 		return endInclusive - startInclusive + 1;
+	}
+
+
+	@Override
+	public String toString() {
+		return getClass() .getSimpleName() + ": startInclusive=" + startInclusive + ", endInclusive=" + endInclusive;
 	}
 }

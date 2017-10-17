@@ -28,77 +28,67 @@ package org.mitre.mpf.wfm.segmenting;
 
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.ImageRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.util.TimePair;
-import org.mitre.mpf.wfm.util.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 @Component(ImageMediaSegmenter.REF)
 public class ImageMediaSegmenter implements MediaSegmenter {
 	private static final Logger log = LoggerFactory.getLogger(ImageMediaSegmenter.class);
 	public static final String REF = "imageMediaSegmenter";
 
-	@Autowired
-	private TimeUtils timeUtils;
 
 	@Override
-	public List<Message> createDetectionRequestMessages(TransientMedia transientMedia, DetectionContext detectionContext) throws WfmProcessingException {
-		List<Message> messages = new ArrayList<Message>();
-		List<TimePair> segments;
+	public List<Message> createDetectionRequestMessages(TransientMedia media, DetectionContext context) {
 
-		if (detectionContext.isFirstDetectionStage()) {
-			// If this is the first detection stage, there cannot be any previous tracks to consider.
-			// Therefore, simply indicate that we want to perform detection on the entire image by
-			// beginning sending in the range [0, 0].
-			segments = new ArrayList<>(1);
-			segments.add(new TimePair(0, 0));
-		} else {
-			segments = timeUtils.createSegments(detectionContext.getPreviousTrackTimePairs(), 1, 1, 1);
+		if (context.isFirstDetectionStage()) {
+			return Collections.singletonList(createProtobufMessage(media, context, ImageRequest.getDefaultInstance()));
 		}
-
-		messages.addAll(createDetectionRequestMessages(transientMedia, detectionContext, segments));
-		return messages;
+		else if (MediaSegmenter.feedForwardIsEnabled(context)) {
+			return createFeedForwardMessages(media, context);
+		}
+		else if (!context.getPreviousTracks().isEmpty()) {
+			return Collections.singletonList(createProtobufMessage(media, context, ImageRequest.getDefaultInstance()));
+		}
+		else {
+			return Collections.emptyList();
+		}
 	}
 
-	private List<Message> createDetectionRequestMessages(TransientMedia transientMedia, DetectionContext detectionContext, List<TimePair> segments) {
-		List<Message> messages = new ArrayList<Message>(segments.size());
-		for(TimePair segment : segments) {
-                    assert segment.getStartInclusive() >= 0 :
-                                      String.format("Segment start must always be GTE 0. Actual: %d", segment.getStartInclusive());
-                    assert segment.getEndInclusive() >= 0 :
-                                      String.format("Segment end must always be GTE 0. Actual: %d", segment.getEndInclusive());
-			log.debug("Creating segment [{}, {}] for {}.", segment.getStartInclusive(), segment.getEndInclusive(), transientMedia.getId());
-			Message message = new DefaultMessage();
-			DetectionProtobuf.DetectionRequest.Builder requestBuilder = DetectionProtobuf.DetectionRequest.newBuilder()
-					.setDataType(DetectionProtobuf.DetectionRequest.DataType.IMAGE)
-					.setRequestId(0)
-					.setMediaId(transientMedia.getId())
-					.setStageIndex(detectionContext.getStageIndex())
-					.setStageName(detectionContext.getStageName())
-					.setActionIndex(detectionContext.getActionIndex())
-					.setActionName(detectionContext.getActionName())
-					.setDataUri(transientMedia.getLocalPath())
-					.addAllAlgorithmProperty(detectionContext.getAlgorithmProperties())
-					.setImageRequest(DetectionProtobuf.DetectionRequest.ImageRequest.newBuilder());
 
-			for (Map.Entry<String,String> entry : transientMedia.getMetadata().entrySet()) {
-				requestBuilder.addMediaMetadata(DetectionProtobuf.PropertyMap.newBuilder()
-						.setKey(entry.getKey())
-						.setValue(entry.getValue()));
-			}
-			message.setBody(requestBuilder.build());
-			messages.add(message);
+	private static Message createProtobufMessage(TransientMedia media, DetectionContext context,
+	                                             ImageRequest imageRequest) {
+		DetectionProtobuf.DetectionRequest detectionRequest = MediaSegmenter.initializeRequest(media, context)
+				.setDataType(DetectionProtobuf.DetectionRequest.DataType.IMAGE)
+				.setImageRequest(imageRequest)
+				.build();
+
+		Message message = new DefaultMessage();
+		message.setBody(detectionRequest);
+		return message;
+	}
+
+
+	private static List<Message> createFeedForwardMessages(TransientMedia media, DetectionContext context) {
+		List<Message> messages = new ArrayList<>();
+		for (Track track : context.getPreviousTracks()) {
+			DetectionProtobuf.ImageLocation imageLocation = MediaSegmenter.createImageLocation(track.getExemplar());
+			ImageRequest imageRequest = ImageRequest.newBuilder()
+					.setFeedForwardLocation(imageLocation)
+					.build();
+
+			messages.add(createProtobufMessage(media, context, imageRequest));
 		}
 		return messages;
 	}
 }
+

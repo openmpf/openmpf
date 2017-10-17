@@ -94,69 +94,68 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
 
 					byte[] responseBytes = null;
 
-					// TODO: Include the exception message in the response message for more detail.
-					if (MPFDataType.AUDIO == msgMetadata.getDataType()) {
-						MPFDetectionAudioRequest audioRequest = detectionBuffer.getAudioRequest();
-						try {
-							List<MPFAudioTrack> tracks = detector.getDetections(
-									new MPFAudioJob(
-											msgMetadata.getJobName(),
-											msgMetadata.getDataUri(),
-											msgMetadata.getAlgorithmProperties(),
-											msgMetadata.getMediaProperties(),
-											audioRequest.getStartTime(),
-											audioRequest.getStopTime()));
-							responseBytes = detectionBuffer.createAudioResponseMessage(msgMetadata, detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS);
-						} catch (MPFComponentDetectionError e) {
-							responseBytes = detectionBuffer.createAudioResponseMessage(msgMetadata, detectionType, Collections.<MPFAudioTrack>emptyList(), e.getDetectionError());
-						}
-					} else if (MPFDataType.IMAGE == msgMetadata.getDataType()) {
-						MPFDetectionImageRequest imageRequest = detectionBuffer.getImageRequest();
-						List<MPFImageLocation> locations = new ArrayList<>();
-						try {
-							locations = detector.getDetections(
-									new MPFImageJob(
-											msgMetadata.getJobName(),
-											msgMetadata.getDataUri(),
-											msgMetadata.getAlgorithmProperties(),
-											msgMetadata.getMediaProperties()));
-							responseBytes = detectionBuffer.createImageResponseMessage(msgMetadata, detectionType, locations, MPFDetectionError.MPF_DETECTION_SUCCESS);
-						} catch (MPFComponentDetectionError e) {
-							responseBytes = detectionBuffer.createImageResponseMessage(msgMetadata, detectionType, locations, e.getDetectionError());
-						}
+                    // TODO: Include the exception message in the response message for more detail.
+                    if (MPFDataType.AUDIO == msgMetadata.getDataType()) {
+                        MPFDetectionAudioRequest audioRequest = detectionBuffer.getAudioRequest();
+                        try {
+                            List<MPFAudioTrack> tracks = new ArrayList<>();
+                            tracks = detector.getDetections(new MPFAudioJob(msgMetadata.getJobName(),
+                                                                            msgMetadata.getDataUri(),
+                                                                            msgMetadata.getAlgorithmProperties(),
+                                                                            msgMetadata.getMediaProperties(),
+                                                                            audioRequest.getStartTime(),
+                                                                            audioRequest.getStopTime(),
+                                                                            audioRequest.getFeedForwardTrack()));
+                            responseBytes = detectionBuffer.createAudioResponseMessage(msgMetadata, detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS);
+                        } catch (MPFComponentDetectionError e) {
+                            responseBytes = detectionBuffer.createAudioResponseMessage(msgMetadata, detectionType, Collections.<MPFAudioTrack>emptyList(), e.getDetectionError());
+                        }
+                    } else if (MPFDataType.IMAGE == msgMetadata.getDataType()) {
+                        MPFDetectionImageRequest imageRequest = detectionBuffer.getImageRequest();
+                        List<MPFImageLocation> locations = new ArrayList<>();
+                        try {
+                            locations = detector.getDetections(new MPFImageJob(msgMetadata.getJobName(),
+                                                                               msgMetadata.getDataUri(),
+                                                                               msgMetadata.getAlgorithmProperties(),
+                                                                               msgMetadata.getMediaProperties(),
+                                                                               imageRequest.getFeedForwardLocation()));
+                            responseBytes = detectionBuffer.createImageResponseMessage(msgMetadata, detectionType, locations, MPFDetectionError.MPF_DETECTION_SUCCESS);
+                        } catch (MPFComponentDetectionError e) {
+                            responseBytes = detectionBuffer.createImageResponseMessage(msgMetadata, detectionType, locations, e.getDetectionError());
+                        }
 
-					} else if (MPFDataType.VIDEO == msgMetadata.getDataType()) {
-						MPFDetectionVideoRequest VideoRequest = detectionBuffer.getVideoRequest();
-						List<MPFVideoTrack> tracks = new ArrayList<>();
-						try {
-							tracks = detector.getDetections(
-									new MPFVideoJob(msgMetadata.getJobName(),
-											msgMetadata.getDataUri(),
-											msgMetadata.getAlgorithmProperties(),
-											msgMetadata.getMediaProperties(),
-											VideoRequest.getStartFrame(),
-											VideoRequest.getStopFrame()));
-							responseBytes = detectionBuffer.createVideoResponseMessage(msgMetadata, detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS);
-						} catch (MPFComponentDetectionError e) {
-							responseBytes = detectionBuffer.createVideoResponseMessage(msgMetadata, detectionType, tracks, e.getDetectionError());
-						}
-					}
-					// for debugging purposes
-					LOG.debug("Detection results for file " + msgMetadata.getDataUri() + ":\n" + responseBytes.toString());
+                    } else if (MPFDataType.VIDEO == msgMetadata.getDataType()) {
+                        MPFDetectionVideoRequest videoRequest = detectionBuffer.getVideoRequest();
+                        List<MPFVideoTrack> tracks = new ArrayList<>();
+                        try {
+                            tracks = detector.getDetections(new MPFVideoJob(msgMetadata.getJobName(),
+                                                                            msgMetadata.getDataUri(),
+                                                                            msgMetadata.getAlgorithmProperties(),
+                                                                            msgMetadata.getMediaProperties(),
+                                                                            videoRequest.getStartFrame(),
+                                                                            videoRequest.getStopFrame(),
+                                                                            videoRequest.getFeedForwardTrack()));
+                            responseBytes = detectionBuffer.createVideoResponseMessage(msgMetadata, detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS);
+                        } catch (MPFComponentDetectionError e) {
+                            responseBytes = detectionBuffer.createVideoResponseMessage(msgMetadata, detectionType, tracks, e.getDetectionError());
+                        }
+                    }
+                    // for debugging purposes
+                    LOG.debug("Detection results for file " + msgMetadata.getDataUri() + ":\n" + responseBytes.toString());
 
-					BytesMessage responseBytesMessage;
-					try {
-						responseBytesMessage = session.createBytesMessage();
-						responseBytesMessage.writeBytes(responseBytes);
-						ProtoUtils.setMsgProperties(headerProperties, responseBytesMessage);
-						replyProducer = session.createProducer(out);
-						replyProducer.send(responseBytesMessage);
-						session.commit();
-						LOG.info("Detection response sent for job ID {}", msgMetadata.getRequestId());
-						LOG.debug(responseBytesMessage.toString());
-					} catch (JMSException e) {
-						LOG.error("Failed to send detection response message due to Exception {}", e);
-						}
+                    BytesMessage responseBytesMessage;
+                    try {
+                        responseBytesMessage = session.createBytesMessage();
+                        responseBytesMessage.writeBytes(responseBytes);
+                        ProtoUtils.setMsgProperties(headerProperties, responseBytesMessage);
+                        replyProducer = session.createProducer(out);
+                        replyProducer.send(responseBytesMessage);
+                        session.commit();
+                        LOG.info("Detection response sent for job ID {}", msgMetadata.getRequestId());
+                        LOG.debug(responseBytesMessage.toString());
+                    } catch (JMSException e) {
+                        LOG.error("Failed to send detection response message due to Exception {}", e);
+                    }
 
                 } else {
 					LOG.error("Detection cannot be performed on the " + msgMetadata.getDataType() + " data type");

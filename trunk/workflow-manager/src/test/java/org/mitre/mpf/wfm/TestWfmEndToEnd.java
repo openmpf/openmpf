@@ -33,17 +33,21 @@ import org.apache.camel.ExchangePattern;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.JsonJobRequest;
+import org.mitre.mpf.interop.JsonMediaInputObject;
+import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.enums.*;
+import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.MpfEndpoints;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.pipeline.PipelineManager;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -71,10 +75,6 @@ public class TestWfmEndToEnd {
 
 	@Autowired
 	private CamelContext camelContext;
-
-	@Autowired
-	@Qualifier(PipelineManager.REF)
-	protected PipelineManager pipelineManager;
 
 	@Autowired
 	@Qualifier(IoUtils.REF)

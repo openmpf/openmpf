@@ -27,47 +27,47 @@
 'use strict';
 /* global $, angular */
 
-var AboutCtrl = function($scope, $location, $interpolate, MetadataService) {
+var AboutCtrl = function($scope, $location, $interpolate, depResponse, MetadataService) {
 
-	$scope.text_detection_filepath = "resources/downloads/OalprLicensePlateTextDetection.tar.gz";
+    $scope.text_detection_filepath = "resources/downloads/OalprLicensePlateTextDetection.tar.gz";
 
-	var initView = function() {
-		fetchMetadata();
-		loadDependencyGroups();
-		makeLinksOpenInNewTab();
-	};
-	
-	var fetchMetadata = function() {
-		MetadataService.getMetadata().then(function(data) {
-			$scope.displayVersion = HomeUtilsFull.displayVersion;
-		});
-	};
+    var initView = function() {
+        fetchMetadata();
+        loadDependencyGroups();
+        makeLinksOpenInNewTab();
+    };
 
-	var loadDependencyGroups = function () {
-		$scope.depGroups = angular.fromJson($('#dependency-data').text());
-		$scope.renderCustomLicense = function (dep) {
-		    makeLinksOpenInNewTab();
-			if (!dep.customLicenseId) {
-				return '';
-			}
+    var fetchMetadata = function() {
+        MetadataService.getMetadata().then(function(data) {
+            $scope.displayVersion = HomeUtilsFull.displayVersion;
+        });
+    };
 
-			var $customLicenseEl = $('#' + dep.customLicenseId);
-			if ($customLicenseEl.size()) {
-				var customLicenseHtml = $customLicenseEl.html();
-				return $interpolate(customLicenseHtml)($scope);
-			}
-			else {
-				window.alert("The dependency named \"" + dep.name + "\" references the license template with id: \"" +
-					dep.customLicenseId + "\", but it does not exist.\n" +
-					"You must add a custom license with an id of: " + dep.customLicenseId);
-			}
-		};
-	};
+    var loadDependencyGroups = function () {
+        $scope.depGroups = depResponse.data.groups;
+        $scope.renderCustomLicense = function (dep) {
+            makeLinksOpenInNewTab();
+            if (!dep.customLicenseId) {
+                return '';
+            }
 
-	var makeLinksOpenInNewTab = function () {
-		$('#about-page').find('a').attr('target', '_blank');
-	};
+            var $customLicenseEl = $('#' + dep.customLicenseId);
+            if ($customLicenseEl.size()) {
+                var customLicenseHtml = $customLicenseEl.html();
+                return $interpolate(customLicenseHtml)($scope);
+            }
+            else {
+                window.alert("The dependency named \"" + dep.name + "\" references the license template with id: \"" +
+                    dep.customLicenseId + "\", but it does not exist.\n" +
+                    "You must add a custom license with an id of: " + dep.customLicenseId);
+            }
+        };
+    };
+
+    var makeLinksOpenInNewTab = function () {
+        $('#about-page').find('a').attr('target', '_blank');
+    };
 
 
-	initView();
+    initView();
 };

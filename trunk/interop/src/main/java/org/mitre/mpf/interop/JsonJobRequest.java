@@ -70,6 +70,7 @@ public class JsonJobRequest {
 	@JsonPropertyDescription("The relative priority of the job which may be in the range 1-9.")
 	private int priority;
 	public int getPriority() { return priority; }
+	public void setPriority(int priority) { this.priority = priority; }
 
 	@JsonProperty("callbackURL")
 	@JsonPropertyDescription("The OPTIONAL URL to make a callback of the completed job.")
@@ -112,7 +113,7 @@ public class JsonJobRequest {
 			jsonJobRequest.media.addAll(media);
 		}
 
-		// update to support the priority scheme (from lowest to highest):
+		// Putting algorithm properties as defined here supports the priority scheme (from lowest to highest):
 		// action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
 		if(algorithmProperties != null) {
 			jsonJobRequest.algorithmProperties.putAll(algorithmProperties);

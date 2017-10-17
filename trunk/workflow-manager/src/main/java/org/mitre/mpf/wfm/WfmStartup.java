@@ -30,6 +30,8 @@ import org.apache.activemq.broker.jmx.BrokerViewMBean;
 import org.apache.activemq.broker.jmx.QueueViewMBean;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
+import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDao;
+import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.component.StartupComponentRegistrationService;
@@ -70,6 +72,10 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	private HibernateJobRequestDao jobRequestDao;
 
 	@Autowired
+	@Qualifier(HibernateStreamingJobRequestDaoImpl.REF)
+	private HibernateStreamingJobRequestDao streamingJobRequestDao;
+
+	@Autowired
 	private MpfService mpfService;
 
 	@Autowired
@@ -99,8 +105,11 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 			if (!applicationRefreshed) {
 				log.info("onApplicationEvent: " + appContext.getDisplayName() + " " + appContext.getId()); // DEBUG
 
-				log.info("Marking any remaining running jobs as CANCELLED.");
+				log.info("Marking any remaining running batch jobs as CANCELLED.");
 				jobRequestDao.cancelJobsInNonTerminalState();
+
+        log.info("Marking any remaining running streaming jobs as CANCELLED.");
+        streamingJobRequestDao.cancelJobsInNonTerminalState();
 
 				if (propertiesUtil.isAmqBrokerEnabled()) {
 					try {

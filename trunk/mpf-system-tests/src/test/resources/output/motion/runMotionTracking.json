@@ -33,14 +33,14 @@
   "media": [
     {
       "mediaId": 20,
-      "path": "file:/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/motion/STRUCK_Test_720p.mov",
-      "mimeType": "video/quicktime",
+      "path": "file:/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/motion/STRUCK_Test_720p.mp4",
+      "mimeType": "video/mp4",
       "length": 220,
       "sha256": "ec65d671bbb9b03cb2a5383f4655ceda5faa39908f77f3fb63ef4897fc9cd763",
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
-        "DURATION": "8069",
+        "DURATION": "8070",
         "FPS": "25.28",
         "FRAME_COUNT": "220"
       },

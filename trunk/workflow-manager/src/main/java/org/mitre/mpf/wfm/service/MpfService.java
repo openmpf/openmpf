@@ -28,7 +28,10 @@ package org.mitre.mpf.wfm.service;
 
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
+import org.mitre.mpf.interop.JsonStreamingJobRequest;
+import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 
@@ -42,7 +45,7 @@ public interface MpfService {
 	// ====================
 
 	/**
-	 * Create a new job which will execute the specified pipeline on the provided list of provided URIs.
+	 * Create a new batch job which will execute the specified pipeline on the provided list of provided URIs.
 	 * @param media A List of <code>JsonMediaInputObject</code> entries, each representing a medium to be processed
 	 *              and an optional set of media properties.
 	 * @param algorithmProperties A map of properties which will override the job properties on this job for a particular algorithm.
@@ -56,7 +59,7 @@ public interface MpfService {
 	public JsonJobRequest createJob(List<JsonMediaInputObject> media, Map<String,Map> algorithmProperties, Map<String,String> jobProperties, String pipelineName, String externalId, boolean buildOutput, int priority);
 
 	/**
-	 * Create a new job which will execute the specified pipeline on the provided list of provided URIs.
+	 * Create a new batch job which will execute the specified pipeline on the provided list of provided URIs.
 	 * @param media A List of <code>JsonMediaInputObject</code> entries, each representing a medium to be processed
 	 *              and an optional set of media properties.
 	 * @param algorithmProperties A map of properties which will override the job properties on this job for a particular algorithm.
@@ -72,59 +75,124 @@ public interface MpfService {
 	public JsonJobRequest createJob(List<JsonMediaInputObject> media, Map<String,Map> algorithmProperties, Map<String,String> jobProperties, String pipelineName, String externalId, boolean buildOutput, int priority, String callback, String method);
 
 	/**
-	 * Asynchronously submits a JSON-based job request and returns the identifier associated with the persistent job request which was created.
-	 * @param jobRequest The job to execute.
-	 * @return The id of the job which was created.
+	 * Create a new streaming job which will execute the specified pipeline on the URI defined in the stream object.
+	 * @param json_stream
+	 * @param algorithmProperties
+	 * @param jobProperties
+	 * @param pipelineName
+	 * @param externalId
+	 * @param buildOutput
+	 * @param priority
+	 * @param stallAlertDetectionThreshold
+	 * @param stallAlertRate
+	 * @param stallTimeout
+	 * @param healthReportCallbackURI
+	 * @param summaryReportCallbackURI
+	 * @param newTrackAlertCallbackURI
+	 * @param method
+	 * @return A {@link org.mitre.mpf.interop.JsonStreamingJobRequest} which summarizes this request.
 	 */
-	public long submitJob(JsonJobRequest jobRequest);
+	public JsonStreamingJobRequest createStreamingJob(JsonStreamingInputObject json_stream,
+													  Map<String,Map<String,String>> algorithmProperties,
+													  Map<String,String> jobProperties,
+													  String pipelineName, String externalId,
+													  boolean buildOutput, int priority,
+													  long stallAlertDetectionThreshold,
+													  long stallAlertRate,
+													  long stallTimeout,
+													  String healthReportCallbackURI,
+													  String summaryReportCallbackURI,
+													  String newTrackAlertCallbackURI,
+													  String method);
 
 	/**
-	 * Asynchronously submits a job using the originally provided priority. See {@link #resubmitJob(long, int)}. */
+	 * Asynchronously submits a JSON-based batch job request and returns the identifier associated with the persistent job request which was created.
+	 * Note: this method creates the jobId for this newly created batch job
+	 * @param jobRequest The batch job to execute.
+	 * @return The jobId of the batch job which was created.
+	 */
+	public long submitJob(JsonJobRequest jobRequest);
+	/**
+	 * Asynchronously submits a JSON-based streaming job request and returns the identifier associated with the persistent job request which was created.
+	 * Note: this method creates the jobId for this newly created streaming job
+	 * @param streamingJobRequest The streaming job to execute.
+	 * @return The jobId of the streaming job which was created.
+	 */
+	public long submitJob(JsonStreamingJobRequest streamingJobRequest);
+
+	/**
+	 * Asynchronously submits a job using the originally provided priority. See {@link #resubmitJob(long, int)}.
+	 * Only batch jobs support resubmitJob
+	 */
 	long resubmitJob(long jobId);
 
 	/**
 	 * Asynchronously resubmits a job. It is assumed that the job 1) exists and 2) is in a terminal state at the
-	 * moment the request is made.
+	 * moment the request is made. Only batch jobs support resubmitJob
 	 * @param jobId The MPF-assigned identifier for the original job.
 	 * @param newPriority The new priority to assign to this job. Note: Future resubmissions will use this priority value.
 	 */
 	long resubmitJob(long jobId, int newPriority);
 
 	/**
-	 * Attempts to cancel a job that is currently executing. If the job does not exist or otherwise cannot be
+	 * Attempts to cancel a batch job that is currently executing. If the job does not exist or otherwise cannot be
 	 * cancelled, this method will return {@literal false}.
-	 * @param jobId The MPF-assigned identifier for the job.
-	 * @return {@literal true} iff the job exists and was cancelled successfully.
+	 * @param jobId The MPF-assigned identifier for the batch job. The job must be a batch job.
+	 * @return {@literal true} iff the batch job exists and was cancelled successfully.
 	 */
 	boolean cancel(long jobId);
 
-	/** Gets the marked-up media with the specified id. */
+	/**
+	 * Attempts to cancel a streaming job that is currently executing. If the streaming job does not
+	 * exist or otherwise cannot be cancelled, this method will return {@literal false}.
+	 * @param jobId The MPF-assigned identifier for the streaming job. The job must be a streaming job.
+	 * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job
+	 * @return {@literal true} iff the streaming job exists and was cancelled successfully.
+	 */
+	boolean cancelStreamingJob(long jobId, boolean doCleanup);
+
+	/** Gets the marked-up media with the specified (batch job) id. */
 	public MarkupResult getMarkupResult(long id);
 
-	/** Gets the marked-up media associated with the specified job. */
+	/** Gets the marked-up media associated with the specified (batch job) job. */
 	public List<MarkupResult> getMarkupResultsForJob(long jobId);
 
-	/** Gets the marked-up media associated with all jobs. */
+	/** Gets the marked-up media associated with all (batch) jobs. */
 	public List<MarkupResult> getAllMarkupResults();
 
-	/** Gets the JobRequest instance in the persistent data store associated with the specified id. */
+	/**
+	 * Gets the JobRequest instance in the persistent data store associated with the specified batch (job) id.
+	 */
 	public JobRequest getJobRequest(long id);
 
-	/** Gets all of the JobRequest instances in the persistent data store. */
+	/**
+	 * Gets the StreamingJobRequest instance in the persistent data store associated with the
+	 * specified streaming (job) id.
+	 */
+	public StreamingJobRequest getStreamingJobRequest(long id);
+
+	/**
+	 * Gets all of the JobRequest (batch job) instances in the persistent data store.
+	 */
 	public List<JobRequest> getAllJobRequests();
 
-	public List<SystemMessage> getSystemMessagesByType(String filterbyType );
+	/**
+	 * Gets all of the StreamingJobRequest (streaming job) instances in the persistent data store.
+	 */
+	public List<StreamingJobRequest> getAllStreamingJobRequests();
+
+	public List<SystemMessage> getSystemMessagesByType(String filterbyType);
 
 	public List<SystemMessage> getSystemMessagesByRemoveStrategy(String filterbyRemoveStrategy );
 
 	/** adds a System Message or updates the one that is already in the DB
 	 *  returns the System Message
-     */
+	 */
 	public SystemMessage addSystemMessage( SystemMessage obj );
 
 	/** adds one of the standard System Messages ID'ed with msgID;
 	 *  returns the System Message
-     */
+	 */
 	public SystemMessage addStandardSystemMessage( String msgID );
 
 	/** deletes the System Message with msgId

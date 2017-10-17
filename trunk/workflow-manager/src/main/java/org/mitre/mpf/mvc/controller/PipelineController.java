@@ -36,9 +36,8 @@ import org.mitre.mpf.mvc.util.JsonView;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.DuplicateNameWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.NotFoundWfmProcessingException;
-import org.mitre.mpf.wfm.pipeline.PipelineManager;
-import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,10 +51,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -73,9 +69,6 @@ public class PipelineController {
     @Autowired
     private PipelineService pipelineService;
 
-    @Autowired
-    private PipelineManager pipelineManager;
-
     /*
      *	/pipelines
      */
@@ -91,7 +84,7 @@ public class PipelineController {
     		@ApiResponse(code = 401, message = "Bad credentials") })
     @ResponseBody
     public List<String> getAvailablePipelinesRest() {
-        return pipelineService.getPipelineNames();
+        return new ArrayList<>(pipelineService.getPipelineNames());
     }
 
 
@@ -105,7 +98,7 @@ public class PipelineController {
             produces = "application/json")
     @ResponseBody
     public Set<PipelineComponentBasicInfo> getPipelines() {
-        return pipelineManager.getPipelines()
+        return pipelineService.getPipelines()
                 .stream()
                 .map(c -> new PipelineComponentBasicInfo(c.getName(), c.getDescription()))
                 .collect(Collectors.toSet());
@@ -113,7 +106,7 @@ public class PipelineController {
 
     //INTERNAL - deprecated
     //  pipelines2: todo: should remove this after removing usage in
-    //      AppServices.service('PipelinesService'... in client code
+    //      AppServices.service('PipelineService'... in client code
     @Deprecated
     @RequestMapping(value = {"/pipelines/details"}, method = RequestMethod.GET, produces = "application/json")
     @ResponseBody
@@ -132,7 +125,7 @@ public class PipelineController {
             produces = "application/json")
     @ResponseBody
     public Set<PipelineDefinition> getAllAvailablePipelines() {
-        return pipelineManager.getPipelines();
+        return pipelineService.getPipelines();
     }
 
 
@@ -142,8 +135,11 @@ public class PipelineController {
     @RequestMapping(value = "/pipelines/model", method = RequestMethod.GET)
     @ResponseBody
     public PipelinesModel getPipelinesModel() {
-        return new PipelinesModel(pipelineService.getAlgorithmNames(), pipelineService.getActionNames(),
-                pipelineService.getTaskNames(), pipelineService.getPipelineNames());
+        return new PipelinesModel(
+                new ArrayList<>(pipelineService.getAlgorithmNames()),
+                new ArrayList<>(pipelineService.getActionNames()),
+                new ArrayList<>(pipelineService.getTaskNames()),
+                new ArrayList<>(pipelineService.getPipelineNames()));
     }
 
     //INTERNAL - deprecated
@@ -152,8 +148,11 @@ public class PipelineController {
     @ResponseBody
     public List<PropertyDefinition> getAlgorithmPropertiesJson(
             @RequestParam(value = "algName", required = true) String algName) {
-
-        return pipelineService.getAlgorithmProperties(algName);
+        AlgorithmDefinition algorithmDefinition = pipelineService.getAlgorithm(algName);
+        if (algorithmDefinition == null) {
+            return Collections.emptyList();
+        }
+        return algorithmDefinition.getProvidesCollection().getAlgorithmProperties();
     }
 
     //INTERNAL
@@ -170,7 +169,7 @@ public class PipelineController {
     @ResponseBody
     public PipelineDefinition getPipeline(
             @PathVariable("pipelineName") String pipelineName) throws WfmProcessingException{
-        PipelineDefinition pipelineDefinition = pipelineManager.getPipeline(pipelineName);
+        PipelineDefinition pipelineDefinition = pipelineService.getPipeline(pipelineName);
         if (pipelineDefinition==null) {
             throw new NotFoundWfmProcessingException("Pipeline not found: " + pipelineName + ".");
         }
@@ -200,7 +199,7 @@ public class PipelineController {
         for (String taskName : pipelineModel.getTasksToAdd()) {
             pipelineDefinition.getTaskRefs().add(new TaskDefinitionRef(taskName));
         }
-        pipelineService.addAndSavePipeline(pipelineDefinition);
+        pipelineService.savePipeline(pipelineDefinition);
     }
 
     //INTERNAL
@@ -215,7 +214,7 @@ public class PipelineController {
     @ResponseBody
     public void deletePipeline(
             @PathVariable("pipelineName") String pipelineName) throws WfmProcessingException{
-        pipelineService.removeAndDeletePipeline(pipelineName);
+    	pipelineService.deletePipeline(pipelineName);
     }
 
     //INTERNAL
@@ -228,7 +227,7 @@ public class PipelineController {
             produces = "application/json")
     @ResponseBody
     public Set<PipelineComponentBasicInfo> getPipelineTasks() {
-         return pipelineManager.getTasks()
+         return pipelineService.getTasks()
                 .stream()
                 .map(c -> new PipelineComponentBasicInfo(c.getName(), c.getDescription()))
                 .collect(Collectors.toSet());
@@ -247,7 +246,7 @@ public class PipelineController {
     @ResponseBody
     public TaskDefinition getPipelineTask(
             @PathVariable("taskName") String taskName) throws WfmProcessingException {
-        TaskDefinition task = pipelineManager.getTask(taskName);
+        TaskDefinition task = pipelineService.getTask(taskName);
         if (task == null) {
             throw new NotFoundWfmProcessingException("Task not found: " + taskName + ".");
         }
@@ -278,7 +277,7 @@ public class PipelineController {
         for (String actionName : taskModel.getActionsToAdd()) {
             taskDefinition.getActions().add(new ActionDefinitionRef(actionName));
         }
-        pipelineService.addAndSaveTask(taskDefinition);
+        pipelineService.saveTask(taskDefinition);
     }
 
     //INTERNAL
@@ -293,7 +292,7 @@ public class PipelineController {
     @ResponseBody
     public void deletePipelineTask(
             @PathVariable("taskName") String taskName) throws WfmProcessingException {
-        pipelineService.removeAndDeleteTask(taskName);
+        pipelineService.deleteTask(taskName);
     }
 
     //INTERNAL
@@ -306,7 +305,7 @@ public class PipelineController {
             produces = "application/json")
     @ResponseBody
     public Set<PipelineComponentBasicInfo> getPipelineActions() {
-        return pipelineManager.getActions()
+        return pipelineService.getActions()
                 .stream()
                 .map(c -> new PipelineComponentBasicInfo(c.getName(), c.getDescription()))
                 .collect(Collectors.toSet());
@@ -325,7 +324,7 @@ public class PipelineController {
     @ResponseBody
     public ActionDefinition getPipelineAction(
             @PathVariable("actionName") String actionName) throws WfmProcessingException {
-        ActionDefinition action = pipelineManager.getAction(actionName);
+        ActionDefinition action = pipelineService.getAction(actionName);
         if (action == null) {
             throw new NotFoundWfmProcessingException("Action not found: " + actionName + ".");
         }
@@ -355,9 +354,23 @@ public class PipelineController {
             throw new WfmProcessingException("Invalid properties value: " + actionModel.getProperties() + ".", e);
         }
 
-        pipelineService.addAndSaveAction(actionModel.getActionName().toUpperCase(),
-                actionModel.getActionDescription(), actionModel.getAlgorithmName(), modifiedProperties);
+        saveAction(actionModel, modifiedProperties);
     }
+
+
+    private void saveAction(ActionModel actionModel, Map<String, String> actionProperties) {
+        ActionDefinition actionDef = new ActionDefinition(
+                actionModel.getActionName(),
+                actionModel.getAlgorithmName(),
+                actionModel.getActionDescription());
+
+        for (Map.Entry<String, String> propEntry : actionProperties.entrySet()) {
+            PropertyDefinitionRef propDef = new PropertyDefinitionRef(propEntry.getKey(), propEntry.getValue()) ;
+            actionDef.getProperties().add(propDef);
+        }
+        pipelineService.saveAction(actionDef);
+    }
+
 
     //INTERNAL
     /** Deletes a specified action.
@@ -371,7 +384,7 @@ public class PipelineController {
     @ResponseBody
     public void deletePipelineAction(
             @PathVariable("actionName") String actionName) throws WfmProcessingException {
-        pipelineService.removeAndDeleteAction(actionName);
+        pipelineService.deleteAction(actionName);
     }
 
     //INTERNAL
@@ -384,7 +397,7 @@ public class PipelineController {
             produces = "application/json")
     @ResponseBody
     public Set<PipelineComponentBasicInfo> getPipelineAlgorithms() {
-        return pipelineManager.getAlgorithms()
+        return pipelineService.getAlgorithms()
                 .stream()
                 .map(c -> new PipelineComponentBasicInfo(c.getName(), c.getDescription()))
                 .collect(Collectors.toSet());
@@ -404,7 +417,7 @@ public class PipelineController {
     @ResponseBody
     public AlgorithmDefinition getPipelineAlgorithm(
             @PathVariable("algorithmName") String algorithmName) throws WfmProcessingException {
-        AlgorithmDefinition algorithmDefinition = pipelineManager.getAlgorithm(algorithmName);
+        AlgorithmDefinition algorithmDefinition = pipelineService.getAlgorithm(algorithmName);
         if (algorithmDefinition == null) {
             throw new NotFoundWfmProcessingException("Algorithm not found: " + algorithmName + ".");
         }
@@ -454,15 +467,16 @@ public class PipelineController {
             return JsonView.Render(responseTuple, response);
         }
 
-        //unlike "/addToPipelineController" - an action, is added and save is done at the same time, did not want to change existing logic
-        Tuple<Boolean,String> saveTuple = pipelineService.addAndSaveActionDeprecated(actionModel.getActionName().toUpperCase(),
-                actionModel.getActionDescription(), actionModel.getAlgorithmName(), modifiedProperties);
-        if (!saveTuple.getFirst()) {
-        	log.error("new action creation failed and nothing was saved to xml");
-        } else {
-        	log.debug("Successfully created action ", saveTuple.getSecond());
+        try {
+        	saveAction(actionModel, modifiedProperties);
+            log.debug("Successfully created action: " + actionModel.getActionName());
+        	responseTuple = new Tuple<>(true, null);
         }
-        responseTuple = saveTuple;
+        catch (WfmProcessingException ex) {
+            log.error("new action creation failed and nothing was saved to xml", ex);
+            responseTuple = new Tuple<>(false, "Unable to save action.");
+        }
+
         return JsonView.Render(responseTuple, response);
     }
 
@@ -481,39 +495,31 @@ public class PipelineController {
             String name = addToPipelineModel.getName().toUpperCase();
             String type = addToPipelineModel.getType();
 
-            //actions is handled by "/createaction"
-            if(type.equals("task")) {
-                TaskDefinition taskDefinition = new TaskDefinition(name, description);
-                for(String actionName : addToPipelineModel.getItemsToAdd()) {
-                    taskDefinition.getActions().add( new ActionDefinitionRef(actionName) );
+            try {
+                //actions is handled by "/createaction"
+                if(type.equals("task")) {
+                    TaskDefinition taskDefinition = new TaskDefinition(name, description);
+                    for(String actionName : addToPipelineModel.getItemsToAdd()) {
+                        taskDefinition.getActions().add( new ActionDefinitionRef(actionName) );
+                    }
+                    pipelineService.saveTask(taskDefinition);
                 }
-                successfulAdd = pipelineService.addTaskDeprecated(taskDefinition);
-            }
-            else if(type.equals("pipeline")) {
-                PipelineDefinition pipelineDefinition = new PipelineDefinition(name, description);
-                for(String taskName : addToPipelineModel.getItemsToAdd()) {
-                    pipelineDefinition.getTaskRefs().add( new TaskDefinitionRef(taskName) );
+                else if(type.equals("pipeline")) {
+                    PipelineDefinition pipelineDefinition = new PipelineDefinition(name, description);
+                    for(String taskName : addToPipelineModel.getItemsToAdd()) {
+                        pipelineDefinition.getTaskRefs().add( new TaskDefinitionRef(taskName) );
+                    }
+                    pipelineService.savePipeline(pipelineDefinition);
                 }
-                successfulAdd = pipelineService.addPipeline(pipelineDefinition);
+                log.debug("success adding to the {} collection", type);
+                responseTuple = new Tuple<Boolean, String>(true, null);
             }
-
-            if(!successfulAdd) {
-                //responseMap.put(false, "failed to add the " + type + " check logs for detailed error");
+            catch (WfmProcessingException ex) {
                 responseTuple = new Tuple<Boolean, String>(false, "failed to add the " + type + " check logs for detailed error");
-            } else {
-            	log.debug("success adding to the {} collection", type);
-                //only try to save if an add was successful
-                Tuple<Boolean,String> saveTuple = pipelineService.savePipelineChanges(type);
-                if(!saveTuple.getFirst()) {
-                    responseTuple = saveTuple;
-                    log.error("failure saving to the {} xml file", type);
-                } else {
-                    responseTuple = saveTuple;
-                    log.debug("success adding and saving to the {} xml file", type);
-                }
+                log.error(responseTuple.getSecond(), ex);
             }
         } else {
-        	//assuming that the addToPipelineModel is not null and the user forgot to add items before clicking create
+            //assuming that the addToPipelineModel is not null and the user forgot to add items before clicking create
             responseTuple = new Tuple<Boolean, String>(false, "Please add items before clicking 'Create'!");
         }
 

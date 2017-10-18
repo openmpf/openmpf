@@ -163,7 +163,10 @@ def get_custom_aatp(ref_list, installed_file, output_xml_file):
 
         # Child did not match anything from the reference set, it is custom
         else:
-            child.set('name', 'CUSTOM {0}'.format(child_name))
+            if child_name.startswith('CUSTOM '):
+                child.set('name', child_name)
+            else:
+                child.set('name', 'CUSTOM {0}'.format(child_name))
 
             # Process algorithm, action and task references
             for grandChild in child:
@@ -173,7 +176,10 @@ def get_custom_aatp(ref_list, installed_file, output_xml_file):
                     for greatGrandChild in grandChild:
                         great_grand_child_name = greatGrandChild.get('name')
                         if not any(great_grand_child_name in e for e in ref_list):
-                            greatGrandChild.set('name', 'CUSTOM {0}'.format(great_grand_child_name))
+                            if great_grand_child_name.startswith('CUSTOM '):
+                                greatGrandChild.set('name', great_grand_child_name)
+                            else:
+                                greatGrandChild.set('name', 'CUSTOM {0}'.format(great_grand_child_name))
 
     # Write the custom XML file to the specified location
     installed_xml_tree.write(output_xml_file,

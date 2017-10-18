@@ -30,7 +30,7 @@
   remote_user: mpf
   become: yes
   vars:
-    - deployment_config: "{{ lookup('file', '/opt/mpf/share/deployment_config.json') | from_json }}"
+    - deployment_config: "{{ lookup('file', '{{ mpf_home }}/share/deployment_config.json') | from_json }}"
   pre_tasks:
     - name: Set default password values
       set_fact:

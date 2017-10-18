@@ -25,4 +25,4 @@
 #############################################################################
 ---
 #file: roles/repo/vars/main.yml
-repo_directory: /opt/mpf/manage/repo/
+repo_directory: {{ mpf_home }}/manage/repo/

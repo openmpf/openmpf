@@ -39,7 +39,7 @@
   become_user: mpf
 
 - name: Validate presence of MPF shared storage
-  fail: msg="Invalid MPF Configuration. Shared storage not found at /opt/mpf/share"
+  fail: msg="Invalid MPF Configuration. Shared storage not found at {{ mpf_home }}"
   when: not validation.stat.exists
 
 - name: Configure MPF profile.d script

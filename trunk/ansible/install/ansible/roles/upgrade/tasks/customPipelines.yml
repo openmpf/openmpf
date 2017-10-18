@@ -40,41 +40,26 @@
     delegate_to: "{{ master_host }}"
     run_once: true
 
-  - name: Check for custom Algorithms, Actions, Tasks, and Pipelines files
-    stat:
-      path: "{{ mpf_home }}/data/custom{{ item }}.xml"
+  - name: Identify custom Algorithms, Actions, Tasks, and Pipelines
+    shell: "python -c \"from customPipelines import *; get_custom_aatp(get_reference_aatp(), '{{ mpf_home }}/data/{{ item }}.xml', '{{ mpf_home }}/data/custom{{ item }}.xml');\""
+    args:
+      chdir: "{{ mpf_home }}/manage/ansible/roles/upgrade/files/customPipelines"
     with_items:
       - Algorithms
       - Actions
       - Tasks
       - Pipelines
-    register: custom_files_check_st
-    delegate_to: "{{ master_host }}"
-    run_once: true
-
-  - name: Check for Algorithms, Actions, Tasks, and Pipelines files
-    stat:
-      path: "{{ mpf_home }}/data/{{ item.item }}.xml"
-    with_items: "{{ custom_files_check_st.results }}"
-    register: files_check_st
-    when: "not {{ item.stat.exists }}"
-    delegate_to: "{{ master_host }}"
-    run_once: true
-
-  - name: Identify custom Algorithms, Actions, Tasks, and Pipelines
-    shell: "python -c \"from customPipelines import *; get_custom_aatp(get_reference_aatp(), '{{ item.stat.path }}', '/opt/mpf/data/custom{{ item.stat.path | basename }}');\""
-    args:
-      chdir: "{{ mpf_home }}/manage/ansible/roles/upgrade/files/customPipelines"
-    with_items: "{{ files_check_st.results }}"
-    when: "files_check_st is defined and {{ item.stat.exists | default(false) }}"
     delegate_to: "{{ master_host }}"
     run_once: true
 
   - name: Backup existing Algorithms, Actions, Tasks, and Pipelines files
     copy:
-      src: "{{ item.stat.path }}"
-      dest: "/opt/mpf/data/{{ item.stat.path | basename }}.bak"
-    with_items: "{{ files_check_st.results }}"
-    when: "files_check_st is defined and {{ item.stat.exists | default(false)}}"
+      src: "{{ mpf_home }}/data/{{ item }}.xml"
+      dest: "{{ mpf_home }}/data/{{ item }}.xml.bak"
+    with_items:
+      - Algorithms
+      - Actions
+      - Tasks
+      - Pipelines
     delegate_to: "{{ master_host }}"
     run_once: true

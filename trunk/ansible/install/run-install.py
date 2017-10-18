@@ -308,10 +308,14 @@ for component in package_data['MPF_Components']:
     if component_archive_file and os.path.isfile(component_archive_filepath):
         component_archive_info = get_component_info(component_archive_filepath)
 
-        # If the installed component has a componentVersion key, compare the installed version to the newer component.
+        # If the installed component has a componentVersion key, compare the installed version to the component in the deployment package.
         if upgrade_choice and installed_component_data and 'componentVersion' in installed_component_data:
             if StrictVersion(component_archive_info.componentVersion) > StrictVersion(installed_component_data['componentVersion']):
                 component_version_upgrade = True
+
+        # If the installed component does not have a componentVersion key, but the component in the deployment package does, install the latter.
+        elif upgrade_choice and installed_component_data and 'componentVersion' not in installed_component_data and component_archive_info.componentVersion:
+            component_version_upgrade = True
 
         # Check the component state and conditionally prompt to register it
         if component_archive_info.componentState == 'REGISTERED' and upgrade_choice and component_version_upgrade:

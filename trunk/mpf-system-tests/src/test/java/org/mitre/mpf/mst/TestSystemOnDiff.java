@@ -37,6 +37,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import java.util.*;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.*;
 
 /**
@@ -336,17 +337,23 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 				.flatMap(t -> t.getDetections().stream())
 				.collect(toList());
 
-		boolean appleFound = caffeDetections.stream()
+
+		assertTrue(caffeDetections.stream()
+				           .allMatch(d -> d.getOffsetFrame() >= 31));
+
+		assertTrue(caffeDetections.stream()
+				           .allMatch(d -> d.getX() + d.getWidth() <= 180));
+
+
+		Set<String> detectedObjects = caffeDetections.stream()
 				.map(d -> d.getDetectionProperties().get("CLASSIFICATION"))
-				.filter(Objects::nonNull)
-				.anyMatch(s -> s.equalsIgnoreCase("Granny Smith"));
-		assertFalse(appleFound);
+				// Not sure why Caffe detects an envelope,
+				// but the important thing is that Caffe doesn't find Granny Smith.
+				.filter(c -> !c.equalsIgnoreCase("envelope"))
+				.collect(toSet());
 
-		assertTrue(caffeDetections.stream()
-				.allMatch(d -> d.getOffsetFrame() >= 31));
-
-		assertTrue(caffeDetections.stream()
-				.allMatch(d -> d.getX() + d.getWidth() <= 180));
+		assertEquals(1, detectedObjects.size());
+		assertTrue(detectedObjects.contains("digital clock"));
 	}
 
 

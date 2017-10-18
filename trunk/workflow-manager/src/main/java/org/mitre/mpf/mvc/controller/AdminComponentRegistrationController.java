@@ -257,7 +257,7 @@ public class AdminComponentRegistrationController {
                 return ResponseMessage.ok("Component successfully registered");
             }
             catch (ComponentRegistrationException ex) {
-                return handleRegistrationErrorResponse(null, ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, ex);
+                return handleRegistrationErrorResponse(filePath, ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, ex);
             }
         });
     }

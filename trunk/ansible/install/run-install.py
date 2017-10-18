@@ -259,6 +259,16 @@ mpf_components = []
 # Ask if upgrading MPF from a previous installation
 upgrade_choice = yes_or_no_prompt('Is this an upgrade to an existing MPF install?', False)
 
+if upgrade_choice:
+    continue_prompt = ''.join(['Upgrading a component will remove the pre-existing component directory located in ',
+                               mpf_home, '/plugins on every MPF node. Backup any necessary files in those directories. ',
+                               'You may need to manually update/replace data files and/or licenses once a component ',
+                               'has been upgraded. \n\nContinue?']);
+    continue_choice = yes_or_no_prompt(continue_prompt, True)
+
+    if not continue_choice:
+        sys.exit('User aborted. Exiting...')
+
 # Prompt user to select config file if more than one is found
 if len(package_config_files) > 1:
     print 'More than one package config file was found.'
@@ -349,58 +359,6 @@ for component in package_data['MPF_Components']:
             component_archive_info.componentTLD,
             component_archive_info.componentSetupFile,
             component_archive_info.componentInstructionsFile))
-
-
-# TODO: this may not be necessary if we're no longer removing all pre-existing components
-# Check for components not in package configuration file but installed under $MPF_HOME/plugins/
-if upgrade_choice and os.path.isdir(''.join([mpf_home, '/plugins'])):
-
-    # Set path to search for component descriptors
-    descriptor_dirs = ''.join([mpf_home, '/plugins/*/descriptor/descriptor.json'])
-
-    # Generate a list of the installed component descriptor files
-    descriptors = glob.glob(descriptor_dirs)
-
-    # Read each component descriptor
-    for descriptor in descriptors:
-
-        # Load descriptor json
-        descriptor_data = load_json_from_file(descriptor)
-
-        if not any(component['componentName'] == descriptor_data['componentName'] for component in mpf_components):
-            # Set the component archive file based on information from the descriptor.
-
-            component_archive_files = [''.join([mpf_home,
-                                                '/manage/repo/tars/mpf/',
-                                                descriptor_data['componentName'],
-                                                '*',
-                                                '.tar.gz']),
-                                       ''.join([mpf_home, '/share/components/',
-                                                descriptor_data['componentName'],
-                                                '*',
-                                               '.tar.gz'])]
-
-            # Check for the original component archive file
-            for component_archive_file in component_archive_files:
-                existing_component_archive = glob.glob(component_archive_file)
-
-                for archive in existing_component_archive:
-                    # Prompt to upgrade and register the component
-                    register_component = yes_or_no_prompt('Attempt to register existing component {0}{1}{2}?'.format(text_format.bold, descriptor_data['componentName'], text_format.end), False)
-                    component_archive_info = get_component_info(archive)
-
-                    # Append component information to the mpf_components dict for the deployment config
-                    if register_component:
-                        mpf_components.append(
-                            set_component(
-                                component_archive_info.componentName,
-                                register_component,
-                                component_archive_info.componentState,
-                                component_archive_info.componentDescriptorPath,
-                                archive,
-                                component_archive_info.componentTLD,
-                                component_archive_info.componentSetupFile,
-                                component_archive_info.componentInstructionsFile))
 
 
 # Prompt for HTTPS support

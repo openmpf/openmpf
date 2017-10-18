@@ -24,7 +24,7 @@
 # limitations under the License.                                            #
 #############################################################################
 ---
-#file: roles/upgrade/tasks/8to9/customPipelines.yml
+#file: roles/upgrade/tasks/mpf-to-current/customPipelines.yml
 
   - name: Install Dependencies
     yum:
@@ -54,7 +54,7 @@
 
   - name: Check for Algorithms, Actions, Tasks, and Pipelines files
     stat:
-      path: "{{ tomcat_home }}/webapps/workflow-manager/WEB-INF/classes/{{ item.item }}.xml"
+      path: "{{ mpf_home }}/data/{{ item.item }}.xml"
     with_items: "{{ custom_files_check_st.results }}"
     register: files_check_st
     when: "not {{ item.stat.exists }}"
@@ -76,5 +76,17 @@
       dest: "/opt/mpf/data/{{ item.stat.path | basename }}.bak"
     with_items: "{{ files_check_st.results }}"
     when: "files_check_st is defined and {{ item.stat.exists | default(false)}}"
+    delegate_to: "{{ master_host }}"
+    run_once: true
+
+  - name: After backup of existing Algorithms, Actions, Tasks, and Pipelines files - find original .xml files
+    stat:
+      path: "{{ mpf_home }}/data/{{ item }}.xml"
+    with_items:
+      - Algorithms
+      - Actions
+      - Tasks
+      - Pipelines
+    register: original_xml_files_check_st
     delegate_to: "{{ master_host }}"
     run_once: true

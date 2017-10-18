@@ -102,6 +102,21 @@
     - name: Add localhost to repo inventory
       add_host: name={{ inventory_hostname }} groups=mpf-repo
 
+    # make sure mpf release 1.0.0+ changes have been applied to {{ mpf_home }}/data/Algorithms.xml.
+    # if the regular expression is satisfied, then the algorithm attributes are appended, otherwise no change
+    - debug: msg="Updating {{ mpf_home }}/data/Algorithms.xml to conform with MPF R1.0.0+ algorithm attributes"
+    - replace:
+        destfile: "{{ mpf_home }}/data/Algorithms.xml"
+        regexp: '(<algorithm\s+name="\w+"\s+actionType="\w+")\s*>'
+        replace: '\1 supportsBatchProcessing="true" supportsStreamProcessing="false">'
+        backup: yes
+
+    - replace:
+        destfile: "{{ mpf_home }}/data/nodeServicesPalette.json"
+        regexp: 'mpf-markup-.*\.jar'
+        replace: 'mpf-markup-1.0.0.jar'
+        backup: yes
+
   post_tasks:
     - name: Start ActiveMQ
       service:
@@ -189,3 +204,17 @@
       file:
         path="/tmp/update_wfm_pw.sql"
         state=absent
+
+    # make sure mpf release 1.0.0+ changes have been applied to MySQL schema.  Leave this check in, because the next line includes the handling commands
+    # Note that this task must run after workflow-manager has started. If the mysql command is successful, the return code (rc) should be 0.
+    - name: Check for hibernate_sequence table in mpf database
+      shell: >
+        mysql --execute="use mpf;SHOW TABLES LIKE 'hibernate_sequence';" | grep 'hibernate_sequence'
+      register: check_hibernate_sequence
+      failed_when:
+        - "'ERROR 2002' in check_hibernate_sequence.stderr"
+
+    - name: Update the mpf hibernate_sequence in mysql, as needed for upgrade to mpf R1.0.0+
+      command: >
+        mysql --execute="update mpf.hibernate_sequence set next_val=(SELECT IFNULL( (SELECT max(id)+1 FROM mpf.job_request), 1));"
+      when: "check_hibernate_sequence.rc == 0 and 'hibernate_sequence' in check_hibernate_sequence.stdout"

@@ -24,7 +24,8 @@
 # limitations under the License.                                            #
 #############################################################################
 ---
-#file: roles/upgrade/tasks/8to9/vars.yml
-r8OutputObjectVersion: "1.0"
-mpf_home: "{{ lookup('env','MPF_HOME') | default('/opt/mpf', true) }}"
-tomcat_home: "/opt/apache-tomcat"
+- hosts: mpf-master, mpf-child
+  roles:
+    - cleanup
+  remote_user: mpf
+  become: yes

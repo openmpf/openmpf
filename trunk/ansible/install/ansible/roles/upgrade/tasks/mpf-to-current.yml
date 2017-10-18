@@ -24,8 +24,28 @@
 # limitations under the License.                                            #
 #############################################################################
 ---
-- hosts: mpf-master
-  roles:
-    - upgrade
-  remote_user: mpf
-  become: yes
+#file: roles/upgrade/tasks/mpf-to-current.yml
+
+  - include: mysql.yml
+    delegate_to: "{{ master_host }}"
+    run_once: true
+
+  - include: customPipelines.yml
+    delegate_to: "{{ master_host }}"
+    run_once: true
+
+  # Previous releases of openmpf used path $MPF_HOME/share/components/components.json,
+  # releases 0.9+ use $MPF_HOME/data/components.json
+  - name: Check for previous version of components JSON file
+    stat:
+      path: "{{ mpf_home }}/data/components.json"
+    register: old_components_st
+    run_once: true
+
+  - name: Backup previous version of components.json file
+    copy:
+      src: "{{ mpf_home }}/data/components.json"
+      dest: "{{ mpf_home }}/data/components.json.bak"
+    delegate_to: "{{ master_host }}"
+    run_once: true
+    when: old_components_st.stat.exists

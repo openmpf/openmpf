@@ -24,26 +24,34 @@
 # limitations under the License.                                            #
 #############################################################################
 ---
-#file: roles/upgrade/tasks/8to9/mysql.yml
+#file: roles/child/tasks/compunregistration.yml
 
-  - name: Ensure MySQL is started
-    service:
-      name: mysqld
-      state: started
+# TODO: check if component was previously installed before doing this
+- name: "Unregister old {{ item.componentName }} component"
+  uri:
+    url: "{{ unregister_component_uri }}{{ mpf_home }}/plugins/{{ item.componentDescriptorPath }}&deletePackage=false&recursive=false"
+    method: GET
+    follow_redirects: all
+    force_basic_auth: yes
+    user: "admin"
+    password: "{{ admin_wfm_pw }}"
+    status_code: 200
+    return_content: yes
+    timeout: 150
+    validate_certs: no
+  environment:
+    no_proxy: "{{ master_host }}"
+  run_once: true
+  when: can_register_components and item.register and item.componentDescriptorPath
+  register: unregistration_results
+  failed_when: unregistration_results.status == 404
+  delegate_to: "{{ master_host }}"
 
-  - name: Check for output_object_version column in mpf.job_request table
-    shell: >
-      mysql --execute="show columns from mpf.job_request like 'output_object_version';" | grep 'output_object_version'
-    register: check_output_object_version
-    failed_when:
-      - "'ERROR 2002' in check_output_object_version.stderr"
+- name: Show component unregistration message
+  debug: msg="Unregistration message was {{ unregistration_results.content }}"
+  when: item.register
+  run_once: true
+  delegate_to: "{{ master_host }}"
 
-  - name: Add output_object_version column to mpf.job_request table
-    command: >
-      mysql --execute="alter table mpf.job_request add output_object_version varchar(255);"
-    when: "check_output_object_version.rc == 1 and 'output_object_version' not in check_output_object_version.stdout"
-
-  - name: Set output_object_version for existing entries in mpf.job_request table
-    command: >
-      mysql --execute="update mpf.job_request set output_object_version = '{{ r8OutputObjectVersion }}' where output_object_version is NULL;"
-    when: check_output_object_version|succeeded
+- pause:
+    prompt: "DEBUG: Unregister old {{ item.componentName }} component!"

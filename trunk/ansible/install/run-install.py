@@ -260,11 +260,16 @@ mpf_components = []
 upgrade_choice = yes_or_no_prompt('Is this an upgrade to an existing MPF install?', False)
 
 if upgrade_choice:
-    continue_prompt = ''.join(['Upgrading a component will remove the pre-existing component directory located in ',
-                               mpf_home, '/plugins on every MPF node. Backup any necessary files in those directories. ',
-                               'You may need to manually update/replace data files and/or licenses once a component ',
-                               'has been upgraded. \n\nContinue?']);
-    continue_choice = yes_or_no_prompt(continue_prompt, True)
+    print ('\n{0}NOTE:{1} After an upgrade no services will being running on any of the MPF nodes. You will need to '
+        'reconfigure the services through the Nodes page of the web UI.'
+        .format(text_format.bold, text_format.end))
+
+    print ('\n{0}NOTE:{1} Upgrading a component will remove the pre-existing component directory located in '
+        '{2}/plugins on every MPF node. Backup any necessary files in those directories. You may need to manually '
+        'update/replace data files and/or licenses once a component has been upgraded.'
+        .format(text_format.bold, text_format.end, mpf_home))
+                               '']);
+    continue_choice = yes_or_no_prompt('Continue?', True)
 
     if not continue_choice:
         sys.exit('User aborted. Exiting...')

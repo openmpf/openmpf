@@ -268,7 +268,7 @@ if upgrade_choice:
         '{2}/plugins on every MPF node. Backup any necessary files in those directories. You may need to manually '
         'update/replace data files and/or licenses once a component has been upgraded.'
         .format(text_format.bold, text_format.end, mpf_home))
-                               '']);
+
     continue_choice = yes_or_no_prompt('Continue?', True)
 
     if not continue_choice:

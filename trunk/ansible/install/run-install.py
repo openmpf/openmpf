@@ -260,7 +260,7 @@ mpf_components = []
 upgrade_choice = yes_or_no_prompt('Is this an upgrade to an existing MPF install?', False)
 
 if upgrade_choice:
-    print ('\n{0}NOTE:{1} After an upgrade no services will being running on any of the MPF nodes. You will need to '
+    print ('\n{0}NOTE:{1} After an upgrade no services will be running on any of the MPF nodes. You will need to '
         'reconfigure the services through the Nodes page of the web UI.'
         .format(text_format.bold, text_format.end))
 

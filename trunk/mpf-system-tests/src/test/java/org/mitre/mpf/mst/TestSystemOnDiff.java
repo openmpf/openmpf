@@ -34,12 +34,10 @@ import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.SortedSet;
+import java.util.*;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.*;
 
 /**
@@ -273,6 +271,132 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
 	@Test(timeout = 5 * MINUTES)
+	public void runMogThenCaffeFeedForwardSupersetRegionTest() {
+		String actionTaskName = "TEST CAFFE WITH FEED FORWARD SUPERSET REGION";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "CAFFE",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED SUPERSET REGION TO CAFFE PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		int maxXMotion = 680 / 2; // Video is 680 x 320 and only the object on the left side of the frame moves.
+
+		runFeedForwardRegionTest(pipelineName, "/samples/object/ff-region-object-motion.avi",
+		                         "CLASS", firstMotionFrame, maxXMotion);
+	}
+
+
+	@Test(timeout = 5 * MINUTES)
+	public void runMogThenCaffeFeedForwardExactRegionTest() {
+		String actionTaskName = "TEST CAFFE WITH FEED FORWARD EXACT REGION";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "CAFFE",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "REGION"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED EXACT REGION TO CAFFE PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+
+		List<JsonMediaInputObject> media = toMediaObjectList(
+				ioUtils.findFile("/samples/object/ff-exact-region-object-motion.avi"));
+
+		long jobId = runPipelineOnMedia(pipelineName, media);
+		JsonOutputObject outputObject = getJobOutputObject(jobId);
+
+		assertEquals(1, outputObject.getMedia().size());
+		JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
+
+		SortedSet<JsonActionOutputObject> caffeOutputObjects = outputMedia.getTypes().get("CLASS");
+		assertNotNull(caffeOutputObjects);
+
+		SortedSet<JsonActionOutputObject> motionOutputObjects = outputMedia.getTypes().get("MOTION");
+		assertNotNull(motionOutputObjects);
+
+		List<JsonTrackOutputObject> caffeTracks = caffeOutputObjects.stream()
+				.flatMap(o -> o.getTracks().stream())
+				.collect(toList());
+
+		List<JsonTrackOutputObject> motionTracks = motionOutputObjects.stream()
+				.flatMap(o -> o.getTracks().stream())
+				.collect(toList());
+
+		assertTracksMatch(caffeTracks, motionTracks);
+
+
+		List<JsonDetectionOutputObject> caffeDetections = caffeTracks.stream()
+				.flatMap(t -> t.getDetections().stream())
+				.collect(toList());
+
+
+		assertTrue(caffeDetections.stream()
+				           .allMatch(d -> d.getOffsetFrame() >= 31));
+
+		assertTrue(caffeDetections.stream()
+				           .allMatch(d -> d.getX() + d.getWidth() <= 180));
+
+
+		Set<String> detectedObjects = caffeDetections.stream()
+				.map(d -> d.getDetectionProperties().get("CLASSIFICATION"))
+				// Not sure why Caffe detects an envelope,
+				// but the important thing is that Caffe doesn't find Granny Smith.
+				.filter(c -> !c.equalsIgnoreCase("envelope"))
+				.collect(toSet());
+
+		assertEquals(1, detectedObjects.size());
+		assertTrue(detectedObjects.contains("digital clock"));
+	}
+
+
+	private static void assertTracksMatch(List<JsonTrackOutputObject> tracks1,
+	                                      List<JsonTrackOutputObject> tracks2) {
+		assertEquals(tracks1.size(), tracks2.size());
+		Collections.sort(tracks1);
+		Collections.sort(tracks2);
+
+		Iterator<JsonTrackOutputObject> it1 = tracks1.iterator();
+		Iterator<JsonTrackOutputObject> it2 = tracks2.iterator();
+		while (it1.hasNext()) {
+			JsonTrackOutputObject t1 = it1.next();
+			JsonTrackOutputObject t2 = it2.next();
+
+			assertEquals(t1.getStartOffset(), t2.getStartOffset());
+			assertEquals(t1.getStopOffset(), t2.getStopOffset());
+			assertDetectionsMatch(t1.getDetections(), t2.getDetections());
+		}
+	}
+
+	private static void assertDetectionsMatch(SortedSet<JsonDetectionOutputObject> detections1,
+	                                          SortedSet<JsonDetectionOutputObject> detections2) {
+		assertEquals(detections1.size(), detections2.size());
+
+		Iterator<JsonDetectionOutputObject> it1 = detections1.iterator();
+		Iterator<JsonDetectionOutputObject> it2 = detections2.iterator();
+
+		while (it1.hasNext()) {
+			JsonDetectionOutputObject d1 = it1.next();
+			JsonDetectionOutputObject d2 = it2.next();
+			assertEquals(d1.getOffsetFrame(), d2.getOffsetFrame());
+			assertEquals(d1.getX(), d2.getX());
+			assertEquals(d1.getY(), d2.getY());
+			assertEquals(d1.getWidth(), d2.getWidth());
+			assertEquals(d1.getHeight(), d2.getHeight());
+		}
+	}
+
+
+
+
+	@Test(timeout = 5 * MINUTES)
 	public void runMogThenOcvFaceFeedForwardFullFrameTest() {
 		String actionTaskName = "TEST OCV FACE WITH FEED FORWARD FULL FRAME";
 
@@ -339,6 +463,28 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
 	@Test(timeout = 5 * MINUTES)
+	public void runMogThenCaffeFeedForwardFullFrameTest() {
+		String actionTaskName = "TEST CAFFE WITH FEED FORWARD FULL FRAME";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "CAFFE",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED FULL FRAME TO CAFFE PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		int maxXLeftDetection = 680;  // Video is 680x320 and Caffe reports entire frame.
+		int minXRightDetection = 0;  //  Video is 680x320 and Caffe reports entire frame.
+		runFeedForwardFullFrameTest(pipelineName, "/samples/object/ff-region-object-motion.avi",
+		                            "CLASS", firstMotionFrame, maxXLeftDetection, minXRightDetection);
+	}
+
+
+	@Test(timeout = 5 * MINUTES)
 	public void runOcvFaceThenMogFeedForwardFullFrameTest() {
 		String actionTaskName = "TEST MOG WITH FEED FORWARD FULL FRAME";
 
@@ -400,12 +546,12 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 		List<JsonDetectionOutputObject> detections = runFeedForwardTest(pipelineName, mediaPath, detectionType,
 		                                                                firstDetectionFrame);
 		boolean foundLeftDetection = detections.stream()
-				.anyMatch(d -> d.getX() + d.getWidth() < maxXLeftDetection);
+				.anyMatch(d -> d.getX() + d.getWidth() <= maxXLeftDetection);
 
 		assertTrue("Did not find expected detection on left side on frame.", foundLeftDetection);
 
 		boolean foundRightDetection = detections.stream()
-				.anyMatch(d -> d.getX() > minXRightDetection);
+				.anyMatch(d -> d.getX() >= minXRightDetection);
 		assertTrue("Did not find expected detection on right side on frame.", foundRightDetection);
 	}
 

@@ -51,7 +51,8 @@ public interface MediaSegmenter {
 
 	public static final String FEED_FORWARD_TOP_CONFIDENCE_COUNT = "FEED_FORWARD_TOP_CONFIDENCE_COUNT";
 
-	static final Set<String> FEED_FORWARD_TYPES = ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION");
+	static final Set<String> FEED_FORWARD_TYPES
+			= ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION", "REGION");
 
 
 

@@ -110,12 +110,10 @@
     # make sure mpf release 1.0.0+ changes have been applied to {{ mpf_home }}/data/Algorithms.xml.
     # if the regular expression is satisfied, then the algorithm attributes are appended, otherwise no change
     - name: "Updating Algorithms.xml with \"supports\" fields"
-      lineinfile:
-        dest: "{{ mpf_home }}/data/Algorithms.xml"
+      replace:
+        destfile: "{{ mpf_home }}/data/Algorithms.xml"
         regexp: '(<algorithm\s+name="\w+"\s+actionType="\w+")\s*>'
-        line: '\1 supportsBatchProcessing="true" supportsStreamProcessing="false">'
-        state: present
-        backrefs: yes
+        replace: '\1 supportsBatchProcessing="true" supportsStreamProcessing="false">'
       when: algorithms_file_st.stat.exists
 
     - name: "Check for nodeServicesPalette.json"

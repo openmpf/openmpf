@@ -26,7 +26,6 @@
 ---
 #file: roles/child/tasks/compunregistration.yml
 
-# TODO: check if component was previously installed before doing this
 - name: "Unregister old {{ item.componentName }} component"
   uri:
     url: "{{ unregister_component_uri }}{{ mpf_home }}/plugins/{{ item.componentDescriptorPath }}&deletePackage=false&recursive=false"

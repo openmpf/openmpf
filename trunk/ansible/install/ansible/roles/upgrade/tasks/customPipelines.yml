@@ -24,7 +24,42 @@
 # limitations under the License.                                            #
 #############################################################################
 ---
-#file: roles/upgrade/tasks/8to9/vars.yml
-r8OutputObjectVersion: "1.0"
-mpf_home: "{{ lookup('env','MPF_HOME') | default('/opt/mpf', true) }}"
-tomcat_home: "/opt/apache-tomcat"
+#file: roles/upgrade/tasks/mpf-to-current/customPipelines.yml
+
+  - name: Install Dependencies
+    yum:
+      name="{{ item }}"
+      state=latest
+      update_cache=yes
+      disablerepo=*
+      enablerepo=mpf-repo
+    environment:
+      no_proxy: "{{ repo_host }}"
+    with_items:
+      - python-lxml
+    delegate_to: "{{ master_host }}"
+    run_once: true
+
+  - name: Identify custom Algorithms, Actions, Tasks, and Pipelines
+    shell: "python -c \"from customPipelines import *; get_custom_aatp(get_reference_aatp(), '{{ mpf_home }}/data/{{ item }}.xml', '{{ mpf_home }}/data/custom{{ item }}.xml');\""
+    args:
+      chdir: "{{ mpf_home }}/manage/ansible/roles/upgrade/files/customPipelines"
+    with_items:
+      - Algorithms
+      - Actions
+      - Tasks
+      - Pipelines
+    delegate_to: "{{ master_host }}"
+    run_once: true
+
+  - name: Backup existing Algorithms, Actions, Tasks, and Pipelines files
+    copy:
+      src: "{{ mpf_home }}/data/{{ item }}.xml"
+      dest: "{{ mpf_home }}/data/{{ item }}.xml.bak"
+    with_items:
+      - Algorithms
+      - Actions
+      - Tasks
+      - Pipelines
+    delegate_to: "{{ master_host }}"
+    run_once: true

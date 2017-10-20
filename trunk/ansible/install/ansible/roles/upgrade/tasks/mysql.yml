@@ -24,8 +24,22 @@
 # limitations under the License.                                            #
 #############################################################################
 ---
-#file: roles/upgrade/vars/main.yml
-tomcat_home: "/opt/apache-tomcat"
-mpf_home: "{{ lookup('env','MPF_HOME') | default('/opt/mpf', true) }}"
+#file: roles/upgrade/tasks/mpf-to-current/mysql.yml
 
+  - name: Ensure MySQL is started
+    service:
+      name: mysqld
+      state: started
 
+  # make sure mpf release 0.8 to 0.9 changes have been applied to MySQL schema.  Leave this check in, because the next line includes the handling commands
+  - name: Check for output_object_version column in mpf.job_request table
+    shell: >
+      mysql --execute="show columns from mpf.job_request like 'output_object_version';" | grep 'output_object_version'
+    register: check_output_object_version
+    failed_when:
+      - "'ERROR 2002' in check_output_object_version.stderr"
+
+  - name: Add output_object_version column to mpf.job_request table
+    command: >
+      mysql --execute="alter table mpf.job_request add output_object_version varchar(255);"
+    when: "check_output_object_version.rc == 1 and 'output_object_version' not in check_output_object_version.stdout"

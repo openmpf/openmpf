@@ -160,12 +160,7 @@ public class MpfServiceImpl implements MpfService {
 	 */
 	@Override
 	public long resubmitJob(long jobId) {
-		try {
-			return jobRequestBo.resubmit(jobId).getId();
-		} catch ( WfmProcessingException wpe ) {
-			log.error("Failed to resubmit job {} due to an exception.", jobId, wpe);
-			return -1;
-		}
+		return jobRequestBo.resubmit(jobId).getId();
 	}
 
 	/**
@@ -176,12 +171,7 @@ public class MpfServiceImpl implements MpfService {
 	 */
 	@Override
 	public long resubmitJob(long jobId, int newPriority) {
-		try {
-			return jobRequestBo.resubmit(jobId, newPriority).getId();
-		} catch ( WfmProcessingException wpe ) {
-			log.error("Failed to resubmit job {} due to an exception.", jobId, wpe);
-			return -1;
-		}
+		return jobRequestBo.resubmit(jobId, newPriority).getId();
 	}
 
 	/** Create a new streaming job which will execute the specified pipeline on the provided list of provided URIs

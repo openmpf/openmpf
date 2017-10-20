@@ -54,8 +54,9 @@ if ! rpm -q --quiet createrepo ; then
   LIBSEL_RPM=$(find $REPO_PATH"/rpms/management/" -type f -name "libselinux-python*.rpm")
   PYTHON_RPM=$(find $REPO_PATH"/rpms/management/" -type f -name "python-2*.rpm")
   PYLIB_RPM=$(find $REPO_PATH"/rpms/management/" -type f -name "python-libs*.rpm")
-  
-  yum -y --nogpgcheck localinstall --disablerepo=* $DLT_RPM $PYDLT_RPM $CR_RPM $PYXML2_RPM $XML2_RPM $LIBSEL_RPM $PYTHON_RPM $PYLIB_RPM
+  PYDEVEL_RPM=$(find $REPO_PATH"/rpms/management/" -type f -name "python-devel*.rpm")
+
+  yum -y --nogpgcheck localinstall --disablerepo=* $DLT_RPM $PYDLT_RPM $CR_RPM $PYXML2_RPM $XML2_RPM $LIBSEL_RPM $PYTHON_RPM $PYLIB_RPM $PYDEVEL_RPM
 
   echo "Completed installing createrepo."
 else

@@ -24,26 +24,8 @@
 # limitations under the License.                                            #
 #############################################################################
 ---
-#file: roles/upgrade/tasks/8to9/customProperties.yml
-
-  - name: Check for mpf-custom.properties file
-    stat:
-      path="{{ tomcat_home }}/webapps/workflow-manager/WEB-INF/classes/properties/mpf-custom.properties"
-    register: custom_properties_st
-
-  - name: Check for mpf-custom.properties symlink
-    stat:
-      path="{{ mpf_home }}/config/mpf-custom.properties"
-    register: custom_properties_lnk_st
-
-  - name: "Remove {{ mpf_home }}/config/mpf-custom.properties symlink"
-    file:
-      path="{{ mpf_home }}/config/mpf-custom.properties"
-      state=absent
-    when: custom_properties_lnk_st.stat.islnk is defined and custom_properties_lnk_st.stat.islnk
-
-  - name: "Copy mpf-custom.properties to {{ mpf_home }}/config/mpf-custom.properties"
-    copy:
-      src="{{ tomcat_home }}/webapps/workflow-manager/WEB-INF/classes/properties/mpf-custom.properties"
-      dest="{{ mpf_home }}/config/mpf-custom.properties"
-    when: custom_properties_st.stat.exists
+- hosts: mpf-master, mpf-child
+  roles:
+    - cleanup
+  remote_user: mpf
+  become: yes

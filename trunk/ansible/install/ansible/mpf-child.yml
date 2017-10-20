@@ -43,12 +43,6 @@
     - name: Add localhost to repo inventory
       add_host: name={{ inventory_hostname }} groups=mpf-repo
 
-  post_tasks:
-    - name: Get MPF component descriptors
-      set_fact:
-        mpf_descriptor_paths: "{% set temp_list = [] %}{% for component in deployment_config.mpf_components %}{% if component.register %}{{ temp_list.append(component.componentDescriptorPath) }}{% endif %}{% endfor %}{{ temp_list }}"
-      delegate_to: "{{ master_host }}"
-
     - name: Check for existence of keystore file
       stat:
         path="{{ deployment_config.https.keystore_file }}"
@@ -57,14 +51,13 @@
       delegate_to: "{{ master_host }}"
       run_once: true
 
-    - name: Set MPF component registration information
+  post_tasks:
+    - name: Get MPF component descriptors
       set_fact:
-        can_register_components: "{% if deployment_config.https.install and keystore_filest.stat.exists == False %}False{% else %}True{% endif %}"
-        component_uri: "{% if deployment_config.https.install %}https://{{ master_host }}:8443/workflow-manager/rest/component/registerViaFile?filePath={% else %}http://{{ master_host }}:8080/workflow-manager/rest/component/registerViaFile?filePath={% endif %}"
+        mpf_descriptor_paths: "{% set temp_list = [] %}{% for component in deployment_config.mpf_components %}{% if component.register %}{{ temp_list.append(component.componentDescriptorPath) }}{% endif %}{% endfor %}{{ temp_list }}"
       delegate_to: "{{ master_host }}"
-      run_once: true
 
-    - name: Process MPF components
+    - name: Register MPF components
       include: "{{ mpf_home }}/manage/ansible/roles/child/tasks/compregistration.yml"
       with_items:
         - "{{ deployment_config.mpf_components }}"

@@ -24,8 +24,5 @@
 # limitations under the License.                                            #
 #############################################################################
 ---
-#file: roles/upgrade/vars/main.yml
-tomcat_home: "/opt/apache-tomcat"
+#file: roles/cleanup/vars/main.yml
 mpf_home: "{{ lookup('env','MPF_HOME') | default('/opt/mpf', true) }}"
-
-

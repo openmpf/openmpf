@@ -32,11 +32,11 @@ public interface RemoveComponentService {
 
     public void removeComponent(String componentName);
 
-    public void unregisterViaFile(String jsonDescriptorPath);
+    public void unregisterViaFile(String jsonDescriptorPath, boolean deletePackage, boolean recursive);
 
     public void removePackage(String componentPackageFileName);
 
     public void unregisterRetainPackage(String componentPackageFileName);
 
-    public void recursivelyDeleteCustomPipelines(RegisterComponentModel rcm);
+    public void deleteCustomPipelines(RegisterComponentModel rcm, boolean recursive);
 }

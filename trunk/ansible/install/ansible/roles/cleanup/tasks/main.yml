@@ -24,8 +24,8 @@
 # limitations under the License.                                            #
 #############################################################################
 ---
-#file: roles/upgrade/vars/main.yml
-tomcat_home: "/opt/apache-tomcat"
-mpf_home: "{{ lookup('env','MPF_HOME') | default('/opt/mpf', true) }}"
+#file: roles/cleanup/tasks/main.yml
 
+  - name: Run Cleanup of Previously Deployed MPF software, including executable, lib and jar files
+    include: mpf-cleanup-sw-files.yml
 

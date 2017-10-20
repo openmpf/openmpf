@@ -31,6 +31,7 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
+import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.camel.routes.JobCreatorRouteBuilder;
@@ -304,7 +305,11 @@ public class JobRequestBoImpl implements JobRequestBo {
                     originalMedia.add(originalMedium);
                 }
 
-                jsonJobRequest = new JsonJobRequest(jsonJobRequest.getExternalId(), jsonJobRequest.isOutputObjectEnabled(), jsonJobRequest.getPipeline(), priority) {{
+                // Attempt to recreate the pipeline because registered components; as well as algorithms, actions, tasks, and pipelines;
+                // may have changed since the first time the job was run.
+                JsonPipeline jsonPipeline = pipelineService.createJsonPipeline(jsonJobRequest.getPipeline().getName());
+
+                jsonJobRequest = new JsonJobRequest(jsonJobRequest.getExternalId(), jsonJobRequest.isOutputObjectEnabled(), jsonPipeline, priority) {{
                     getMedia().addAll(originalMedia);
                 }};
 

@@ -24,54 +24,50 @@
 # limitations under the License.                                            #
 #############################################################################
 ---
-#file: roles/upgrade/tasks/8to9.yml
-
-  - name: Load MPF R0.8 -> MPF R0.9 variables
-    include_vars: 8to9/vars.yml
-
-  - include: 8to9/mysql.yml
-    delegate_to: "{{ master_host }}"
-    run_once: true
-
-  - include: 8to9/customPipelines.yml
-    delegate_to: "{{ master_host }}"
-    run_once: true
-
-  - include: 8to9/customProperties.yml
-    delegate_to: "{{ master_host }}"
-    run_once: true
-
-  - name: Check for previous version of components JSON file
-    stat:
-      path: "{{ mpf_home }}/share/components/components.json"
-    register: old_components_st
-    run_once: true
-
-  - name: Backup previous version of components.json file
-    copy:
-      src: "{{ mpf_home }}/share/components/components.json"
-      dest: "{{ mpf_home }}/data/components.json.bak"
-    delegate_to: "{{ master_host }}"
-    run_once: true
-    when: old_components_st.stat.exists
-
-  - name: Remove previous version of components.json file
-    file:
-      path: "{{ mpf_home }}/share/components/components.json"
-      state: absent
-    delegate_to: "{{ master_host }}"
-    run_once: true
-    when: old_components_st.stat.exists
-
-  - name: Find old .jar files
+#file: roles/cleanup/tasks/mpf-cleanup-sw-files.yml
+  - name: MPF cleanup, find old mpf.conf file in the /etc/ld.so.conf.d directory
     find:
-      paths: "{{ mpf_home }}/jars"
-      patterns: "mpf*-0.8.0.jar"
-    register: oldjar_find
+      paths: "/etc/ld.so.conf.d"
+      patterns: "mpf.conf"
+    register: oldMpfConf_find
 
-  - name: Remove old .jar files
+  - name: MPF cleanup, remove old mpf.conf file in the /etc/ld.so.conf.d directory
     file:
       path="{{ item.path }}"
       state=absent
-    with_items: "{{ oldjar_find.files }}"
-    when: "{{ oldjar_find.matched|int|default(0) }} > 0"
+    with_items: "{{ oldMpfConf_find.files }}"
+    when: "{{ oldMpfConf_find.matched|int|default(0) }} > 0"
+
+  - name: MPF cleanup, delete the mpf jars directory with contents
+    file:
+      state: absent
+      path: "{{ mpf_home }}/jars"
+
+  - name: MPF cleanup, delete the mpf lib directory with contents
+    file:
+      state: absent
+      path: "{{ mpf_home }}/lib"
+
+  - name: MPF cleanup, delete the mpf libdata directory with contents
+    file:
+      state: absent
+      path: "{{ mpf_home }}/libdata"
+
+  - name: MPF cleanup, delete the mpf bin directory with contents
+    file:
+      state: absent
+      path: "{{ mpf_home }}/bin"
+
+  - name: MPF cleanup, find old mpf nodeManagerConfig.xml file in the data directory
+    find:
+      paths: "{{ mpf_home }}/data"
+      patterns: "nodeManagerConfig.xml"
+    register: oldNodeConfig_find
+
+  - name: MPF cleanup, remove old mpf nodeManagerConfig.xml file in the data directory
+    file:
+      path="{{ item.path }}"
+      state=absent
+    with_items: "{{ oldNodeConfig_find.files }}"
+    when: "{{ oldNodeConfig_find.matched|int|default(0) }} > 0"
+

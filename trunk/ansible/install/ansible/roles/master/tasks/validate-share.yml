@@ -44,7 +44,7 @@
 
 - name: Validate share folder exists if multi-node configuration
   fail:
-    msg="Invalid MPF Configuration. Shared storage not found at /opt/mpf/share"
+    msg="Invalid MPF Configuration. Shared storage not found at {{ mpf_home }}"
   when: ((num_child_hosts | int > 1) or ("{{ first_child_host }}" != "{{ master_host }}" and num_child_hosts | int == 1)) and not share_folder.stat.exists
   
 - name: Check for existing shared log folders

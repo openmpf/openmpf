@@ -39,10 +39,8 @@ public class JsonExtrasDescriptor {
     @NotBlank
     public String componentName;
 
-    // optional
     public String componentVersion;
 
-    // optional
     public String middlewareVersion;
 
     @Null

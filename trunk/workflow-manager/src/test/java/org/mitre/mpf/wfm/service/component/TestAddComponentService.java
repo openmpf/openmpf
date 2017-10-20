@@ -352,7 +352,7 @@ public class TestAddComponentService {
 
         // Assert
         verify(_mockRemoveComponentService, never())
-                .deleteCustomPipelines(any(), true);
+                .deleteCustomPipelines(any(), eq(true));
         assertUndeployed(COMPONENT_NAME);
     }
 

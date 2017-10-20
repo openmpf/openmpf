@@ -102,19 +102,35 @@
     - name: Add localhost to repo inventory
       add_host: name={{ inventory_hostname }} groups=mpf-repo
 
+    - name: "Check for Algorithms.xml"
+      stat:
+        path="{{ mpf_home }}/data/Algorithms.xml"
+      register: algorithms_file_st
+
     # make sure mpf release 1.0.0+ changes have been applied to {{ mpf_home }}/data/Algorithms.xml.
     # if the regular expression is satisfied, then the algorithm attributes are appended, otherwise no change
-    - debug: msg="Updating {{ mpf_home }}/data/Algorithms.xml to conform with MPF R1.0.0+ algorithm attributes"
-    - replace:
-        destfile: "{{ mpf_home }}/data/Algorithms.xml"
+    - name: "Updating Algorithms.xml with \"supports\" fields"
+      lineinfile:
+        dest: "{{ mpf_home }}/data/Algorithms.xml"
         regexp: '(<algorithm\s+name="\w+"\s+actionType="\w+")\s*>'
-        replace: '\1 supportsBatchProcessing="true" supportsStreamProcessing="false">'
+        line: '\1 supportsBatchProcessing="true" supportsStreamProcessing="false">'
+        state: present
+        backrefs: yes
+      when: algorithms_file_st.stat.exists
 
-    - debug: msg="Updating {{ mpf_home }}/data/nodeServicesPalette.json with markup version number"
-    - replace:
-        destfile: "{{ mpf_home }}/data/nodeServicesPalette.json"
-        regexp: 'mpf-markup-.*\.jar'
-        replace: 'mpf-markup-1.0.0.jar'
+    - name: "Check for nodeServicesPalette.json"
+      stat:
+        path="{{ mpf_home }}/data/nodeServicesPalette.json"
+      register: palette_file_st
+
+    - name: "Updating nodeServicesPalette.json with markup version number"
+      lineinfile:
+        dest: "{{ mpf_home }}/data/nodeServicesPalette.json"
+        regexp: '(.*)mpf-markup-.*\.jar(.*)'
+        line: '\1mpf-markup-1.0.0.jar\2'
+        state: present
+        backrefs: yes
+      when: palette_file_st.stat.exists
 
   post_tasks:
     - name: Start ActiveMQ

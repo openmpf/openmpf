@@ -37,7 +37,7 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 
 /**
  * Contains properties used to identify a piece of media.  The media may or may not have a local file path associated with it.
- * This class also defines the protocols that openmpf supports for media resources
+ * This class also defines the protocols that OpenMPF supports for media resources
  */
 public class MediaResource {
 
@@ -47,8 +47,8 @@ public class MediaResource {
     public static final String LOCAL_FILE_DOES_NOT_EXIST = "File does not exist";
     public static final String LOCAL_FILE_NOT_READABLE = "File is not readable";
 
-    // define the UriSchemes that are not supported by openmpf for media resources.
-    // Note that openmpf supports everything except UriScheme.UNDEFINED, so we use an unsupported (i.e. exclusive) list of protocols here.
+    // define the UriSchemes that are not supported by OpenMPF for media resources.
+    // Note that OpenMPF supports everything except UriScheme.UNDEFINED, so we use an unsupported (i.e. exclusive) list of protocols here.
     public static final List<UriScheme> unsupportedUriSchemeList = Arrays.asList(UriScheme.UNDEFINED);
 
     private MediaResourceContainer mediaResourceContainer = null;
@@ -107,7 +107,7 @@ public class MediaResource {
      */
     @JsonCreator
     public MediaResource(@JsonProperty("uri") String uri) {
-        // construct the media resource info container, passing along the URI schemes that aren't supported by openmpf for this type of media.
+        // construct the media resource info container, passing along the URI schemes that aren't supported by OpenMPF for this type of media.
         mediaResourceContainer = new MediaResourceContainer(uri, ListFilterType.EXCLUSION_LIST, unsupportedUriSchemeList);
         if ( mediaResourceContainer.isMediaResourceInError() ) {
             resourceStatusMessage = mediaResourceContainer.getResourceErrorMessage();
@@ -142,7 +142,7 @@ public class MediaResource {
      * @return true if the specified URI scheme is any defined protocol, false otherwise.
      */
     private static boolean isSupportedUriScheme(UriScheme localUriScheme) {
-        // check the localUriScheme to see if it is in the list of unsupported uriSchemes, if so that the uriScheme is NOT supported by openmpf
+        // check the localUriScheme to see if it is in the list of unsupported uriSchemes, if so that the uriScheme is NOT supported by OpenMPF
         return localUriScheme != null && unsupportedUriSchemeList.stream().noneMatch(unsupportedUriScheme -> localUriScheme == unsupportedUriScheme);
     }
 

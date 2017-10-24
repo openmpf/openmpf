@@ -626,7 +626,7 @@ public class RedisImpl implements Redis {
 		// If this is the first time the job has been persisted, add the job's ID to the
 		// collection of batch jobs known to the system so that we can assume that the key BATCH_JOB:N
 		// exists in Redis provided that N exists in this set.
-		// Note that in prior releases of openmpf, "BATCH_JOB" was represented as "JOB"
+		// Note that in prior releases of OpenMPF, "BATCH_JOB" was represented as "JOB"
 		redisTemplate
 				.boundSetOps(BATCH_JOB) // e.g., BATCH_JOB
 				.add(Long.toString(transientJob.getId()));

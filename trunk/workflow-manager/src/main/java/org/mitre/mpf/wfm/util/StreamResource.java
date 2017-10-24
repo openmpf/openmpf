@@ -44,9 +44,9 @@ public class StreamResource {
     public static final String NOT_DEFINED_URI_SCHEME = "URI scheme not defined";
     public static final String NOT_SUPPORTED_URI_SCHEME = "Unsupported URI scheme";
 
-    // define the UriSchemes that are supported by openmpf for stream resources.
-    // Note that openmpf supports only RTSP and HTTP protocols for stream, so we use an supported (i.e. inclusive) list of protocols here.
-    public static final List<UriScheme> supportedUriSchemeList = Arrays.asList(UriScheme.RTSP, UriScheme.HTTP);
+    // define the UriSchemes that are supported by OpenMPF for stream resources.
+    // Note that OpenMPF supports only HTTPS, HTTP and RTSP protocols for streams, so we use an supported (i.e. inclusive) list of protocols here.
+    public static final List<UriScheme> supportedUriSchemeList = Arrays.asList(UriScheme.RTSP, UriScheme.HTTP, UriScheme.HTTPS);
 
     private StreamResourceContainer streamResourceContainer = null;
     private String resourceStatusMessage = null;
@@ -56,7 +56,7 @@ public class StreamResource {
      */
     public String getUri() { return streamResourceContainer.getUri(); }
 
-    /** The URI scheme (protocol) associated with this stream resource. OpenMPF only supports the http and rtsp protocols for streams.
+    /** The URI scheme (protocol) associated with this stream resource. OpenMPF only supports the HTTPS, HTTP and RTSP protocols for streams.
      * @return The URI scheme (protocol) associated with this stream resource.
      */
     public UriScheme getUriScheme() {return streamResourceContainer.getUriScheme();}
@@ -77,7 +77,7 @@ public class StreamResource {
 
     /** Construct stream resource from the specified URI. If the stream resource is not successfully constructed,
      * then the streamResourceStatusMessage may be used to return the reason why the construction was not successful.
-     * @param uri The URI of the source file which may use the rtsp, http, or other protocol.
+     * @param uri The URI of the stream which may use the HTTPS, HTTP and RTSP protocol.
      */
     @JsonCreator
     public StreamResource(@JsonProperty("uri") String uri) {
@@ -95,7 +95,7 @@ public class StreamResource {
      }
 
     /** Check to see if the URI scheme for this stream resource is one of the supported stream protocols.
-     * OpenMPF currently only supports the RTSP and HTTP protocols for streams.
+     * OpenMPF currently only supports the HTTPS, HTTP and RTSP protocols for streams.
      * @return true if the URI scheme for this stream resource is one of the supported stream protocols, false otherwise.
      */
     public boolean isSupportedUriScheme() {
@@ -103,7 +103,7 @@ public class StreamResource {
     }
 
     /** Check to see if the URI scheme for this stream resource is one of the supported stream protocols.
-     * OpenMPF currently only supports the RTSP and HTTP protocols for streams.
+     * OpenMPF currently only supports the HTTPS, HTTP and RTSP protocols for streams.
      * @param localUriScheme URI scheme to test.
      * @return true if the specified URI scheme is one of the supported stream protocols, false otherwise.
      */
@@ -112,8 +112,8 @@ public class StreamResource {
     }
 
     /** Check to see if the URI scheme for this stream resource is one of the supported stream protocols.
-     * OpenMPF currently only supports the RTSP and HTTP protocols for streams.
-     * @param uri The URI of the source file which may use the rtsp, http, or other protocol.
+     * OpenMPF currently only supports the HTTPS, HTTP and RTSP protocols for streams.
+     * @param uri The URI of the stream which may use the HTTPS, HTTP and RTSP.
      * @return true if the URI scheme for this stream resource is one of the supported stream protocols, false otherwise.
      */
     public static boolean isSupportedUriScheme(String uri) {

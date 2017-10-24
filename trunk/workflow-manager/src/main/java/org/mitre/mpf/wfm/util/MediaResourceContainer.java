@@ -57,8 +57,8 @@ public class MediaResourceContainer {
     /** Constructor to collect media resource info for the specified URI.
      * @param uri URI to evaluate
      * @param listFilterType enumeration specifies if the specified uriSchemeFilterList is an inclusion filter or an exclusion filter
-     * @param uriSchemeFilterList list of URI schemes that openmpf supports (if inclusion filter is passed) or
-     * the list of URI schemes that openmpf doesn't support (if exclusion filter is passed).
+     * @param uriSchemeFilterList list of URI schemes that OpenMPF supports (if inclusion filter is passed) or
+     * the list of URI schemes that OpenMPF doesn't support (if exclusion filter is passed).
      */
     @JsonCreator
     protected MediaResourceContainer(@JsonProperty("uri") String uri, @JsonProperty("listFilterType") ListFilterType listFilterType,
@@ -71,12 +71,12 @@ public class MediaResourceContainer {
             if ( resourceUriScheme == UriScheme.FILE ) {
                 resourceFile = Paths.get(uriInstance).toAbsolutePath().toFile();
             }
-            // use the filter parameters to determine whether or not openmpf supports this media
+            // use the filter parameters to determine whether or not OpenMPF supports this media
             if ( listFilterType == ListFilterType.INCLUSION_LIST ) {
-                // check the resourceUriScheme to see if it is in the list of supported uriSchemes, if so that the uriScheme is supported by openmpf
+                // check the resourceUriScheme to see if it is in the list of supported uriSchemes, if so that the uriScheme is supported by OpenMPF
                 isSupportedProtocol = isResourceOfDefinedUriScheme() && uriSchemeFilterList.stream().anyMatch(supportedUriScheme -> resourceUriScheme == supportedUriScheme);
             } else {
-                // check the resourceUriScheme to see if it is in the list of unsupported uriSchemes, if so that the uriScheme is NOT supported by openmpf
+                // check the resourceUriScheme to see if it is in the list of unsupported uriSchemes, if so that the uriScheme is NOT supported by OpenMPF
                 isSupportedProtocol = isResourceOfDefinedUriScheme() && uriSchemeFilterList.stream().noneMatch(supportedUriScheme -> resourceUriScheme == supportedUriScheme);
             }
         } catch (URISyntaxException use) {
@@ -87,17 +87,17 @@ public class MediaResourceContainer {
     public boolean isResourceOfDefinedUriScheme() { return resourceUriScheme != null && resourceUriScheme != UriScheme.UNDEFINED; }
     public boolean isResourceOfSupportedUriScheme() { return isSupportedProtocol; };
     public boolean isFileResource() { return resourceUriScheme == UriScheme.FILE && resourceFile != null; };
-    public boolean isFileResourceExisting() { return resourceUriScheme == UriScheme.FILE && resourceFile != null && resourceFile.exists(); }
-    public boolean isFileResourceReadable() { return resourceUriScheme == UriScheme.FILE && resourceFile != null && resourceFile.exists() && resourceFile.canRead(); }
+    public boolean isFileResourceExisting() { return isFileResource() && resourceFile.exists(); }
+    public boolean isFileResourceReadable() { return isFileResourceExisting() && resourceFile.canRead(); }
 
     /** Get the error message associated with construction of this resource.
      * @return Return the error message associated with construction of this resource.  Will be null if no error occurred during construction.
      */
     public String getResourceErrorMessage() { return resourceErrorMessage; }
 
-    /** Method will return true if there was an error found during construction of this resource, false otherwise.
+    /** Will return true if there was an error found during construction of this resource, false otherwise.
      * If the media resource was constructed with error, use method getResourceErrorMessage to find out what the error is.
-     * @return Return true if there was an error found during construction of this resource, false otherwise.
+     * @return true if there was an error found during construction of this resource, false otherwise.
      */
     public boolean isMediaResourceInError() { return resourceErrorMessage != null; }
 

@@ -30,7 +30,6 @@ package org.mitre.mpf.mst;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Rule;
-import org.junit.rules.ErrorCollector;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.mitre.mpf.interop.*;
@@ -66,7 +65,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.annotation.PostConstruct;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URL;
 import java.util.*;
@@ -112,42 +113,7 @@ public abstract class TestSystem {
 	public TestName testName = new TestName();
 
 	@Rule
-	public ErrorCollector errorCollector = new ErrorCollector() {
-		private final List<Throwable> _errors = new ArrayList<>();
-
-		/**
-		 * This is overridden so that Jenkins doesn't treat each failed assertion as a separate failed test.
-		 */
-		@Override
-		protected void verify() throws Throwable {
-			if (_errors.isEmpty()) {
-				return;
-			}
-			if (_errors.size() == 1) {
-				throw _errors.get(0);
-			}
-			Assert.fail(combineErrorMessages());
-		}
-
-
-		private String combineErrorMessages() {
-			StringWriter stringWriter = new StringWriter();
-			try (PrintWriter errorMsgWriter = new PrintWriter(stringWriter)) {
-				errorMsgWriter.printf("The were %s errors:\n", _errors.size());
-				for (Throwable error : _errors) {
-					error.printStackTrace(errorMsgWriter);
-					errorMsgWriter.println("------");
-				}
-			}
-			return stringWriter.toString();
-		}
-
-		@Override
-		public void addError(Throwable error) {
-			_errors.add(error);
-		}
-	};
-
+	public MpfErrorCollector errorCollector = new MpfErrorCollector();
 
 	protected OutputChecker outputChecker = new OutputChecker(errorCollector);
 

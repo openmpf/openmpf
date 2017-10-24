@@ -47,6 +47,7 @@
   yum:
     name="/tmp/{{ item[1].path | basename }}"
     disable_gpg_check=yes
+    update_cache=yes
     disablerepo=*
     state=present
     validate_certs=no
@@ -59,6 +60,7 @@
   yum:
     name="/tmp/{{ item[1].path | basename }}"
     disable_gpg_check=yes
+    update_cache=yes
     disablerepo=*
     state=present
     validate_certs=no
@@ -80,6 +82,7 @@
   yum:
     name="/tmp/{{ item[1].path | basename }}"
     state=present
+    update_cache=yes
     disablerepo=*
   when: "'mpf-master' not in group_names and 'localhost' not in inventory_hostname"
   with_subelements:

@@ -744,13 +744,15 @@
 
                     //finally submit the job
                     MediaService.createJobFromMedia(jobCreationRequest).then(function (jobCreationResponse) {
-                        //TODO: should check jobCreationResponse.success field
-                        NotificationSvc.success('Job ' + jobCreationResponse.jobId + ' created!');
+                        if (jobCreationResponse.mpfResponse.responseCode == 0) {
+                            NotificationSvc.success('Job ' + jobCreationResponse.jobId + ' created!');
+                            $log.info('successful job creation - switch to jobs view');
 
-                        $log.info('successful job creation - switch to jobs view');
-
-                        $location.path('/jobs');//go to jobs view
-                        if (!$scope.$$phase) $scope.$apply()
+                            $location.path('/jobs');//go to jobs view
+                            if (!$scope.$$phase) $scope.$apply()
+                        } else {
+                            NotificationSvc.error(jobCreationResponse.mpfResponse.message);
+                        }
                     });
                 } else {
                     NotificationSvc.error('Please select some files!');

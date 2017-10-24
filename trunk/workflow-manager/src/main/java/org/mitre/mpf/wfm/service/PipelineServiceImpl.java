@@ -55,6 +55,7 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @Component
 public class PipelineServiceImpl implements PipelineService {
@@ -168,16 +169,60 @@ public class PipelineServiceImpl implements PipelineService {
     public JsonPipeline createJsonPipeline(String pipeline) {
 		String pipelineName = TextUtils.trimAndUpper(pipeline);
 		if(!pipelines.containsKey(pipelineName)) {
-			log.warn("A pipeline does not exist with the name '{}'.", pipeline);
-			return null;
+                        throw new InvalidPipelineObjectWfmProcessingException("Missing pipeline: \"" + pipeline + "\".");
 		}
 
         PipelineDefinition pipelineDef = pipelines.get(pipelineName);
 
         JsonPipeline jsonPipeline = new JsonPipeline(pipelineDef.getName(), pipelineDef.getDescription());
-        pipelineDef.getTaskRefs().stream()
-                .map(this::getTask)
-                .map(this::convert)
+
+        List<TaskDefinitionRef> missingTasks = pipelineDef.getTaskRefs().stream()
+                .filter(td -> (getTask(td) == null))
+                .collect(Collectors.toList());
+
+        List<TaskDefinitionRef> availableTasks = pipelineDef.getTaskRefs().stream()
+                .filter(td -> (getTask(td) != null))
+                .collect(Collectors.toList());;
+
+        List<ActionDefinitionRef> missingActions = availableTasks.stream()
+                .flatMap(td -> getTask(td).getActions().stream())
+                .filter(ad -> (getAction(ad) == null))
+                .collect(Collectors.toList());
+
+        List<ActionDefinitionRef> availableActions = availableTasks.stream()
+                .flatMap(td -> getTask(td).getActions().stream())
+                .filter(ad -> (getAction(ad) != null))
+                .collect(Collectors.toList());
+
+        List<String> missingAlgorithms = availableActions.stream()
+                .map(ad -> getAction(ad).getAlgorithmRef())
+                .filter(ad -> (getAlgorithm(ad) == null))
+                .collect(Collectors.toList());
+
+        String message = "";
+        if (!missingAlgorithms.isEmpty()) {
+            message += missingAlgorithms.stream()
+                    .collect(Collectors.joining("\", \"", "Missing algorithms: \"", "\". "));
+        }
+
+        if (!missingActions.isEmpty()) {
+            message += missingActions.stream()
+                    .map(ActionDefinitionRef::getName)
+                    .collect(Collectors.joining("\", \"", "Missing actions: \"", "\". "));
+        }
+
+        if (!missingTasks.isEmpty()) {
+            message += missingTasks.stream()
+                    .map(TaskDefinitionRef::getName)
+                    .collect(Collectors.joining("\", \"", "Missing tasks: \"", "\". "));
+        }
+
+        if (!message.isEmpty()) {
+            throw new InvalidPipelineObjectWfmProcessingException(message.trim());
+        }
+
+        availableTasks.stream()
+                .map(td -> convert(getTask(td)))
                 .forEach(stage -> jsonPipeline.getStages().add(stage));
 
         return jsonPipeline;

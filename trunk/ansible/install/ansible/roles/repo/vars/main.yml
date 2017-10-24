@@ -25,4 +25,5 @@
 #############################################################################
 ---
 #file: roles/repo/vars/main.yml
-repo_directory: /opt/mpf/manage/repo/
+mpf_home: "{{ lookup('env','MPF_HOME') | default('/opt/mpf', true) }}"
+repo_directory: "{{ mpf_home }}/manage/repo/"

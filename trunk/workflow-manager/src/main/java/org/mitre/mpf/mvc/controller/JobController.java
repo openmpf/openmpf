@@ -33,9 +33,11 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.event.JobProgress;
+import org.mitre.mpf.wfm.exceptions.InvalidPipelineObjectWfmProcessingException;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -385,17 +387,29 @@ public class JobController {
             }
             // the job request has been successfully parsed, construct the job creation response
             return new JobCreationResponse(jobId);
+        } catch (InvalidPipelineObjectWfmProcessingException ex) {
+            String err = createErrorString(jobCreationRequest, ex.getMessage());
+            log.error(err, ex);
+            return new JobCreationResponse(1, err);
         } catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
-            StringBuilder errBuilder = new StringBuilder("Failure creating job");
-            if (jobCreationRequest.getExternalId() != null) {
-                errBuilder.append(String.format(" with external id '%s'", jobCreationRequest.getExternalId()));
-            }
-            errBuilder.append(" due to an exception. Please check server logs for more detail.");
-            String err = errBuilder.toString();
+            String err = createErrorString(jobCreationRequest, null);
             log.error(err, ex);
             // the job request did not parse successfully, construct the job creation response describing the error that occurred.
             return new JobCreationResponse(1, err);
         }
+    }
+
+    private String createErrorString(JobCreationRequest jobCreationRequest, String message) {
+        StringBuilder errBuilder = new StringBuilder("Failure creating job");
+        if (jobCreationRequest.getExternalId() != null) {
+            errBuilder.append(String.format(" with external id '%s'", jobCreationRequest.getExternalId()));
+        }
+        if (message != null) {
+            errBuilder.append(". ").append(message);
+        } else {
+            errBuilder.append(" due to an exception. Please check server logs for more detail.");
+        }
+        return errBuilder.toString();
     }
 
     private List<SingleJobInfo> getJobStatusInternal(Long jobId, boolean useSession) {
@@ -444,14 +458,20 @@ public class JobController {
         log.debug("Attempting to resubmit job with id: {}.", jobId);
         //if there is a priority param passed then use it, if not, use the default
         int jobPriority = (jobPriorityParam != null) ? jobPriorityParam : propertiesUtil.getJmsPriority();
-        long newJobId = mpfService.resubmitJob(jobId, jobPriority);
-        //newJobId should be equal to jobId if there are no issues and -1 if there is a problem
-        if (newJobId != -1 && newJobId == jobId) {
-            //make sure to reset the value in the job progress map to handle manual refreshes that will display
-            //the old progress value (100 in most cases converted to 99 because of the INCOMPLETE STATE)!
-            jobProgress.setJobProgress(newJobId, 0.0f);
-            log.debug("Successful resubmission of Job Id: {} as new JobId: {}", jobId, newJobId);
-            return new JobCreationResponse(newJobId);
+        try {
+            long newJobId = mpfService.resubmitJob(jobId, jobPriority);
+            //newJobId should be equal to jobId if there are no issues and -1 if there is a problem
+            if (newJobId != -1 && newJobId == jobId) {
+                //make sure to reset the value in the job progress map to handle manual refreshes that will display
+                //the old progress value (100 in most cases converted to 99 because of the INCOMPLETE STATE)!
+                jobProgress.setJobProgress(newJobId, 0.0f);
+                log.debug("Successful resubmission of Job Id: {} as new JobId: {}", jobId, newJobId);
+                return new JobCreationResponse(newJobId);
+            }
+        } catch (WfmProcessingException wpe) {
+            String errorStr = "Failed to resubmit the job with id '" + Long.toString(jobId) + "'. " + wpe.getMessage();
+            log.error(errorStr);
+            return new JobCreationResponse(1, errorStr);
         }
         String errorStr = "Failed to resubmit the job with id '" + Long.toString(jobId) + "'. Please check to make sure the job exists before submitting a resubmit request. "
                 + "Also consider checking the server logs for more information on this error.";

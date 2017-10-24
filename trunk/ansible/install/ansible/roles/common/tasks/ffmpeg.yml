@@ -26,83 +26,56 @@
 ---
 #file: roles/master/tasks/ffmpeg.yml
 
-- name: Ensure ffmpeg directory exists
-  file: path={{ mpf_home }}/bin/ffmpeg/ state=directory
+- name: Ensure bin directory exists
+  file: path={{ mpf_home }}/bin/ state=directory
+
+# Remove old files in case we're upgrading
+- name: Remove existing ffmpeg top level directory
+  file:
+    dest="{{ mpf_home }}/bin/ffmpeg"
+    state="absent"
 
 - name: Unarchive ffmpeg
   unarchive:
     src=http://{{ repo_host }}/repo/tars/ffmpeg.tar.gz
-    dest={{mpf_home}}/bin/ffmpeg/
+    dest={{mpf_home}}/bin/
     copy=no
     list_files=yes
   environment:
     no_proxy: "{{ repo_host }}"
 
-- name: Get the ffmpeg top level directory
-  find:
-    paths="{{ mpf_home }}/bin/ffmpeg"
-    patterns="ffmpeg"
-    file_type=directory
-    recurse=no
-  register: ffmpeg_tld
-
-- name: "Set the ffmpeg version to {{ ffmpeg_tld.files[0].path | basename }}"
-  set_fact:
-    ffmpeg_version: "{{ ffmpeg_tld.files[0].path | basename }}"
-  when: ffmpeg_tld is defined
-
 - name: Remove existing link to ffprobe
   file:
     dest="/usr/bin/ffprobe"
     state="absent"
-  when: ffmpeg_version is defined
 
 - name: Ensure link to ffprobe
   file:
-    src="{{ mpf_home }}/bin/ffmpeg/{{ ffmpeg_version }}/ffprobe"
+    src="{{ mpf_home }}/bin/ffmpeg/ffprobe"
     dest="/usr/bin/ffprobe"
     state="link"
     force="yes"
-  when: ffmpeg_version is defined
 
 - name: Remove existing link to ffmpeg
   file:
     dest="/usr/bin/ffmpeg"
     state="absent"
-  when: ffmpeg_version is defined
 
 - name: Ensure link to ffmpeg
   file:
-    src="{{ mpf_home }}/bin/ffmpeg/{{ ffmpeg_version }}/ffmpeg"
+    src="{{ mpf_home }}/bin/ffmpeg/ffmpeg"
     dest="/usr/bin/ffmpeg"
     state="link"
     force="yes"
-  when: ffmpeg_version is defined
-
-- name: Remove existing link to ffprobe-10bit
-  file:
-    dest="/usr/bin/ffmpeg-10bit"
-    state="absent"
-  when: ffmpeg_version is defined
-
-- name: Ensure link to ffprobe-10bit
-  file:
-    src="{{ mpf_home }}/bin/ffmpeg/{{ ffmpeg_version }}/ffmpeg-10bit"
-    dest="/usr/bin/ffmpeg-10bit"
-    state="link"
-    force="yes"
-  when: ffmpeg_version is defined
 
 - name: Remove existing link to ffserver
   file:
     dest="/usr/bin/ffserver"
     state="absent"
-  when: ffmpeg_version is defined
 
 - name: Ensure link to ffserver
   file:
-    src="{{ mpf_home }}/bin/ffmpeg/{{ ffmpeg_version }}/ffserver"
+    src="{{ mpf_home }}/bin/ffmpeg/ffserver"
     dest="/usr/bin/ffserver"
     state="link"
     force="yes"
-  when: ffmpeg_version is defined

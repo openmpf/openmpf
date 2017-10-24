@@ -51,7 +51,8 @@ public interface MediaSegmenter {
 
 	public static final String FEED_FORWARD_TOP_CONFIDENCE_COUNT = "FEED_FORWARD_TOP_CONFIDENCE_COUNT";
 
-	static final Set<String> FEED_FORWARD_TYPES = ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION");
+	static final Set<String> FEED_FORWARD_TYPES
+			= ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION", "REGION");
 
 
 
@@ -218,9 +219,9 @@ public interface MediaSegmenter {
 	 */
 	public static boolean overlaps(TimePair current, TimePair target, int minGapBetweenSegments) {
 		// Current spans [S, E], Target spans  [S*, E*], and it is known that S <= S*.
-		// The tracks overlap if S <= S* <= E or E < (S* - G)
+		// The tracks overlap if S <= S* <= E or (S* - E) <= G
 		return (current.getStartInclusive() <= target.getStartInclusive() && target.getStartInclusive() <= current.getEndInclusive()) ||
-				current.getEndInclusive() <= target.getStartInclusive() - minGapBetweenSegments;
+				target.getStartInclusive() - current.getEndInclusive() <= minGapBetweenSegments;
 	}
 
 	/**

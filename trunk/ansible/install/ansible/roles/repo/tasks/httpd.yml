@@ -26,7 +26,12 @@
 ---
 #file: roles/repo/tasks/httpd.yml
 - name: Install httpd
-  yum: name=httpd state=present disablerepo=* enablerepo=mpf-local-repo
+  yum:
+    name=httpd
+    state=present
+    update_cache=yes
+    disablerepo=*
+    enablerepo=mpf-local-repo
 
 - name: Config httpd
   template: src=repo.conf.j2 dest=/etc/httpd/conf.d/repo.conf

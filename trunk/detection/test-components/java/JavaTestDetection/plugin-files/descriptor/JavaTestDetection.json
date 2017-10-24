@@ -1,9 +1,9 @@
 {
   "componentName" : "JavaTestDetection",
-  "componentVersion" : "0.10.0",
-  "middlewareVersion" :  "0.10.0",
+  "componentVersion" : "1.0.0",
+  "middlewareVersion" :  "1.0.0",
   "sourceLanguage" : "java",
-  "pathName" : "mpf-java-test-detection-component-0.10.0.jar",
+  "pathName" : "mpf-java-test-detection-component-1.0.0.jar",
   "launchArgs" : [],
   "environmentVariables" : [ {
     "name" : "DUMMY_VAR",

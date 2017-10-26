@@ -27,7 +27,9 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.slf4j.Logger;
@@ -35,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -48,13 +51,25 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
 	public static final String REF = "defaultMediaSegmenter";
 
 	@Override
-	public List<Message> createDetectionRequestMessages(TransientMedia transientMedia, DetectionContext detectionContext) throws WfmProcessingException {
-		log.warn("[Job {}|{}|{}] Media {} is of the unsupported type '{}' and will not be processed.",
-				detectionContext.getJobId(),
-				detectionContext.getStageIndex(),
-				detectionContext.getActionIndex(),
-				transientMedia.getId(),
-				transientMedia.getType());
-		return new ArrayList<Message>(0);
+	public List<Message> createDetectionRequestMessages(TransientMedia media, DetectionContext context) {
+		log.warn("[Job {}|{}|{}] Media {} is of the unsupported type '{}' and will be processed generically.",
+				context.getJobId(),
+				context.getStageIndex(),
+				context.getActionIndex(),
+				media.getId(),
+				media.getType());
+		return Collections.singletonList(createProtobufMessage(media, context, DetectionProtobuf.DetectionRequest.GenericRequest.getDefaultInstance()));
+	}
+
+	private static Message createProtobufMessage(TransientMedia media, DetectionContext context,
+												 DetectionProtobuf.DetectionRequest.GenericRequest genericRequest) {
+		DetectionProtobuf.DetectionRequest detectionRequest = MediaSegmenter.initializeRequest(media, context)
+				.setDataType(DetectionProtobuf.DetectionRequest.DataType.UNKNOWN)
+				.setGenericRequest(genericRequest)
+				.build();
+
+		Message message = new DefaultMessage();
+		message.setBody(detectionRequest);
+		return message;
 	}
 }

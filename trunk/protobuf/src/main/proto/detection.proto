@@ -132,7 +132,6 @@ message DetectionRequest {
 
     repeated PropertyMap media_metadata = 405;
 
-    // TODO: This is a placeholder. It's currently not used.
     message GenericRequest {
         // TODO: Add any necessary fields here.
     }
@@ -206,12 +205,9 @@ message DetectionResponse {
     // Profiling metrics.
     optional MetricsMessage metrics = 405;
 
-
-    // TODO: This is a placeholder. It's currently not used.
     message GenericResponse {
         required string detection_type = 1;
-        optional bytes data = 2;
-        repeated PropertyMap detection_properties = 3;
+        repeated PropertyMap detection_properties = 2;
     }
     repeated GenericResponse generic_responses = 500;
 

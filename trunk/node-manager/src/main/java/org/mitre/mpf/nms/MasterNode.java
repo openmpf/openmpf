@@ -32,11 +32,15 @@ import org.mitre.mpf.nms.xml.NodeManagers;
 import org.mitre.mpf.nms.xml.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.io.InputStream;
 import java.util.*;
 
+@Component
 public class MasterNode {
 
     private static final Logger log = LoggerFactory.getLogger(MasterNode.class);
@@ -45,32 +49,24 @@ public class MasterNode {
 
     private final MasterNodeStateManager nodeStateManager;
 
-    
-    /**
-     *
-     * @param masterConfigFile
-     * @param activeMqHost
-     * @param jgroupsConfigXml
-     * @param channelName
-     * @param description Our JGroups logical entity name will include our
-     * hostname and this description (can be null)
-     */
-    public MasterNode(InputStream masterConfigFile, String activeMqHost, InputStream jgroupsConfigXml,
-                      String channelName, String description) {
-        this(jgroupsConfigXml, channelName, description);
-        loadConfigFile(masterConfigFile, activeMqHost);
+
+    public static MasterNode create() {
+        try (ClassPathXmlApplicationContext context
+                     = new ClassPathXmlApplicationContext("applicationContext.xml", MasterNode.class))  {
+            return context.getBean(MasterNode.class);
+        }
     }
 
-    /**
-     * Same as above but does not expect a configuration file describing nodes
-     * to create (none will be created)
-     */
-    public MasterNode(InputStream jgroupsConfigXml, String channelName, String description) {
-        nodeStateManager = new MasterNodeStateManager();
-        nodeStateManager.startReceiving(jgroupsConfigXml, channelName, ChannelReceiver.NodeTypes.MasterNode,
-                description);
+
+    @Autowired
+    MasterNode(MasterNodeStateManager nodeStateManager) {
+        this.nodeStateManager = nodeStateManager;
     }
 
+
+    public void run() {
+        nodeStateManager.startReceiving(ChannelReceiver.NodeTypes.MasterNode, "MPF-MasterNode");
+    }
 
 
     /**

@@ -33,48 +33,45 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.stereotype.Component;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.Properties;
 
+@Component
 public class NodeManager implements Runnable {
 
     private static final Logger LOG = LoggerFactory.getLogger(NodeManager.class);
 
+    private final NodeManagerProperties properties;
+
     private final ChildNodeStateManager nodeStateManager;
 
-    private static int HTTP_PORT;
 
-
-    /**
-     * Constructor
-     *
-     * @param jgroupsConfigXML
-     * @param channelName
-     * @param description Our JGroups logical entity name will include our
-     * hostname and this description (can be null)
-     */
-    public NodeManager(InputStream jgroupsConfigXML, String channelName, String description) {
-        nodeStateManager = new ChildNodeStateManager();
-        nodeStateManager.startReceiving(jgroupsConfigXML, channelName, ChannelReceiver.NodeTypes.NodeManager,
-                                        description);
+    @Autowired
+    public NodeManager(NodeManagerProperties properties, ChildNodeStateManager nodeStateManager) {
+        this.properties = properties;
+        this.nodeStateManager = nodeStateManager;
     }
 
     @Override
     public void run() {
+        nodeStateManager.startReceiving(ChannelReceiver.NodeTypes.NodeManager, "NodeManager");
         initHttpServer();
         nodeStateManager.run();
+        shutdown();
     }
 
 
     private void initHttpServer() {
         try {
-            HttpServer server = HttpServer.create(new InetSocketAddress(HTTP_PORT), 0);
+            HttpServer server = HttpServer.create(new InetSocketAddress(properties.getNodeStatusHttpPort()), 0);
             server.createContext("/", this::handle);
             server.start();
         }
@@ -95,18 +92,12 @@ public class NodeManager implements Runnable {
         }
 
         headers.set("Content-Type", "text/html");
-
-        StatusViewContext test = new StatusViewContext(
-                nodeStateManager.getMessageChannel().getAddress(),
-                nodeStateManager.getMessageChannel().getChannel().getView().getMembers(),
-                nodeStateManager.getNodeTable().values(),
-                nodeStateManager.getServiceTable().values());
-
-
         exchange.sendResponseHeaders(200, 0);
 
+        StatusViewContext viewContext = new StatusViewContext(nodeStateManager, properties.getNodeStatusHttpPort());
+
         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(exchange.getResponseBody()))) {
-            renderMustacheView(writer, test);
+            renderMustacheView(writer, viewContext);
         }
     }
 
@@ -142,117 +133,21 @@ public class NodeManager implements Runnable {
     }
 
 
-    public static int getHttpPort() {
-        return HTTP_PORT;
-    }
-
-
-    public void shutdown() {
+    private void shutdown() {
         nodeStateManager.shutdown();
     }
 
-    /**
-     * MAIN.
-     *
-     * @param args
-     */
-    public static void main(String[] args) {
 
+    public static void main(String[] args) {
         LOG.info("NodeManager Started");
-    	
-    	String resourcePath = "properties/nm.properties";
-    	Resource resource = new ClassPathResource(resourcePath);
-    	try {
-			Properties props = PropertiesLoaderUtils.loadProperties(resource);
-			int minServiceTimeupMillis = Integer.parseInt(props.getProperty("min.service.timeup.millis", "60000"));
-            ChildNodeStateManager.setMinServiceTimeUpMillis(minServiceTimeupMillis);
-            HTTP_PORT = Integer.parseInt(props.getProperty("node.status.http.port", "8008"));
-		}
-		catch (IOException e) {
-			LOG.error("Failed to retrieve node manager properties from resource path '{}' with exception {} {}.", resourcePath, e.getMessage(), e);
-		}
-    	
+
         // Log that we are being shutdown, but more hooks are found during process launches in BaseNodeLauncher
         Runtime.getRuntime().addShutdownHook(new Thread(
                 () -> LOG.info("Service shutdown")));
 
-        String host = System.getenv("THIS_MPF_NODE");
-        LOG.debug("Hostname is: '{}'.", host);
-        if(host == null) {
-            LOG.error("Could not determine the hostname, NodeManager will exit.");
-            System.exit(1);
-        }
-
-        // TODO: find a better place or pull from Props
-        String jgConfig = System.getProperty(NodeManagerConstants.JGROUPS_CONFIG_PARAM, "jGroupsTCPConfig.xml");
-        InputStream jgIs = NodeManager.class.getClassLoader().getResourceAsStream(jgConfig);
-        String channel = NodeManagerConstants.DEFAULT_CHANNEL;
-
-        String workingDir = System.getProperty("user.dir");
-        LOG.debug("Working dir is {}", workingDir);
-
-        if (args.length >= 1 && "master".equals(args[0])) {
-            try {
-                LOG.info("I am going to be a test master now");
-
-                LOG.debug("Reading config file");
-                String activeMqHostname = System.getProperty("ACTIVE_MQ_HOST");
-                if (activeMqHostname == null) {
-                    activeMqHostname = "failover://(tcp://localhost:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1";
-                }
-
-                InputStream nodeManagerConfig = null;
-                if (args.length >= 2) {
-                    LOG.debug("Reading config file: %s\n", args[1]);
-                    nodeManagerConfig = new FileInputStream(new File(args[1]));
-                } else {
-                    LOG.error("Please specify a config file!");
-                    System.exit(-1);
-                }
-
-                //masterNode.loadConfigFile(nodeManagerConfig, activeMqHostname);
-                MasterNode masterNode = new MasterNode(nodeManagerConfig, activeMqHostname, jgIs, NodeManagerConstants.DEFAULT_CHANNEL, "MasterTest");
-                // Provide a sample callback interface/class so we can monitor changes. In real life, handle this
-                // in your class directly, we are powerless here in main()...
-                SampleCallback cb = new SampleCallback();
-                masterNode.setCallback(cb);
-
-                LOG.debug("Launching and waiting for completion");
-                masterNode.launchAllNodes();
-
-                /**
-                 * System.out.println("Sleeping 10 seconds before shutdown");
-                 * Thread.sleep(10000); masterNode.shutdownAllNodes();
-                 */
-                LOG.info("Sleeping forever: Hit Return to shutdown system or Ctrl-C to exit leaving nodes running...");
-                try {
-                    System.in.read();
-                } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    LOG.error("There was an error. {} {}", e.getMessage(), e);
-                }
-                LOG.debug("Shutting down...");
-                masterNode.shutdown();
-            } catch (Exception e) {
-                LOG.error("There was an error. {} {}", e.getMessage(), e);
-            }
-
-            LOG.info("Goodbye!");
-            System.exit(0);
-        } else {
-            LOG.info("Starting up as a NodeManager on " + host);
-            // DEFAULT MODE: Run as a NodeManager
-            //String name = NodeManagerConstants.NODE_MANAGER_TAG + ":" + host;
-
-            // instantiate, startup jgroups, wait for something to happen
-            NodeManager mgr = new NodeManager(jgIs, channel, "NodeManager");
-            try {
-                jgIs.close();
-            } catch (IOException e) {
-                LOG.error("There was an error. {} {}", e.getMessage(), e);
-            }
-            mgr.run();
-            mgr.shutdown();
+        try (ClassPathXmlApplicationContext context
+                     = new ClassPathXmlApplicationContext("applicationContext.xml", NodeManager.class)) {
+            context.getBean(NodeManager.class).run();
         }
     }
 }

@@ -161,8 +161,7 @@ public class StreamingJobController {
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public StreamingJobCancelResponse cancelStreamingJob(@PathVariable("id") long jobId,
-                                                         @ApiParam(name = "doCleanup", value = "doCleanup", required = false,
-                                                                   defaultValue = "false") @RequestParam("doCleanup") boolean doCleanup) {
+                                                         @RequestParam(value = "doCleanup", required = false, defaultValue="false") boolean doCleanup) {
         return cancelStreamingJobInternal(jobId, doCleanup);
     }
 

@@ -306,6 +306,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 					}
 				}
 			}
+			// add check for a job successfully completed, but there was an error found in this media.  A completed job should
+			// be marked as complete with errors if an error is found in any media
+			if ( StringUtils.equalsIgnoreCase(jsonOutputObject.getStatus(), "COMPLETE") && StringUtils.equalsIgnoreCase(mediaOutputObject.getStatus(), "ERROR") ) {
+				jsonOutputObject.setStatus("COMPLETE_WITH_ERRORS");
+				jobStatus.setValue(JobStatus.COMPLETE_WITH_ERRORS);
+			}
 			jsonOutputObject.getMedia().add(mediaOutputObject);
 			mediaIndex++;
 		}

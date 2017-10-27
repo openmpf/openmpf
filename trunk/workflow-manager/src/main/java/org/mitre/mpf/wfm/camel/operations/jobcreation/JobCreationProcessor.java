@@ -174,19 +174,20 @@ public class JobCreationProcessor extends WfmProcessor {
 
 			exchange.getOut().setBody(jsonUtils.serialize(transientJob));
 			exchange.getOut().getHeaders().put(MpfHeaders.JOB_ID, jobRequestEntity.getId());
+
 		} catch(WfmProcessingException exception) {
 			try {
 				// Make an effort to mark the job as failed.
 				if(INVALID_PIPELINE_MESSAGE.equals(exception.getMessage())) {
-					log.warn("Job #{} did not specify a valid pipeline.", jobId);
+					log.warn("Batch Job #{} did not specify a valid pipeline.", jobId);
 				} else {
-					log.warn("Failed to parse the input object for Job #{} due to an exception.", jobRequestEntity.getId(), exception);
+					log.warn("Failed to parse the input object for Batch Job #{} due to an exception.", jobRequestEntity.getId(), exception);
 				}
 				jobRequestEntity.setStatus(JobStatus.JOB_CREATION_ERROR);
 				jobRequestEntity.setTimeCompleted(new Date());
 				jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 			} catch(Exception persistException) {
-				log.warn("Failed to mark Job #{} as failed due to an exception. It will remain it its current state until manually changed.", jobRequestEntity, persistException);
+				log.warn("Failed to mark Batch Job #{} as failed due to an exception. It will remain it its current state until manually changed.", jobRequestEntity, persistException);
 			}
 
 			// Set a flag so that the routing logic knows that the job has completed.
@@ -205,3 +206,6 @@ public class JobCreationProcessor extends WfmProcessor {
 		return transientMedia;
 	}
 }
+
+
+

@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.util;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Paths;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -68,16 +69,40 @@ public class MediaResourceContainer {
             // collect basic information about the media.
             URI uriInstance = new URI(uri);
             resourceUriScheme = UriScheme.parse(uriInstance.getScheme());
-            if ( resourceUriScheme == UriScheme.FILE ) {
-                resourceFile = Paths.get(uriInstance).toAbsolutePath().toFile();
+
+            // additional handling is required for file media.  Get the file path, handling any possible errors which may occur.
+            try {
+                if (resourceUriScheme == UriScheme.FILE) {
+                    resourceFile = Paths.get(uriInstance).toAbsolutePath().toFile();
+                }
+            } catch (IllegalArgumentException iae) {
+                // an exception occurred while getting the file path, store the error and clear resourceUriScheme
+                resourceErrorMessage = iae.getMessage();
+                resourceUriScheme = null;
+            } catch (FileSystemNotFoundException fsnfe) {
+                // an exception occurred while getting the file path, store the error and clear resourceUriScheme
+                resourceErrorMessage = fsnfe.getMessage();
+                resourceUriScheme = null;
+            } catch (SecurityException se) {
+                // an exception occurred while getting the file path, store the error and clear resourceUriScheme
+                resourceErrorMessage = se.getMessage();
+                resourceUriScheme = null;
             }
-            // use the filter parameters to determine whether or not OpenMPF supports this media
-            if ( listFilterType == ListFilterType.INCLUSION_LIST ) {
-                // check the resourceUriScheme to see if it is in the list of supported uriSchemes, if so that the uriScheme is supported by OpenMPF
-                isSupportedProtocol = isResourceOfDefinedUriScheme() && uriSchemeFilterList.stream().anyMatch(supportedUriScheme -> resourceUriScheme == supportedUriScheme);
-            } else {
-                // check the resourceUriScheme to see if it is in the list of unsupported uriSchemes, if so that the uriScheme is NOT supported by OpenMPF
-                isSupportedProtocol = isResourceOfDefinedUriScheme() && uriSchemeFilterList.stream().noneMatch(supportedUriScheme -> resourceUriScheme == supportedUriScheme);
+
+            // use the filter parameters to determine whether or not OpenMPF supports this media,
+            // provided that the resources URI scheme is still considered to be valid.
+            if ( resourceUriScheme != null ) {
+                if (listFilterType == ListFilterType.INCLUSION_LIST) {
+                    // check the resourceUriScheme to see if it is in the list of supported uriSchemes, if so that the uriScheme is supported by OpenMPF
+                    isSupportedProtocol =
+                        isResourceOfDefinedUriScheme() && uriSchemeFilterList.stream().anyMatch(
+                            supportedUriScheme -> resourceUriScheme == supportedUriScheme);
+                } else {
+                    // check the resourceUriScheme to see if it is in the list of unsupported uriSchemes, if so that the uriScheme is NOT supported by OpenMPF
+                    isSupportedProtocol =
+                        isResourceOfDefinedUriScheme() && uriSchemeFilterList.stream().noneMatch(
+                            supportedUriScheme -> resourceUriScheme == supportedUriScheme);
+                }
             }
         } catch (URISyntaxException use) {
             resourceErrorMessage = use.getMessage();

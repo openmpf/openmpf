@@ -109,6 +109,7 @@ public class MediaResource {
     public MediaResource(@JsonProperty("uri") String uri) {
         // construct the media resource info container, passing along the URI schemes that aren't supported by OpenMPF for this type of media.
         mediaResourceContainer = new MediaResourceContainer(uri, ListFilterType.EXCLUSION_LIST, unsupportedUriSchemeList);
+
         if ( mediaResourceContainer.isMediaResourceInError() ) {
             resourceStatusMessage = mediaResourceContainer.getResourceErrorMessage();
         } else if ( !mediaResourceContainer.isResourceOfDefinedUriScheme() ) {

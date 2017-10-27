@@ -47,9 +47,9 @@ public class MediaResource {
     public static final String LOCAL_FILE_DOES_NOT_EXIST = "File does not exist";
     public static final String LOCAL_FILE_NOT_READABLE = "File is not readable";
 
-    // define the UriSchemes that are not supported by OpenMPF for media resources.
-    // Note that OpenMPF supports everything except UriScheme.UNDEFINED, so we use an unsupported (i.e. exclusive) list of protocols here.
-    public static final List<UriScheme> unsupportedUriSchemeList = Arrays.asList(UriScheme.UNDEFINED);
+    // define the UriSchemes that are supported by OpenMPF for media resources.
+    // Note that OpenMPF supports only HTTPS, HTTP and FILE protocols for media, so we use an supported (i.e. inclusive) list of protocols here.
+    public static final List<UriScheme> supportedUriSchemeList = Arrays.asList(UriScheme.FILE, UriScheme.HTTP, UriScheme.HTTPS);
 
     private MediaResourceContainer mediaResourceContainer = null;
 
@@ -73,7 +73,7 @@ public class MediaResource {
      */
     public String getUri() { return mediaResourceContainer.getUri(); }
 
-    /** The URI scheme (protocol) associated with this media resource, may include the file, http, https, or some other protocol.
+    /** The URI scheme (protocol) associated with this media resource. Note that OpenMPF supports only HTTPS, HTTP and FILE protocols for media.
      * @return The URI scheme (protocol) associated with this media resource.
      */
     public UriScheme getUriScheme() {return mediaResourceContainer.getUriScheme();}
@@ -107,8 +107,8 @@ public class MediaResource {
      */
     @JsonCreator
     public MediaResource(@JsonProperty("uri") String uri) {
-        // construct the media resource info container, passing along the URI schemes that aren't supported by OpenMPF for this type of media.
-        mediaResourceContainer = new MediaResourceContainer(uri, ListFilterType.EXCLUSION_LIST, unsupportedUriSchemeList);
+        // construct the media resource info container, passing along the URI schemes that are supported by OpenMPF for this type of media.
+        mediaResourceContainer = new MediaResourceContainer(uri, ListFilterType.INCLUSION_LIST, supportedUriSchemeList);
 
         if ( mediaResourceContainer.isMediaResourceInError() ) {
             resourceStatusMessage = mediaResourceContainer.getResourceErrorMessage();
@@ -130,7 +130,7 @@ public class MediaResource {
     }
 
     /** Check to see if the URI scheme for this media is one of the protocols OpenMPF supports for media.
-     * For media, OpenMPF supports the file, http, https, or any other protocol.
+     * For media, OpenMPF supports the file, http, or https protocol.
      * @return true if the specified URI scheme is any defined protocol, false otherwise.
      */
     public boolean isSupportedUriScheme() {
@@ -138,17 +138,17 @@ public class MediaResource {
     }
 
     /** Check to see if the passed URI scheme is one of the supported protocols.
-     * For media, OpenMPF supports the file, http, https, or any other protocol.
+     * For media, OpenMPF supports the file, http or https protocol.
      * @param localUriScheme URI scheme to test.
      * @return true if the specified URI scheme is any defined protocol, false otherwise.
      */
     private static boolean isSupportedUriScheme(UriScheme localUriScheme) {
-        // check the localUriScheme to see if it is in the list of unsupported uriSchemes, if so that the uriScheme is NOT supported by OpenMPF
-        return localUriScheme != null && unsupportedUriSchemeList.stream().noneMatch(unsupportedUriScheme -> localUriScheme == unsupportedUriScheme);
+        // check the localUriScheme to see if it is in the list of supported uriSchemes, if so that the uriScheme is supported by OpenMPF
+        return localUriScheme != null && supportedUriSchemeList.stream().anyMatch(supportedUriScheme -> localUriScheme == supportedUriScheme);
     }
 
     /** Check to see if the URI scheme for this media resource is one of the supported stream protocols.
-     * OpenMPF supports the file, http, https, or other protocol for media.
+     * OpenMPF supports the file, http or https protocol for media.
      * @param uri The URI of the source file which may use any of the supported protocols.
      * @return true if the URI scheme for this media resource is one of the supported protocols, false otherwise.
      */
@@ -167,7 +167,7 @@ public class MediaResource {
      * @return Information about the media resource, including UriScheme, protocol support, file status (if applicable)
      */
     public static MediaResourceContainer getMediaResourceContainer(String uri) {
-        return new MediaResourceContainer(uri, ListFilterType.EXCLUSION_LIST, unsupportedUriSchemeList);
+        return new MediaResourceContainer(uri, ListFilterType.INCLUSION_LIST, supportedUriSchemeList);
     }
 
 }

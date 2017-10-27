@@ -80,7 +80,7 @@ public class StreamResourceContainer {
     public boolean isResourceOfSupportedUriScheme() { return isSupportedProtocol; };
 
     /** Get the error message associated with construction of this resource.
-     * @return Return the error message associated with construction of this resource.  Will be null if no error occurred during construction.
+     * @return the error message associated with construction of this resource.  Will be null if no error occurred during construction.
      */
     public String getResourceErrorMessage() { return resourceErrorMessage; }
 

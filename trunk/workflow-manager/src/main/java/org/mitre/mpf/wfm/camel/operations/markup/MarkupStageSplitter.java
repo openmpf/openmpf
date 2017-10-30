@@ -169,9 +169,9 @@ public class MarkupStageSplitter implements StageSplitter {
 		hibernateMarkupResultDao.deleteByJobId(transientJob.getId());
 
 		for(int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
-			int mediaIndex = 0;
 			TransientAction transientAction = transientStage.getActions().get(actionIndex);
-			for (TransientMedia transientMedia : transientJob.getMedia()) {
+			for (int mediaIndex = 0; mediaIndex < transientJob.getMedia().size(); mediaIndex++) {
+				TransientMedia transientMedia = transientJob.getMedia().get(mediaIndex);
 				if (transientMedia.isFailed()) {
 					log.debug("Skipping '{}' - it is in an error state.", transientMedia.getId(), transientMedia.getLocalPath());
 					continue;
@@ -199,7 +199,6 @@ public class MarkupStageSplitter implements StageSplitter {
 					message.setBody(markupRequest);
 					messages.add(message);
 				}
-				mediaIndex++;
 			}
 		}
 

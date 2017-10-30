@@ -42,16 +42,20 @@ import org.mitre.mpf.wfm.enums.UriScheme;
  */
 
 public class MediaResourceContainer {
+
     private String resourceUri = null;
     public String getUri() { return resourceUri; }
+
     private UriScheme resourceUriScheme = null;
     public UriScheme getUriScheme() { return resourceUriScheme; }
+
     private File resourceFile = null;
 
     /** Get the File associated with this media resource.
      * @return Get the File associated with this media resource. May be null if this resource is not a file type.
      */
     public File getFile() { return resourceFile; }
+
     private String resourceErrorMessage = null;
     private boolean isSupportedProtocol = false;
 
@@ -78,15 +82,15 @@ public class MediaResourceContainer {
             } catch (IllegalArgumentException iae) {
                 // an exception occurred while getting the file path, store the error and clear resourceUriScheme
                 resourceErrorMessage = iae.getMessage();
-                resourceUriScheme = null;
+                resourceUriScheme = UriScheme.UNDEFINED;
             } catch (FileSystemNotFoundException fsnfe) {
                 // an exception occurred while getting the file path, store the error and clear resourceUriScheme
                 resourceErrorMessage = fsnfe.getMessage();
-                resourceUriScheme = null;
+                resourceUriScheme = UriScheme.UNDEFINED;
             } catch (SecurityException se) {
                 // an exception occurred while getting the file path, store the error and clear resourceUriScheme
                 resourceErrorMessage = se.getMessage();
-                resourceUriScheme = null;
+                resourceUriScheme = UriScheme.UNDEFINED;
             }
 
             // use the filter parameters to determine whether or not OpenMPF supports this media,

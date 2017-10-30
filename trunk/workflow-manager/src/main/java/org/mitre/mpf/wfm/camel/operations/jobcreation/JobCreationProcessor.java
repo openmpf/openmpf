@@ -162,14 +162,19 @@ public class JobCreationProcessor extends WfmProcessor {
 			transientJob.getMedia().addAll(buildMedia(jobRequest.getMedia()));
 			redis.persistJob(transientJob);
 
-			if(transientPipeline == null) {
+			if (transientPipeline == null) {
 				redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_ERRORS);
 				throw new WfmProcessingException(INVALID_PIPELINE_MESSAGE);
 			}
 
-			// Everything has been good so far. Update the job status.
-			jobRequestEntity.setStatus(JobStatus.IN_PROGRESS);
-			redis.setJobStatus(jobId, JobStatus.IN_PROGRESS);
+			if (transientJob.getMedia().stream().anyMatch(m -> m.isFailed())) {
+				jobRequestEntity.setStatus(JobStatus.IN_PROGRESS_ERRORS);
+				redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_ERRORS);
+				// allow the job to run since some of the media may be good
+			} else {
+				jobRequestEntity.setStatus(JobStatus.IN_PROGRESS);
+				redis.setJobStatus(jobId, JobStatus.IN_PROGRESS);
+			}
 			jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 
 			exchange.getOut().setBody(jsonUtils.serialize(transientJob));

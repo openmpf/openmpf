@@ -105,7 +105,7 @@ public class TestSystemStress3 extends TestSystemWithDefaultConfig {
             try {
                 while (!fQueue.isEmpty()) {
                     List<JsonMediaInputObject> media = new LinkedList<>();
-                    media.add(new JsonMediaInputObject(fQueue.take().getAbsoluteFile().toURI().toString()));
+                    media.add(new JsonMediaInputObject(fQueue.take().getAbsoluteFile().toPath().toUri().toString()));
                     runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
                             propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
                     manyJobsNumFilesProcessed++;

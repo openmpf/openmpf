@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLConnection;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -151,7 +152,7 @@ public class MarkupController {
                             model.setSourceDownloadUrl("server/download?fullPath=" + Paths.get(URI.create(nonUrlPath)));
                             model.setSourceFileAvailable(true);
                         }
-                    } catch (IllegalArgumentException e) {
+                    } catch (IllegalArgumentException | FileSystemNotFoundException e) {
                         // URI has an authority component or URI scheme is not "file"
                     }
                 }

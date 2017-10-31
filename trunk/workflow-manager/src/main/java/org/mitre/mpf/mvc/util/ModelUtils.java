@@ -28,6 +28,7 @@ package org.mitre.mpf.mvc.util;
 
 import java.io.File;
 import java.net.URI;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Paths;
 
 import org.apache.commons.lang3.StringUtils;
@@ -95,7 +96,7 @@ public class ModelUtils {
 					markupImgUrl = "markup/content?id=" + markupResult.getId();
 					markupDownloadUrl = "markup/download?id=" + markupResult.getId();
 				}
-			} catch(IllegalArgumentException e) {
+			} catch(IllegalArgumentException | FileSystemNotFoundException e) {
 				// URI has an authority component or URI scheme is not "file"
 			}
 		}
@@ -110,7 +111,7 @@ public class ModelUtils {
 					sourceImgUrl = "server/node-image?nodeFullPath=" + Paths.get(URI.create(nonUrlPath));
 					sourceDownloadUrl = "server/download?fullPath=" + Paths.get(URI.create(nonUrlPath));
 				}
-			} catch(IllegalArgumentException e) {
+			} catch(IllegalArgumentException | FileSystemNotFoundException e) {
 				// URI has an authority component or URI scheme is not "file"
 			}
 		}

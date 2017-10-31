@@ -152,7 +152,7 @@ public class MarkupController {
                             model.setSourceDownloadUrl("server/download?fullPath=" + Paths.get(URI.create(nonUrlPath)));
                             model.setSourceFileAvailable(true);
                         }
-                    } catch (IllegalArgumentException | FileSystemNotFoundException e) {
+                    } catch (IllegalArgumentException e) {
                         // URI has an authority component or URI scheme is not "file"
                     }
                 }

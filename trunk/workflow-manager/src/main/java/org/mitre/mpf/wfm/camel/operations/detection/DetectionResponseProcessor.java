@@ -167,6 +167,7 @@ public class DetectionResponseProcessor
 
 		return null;
 	}
+
 	private void processVideoResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, Float fps, double confidenceThreshold) {
 		// Iterate through the videoResponse
 		for (DetectionProtobuf.DetectionResponse.VideoResponse videoResponse : detectionResponse.getVideoResponsesList()) {

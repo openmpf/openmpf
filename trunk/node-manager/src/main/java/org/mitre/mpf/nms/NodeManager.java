@@ -56,11 +56,11 @@ public class NodeManager implements Runnable {
 
 
     public static void main(String[] args) {
-        LOG.info("NodeManager Started");
+        LOG.info("NodeManager started");
 
         // Log that we are being shutdown, but more hooks are found during process launches in BaseNodeLauncher
         Runtime.getRuntime().addShutdownHook(new Thread(
-                () -> LOG.info("Service shutdown")));
+                () -> LOG.info("NodeManager shutdown")));
 
 
         try (ClassPathXmlApplicationContext context

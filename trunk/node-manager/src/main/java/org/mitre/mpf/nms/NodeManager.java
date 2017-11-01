@@ -38,20 +38,16 @@ public class NodeManager implements Runnable {
 
     private final ChildNodeStateManager nodeStateManager;
 
-    private final NodeStatusHttpServer nodeStatusHttpServer;
-
 
     @Autowired
-    public NodeManager(ChildNodeStateManager nodeStateManager, NodeStatusHttpServer nodeStatusHttpServer) {
+    public NodeManager(ChildNodeStateManager nodeStateManager) {
         this.nodeStateManager = nodeStateManager;
-        this.nodeStatusHttpServer = nodeStatusHttpServer;
     }
 
 
     @Override
     public void run() {
         nodeStateManager.startReceiving(ChannelReceiver.NodeTypes.NodeManager, "NodeManager");
-	    nodeStatusHttpServer.start();
         nodeStateManager.run();
 
         nodeStateManager.shutdown();
@@ -66,8 +62,15 @@ public class NodeManager implements Runnable {
         Runtime.getRuntime().addShutdownHook(new Thread(
                 () -> LOG.info("Service shutdown")));
 
+
         try (ClassPathXmlApplicationContext context
                      = new ClassPathXmlApplicationContext("applicationContext.xml", NodeManager.class)) {
+
+            NodeManagerProperties properties = context.getBean(NodeManagerProperties.class);
+            if (properties.isNodeStatusPageEnabled()) {
+                context.getBean(NodeStatusHttpServer.class).start();
+            }
+
             context.getBean(NodeManager.class).run();
         }
     }

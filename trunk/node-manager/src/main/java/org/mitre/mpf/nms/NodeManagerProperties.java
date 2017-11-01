@@ -54,16 +54,23 @@ public class NodeManagerProperties {
 	}
 
 
-	@Value("${node.status.http.port}")
+	@Value("${min.service.timeup.millis}")
+	private int minServiceUpTimeMillis;
+	public int getMinServiceUpTimeMillis() {
+		return minServiceUpTimeMillis;
+	}
+
+
+	@Value("${mpf.node.status.http.port}")
 	private int nodeStatusHttpPort;
 	public int getNodeStatusHttpPort() {
 		return nodeStatusHttpPort;
 	}
 
 
-	@Value("${min.service.timeup.millis}")
-	private int minServiceUpTimeMillis;
-	public int getMinServiceUpTimeMillis() {
-		return minServiceUpTimeMillis;
+	@Value("${mpf.node.status.page.enabled}")
+	private boolean nodeStatusPageEnabled;
+	public boolean isNodeStatusPageEnabled() {
+		return nodeStatusPageEnabled;
 	}
 }

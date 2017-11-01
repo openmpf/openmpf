@@ -52,7 +52,7 @@ public class MasterNode {
 
     public static MasterNode create() {
         try (ClassPathXmlApplicationContext context
-                     = new ClassPathXmlApplicationContext("applicationContext.xml", MasterNode.class))  {
+                     = new ClassPathXmlApplicationContext("applicationContext-nm.xml"))  {
             return context.getBean(MasterNode.class);
         }
     }

@@ -64,7 +64,7 @@ public class NodeManager implements Runnable {
 
 
         try (ClassPathXmlApplicationContext context
-                     = new ClassPathXmlApplicationContext("applicationContext.xml", NodeManager.class)) {
+                     = new ClassPathXmlApplicationContext("applicationContext-nm.xml")) {
 
             NodeManagerProperties properties = context.getBean(NodeManagerProperties.class);
             if (properties.isNodeStatusPageEnabled()) {

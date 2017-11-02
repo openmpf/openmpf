@@ -117,13 +117,19 @@ public class MediaResource {
         } else if ( !mediaResourceContainer.isResourceOfSupportedUriScheme() ) {
             resourceStatusMessage = NOT_SUPPORTED_URI_SCHEME;
         } else if ( mediaResourceContainer.isFileResource() && !mediaResourceContainer.isFileResourceExisting() ) {
+            // set resource status to error - that file doesn't exist
             resourceStatusMessage = LOCAL_FILE_DOES_NOT_EXIST;
+            // even though the file does not exist, set the localPathFile variable to avoid potential for NullPointerExceptions.
+            localFilePath = mediaResourceContainer.getResourceFile().getAbsolutePath();
         } else if ( mediaResourceContainer.isFileResource() && !mediaResourceContainer.isFileResourceReadable() ) {
+            // set resource status to error - that file exists but it isn't readable
             resourceStatusMessage = LOCAL_FILE_NOT_READABLE;
+            // even though the file isn't readable, set the localPathFile variable to avoid potential for NullPointerExceptions.
+            localFilePath = mediaResourceContainer.getResourceFile().getAbsolutePath();
         } else if ( mediaResourceContainer.isFileResource() ) {
+            resourceStatusMessage = NO_ERROR;
             // localFilePath maintained separately allows for override of file path in mediaResourceContainer via method setLocalFilePath
             localFilePath = mediaResourceContainer.getResourceFile().getAbsolutePath();
-            resourceStatusMessage = NO_ERROR;
         } else {
             resourceStatusMessage = NO_ERROR;
         }

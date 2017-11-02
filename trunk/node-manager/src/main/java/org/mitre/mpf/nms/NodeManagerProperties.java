@@ -25,42 +25,52 @@
  ******************************************************************************/
 
 package org.mitre.mpf.nms;
-import java.io.Serializable;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Component;
+
+@Component
+public class NodeManagerProperties {
+
+	@Value("${mpf.jgroups.config}")
+	private Resource jGroupsConfig;
+	public Resource getJGroupsConfig() {
+		return jGroupsConfig;
+	}
 
 
-/**
- * Handle for each {@link ChannelReceiver} node in JGroup.  These are known (expected) as defined in the config file and
- * as the Master directs the Mgrs to create.  They are also discovered after they have been created and have
- * joined the group.  Thus, these are objects are created before discovery but are noted to exist (isAlive) once
- * discovered.
- */
-public class NodeDescriptor implements Serializable {
+	@Value("${mpf.jgroups.channel.name}")
+	private String channelName;
+	public String getChannelName() {
+		return channelName;
+	}
 
-    private final String hostname;
 
-    private  NodeManagerConstants.States lastKnownState =  NodeManagerConstants.States.Unknown;
+	@Value("${mpf.this.node}")
+	private String thisMpfNode;
+	public String getThisMpfNode() {
+		return thisMpfNode;
+	}
 
-    public  NodeDescriptor(String hostname) {
-        this.hostname = hostname;
-    }
 
-    public String getHostname() {
-        return hostname;
-    }
+	@Value("${min.service.timeup.millis}")
+	private int minServiceUpTimeMillis;
+	public int getMinServiceUpTimeMillis() {
+		return minServiceUpTimeMillis;
+	}
 
-    public boolean isAlive() {
-        return (NodeManagerConstants.States.Running == lastKnownState);
-    }
 
-    public  NodeManagerConstants.States getLastKnownState() {
-        return lastKnownState;
-    }
+	@Value("${mpf.node.status.http.port}")
+	private int nodeStatusHttpPort;
+	public int getNodeStatusHttpPort() {
+		return nodeStatusHttpPort;
+	}
 
-    public void setLastKnownState( NodeManagerConstants.States lastKnownState) {
-        this.lastKnownState = lastKnownState;
-    }
 
-    public boolean doesHostMatch(String host) {
-        return (hostname.compareTo(host) == 0);
-    }
+	@Value("${mpf.node.status.page.enabled}")
+	private boolean nodeStatusPageEnabled;
+	public boolean isNodeStatusPageEnabled() {
+		return nodeStatusPageEnabled;
+	}
 }

@@ -30,19 +30,31 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Component
 public class ChildNodeStateManager extends ChannelReceiver {
 
     private static final Logger LOG = LoggerFactory.getLogger(ChildNodeStateManager.class);
 
-    private static int minServiceTimeUpMillis = 60000;
+
+    private final NodeManagerProperties properties;
 
     private final Map<String, BaseServiceLauncher> launchedAppsMap = new HashMap<>();
+
+
+    @Autowired
+    public ChildNodeStateManager(NodeManagerProperties properties, ChannelNode channelNode) {
+        super(properties, channelNode);
+        this.properties = properties;
+    }
+
 
     @Override
     public void receive(Message msg) {
@@ -78,7 +90,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
                 }
             }
 
-            if (sd.doesHostMatch(getMyHost())) {
+            if (sd.doesHostMatch(properties.getThisMpfNode())) {
                 // one of ours set it up correctly
                 switch (sd.getLastKnownState()) {
                     case Delete:
@@ -118,7 +130,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
 
                 // If we are not already deemed running, tell the world that indeed we are
                 if (msu.getLastKnownState() != NodeManagerConstants.States.Running
-                        && msu.getTheNode().doesHostMatch(getMyHost())) {
+                        && msu.getTheNode().doesHostMatch(properties.getThisMpfNode())) {
                     updateState(msu.getTheNode(), NodeManagerConstants.States.Running);
                 }
             }
@@ -163,7 +175,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
 
             if (launcher != null) {
                 // if it's startable then hold onto it
-                if (launcher.startup(minServiceTimeUpMillis)) {
+                if (launcher.startup(properties.getMinServiceUpTimeMillis())) {
                     launchedAppsMap.put(launcher.getServiceName(), launcher);
                     updateState(desc, NodeManagerConstants.States.Running);
                     LOG.debug("Sending {} state for {}", NodeManagerConstants.States.Running, desc.getName());
@@ -192,14 +204,15 @@ public class ChildNodeStateManager extends ChannelReceiver {
      */
     public void run() {
         // We are running - tell the world
-        NodeDescriptor mgr = new NodeDescriptor(ChannelReceiver.getMyHost());
+        NodeDescriptor mgr = new NodeDescriptor(properties.getThisMpfNode());
         updateState(mgr, NodeManagerConstants.States.Running);
 
         // Now that we are all up and running and syncd with the cluster, see if we had been tasked
         // with any launches that we weren't there to do.
         synchronized (getServiceTable()) {
             for (ServiceDescriptor sd : getServiceTable().values()) {
-                if (sd.doesStateMatch(NodeManagerConstants.States.Launching) && sd.doesHostMatch(getMyHost())) {
+                if (sd.doesStateMatch(NodeManagerConstants.States.Launching)
+                        && sd.doesHostMatch(properties.getThisMpfNode())) {
                     // @todo: offline when messages came? If we went away the state of these would be running!
                     // System.err.println("Launching a previously setup node: " + sd.getName());
                     LOG.debug("Launching a previously setup node: " + sd.getName());
@@ -216,7 +229,6 @@ public class ChildNodeStateManager extends ChannelReceiver {
         while (isConnected()) {
             SleepUtil.interruptableSleep(2000);
 
-            // Let's log some info
             int running = launchedAppsMap.size();
             for (BaseServiceLauncher n : launchedAppsMap.values()) {
                 ServiceDescriptor sd = getServiceTable().get(n.getServiceName());
@@ -258,13 +270,5 @@ public class ChildNodeStateManager extends ChannelReceiver {
             }
             lastRunning = running;
         }
-    }
-
-    public static void setMinServiceTimeUpMillis(int newTime) {
-        minServiceTimeUpMillis = newTime;
-    }
-
-    public static int getMinServiceTimeUpMillis() {
-        return minServiceTimeUpMillis;
     }
 }

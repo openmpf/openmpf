@@ -42,7 +42,7 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 
 public class StreamResourceContainer {
     private String resourceUri = null;
-    public String getUri() { return resourceUri; }
+    protected String getUri() { return resourceUri; }
     private UriScheme resourceUriScheme = null;
     protected UriScheme getUriScheme() { return resourceUriScheme; }
 
@@ -76,18 +76,18 @@ public class StreamResourceContainer {
         }
     }
 
-    public boolean isResourceOfDefinedUriScheme() { return resourceUriScheme != null && resourceUriScheme != UriScheme.UNDEFINED; }
-    public boolean isResourceOfSupportedUriScheme() { return isSupportedProtocol; };
+    protected boolean isResourceOfDefinedUriScheme() { return resourceUriScheme != null && resourceUriScheme != UriScheme.UNDEFINED; }
+    protected boolean isResourceOfSupportedUriScheme() { return isSupportedProtocol; };
 
     /** Get the error message associated with construction of this resource.
      * @return the error message associated with construction of this resource.  Will be null if no error occurred during construction.
      */
-    public String getResourceErrorMessage() { return resourceErrorMessage; }
+    protected String getResourceErrorMessage() { return resourceErrorMessage; }
 
     /** Will return true if there was an error found during construction of this resource, false otherwise.
      * If the stream resource was constructed with error, use method getResourceErrorMessage to find out what the error is.
      * @return true if there was an error found during construction of this resource, false otherwise.
      */
-    public boolean isStreamResourceInError() { return resourceErrorMessage != null; }
+    protected boolean isStreamResourceInError() { return resourceErrorMessage != null; }
 
  }

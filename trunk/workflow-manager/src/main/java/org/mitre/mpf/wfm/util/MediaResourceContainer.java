@@ -59,7 +59,7 @@ public class MediaResourceContainer {
     private boolean isSupportedProtocol = false;
 
     /** Constructor to collect media resource info for the specified URI.
-     * This constructor is protected because it only intended to be instantiated by the MediaResource class.
+     * This constructor is protected because it is only intended to be instantiated by the MediaResource class.
      * @param uri URI to evaluate
      * @param listFilterType enumeration specifies if the specified uriSchemeFilterList is an inclusion filter or an exclusion filter
      * @param uriSchemeFilterList list of URI schemes that OpenMPF supports (if inclusion filter is passed) or

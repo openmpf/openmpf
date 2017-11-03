@@ -28,6 +28,7 @@ package org.mitre.mpf.mvc.util;
 
 import java.io.File;
 import java.net.URI;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Paths;
 
 import org.apache.commons.lang3.StringUtils;
@@ -86,24 +87,32 @@ public class ModelUtils {
 		boolean sourceFileAvailable = false;
 
 		if(markupResult.getMarkupUri() != null) {
-			String nonUrlPath = markupResult.getMarkupUri();
-			markupUriContentType = NIOUtils.getPathContentType(Paths.get(URI.create(nonUrlPath)));
-			File f = new File(URI.create(nonUrlPath));
-			if(f != null && f.exists()) {
-				markupFileAvailable = true;
-				markupImgUrl="markup/content?id="+markupResult.getId();
-				markupDownloadUrl = "markup/download?id=" + markupResult.getId();
+			try {
+				String nonUrlPath = markupResult.getMarkupUri();
+				markupUriContentType = NIOUtils.getPathContentType(Paths.get(URI.create(nonUrlPath)));
+				File f = new File(URI.create(nonUrlPath));
+				if (f != null && f.exists()) {
+					markupFileAvailable = true;
+					markupImgUrl = "markup/content?id=" + markupResult.getId();
+					markupDownloadUrl = "markup/download?id=" + markupResult.getId();
+				}
+			} catch(IllegalArgumentException | FileSystemNotFoundException e) {
+				// URI has an authority component or URI scheme is not "file"
 			}
 		}
 
 		if(markupResult.getSourceUri() != null) {
-			String nonUrlPath = markupResult.getSourceUri();
-			sourceUriContentType = NIOUtils.getPathContentType(Paths.get(URI.create(nonUrlPath)));
-			File f = new File(URI.create(nonUrlPath));
-			if (f != null && f.exists()){
-				sourceFileAvailable = true;
-				sourceImgUrl = "server/node-image?nodeFullPath=" + Paths.get(URI.create(nonUrlPath));
-				sourceDownloadUrl = "server/download?fullPath=" + Paths.get(URI.create(nonUrlPath));
+			try {
+				String nonUrlPath = markupResult.getSourceUri();
+				sourceUriContentType = NIOUtils.getPathContentType(Paths.get(URI.create(nonUrlPath)));
+				File f = new File(URI.create(nonUrlPath));
+				if (f != null && f.exists()){
+					sourceFileAvailable = true;
+					sourceImgUrl = "server/node-image?nodeFullPath=" + Paths.get(URI.create(nonUrlPath));
+					sourceDownloadUrl = "server/download?fullPath=" + Paths.get(URI.create(nonUrlPath));
+				}
+			} catch(IllegalArgumentException | FileSystemNotFoundException e) {
+				// URI has an authority component or URI scheme is not "file"
 			}
 		}
 
@@ -130,7 +139,7 @@ public class ModelUtils {
 		// some job status' may be terminal
 		boolean isTerminal = (jobStatus != null && jobStatus.isTerminal());
 
-		return new StreamingJobInfo(streamingJobRequest.getId(), streamingJobRequest.getExternalId(),
+		return new StreamingJobInfo(streamingJobRequest.getId(),
 				streamingJobRequest.getPipeline(),
 				streamingJobRequest.getPriority(),
 				streamingJobRequest.getStatus().toString(), jobContainerProgress, streamingJobRequest.getTimeReceived(),

@@ -24,46 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api;
+package org.mitre.mpf.wfm.enums;
 
-public class StreamingJobCancelResponse {
-	private Long jobId;
-	private boolean doCleanup = false;
-	private String outputObjectDirectory;
-	private MpfResponse mpfResponse = new MpfResponse();
-
-	public StreamingJobCancelResponse() {}
-
-	public StreamingJobCancelResponse(boolean doCleanup, int errorCode, String errorMessage) {
-		this.mpfResponse.setMessage(errorCode, errorMessage);
-		this.jobId = -1L;
-		this.doCleanup = doCleanup;
-	}
-
-	/** Constructor
-	 * @param jobId job id of this streaming job
-	 * @param outputObjectDirectory root directory for output objects created during this streaming job
-	 * @param doCleanup if true, then the caller is requesting that the output object directory is cleaned up prior to cancelling this job
-	 */
-	public StreamingJobCancelResponse(Long jobId, String outputObjectDirectory, boolean doCleanup) {
-		this.jobId = jobId;
-		this.outputObjectDirectory = outputObjectDirectory;
-		this.doCleanup = doCleanup;
-		this.mpfResponse.setMessage(0,"success");
-	}
-	
-	public Long getJobId() {
-		return jobId;
-	}
-
-	public boolean getDoCleanup() { return doCleanup; }
-
-	public String getOutputObjectDirectory() {
-		return outputObjectDirectory;
-	}
-
-	public MpfResponse getMpfResponse() {
-		return mpfResponse;
-	}
-
-}
+/** Enumeration allows for more clearly defining a list passed to a method as in inclusion filter or an exclusion filter. */
+public enum ListFilterType { INCLUSION_LIST, EXCLUSION_LIST };

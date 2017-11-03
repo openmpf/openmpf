@@ -145,7 +145,7 @@ public class TestAudioMediaSegmenter {
 
 
 	private static TransientMedia createTestMedia() {
-		TransientMedia media = new TransientMedia(1, "file:///example.jpg");
+		TransientMedia media = new TransientMedia(1, "file:///example.wav");
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;

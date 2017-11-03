@@ -169,12 +169,11 @@ public class MarkupStageSplitter implements StageSplitter {
 		hibernateMarkupResultDao.deleteByJobId(transientJob.getId());
 
 		for(int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
-			int mediaIndex = 0;
 			TransientAction transientAction = transientStage.getActions().get(actionIndex);
-			for (TransientMedia transientMedia : transientJob.getMedia()) {
+			for (int mediaIndex = 0; mediaIndex < transientJob.getMedia().size(); mediaIndex++) {
+				TransientMedia transientMedia = transientJob.getMedia().get(mediaIndex);
 				if (transientMedia.isFailed()) {
 					log.debug("Skipping '{}' - it is in an error state.", transientMedia.getId(), transientMedia.getLocalPath());
-					continue;
 				} else if(!StringUtils.startsWith(transientMedia.getType(), "image") && !StringUtils.startsWith(transientMedia.getType(), "video")) {
 					log.debug("Skipping Media {} - only image and video files are eligible for markup.", transientMedia.getId());
 				} else {
@@ -186,7 +185,7 @@ public class MarkupStageSplitter implements StageSplitter {
 							.setMediaId(transientMedia.getId())
 							.setMediaType(Markup.MediaType.valueOf(transientMedia.getMediaType().toString().toUpperCase()))
 							.setRequestId(redis.getNextSequenceValue())
-							.setSourceUri(new File(transientMedia.getLocalPath()).getAbsoluteFile().toURI().toString())
+							.setSourceUri(new File(transientMedia.getLocalPath()).getAbsoluteFile().toPath().toUri().toString())
 							.setDestinationUri(boundingBoxMapEntryList.size() > 0 ?
 									propertiesUtil.createMarkupPath(transientJob.getId(), transientMedia.getId(), getMarkedUpMediaExtensionForMediaType(transientMedia.getMediaType())).toUri().toString() :
 									propertiesUtil.createMarkupPath(transientJob.getId(), transientMedia.getId(), getFileExtension(transientMedia.getType())).toUri().toString())
@@ -199,7 +198,6 @@ public class MarkupStageSplitter implements StageSplitter {
 					message.setBody(markupRequest);
 					messages.add(message);
 				}
-				mediaIndex++;
 			}
 		}
 

@@ -38,6 +38,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.StreamResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,8 +78,8 @@ public class StreamingJobController {
     @RequestMapping(value = {"/rest/streaming/jobs"}, method = RequestMethod.POST)
     @ApiOperation(value = "Creates and submits a streaming job using a JSON StreamingJobCreationRequest object as the request body.",
             notes = "The pipelineName should be one of the values in 'rest/pipelines'. The stream should contain a valid streamUri, " +
-                    "for example: rtsp://example.com/media.mp4.  Optional segmentSize, mediaProperties, stallAlertDetectionThreshold, "+
-                    "stallAlertRate, stallTimeout and stallCallbackUri may also be defined for the stream. " +
+                    "for example: rtsp://example.com/media.mp4.  Optional segmentSize, mediaProperties, "+
+                    "stallTimeout and stallCallbackUri may also be defined for the stream. " +
                     "Additional streaming job options include summaryReportCallbackUri, healthReportCallbackUri, newTrackAlertCallbackUri and " +
                     "callbackMethod (GET or POST). " +
                     "Other streaming job options include jobProperties object which contains String key-value pairs which override the pipeline's job properties for this streaming job. " +
@@ -160,15 +161,34 @@ public class StreamingJobController {
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public StreamingJobCancelResponse cancelStreamingJob(@PathVariable("id") long jobId,
-                                                         @ApiParam(name = "doCleanup", value = "doCleanup", required = false,
-                                                                   defaultValue = "false") @RequestParam("doCleanup") boolean doCleanup) {
+                                                         @RequestParam(value = "doCleanup", required = false, defaultValue="false") boolean doCleanup) {
         return cancelStreamingJobInternal(jobId, doCleanup);
+    }
+
+    private StreamingJobCreationResponse createStreamingJobCreationErrorResponse(String streamingJobExternalId,
+                                                                                 String errorReason) {
+        StringBuilder errBuilder = new StringBuilder("Failure creating streaming job");
+        if ( streamingJobExternalId != null ) {
+            errBuilder.append(String.format(" with external id '%s'", streamingJobExternalId));
+        }
+        errBuilder.append(" due to "+errorReason+". Please check the request parameters against the constraints defined in the REST API.");
+        String err = errBuilder.toString();
+        log.error(err);
+        return new StreamingJobCreationResponse(1, err);
     }
 
     private StreamingJobCreationResponse createStreamingJobInternal(StreamingJobCreationRequest streamingJobCreationRequest) {
 
         try {
-            if ( streamingJobCreationRequest.isValidRequest() ) {
+            if ( !streamingJobCreationRequest.isValidRequest() ) {
+                // The streaming job failed the API syntax check, the job request is malformed. Reject the job and send an error response.
+                return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),"malformed request");
+            } else if ( !StreamResource.isSupportedUriScheme(streamingJobCreationRequest.getStreamUri()) ) {
+                // The streaming job failed the check for supported stream protocol check, so OpenMPF can't process the requested stream URI.
+                // Reject the job and send an error response.
+                return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),
+                                                               "malformed or unsupported stream URI: "+streamingJobCreationRequest.getStreamUri());
+            } else {
                 boolean enableOutputToDisk = propertiesUtil.isOutputObjectsEnabled();
                 if ( streamingJobCreationRequest.getEnableOutputToDisk() != null ) {
                   enableOutputToDisk = streamingJobCreationRequest.getEnableOutputToDisk();
@@ -189,8 +209,6 @@ public class StreamingJobController {
                         streamingJobCreationRequest.getExternalId(), //TODO: what do we do with this from the UI?
                         enableOutputToDisk, // Use the buildOutput value if it is provided with the streaming job, otherwise use the default value from the properties file.,
                         priority,// Use the priority value if it is provided, otherwise use the default value from the properties file.
-                        streamingJobCreationRequest.getStallAlertDetectionThreshold(),
-                        streamingJobCreationRequest.getStallAlertRate(),
                         streamingJobCreationRequest.getStallTimeout(),
                         streamingJobCreationRequest.getHealthReportCallbackUri(),
                         streamingJobCreationRequest.getSummaryReportCallbackUri(),
@@ -207,17 +225,7 @@ public class StreamingJobController {
                 // get the streamingJobRequest so we can pass along the output object directory in the
                 // streaming job creation response.
                 StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
-                return new StreamingJobCreationResponse( jobId, jsonStreamingJobRequest.getExternalId(), streamingJobRequest.getOutputObjectDirectory() );
-            } else {
-                StringBuilder errBuilder = new StringBuilder("Failure creating streaming job");
-                if (streamingJobCreationRequest.getExternalId() != null) {
-                    errBuilder.append(String.format(" with external id '%s'", streamingJobCreationRequest.getExternalId()));
-                }
-                errBuilder.append(" due to a malformed request. Please check the request parameters against the constraints defined in the REST API.");
-                String err = errBuilder.toString();
-
-                log.error(err);
-                return new StreamingJobCreationResponse(1, err);
+                return new StreamingJobCreationResponse( jobId, streamingJobRequest.getOutputObjectDirectory() );
             }
         } catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
             StringBuilder errBuilder = new StringBuilder("Failure creating streaming job");
@@ -273,8 +281,7 @@ public class StreamingJobController {
         StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
         if ( mpfService.cancelStreamingJob(jobId, doCleanup ) ) {
             log.debug("Successful cancellation of streaming job with id: {}",jobId);
-            return new StreamingJobCancelResponse(jobId,streamingJobRequest.getExternalId(),
-                    streamingJobRequest.getOutputObjectDirectory(), doCleanup);
+            return new StreamingJobCancelResponse(jobId,streamingJobRequest.getOutputObjectDirectory(), doCleanup);
         }
         String errorStr = "Failed to cancel the streaming job with id '" + Long.toString(jobId)
                 + "'. Please check to make sure the streaming job exists before submitting a cancel request. "

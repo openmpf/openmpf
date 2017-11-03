@@ -24,51 +24,38 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.component.executor.detection;
 
-#ifndef CPP_TEST_COMPONENTS_HELLOWORLD_H
-#define CPP_TEST_COMPONENTS_HELLOWORLD_H
+import javax.jms.JMSException;
+import javax.jms.Message;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
-#include <string>
-#include <vector>
+public class ProtoUtils {
+	
+    public static Map<String, Object> copyMsgProperties(Message src) throws JMSException {
+        Map<String, Object> objectProperties = new HashMap<String, Object>();
+        @SuppressWarnings("rawtypes")
+        Enumeration e = src.getPropertyNames();
+        while (e.hasMoreElements()) {
+            String k = (String) e.nextElement();
+            objectProperties.put(k, src.getObjectProperty(k));
+        }
+        return objectProperties;
+    }
 
-#include <log4cxx/logger.h>
+    /**
+     * Sets message properties using the given mapping.
+     * 
+     * @param properties
+     * @param dsc
+     * @throws JMSException 
+     */
+    public static void setMsgProperties(Map<String, Object> properties, Message dsc) throws JMSException {
+        for (Map.Entry<String, Object> e : properties.entrySet()) {
+            dsc.setObjectProperty(e.getKey(), e.getValue());
+        }
+    }
 
-#include <MPFDetectionComponent.h>
-
-
-class HelloWorld : public MPF::COMPONENT::MPFDetectionComponent {
-
-public:
-
-    bool Init();
-
-    bool Close();
-
-    MPF::COMPONENT::MPFDetectionError GetDetections(
-            const MPF::COMPONENT::MPFVideoJob &job,
-            std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks) override;
-
-    MPF::COMPONENT::MPFDetectionError GetDetections(
-            const MPF::COMPONENT::MPFImageJob &job,
-            std::vector<MPF::COMPONENT::MPFImageLocation> &locations) override;
-
-    MPF::COMPONENT::MPFDetectionError GetDetections(
-            const MPF::COMPONENT::MPFAudioJob &job,
-            std::vector<MPF::COMPONENT::MPFAudioTrack> &tracks) override;
-
-    MPF::COMPONENT::MPFDetectionError GetDetections(
-            const MPF::COMPONENT::MPFGenericJob &job,
-            std::vector<MPF::COMPONENT::MPFGenericTrack> &tracks) override;
-
-    bool Supports(MPF::COMPONENT::MPFDetectionDataType data_type);
-
-    std::string GetDetectionType();
-
-private:
-
-    log4cxx::LoggerPtr hw_logger_;
-
-};
-
-
-#endif //CPP_TEST_COMPONENTS_HELLOWORLD_H
+}

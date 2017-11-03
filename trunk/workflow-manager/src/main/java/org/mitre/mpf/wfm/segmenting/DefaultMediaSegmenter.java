@@ -28,9 +28,10 @@ package org.mitre.mpf.wfm.segmenting;
 
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This segmenter returns an empty message collection and warns that the provided {@link org.mitre.mpf.wfm.data.entities.transients.TransientMedia}
@@ -52,13 +54,20 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
 
 	@Override
 	public List<Message> createDetectionRequestMessages(TransientMedia media, DetectionContext context) {
-		log.warn("[Job {}|{}|{}] Media {} is of the unsupported type '{}' and will be processed generically.",
+		log.warn("[Job {}|{}|{}] Media {} is of the type '{}' and will be processed generically.",
 				context.getJobId(),
 				context.getStageIndex(),
 				context.getActionIndex(),
 				media.getId(),
 				media.getType());
-		return Collections.singletonList(createProtobufMessage(media, context, DetectionProtobuf.DetectionRequest.GenericRequest.getDefaultInstance()));
+
+		if (!context.isFirstDetectionStage() && MediaSegmenter.feedForwardIsEnabled(context)) {
+			return createFeedForwardMessages(media, context);
+		}
+
+		return Collections.singletonList(
+				createProtobufMessage(media, context,
+						DetectionProtobuf.DetectionRequest.GenericRequest.newBuilder().build()));
 	}
 
 	private static Message createProtobufMessage(TransientMedia media, DetectionContext context,
@@ -71,5 +80,27 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
 		Message message = new DefaultMessage();
 		message.setBody(detectionRequest);
 		return message;
+	}
+
+	private static List<Message> createFeedForwardMessages(TransientMedia media, DetectionContext context) {
+		List<Message> messages = new ArrayList<>();
+		for (Track track : context.getPreviousTracks()) {
+
+			DetectionProtobuf.DetectionRequest.GenericRequest.Builder genericRequest = DetectionProtobuf.DetectionRequest.GenericRequest.newBuilder();
+
+			Detection exemplar = track.getExemplar();
+
+			DetectionProtobuf.GenericTrack.Builder genericTrackBuilder = genericRequest.getFeedForwardTrackBuilder()
+					.setConfidence(exemplar.getConfidence());
+
+			for (Map.Entry<String, String> entry : exemplar.getDetectionProperties().entrySet()) {
+				genericTrackBuilder.addDetectionPropertiesBuilder()
+						.setKey(entry.getKey())
+						.setValue(entry.getValue());
+			}
+
+			messages.add(createProtobufMessage(media, context, genericRequest.build()));
+		}
+		return messages;
 	}
 }

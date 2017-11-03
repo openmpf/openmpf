@@ -122,8 +122,7 @@ void MPFDetectionBuffer::GetAudioRequest(MPFDetectionAudioRequest &audio_request
     audio_request.start_time = detection_request.audio_request().start_time();
     audio_request.stop_time = detection_request.audio_request().stop_time();
     audio_request.has_feed_forward_track = false;
-    //If there is a feed-forward track in the request, copy it into an
-    //MPFAudioTrack
+    // If there is a feed-forward track in the request, copy it into an MPFAudioTrack
     if (detection_request.audio_request().has_feed_forward_track()) {
         audio_request.has_feed_forward_track = true;
         audio_request.feed_forward_track.start_time =
@@ -141,8 +140,7 @@ void MPFDetectionBuffer::GetAudioRequest(MPFDetectionAudioRequest &audio_request
 
 void MPFDetectionBuffer::GetImageRequest(MPFDetectionImageRequest &image_request) {
     image_request.has_feed_forward_location = false;
-    //If there is a feed-forward location in the request, copy it into an
-    //MPFImageLocation
+    // If there is a feed-forward location in the request, copy it into an MPFImageLocation
     if (detection_request.image_request().has_feed_forward_location()) {
         image_request.has_feed_forward_location = true;
         image_request.feed_forward_location.x_left_upper =
@@ -159,6 +157,20 @@ void MPFDetectionBuffer::GetImageRequest(MPFDetectionImageRequest &image_request
     // Copy the image location properties
     for (auto prop : detection_request.image_request().feed_forward_location().detection_properties()) {
         image_request.feed_forward_location.detection_properties[prop.key()] = prop.value();
+    }
+}
+
+void MPFDetectionBuffer::GetGenericRequest(MPFDetectionGenericRequest &generic_request) {
+    generic_request.has_feed_forward_track = false;
+    // If there is a feed-forward track in the request, copy it into an MPFGenericTrack
+    if (detection_request.generic_request().has_feed_forward_track()) {
+        generic_request.has_feed_forward_track = true;
+        generic_request.feed_forward_track.confidence =
+                detection_request.audio_request().feed_forward_track().confidence();
+        // Copy the track properties
+        for (auto prop : detection_request.generic_request().feed_forward_track().detection_properties()) {
+            generic_request.feed_forward_track.detection_properties[prop.key()] = prop.value();
+        }
     }
 }
 
@@ -324,6 +336,35 @@ unsigned char *MPFDetectionBuffer::PackImageResponse(
 
         for (auto const &prop : detection.detection_properties) {
             org::mitre::mpf::wfm::buffers::PropertyMap *detection_prop = new_detection->add_detection_properties();
+            detection_prop->set_key(prop.first);
+            detection_prop->set_value(prop.second);
+        }
+    }
+
+    return FinalizeDetectionResponse(detection_response, packed_length);
+}
+
+unsigned char *MPFDetectionBuffer::PackGenericResponse(
+        const vector<MPFGenericTrack> &tracks,
+        const MPFMessageMetadata *const msg_metadata,
+        const MPFDetectionDataType data_type,
+        const string detection_type,
+        int *packed_length,
+        const MPFDetectionError error) const {
+    // Caller has to delete returned data
+
+    DetectionResponse detection_response;
+    PackCommonFields(msg_metadata, data_type, error, detection_response);
+
+    DetectionResponse_GenericResponse *generic_response = detection_response.add_generic_responses();
+    generic_response->set_detection_type(detection_type);
+
+    for (vector<MPFGenericTrack>::const_iterator tracks_iter = tracks.begin(); tracks_iter != tracks.end(); tracks_iter++) {
+        MPFGenericTrack track = *tracks_iter;
+        GenericTrack *new_track = generic_response->add_generic_tracks();
+        new_track->set_confidence(track.confidence);
+        for (auto const &prop : track.detection_properties) {
+            org::mitre::mpf::wfm::buffers::PropertyMap *detection_prop = new_track->add_detection_properties();
             detection_prop->set_key(prop.first);
             detection_prop->set_value(prop.second);
         }

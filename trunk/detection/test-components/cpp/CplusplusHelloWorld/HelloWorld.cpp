@@ -86,13 +86,23 @@ MPFDetectionError HelloWorld::GetDetections(const MPFAudioJob &job, vector<MPFAu
 
 MPFDetectionError HelloWorld::GetDetections(const MPFImageJob &job, vector<MPFImageLocation> &locations) {
     LOG4CXX_INFO(hw_logger_, "[" << job.job_name << "] Processing complete. Found " << locations.size() << " image locations.");
+    return MPF_DETECTION_SUCCESS;
+}
 
+//-----------------------------------------------------------------------------
+// Generic case
+
+MPFDetectionError HelloWorld::GetDetections(const MPFGenericJob &job, vector<MPFGenericTrack> &tracks) {
+    LOG4CXX_INFO(hw_logger_, "[" << job.job_name << "] Processing complete. Found " << tracks.size() << " generic tracks.");
     return MPF_DETECTION_SUCCESS;
 }
 
 //-----------------------------------------------------------------------------
 bool HelloWorld::Supports(MPFDetectionDataType data_type) {
-    return data_type == MPFDetectionDataType::IMAGE || data_type == MPFDetectionDataType::VIDEO;
+    return data_type == MPFDetectionDataType::IMAGE
+           || data_type == MPFDetectionDataType::VIDEO
+           || data_type == MPFDetectionDataType::AUDIO
+           || data_type == MPFDetectionDataType::UNKNOWN;
 }
 
 //-----------------------------------------------------------------------------

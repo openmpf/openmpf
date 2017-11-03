@@ -33,7 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This predicate matches when the target exchange's incoming message's {@link MpfHeaders#SPLIT_COMPLETED} header
+ * This predicate matches when the target exchange's incoming message's {@link MpfHeaders#c} header
  * has a value of {@link java.lang.Boolean#TRUE}.
  *
  * Note: By default, this predicate will not assign a value to the target exchange's outgoing message's body.

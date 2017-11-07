@@ -315,7 +315,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * // TODO The streaming job cancel request must also be sent to the components via the Master Node Manager
      * @param jobId     The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
      * @param doCleanup if true, delete the streaming job files from disk as part of cancelling the streaming job.
-     * @return true if the streaming job was successfully cancelled, false otherwise.
+     * @return true if the streaming job was successfully cancelled, false if the streaming job has already been cancelled or if the streaming jobs status is terminal.
      * @throws WfmProcessingException
      */
     @Override
@@ -334,64 +334,67 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         } else {
             log.info("[Job {}:*:*] Cancelling streaming job.", jobId);
 
-            // If doCleanup is true, then the caller has requested that the output object directory be deleted as part
-            // of the job cancellation.
-            if (doCleanup) {
-                // delete the output object directory as part of the job cancellation
-                String outputObjectDirectory = streamingJobRequest.getOutputObjectDirectory();
-                if (outputObjectDirectory == null || outputObjectDirectory.isEmpty()) {
-                    log.warn("[Job {}:*:*] doCleanup is enabled but the streaming job output object directory is null or empty. Can't cleanup the output object directory for this job.", jobId);
-                } else {
-                    // before we start deleting any file system, double check that this is the root directory of the
-                    // streaming job's output object directory.
-                    File outputObjectDirectoryFile = new File(outputObjectDirectory);
-                    if (outputObjectDirectoryFile.exists() && outputObjectDirectoryFile.isDirectory() && outputObjectDirectoryFile.isAbsolute()) {
-                        Path outputObjectDirectoryFileRootPath = Paths.get(outputObjectDirectoryFile.toURI());
-                        // TODO some extra validation should be added here for security to ensure that the output object directory identified is of valid syntax (i.e. error out if equal to "/", etc)
-                        // TODO need to define naming convention for VidoeWriter output files.
-                        // TODO extra validation should be added here for security to ensure that only VideoWriter output files are deleted.
-                        // TODO the software that actually deletes the output object file system is commented out until the security filters can be enforced
-                        // TODO what extra handling needs to be added if the cleanup fails?  How to notify the user?
-                        log.warn("[Job {}:*:*] doCleanup is enabled but output object directory validation filters haven't yet been added.", jobId);
-
-                        try (Stream<Path> paths = Files.walk(outputObjectDirectoryFileRootPath)) {
-                            paths.forEach(p -> p.toFile().delete());
-                        }
-                        catch (IOException ioe) {
-                            String errorMessage =
-                                "Failed to cleanup the output object file directory for streaming job "
-                                    + jobId
-                                    + " due to IO exception.";
-                            log.error(errorMessage);
-                            throw new WfmProcessingException(errorMessage, ioe);
-                        }
-
-                    } else {
-                        log.warn("[Job {}:*:*] doCleanup is enabled but the output object directory associated with this streaming job isn't a viable directory. Can't cleanup the output object directory for this job.", jobId);
-                    }
-                }
-            }
-
-            // Mark the streaming job as cancelled in Redis so that future steps in the workflow will know not to continue processing.
+            // Mark the streaming job as cancelled in Redis so that future steps in the workflow will not to continue processing.
             if (redis.cancel(jobId)) {
-                try {
-                    // Try to move any pending work items on the queues to the appropriate cancellation queues.
-                    // If this operation fails, any remaining pending items will continue to process, but
-                    // the future splitters should not create any new work items. In short, if this fails,
-                    // the system should not be affected, but the streaming job may not complete any faster.
-                    // TODO tell the master node manager to cancel the streaming job
-                    log.warn("[Job {}:*:*] Cancellation of streaming job via master node manager not yet implemented.", jobId);
-                } catch (Exception exception) {
-                    log.warn("[Job {}:*:*] Failed to remove the pending work elements in the message broker for this streaming job. The job must complete the pending work elements before it will cancel the job.", jobId, exception);
-                }
+
+                // Try to move any pending work items on the queues to the appropriate cancellation queues.
+                // If this operation fails, any remaining pending items will continue to process, but
+                // the future splitters should not create any new work items. In short, if this fails,
+                // the system should not be affected, but the streaming job may not complete any faster.
+                // TODO tell the master node manager to cancel the streaming job
+                log.warn("[Job {}:*:*] Cancellation of streaming job via master node manager not yet implemented.", jobId);
+
+                // set job status as cancelling, and persist that changed state in the database
                 streamingJobRequest.setStatus(JobStatus.CANCELLING);
                 streamingJobRequestDao.persist(streamingJobRequest);
+
+                // If doCleanup is true, then the caller has requested that the output object directory be deleted as part
+                // of the job cancellation.  Note that the node manager may not yet have cancelled this streaming job, so these files may still be in use when they are deleted in the section below.
+                if (doCleanup) {
+                    // delete the output object directory as part of the job cancellation
+                    String outputObjectDirectory = streamingJobRequest.getOutputObjectDirectory();
+                    if (outputObjectDirectory == null || outputObjectDirectory.isEmpty()) {
+                        log.warn("[Job {}:*:*] doCleanup is enabled but the streaming job output object directory is null or empty. Can't cleanup the output object directory for this job.", jobId);
+                    } else {
+                        // before we start deleting any file system, double check that this is the root directory of the
+                        // streaming job's output object directory.
+                        File outputObjectDirectoryFile = new File(outputObjectDirectory);
+                        if ( !outputObjectDirectoryFile.exists() ) {
+                            // it is not an error if the streaming job has been cancelled, doCleanup is enabled, but the output object directory doesn't exist.  Just log that fact and continue
+                            log.info("[Job {}:*:*] streaming job is cancelling - output object directory {} not deleted because it doesn't exist.", jobId, outputObjectDirectory);
+                        } else if ( outputObjectDirectoryFile.isDirectory() && outputObjectDirectoryFile.isAbsolute() ) {
+                            log.info("[Job {}:*:*] streaming job is cancelling - output object directory {} is being deleted as requested within the cancel request.", jobId, outputObjectDirectory);
+                            Path outputObjectDirectoryFileRootPath = Paths.get(outputObjectDirectoryFile.toURI());
+                            try (Stream<Path> paths = Files.walk(outputObjectDirectoryFileRootPath)) {
+                                paths.forEach(p -> p.toFile().delete());
+                            }
+                            catch (IOException ioe) {
+                                String errorMessage =
+                                    "Failed to cleanup the output object file directory for streaming job "
+                                        + jobId
+                                        + " due to IOException: "+ioe.getMessage();
+                                log.error(errorMessage);
+                                throw new WfmProcessingException(errorMessage, ioe);
+                            }
+
+                        } else {
+                            String errorMessage = "Streaming Job "+jobId+" requested to be cancelled with doCleanup enabled, but  output object directory "+ outputObjectDirectory + " isn't a viable directory. Can't delete output object directory.";
+                            log.warn("[Job {}:*:*] doCleanup is enabled but the output object directory associated with this streaming job isn't a viable directory. Can't cleanup the output object directory for this job.", jobId);
+                            throw new WfmProcessingException(errorMessage);
+                        }
+                    }
+                }
+
             } else {
+                // Couldn't find the requested job as a batch or as a streaming job in REDIS.
                 // Warn of the race condition where Redis and the persistent database reflect different states.
                 log.warn("[Job {}:*:*] The streaming job is not in progress and cannot be cancelled at this time.", jobId);
+                throw new WfmProcessingException("Streaming job with jobId "+jobId+" is not found, it cannot be cancelled at this time.");
             }
-            return true;
+
         }
+        // if we get to here without throwing an exception, the job was successfully cancelled.
+        return true;
     }
 
     /**

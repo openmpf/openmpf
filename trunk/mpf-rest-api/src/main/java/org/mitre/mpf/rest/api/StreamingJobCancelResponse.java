@@ -32,24 +32,37 @@ public class StreamingJobCancelResponse {
 	private String outputObjectDirectory;
 	private MpfResponse mpfResponse = new MpfResponse();
 
-	public StreamingJobCancelResponse() {}
-
-	public StreamingJobCancelResponse(boolean doCleanup, int errorCode, String errorMessage) {
-		this.mpfResponse.setMessage(errorCode, errorMessage);
-		this.jobId = -1L;
+    /** Set response parameters.
+     * @param jobId job id of this streaming job
+     * @param outputObjectDirectory root directory for output objects created during this streaming job
+     * @param doCleanup if true, then the caller is requesting that the output object directory is cleaned up prior to cancelling this job
+    */
+    private void setResponseParameters(Long jobId, String outputObjectDirectory, boolean doCleanup) {
+		this.jobId = jobId;
+		this.outputObjectDirectory = outputObjectDirectory;
 		this.doCleanup = doCleanup;
 	}
 
-	/** Constructor
+	/** Constructor typically used for construction of a StreamingJobCancelResponse indicating an error.
+	 * @param jobId job id of this streaming job
+	 * @param outputObjectDirectory root directory for output objects created during this streaming job
+	 * @param doCleanup if true, then the caller is requesting that the output object directory is cleaned up prior to cancelling this job
+     * @param errorCode error code to be set in the mpf response
+     * @param errorMessage error message to be set in the mpf response
+	 */
+	public StreamingJobCancelResponse(Long jobId, String outputObjectDirectory, boolean doCleanup, int errorCode, String errorMessage) {
+		setResponseParameters(jobId,outputObjectDirectory,doCleanup);
+        mpfResponse.setMessage(errorCode, errorMessage);
+	}
+
+	/** Constructor typically used for construction of a StreamingJobCancelResponse indicating success.
 	 * @param jobId job id of this streaming job
 	 * @param outputObjectDirectory root directory for output objects created during this streaming job
 	 * @param doCleanup if true, then the caller is requesting that the output object directory is cleaned up prior to cancelling this job
 	 */
 	public StreamingJobCancelResponse(Long jobId, String outputObjectDirectory, boolean doCleanup) {
-		this.jobId = jobId;
-		this.outputObjectDirectory = outputObjectDirectory;
-		this.doCleanup = doCleanup;
-		this.mpfResponse.setMessage(0,"success");
+		setResponseParameters(jobId,outputObjectDirectory,doCleanup);
+        mpfResponse.setMessage(0,"success");
 	}
 	
 	public Long getJobId() {

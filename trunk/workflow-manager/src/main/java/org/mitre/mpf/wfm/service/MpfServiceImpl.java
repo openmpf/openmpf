@@ -225,18 +225,13 @@ public class MpfServiceImpl implements MpfService {
 	 * Cancel a streaming job.
 	 * @param jobId The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
 	 * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job.
-	 * @return
+	 * @return true if the streaming job was successfully cancelled, false otherwise.
+	 * @exception WfmProcessingException is thrown if an error occurs during cancellation of the streaming job.
 	 */
 	@Override
-	public boolean cancelStreamingJob(long jobId, boolean doCleanup) {
-		try {
-			log.debug(this.getClass().getName()+":cancelStreamingJob: jobId="+jobId+", doCleanup="+doCleanup+" - don't know what to do with doCleanup TODO");
-			boolean status = streamingJobRequestBo.cancel(jobId, doCleanup);
-			return status;
-		} catch ( WfmProcessingException wpe ) {
-			log.error("Failed to cancel Streaming Job #{} due to an exception.", jobId, wpe);
-			return false;
-		}
+	public boolean cancelStreamingJob(long jobId, boolean doCleanup) throws WfmProcessingException{
+		boolean status = streamingJobRequestBo.cancel(jobId, doCleanup);
+		return status;
 	}
 
 	@Override

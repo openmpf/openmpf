@@ -137,7 +137,7 @@ public class IoUtils {
             return MediaType.AUDIO;
         } else {
             log.warn(String.format("The MIME type '%s' does not map to a MediaType.", mimeType));
-            return MediaType.UNSUPPORTED;
+            return MediaType.UNKNOWN;
         }
     }
 
@@ -226,25 +226,12 @@ public class IoUtils {
 
     /***
      * Returns true if the file passes mime and custom extension tests
-     * @param contentType
-     * @param filename
-     * @return
-     */
-    private boolean isApproved(String contentType,String filename) {
-        if (isApprovedContentType(contentType) || isApprovedCustomExtension(filename)) {
-            return true;
-        }
-        return false;
-    }
-
-    /***
-     * Returns true if the file passes mime and custom extension tests
      * @param file
      * @return
      */
     public boolean isApprovedFile(File file) {
         String contentType = getMimeType(file.getAbsolutePath());
-        return isApproved(contentType,file.getAbsolutePath());
+        return isApprovedContentType(contentType);
     }
 
     /***
@@ -254,43 +241,16 @@ public class IoUtils {
      * @throws WfmProcessingException
      */
     public boolean isApprovedFile(URL url) throws WfmProcessingException {
-        String filename = url.getFile();
         String contentType = getMimeType(url);
-        return isApproved(contentType,filename);
+        return isApprovedContentType(contentType);
     }
 
     /***
-     * Returns true if the file passes mime and custom extension tests
-     * @param contentType
-     * @param filename
-     * @return
-     */
-    public boolean isApprovedFile(String contentType,String filename) {
-        return isApproved(contentType,filename);
-    }
-
-    /***
-     * Returns true if the content type is not equal to null and the content type does start with AUDIO, IMAGE, or VIDEO
+     * Returns true if the content type is not equal to null
      * @param contentType
      * @return
      */
     public boolean isApprovedContentType(String contentType) {
-        MediaType type = MediaTypeUtils.parse(contentType);
-        return (type != MediaType.UNSUPPORTED);
-    }
-
-    /***
-     * Returns true of the path ends with a custom extension
-     * @param pathStr
-     * @return
-     */
-    public boolean isApprovedCustomExtension(String pathStr) {
-        List<String> customExtensions = propertiesUtil.getServerMediaTreeCustomExtensions();
-        for (String extn : customExtensions) {
-            if (pathStr.endsWith(extn)) {
-                return true;
-            }
-        }
-        return false;
+        return MediaTypeUtils.parse(contentType) != null;
     }
 }

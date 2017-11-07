@@ -213,7 +213,7 @@ public class MarkupStageSplitter implements StageSplitter {
 				return ".avi";
 
 			case AUDIO: // Falls through
-			case UNSUPPORTED: // Falls through
+			case UNKNOWN: // Falls through
 			default:
 				return ".bin";
 		}

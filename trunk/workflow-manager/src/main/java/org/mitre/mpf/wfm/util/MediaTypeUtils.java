@@ -92,28 +92,7 @@ public class MediaTypeUtils {
         } else if(StringUtils.startsWithIgnoreCase(trimmedMimeType, "VIDEO")) {
             return MediaType.VIDEO;
         } else {
-            return MediaType.UNSUPPORTED;
+            return MediaType.UNKNOWN;
         }
     }
-
-    /**
-     * Gets the list of approved mime types from the whitelist properties files
-     * @return List of mime types
-     */
-    public static List<String> getAcceptedMimeTypes() {
-        List<String> list = new ArrayList<String>();
-        if (mediaTypeProperties==null) {
-            log.warn("media type properties not loaded.");
-        } else {
-            Enumeration e = mediaTypeProperties.propertyNames();
-            while (e.hasMoreElements()) {
-                String key = (String) e.nextElement();
-                if (key.startsWith("whitelist.")) {
-                    list.add(TextUtils.trim(key.replace("whitelist.", "")));
-                }
-            }
-        }
-        return list;
-    }
-
 }

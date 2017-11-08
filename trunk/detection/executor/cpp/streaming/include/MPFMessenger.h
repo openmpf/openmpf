@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,57 +28,83 @@
 #define MPF_MESSENGER_H_
 
 #include <string>
+#include <stdexcept>
 
 #include "MPFMessage.h"
 
 namespace MPF {
 
-enum MPFMessengerError {
-    MESSENGER_SUCCESS = 0,
-    MESSENGER_NOT_INITIALIZED,
-    MESSENGER_MISSING_PROPERTY,
-    MESSENGER_INVALID_PROPERTY,
-    MESSENGER_PROPERTY_IS_NOT_INT,
-    MESSENGER_PROPERTY_IS_NOT_FLOAT,
-    MESSENGER_OTHER_ERROR
+class MPFMessageException : std::runtime_error {
+  public:
+
+    enum MPFMessageError {
+        UNRECOGNIZED_ERROR,
+        UNSPECIFIED_ERROR,
+        MESSENGER_NOT_INITIALIZED,
+        MESSENGER_MISSING_PROPERTY,
+        MESSENGER_INVALID_PROPERTY
+    };
+
+    explicit MPFMessageException(const char *msg, MPFMessageError e) 
+            : std::runtime_error(msg), error_type_(e) {}
+    explicit MPFMessageException(const std::string &msg, MPFMessageError e) 
+            : std::runtime_error(msg), error_type_(e) {}
+    virtual ~MPFMessageException() = default;
+
+    MPFMessageError getErrorType() {
+        return error_type_;
+    }
+
+  protected:
+    MPFMessageError error_type_;
 };
 
 class MPFMessenger {
-
- public:
-
+  public: 
     virtual ~MPFMessenger() = default;
 
-    virtual MPFMessengerError Connect(const std::string &broker_name,
-                                      const MPF::COMPONENT::Properties &properties) = 0;
-    virtual MPFMessengerError CreateReceiver(const std::string &queue_name,
-                                             const MPF::COMPONENT::Properties &queue_properties,
-                                             MPF::MPFReceiver *receiver) = 0;
-    virtual MPFMessengerError CreateSender(const std::string &queue_name,
-                                           const MPF::COMPONENT::Properties &queue_properties,
-                                           MPF::MPFSender *sender) = 0;
-    virtual MPFMessengerError Start() = 0;
-    virtual MPFMessengerError SendMessage(const MPF::MPFMessage *msg) = 0;
-    virtual MPFMessengerError ReceiveMessage(MPF::MPFMessage *msg) = 0;
-    virtual MPFMessengerError CloseReceiver(MPF::MPFReceiver *receiver) = 0;
-    virtual MPFMessengerError CloseSender(MPF::MPFSender *sender) = 0;
-    virtual MPFMessengerError Shutdown() = 0;
+    // Connect to the message passing system
+    virtual void Connect(const std::string &broker_name,
+                         const MPF::COMPONENT::Properties &properties) = 0;
+    virtual void Start() = 0;
+    virtual void Stop() = 0;
+    virtual void Shutdown() = 0;
 
   protected:
-    MPFMessenger() = default;
+    bool connected_;
+    MPFMessenger() : connected_(false) {}
 
+};
+
+class MPFInputMessenger : MPFMessenger {
+  public: 
+    virtual ~MPFInputMessenger() = default;
+    MPFInputMessenger() = default;
+
+    virtual void SetInputQueue(const std::string &queue_name,
+                               const MPF::COMPONENT::Properties &queue_properties) = 0;
+
+    //blocking receive
+    virtual std::unique_ptr<MPFMessage> GetMessage() = 0;
+    // blocking receive with timeout
+    virtual std::unique_ptr<MPFMessage> GetMessage(const uint32_t timeout_msec) = 0;
+    // non-blocking receive
+    virtual std::unique_ptr<MPFMessage> TryGetMessage() = 0;
+
+};
+
+class MPFOutputMessenger : MPFMessenger {
+  public: 
+    virtual ~MPFOutputMessenger() = default;
+    MPFOutputMessenger() = default;
+
+    virtual void SetOutputQueue(const std::string &queue_name,
+                           const MPF::COMPONENT::Properties &queue_properties) = 0;
+
+    // blocking send
+    virtual void PutMessage(const MPFMessage *msg) = 0;
 };
 
 } // namespace MPF
 
-#define MPF_MESSENGER_CREATOR(name) \
-  extern "C" MPF::COMPONENT::MPFMessenger* messenger_creator() { \
-      return new (name);                                  \
-  }
-
-#define MPF_MESSENGER_DELETER() \
-  extern "C" MPF::COMPONENT::MPFMessenger* messenger_deleter(MPFMessenger *messenger_P_) { \
-    delete messenger_P_; \
-  }
-
-#endif // MPF_MESSAGE_QUEUE_H_
+#endif // MPF_MESSENGER_H_

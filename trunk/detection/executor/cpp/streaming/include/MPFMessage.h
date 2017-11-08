@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -34,95 +34,86 @@
 namespace MPF {
 
 struct MPFMessage {
-    MPF::COMPONENT::Properties msg_properties;
+    std::string job_name_;
+    uint32_t job_number_;
+    virtual ~MPFMessage() = default;
   protected:
-    MPFMessage(const MPF::COMPONENT::Properties &p) 
-            : msg_properties(p) {}
+    MPFMessage(const std::string &job_name, const uint32_t job_number)
+            : job_name_(job_name), job_number_(job_number) {}
 };
-
-// So that the other processing components can attach to the Frame
-// Storage Buffer, the SegmentReady message needs to include
-// parameters needed to do that in the Properties.
 
 struct MPFSegmentReadyMessage : MPFMessage {
 
-    int segment_number;
-    MPFSegmentReadyMessage(const int num,
-                           const MPF::COMPONENT::Properties &props)
-            : MPFMessage(props),
-              segment_number(num) {}
+    uint32_t segment_number_;
+    MPFSegmentReadyMessage(const std::string &job_name,
+                           const uint32_t job_number,
+                           const uint32_t seg_num)
+            : MPFMessage(job_name, job_number),
+              segment_number_(num) {}
+    ~MPFSegmentReadyMessage() = default;
 };
 
 struct MPFFrameReadyMessage : MPFMessage {
 
-    int segment_number;
-    int frame_index;
-    uint64_t frame_offset_bytes;
-    MPFFrameReadyMessage(const int num,
-                         const int index,
-                         const uint64_t offset,
-                         const MPF::COMPONENT::Properties &props) 
-            : MPFMessage(props),
-              segment_number(num),
-              frame_index(index),
-              frame_offset_bytes(offset) {}
+    uint32_t segment_number_;
+    uint32_t frame_index_;
+    uint64_t frame_offset_bytes_;
+    MPFFrameReadyMessage(const std::string &job_name,
+                         const uint32_t job_number,
+                         const uint32_t seg_num,
+                         const uint32_t index,
+                         const uint64_t offset)
+            : MPFMessage(job_name, job_number),
+              segment_number_(seg_num),
+              frame_index_(index),
+              frame_offset_bytes_(offset) {}
+    ~MPFFrameReadyMessage() = default;
 };  
 
 struct MPFReleaseFrameMessage : MPFMessage {
 
-    uint64_t frame_offset_bytes;
-    MPFReleaseFrameMessage(const uint64_t offset,
-                         const MPF::COMPONENT::Properties &props) 
-            : MPFMessage(props),
-              frame_offset_bytes(offset) {}
+    uint64_t frame_offset_bytes_;
+    MPFReleaseFrameMessage(const std::string &job_name,
+                           const uint32_t job_number,
+                           const uint64_t offset)
+            : MPFMessage(job_name, job_number),
+              frame_offset_bytes_(offset) {}
+    ~MPFReleaseFrameMessage() = default;
 };
 
 struct MPFJobStatusMessage : MPFMessage {
-    std::string status_message;
-    MPFJobStatusMessage(const std::string &msg,
-                        const MPF::COMPONENT::Properties &props) 
-            : MPFMessage(props), status_message(msg) {}
+    std::string status_message_;
+    MPFJobStatusMessage(const std::string &job_name,
+                        const uint32_t job_number,
+                        const std::string &msg)
+            : MPFMessage(job_name, job_number), status_message_(msg) {}
+    ~MPFJobStatusMessage() = default;
 };
 
 struct MPFSegmentSummaryMessage : MPFMessage {
-    int segment_number;
-    std::vector<MPF::COMPONENT::MPFVideoTrack> tracks;
-    MPFSegmentSummaryMessage(int n,
-                             const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks,
-                             const MPF::COMPONENT::Properties &props) 
-            : MPFMessage(props),
-              segment_number(n),
-              tracks(tracks) {}
+    int segment_number_;
+    std::vector<MPF::COMPONENT::MPFVideoTrack> tracks_;
+    MPFSegmentSummaryMessage(const std::string &job_name,
+                             const uint32_t job_number,
+                             int seg_num,
+                             const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks)
+            : MPFMessage(job_name, job_number),
+              segment_number_(seg_num),
+              tracks_(tracks) {}
+    ~MPFSegmentSummaryMessage() = default;
 };
 
 struct MPFVideoWrittenMessage : MPFMessage {
-    int segment_number;
-    std::string video_output_pathname;
-    MPFVideoWrittenMessage(int n,
-                        const std::string path,
-                        const MPF::COMPONENT::Properties &props) 
-            : MPFMessage(props),
-              segment_number(n),
-              video_output_pathname(path) {}
-};
-
-class MPFReceiver {
-  public:
-    virtual ~MPFReceiver() = default;
-    virtual MPFMessage* getMessage() = 0;
-  protected:
-    MPFReceiver() = default;
-    std::string queue_name_;
-};
-
-
-class MPFSender {
-  public:
-    virtual ~MPFSender() = default;
-    virtual void putMessage(MPFMessage *msg) = 0;
-  protected:
-    MPFSender() = default;
-    std::string queue_name_;
+    int segment_number_;
+    std::string video_output_pathname_;
+    MPFVideoWrittenMessage(const std::string &job_name,
+                           const uint32_t job_number,
+                           const uint32_t seg_num,
+                           const std::string &path)
+            : MPFMessage(job_name, job_number),
+              segment_number_(seg_num),
+              video_output_pathname_(path) {}
+    ~MPFVideoWrittenMessage() = default;
 };
 
 

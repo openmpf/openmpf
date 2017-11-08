@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,45 +29,64 @@
 
 #include <memory>
 
-#include <cms/MessageConsumer.h>
-#include <cms/MessageProducer.h>
+#include <cms/TextMessage.h>
 
 #include "MPFMessage.h"
 
 
 namespace MPF {
 
-class MPFAMQReceiver : MPFReceiver {
-  public:
-    MPFAMQReceiver() = default;
-    MPFAMQReceiver(cms::MessageConsumer *consumer,
-                   cms::Destination *destination)
-            : destination_(destination)
-            , consumer_(consumer) {}
-    ~MPFAMQReceiver() = default;
-    MPFMessage* getMessage() override;
-  private:
-    std::unique_ptr<cms::Destination> destination_;
-    std::unique_ptr<cms::MessageConsumer> consumer_;
-    
+struct AMQSegmentReadyMessage : MPFSegmentReadyMessage, cms::Message {
+
+    AMQSegmentReadyMessage(const std::string &job_name,
+                           const uint32_t job_number,
+                           const uint32_t seg_num)
+            : MPFSegmentReadyMessage(job_name, job_number, seg_num) {}
 };
 
+struct AMQFrameReadyMessage : MPFFrameReadyMessage, cms::Message {
 
-class MPFAMQSender : MPFSender {
-  public:
-    MPFAMQSender() = default;
-    MPFAMQSender(cms::MessageProducer *producer,
-                 cms::Destination *destination)
-            : destination_(destination)
-            , producer_(producer) {}
-    ~MPFAMQSender() = default;
-    void putMessage(MPFMessage *msg) override;
-  private:
-    std::unique_ptr<cms::Destination> destination_;
-    std::unique_ptr<cms::MessageProducer> producer_;
+    AMQFrameReadyMessage(const std::string &job_name,
+                         const uint32_t job_number,
+                         const uint32_t seg_num,
+                         const uint32_t index,
+                         const uint64_t offset)
+            : MPFFrameReadyMessage(job_name, job_number, seg_num, index, offset) {}
+};  
 
+struct AMQReleaseFrameMessage : MPFReleaseFrameMessage, cms::Message {
+
+    AMQReleaseFrameMessage(const std::string &job_name,
+                           const uint32_t job_number,
+                           const uint64_t offset)
+            : MPFReleaseFrameMessage(job_name, job_number, offset) {}
 };
 
+struct AMQJobStatusMessage : MPFJobStatusMessage, cms::Message {
+
+    AMQJobStatusMessage(const std::string &job_name,
+                        const uint32_t job_number,
+                        const std::string &msg)
+            : MPFJobStatusMessage(job_name, job_number, msg) {}
+};
+
+struct AMQSegmentSummaryMessage : MPFSegmentSummaryMessage, cms::BytesMessage {
+
+    AMQSegmentSummaryMessage(const std::string &job_name,
+                             const uint32_t job_number,
+                             int seg_num,
+                             const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks)
+            : MPFSegmentSummaryMessage(job_name, job_number, seg_num, tracks) {}
+};
+
+struct AMQVideoWrittenMessage : MPFVideoWrittenMessage, cms::Message {
+
+    AMQVideoWrittenMessage(const std::string &job_name,
+                           const uint32_t job_number,
+                           const uint32_t seg_num,
+                           const std::string &path)
+            : MPFVideoWrittenMessage(job_name, job_number, seg_num, path) {}
+};
 
 } // namespace MPF
 

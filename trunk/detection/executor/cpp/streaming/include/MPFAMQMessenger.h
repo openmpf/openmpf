@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2016 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2016 The MITRE Corporation                                       *
+ * Copyright 2017 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -37,39 +37,61 @@
 #include <cms/Session.h>
 #include <cms/MessageConsumer.h>
 #include <cms/MessageProducer.h>
-#include <log4cxx/logger.h>
+//#include <log4cxx/logger.h>
 
 #include "MPFMessenger.h"
 #include "MPFAMQMessage.h"
 
 namespace MPF {
 
-class MPFAMQMessenger : public MPFMessenger {
+class AMQMessenger : MPFMessenger {
+  public:
+    virtual ~AMQMessenger() = default;
+
+    void Connect(const std::string &broker_name,
+                 const MPF::COMPONENT::Properties &properties) override;
+    void Start() override;
+    void Stop() override;
+    void Shutdown() override;
+
+  protected:
+    AMQMessenger()
+            : MPFMessenger(false), connection_(NULL) {}
+
+    static std::unique_ptr<cms::Connection> connection_;
+
+};
+
+class AMQInputMessenger : public AMQMessenger, MPFInputMessenger {
 
  public:
-    MPFAMQMessenger() = default;
-    ~MPFAMQMessenger() { Shutdown(); }
+    AMQInputMessenger() = default;
+    ~AMQInputMessenger() { Shutdown(); }
 
-    MPFMessengerError Connect(const std::string &broker_name,
-                              const MPF::COMPONENT::Properties &properties) override;
-    MPFMessengerError CreateReceiver(const std::string &queue_name,
-                                     const MPF::COMPONENT::Properties &queue_properties,
-                                     MPF::MPFReceiver *receiver) override;
-    MPFMessengerError CreateSender(const std::string &queue_name,
-                                   const MPF::COMPONENT::Properties &queue_properties,
-                                   MPF::MPFSender *sender) override;
-    MPFMessengerError Start() override;
-    MPFMessengerError SendMessage(const MPF::MPFMessage *msg) override;
-    MPFMessengerError ReceiveMessage(MPF::MPFMessage *msg) override;
-    MPFMessengerError CloseReceiver(MPFReceiver *receiver) override;
-    MPFMessengerError CloseSender(MPFSender *sender) override;
-    MPFMessengerError Shutdown() override;
+    // MPFInputMessenger methods
+    std::unique_ptr<MPFMessage> GetMessage() override;
+    std::unique_ptr<MPFMessage> GetMessage(const uint32_t timeout_msec) override;
+    std::unique_ptr<MPFMessage> TryGetMessage() override;
 
   private:
     bool initialized_;
-    std::unique_ptr<cms::Connection> connection_;
     std::unique_ptr<cms::Session> session_;
+};
 
+class AMQOutputMessenger : AMQMessenger, MPFOutputMessenger {
+  public:
+    AMQOutputMessenger() = default;
+    ~AMQOutputMessenger() = { Shutdown(); }
+
+    void SetOutputQueue(const std::string &queue_name,
+                        const MPF::COMPONENT::Properties &queue_properties) override;
+
+    // blocking send
+    void PutMessage(const MPFMessage *msg) override;
+
+  private:
+    bool initialized_;
+    std::unique_ptr<cms::Session> session_;
 };
 
 } // namespace MPF

@@ -181,15 +181,20 @@ public class AddComponentServiceImpl implements AddComponentService {
         customPipelineValidator.validate(descriptor);
 
         AlgorithmDefinition algorithmDef = null;
-        String algoName = null;
         if (descriptor.algorithm != null) {
             algorithmDef = convertJsonAlgo(descriptor);
-            algoName = saveAlgorithm(algorithmDef);
-            model.setAlgorithmName(algoName);
+            String serviceName = saveService(descriptor, algorithmDef);
+            model.setServiceName(serviceName);
         }
+
         model.setComponentName(descriptor.componentName);
 
         try {
+        	if (algorithmDef != null) {
+                String algoName = saveAlgorithm(algorithmDef);
+                model.setAlgorithmName(algoName);
+            }
+
             Set<String> savedActions = saveActions(descriptor, algorithmDef);
             model.getActions().addAll(savedActions);
 
@@ -198,20 +203,9 @@ public class AddComponentServiceImpl implements AddComponentService {
 
             Set<String> savedPipelines = savePipelines(descriptor, algorithmDef);
             model.getPipelines().addAll(savedPipelines);
-
-            if (descriptor.algorithm != null) {
-                String serviceName = saveService(descriptor, algorithmDef);
-                model.setServiceName(serviceName);
-            }
         }
         catch (ComponentRegistrationSubsystemException ex) {
-            if (descriptor.algorithm != null) {
-                _log.warn("Component registration failed for {}. Removing the {} algorithm and child objects.",
-                        descriptor.componentName, algoName);
-            } else {
-                _log.warn("Component registration failed for {}. Removing child objects.",
-                        descriptor.componentName);
-            }
+            _log.warn("Component registration failed for {}. Removing child objects.", descriptor.componentName);
             removeComponentService.deleteCustomPipelines(model, true);
             throw ex;
         }
@@ -245,6 +239,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         AlgorithmDefinition algoDef = new AlgorithmDefinition(
                 jsonAlgo.actionType,
                 descriptor.algorithm.name.toUpperCase(),
+                descriptor.componentName,
                 jsonAlgo.description,
                 jsonAlgo.supportsBatchProcessing,
                 jsonAlgo.supportsStreamProcessing);
@@ -434,7 +429,7 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     private String saveService(JsonComponentDescriptor descriptor, AlgorithmDefinition algorithmDef)
             throws ComponentRegistrationSubsystemException {
-        String serviceName = descriptor.componentName;
+        String serviceName = algorithmDef.getServiceName();
         if (nodeManagerService.getServiceModels().containsKey(serviceName)) {
             throw new ComponentRegistrationSubsystemException(String.format(
                     "Couldn't add the %s service because another service already has that name", serviceName));

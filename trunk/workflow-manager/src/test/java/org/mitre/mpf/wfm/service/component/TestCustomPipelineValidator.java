@@ -209,12 +209,13 @@ public class TestCustomPipelineValidator {
         descriptor.algorithm.supportsBatchProcessing = false;
         descriptor.algorithm.supportsStreamProcessing = true;
 
-        AlgorithmDefinition batchAndStreamingAlgo = new AlgorithmDefinition(ActionType.DETECTION,
-                                                                            "BATCH_AND_STREAMING", "", true, true);
+        AlgorithmDefinition batchAndStreamingAlgo = new AlgorithmDefinition(
+                ActionType.DETECTION, "BATCH_AND_STREAMING", "svc_name", "", true, true);
         when(_mockPipelineService.getAlgorithm(batchAndStreamingAlgo.getName()))
                 .thenReturn(batchAndStreamingAlgo);
 
-        AlgorithmDefinition batchOnlyAlgo = new AlgorithmDefinition(ActionType.DETECTION, "BATCH_ONLY", "", true, false);
+        AlgorithmDefinition batchOnlyAlgo = new AlgorithmDefinition(
+                ActionType.DETECTION, "BATCH_ONLY", "svc_name", "", true, false);
         when(_mockPipelineService.getAlgorithm(batchOnlyAlgo.getName()))
                 .thenReturn(batchOnlyAlgo);
 
@@ -295,7 +296,8 @@ public class TestCustomPipelineValidator {
 
 
     private void setupReferencedAlgo() {
-        AlgorithmDefinition algoDef = new AlgorithmDefinition(ActionType.DETECTION, REFERENCED_ALGO_NAME, "", true, false);
+        AlgorithmDefinition algoDef = new AlgorithmDefinition(
+                ActionType.DETECTION, REFERENCED_ALGO_NAME, "svc_name", "", true, false);
         ACTION1_PROP_NAMES
                 .stream()
                 .map(n -> new PropertyDefinition(n, ValueType.INT, "1", "0"))

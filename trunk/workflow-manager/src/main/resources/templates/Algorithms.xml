@@ -27,7 +27,7 @@
 
 <algorithms>
 
-    <algorithm name="MARKUPCV" actionType="MARKUP" supportsBatchProcessing="true">
+    <algorithm name="MARKUPCV" actionType="MARKUP" supportsBatchProcessing="true" serviceName="Markup">
         <description>Marks up any objects which were detected in the last detection task of a pipeline. Does not support audio files (e.g., MP3, WAV, etc.).</description>
         <requires>
             <state-refs>

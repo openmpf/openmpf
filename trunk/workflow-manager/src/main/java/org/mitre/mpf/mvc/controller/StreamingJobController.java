@@ -310,25 +310,36 @@ public class StreamingJobController {
     private StreamingJobCancelResponse cancelStreamingJobInternal(long jobId, boolean doCleanup) {
         StreamingJobCancelResponse cancelResponse = null;
         log.debug("Attempting to cancel streaming job with id: {}.", jobId);
+
         StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
-        try {
-            if (mpfService.cancelStreamingJob(jobId, doCleanup)) {
-                log.debug("Successful cancellation of streaming job with id: {}", jobId);
+        if ( streamingJobRequest == null ) {
+            cancelResponse = new StreamingJobCancelResponse(jobId, "", doCleanup, 1, "Streaming job with id "+jobId+" doesn't exist.");
+        } else {
+            try {
+                if (mpfService.cancelStreamingJob(jobId, doCleanup)) {
+                    log.debug("Successful cancellation of streaming job with id: {}", jobId);
+                    cancelResponse = new StreamingJobCancelResponse(jobId,
+                        streamingJobRequest.getOutputObjectDirectory(), doCleanup);
+                } else {
+                    // if the job already appears to be cancelled, send success error code - but mention that the job looks like it has already been cancelled.
+                    log.debug(
+                        "Streaming job with id: {} is already cancelled or already has a status of terminal",
+                        jobId);
+                    cancelResponse = new StreamingJobCancelResponse(jobId,
+                        streamingJobRequest.getOutputObjectDirectory(), doCleanup, 0,
+                        "Streaming job " + jobId
+                            + " has already been cancelled or already has terminal status.");
+                }
+            } catch (WfmProcessingException e) {
+                log.error(e.getMessage());
+                String errorStr =
+                    "Failed to cancel the streaming job with id '" + Long.toString(jobId)
+                        + "'. Please check to make sure the streaming job exists before submitting a cancel request. "
+                        + "Also consider checking the server logs for more information on this error.";
+                log.error(errorStr);
                 cancelResponse = new StreamingJobCancelResponse(jobId,
-                    streamingJobRequest.getOutputObjectDirectory(), doCleanup);
-            } else {
-                // if the job already appears to be cancelled, send success error code - but mention that the job looks like it has already been cancelled.
-                log.debug("Streaming job with id: {} is already cancelled or already has a status of terminal", jobId);
-                cancelResponse = new StreamingJobCancelResponse(jobId,
-                    streamingJobRequest.getOutputObjectDirectory(), doCleanup, 0, "Streaming job "+jobId+" has already been cancelled or already has terminal status.");
+                    streamingJobRequest.getOutputObjectDirectory(), doCleanup, 1, e.getMessage());
             }
-        } catch ( WfmProcessingException e ) {
-            log.error(e.getMessage());
-            String errorStr = "Failed to cancel the streaming job with id '" + Long.toString(jobId)
-                + "'. Please check to make sure the streaming job exists before submitting a cancel request. "
-                + "Also consider checking the server logs for more information on this error.";
-            log.error(errorStr);
-            cancelResponse = new StreamingJobCancelResponse(jobId, streamingJobRequest.getOutputObjectDirectory(), doCleanup, 1, e.getMessage());
         }
         return cancelResponse;
     }

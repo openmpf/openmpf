@@ -47,14 +47,6 @@ public class TransientStreamingJob {
 	private int priority;
 	public int getPriority() { return  priority; }
 
-	private long stallAlertDetectionThreshold;
-	public void setStallAlertDetectionThreshold(long value) { stallAlertDetectionThreshold = value; }
-	public long getStallAlertDetectionThreshold() { return stallAlertDetectionThreshold; }
-
-	private long stallAlertRate;
-	public void setStallAlertRate(long value) { stallAlertRate = value; }
-	public long getStallAlertRate() { return stallAlertRate; }
-
 	private long stallTimeout;
 	public void setStallTimeout(long value) { stallTimeout = value; }
 	public long getStallTimeout() { return stallTimeout; }
@@ -97,8 +89,6 @@ public class TransientStreamingJob {
                                  @JsonProperty("externalId") String externalId,
                                  @JsonProperty("pipeline") TransientPipeline pipeline,
                                  @JsonProperty("priority") int priority,
-								 @JsonProperty("stallAlertDetectionThreshold") long stallAlertDetectionThreshold,
-								 @JsonProperty("stallAlertRate") long stallAlertRate,
 								 @JsonProperty("stallTimeout") long stallTimeout,
 								 @JsonProperty("outputEnabled") boolean outputEnabled,
 								 @JsonProperty("outputObjectDirectory") String outputObjectDirectory,
@@ -107,8 +97,6 @@ public class TransientStreamingJob {
 		this.externalId = externalId;
 		this.pipeline = pipeline;
 		this.priority = priority;
-		this.stallAlertDetectionThreshold = stallAlertDetectionThreshold;
-		this.stallAlertRate = stallAlertRate;
 		this.stallTimeout = stallTimeout;
 		this.outputEnabled = outputEnabled;
 		this.outputObjectDirectory = outputObjectDirectory;
@@ -123,8 +111,6 @@ public class TransientStreamingJob {
                                  @JsonProperty("externalId") String externalId,
                                  @JsonProperty("pipeline") TransientPipeline pipeline,
                                  @JsonProperty("priority") int priority,
-								 @JsonProperty("stallAlertDetectionThreshold") long stallAlertDetectionThreshold,
-								 @JsonProperty("stallAlertRate") long stallAlertRate,
 								 @JsonProperty("stallTimeout") long stallTimeout,
 								 @JsonProperty("outputEnabled") boolean outputEnabled,
 								 @JsonProperty("outputObjectDirectory") String outputObjectDirectory,
@@ -133,8 +119,7 @@ public class TransientStreamingJob {
 								 @JsonProperty("summaryReportCallbackURI") String summaryReportCallbackURI,
 								 @JsonProperty("newTrackAlertCallbackURI") String newTrackAlertCallbackURI,
                                  @JsonProperty("callbackMethod") String callbackMethod) {
-		this(id,externalId,pipeline,priority,
-				stallAlertDetectionThreshold,stallAlertRate,stallTimeout,outputEnabled,outputObjectDirectory,cancelled);
+		this(id,externalId,pipeline,priority,stallTimeout,outputEnabled,outputObjectDirectory,cancelled);
 		this.healthReportCallbackURI = healthReportCallbackURI;
 		this.summaryReportCallbackURI = summaryReportCallbackURI;
 		this.newTrackAlertCallbackURI = newTrackAlertCallbackURI;

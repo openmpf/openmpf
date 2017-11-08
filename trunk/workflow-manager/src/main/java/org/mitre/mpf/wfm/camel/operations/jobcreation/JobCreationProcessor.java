@@ -162,31 +162,37 @@ public class JobCreationProcessor extends WfmProcessor {
 			transientJob.getMedia().addAll(buildMedia(jobRequest.getMedia()));
 			redis.persistJob(transientJob);
 
-			if(transientPipeline == null) {
+			if (transientPipeline == null) {
 				redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_ERRORS);
 				throw new WfmProcessingException(INVALID_PIPELINE_MESSAGE);
 			}
 
-			// Everything has been good so far. Update the job status.
-			jobRequestEntity.setStatus(JobStatus.IN_PROGRESS);
-			redis.setJobStatus(jobId, JobStatus.IN_PROGRESS);
+			if (transientJob.getMedia().stream().anyMatch(m -> m.isFailed())) {
+				jobRequestEntity.setStatus(JobStatus.IN_PROGRESS_ERRORS);
+				redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_ERRORS);
+				// allow the job to run since some of the media may be good
+			} else {
+				jobRequestEntity.setStatus(JobStatus.IN_PROGRESS);
+				redis.setJobStatus(jobId, JobStatus.IN_PROGRESS);
+			}
 			jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 
 			exchange.getOut().setBody(jsonUtils.serialize(transientJob));
 			exchange.getOut().getHeaders().put(MpfHeaders.JOB_ID, jobRequestEntity.getId());
+
 		} catch(WfmProcessingException exception) {
 			try {
 				// Make an effort to mark the job as failed.
 				if(INVALID_PIPELINE_MESSAGE.equals(exception.getMessage())) {
-					log.warn("Job #{} did not specify a valid pipeline.", jobId);
+					log.warn("Batch Job #{} did not specify a valid pipeline.", jobId);
 				} else {
-					log.warn("Failed to parse the input object for Job #{} due to an exception.", jobRequestEntity.getId(), exception);
+					log.warn("Failed to parse the input object for Batch Job #{} due to an exception.", jobRequestEntity.getId(), exception);
 				}
 				jobRequestEntity.setStatus(JobStatus.JOB_CREATION_ERROR);
 				jobRequestEntity.setTimeCompleted(new Date());
 				jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 			} catch(Exception persistException) {
-				log.warn("Failed to mark Job #{} as failed due to an exception. It will remain it its current state until manually changed.", jobRequestEntity, persistException);
+				log.warn("Failed to mark Batch Job #{} as failed due to an exception. It will remain it its current state until manually changed.", jobRequestEntity, persistException);
 			}
 
 			// Set a flag so that the routing logic knows that the job has completed.
@@ -205,3 +211,6 @@ public class JobCreationProcessor extends WfmProcessor {
 		return transientMedia;
 	}
 }
+
+
+

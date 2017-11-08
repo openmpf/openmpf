@@ -45,14 +45,6 @@ public class JsonStreamingJobRequest {
 	private JsonStreamingInputObject stream;
 	public JsonStreamingInputObject getStream() { return stream; }
 
-	@JsonPropertyDescription("The stall alert detection threshold to be defined for this stream, milliseconds.")
-	private long stallAlertDetectionThreshold;
-	public long getStallAlertDetectionThreshold() { return stallAlertDetectionThreshold; }
-
-	@JsonPropertyDescription("The stall alert rate to be defined for this stream, milliseconds.")
-	private long stallAlertRate;
-	public long getStallAlertRate() { return stallAlertRate; }
-
 	@JsonPropertyDescription("The stall timeout to be defined for this stream, milliseconds.")
 	private long stallTimeout;
 	public long getStallTimeout() { return stallTimeout; }
@@ -104,8 +96,6 @@ public class JsonStreamingJobRequest {
       @JsonProperty("pipeline") JsonPipeline pipeline,
       @JsonProperty("priority") int priority,
       @JsonProperty("stream") JsonStreamingInputObject jsonStream,
-      @JsonProperty("stallAlertDetectionThreshold") long stallAlertDetectionThreshold,
-      @JsonProperty("stallAlertRate") long stallAlertRate,
       @JsonProperty("stallTimeout") long stallTimeout,
       @JsonProperty("healthReportCallbackUri") String healthReportCallbackUri,
       @JsonProperty("summaryReportCallbackUri") String summaryReportCallbackUri,
@@ -119,8 +109,6 @@ public class JsonStreamingJobRequest {
 		this.outputObjectDirectory = outputObjectDirectory;
 		this.pipeline = pipeline;
 		this.priority = priority;
-		this.stallAlertDetectionThreshold = stallAlertDetectionThreshold;
-		this.stallAlertRate = stallAlertRate;
 		this.stallTimeout = stallTimeout;
 		this.healthReportCallbackUri = healthReportCallbackUri;
 		this.summaryReportCallbackUri = summaryReportCallbackUri;

@@ -78,7 +78,7 @@ public class JsonUtils {
 		try {
 			return smileObjectMapper.readValue(json, targetClass);
 		} catch(IOException ioe) {
-			throw new WfmProcessingException(String.format("Failed to deserialize instance of '%s'.", targetClass.getSimpleName()));
+			throw new WfmProcessingException(String.format("Failed to deserialize instance of '%s'.", targetClass.getSimpleName()),ioe);
 		}
 	}
 
@@ -90,7 +90,7 @@ public class JsonUtils {
 		try {
 			return jsonObjectMapper.readValue(json, targetClass);
 		} catch (IOException ioe) {
-			throw new WfmProcessingException(String.format("Failed to deserialize instance of '%s'.", targetClass.getSimpleName()));
+			throw new WfmProcessingException(String.format("Failed to deserialize instance of '%s'.", targetClass.getSimpleName()),ioe);
 		}
 	}
 
@@ -99,7 +99,7 @@ public class JsonUtils {
 		try {
 			return smileObjectMapper.writeValueAsBytes(object);
 		} catch(IOException ioe) {
-			throw new WfmProcessingException(String.format("Failed to serialize '%s'.", object));
+			throw new WfmProcessingException(String.format("Failed to serialize '%s'.", object),ioe);
 		}
 	}
 
@@ -108,7 +108,7 @@ public class JsonUtils {
 		try {
 			return jsonObjectMapper.writeValueAsBytes(object);
 		} catch(IOException ioe) {
-			throw new WfmProcessingException(String.format("Failed to serialize '%s'.", object));
+			throw new WfmProcessingException(String.format("Failed to serialize '%s'.", object),ioe);
 		}
 	}
 
@@ -117,7 +117,7 @@ public class JsonUtils {
 		try {
 			jsonObjectMapper.writeValue(targetFile, object);
 		} catch(IOException ioe) {
-			throw new WfmProcessingException(String.format("Failed to serialize '%s' to '%s'.", object, targetFile));
+			throw new WfmProcessingException(String.format("Failed to serialize '%s' to '%s'.", object, targetFile),ioe);
 		}
 	}
 
@@ -126,7 +126,7 @@ public class JsonUtils {
 		try {
 			return jsonObjectMapper.writeValueAsString(object);
 		} catch(IOException ioe) {
-			throw new WfmProcessingException(String.format("Failed to serialize '%s'.", object));
+			throw new WfmProcessingException(String.format("Failed to serialize '%s'.", object),ioe);
 		}
 	}
 

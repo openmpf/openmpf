@@ -34,7 +34,7 @@ public class JobCreationStreamData {
     private String streamUri;
     public JobCreationStreamData() {}
     public JobCreationStreamData(String uri) {
-        this.streamUri=uri;
+        setStreamUri(uri);
     }
     public String getStreamUri() {
         return streamUri;

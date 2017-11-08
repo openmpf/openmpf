@@ -23,55 +23,76 @@
  * See the License for the specific language governing permissions and        *
  * limitations under the License.                                             *
  ******************************************************************************/
+
 package org.mitre.mpf.nms;
 
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheFactory;
+import com.sun.net.httpserver.Headers;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.net.InetSocketAddress;
+
 @Component
-public class NodeManager implements Runnable {
+public class NodeStatusHttpServer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(NodeManager.class);
+	private static final Logger LOG = LoggerFactory.getLogger(NodeStatusHttpServer.class);
 
-    private final ChildNodeStateManager nodeStateManager;
+	private final NodeManagerProperties properties;
 
-
-    @Autowired
-    public NodeManager(ChildNodeStateManager nodeStateManager) {
-        this.nodeStateManager = nodeStateManager;
-    }
+	private final ChildNodeStateManager nodeStateManager;
 
 
-    @Override
-    public void run() {
-        nodeStateManager.startReceiving(ChannelReceiver.NodeTypes.NodeManager, "NodeManager");
-        nodeStateManager.run();
-
-        nodeStateManager.shutdown();
-    }
+	@Autowired
+	public NodeStatusHttpServer(NodeManagerProperties properties, ChildNodeStateManager nodeStateManager) {
+		this.properties = properties;
+		this.nodeStateManager = nodeStateManager;
+	}
 
 
+	public void start() {
+		try {
+			HttpServer server = HttpServer.create(new InetSocketAddress(properties.getNodeStatusHttpPort()), 0);
+			server.createContext("/", this::handle);
+			server.start();
+			LOG.info("Started node status debug page on port {}", server.getAddress().getPort());
+		}
+		catch (IOException e) {
+			LOG.error("Could not setup HTTP debug service: ", e);
+		}
+	}
 
-    public static void main(String[] args) {
-        LOG.info("NodeManager started");
 
-        // Log that we are being shutdown, but more hooks are found during process launches in BaseNodeLauncher
-        Runtime.getRuntime().addShutdownHook(new Thread(
-                () -> LOG.info("NodeManager shutdown")));
+	private void handle(HttpExchange exchange) throws IOException {
+		Headers headers = exchange.getResponseHeaders();
+		headers.set("Content-Type", "text/html");
+		exchange.sendResponseHeaders(200, 0);
+
+		StatusViewContext viewContext = new StatusViewContext(nodeStateManager, properties.getNodeStatusHttpPort());
+
+		try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(exchange.getResponseBody()))) {
+			renderMustacheView(writer, viewContext);
+		}
+	}
 
 
-        try (ClassPathXmlApplicationContext context
-                     = new ClassPathXmlApplicationContext("applicationContext-nm.xml")) {
+	private static Mustache COMPILED_TEMPLATE;
 
-            NodeManagerProperties properties = context.getBean(NodeManagerProperties.class);
-            if (properties.isNodeStatusPageEnabled()) {
-                context.getBean(NodeStatusHttpServer.class).start();
-            }
-
-            context.getBean(NodeManager.class).run();
-        }
-    }
+	private static void renderMustacheView(Writer writer, Object viewContext) {
+		if (COMPILED_TEMPLATE == null) {
+			MustacheFactory mf = new DefaultMustacheFactory();
+			COMPILED_TEMPLATE = mf.compile("node-status-view.mustache");
+		}
+		COMPILED_TEMPLATE.execute(writer, viewContext);
+	}
 }

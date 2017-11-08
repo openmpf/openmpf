@@ -60,59 +60,35 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 	@Autowired
 	private PropertiesUtil propertiesUtil;
 
-	private volatile boolean isRunning = false;
+	@Autowired
 	private MasterNode masterNode;
-	private Map<String, ServiceDescriptor> serviceDescriptorMap = new ConcurrentHashMap<String, ServiceDescriptor>();
 
-	public NodeManagerStatus() {
-		String fHostName = System.getenv("THIS_MPF_NODE");
-		log.debug("Hostname is: '{}'.", fHostName);
+	private volatile boolean isRunning = false;
 
-		if(fHostName == null) {
-			log.error("Could not determine the hostname.");
-		}
-	}
+	private Map<String, ServiceDescriptor> serviceDescriptorMap = new ConcurrentHashMap<>();
+
 
 	public void init(boolean reloadConfig) {
-		InputStream tcpConfig = null, nodeManagerConfig = null;
-		try {
-			if(!reloadConfig) {
-				isRunning = true;
-				tcpConfig = MasterNode.class.getClassLoader().getResourceAsStream("jGroupsTCPConfig.xml");
-				masterNode = new MasterNode(tcpConfig,
-						NodeManagerConstants.DEFAULT_CHANNEL, "MPF-MasterNode");
-			}
-
-			try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
-				if (masterNode.loadConfigFile(inStream, activeMqHostname)) {
-					masterNode.launchAllNodes();
-				}
-			}
-
-			if(!reloadConfig) {		
-				masterNode.setCallback(this);
-			}
-			
-			updateServiceDescriptors();
-		} catch (IOException ex) {
-			throw new UncheckedIOException(ex);
-		} finally {
-			if (tcpConfig != null) {
-				try {
-					tcpConfig.close();
-				} catch (IOException e) {
-					log.error(e.getMessage(), e);
-				}
-			}
-			if (nodeManagerConfig != null) {
-				try {
-					nodeManagerConfig.close();
-				} catch (IOException e) {
-					log.error(e.getMessage(), e);
-				}
+		if(!reloadConfig) {
+			masterNode.run();
+			isRunning = true;
+		}
+		try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
+			if (masterNode.loadConfigFile(inStream, activeMqHostname)) {
+				masterNode.launchAllNodes();
 			}
 		}
+		catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+
+		if(!reloadConfig) {
+			masterNode.setCallback(this);
+		}
+
+		updateServiceDescriptors();
 	}
+
 
 	public void stop() {
 		try {
@@ -306,7 +282,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 		log.info("Reloading the node manager config");
         Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.NodeManagerStatus.reloadNodeManagerConfig").start();
         init(true);
-        split.stop();     
+        split.stop();
 	}
 
 	@Override

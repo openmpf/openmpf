@@ -33,8 +33,6 @@ public class StreamingJobInfo {
 	public Long getJobId() {
 		return jobId;
 	}
-	private String externalId = null;
-	public String getExternalId() { return externalId; }
 	private String pipelineName;
 	public String getPipelineName() {
 		return pipelineName;
@@ -85,11 +83,10 @@ public class StreamingJobInfo {
 	 * @param streamUri URI of the streaming data
 	 * @param terminal if true, marks a terminal error
 	 */
-	public StreamingJobInfo(Long jobId, String externalId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus, float jobProgress,
+	public StreamingJobInfo(Long jobId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus, float jobProgress,
 									Date startDate, Date endDate, String outputObjectDirectory,
 									String streamUri, boolean terminal) {
 		this.jobId = jobId;
-		this.externalId = externalId;
 		this.pipelineName = pipelineName;
 		this.jobStatus = jobStatus;
 		// TODO jobPriority and jobProgress (alternate name jobRunTime) may be included in a later release

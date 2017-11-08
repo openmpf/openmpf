@@ -31,31 +31,33 @@ import org.jgroups.JChannel;
 import org.jgroups.Receiver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.InputStream;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
  * Light-weight access class for connecting to a JGroups channel
  */
+@Component
 public class ChannelNode {
 
-    //Logging
     private static final Logger log = LoggerFactory.getLogger(ChannelNode.class);
+
+    private final NodeManagerProperties properties;
 
     private JChannel channel;
     private boolean isConnected;
 
+    @Autowired
+    public ChannelNode(NodeManagerProperties properties) {
+    	this.properties = properties;
+    }
 
-    public void connect(InputStream jgroupsConfigXml, String channelName, String nodeName, Receiver receiver) {
-        //File testIt = new File(jgroupsConfigXml);
-        if (jgroupsConfigXml == null) {
-            log.warn("Invalid jGroups config input stream.");
-            return;
-        }
 
+    public void connect(String nodeName, Receiver receiver) {
         try {
-            channel = createChannel(jgroupsConfigXml, nodeName);
-            channel.connect(channelName);
+	        channel = new JChannel(properties.getJGroupsConfig().getURL());
+	        channel.setName(nodeName);
+            channel.connect(properties.getChannelName());
             channel.setReceiver(receiver);
             channel.getState(null, 10000);
             isConnected = true;
@@ -112,18 +114,5 @@ public class ChannelNode {
         channel.close();
         isConnected = false;
         log.debug("Channel closed.");
-    }
-
-    /**
-     * Creates a new JChannel with the given configuration but doesn not connect to it.
-     * @param    jgroupsConfig Location of the jgroups xml configuration file.  It must be relative to the classpath
-     * @param    name Name to be given to the new channel.
-     * @return   The newly-created, unconnected JChannel
-     *
-     */
-    private static JChannel createChannel(InputStream jgroupsConfig, String name) throws Exception {
-        JChannel ret = new JChannel(jgroupsConfig);
-        ret.setName(name);
-        return ret;
     }
 }

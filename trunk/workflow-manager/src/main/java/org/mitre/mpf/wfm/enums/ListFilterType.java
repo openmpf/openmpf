@@ -24,43 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.nms;
-import java.io.Serializable;
+package org.mitre.mpf.wfm.enums;
 
-
-/**
- * Handle for each {@link ChannelReceiver} node in JGroup.  These are known (expected) as defined in the config file and
- * as the Master directs the Mgrs to create.  They are also discovered after they have been created and have
- * joined the group.  Thus, these are objects are created before discovery but are noted to exist (isAlive) once
- * discovered.
- */
-public class NodeDescriptor implements Serializable {
-
-    private final String hostname;
-
-    private  NodeManagerConstants.States lastKnownState =  NodeManagerConstants.States.Unknown;
-
-    public  NodeDescriptor(String hostname) {
-        this.hostname = hostname;
-    }
-
-    public String getHostname() {
-        return hostname;
-    }
-
-    public boolean isAlive() {
-        return (NodeManagerConstants.States.Running == lastKnownState);
-    }
-
-    public  NodeManagerConstants.States getLastKnownState() {
-        return lastKnownState;
-    }
-
-    public void setLastKnownState( NodeManagerConstants.States lastKnownState) {
-        this.lastKnownState = lastKnownState;
-    }
-
-    public boolean doesHostMatch(String host) {
-        return (hostname.compareTo(host) == 0);
-    }
-}
+/** Enumeration allows for more clearly defining a list passed to a method as in inclusion filter or an exclusion filter. */
+public enum ListFilterType { INCLUSION_LIST, EXCLUSION_LIST };

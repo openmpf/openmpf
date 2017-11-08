@@ -45,6 +45,10 @@ public class AlgorithmDefinition {
     private String name;
 	public String getName() { return name; }
 
+	@XStreamAsAttribute
+	private String serviceName;
+	public String getServiceName() { return serviceName; }
+
 	/** The REQUIRED description of this algorithm. */
     private String description;
 	public String getDescription() { return description; }
@@ -79,10 +83,11 @@ public class AlgorithmDefinition {
 	 * @param name The REQUIRED non-null name of the algorithm. This is preprocessed using {@link org.mitre.mpf.wfm.util.TextUtils#trimAndUpper(String)}.
 	 * @param description The REQUIRED non-null description of the algorithm. This is preprocessed using {@link org.mitre.mpf.wfm.util.TextUtils#trim(String)}.
 	 */
-    public AlgorithmDefinition(ActionType actionType, String name, String description,
+    public AlgorithmDefinition(ActionType actionType, String algorithmName, String serviceName, String description,
                                boolean supportsBatchProcessing, boolean supportsStreamProcessing) {
         this.actionType = actionType;
-	    this.name = TextUtils.trimAndUpper(name);
+	    this.name = TextUtils.trimAndUpper(algorithmName);
+	    this.serviceName = TextUtils.trim(serviceName);
         this.description = TextUtils.trim(description);
 	    this.providesCollection = new ProvidesCollection();
 	    this.requiresCollection = new RequiresCollection();

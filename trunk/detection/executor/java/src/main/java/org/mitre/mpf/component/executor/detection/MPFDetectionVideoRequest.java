@@ -24,51 +24,50 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.component.executor.detection;
+import org.mitre.mpf.component.api.detection.MPFVideoTrack;
 
-#ifndef CPP_TEST_COMPONENTS_HELLOWORLD_H
-#define CPP_TEST_COMPONENTS_HELLOWORLD_H
+public class MPFDetectionVideoRequest {
 
-#include <string>
-#include <vector>
+    private int startFrame;
+    private int stopFrame;
+    private MPFVideoTrack feedForwardTrack;
 
-#include <log4cxx/logger.h>
+    public int getStartFrame() {
+        return startFrame;
+    }
 
-#include <MPFDetectionComponent.h>
+    public void setStartFrame(int startFrame) {
+        this.startFrame = startFrame;
+    }
 
+    public int getStopFrame() {
+        return stopFrame;
+    }
 
-class HelloWorld : public MPF::COMPONENT::MPFDetectionComponent {
+    public void setStopFrame(int stopFrame) {
+        this.stopFrame = stopFrame;
+    }
 
-public:
+    public MPFVideoTrack getFeedForwardTrack() {
+        return feedForwardTrack;   // Could be null; be sure to check
+    }
 
-    bool Init();
+    // Constructor for a request that does not have a feed-forward track
+    public MPFDetectionVideoRequest(int startFrame,
+                                    int stopFrame) {
+        this.startFrame = startFrame;
+        this.stopFrame = stopFrame;
+        this.feedForwardTrack = null;
+    }
 
-    bool Close();
+    // Constructor for a request that has a feed-forward track
+    public MPFDetectionVideoRequest(int startFrame,
+                                    int stopFrame,
+                                    MPFVideoTrack track) {
+        this.startFrame = startFrame;
+        this.stopFrame = stopFrame;
+        this.feedForwardTrack = track;
+    }
 
-    MPF::COMPONENT::MPFDetectionError GetDetections(
-            const MPF::COMPONENT::MPFVideoJob &job,
-            std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks) override;
-
-    MPF::COMPONENT::MPFDetectionError GetDetections(
-            const MPF::COMPONENT::MPFImageJob &job,
-            std::vector<MPF::COMPONENT::MPFImageLocation> &locations) override;
-
-    MPF::COMPONENT::MPFDetectionError GetDetections(
-            const MPF::COMPONENT::MPFAudioJob &job,
-            std::vector<MPF::COMPONENT::MPFAudioTrack> &tracks) override;
-
-    MPF::COMPONENT::MPFDetectionError GetDetections(
-            const MPF::COMPONENT::MPFGenericJob &job,
-            std::vector<MPF::COMPONENT::MPFGenericTrack> &tracks) override;
-
-    bool Supports(MPF::COMPONENT::MPFDetectionDataType data_type);
-
-    std::string GetDetectionType();
-
-private:
-
-    log4cxx::LoggerPtr hw_logger_;
-
-};
-
-
-#endif //CPP_TEST_COMPONENTS_HELLOWORLD_H
+}

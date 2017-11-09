@@ -310,7 +310,7 @@ public class StreamingJobController {
                 if (methodStatus.isSuccess()) {
                     log.debug("Successfully marked for cancellation streaming job with id {}", jobId);
                     cancelResponse = new StreamingJobCancelResponse(jobId,
-                        streamingJobRequest.getOutputObjectDirectory(), doCleanup);
+                        streamingJobRequest.getOutputObjectDirectory(), doCleanup, MpfResponse.RESPONSE_CODE_SUCCESS, methodStatus.getSummary());
                 } else if ( methodStatus.isWarning() ){
                     // if the job was marked for cancellation, but methodStatus contains a warning code, forward the warning along in the mpfResponse.
                     log.debug("Got a warning when cancelling streaming job with id {}, warning is '{}'", jobId, methodStatus.getSummary());
@@ -323,7 +323,7 @@ public class StreamingJobController {
                         streamingJobRequest.getOutputObjectDirectory(), doCleanup, MpfResponse.RESPONSE_CODE_ERROR, methodStatus.getSummary());
                 }
             } catch (WfmProcessingException e) {
-                log.error(e.getMessage());
+                log.error(e.getMessage(),e);
                 String errorStr =
                     "Failed to cancel the streaming job with id " + Long.toString(jobId)
                         + ". Please check to make sure the streaming job exists before submitting a cancel request. "

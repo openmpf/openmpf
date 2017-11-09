@@ -55,16 +55,6 @@ public class StreamingJobCancelResponse {
         mpfResponse.setMessage(errorCode, errorMessage);
 	}
 
-	/** Constructor typically used for construction of a StreamingJobCancelResponse indicating success.
-	 * @param jobId job id of this streaming job
-	 * @param outputObjectDirectory root directory for output objects created during this streaming job
-	 * @param doCleanup if true, then the caller is requesting that the output object directory is cleaned up prior to cancelling this job
-	 */
-	public StreamingJobCancelResponse(Long jobId, String outputObjectDirectory, boolean doCleanup) {
-		setResponseParameters(jobId, outputObjectDirectory, doCleanup);
-        mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_SUCCESS, "success");
-	}
-	
 	public Long getJobId() {
 		return jobId;
 	}

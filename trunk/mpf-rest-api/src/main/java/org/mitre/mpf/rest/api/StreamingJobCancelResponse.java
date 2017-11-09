@@ -51,7 +51,7 @@ public class StreamingJobCancelResponse {
      * @param errorMessage error message to be set in the mpf response
 	 */
 	public StreamingJobCancelResponse(Long jobId, String outputObjectDirectory, boolean doCleanup, int errorCode, String errorMessage) {
-		setResponseParameters(jobId,outputObjectDirectory,doCleanup);
+		setResponseParameters(jobId, outputObjectDirectory, doCleanup);
         mpfResponse.setMessage(errorCode, errorMessage);
 	}
 
@@ -61,8 +61,8 @@ public class StreamingJobCancelResponse {
 	 * @param doCleanup if true, then the caller is requesting that the output object directory is cleaned up prior to cancelling this job
 	 */
 	public StreamingJobCancelResponse(Long jobId, String outputObjectDirectory, boolean doCleanup) {
-		setResponseParameters(jobId,outputObjectDirectory,doCleanup);
-        mpfResponse.setMessage(0,"success");
+		setResponseParameters(jobId, outputObjectDirectory, doCleanup);
+        mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_SUCCESS, "success");
 	}
 	
 	public Long getJobId() {

@@ -31,10 +31,10 @@ import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 
-import java.util.List;
 import java.util.Map;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
+import org.mitre.mpf.wfm.util.MethodStatus;
 
 public interface StreamingJobRequestBo {
 
@@ -72,11 +72,16 @@ public interface StreamingJobRequestBo {
 	StreamingJobRequest initialize(JsonStreamingJobRequest streamingJobRequest) throws WfmProcessingException;
 
 	/**
-	 * Cancel a streaming job.
-	 * @param jobId The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job
-	 * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job
-	 * @return
-	 * @throws WfmProcessingException
+	 * Marks a streaming job as CANCELLING in both REDIS and in the long-term database.
+	 * @param jobId     The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
+	 * @param doCleanup if true, delete the streaming job files from disk as part of cancelling the streaming job.
+	 * @return MethodStatus isSuccessful is true if the streaming job was successfully marked for cancellation,
+	 * MethodStatus isWarning is true if the streaming job has already been cancelled, or if the streaming jobs status is already terminal, or if the
+	 * streaming job was successfully marked for cancellation but the request to cleanup the output object directory failed.
+	 * MethodStatus isError is true if the streaming job couldn't be marked for cancellation.
+	 * MethodStatus.getSummary will provide more information if a warning or error occurred.
+	 * MethodStatus.getDetail may be null or may provide more detailed information about a warning or error.
+	 * @exception WfmProcessingException is thrown if a processing error occurs
 	 */
-	boolean cancel(long jobId, boolean doCleanup) throws WfmProcessingException;
+	MethodStatus cancel(long jobId, boolean doCleanup) throws WfmProcessingException;
 }

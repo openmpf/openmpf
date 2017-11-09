@@ -48,6 +48,7 @@ import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.util.MethodStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -221,17 +222,18 @@ public class MpfServiceImpl implements MpfService {
 		}
 	}
 
-	/**
-	 * Cancel a streaming job.
-	 * @param jobId The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
-	 * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job.
-	 * @return true if the streaming job was successfully cancelled, false otherwise.
-	 * @exception WfmProcessingException is thrown if an error occurs during cancellation of the streaming job.
-	 */
+    /**
+     * Marks a streaming job as CANCELLING in both REDIS and in the long-term database.
+     * @param jobId     The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
+     * @param doCleanup if true, delete the streaming job files from disk as part of cancelling the streaming job.
+     * @return MethodStatus with statusCode=StatusCode.SUCCESS if the streaming job was successfully marked for cancellation,
+     * statusCode=StatusCode.WARNING if the streaming job has already been cancelled or if the streaming jobs status is already terminal, or
+     * statusCode=StatusCode.ERROR if the streaming job can't be cancelled.  MethodStatus.getSummary will provide a summary of the warning or error that occurred.
+     * MethodStatus.getDetail may be null or otherwise will provide more detailed information about the warning or error.
+     */
 	@Override
-	public boolean cancelStreamingJob(long jobId, boolean doCleanup) throws WfmProcessingException{
-		boolean status = streamingJobRequestBo.cancel(jobId, doCleanup);
-		return status;
+	public MethodStatus cancelStreamingJob(long jobId, boolean doCleanup) throws WfmProcessingException{
+		return streamingJobRequestBo.cancel(jobId, doCleanup);
 	}
 
 	@Override
@@ -275,6 +277,20 @@ public class MpfServiceImpl implements MpfService {
 	@Override
 	public List<StreamingJobRequest> getAllStreamingJobRequests() {
 		return streamingJobRequestDao.findAll();
+	}
+
+	/**
+	 * Get the list of all streaming job ids
+	 * @return list of all streaming job ids
+	 */
+	@Override
+	public List<Long> getAllStreamingJobIds() {
+		List<StreamingJobRequest> jobRequests = new ArrayList<StreamingJobRequest>(getAllStreamingJobRequests());
+		List<Long> allJobIds = new ArrayList<Long>();
+		for (StreamingJobRequest job : jobRequests) {
+			allJobIds.add(job.getId());
+		}
+		return allJobIds;
 	}
 
 	/* ***** System Messages ***** */

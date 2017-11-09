@@ -30,15 +30,16 @@ import io.swagger.annotations.*;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.mvc.util.ModelUtils;
+import org.mitre.mpf.rest.api.MpfResponse;
 import org.mitre.mpf.rest.api.StreamingJobCancelResponse;
 import org.mitre.mpf.rest.api.StreamingJobInfo;
 import org.mitre.mpf.rest.api.StreamingJobCreationRequest;
 import org.mitre.mpf.rest.api.StreamingJobCreationResponse;
-import org.mitre.mpf.rest.api.AllStreamingJobsInfoModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.MpfService;
+import org.mitre.mpf.wfm.util.MethodStatus;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.StreamResource;
 import org.slf4j.Logger;
@@ -127,33 +128,20 @@ public class StreamingJobController {
     }
 
     /*
-     * GET /streaming/jobs/get
+     * GET /streaming/jobs
      */
     //EXTERNAL
-    @RequestMapping(value = "/rest/streaming/jobs/get", method = RequestMethod.GET)
-    @ApiOperation(value = "Gets a StreamingJobInfo model for all of the current streaming jobs.",
-        produces = "application/json", response = AllStreamingJobsInfoModel.class)
+    @RequestMapping(value = "/rest/streaming/jobs", method = RequestMethod.GET)
+    @ApiOperation(value = "Gets a list of job ids for all streaming jobs.",
+        produces = "application/json", response=Long.class, responseContainer="List")
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successful response"),
         @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
-    public ResponseEntity<AllStreamingJobsInfoModel> getStreamingJobsInfoRest() {
-        //get a list of all of the current streaming jobs
-        List<StreamingJobRequest> currentJobRequests = mpfService.getAllStreamingJobRequests();
-
-        try {
-            AllStreamingJobsInfoModel allJobsInfo = new AllStreamingJobsInfoModel();
-            for (StreamingJobRequest job : currentJobRequests) {
-                allJobsInfo.addJob(job.getId());
-            }
-            return new ResponseEntity<>(allJobsInfo, HttpStatus.OK);
-        } catch (Exception ex) {
-            log.error("Exception in get all streaming jobs with stack trace: {}", ex.getMessage());
-            return new ResponseEntity<>((AllStreamingJobsInfoModel)null, HttpStatus.BAD_REQUEST);
-        }
+    public List<Long> getStreamingJobsInfoRest() {
+        //get a list of all of the streaming job ids
+        return new ArrayList<>(mpfService.getAllStreamingJobIds());
     }
-
-
 
 // TODO:
 // /rest/streaming/jobs/{id}/output/detection
@@ -251,7 +239,7 @@ public class StreamingJobController {
                 // is persisted in the long term database, and the streaming jobs output object file system
                 // will be created using the assigned jobId, if the creation of output objects is enabled .
                 long jobId = mpfService.submitJob(jsonStreamingJobRequest);
-                log.debug("Successful creation of streaming JobId: {}", jobId);
+                log.debug("Successful creation of streaming JobId {}", jobId);
 
                 // get the streamingJobRequest so we can pass along the output object directory in the
                 // streaming job creation response.
@@ -309,36 +297,40 @@ public class StreamingJobController {
 
     private StreamingJobCancelResponse cancelStreamingJobInternal(long jobId, boolean doCleanup) {
         StreamingJobCancelResponse cancelResponse = null;
-        log.debug("Attempting to cancel streaming job with id: {}.", jobId);
+        log.debug("Attempting to cancel streaming job with id {}.", jobId);
 
         StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
         if ( streamingJobRequest == null ) {
-            cancelResponse = new StreamingJobCancelResponse(jobId, "", doCleanup, 1, "Streaming job with id "+jobId+" doesn't exist.");
+            // if the requested streaming job doesn't exist, it can't be marked for cancellation, so this is an error.
+            cancelResponse = new StreamingJobCancelResponse(jobId, "", doCleanup,
+                MpfResponse.RESPONSE_CODE_ERROR, "Streaming job with id "+jobId+" doesn't exist.");
         } else {
             try {
-                if (mpfService.cancelStreamingJob(jobId, doCleanup)) {
-                    log.debug("Successful cancellation of streaming job with id: {}", jobId);
+                MethodStatus methodStatus = mpfService.cancelStreamingJob(jobId, doCleanup);
+                if (methodStatus.isSuccess()) {
+                    log.debug("Successfully marked for cancellation streaming job with id {}", jobId);
                     cancelResponse = new StreamingJobCancelResponse(jobId,
                         streamingJobRequest.getOutputObjectDirectory(), doCleanup);
-                } else {
-                    // if the job already appears to be cancelled, send success error code - but mention that the job looks like it has already been cancelled.
-                    log.debug(
-                        "Streaming job with id: {} is already cancelled or already has a status of terminal",
-                        jobId);
+                } else if ( methodStatus.isWarning() ){
+                    // if the job was marked for cancellation, but methodStatus contains a warning code, forward the warning along in the mpfResponse.
+                    log.debug("Got a warning when cancelling streaming job with id {}, warning is '{}'", jobId, methodStatus.getSummary());
                     cancelResponse = new StreamingJobCancelResponse(jobId,
-                        streamingJobRequest.getOutputObjectDirectory(), doCleanup, 0,
-                        "Streaming job " + jobId
-                            + " has already been cancelled or already has terminal status.");
+                        streamingJobRequest.getOutputObjectDirectory(), doCleanup, MpfResponse.RESPONSE_CODE_WARNING, methodStatus.getSummary());
+                } else if ( methodStatus.isError() ) {
+                    // if the job could not be marked for cancellation, forward the error along in the mpfResponse.
+                    log.error("Got an error when cancelling streaming job with id {}, error is '{}'", jobId, methodStatus.getSummary());
+                    cancelResponse = new StreamingJobCancelResponse(jobId,
+                        streamingJobRequest.getOutputObjectDirectory(), doCleanup, MpfResponse.RESPONSE_CODE_ERROR, methodStatus.getSummary());
                 }
             } catch (WfmProcessingException e) {
                 log.error(e.getMessage());
                 String errorStr =
-                    "Failed to cancel the streaming job with id '" + Long.toString(jobId)
-                        + "'. Please check to make sure the streaming job exists before submitting a cancel request. "
+                    "Failed to cancel the streaming job with id " + Long.toString(jobId)
+                        + ". Please check to make sure the streaming job exists before submitting a cancel request. "
                         + "Also consider checking the server logs for more information on this error.";
                 log.error(errorStr);
                 cancelResponse = new StreamingJobCancelResponse(jobId,
-                    streamingJobRequest.getOutputObjectDirectory(), doCleanup, 1, e.getMessage());
+                    streamingJobRequest.getOutputObjectDirectory(), doCleanup, MpfResponse.RESPONSE_CODE_ERROR, e.getMessage());
             }
         }
         return cancelResponse;

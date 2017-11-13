@@ -41,7 +41,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.*;
-import java.util.List;
 
 @Component(IoUtils.REF)
 public class IoUtils {
@@ -84,8 +83,7 @@ public class IoUtils {
      */
     public String getMimeType(String absolutePath) {
         Validate.notNull(absolutePath, "The absolutePath parameter must not be null.");
-        String mimeType = tikaInstance.detect(absolutePath);
-        return mimeType;
+        return tikaInstance.detect(absolutePath);
     }
 
     /***
@@ -94,8 +92,7 @@ public class IoUtils {
      * @return
      */
     public String getMimeType(byte[] bytes) {
-        String mimeType = tikaInstance.detect(bytes);
-        return mimeType;
+        return tikaInstance.detect(bytes);
     }
 
     /**
@@ -104,8 +101,7 @@ public class IoUtils {
      * @return
      */
     public String getMimeType(File file) throws IOException {
-        String mimeType = tikaInstance.detect(file);
-        return mimeType;
+        return tikaInstance.detect(file);
     }
 
     /**
@@ -114,8 +110,7 @@ public class IoUtils {
      * @return
      */
     public String getMimeType(InputStream inputStream) throws IOException {
-        String mimeType = tikaInstance.detect(inputStream);
-        return mimeType;
+        return tikaInstance.detect(inputStream);
     }
 
     /**
@@ -230,8 +225,7 @@ public class IoUtils {
      * @return
      */
     public boolean isApprovedFile(File file) {
-        String contentType = getMimeType(file.getAbsolutePath());
-        return isApprovedContentType(contentType);
+        return isApprovedContentType(getMimeType(file.getAbsolutePath()));
     }
 
     /***
@@ -241,8 +235,7 @@ public class IoUtils {
      * @throws WfmProcessingException
      */
     public boolean isApprovedFile(URL url) throws WfmProcessingException {
-        String contentType = getMimeType(url);
-        return isApprovedContentType(contentType);
+        return isApprovedContentType(getMimeType(url));
     }
 
     /***

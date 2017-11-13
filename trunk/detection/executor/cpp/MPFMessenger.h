@@ -87,7 +87,7 @@ class MPFMessenger {
 
   /**
    * The Startup method establishes an ActiveMQ session and creates a consumer
-   * for TrackRequest messages.  This method must be called once after the
+   * for DetectionRequest messages.  This method must be called once after the
    * constructor but before any other methods are invoked.
    * @param broker_uri The remote address used to connect to the message
    * provider
@@ -106,8 +106,8 @@ class MPFMessenger {
 
   /**
    * The ReceiveMessage method is invoked to receive the next available
-   * TrackRequest message.  This method also creates an ActiveMQ message
-   * producer for sending a corresponding TrackResponse message, based on
+   * DetectionRequest message.  This method also creates an ActiveMQ message
+   * producer for sending a corresponding DetectionResponse message, based on
    * the ReplyTo value contained in the received message header.  As
    * currently implemented, this method blocks until a message is received.
    * The calling program is responsible for deleting the returned byte array.
@@ -122,9 +122,9 @@ class MPFMessenger {
     int* msg_body_length);
 
   /**
-   * The SendMessage method is invoked to send a TrackResponse message.
+   * The SendMessage method is invoked to send a DetectionResponse message.
    * Note that undefined behavior may occur if this method is invoked
-   * without having received and successfully unpacked a TrackRequest
+   * without having received and successfully unpacked a DetectionRequest
    * message.
    * @param packed_msg A byte array containing the message body in protobuf
    * form
@@ -142,10 +142,10 @@ class MPFMessenger {
   activemq::core::ActiveMQConnectionFactory* connection_factory_; /**< Pointer to the created ActiveMQ Connection Factory*/
   cms::Connection* connection_;                                   /**< Pointer to the created ActiveMQ Connection */
   cms::Session* session_;                                         /**< Pointer to the created ActiveMQ Session */
-  cms::Destination* request_destination_;                         /**< Pointer to the ActiveMQ TrackRequest Destination */
-  cms::MessageConsumer* request_consumer_;                        /**< Pointer to the created ActiveMQ TrackRequest Consumer */
-  cms::MessageProducer* response_producer_;                       /**< Pointer to the created ActiveMQ TrackResponse Producer */
-  const log4cxx::LoggerPtr &main_logger_;                               /**< log4cxx Logger pointer passed in from the calling program */
+  cms::Destination* request_destination_;                         /**< Pointer to the ActiveMQ DetectionRequest Destination */
+  cms::MessageConsumer* request_consumer_;                        /**< Pointer to the created ActiveMQ DetectionRequest Consumer */
+  cms::MessageProducer* response_producer_;                       /**< Pointer to the created ActiveMQ DetectionResponse Producer */
+  const log4cxx::LoggerPtr &main_logger_;                         /**< log4cxx Logger pointer passed in from the calling program */
 
 };
 

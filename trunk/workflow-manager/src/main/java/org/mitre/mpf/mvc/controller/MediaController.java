@@ -222,8 +222,8 @@ public class MediaController {
 					return new ResponseEntity<>("{\"error\":\"" + err + "\"}", HttpStatus.INTERNAL_SERVER_ERROR);
 				}		
 
-				//return error if the file has an invalid content type and the filename does not have a valid extension
-				if(!ioUtils.isApprovedFile(contentType,filename)){
+				//return error if the file has an invalid content type
+				if(!ioUtils.isApprovedContentType(contentType)){
 					String msg = "The media is not a supported type. Please add a whitelist."+contentType+" entry to the mediaType.properties file.";
 					log.error(msg+" File:"+filename);
 					return new ResponseEntity<>("{\"error\":\"" + msg + "\"}", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -280,16 +280,5 @@ public class MediaController {
 			}
 		}
 		return new ResponseEntity<>("{\"error\":\"Invalid path\"}", HttpStatus.INTERNAL_SERVER_ERROR);
-	}
-	
-	@RequestMapping(value = {"/media/custom-upload-extensions"}, method = RequestMethod.GET)
-	@ResponseBody
-	public List<String> getCustomUploadExtensions(){
-		List <String> list = new ArrayList<String>();
-		for(String s : propertiesUtil.getServerMediaTreeCustomExtensions()){
-			list.add("."+s);
-		}
-		list.addAll(MediaTypeUtils.getAcceptedMimeTypes());
-		return list;
 	}
 }

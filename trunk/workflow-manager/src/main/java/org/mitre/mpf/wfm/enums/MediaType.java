@@ -32,8 +32,8 @@ public enum MediaType {
     VIDEO,
     IMAGE,
     AUDIO,
-	UNSUPPORTED;
+	UNKNOWN;
 
-	public static final MediaType DEFAULT = UNSUPPORTED;
+	public static final MediaType DEFAULT = UNKNOWN;
 
 }

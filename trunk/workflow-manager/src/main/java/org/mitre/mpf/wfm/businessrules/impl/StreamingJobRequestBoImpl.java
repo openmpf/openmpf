@@ -355,6 +355,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                     streamingJobRequest.setStatus(JobStatus.CANCELLING);
                     streamingJobRequestDao.persist(streamingJobRequest);
 
+                    // TODO this doCleanup section should be moved to after the Node Manager has notified the WFM that the streaming job has been cancelled (issue #334)
                     // If doCleanup is true, then the caller has requested that the output object directory be deleted as part
                     // of the job cancellation. Note that the node manager may not yet have cancelled this streaming job, so these files may still be in use
                     // when they are deleted in the code below. If this occurs, then the output object directory may not be deleted as requested and a

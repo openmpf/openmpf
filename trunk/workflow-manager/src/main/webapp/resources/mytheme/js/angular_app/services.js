@@ -196,14 +196,6 @@ AppServices.service('MediaService', function ($http) {
         return promise;
     };
 
-    this.getCustomUploadExtensions = function () {
-        var promise = $http.get('media/custom-upload-extensions')
-            .then(function (response) {
-                return response.data;
-            });
-        return promise;
-    };
-
     this.createDirectory = function (serverpath) {
         var path = serverpath;
         var promise = $http({

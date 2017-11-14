@@ -104,9 +104,9 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                                 type = "label-primary";
                             }
                             var hideProgress = 'style="display:none;"';
-                            if (job.jobProgress > 0 && job.jobProgress < 100) hideProgress = "";
+                            if (job.jobStatus.startsWith('IN_PROGRESS') && job.jobProgress < 100) hideProgress = "";
                             var progress = job.jobProgress.toFixed();
-                            var progressDiv = '<div class="progress" ' + hideProgress + '><div class="progress-bar progress-bar-success" role="progressbar"  id="jobProgress' + job.jobId + '" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="min-width: 4em;width:' + progress + '%">' + progress + '%</div></div>';
+                            var progressDiv = '<div class="progress" ' + hideProgress + '><div class="progress-bar progress-bar-success" role="progressbar"  id="jobProgress' + job.jobId + '" aria-valuenow="0" aria-valuemin="' + progress + '" aria-valuemax="100" style="width:' + progress + '%">' + progress + '%</div></div>';
                             return '<span class="job-status label ' + type + '" id="jobStatusCell' + job.jobId + '">' + job.jobStatus + '</span>' + progressDiv;
                         }
                     },

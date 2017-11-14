@@ -158,10 +158,6 @@
   white-space: nowrap;
 }
 
-.progress-bar {
-  padding: .2em;
-}
-
 /*----------------------- Input Validation Errors ----------------------------------*/
 
 .dnd-item-count-input-validation-message {

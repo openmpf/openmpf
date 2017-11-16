@@ -103,7 +103,8 @@ public class StreamingServiceManagerImpl implements StreamingServiceManager {
 
 	private void save() {
 		try (OutputStream outputStream = _propertiesUtil.getStreamingServices().getOutputStream()) {
-			_objectMapper.writeValue(outputStream, _serviceModels);
+			_objectMapper.writerWithDefaultPrettyPrinter()
+					.writeValue(outputStream, _serviceModels);
 		}
 		catch (IOException e) {
 			throw new UncheckedIOException("Failed to write to streaming services file.", e);

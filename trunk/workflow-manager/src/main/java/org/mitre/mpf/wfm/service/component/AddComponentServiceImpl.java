@@ -495,7 +495,7 @@ public class AddComponentServiceImpl implements AddComponentService {
 		        .anyMatch(s -> s.getServiceName().equals(serviceName));
         if (existingSvc) {
             throw new ComponentRegistrationSubsystemException(String.format(
-                    "Couldn't add the %s streaming service because another service already has that name",
+                    "Couldn't add the %s streaming service because another service already has that name.",
                     serviceName));
         }
 

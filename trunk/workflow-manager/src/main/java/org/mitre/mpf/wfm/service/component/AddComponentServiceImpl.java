@@ -512,8 +512,10 @@ public class AddComponentServiceImpl implements AddComponentService {
             return serviceName;
         }
         else {
-        	throw new IllegalArgumentException(String.format("Stream processing is not supported for %s components.",
-                                                             descriptor.sourceLanguage));
+            // TODO: Also save services for other languages when streaming is implemented for them.
+            _log.error("Streaming processing is not supported for {} components. No streaming service will be added for the {} component.",
+                       descriptor.sourceLanguage, descriptor.componentName);
+            return null;
         }
     }
 

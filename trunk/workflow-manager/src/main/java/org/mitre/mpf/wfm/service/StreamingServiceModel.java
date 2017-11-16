@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.service;
 
 import com.google.common.collect.ImmutableList;
+import org.mitre.mpf.mvc.util.JsonDropLeadingUnderscore;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
 import org.mitre.mpf.wfm.service.component.ComponentLanguage;
 
@@ -34,17 +35,19 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+
+@JsonDropLeadingUnderscore
 public class StreamingServiceModel {
 
-	private String serviceName;
+	private String _serviceName;
 
-	private String algorithmName;
+	private String _algorithmName;
 
-	private ComponentLanguage sourceLanguage;
+	private ComponentLanguage _sourceLanguage;
 
-	private String libraryPath;
+	private String _libraryPath;
 
-	private List<EnvironmentVariableModel> environmentVariables;
+	private List<EnvironmentVariableModel> _environmentVariables;
 
 
 	public StreamingServiceModel() {
@@ -57,30 +60,31 @@ public class StreamingServiceModel {
 			ComponentLanguage sourceLanguage,
 			String libraryPath,
 			Collection<EnvironmentVariableModel> environmentVariables) {
-		this.serviceName = serviceName;
-		this.algorithmName = algorithmName;
-		this.sourceLanguage = sourceLanguage;
-		this.libraryPath = libraryPath;
-		this.environmentVariables = ImmutableList.copyOf(environmentVariables);
+		_serviceName = serviceName;
+		_algorithmName = algorithmName;
+		_sourceLanguage = sourceLanguage;
+		_libraryPath = libraryPath;
+		_environmentVariables = ImmutableList.copyOf(environmentVariables);
 	}
 
 	public String getServiceName() {
-		return serviceName;
+		return _serviceName;
 	}
 
 	public String getAlgorithmName() {
-		return algorithmName;
+		return _algorithmName;
 	}
 
 	public ComponentLanguage getSourceLanguage() {
-		return sourceLanguage;
+		return _sourceLanguage;
 	}
 
 	public String getLibraryPath() {
-		return libraryPath;
+		return _libraryPath;
 	}
 
 	public List<EnvironmentVariableModel> getEnvironmentVariables() {
-		return Collections.unmodifiableList(environmentVariables);
+		return Collections.unmodifiableList(_environmentVariables);
 	}
 }
+

@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -57,6 +58,8 @@ public class TestStreamingServiceManager {
 
 	private ObjectMapper _objectMapper;
 
+	private ObjectWriter _objectWriter;
+
 	@Rule
 	public TemporaryFolder tempFolder = new TemporaryFolder();
 
@@ -64,7 +67,12 @@ public class TestStreamingServiceManager {
 	@Before
 	public void init() throws IOException {
 		_mockProperties = mock(PropertiesUtil.class);
+
 		_objectMapper = spy(new ObjectMapper());
+		_objectWriter = spy(_objectMapper.writerWithDefaultPrettyPrinter());
+		when(_objectMapper.writerWithDefaultPrettyPrinter())
+				.thenReturn(_objectWriter);
+
 
 		File streamingServicesFile = tempFolder.newFile("streamingServices.json");
 		Files.write(streamingServicesFile.toPath(), Collections.singletonList("[]"));
@@ -98,7 +106,7 @@ public class TestStreamingServiceManager {
 	@Test
 	public void canAddNewService() throws IOException {
 		assertTrue(_streamingServiceManager.getServices().isEmpty());
-		InOrder inOrder = inOrder(_objectMapper);
+		InOrder inOrder = inOrder(_objectWriter);
 
 		List<StreamingServiceModel> testModels = createTestModels();
 		_streamingServiceManager.addService(testModels.get(0));
@@ -114,6 +122,9 @@ public class TestStreamingServiceManager {
 		assertServiceListEqual(testModels, loadedServiceModels);
 
 		verifyNumServicesSaved(inOrder, 2);
+
+		Files.lines(_mockProperties.getStreamingServices().getFile().toPath())
+				.forEach(System.out::println);
 	}
 
 
@@ -122,7 +133,7 @@ public class TestStreamingServiceManager {
 		List<StreamingServiceModel> testModels = createTestModels();
 		_streamingServiceManager.addService(testModels.get(0));
 		_streamingServiceManager.addService(testModels.get(1));
-		verify(_objectMapper, times(2))
+		verify(_objectWriter, times(2))
 				.writeValue(any(OutputStream.class), any());
 
 
@@ -138,7 +149,7 @@ public class TestStreamingServiceManager {
 		}
 		catch (IllegalStateException ignored) {}
 
-		verify(_objectMapper, times(2))
+		verify(_objectWriter, times(2))
 				.writeValue(any(OutputStream.class), any());
 
 		assertServiceListEqual(testModels, _streamingServiceManager.getServices());
@@ -148,7 +159,7 @@ public class TestStreamingServiceManager {
 
 	@Test
 	public void canRemoveService() throws IOException {
-		InOrder inOrder = inOrder(_objectMapper);
+		InOrder inOrder = inOrder(_objectWriter);
 
 		List<StreamingServiceModel> testModels = createTestModels();
 		_streamingServiceManager.addService(testModels.get(0));
@@ -213,7 +224,7 @@ public class TestStreamingServiceManager {
 
 
 	private void verifyNumServicesSaved(InOrder inOrder, int numSaved) throws IOException {
-		inOrder.verify(_objectMapper)
+		inOrder.verify(_objectWriter)
 				.writeValue(notNull(OutputStream.class), whereArg(l -> ((Collection<?>) l).size() == numSaved));
 	}
 

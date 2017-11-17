@@ -29,6 +29,8 @@ package org.mitre.mpf.wfm.camel.operations.jobcreation;
 import org.apache.camel.Exchange;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.*;
+import org.mitre.mpf.mvc.controller.AtmosphereController;
+import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
@@ -167,14 +169,18 @@ public class JobCreationProcessor extends WfmProcessor {
 				throw new WfmProcessingException(INVALID_PIPELINE_MESSAGE);
 			}
 
+			JobStatus jobStatus;
 			if (transientJob.getMedia().stream().anyMatch(m -> m.isFailed())) {
-				jobRequestEntity.setStatus(JobStatus.IN_PROGRESS_ERRORS);
-				redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_ERRORS);
+				jobStatus = JobStatus.IN_PROGRESS_ERRORS;
 				// allow the job to run since some of the media may be good
 			} else {
-				jobRequestEntity.setStatus(JobStatus.IN_PROGRESS);
-				redis.setJobStatus(jobId, JobStatus.IN_PROGRESS);
+				jobStatus = JobStatus.IN_PROGRESS;
 			}
+
+			jobRequestEntity.setStatus(jobStatus);
+			redis.setJobStatus(jobId, jobStatus);
+			AtmosphereController.broadcast(new JobStatusMessage(jobId, 0, jobStatus, null));
+
 			jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 
 			exchange.getOut().setBody(jsonUtils.serialize(transientJob));

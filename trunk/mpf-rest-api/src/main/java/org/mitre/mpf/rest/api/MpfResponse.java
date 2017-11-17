@@ -27,7 +27,7 @@
 package org.mitre.mpf.rest.api;
 
 public class MpfResponse {
-	//TODO: need to develop error codes...
+	//TODO: wishlist task #343 created to refactor the rest of the codebase to use these static data members instead of hardcoding 0 or 1, plus need to develop additional error codes...
 	//0 = no error and message will be null, 1 = error and message will be populated, 2 = warning and message will be populated
 	public static final int RESPONSE_CODE_SUCCESS = 0;
 	public static final int RESPONSE_CODE_ERROR = 1;
@@ -37,11 +37,17 @@ public class MpfResponse {
 	 * Fields and getters
 	 */
 	private int responseCode = RESPONSE_CODE_SUCCESS;
+
+    /**
+     * Get the response code associated with this MpfResponse.
+     * @return response code, which should be one of the predefined response codes defined for a MpfResponse.
+     */
 	public int getResponseCode() {
 		return responseCode;
 	}
 
-    /** Set the mpf response code
+    /**
+     * Set the mpf response code
      * @param responseCode one of the pre-defined mpfResponse response codes
      */
 	public void setResponseCode(int responseCode) {
@@ -53,10 +59,16 @@ public class MpfResponse {
     }
 
 	private String message = null;
+
+    /**
+     * Get the message associated with this MpfResponse.
+     * @return message associated with this MpfResponse.
+     */
 	public String getMessage() {
 		return message;
 	}
-    /** Set the mpf response. Cannot set the message without a responseCode.
+    /**
+     * Set the mpf response code and message for this MpfResponse. Cannot set the message without a responseCode.
      * @param responseCode one of the pre-defined mpfResponse response codes
      * @param message mpf response message
      */
@@ -70,7 +82,8 @@ public class MpfResponse {
 	 */
 	public MpfResponse() { }
 
-    /** Construct a mpf response with a response code and response message
+    /**
+     * Construct a mpf response with a response code and response message
      * @param responseCode one of the pre-defined mpfResponse response codes
      * @param message mpf response message
      */

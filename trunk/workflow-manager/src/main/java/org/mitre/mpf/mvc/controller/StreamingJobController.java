@@ -38,8 +38,9 @@ import org.mitre.mpf.rest.api.StreamingJobCreationResponse;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.event.JobProgress;
+import org.mitre.mpf.wfm.exceptions.JobCancellationErrorWfmProcessingException;
+import org.mitre.mpf.wfm.exceptions.JobCancellationWarningWfmProcessingException;
 import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.util.MethodStatus;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.StreamResource;
 import org.slf4j.Logger;
@@ -140,7 +141,7 @@ public class StreamingJobController {
     @ResponseBody
     public List<Long> getStreamingJobsInfoRest() {
         //get a list of all of the streaming job ids
-        return new ArrayList<>(mpfService.getAllStreamingJobIds());
+        return mpfService.getAllStreamingJobIds();
     }
 
 // TODO:
@@ -190,7 +191,7 @@ public class StreamingJobController {
         if ( streamingJobExternalId != null ) {
             errBuilder.append(String.format(" with external id '%s'", streamingJobExternalId));
         }
-        errBuilder.append(" due to "+errorReason+". Please check the request parameters against the constraints defined in the REST API.");
+        errBuilder.append(" due to " + errorReason + ". Please check the request parameters against the constraints defined in the REST API.");
         String err = errBuilder.toString();
         log.error(err);
         return new StreamingJobCreationResponse(1, err);
@@ -201,12 +202,12 @@ public class StreamingJobController {
         try {
             if ( !streamingJobCreationRequest.isValidRequest() ) {
                 // The streaming job failed the API syntax check, the job request is malformed. Reject the job and send an error response.
-                return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),"malformed request");
+                return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(), "malformed request");
             } else if ( !StreamResource.isSupportedUriScheme(streamingJobCreationRequest.getStreamUri()) ) {
                 // The streaming job failed the check for supported stream protocol check, so OpenMPF can't process the requested stream URI.
                 // Reject the job and send an error response.
                 return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),
-                                                               "malformed or unsupported stream URI: "+streamingJobCreationRequest.getStreamUri());
+                                                               "malformed or unsupported stream URI: " + streamingJobCreationRequest.getStreamUri());
             } else {
                 boolean enableOutputToDisk = propertiesUtil.isOutputObjectsEnabled();
                 if ( streamingJobCreationRequest.getEnableOutputToDisk() != null ) {
@@ -303,34 +304,40 @@ public class StreamingJobController {
         if ( streamingJobRequest == null ) {
             // if the requested streaming job doesn't exist, it can't be marked for cancellation, so this is an error.
             cancelResponse = new StreamingJobCancelResponse(jobId, "", doCleanup,
-                MpfResponse.RESPONSE_CODE_ERROR, "Streaming job with id "+jobId+" doesn't exist.");
+                MpfResponse.RESPONSE_CODE_ERROR, "Streaming job with id " + jobId + " doesn't exist.");
         } else {
             try {
-                MethodStatus methodStatus = mpfService.cancelStreamingJob(jobId, doCleanup);
-                if (methodStatus.isSuccess()) {
-                    log.debug("Successfully marked for cancellation streaming job with id {}", jobId);
-                    cancelResponse = new StreamingJobCancelResponse(jobId,
-                        streamingJobRequest.getOutputObjectDirectory(), doCleanup, MpfResponse.RESPONSE_CODE_SUCCESS, methodStatus.getSummary());
-                } else if ( methodStatus.isWarning() ){
-                    // if the job was marked for cancellation, but methodStatus contains a warning code, forward the warning along in the mpfResponse.
-                    log.debug("Got a warning when cancelling streaming job with id {}, warning is '{}'", jobId, methodStatus.getSummary());
-                    cancelResponse = new StreamingJobCancelResponse(jobId,
-                        streamingJobRequest.getOutputObjectDirectory(), doCleanup, MpfResponse.RESPONSE_CODE_WARNING, methodStatus.getSummary());
-                } else if ( methodStatus.isError() ) {
-                    // if the job could not be marked for cancellation, forward the error along in the mpfResponse.
-                    log.error("Got an error when cancelling streaming job with id {}, error is '{}'", jobId, methodStatus.getSummary());
-                    cancelResponse = new StreamingJobCancelResponse(jobId,
-                        streamingJobRequest.getOutputObjectDirectory(), doCleanup, MpfResponse.RESPONSE_CODE_ERROR, methodStatus.getSummary());
-                }
-            } catch (WfmProcessingException e) {
-                log.error(e.getMessage(),e);
-                String errorStr =
-                    "Failed to cancel the streaming job with id " + Long.toString(jobId)
-                        + ". Please check to make sure the streaming job exists before submitting a cancel request. "
-                        + "Also consider checking the server logs for more information on this error.";
-                log.error(errorStr);
+
+                mpfService.cancelStreamingJob(jobId, doCleanup);
+
+                log.info("Successfully marked for cancellation streaming job with id {}", jobId);
+
                 cancelResponse = new StreamingJobCancelResponse(jobId,
-                    streamingJobRequest.getOutputObjectDirectory(), doCleanup, MpfResponse.RESPONSE_CODE_ERROR, e.getMessage());
+                    streamingJobRequest.getOutputObjectDirectory(), doCleanup,
+                    MpfResponse.RESPONSE_CODE_SUCCESS, "success");
+
+            } catch (JobCancellationWarningWfmProcessingException cwe ) {
+                // If the job was marked for cancellation, but a warning exception was caught, log the warning and forward the warning along in the mpfResponse.
+                log.warn("Got a warning when cancelling streaming job with id {}, warning is '{}'",
+                    jobId, cwe.getMessage());
+                cancelResponse = new StreamingJobCancelResponse(jobId,
+                    streamingJobRequest.getOutputObjectDirectory(), doCleanup,
+                    MpfResponse.RESPONSE_CODE_WARNING, cwe.getMessage());
+
+            } catch (JobCancellationErrorWfmProcessingException cee ) {
+                // If the job could not be marked for cancellation, log the error and forward the error along in the mpfResponse.
+                log.error("Error cancelling streaming job with id {}, error is '{}'",
+                    jobId, cee.getMessage());
+                cancelResponse = new StreamingJobCancelResponse(jobId,
+                    streamingJobRequest.getOutputObjectDirectory(), doCleanup,
+                    MpfResponse.RESPONSE_CODE_ERROR, cee.getMessage());
+            } catch ( WfmProcessingException e ) {
+                // If a WFM processing error occurred, log the error and forward the error along in the mpfResponse.
+                log.error("WFM processing error occurred during cancellation of streaming job with id {}, error is '{}'",
+                    jobId, e.getMessage());
+                cancelResponse = new StreamingJobCancelResponse(jobId,
+                    streamingJobRequest.getOutputObjectDirectory(), doCleanup,
+                    MpfResponse.RESPONSE_CODE_ERROR, e.getMessage());
             }
         }
         return cancelResponse;

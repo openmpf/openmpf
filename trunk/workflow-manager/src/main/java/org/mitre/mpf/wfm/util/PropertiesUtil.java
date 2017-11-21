@@ -528,5 +528,31 @@ public class PropertiesUtil {
 		}
 	}
 
+	// Define properties specific to Streaming jobs
+
+    // Defaults to 30 seconds if property is not set.
+    @Value("${streaming.healthReport.callbackRate:30}")
+    private int healthReportCallbackRate;
+
+    /**
+     * Get the health report callback rate, in seconds
+     * @return health report callback rate, in seconds
+     */
+    public int getHealthReportCallbackRate() {
+        return healthReportCallbackRate;
+    }
+
+    // Defaults to 30 seconds if property is not set.
+    @Value("${streaming.stallAlert.detectionThreshold:30}")
+    private int stallAlertDetectionThreshold;
+
+    /**
+     * Get the stall alert detection threshold, in seconds
+     * @return stall alert detection threshold, in seconds
+     */
+    public int getStallAlertDetectionThreshold() {
+        return stallAlertDetectionThreshold;
+    }
+
 }
 

@@ -122,9 +122,6 @@ public class TestStreamingServiceManager {
 		assertServiceListEqual(testModels, loadedServiceModels);
 
 		verifyNumServicesSaved(inOrder, 2);
-
-		Files.lines(_mockProperties.getStreamingServices().getFile().toPath())
-				.forEach(System.out::println);
 	}
 
 

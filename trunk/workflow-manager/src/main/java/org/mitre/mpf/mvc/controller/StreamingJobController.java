@@ -35,11 +35,12 @@ import org.mitre.mpf.rest.api.StreamingJobCancelResponse;
 import org.mitre.mpf.rest.api.StreamingJobInfo;
 import org.mitre.mpf.rest.api.StreamingJobCreationRequest;
 import org.mitre.mpf.rest.api.StreamingJobCreationResponse;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.event.JobProgress;
-import org.mitre.mpf.wfm.exceptions.JobCancellationErrorWfmProcessingException;
-import org.mitre.mpf.wfm.exceptions.JobCancellationWarningWfmProcessingException;
+import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidJobIdWfmProcessingException;
+import org.mitre.mpf.wfm.exceptions.JobAlreadyCancellingWfmProcessingException;
+import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidOutputObjectDirectoryWfmProcessingException;
+import org.mitre.mpf.wfm.exceptions.JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.StreamResource;
@@ -316,28 +317,35 @@ public class StreamingJobController {
                     streamingJobRequest.getOutputObjectDirectory(), doCleanup,
                     MpfResponse.RESPONSE_CODE_SUCCESS, "success");
 
-            } catch (JobCancellationWarningWfmProcessingException cwe ) {
-                // If the job was marked for cancellation, but a warning exception was caught, log the warning and forward the warning along in the mpfResponse.
+            } catch (JobAlreadyCancellingWfmProcessingException | JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException we ) {
+                // If the job was marked for cancellation, but one of these warning exceptions were caught,
+                // log the warning and forward the warning along in the mpfResponse.
+                // TODO when openmpf issue #334 is implemented, handling for JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException will be moved someplace else
                 log.warn("Got a warning when cancelling streaming job with id {}, warning is '{}'",
-                    jobId, cwe.getMessage());
+                    jobId, we.getMessage());
                 cancelResponse = new StreamingJobCancelResponse(jobId,
                     streamingJobRequest.getOutputObjectDirectory(), doCleanup,
-                    MpfResponse.RESPONSE_CODE_WARNING, cwe.getMessage());
+                    MpfResponse.RESPONSE_CODE_WARNING, we.getMessage());
 
-            } catch (JobCancellationErrorWfmProcessingException cee ) {
-                // If the job could not be marked for cancellation, log the error and forward the error along in the mpfResponse.
-                log.error("Error cancelling streaming job with id {}, error is '{}'",
+            } catch (JobCancellationInvalidOutputObjectDirectoryWfmProcessingException idee ) {
+                // TODO when openmpf issue #334 is implemented, handling for JobCancellationInvalidOutputObjectDirectoryWfmProcessingException will be moved someplace else
+                // If the streaming job was marked for cancellation, but the
+                // jobs output object directory couldn't be deleted due to an error,
+                // log the error and forward the error along in the mpfResponse.
+                log.error("Got an output object directory error when cancelling streaming job with id {}, error is '{}'",
+                    jobId, idee.getMessage());
+                cancelResponse = new StreamingJobCancelResponse(jobId,
+                    streamingJobRequest.getOutputObjectDirectory(), doCleanup,
+                    MpfResponse.RESPONSE_CODE_ERROR, idee.getMessage());
+
+            } catch (JobCancellationInvalidJobIdWfmProcessingException cee ) {
+                // If the job could not be marked for cancellation because the streaming job Id was invalid,
+                // log the error and forward the error along in the mpfResponse.
+                log.error("Streaming job with id {} couldn't be cancelled, error is '{}'",
                     jobId, cee.getMessage());
                 cancelResponse = new StreamingJobCancelResponse(jobId,
                     streamingJobRequest.getOutputObjectDirectory(), doCleanup,
                     MpfResponse.RESPONSE_CODE_ERROR, cee.getMessage());
-            } catch ( WfmProcessingException e ) {
-                // If a WFM processing error occurred, log the error and forward the error along in the mpfResponse.
-                log.error("WFM processing error occurred during cancellation of streaming job with id {}, error is '{}'",
-                    jobId, e.getMessage());
-                cancelResponse = new StreamingJobCancelResponse(jobId,
-                    streamingJobRequest.getOutputObjectDirectory(), doCleanup,
-                    MpfResponse.RESPONSE_CODE_ERROR, e.getMessage());
             }
         }
         return cancelResponse;

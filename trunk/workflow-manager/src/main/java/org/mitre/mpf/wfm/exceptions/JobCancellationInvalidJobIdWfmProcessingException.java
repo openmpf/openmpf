@@ -28,13 +28,13 @@ package org.mitre.mpf.wfm.exceptions;
 
 import org.mitre.mpf.wfm.WfmProcessingException;
 
-public class JobCancellationErrorWfmProcessingException extends WfmProcessingException {
+public class JobCancellationInvalidJobIdWfmProcessingException extends WfmProcessingException {
 
-    public JobCancellationErrorWfmProcessingException(String msg) {
+    public JobCancellationInvalidJobIdWfmProcessingException(String msg) {
         super(msg);
     }
 
-    public JobCancellationErrorWfmProcessingException(String msg, Exception e) {
+    public JobCancellationInvalidJobIdWfmProcessingException(String msg, Exception e) {
         super(msg, e);
     }
 }

@@ -35,11 +35,10 @@ import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
-import org.mitre.mpf.wfm.exceptions.JobCancellationErrorWfmProcessingException;
-import org.mitre.mpf.wfm.exceptions.JobCancellationWarningWfmProcessingException;
 
 import java.util.List;
 import java.util.Map;
+
 
 
 public interface MpfService {
@@ -146,12 +145,10 @@ public interface MpfService {
      * Marks a streaming job as CANCELLING in both REDIS and in the long-term database.
      * @param jobId     The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
      * @param doCleanup if true, delete the streaming job files from disk as part of cancelling the streaming job.
-     * @exception JobCancellationWarningWfmProcessingException may be thrown if the streaming job has already been cancelled or
-     * if the streaming jobs status is already terminal. JobCancellationErrorWfmProcessingException may be thrown if the
-     * streaming job can't be cancelled. WfmProcessingException will be thrown if a WFM processing error was detected.
+     * @exception WfmProcessingException may be thrown if a warning or error occurs.
      * The exception message will provide a summary of the warning or error that occurred.
      */
-	void cancelStreamingJob(long jobId, boolean doCleanup) throws JobCancellationWarningWfmProcessingException, JobCancellationErrorWfmProcessingException, WfmProcessingException;
+	void cancelStreamingJob(long jobId, boolean doCleanup) throws WfmProcessingException;
 
 	/** Gets the marked-up media with the specified (batch job) id. */
 	public MarkupResult getMarkupResult(long id);

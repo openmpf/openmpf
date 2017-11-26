@@ -40,6 +40,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.mitre.mpf.interop.JsonAction;
 import org.mitre.mpf.interop.JsonCallbackBody;
+import org.mitre.mpf.interop.JsonHealthReportDataCallbackBody;
 import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.interop.JsonStage;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
@@ -651,6 +652,37 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         }
     }
 
+    /**
+     * Send the streaming jobs Health Report to the health report callback.
+     * @param jobId unique id for this streaming job
+     * @throws WfmProcessingException
+     */
+    private void healthReportCallback(long jobId) throws WfmProcessingException {
+        final String jsonHealthReportCallbackURL = redis.getHealthReportCallbackURI(jobId);
+        final String jsonCallbackMethod = redis.getCallbackMethod(jobId);
+        if (jsonHealthReportCallbackURL != null && jsonCallbackMethod != null && (jsonCallbackMethod.equals("POST") || jsonCallbackMethod.equals("GET"))) {
+            log.info("Starting " + jsonCallbackMethod + " health report callback to " + jsonHealthReportCallbackURL);
+            try {
+                long currentTimeMsec = System.currentTimeMillis();
+                Date reportDate = new Date(currentTimeMsec);
+                // get the timestamp (in seconds) which marks when the health report for this streaming job was last sent.
+                // Note that lastHealthReportTimestamp may be 0L if a health report for this streaming job has not yet been sent.
+                Long lastHealthReportTimestamp = redis.getHealthReportLastTimestamp(jobId);
+                Long elapsedTime = null;
+                if ( lastHealthReportTimestamp != null ) {
+                    elapsedTime = Long.valueOf(currentTimeMsec/1000 - lastHealthReportTimestamp.longValue());
+                }
+                JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(jobId, redis.getExternalId(jobId),
+                    reportDate, redis.getJobStatus(jobId).toString(), elapsedTime, redis.getHealthReportLastNewActivityAlertFrameId(jobId));
+                new Thread(new CallbackThread(jsonHealthReportCallbackURL, jsonCallbackMethod, jsonBody)).start();
+                // TODO, can this be set when the thread is actually run?
+                redis.setHealthReportLastTimestamp(jobId,Long.valueOf(currentTimeMsec/1000));
+            } catch (IOException ioe) {
+                log.warn("Failed to issue {} callback to '{}' due to an I/O exception.", jsonCallbackMethod, jsonHealthReportCallbackURL, ioe);
+            }
+        }
+    }
+
     // TODO finalize what needs to be done to mark a streaming job as completed in the WFM, method copied over from StreamingJobCompleteProcessorImpl.java
     private void markJobCompleted(long jobId, JobStatus jobStatus) {
         log.debug("Marking Streaming Job {} as completed with status '{}'.", jobId, jobStatus);
@@ -702,21 +734,43 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         private String callbackMethod;
         private HttpUriRequest req;
 
-        public CallbackThread(String callbackURL, String callbackMethod, JsonCallbackBody body) throws UnsupportedEncodingException {
+        private String setGetMethodParametersForCallbackURL(String callbackURL, JsonHealthReportDataCallbackBody body) {
+            String jsonCallbackURL2 = setGetMethodParametersForCallbackURL(callbackURL,(JsonCallbackBody)body);
+            if (body.getReportDate() != null) {
+                jsonCallbackURL2 += "&reportDate=" + body.getReportDate();
+            }
+            if (body.getJobStatus() != null) {
+                jsonCallbackURL2 += "&jobStatus=" + body.getJobStatus();
+            }
+            if (body.getLastNewActivityAlertFrameId() != null) {
+                jsonCallbackURL2 += "&lastNewActivityAlertFrameId =" + body.getLastNewActivityAlertFrameId();
+            }
+            if (body.getElapsedTime() != null) {
+                jsonCallbackURL2 += "&elapsedTime =" + body.getElapsedTime();
+            }
+            return jsonCallbackURL2;
+        }
+
+        private String setGetMethodParametersForCallbackURL(String callbackURL, JsonCallbackBody body) {
+            String jsonCallbackURL2 = callbackURL;
+            if (jsonCallbackURL2.contains("?")) {
+                jsonCallbackURL2 += "&";
+            } else {
+                jsonCallbackURL2 += "?";
+            }
+            jsonCallbackURL2 += "jobid=" + body.getJobId();
+            if (body.getExternalId() != null) {
+                jsonCallbackURL2 += "&externalid=" + body.getExternalId();
+            }
+            return jsonCallbackURL2;
+        }
+
+       public CallbackThread(String callbackURL, String callbackMethod, JsonCallbackBody body) throws UnsupportedEncodingException {
             this.callbackURL = callbackURL;
             this.callbackMethod = callbackMethod;
 
             if (callbackMethod.equals("GET")) {
-                String jsonCallbackURL2 = callbackURL;
-                if (jsonCallbackURL2.contains("?")) {
-                    jsonCallbackURL2 += "&";
-                } else {
-                    jsonCallbackURL2 += "?";
-                }
-                jsonCallbackURL2 += "jobid=" + body.getJobId();
-                if (body.getExternalId() != null) {
-                    jsonCallbackURL2 += "&externalid=" + body.getExternalId();
-                }
+                String jsonCallbackURL2 = setGetMethodParametersForCallbackURL(callbackURL,body);
                 req = new HttpGet(jsonCallbackURL2);
             } else { // this is for a POST
                 HttpPost post = new HttpPost(callbackURL);
@@ -725,7 +779,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                     post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(body)));
                     req = post;
                 } catch (WfmProcessingException e) {
-                    log.error("Cannont serialize CallbackBody");
+                    log.error("Cannot serialize CallbackBody");
                 }
             }
         }

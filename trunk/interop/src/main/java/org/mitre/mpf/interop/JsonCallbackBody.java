@@ -31,11 +31,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class JsonCallbackBody {
     /** The internal identifier assigned to this job by MPF. */
-    private long jobId;
+    protected long jobId;
     public long getJobId() { return jobId; }
 
     /** The ID that was provided to this job when it was initially submitted. */
-    private String externalid;
+    protected String externalid;
     public String getExternalId() { return externalid; }
 
     @JsonCreator

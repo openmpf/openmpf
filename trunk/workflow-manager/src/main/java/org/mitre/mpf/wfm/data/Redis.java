@@ -225,6 +225,14 @@ public interface Redis {
 	String getSummaryReportCallbackURI(final long jobId) throws WfmProcessingException;
 
 	/**
+	 * The URL of the HealthReportCallback to connect to when the health report for a streaming job needs to be sent.
+	 * @param jobId The MPF-assigned ID of the streaming job to which this HealthReportCallback URI will refer to.
+	 * @return The URI of the HealthReportCallback.
+	 * @throws WfmProcessingException
+	 */
+	String getHealthReportCallbackURI(final long jobId) throws WfmProcessingException;
+
+	/**
 	 * The METHOD of the Callback to connect to when the job is completed. POST or GET.
 	 * @param jobId The MPF-assigned ID of the job to which this Callback Method will refer to.
 	 * @return The METHOD of the Callback to connect to when the job is completed. POST or GET.
@@ -252,4 +260,10 @@ public interface Redis {
 	 */
 	boolean isJobTypeStreaming(final long jobId);
 
-}
+	void setHealthReportLastTimestamp(long jobId, Long lastHealthReportTimestamp) throws WfmProcessingException;
+	Long getHealthReportLastTimestamp(long jobId) throws WfmProcessingException;
+
+    void setHealthReportLastNewActivityAlertFrameId(long jobId, String lastNewActivityAlertFrameId) throws WfmProcessingException;
+    String getHealthReportLastNewActivityAlertFrameId(long jobId) throws WfmProcessingException;
+
+	}

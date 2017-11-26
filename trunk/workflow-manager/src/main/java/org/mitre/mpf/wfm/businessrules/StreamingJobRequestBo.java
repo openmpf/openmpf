@@ -79,4 +79,6 @@ public interface StreamingJobRequestBo {
 	 * The exception message will provide a summary of the warning or error that occurred.
 	 */
 	void cancel(long jobId, boolean doCleanup) throws WfmProcessingException;
+
+	public void sendHealthReportCallback(long jobId) throws WfmProcessingException;
 }

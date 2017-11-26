@@ -658,29 +658,49 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * @throws WfmProcessingException
      */
     private void healthReportCallback(long jobId) throws WfmProcessingException {
-        final String jsonHealthReportCallbackURL = redis.getHealthReportCallbackURI(jobId);
-        final String jsonCallbackMethod = redis.getCallbackMethod(jobId);
-        if (jsonHealthReportCallbackURL != null && jsonCallbackMethod != null && (jsonCallbackMethod.equals("POST") || jsonCallbackMethod.equals("GET"))) {
-            log.info("Starting " + jsonCallbackMethod + " health report callback to " + jsonHealthReportCallbackURL);
-            try {
-                long currentTimeMsec = System.currentTimeMillis();
-                Date reportDate = new Date(currentTimeMsec);
-                // get the timestamp (in seconds) which marks when the health report for this streaming job was last sent.
-                // Note that lastHealthReportTimestamp may be 0L if a health report for this streaming job has not yet been sent.
-                Long lastHealthReportTimestamp = redis.getHealthReportLastTimestamp(jobId);
-                Long elapsedTime = null;
-                if ( lastHealthReportTimestamp != null ) {
-                    elapsedTime = Long.valueOf(currentTimeMsec/1000 - lastHealthReportTimestamp.longValue());
+        // ignore any job which is not listed as a current job in REDIS
+        if ( redis.isJobTypeStreaming(jobId) ) {
+            final String jsonHealthReportCallbackURL = redis.getHealthReportCallbackURI(jobId);
+            final String jsonCallbackMethod = redis.getCallbackMethod(jobId);
+            if (jsonHealthReportCallbackURL != null && jsonCallbackMethod != null && (
+                jsonCallbackMethod.equals("POST") || jsonCallbackMethod.equals("GET"))) {
+                log.info("Starting " + jsonCallbackMethod + " health report callback to "
+                    + jsonHealthReportCallbackURL);
+                try {
+                    long currentTimeMsec = System.currentTimeMillis();
+                    Date reportDate = new Date(currentTimeMsec);
+                    // get the timestamp (in seconds) which marks when the health report for this streaming job was last sent.
+                    // Note that lastHealthReportTimestamp may be 0L if a health report for this streaming job has not yet been sent.
+                    Long lastHealthReportTimestamp = redis.getHealthReportLastTimestamp(jobId);
+                    Long elapsedTime = null;
+                    if (lastHealthReportTimestamp != null) {
+                        elapsedTime = Long.valueOf(
+                            currentTimeMsec / 1000 - lastHealthReportTimestamp.longValue());
+                    }
+                    JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(
+                        jobId, redis.getExternalId(jobId),
+                        reportDate, redis.getJobStatus(jobId).toString(), elapsedTime,
+                        redis.getHealthReportLastNewActivityAlertFrameId(jobId));
+                    new Thread(new CallbackThread(jsonHealthReportCallbackURL, jsonCallbackMethod,
+                        jsonBody)).start();
+                    // TODO, can this be set when the thread is actually run?
+                    redis.setHealthReportLastTimestamp(jobId, Long.valueOf(currentTimeMsec / 1000));
+                } catch (IOException ioe) {
+                    log.warn("Failed to issue {} callback to '{}' due to an I/O exception.",
+                        jsonCallbackMethod, jsonHealthReportCallbackURL, ioe);
                 }
-                JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(jobId, redis.getExternalId(jobId),
-                    reportDate, redis.getJobStatus(jobId).toString(), elapsedTime, redis.getHealthReportLastNewActivityAlertFrameId(jobId));
-                new Thread(new CallbackThread(jsonHealthReportCallbackURL, jsonCallbackMethod, jsonBody)).start();
-                // TODO, can this be set when the thread is actually run?
-                redis.setHealthReportLastTimestamp(jobId,Long.valueOf(currentTimeMsec/1000));
-            } catch (IOException ioe) {
-                log.warn("Failed to issue {} callback to '{}' due to an I/O exception.", jsonCallbackMethod, jsonHealthReportCallbackURL, ioe);
             }
         }
+    }
+
+    /**
+     * Send the streaming jobs Health Report to the health report callback.
+     * @param jobId unique id for the streaming job to be reported on
+     * @throws WfmProcessingException thrown if an error occurs
+     */
+    public void sendHealthReportCallback(long jobId) throws WfmProcessingException {
+        log.info("sendHealthReportCallback: sending Health Report for jobId " + jobId);
+        healthReportCallback(jobId);
     }
 
     // TODO finalize what needs to be done to mark a streaming job as completed in the WFM, method copied over from StreamingJobCompleteProcessorImpl.java

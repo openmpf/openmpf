@@ -363,6 +363,18 @@ public class PropertiesUtil {
 		return getDataResource(nodeManagerConfigData, nodeManagerConfigTemplate);
 	}
 
+
+	@Value("${data.streamingprocesses.file}")
+	private FileSystemResource streamingServicesData;
+
+	@Value("${data.streamingprocesses.template}")
+	private Resource streamingServicesTemplate;
+
+	public WritableResource getStreamingServices() {
+		return getDataResource(streamingServicesData, streamingServicesTemplate);
+	}
+
+
 	//
 	// Component upload and registration properties
 	//

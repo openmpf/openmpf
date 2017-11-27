@@ -33,10 +33,13 @@ import org.mitre.mpf.nms.xml.EnvironmentVariable;
 import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
+import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
+import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.service.StreamingServiceManager;
+import org.mitre.mpf.wfm.service.StreamingServiceModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +61,8 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     private final NodeManagerService nodeManagerService;
 
+    private final StreamingServiceManager streamingServiceManager;
+
     private final ComponentDeploymentService deployService;
 
     private final ComponentStateService componentStateService;
@@ -76,6 +81,7 @@ public class AddComponentServiceImpl implements AddComponentService {
     AddComponentServiceImpl(
             PipelineService pipelineService,
             NodeManagerService nodeManagerService,
+            StreamingServiceManager streamingServiceManager,
             ComponentDeploymentService deployService,
             ComponentStateService componentStateService,
             ComponentDescriptorValidator componentDescriptorValidator,
@@ -86,6 +92,7 @@ public class AddComponentServiceImpl implements AddComponentService {
     {
         this.pipelineService = pipelineService;
         this.nodeManagerService = nodeManagerService;
+        this.streamingServiceManager = streamingServiceManager;
         this.deployService = deployService;
         this.componentStateService = componentStateService;
         this.componentDescriptorValidator = componentDescriptorValidator;
@@ -200,8 +207,14 @@ public class AddComponentServiceImpl implements AddComponentService {
             model.getPipelines().addAll(savedPipelines);
 
             if (descriptor.algorithm != null) {
-                String serviceName = saveService(descriptor, algorithmDef);
-                model.setServiceName(serviceName);
+                if (descriptor.algorithm.supportsBatchProcessing) {
+                    String serviceName = saveBatchService(descriptor, algorithmDef);
+                    model.setServiceName(serviceName);
+                }
+                if (descriptor.algorithm.supportsStreamProcessing) {
+                    String streamingServiceName = saveStreamingService(descriptor, algorithmDef);
+                    model.setStreamingServiceName(streamingServiceName);
+                }
             }
         }
         catch (ComponentRegistrationSubsystemException ex) {
@@ -432,7 +445,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         }
     }
 
-    private String saveService(JsonComponentDescriptor descriptor, AlgorithmDefinition algorithmDef)
+    private String saveBatchService(JsonComponentDescriptor descriptor, AlgorithmDefinition algorithmDef)
             throws ComponentRegistrationSubsystemException {
         String serviceName = descriptor.componentName;
         if (nodeManagerService.getServiceModels().containsKey(serviceName)) {
@@ -472,6 +485,40 @@ public class AddComponentServiceImpl implements AddComponentService {
                     String.format("Could not add service %s for deployment to nodes", serviceName));
         }
     }
+
+
+    private String saveStreamingService(JsonComponentDescriptor descriptor, AlgorithmDefinition algorithmDef)
+            throws ComponentRegistrationSubsystemException {
+
+        String serviceName = descriptor.componentName;
+        boolean existingSvc = streamingServiceManager.getServices().stream()
+		        .anyMatch(s -> s.getServiceName().equals(serviceName));
+        if (existingSvc) {
+            throw new ComponentRegistrationSubsystemException(String.format(
+                    "Couldn't add the %s streaming service because another service already has that name.",
+                    serviceName));
+        }
+
+        if (descriptor.sourceLanguage == ComponentLanguage.CPP) {
+        	// TODO: make separate field in descriptor for lib path
+            String libPath = descriptor.launchArgs.get(0);
+            List<EnvironmentVariableModel> envVars = descriptor.environmentVariables.stream()
+                    .map(descEnv -> new EnvironmentVariableModel(descEnv.name, descEnv.value, descEnv.sep))
+                    .collect(toList());
+
+            StreamingServiceModel serviceModel = new StreamingServiceModel(
+                    serviceName, algorithmDef.getName(), ComponentLanguage.CPP, libPath, envVars);
+            streamingServiceManager.addService(serviceModel);
+            return serviceName;
+        }
+        else {
+            // TODO: Also save services for other languages when streaming is implemented for them.
+            _log.error("Streaming processing is not supported for {} components. No streaming service will be added for the {} component.",
+                       descriptor.sourceLanguage, descriptor.componentName);
+            return null;
+        }
+    }
+
 
     private static String getDefaultActionName(AlgorithmDefinition algorithmDef) {
         return String.format("%s %s ACTION", algorithmDef.getName(), algorithmDef.getActionType().toString());

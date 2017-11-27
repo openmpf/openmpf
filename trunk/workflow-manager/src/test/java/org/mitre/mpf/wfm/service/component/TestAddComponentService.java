@@ -35,6 +35,7 @@ import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -61,6 +62,9 @@ public class TestAddComponentService {
 
     @Mock
     private NodeManagerService _mockNodeManager;
+
+    @Mock
+    private StreamingServiceManager _mockStreamingServiceManager;
 
     @Mock
     private ComponentDeploymentService _mockDeploymentService;
@@ -221,6 +225,12 @@ public class TestAddComponentService {
         verify(_mockNodeManager)
                 .addService(whereArg(s -> s.getName().equals(COMPONENT_NAME)));
 
+        verify(_mockStreamingServiceManager)
+                .addService(whereArg(
+                        s -> s.getServiceName().equals(COMPONENT_NAME)
+                                && s.getAlgorithmName().equals(descriptor.algorithm.name.toUpperCase())
+                                && s.getEnvironmentVariables().size() == descriptor.environmentVariables.size()));
+
         assertNeverUndeployed();
     }
 
@@ -328,6 +338,14 @@ public class TestAddComponentService {
 
         verify(_mockNodeManager)
                 .addService(whereArg(s -> s.getName().equals(COMPONENT_NAME)));
+
+        verify(_mockStreamingServiceManager)
+                .addService(whereArg(
+                        s -> s.getServiceName().equals(COMPONENT_NAME)
+                                && s.getAlgorithmName().equals(descriptor.algorithm.name.toUpperCase())
+                                && s.getEnvironmentVariables().size() == descriptor.environmentVariables.size()));
+
+
         assertNeverUndeployed();
     }
 

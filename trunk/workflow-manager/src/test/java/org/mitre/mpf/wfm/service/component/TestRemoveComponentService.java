@@ -36,6 +36,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
+import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -59,6 +60,9 @@ public class TestRemoveComponentService {
 
     @Mock
     private NodeManagerService _mockNodeManager;
+
+    @Mock
+    private StreamingServiceManager _mockStreamingServiceManager;
 
     @Mock
     private ComponentDeploymentService _mockDeploymentService;
@@ -87,6 +91,7 @@ public class TestRemoveComponentService {
         rcm.setComponentState(ComponentState.REGISTERED);
         rcm.setComponentName(COMPONENT_NAME);
         rcm.setServiceName(serviceName);
+        rcm.setStreamingServiceName(serviceName);
         rcm.setAlgorithmName(algoName);
         rcm.setJsonDescriptorPath(DESCRIPTOR_PATH);
 
@@ -139,6 +144,9 @@ public class TestRemoveComponentService {
                         && nodeManagerModel.getServices().contains(serviceModel2)));
         verify(_mockNodeManager)
                 .removeService(serviceName);
+
+        verify(_mockStreamingServiceManager)
+                .deleteService(serviceName);
 
         verify(_mockPipelineService)
                 .deleteAlgorithm(algoName);

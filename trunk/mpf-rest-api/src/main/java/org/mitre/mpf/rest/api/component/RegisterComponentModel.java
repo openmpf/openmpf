@@ -40,6 +40,7 @@ public class RegisterComponentModel {
 	private ComponentState _componentState = ComponentState.UNKNOWN;
     private String _algorithmName;
     private String _serviceName;
+    private String _streamingServiceName;
 	private List<String> _actions = new ArrayList<>();
 	private List<String> _tasks = new ArrayList<>();
 	private List<String> _pipelines = new ArrayList<>();
@@ -103,6 +104,14 @@ public class RegisterComponentModel {
 
     public void setServiceName(String serviceName) {
 		_serviceName = serviceName;
+    }
+
+    public String getStreamingServiceName() {
+		return _streamingServiceName;
+    }
+
+    public void setStreamingServiceName(String streamingServiceName) {
+		_streamingServiceName = streamingServiceName;
     }
 
     public String getJsonDescriptorPath() {

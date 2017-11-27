@@ -31,6 +31,8 @@
 
 #include "MPFDetectionComponent.h"
 
+#undef NDEBUG
+
 namespace MPF {
 
 struct MPFMessage {
@@ -38,6 +40,7 @@ struct MPFMessage {
     uint32_t job_number_;
     virtual ~MPFMessage() = default;
   protected:
+    MPFMessage() : job_number_(0) {}
     MPFMessage(const std::string &job_name, const uint32_t job_number)
             : job_name_(job_name), job_number_(job_number) {}
 };
@@ -49,7 +52,7 @@ struct MPFSegmentReadyMessage : MPFMessage {
                            const uint32_t job_number,
                            const uint32_t seg_num)
             : MPFMessage(job_name, job_number),
-              segment_number_(num) {}
+              segment_number_(seg_num) {}
     ~MPFSegmentReadyMessage() = default;
 };
 
@@ -58,6 +61,7 @@ struct MPFFrameReadyMessage : MPFMessage {
     uint32_t segment_number_;
     uint32_t frame_index_;
     uint64_t frame_offset_bytes_;
+    MPFFrameReadyMessage() : segment_number_(0), frame_index_(0), frame_offset_bytes_(0) {}
     MPFFrameReadyMessage(const std::string &job_name,
                          const uint32_t job_number,
                          const uint32_t seg_num,
@@ -88,6 +92,22 @@ struct MPFJobStatusMessage : MPFMessage {
                         const std::string &msg)
             : MPFMessage(job_name, job_number), status_message_(msg) {}
     ~MPFJobStatusMessage() = default;
+};
+
+struct MPFNewTrackAlertMessage : MPFMessage {
+    uint32_t segment_number_;
+    uint32_t frame_index_;
+    std::vector<MPF::COMPONENT::MPFVideoTrack> tracks_;
+    MPFNewTrackAlertMessage(const std::string &job_name,
+                             const uint32_t job_number,
+                             uint32_t seg_num,
+                             uint32_t frame_num,
+                             const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks)
+            : MPFMessage(job_name, job_number),
+              segment_number_(seg_num),
+              frame_index_(frame_num),
+              tracks_(tracks) {}
+    ~MPFNewTrackAlertMessage() = default;
 };
 
 struct MPFSegmentSummaryMessage : MPFMessage {

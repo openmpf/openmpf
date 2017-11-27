@@ -29,24 +29,23 @@
 
 #include <memory>
 
-#include <activemq/library/ActiveMQCPP.h>
-#include <activemq/core/ActiveMQConnectionFactory.h>
-#include <activemq/core/PrefetchPolicy.h>
-#include <activemq/core/policies/DefaultPrefetchPolicy.h>
 #include <cms/Connection.h>
 #include <cms/Session.h>
 #include <cms/MessageConsumer.h>
 #include <cms/MessageProducer.h>
-//#include <log4cxx/logger.h>
+#include <log4cxx/logger.h>
 
 #include "MPFMessenger.h"
 #include "MPFAMQMessage.h"
 
 namespace MPF {
 
-class AMQMessenger : MPFMessenger {
+class AMQMessagingManager : MPFMessagingManager {
   public:
-    virtual ~AMQMessenger() = default;
+
+    AMQMessagingManager(const log4cxx::LoggerPtr &logger)
+            : connected_(false), started_(false), logger_(logger) {}
+    virtual ~AMQMessagingManager() = default;
 
     void Connect(const std::string &broker_name,
                  const MPF::COMPONENT::Properties &properties) override;
@@ -54,45 +53,179 @@ class AMQMessenger : MPFMessenger {
     void Stop() override;
     void Shutdown() override;
 
-  protected:
-    AMQMessenger()
-            : MPFMessenger(false), connection_(NULL) {}
+    bool isConnected() { return connected_; }
+    bool isStarted() { return started_; }
+    cms::Connection *getConnection() { return connection_.get(); }
 
-    static std::unique_ptr<cms::Connection> connection_;
+  private:
+    bool connected_;
+    bool started_;
+    std::unique_ptr<cms::Connection> connection_;
+    log4cxx::LoggerPtr logger_;
 
 };
 
-class AMQInputMessenger : public AMQMessenger, MPFInputMessenger {
 
+class AMQMessenger {
  public:
-    AMQInputMessenger() = default;
-    ~AMQInputMessenger() { Shutdown(); }
+    AMQMessenger(std::shared_ptr<AMQMessagingManager> &manager,
+                 const log4cxx::LoggerPtr &logger)
+            : initialized_(false), mesg_mgr_(manager), logger_(logger) {}
 
-    // MPFInputMessenger methods
-    std::unique_ptr<MPFMessage> GetMessage() override;
-    std::unique_ptr<MPFMessage> GetMessage(const uint32_t timeout_msec) override;
-    std::unique_ptr<MPFMessage> TryGetMessage() override;
+    ~AMQMessenger() = default;
+
+    // Initialize the queue: starts the session
+    void InitQueue(const std::string &queue_name,
+                   const MPF::COMPONENT::Properties &queue_properties);
+
+    // Usually, the user would call one or the other of these, not both.
+    void CreateConsumer();
+    void CreateProducer();
+
+    template <typename MSGTYPE>
+    std::unique_ptr<MSGTYPE> GetMessage();
+    template <typename MSGTYPE>
+    std::unique_ptr<MSGTYPE> GetMessage(const uint32_t timeout_msec);
+    template <typename MSGTYPE>
+    std::unique_ptr<MSGTYPE> TryGetMessage();
+    template <typename MSGTYPE>
+    void PutMessage(std::unique_ptr<MSGTYPE> msg);
+
+    // Closes the session and any consumers or producers.
+    void Close();
 
   private:
     bool initialized_;
+    std::shared_ptr<AMQMessagingManager> mesg_mgr_;
     std::unique_ptr<cms::Session> session_;
+    std::unique_ptr<cms::Destination> msg_queue_;
+    std::unique_ptr<cms::MessageConsumer> consumer_;
+    std::unique_ptr<cms::MessageProducer> producer_;
+    log4cxx::LoggerPtr logger_;
 };
 
-class AMQOutputMessenger : AMQMessenger, MPFOutputMessenger {
-  public:
-    AMQOutputMessenger() = default;
-    ~AMQOutputMessenger() = { Shutdown(); }
 
-    void SetOutputQueue(const std::string &queue_name,
-                        const MPF::COMPONENT::Properties &queue_properties) override;
 
-    // blocking send
-    void PutMessage(const MPFMessage *msg) override;
 
-  private:
-    bool initialized_;
-    std::unique_ptr<cms::Session> session_;
-};
+template <class MSGTYPE>
+std::unique_ptr<MSGTYPE> AMQMessenger::GetMessage() {
+
+    std::unique_ptr<MSGTYPE> new_msg(new MSGTYPE);
+    if (mesg_mgr_->isConnected() && mesg_mgr_->isStarted()) {
+        try {
+            new_msg->Receive(consumer_->receive());
+        }
+        catch (cms::CMSException& e) {
+            std::string err_str = "CMSException caught in AMQMessenger::GetMessage: " + e.getMessage() + "\n" + e.getStackTraceString();
+            MPFMessageError err = MESSENGER_GET_MESSAGE_FAILURE;
+            MPFMessageException exc(err_str.c_str(), err);
+            throw(exc);
+        }
+        catch (std::exception& e) {
+            std::string err_str = "CMSException caught in AMQInputMessenger::GetMessage" + std::string(e.what());
+            MPFMessageError err = MESSENGER_GET_MESSAGE_FAILURE;
+            MPFMessageException exc(err_str.c_str(), err);
+            throw(exc);
+        }
+    }
+    else {
+        MPFMessageError err = MESSENGER_NOT_CONNECTED;
+        std::string err_str = "AMQMessenger::GetMessage: Messenger not connected or not started";
+        MPFMessageException exc(err_str.c_str(), err);
+        throw(exc);
+    }
+    return new_msg;
+}
+
+template <typename MSGTYPE>
+std::unique_ptr<MSGTYPE> AMQMessenger::GetMessage(const uint32_t timeout_msec) {
+
+    std::unique_ptr<MSGTYPE> new_msg;
+    if (mesg_mgr_->isConnected() && mesg_mgr_->isStarted()) {
+        try {
+            new_msg->Receive(consumer_->receive(timeout_msec));
+        }
+        catch (cms::CMSException& e) {
+            std::string err_str = "CMSException caught in AMQMessenger::GetMessage(timeout): " + e.getMessage() + "\n" + e.getStackTraceString();
+            MPFMessageError err = MESSENGER_GET_MESSAGE_FAILURE;
+            MPFMessageException exc(err_str.c_str(), err);
+            throw(exc);
+        }
+        catch (std::exception& e) {
+            std::string err_str = "CMSException caught in AMQInputMessenger::GetMessage(timeout)" + std::string(e.what());
+            MPFMessageError err = MESSENGER_GET_MESSAGE_FAILURE;
+            MPFMessageException exc(err_str.c_str(), err);
+            throw(exc);
+        }
+    }
+    else {
+        MPFMessageError err = MESSENGER_NOT_CONNECTED;
+        std::string err_str = "AMQMessenger::GetMessage(timeout): Messenger not connected or not started";
+        MPFMessageException exc(err_str.c_str(), err);
+        throw(exc);
+    }
+    return new_msg;
+}
+
+template <typename MSGTYPE>
+std::unique_ptr<MSGTYPE> AMQMessenger::TryGetMessage() {
+    std::unique_ptr<MSGTYPE> new_msg;
+    if (mesg_mgr_->isConnected() && mesg_mgr_->isStarted()) {
+        try {
+            new_msg->Receive(consumer_->receiveNoWait());
+        }
+        catch (cms::CMSException& e) {
+            std::string err_str = "CMSException caught in AMQMessenger::TryGetMessage: " + e.getMessage() + "\n" + e.getStackTraceString();
+            MPFMessageError err = MESSENGER_GET_MESSAGE_FAILURE;
+            MPFMessageException exc(err_str.c_str(), err);
+            throw(exc);
+        }
+        catch (std::exception& e) {
+            std::string err_str = "CMSException caught in AMQInputMessenger::TryGetMessage" + std::string(e.what());
+            MPFMessageError err = MESSENGER_GET_MESSAGE_FAILURE;
+            MPFMessageException exc(err_str.c_str(), err);
+            throw(exc);
+        }
+    }
+    else {
+        MPFMessageError err = MESSENGER_NOT_CONNECTED;
+        std::string err_str = "AMQMessenger::TryGetMessage: Messenger not connected or not started";
+        MPFMessageException exc(err_str.c_str(), err);
+        throw(exc);
+    }
+    return new_msg;
+}
+
+template <typename MSGTYPE>
+void AMQMessenger::PutMessage(std::unique_ptr<MSGTYPE> send_msg) {
+
+    if (mesg_mgr_->isConnected() && mesg_mgr_->isStarted()) {
+        try {
+            send_msg->InitMessage(session_.get());
+            producer_->send(send_msg->GetMessagePtr());
+        }
+        catch (cms::CMSException& e) {
+            std::string err_str = "CMSException caught in AMQMessenger::PutMessage(): " + e.getMessage() + "\n" + e.getStackTraceString();
+            MPFMessageError err = MESSENGER_GET_MESSAGE_FAILURE;
+            MPFMessageException exc(err_str.c_str(), err);
+            throw(exc);
+        }
+        catch (std::exception& e) {
+            std::string err_str = "CMSException caught in AMQInputMessenger::PutMessage()" + std::string(e.what());
+            MPFMessageError err = MESSENGER_PUT_MESSAGE_FAILURE;
+            MPFMessageException exc(err_str.c_str(), err);
+            throw(exc);
+        }
+    }
+    else {
+        MPFMessageError err = MESSENGER_NOT_CONNECTED;
+        std::string err_str = "AMQMessenger::PutMessage(): Messenger not connected or not started";
+        MPFMessageException exc(err_str.c_str(), err);
+        throw(exc);
+    }
+    return;
+}
+
 
 } // namespace MPF
 

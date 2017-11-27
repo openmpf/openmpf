@@ -34,22 +34,38 @@
 
 namespace MPF {
 
-class MPFMessageException : std::runtime_error {
+enum MPFMessageError {
+    MESSENGER_UNRECOGNIZED_ERROR,
+    MESSENGER_UNSPECIFIED_ERROR,
+    MESSENGER_NOT_INITIALIZED,
+    MESSENGER_MISSING_PROPERTY,
+    MESSENGER_INVALID_PROPERTY,
+    MESSENGER_CONNECTION_FAILURE,
+    MESSENGER_START_FAILURE,
+    MESSENGER_STOP_FAILURE,
+    MESSENGER_SHUTDOWN_FAILURE,
+    MESSENGER_NOT_CONNECTED,
+    MESSENGER_QUEUE_NOT_INITIALIZED,
+    MESSENGER_INIT_QUEUE_FAILURE,
+    MESSENGER_CREATE_CONSUMER_FAILURE,
+    MESSENGER_CREATE_PRODUCER_FAILURE,
+    MESSENGER_GET_MESSAGE_FAILURE,
+    MESSENGER_PUT_MESSAGE_FAILURE,
+    MESSENGER_CLOSE_FAILURE
+};
+
+// This exception is thrown when a system or other library exception
+// is caught, to capture an error type that can be returned the the
+// MPF system in the job status message.
+class MPFMessageException : public std::runtime_error {
   public:
 
-    enum MPFMessageError {
-        UNRECOGNIZED_ERROR,
-        UNSPECIFIED_ERROR,
-        MESSENGER_NOT_INITIALIZED,
-        MESSENGER_MISSING_PROPERTY,
-        MESSENGER_INVALID_PROPERTY
-    };
+    virtual ~MPFMessageException() = default;
 
     explicit MPFMessageException(const char *msg, MPFMessageError e) 
             : std::runtime_error(msg), error_type_(e) {}
     explicit MPFMessageException(const std::string &msg, MPFMessageError e) 
             : std::runtime_error(msg), error_type_(e) {}
-    virtual ~MPFMessageException() = default;
 
     MPFMessageError getErrorType() {
         return error_type_;
@@ -59,9 +75,9 @@ class MPFMessageException : std::runtime_error {
     MPFMessageError error_type_;
 };
 
-class MPFMessenger {
+class MPFMessagingManager {
   public: 
-    virtual ~MPFMessenger() = default;
+    virtual ~MPFMessagingManager() = default;
 
     // Connect to the message passing system
     virtual void Connect(const std::string &broker_name,
@@ -71,38 +87,7 @@ class MPFMessenger {
     virtual void Shutdown() = 0;
 
   protected:
-    bool connected_;
-    MPFMessenger() : connected_(false) {}
-
-};
-
-class MPFInputMessenger : MPFMessenger {
-  public: 
-    virtual ~MPFInputMessenger() = default;
-    MPFInputMessenger() = default;
-
-    virtual void SetInputQueue(const std::string &queue_name,
-                               const MPF::COMPONENT::Properties &queue_properties) = 0;
-
-    //blocking receive
-    virtual std::unique_ptr<MPFMessage> GetMessage() = 0;
-    // blocking receive with timeout
-    virtual std::unique_ptr<MPFMessage> GetMessage(const uint32_t timeout_msec) = 0;
-    // non-blocking receive
-    virtual std::unique_ptr<MPFMessage> TryGetMessage() = 0;
-
-};
-
-class MPFOutputMessenger : MPFMessenger {
-  public: 
-    virtual ~MPFOutputMessenger() = default;
-    MPFOutputMessenger() = default;
-
-    virtual void SetOutputQueue(const std::string &queue_name,
-                           const MPF::COMPONENT::Properties &queue_properties) = 0;
-
-    // blocking send
-    virtual void PutMessage(const MPFMessage *msg) = 0;
+    MPFMessagingManager() = default;
 };
 
 } // namespace MPF

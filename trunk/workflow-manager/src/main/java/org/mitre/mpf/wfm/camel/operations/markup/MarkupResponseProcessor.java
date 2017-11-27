@@ -34,6 +34,7 @@ import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
@@ -77,8 +78,9 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
 		markupResult.setMessage(markupResponse.hasErrorMessage() ? markupResponse.getErrorMessage() : null);
 
 		TransientJob transientJob = redis.getJob(jobId);
+		TransientMedia transientMedia = transientJob.getMedia().get((int)(markupResponse.getMediaIndex()));
 		markupResult.setPipeline(transientJob.getPipeline().getName());
-		markupResult.setSourceUri(transientJob.getMedia().get((int) (markupResponse.getMediaIndex())).getUri());
+		markupResult.setSourceUri(transientMedia.getUri());
 		markupResultDao.persist(markupResult);
 
 		if (markupResponse.getHasError()) {

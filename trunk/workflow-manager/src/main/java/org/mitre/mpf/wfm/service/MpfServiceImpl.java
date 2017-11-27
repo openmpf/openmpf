@@ -160,12 +160,7 @@ public class MpfServiceImpl implements MpfService {
 	 */
 	@Override
 	public long resubmitJob(long jobId) {
-		try {
-			return jobRequestBo.resubmit(jobId).getId();
-		} catch ( WfmProcessingException wpe ) {
-			log.error("Failed to resubmit job {} due to an exception.", jobId, wpe);
-			return -1;
-		}
+		return jobRequestBo.resubmit(jobId).getId();
 	}
 
 	/**
@@ -176,12 +171,7 @@ public class MpfServiceImpl implements MpfService {
 	 */
 	@Override
 	public long resubmitJob(long jobId, int newPriority) {
-		try {
-			return jobRequestBo.resubmit(jobId, newPriority).getId();
-		} catch ( WfmProcessingException wpe ) {
-			log.error("Failed to resubmit job {} due to an exception.", jobId, wpe);
-			return -1;
-		}
+		return jobRequestBo.resubmit(jobId, newPriority).getId();
 	}
 
 	/** Create a new streaming job which will execute the specified pipeline on the provided list of provided URIs
@@ -192,8 +182,6 @@ public class MpfServiceImpl implements MpfService {
 	 * @param externalId A user-defined and optional external identifier for the job.
 	 * @param buildOutput {@literal true} to build output objects, {@literal false} to suppress output objects.
 	 * @param priority The priority to assign to this job.
-	 * @param stallAlertDetectionThreshold
-	 * @param stallAlertRate
 	 * @param stallTimeout
 	 * @param healthReportCallbackURI The health report callback URI or null to disable health reports
 	 * @param summaryReportCallbackURI The summary callback URI or null to disable summary reports
@@ -206,8 +194,6 @@ public class MpfServiceImpl implements MpfService {
 													  Map<String,Map<String,String>> algorithmProperties,
 													  Map<String,String> jobProperties, String pipelineName, String externalId,
 													  boolean buildOutput, int priority,
-													  long stallAlertDetectionThreshold,
-													  long stallAlertRate,
 													  long stallTimeout,
 													  String healthReportCallbackURI,
 													  String summaryReportCallbackURI, String newTrackAlertCallbackURI,
@@ -216,7 +202,7 @@ public class MpfServiceImpl implements MpfService {
 		log.debug("createStreamingJob: stream: {}, Pipeline: {}, Build Output: {}, Priority: {}, healthReportCallbackUri: {}, summaryReportCallbackUri: {}, newTrackAlertCallbackUri: {}, Method: {}", json_stream,
 				pipelineName, buildOutput, priority, healthReportCallbackURI, summaryReportCallbackURI, newTrackAlertCallbackURI, method);
 		return streamingJobRequestBo.createRequest(externalId, pipelineName, json_stream, algorithmProperties, jobProperties, buildOutput, priority,
-				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
+				stallTimeout,
 				healthReportCallbackURI, summaryReportCallbackURI, newTrackAlertCallbackURI, method);
 	}
 

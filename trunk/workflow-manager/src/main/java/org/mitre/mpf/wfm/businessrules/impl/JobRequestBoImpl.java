@@ -31,6 +31,9 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
+import org.mitre.mpf.interop.JsonPipeline;
+import org.mitre.mpf.mvc.controller.AtmosphereController;
+import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.camel.routes.JobCreatorRouteBuilder;
@@ -304,7 +307,11 @@ public class JobRequestBoImpl implements JobRequestBo {
                     originalMedia.add(originalMedium);
                 }
 
-                jsonJobRequest = new JsonJobRequest(jsonJobRequest.getExternalId(), jsonJobRequest.isOutputObjectEnabled(), jsonJobRequest.getPipeline(), priority) {{
+                // Attempt to recreate the pipeline because registered components; as well as algorithms, actions, tasks, and pipelines;
+                // may have changed since the first time the job was run.
+                JsonPipeline jsonPipeline = pipelineService.createJsonPipeline(jsonJobRequest.getPipeline().getName());
+
+                jsonJobRequest = new JsonJobRequest(jsonJobRequest.getExternalId(), jsonJobRequest.isOutputObjectEnabled(), jsonPipeline, priority) {{
                     getMedia().addAll(originalMedia);
                 }};
 
@@ -312,6 +319,10 @@ public class JobRequestBoImpl implements JobRequestBo {
 
             jobRequest = initializeInternal(jobRequest, jsonJobRequest);
             markupResultDao.deleteByJobId(jobId);
+
+            redis.setJobStatus(jobId, JobStatus.IN_PROGRESS);
+            AtmosphereController.broadcast(new JobStatusMessage(jobId, 0, JobStatus.IN_PROGRESS, null));
+
             return runInternal(jobRequest, jsonJobRequest, priority);
         }
     }
@@ -337,7 +348,12 @@ public class JobRequestBoImpl implements JobRequestBo {
 
         // Set output object version to null.
         jobRequest.setOutputObjectVersion(null);
-        return jobRequestDao.persist(jobRequest);
+        jobRequest = jobRequestDao.persist(jobRequest);
+
+        AtmosphereController.broadcast(new JobStatusMessage(jobRequest.getId(), 0, JobStatus.INITIALIZED, null));
+
+        return jobRequest;
+
     }
 
     /**

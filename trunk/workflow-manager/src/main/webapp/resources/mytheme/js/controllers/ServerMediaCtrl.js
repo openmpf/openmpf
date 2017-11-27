@@ -744,13 +744,15 @@
 
                     //finally submit the job
                     MediaService.createJobFromMedia(jobCreationRequest).then(function (jobCreationResponse) {
-                        //TODO: should check jobCreationResponse.success field
-                        NotificationSvc.success('Job ' + jobCreationResponse.jobId + ' created!');
+                        if (jobCreationResponse.mpfResponse.responseCode == 0) {
+                            NotificationSvc.success('Job ' + jobCreationResponse.jobId + ' created!');
+                            $log.info('successful job creation - switch to jobs view');
 
-                        $log.info('successful job creation - switch to jobs view');
-
-                        $location.path('/jobs');//go to jobs view
-                        if (!$scope.$$phase) $scope.$apply()
+                            $location.path('/jobs');//go to jobs view
+                            if (!$scope.$$phase) $scope.$apply()
+                        } else {
+                            NotificationSvc.error(jobCreationResponse.mpfResponse.message);
+                        }
                     });
                 } else {
                     NotificationSvc.error('Please select some files!');
@@ -760,93 +762,86 @@
 
             var buildDropzone = function () {
                 if (dropzone) dropzone.destroy();
-                MediaService.getCustomUploadExtensions().then(function (customExtensions) {
-                    var acceptedFiles = "video/*,image/*,audio/*";
-                    if (customExtensions && customExtensions.length > 0) {
-                        acceptedFiles = acceptedFiles + "," + customExtensions.join(',');
-                    }
 
-                    dropzone = new Dropzone("#fileManager",
-                        {
-                            url: fileUploadURL,
-                            autoProcessQueue: true,
-                            maxFiles: maxFileUploadCnt,
-                            maxFilesize: 5000, //MB
-                            addRemoveLinks: false,
-                            acceptedFiles: acceptedFiles,
-                            previewsContainer: "#dropzone-preview",
-                            clickable: ".fileinput-button",
-                            init: function () {
-                                var self = this;
-                                successfulUploads = 0;
-                                cancelledUploads = 0;
+                dropzone = new Dropzone("#fileManager",
+                    {
+                        url: fileUploadURL,
+                        autoProcessQueue: true,
+                        maxFiles: maxFileUploadCnt,
+                        maxFilesize: 5000, //MB
+                        addRemoveLinks: false,
+                        previewsContainer: "#dropzone-preview",
+                        clickable: ".fileinput-button",
+                        init: function () {
+                            var self = this;
+                            successfulUploads = 0;
+                            cancelledUploads = 0;
 
-                                self.on("addedfile", function (file, xhr, formData) {//on each file
-                                    if (allowUpload) {
-                                        if (!modalShow) {
-                                            progressModal.modal('show');
-                                            modalShow = true;
-                                            $("#cancelUpload").show();
-                                            $(".closeUpload").hide();
-                                            $("#dropzone-preview").height($("#progressModal").height() - 280);
-                                            $("#uploadTitle").html("Please Wait");
-                                        }
-                                    } else {
-                                        self.cancelUpload(file);
-                                        cancelledUploads += 1;
+                            self.on("addedfile", function (file, xhr, formData) {//on each file
+                                if (allowUpload) {
+                                    if (!modalShow) {
+                                        progressModal.modal('show');
+                                        modalShow = true;
+                                        $("#cancelUpload").show();
+                                        $(".closeUpload").hide();
+                                        $("#dropzone-preview").height($("#progressModal").height() - 280);
+                                        $("#uploadTitle").html("Please Wait");
                                     }
-                                });
-                                self.on("sending", function (file, xhr, formData) {//on each file
-                                    if (allowUpload) {
-                                        formData.append('desiredpath', selectedNode.fullPath);
-                                    } else {
-                                        self.cancelUpload(file);
-                                        cancelledUploads += 1;
-                                    }
-                                });
-                                self.on("success", function (file) {
-                                    successfulUploads += 1;
-                                });
-                                // Hide the total progress bar when nothing's uploading anymore
-                                self.on("queuecomplete", function (progress) {
-                                    $log.debug("Queue Complete");
-                                    updateProgress();
-                                    $("#cancelUpload").hide();
-                                    $(".closeUpload").show();
-                                    $("#uploadTitle").html("Finished");
-                                    updateUploading();
-                                    allowUpload = true;
-                                });
-                                // Update the total progress bar
-                                self.on("totaluploadprogress", function (uploadProgress, totalBytes, totalBytesSent) {//on each file, the progress it passes in isnt correct
-                                    if (uploadProgress) {
-                                        updateProgress(uploadProgress, totalBytes, totalBytesSent);
-                                    }
-                                });
-                                self.on("maxfilesreached", function (file_list) {
-                                    $log.error("Max files reached");
-                                    if (allowUpload) NotificationSvc.error("Maximum Files (" + self.options.maxFiles + ") Reached ");
-                                    $scope.cancelUpload();
-                                });
-                                self.on("maxfilesexceeded", function (file_list) {
-                                    $log.error("maxfilesexceeded");
-                                    if (allowUpload) NotificationSvc.error("Maximum Files (" + self.options.maxFiles + ") Exceeded ");
-                                    $scope.cancelUpload();
-                                });
-                                self.on("error", function (file, resp) {
-                                    var err = resp;
-                                    if (resp.error) {
-                                        err = resp.error;
-                                    } else if (resp == "You can't upload files of this type.") {
-                                        err += " Please add a whitelist." + file.type + " entry to the mediaType.properties file."
-                                    }
-                                    $log.error(err, file);
-                                    $(file.previewElement).find('.dz-error-message').text(err);
-                                });
-                            }
+                                } else {
+                                    self.cancelUpload(file);
+                                    cancelledUploads += 1;
+                                }
+                            });
+                            self.on("sending", function (file, xhr, formData) {//on each file
+                                if (allowUpload) {
+                                    formData.append('desiredpath', selectedNode.fullPath);
+                                } else {
+                                    self.cancelUpload(file);
+                                    cancelledUploads += 1;
+                                }
+                            });
+                            self.on("success", function (file) {
+                                successfulUploads += 1;
+                            });
+                            // Hide the total progress bar when nothing's uploading anymore
+                            self.on("queuecomplete", function (progress) {
+                                $log.debug("Queue Complete");
+                                updateProgress();
+                                $("#cancelUpload").hide();
+                                $(".closeUpload").show();
+                                $("#uploadTitle").html("Finished");
+                                updateUploading();
+                                allowUpload = true;
+                            });
+                            // Update the total progress bar
+                            self.on("totaluploadprogress", function (uploadProgress, totalBytes, totalBytesSent) {//on each file, the progress it passes in isnt correct
+                                if (uploadProgress) {
+                                    updateProgress(uploadProgress, totalBytes, totalBytesSent);
+                                }
+                            });
+                            self.on("maxfilesreached", function (file_list) {
+                                $log.error("Max files reached");
+                                if (allowUpload) NotificationSvc.error("Maximum Files (" + self.options.maxFiles + ") Reached ");
+                                $scope.cancelUpload();
+                            });
+                            self.on("maxfilesexceeded", function (file_list) {
+                                $log.error("maxfilesexceeded");
+                                if (allowUpload) NotificationSvc.error("Maximum Files (" + self.options.maxFiles + ") Exceeded ");
+                                $scope.cancelUpload();
+                            });
+                            self.on("error", function (file, resp) {
+                                var err = resp;
+                                if (resp.error) {
+                                    err = resp.error;
+                                } else if (resp == "You can't upload files of this type.") {
+                                    err += " Please add a whitelist." + file.type + " entry to the mediaType.properties file."
+                                }
+                                $log.error(err, file);
+                                $(file.previewElement).find('.dz-error-message').text(err);
+                            });
                         }
-                    ); //end of dropzone creation
-                }); //end of MediaService.getCustomUploadExtensions()
+                    }
+                ); //end of dropzone creation
             }
 
             var updateUploading = function () {

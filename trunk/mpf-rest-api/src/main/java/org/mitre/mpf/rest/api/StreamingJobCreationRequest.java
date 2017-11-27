@@ -48,14 +48,6 @@ public class StreamingJobCreationRequest {
 	private String newTrackAlertCallbackUri = null; // the URL to send a new track alert report to
 	private String callbackMethod = "POST"; // the method to send the response back after a job completes
 
-	private long stallAlertDetectionThreshold = -1L;
-	public void setStallAlertDetectionThreshold(long stallAlertDetectionThreshold) { this.stallAlertDetectionThreshold = stallAlertDetectionThreshold; }
-	public long getStallAlertDetectionThreshold() { return stallAlertDetectionThreshold; }
-
-	private long stallAlertRate = -1L;
-	public void setStallAlertRate(long stallAlertRate) { this.stallAlertRate=stallAlertRate; }
-	public long getStallAlertRate() { return stallAlertRate; }
-
 	private long stallTimeout = -1L;
 	public void setStallTimeout(long stallTimeout) { this.stallTimeout=stallTimeout; }
 	public long getStallTimeout() { return stallTimeout; }
@@ -144,9 +136,8 @@ public class StreamingJobCreationRequest {
 	 */
 	public boolean isValidRequest() {
 		// do error checks on the streaming job request.
-		// TODO check the pipeline name specfied in the create streaming job request and make sure it's streaming-capable
-		if ( getStream().isValidStreamData() && getStallAlertDetectionThreshold() != -1L &&
-				getStallAlertRate() != -1L && getStallTimeout() != -1L ) {
+		// TODO check the pipeline name specified in the create streaming job request and make sure it's streaming-capable
+		if ( getStream().isValidStreamData() && getStallTimeout() != -1L ) {
 			return true;
 		} else {
 			return false;

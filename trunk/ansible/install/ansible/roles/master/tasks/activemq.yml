@@ -146,19 +146,19 @@
 
  - name: Check for existing activemq.log link
    stat:
-    path=/opt/mpf/share/logs/{{master_host}}/log/activemq.log
+    path={{mpf_home}}/share/logs/{{master_host}}/log/activemq.log
    register: amqlog
 
  - name: Remove existing activemq.log link
    file:
-    path=/opt/mpf/share/logs/{{master_host}}/log/activemq.log
+    path={{mpf_home}}/share/logs/{{master_host}}/log/activemq.log
     state=absent
    when: amqlog.stat.exists
   
  - name: Add ActiveMQ log to Web UI Viewer
    file:
     src=/opt/apache-activemq-{{activemq_version}}/data/activemq.log
-    dest=/opt/mpf/share/logs/{{master_host}}/log/activemq.log
+    dest={{mpf_home}}/share/logs/{{master_host}}/log/activemq.log
     state=link
     force=yes
 

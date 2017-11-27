@@ -1,0 +1,45 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2017 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2017 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+---
+#file: roles/upgrade/tasks/mpf-to-current/mysql.yml
+
+  - name: Ensure MySQL is started
+    service:
+      name: mysqld
+      state: started
+
+  # make sure mpf release 0.8 to 0.9 changes have been applied to MySQL schema.  Leave this check in, because the next line includes the handling commands
+  - name: Check for output_object_version column in mpf.job_request table
+    shell: >
+      mysql --execute="show columns from mpf.job_request like 'output_object_version';" | grep 'output_object_version'
+    register: check_output_object_version
+    failed_when:
+      - "'ERROR 2002' in check_output_object_version.stderr"
+
+  - name: Add output_object_version column to mpf.job_request table
+    command: >
+      mysql --execute="alter table mpf.job_request add output_object_version varchar(255);"
+    when: "check_output_object_version.rc == 1 and 'output_object_version' not in check_output_object_version.stdout"

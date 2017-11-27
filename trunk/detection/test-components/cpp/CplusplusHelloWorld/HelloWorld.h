@@ -56,6 +56,10 @@ public:
             const MPF::COMPONENT::MPFAudioJob &job,
             std::vector<MPF::COMPONENT::MPFAudioTrack> &tracks) override;
 
+    MPF::COMPONENT::MPFDetectionError GetDetections(
+            const MPF::COMPONENT::MPFGenericJob &job,
+            std::vector<MPF::COMPONENT::MPFGenericTrack> &tracks) override;
+
     bool Supports(MPF::COMPONENT::MPFDetectionDataType data_type);
 
     std::string GetDetectionType();

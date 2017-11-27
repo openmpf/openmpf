@@ -224,6 +224,7 @@ int main(int argc, char* argv[]) {
                     MPFDetectionVideoRequest video_request;
                     MPFDetectionAudioRequest audio_request;
                     MPFDetectionImageRequest image_request;
+                    MPFDetectionGenericRequest generic_request;
 
                     job_name << "Job " << msg_metadata->job_id << ":" << GetFileName(data_uri);
 
@@ -249,6 +250,8 @@ int main(int argc, char* argv[]) {
 
                     } else if (data_type == MPFDetectionDataType::IMAGE) {
                         detection_buf.GetImageRequest(image_request);
+                    } else {
+                        detection_buf.GetGenericRequest(generic_request);
                     }
 
                     LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing message on " << service_name << ".");
@@ -370,6 +373,7 @@ int main(int argc, char* argv[]) {
                                     locations, msg_metadata, data_type, detection_type, &response_body_length, rc);
 
                         } else {
+                            /*
                             LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Invalid detection data_type of " << data_type);
 
                             msg_metadata->time_elapsed = time.elapsed();
@@ -377,6 +381,40 @@ int main(int argc, char* argv[]) {
                             // Pack error response
                             detection_response_body = detection_buf.PackErrorResponse(
                                     msg_metadata, data_type, &response_body_length, MPF_UNRECOGNIZED_DATA_TYPE);
+                            */
+
+                            vector <MPFGenericTrack> tracks;
+                            if (generic_request.has_feed_forward_track) {
+                                // Invoke the detection component
+                                // with a feed-forward track
+                                LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing feed-forward track on " << service_name << ".");
+                                MPFGenericJob generic_job(job_name.str(),
+                                                          data_uri,
+                                                          generic_request.feed_forward_track,
+                                                          algorithm_properties,
+                                                          media_properties);
+
+                                rc = detection_engine->GetDetections(generic_job, tracks);
+                            }
+                            else {
+                                // Invoke the detection component
+                                // without a feed-forward track
+                                MPFGenericJob generic_job(job_name.str(),
+                                                          data_uri,
+                                                          algorithm_properties,
+                                                          media_properties);
+
+                                rc = detection_engine->GetDetections(generic_job, tracks);
+                            }
+                            msg_metadata->time_elapsed = time.elapsed();
+
+                            if (rc != MPF_DETECTION_SUCCESS) {
+                                LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Generic detection method returned an error for " << data_uri);
+                            }
+
+                            // Pack generic response
+                            detection_response_body = detection_buf.PackGenericResponse(
+                                    tracks, msg_metadata, data_type, detection_type, &response_body_length, rc);
                         }
 
                     } else {

@@ -26,3 +26,6 @@
 ---
 #file: roles/upgrade/vars/main.yml
 tomcat_home: "/opt/apache-tomcat"
+mpf_home: "{{ lookup('env','MPF_HOME') | default('/opt/mpf', true) }}"
+
+

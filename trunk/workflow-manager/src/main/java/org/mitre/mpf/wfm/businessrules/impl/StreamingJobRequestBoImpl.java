@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -210,8 +211,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * @param jobProperties
      * @param buildOutput                  if true, output objects will be stored and this method will assign the output object directory
      * @param priority
-     * @param stallAlertDetectionThreshold
-     * @param stallAlertRate
      * @param stallTimeout
      * @param healthReportCallbackUri      callback for health reports, pass null to disable health reports
      * @param summaryReportCallbackUri     callback for summary reports, pass null to disable summary reports
@@ -223,7 +222,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     public JsonStreamingJobRequest createRequest(String externalId, String pipelineName, JsonStreamingInputObject stream,
                                                  Map<String, Map<String, String>> algorithmProperties,
                                                  Map<String, String> jobProperties, boolean buildOutput, int priority,
-                                                 long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout,
+                                                 long stallTimeout,
                                                  String healthReportCallbackUri, String summaryReportCallbackUri, String newTrackAlertCallbackUri, String callbackMethod) {
         log.debug("[streaming createRequest] externalId:" + externalId + ", pipeline:" + pipelineName + ", buildOutput:" + buildOutput + ", priority:" + priority +
                 ", healthReportCallbackUri:" + healthReportCallbackUri + ", summaryReportCallbackUri:" + summaryReportCallbackUri +
@@ -248,7 +247,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         String outputObjectPath = ""; // initialize output output object to empty string, the path will be set after the streaming job is submitted
         JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(TextUtils.trim(externalId), buildOutput, outputObjectPath,
                 pipelineService.createJsonPipeline(pipelineName), priority, stream,
-                stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
+                stallTimeout,
                 jsonHealthReportCallbackUri, jsonSummaryReportCallbackUri, jsonNewTrackAlertCallbackUri, jsonCallbackMethod,
                 algorithmProperties, jobProperties);
 
@@ -314,10 +313,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * Cancel a streaming job.
      * Mark the job as cancelled in both REDIS and in the long-term database.
      * // TODO The streaming job cancel request must also be sent to the components via the Master Node Manager
-     *
      * @param jobId     The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
-     * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job
-     * @return true if the streaming job was successfully cancelled, false otherwise
+     * @param doCleanup if true, delete the streaming job files from disk as part of cancelling the streaming job.
+     * @return true if the streaming job was successfully cancelled, false otherwise.
      * @throws WfmProcessingException
      */
     @Override
@@ -341,8 +339,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             if (doCleanup) {
                 // delete the output object directory as part of the job cancellation
                 String outputObjectDirectory = streamingJobRequest.getOutputObjectDirectory();
-                if (outputObjectDirectory == null) {
-                    log.warn("[Job {}:*:*] doCleanup is enabled but the streaming job output object directory is null. Can't cleanup the output object directory for this job.", jobId);
+                if (outputObjectDirectory == null || outputObjectDirectory.isEmpty()) {
+                    log.warn("[Job {}:*:*] doCleanup is enabled but the streaming job output object directory is null or empty. Can't cleanup the output object directory for this job.", jobId);
                 } else {
                     // before we start deleting any file system, double check that this is the root directory of the
                     // streaming job's output object directory.
@@ -352,23 +350,21 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                         // TODO some extra validation should be added here for security to ensure that the output object directory identified is of valid syntax (i.e. error out if equal to "/", etc)
                         // TODO need to define naming convention for VidoeWriter output files.
                         // TODO extra validation should be added here for security to ensure that only VideoWriter output files are deleted.
-                        // TODO not sure if we want to allow for following symbolic links here
                         // TODO the software that actually deletes the output object file system is commented out until the security filters can be enforced
                         // TODO what extra handling needs to be added if the cleanup fails?  How to notify the user?
-                        log.warn("[Job {}:*:*] doCleanup is enabled but cleanup of the output object directory associated with this streaming job isn't yet implemented, pending the addition of the directory/file validation filters.", jobId);
-//            try {
-//              Files.walk(outputObjectDirectoryFileRootPath, FileVisitOption.FOLLOW_LINKS)
-//                  .sorted(Comparator.reverseOrder())
-//                  .map(Path::toFile)
-//                  .peek(System.out::println)
-//                  .forEach(File::delete);
-//            } catch (IOException ioe) {
-//              String errorMessage =
-//                  "Failed to cleanup the output object file directory for streaming job " + jobId
-//                      + " due to IO exception.";
-//              log.error(errorMessage);
-//              throw new WfmProcessingException(errorMessage, ioe);
-//            }
+                        log.warn("[Job {}:*:*] doCleanup is enabled but output object directory validation filters haven't yet been added.", jobId);
+
+                        try (Stream<Path> paths = Files.walk(outputObjectDirectoryFileRootPath)) {
+                            paths.forEach(p -> p.toFile().delete());
+                        }
+                        catch (IOException ioe) {
+                            String errorMessage =
+                                "Failed to cleanup the output object file directory for streaming job "
+                                    + jobId
+                                    + " due to IO exception.";
+                            log.error(errorMessage);
+                            throw new WfmProcessingException(errorMessage, ioe);
+                        }
 
                     } else {
                         log.warn("[Job {}:*:*] doCleanup is enabled but the output object directory associated with this streaming job isn't a viable directory. Can't cleanup the output object directory for this job.", jobId);
@@ -495,8 +491,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 streamingJobRequestEntity.getId(),
                 jsonStreamingJobRequest.getExternalId(), transientPipeline,
                 jsonStreamingJobRequest.getPriority(),
-                jsonStreamingJobRequest.getStallAlertDetectionThreshold(),
-                jsonStreamingJobRequest.getStallAlertRate(), jsonStreamingJobRequest.getStallTimeout(),
+                jsonStreamingJobRequest.getStallTimeout(),
                 jsonStreamingJobRequest.isOutputObjectEnabled(),
                 jsonStreamingJobRequest.getOutputObjectDirectory(),
                 false,

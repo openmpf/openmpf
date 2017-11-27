@@ -39,7 +39,7 @@
   become_user: mpf
 
 - name: Validate presence of MPF shared storage
-  fail: msg="Invalid MPF Configuration. Shared storage not found at /opt/mpf/share"
+  fail: msg="Invalid MPF Configuration. Shared storage not found at {{ mpf_home }}"
   when: not validation.stat.exists
 
 - name: Configure MPF profile.d script
@@ -61,6 +61,11 @@
 - name: Load component package descriptor
   include_vars: "{{ mpf_home }}/{{ deployment_config.package_descriptor | basename }}"
 
+- name: Remove MPF Node Manager
+  yum:
+    name=mpf-nodeManager
+    state=absent
+
 - name: Install MPF Node Manager
   yum:
     name=mpf-nodeManager
@@ -72,6 +77,11 @@
   environment:
     no_proxy: "{{repo_host}}"
 
+- name: Remove MPF Media Markup Component
+  yum:
+    name=mpf-markup
+    state=absent
+
 - name: Install MPF Media Markup Component
   yum:
     name=mpf-markup
@@ -80,6 +90,11 @@
     disablerepo=*
     enablerepo=mpf-repo
   register: markup
+
+- name: Remove MPF Protocol Buffers
+  yum:
+    name=mpf-protobuf
+    state=absent
 
 - name: Install MPF Protocol Buffers
   yum:
@@ -96,6 +111,11 @@
 - name: Process MPF Components
   include: mpfcomponents.yml
 
+- name: Remove MPF Java Component Package
+  yum:
+    name=mpf-java-component-api
+    state=absent
+
 - name: Install MPF Java Component API
   yum:
     name=mpf-java-component-api
@@ -104,6 +124,11 @@
     disablerepo=*
     enablerepo=mpf-repo
   register: java_component_api
+
+- name: Remove MPF Java Component Executor Package
+  yum:
+    name=mpf-java-component-executor
+    state=absent
 
 - name: Install MPF Java Component Executor
   yum:
@@ -114,8 +139,13 @@
     enablerepo=mpf-repo
   register: java_component_executor
 
+- name: Remove MPF Video Overlay
+  yum:
+    name=mpf-video-overlay
+    state=absent
+
 - name: Install MPF Video Overlay
-  yum: >
+  yum:
     name=mpf-video-overlay
     state=latest
     update_cache=yes

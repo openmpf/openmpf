@@ -257,7 +257,7 @@ public class AdminComponentRegistrationController {
                 return ResponseMessage.ok("Component successfully registered");
             }
             catch (ComponentRegistrationException ex) {
-                return handleRegistrationErrorResponse(null, ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, ex);
+                return handleRegistrationErrorResponse(filePath, ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, ex);
             }
         });
     }
@@ -272,12 +272,17 @@ public class AdminComponentRegistrationController {
             @ApiResponse(code = 401, message = "Bad credentials") })*/
     @RequestMapping(value = {"/component/unregisterViaFile", "/rest/component/unregisterViaFile"}, method = RequestMethod.GET)
     @ResponseBody
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void unregisterRest(
+    public ResponseMessage unregisterViaFileRest(
             /*@ApiParam(required = true, value = "The path to the JSON component descriptor file")*/
-            @RequestParam String filePath
+            @RequestParam String filePath,
+            @RequestParam(required = false, defaultValue = "true") boolean deletePackage,
+            @RequestParam(required = false, defaultValue = "true") boolean recursive
     ) {
-        withWriteLock(() -> _removeComponentService.unregisterViaFile(filePath));
+        return withWriteLock(() -> {
+            log.info("Entered {}", "[rest/component/unregisterViaFile]");
+                _removeComponentService.unregisterViaFile(filePath, deletePackage, recursive);
+                return ResponseMessage.ok("Component successfully unregistered");
+        });
     }
 
     @RequestMapping(value = {"/components/{componentName}", "/rest/components/{componentName}"},

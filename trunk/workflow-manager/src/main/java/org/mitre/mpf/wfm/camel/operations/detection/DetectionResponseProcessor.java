@@ -124,9 +124,9 @@ public class DetectionResponseProcessor
 
 			// Process each type of response individually.
 			processVideoResponses(jobId, detectionResponse, fps, confidenceThreshold);
-			processAudioResponses(jobId, detectionResponse, fps, confidenceThreshold);
+			processAudioResponses(jobId, detectionResponse, confidenceThreshold);
 			processImageResponses(jobId, detectionResponse, confidenceThreshold);
-
+			processGenericResponses(jobId, detectionResponse, confidenceThreshold);
 		}
 
 		return jsonUtils.serialize(new TrackMergingContext(jobId, detectionResponse.getStageIndex()));
@@ -167,6 +167,7 @@ public class DetectionResponseProcessor
 
 		return null;
 	}
+
 	private void processVideoResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, Float fps, double confidenceThreshold) {
 		// Iterate through the videoResponse
 		for (DetectionProtobuf.DetectionResponse.VideoResponse videoResponse : detectionResponse.getVideoResponsesList()) {
@@ -187,7 +188,6 @@ public class DetectionResponseProcessor
 						startOffsetTime,
 						stopOffsetTime,
 						videoResponse.getDetectionType());
-
 
 				// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
 				for (DetectionProtobuf.VideoTrack.FrameLocationMap locationMap : objectTrack.getFrameLocationsList()) {
@@ -212,27 +212,22 @@ public class DetectionResponseProcessor
 		}
 	}
 
-	private void processAudioResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, Float fps, double confidenceThreshold) {
-		// Iterate through the videoResponse
+	private void processAudioResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, double confidenceThreshold) {
+		// Iterate through the audioResponse
 		for (DetectionProtobuf.DetectionResponse.AudioResponse audioResponse : detectionResponse.getAudioResponsesList()) {
 			// Begin iterating through the tracks that were found by the detector.
 			for (DetectionProtobuf.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
-
-				int startOffsetFrame = (fps == null ? 0 : Math.round(objectTrack.getStartTime() * fps / 1000));
-				int stopOffsetFrame  = (fps == null ? 0 : Math.round(objectTrack.getStopTime()  * fps / 1000));
-
 				// Create a new Track object.
 				Track track = new Track(
 						jobId,
 						detectionResponse.getMediaId(),
 						detectionResponse.getStageIndex(),
 						detectionResponse.getActionIndex(),
-						startOffsetFrame,
-						stopOffsetFrame,
+						0,
+						0,
 						objectTrack.getStartTime(),
 						objectTrack.getStopTime(),
 						audioResponse.getDetectionType());
-
 
 					if (objectTrack.getConfidence() >= confidenceThreshold) {
 						TreeMap<String, String> detectionProperties = new TreeMap<>();
@@ -246,7 +241,7 @@ public class DetectionResponseProcessor
 										0,
 										0,
 										objectTrack.getConfidence(),
-										startOffsetFrame,
+										0,
 										objectTrack.getStartTime(),
 										detectionProperties));
 					}
@@ -262,38 +257,78 @@ public class DetectionResponseProcessor
 	}
 
 	private void processImageResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, double confidenceThreshold) {
-		// Iterate through the videoResponse
+		// Iterate through the imageResponse
 		for (DetectionProtobuf.DetectionResponse.ImageResponse imageResponse : detectionResponse.getImageResponsesList()) {
 			// Begin iterating through the tracks that were found by the detector.
 
+			// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
+			for (DetectionProtobuf.ImageLocation location : imageResponse.getImageLocationsList()) {
+				if (location.getConfidence() >= confidenceThreshold) {
+					// Create a new Track object.
+					Track track = new Track(
+							jobId,
+							detectionResponse.getMediaId(),
+							detectionResponse.getStageIndex(),
+							detectionResponse.getActionIndex(),
+							0,
+							1,
+							imageResponse.getDetectionType());
 
-
-				// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
-				for (DetectionProtobuf.ImageLocation location : imageResponse.getImageLocationsList()) {
-					if (location.getConfidence() >= confidenceThreshold) {
-						// Create a new Track object.
-						Track track = new Track(
-								jobId,
-								detectionResponse.getMediaId(),
-								detectionResponse.getStageIndex(),
-								detectionResponse.getActionIndex(),
-								0,
-								1,
-								imageResponse.getDetectionType());
-						track.getDetections().add(
-								generateTrack(location, 0, 0));
-						if (!track.getDetections().isEmpty()) {
-							track.setExemplar(findExemplar(track));
-							if(!redis.addTrack(track)) {
-								log.warn("Failed to add the track '{}'.", track);
-							}
+					track.getDetections().add(
+							generateTrack(location, 0, 0));
+					if (!track.getDetections().isEmpty()) {
+						track.setExemplar(findExemplar(track));
+						if(!redis.addTrack(track)) {
+							log.warn("Failed to add the track '{}'.", track);
 						}
 					}
 				}
-
-
-
 			}
+		}
+	}
+
+	private void processGenericResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, double confidenceThreshold) {
+		// Iterate through the genericResponse
+		for (DetectionProtobuf.DetectionResponse.GenericResponse genericResponse : detectionResponse.getGenericResponsesList()) {
+			// Begin iterating through the tracks that were found by the detector.
+			for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
+				// Create a new Track object.
+				Track track = new Track(
+						jobId,
+						detectionResponse.getMediaId(),
+						detectionResponse.getStageIndex(),
+						detectionResponse.getActionIndex(),
+						0,
+						0,
+						0,
+						0,
+						genericResponse.getDetectionType());
+
+				if (objectTrack.getConfidence() >= confidenceThreshold) {
+					TreeMap<String, String> detectionProperties = new TreeMap<>();
+					for (DetectionProtobuf.PropertyMap item : objectTrack.getDetectionPropertiesList()) {
+						detectionProperties.put(item.getKey(), item.getValue());
+					}
+					track.getDetections().add(
+							new Detection(
+									0,
+									1,
+									0,
+									0,
+									objectTrack.getConfidence(),
+									0,
+									0,
+									detectionProperties));
+				}
+
+				if (!track.getDetections().isEmpty()) {
+					track.setExemplar(findExemplar(track));
+					if(!redis.addTrack(track)) {
+						log.warn("Failed to add the track '{}'.", track);
+					}
+				}
+			}
+		}
 	}
 
 	private Detection findExemplar(Track track) {

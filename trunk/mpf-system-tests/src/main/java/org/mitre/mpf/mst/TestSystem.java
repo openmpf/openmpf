@@ -30,18 +30,13 @@ package org.mitre.mpf.mst;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Rule;
-import org.junit.rules.ErrorCollector;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.mitre.mpf.interop.*;
-import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.interop.JsonJobRequest;
-import org.mitre.mpf.interop.JsonMediaInputObject;
-import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
-import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
@@ -70,9 +65,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URL;
 import java.util.*;
@@ -118,42 +113,7 @@ public abstract class TestSystem {
 	public TestName testName = new TestName();
 
 	@Rule
-	public ErrorCollector errorCollector = new ErrorCollector() {
-		private final List<Throwable> _errors = new ArrayList<>();
-
-		/**
-		 * This is overridden so that Jenkins doesn't treat each failed assertion as a separate failed test.
-		 */
-		@Override
-		protected void verify() throws Throwable {
-			if (_errors.isEmpty()) {
-				return;
-			}
-			if (_errors.size() == 1) {
-				throw _errors.get(0);
-			}
-			Assert.fail(combineErrorMessages());
-		}
-
-
-		private String combineErrorMessages() {
-			StringWriter stringWriter = new StringWriter();
-			try (PrintWriter errorMsgWriter = new PrintWriter(stringWriter)) {
-				errorMsgWriter.printf("The were %s errors:\n", _errors.size());
-				for (Throwable error : _errors) {
-					error.printStackTrace(errorMsgWriter);
-					errorMsgWriter.println("------");
-				}
-			}
-			return stringWriter.toString();
-		}
-
-		@Override
-		public void addError(Throwable error) {
-			_errors.add(error);
-		}
-	};
-
+	public MpfErrorCollector errorCollector = new MpfErrorCollector();
 
 	protected OutputChecker outputChecker = new OutputChecker(errorCollector);
 
@@ -248,11 +208,19 @@ public abstract class TestSystem {
 		return media;
 	}
 
-	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, boolean buildOutput, int priority) throws Exception {
+	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media) {
+		return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), true,
+		                          propertiesUtil.getJmsPriority());
+	}
+
+
+	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, boolean buildOutput,
+	                                  int priority) {
 		return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), buildOutput, priority);
 	}
 
-	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, Map<String, String> jobProperties, boolean buildOutput, int priority) throws Exception {
+
+	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, Map<String, String> jobProperties, boolean buildOutput, int priority) {
 		JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media, Collections.emptyMap(), jobProperties,
                 buildOutput, priority);
         long jobRequestId = mpfService.submitJob(jsonJobRequest);
@@ -261,11 +229,11 @@ public abstract class TestSystem {
 	}
 
 	protected long runPipelineOnStream(String pipelineName, JsonStreamingInputObject stream, Map<String, String> jobProperties, boolean buildOutput, int priority,
-									   long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout) throws Exception {
+									   long stallTimeout) throws Exception {
 		JsonStreamingJobRequest jsonStreamingJobRequest = streamingJobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, stream,
 				Collections.emptyMap(), jobProperties,
 				buildOutput, priority,
-				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
+				stallTimeout,
 				null,null,null,null);
 		long jobRequestId = mpfService.submitJob(jsonStreamingJobRequest);
 		Assert.assertTrue(waitFor(jobRequestId));
@@ -301,17 +269,26 @@ public abstract class TestSystem {
 				propertiesUtil.getJmsPriority());
 		if (jenkins) {
 			URL expectedOutputPath = getClass().getClassLoader().getResource(expectedOutputJsonPath);
-			URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
-			log.info("Deserializing expected output {} and actual output {}", expectedOutputPath, actualOutputPath);
+			log.info("Deserializing expected output {} and actual output for job {}", expectedOutputPath, jobId);
 
 			JsonOutputObject expectedOutputJson = OBJECT_MAPPER.readValue(expectedOutputPath, JsonOutputObject.class);
-			JsonOutputObject actualOutputJson = OBJECT_MAPPER.readValue(actualOutputPath.toURL(), JsonOutputObject.class);
+			JsonOutputObject actualOutputJson = getJobOutputObject(jobId);
 
 			outputChecker.compareJsonOutputObjects(expectedOutputJson, actualOutputJson, pipelineName);
 		}
 		log.info("Finished test {}()", testName.getMethodName());
 	}
 
+
+	protected JsonOutputObject getJobOutputObject(long jobId) {
+    	try {
+		    File outputObjectFile = propertiesUtil.createDetectionOutputObjectFile(jobId);
+		    return OBJECT_MAPPER.readValue(outputObjectFile, JsonOutputObject.class);
+	    }
+	    catch (IOException e) {
+    		throw new UncheckedIOException(e);
+	    }
+	}
 
 
 	/**

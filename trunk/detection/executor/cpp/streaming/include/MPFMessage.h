@@ -31,7 +31,6 @@
 
 #include "MPFDetectionComponent.h"
 
-#undef NDEBUG
 
 namespace MPF {
 
@@ -45,6 +44,47 @@ struct MPFMessage {
             : job_name_(job_name), job_number_(job_number) {}
 };
 
+
+struct MPFSegmentSummaryMessage : MPFMessage {
+    int segment_number_;
+    std::vector<MPF::COMPONENT::MPFVideoTrack> tracks_;
+    MPFSegmentSummaryMessage(const std::string &job_name,
+                             const uint32_t job_number,
+                             const int seg_num,
+                             const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks)
+            : MPFMessage(job_name, job_number),
+              segment_number_(seg_num),
+              tracks_(tracks) {}
+    ~MPFSegmentSummaryMessage() = default;
+};
+
+struct MPFActivityAlertMessage : MPFMessage {
+    uint32_t segment_number_;
+    uint32_t frame_index_;
+    double activity_time_;
+    MPFActivityAlertMessage(const std::string &job_name,
+                            const uint32_t job_number,
+                            const uint32_t seg_num,
+                            const uint32_t frame_num,
+                            const double time)
+            : MPFMessage(job_name, job_number),
+              segment_number_(seg_num),
+              frame_index_(frame_num),
+              activity_time_(time) {}
+    ~MPFActivityAlertMessage() = default;
+};
+
+struct MPFJobStatusMessage : MPFMessage {
+    std::string status_message_;
+    MPFJobStatusMessage(const std::string &job_name,
+                        const uint32_t job_number,
+                        const std::string &msg)
+            : MPFMessage(job_name, job_number), status_message_(msg) {}
+    ~MPFJobStatusMessage() = default;
+};
+
+/****************************************************************/
+// Not used in single process, single pipeline stage, architecture
 struct MPFSegmentReadyMessage : MPFMessage {
 
     uint32_t segment_number_;
@@ -56,6 +96,7 @@ struct MPFSegmentReadyMessage : MPFMessage {
     ~MPFSegmentReadyMessage() = default;
 };
 
+// Not used in single process, single pipeline stage, architecture
 struct MPFFrameReadyMessage : MPFMessage {
 
     uint32_t segment_number_;
@@ -85,44 +126,24 @@ struct MPFReleaseFrameMessage : MPFMessage {
     ~MPFReleaseFrameMessage() = default;
 };
 
-struct MPFJobStatusMessage : MPFMessage {
-    std::string status_message_;
-    MPFJobStatusMessage(const std::string &job_name,
-                        const uint32_t job_number,
-                        const std::string &msg)
-            : MPFMessage(job_name, job_number), status_message_(msg) {}
-    ~MPFJobStatusMessage() = default;
-};
+// No longer needed: replaced by ActivityAlert message
+// struct MPFNewTrackAlertMessage : MPFMessage {
+//     uint32_t segment_number_;
+//     uint32_t frame_index_;
+//     std::vector<MPF::COMPONENT::MPFVideoTrack> tracks_;
+//     MPFNewTrackAlertMessage(const std::string &job_name,
+//                              const uint32_t job_number,
+//                              const uint32_t seg_num,
+//                              const uint32_t frame_num,
+//                              const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks)
+//             : MPFMessage(job_name, job_number),
+//               segment_number_(seg_num),
+//               frame_index_(frame_num),
+//               tracks_(tracks) {}
+//     ~MPFNewTrackAlertMessage() = default;
+// };
 
-struct MPFNewTrackAlertMessage : MPFMessage {
-    uint32_t segment_number_;
-    uint32_t frame_index_;
-    std::vector<MPF::COMPONENT::MPFVideoTrack> tracks_;
-    MPFNewTrackAlertMessage(const std::string &job_name,
-                             const uint32_t job_number,
-                             uint32_t seg_num,
-                             uint32_t frame_num,
-                             const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks)
-            : MPFMessage(job_name, job_number),
-              segment_number_(seg_num),
-              frame_index_(frame_num),
-              tracks_(tracks) {}
-    ~MPFNewTrackAlertMessage() = default;
-};
-
-struct MPFSegmentSummaryMessage : MPFMessage {
-    int segment_number_;
-    std::vector<MPF::COMPONENT::MPFVideoTrack> tracks_;
-    MPFSegmentSummaryMessage(const std::string &job_name,
-                             const uint32_t job_number,
-                             int seg_num,
-                             const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks)
-            : MPFMessage(job_name, job_number),
-              segment_number_(seg_num),
-              tracks_(tracks) {}
-    ~MPFSegmentSummaryMessage() = default;
-};
-
+// Not used in single process, single pipeline stage, architecture
 struct MPFVideoWrittenMessage : MPFMessage {
     int segment_number_;
     std::string video_output_pathname_;

@@ -68,6 +68,87 @@ struct AMQMessage {
 };
 
 
+struct AMQSegmentSummaryMessage : AMQMessage, MPFSegmentSummaryMessage {
+
+    AMQSegmentSummaryMessage(const std::string &job_name,
+                             const uint32_t job_number,
+                             const uint32_t seg_num,
+                             const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks)
+            : MPFSegmentSummaryMessage(job_name, job_number, seg_num, tracks) {}
+
+    void InitMessage(cms::Session *session) {
+        msg_.reset(session->createBytesMessage());
+        if (NULL != msg_) {
+            msg_->setStringProperty("JOB_NAME", job_name_);
+            msg_->setIntProperty("JOB_NUMBER", job_number_);
+            msg_->setIntProperty("SEGMENT_NUMBER", segment_number_);
+            //TODO: Need to pack the tracks vector into a protobuf and
+            //      set the body of the message.
+        }
+    }
+
+    void ReceiveMessageContent() {
+        job_name_ = msg_->getStringProperty("JOB_NAME");
+        job_number_ = msg_->getIntProperty("JOB_NUMBER");
+        segment_number_ = msg_->getIntProperty("SEGMENT_NUMBER");
+        //TODO: Need to unpack the tracks vector from the protobuf
+        //      in the message body.
+    }
+};
+
+struct AMQActivityAlertMessage : AMQMessage, MPFActivityAlertMessage {
+    AMQActivityAlertMessage(const std::string &job_name,
+                            const uint32_t job_number,
+                            const uint32_t seg_num,
+                            const uint32_t frame_num,
+                            const double time)
+            : MPFActivityAlertMessage(job_name, job_number,seg_num, frame_num, time) {}
+
+
+    void InitMessage(cms::Session *session) {
+        msg_.reset(session->createMessage());
+        if (NULL != msg_) {
+            msg_->setStringProperty("JOB_NAME", job_name_);
+            msg_->setIntProperty("JOB_NUMBER", job_number_);
+            msg_->setIntProperty("SEGMENT_NUMBER", segment_number_);
+            msg_->setIntProperty("FRAME_INDEX", frame_index_);
+            msg_->setDoubleProperty("ACTIVITY_DETECT_TIME", activity_time_);
+        }
+    }
+
+    virtual void ReceiveMessageContent() {
+        job_name_ = msg_->getStringProperty("JOB_NAME");
+        job_number_ = msg_->getIntProperty("JOB_NUMBER");
+        segment_number_ = msg_->getIntProperty("SEGMENT_NUMBER");
+        frame_index_ = msg_->getIntProperty("FRAME_INDEX");
+        activity_time_ = msg_->getDoubleProperty("ACTIVITY_DETECT_TIME");
+    }
+};
+
+struct AMQJobStatusMessage : AMQMessage, MPFJobStatusMessage {
+
+    AMQJobStatusMessage(const std::string &job_name,
+                        const uint32_t job_number,
+                        const std::string &msg)
+            : MPFJobStatusMessage(job_name, job_number, msg) {}
+
+    void InitMessage(cms::Session *session) {
+        msg_.reset(session->createMessage());
+        if (NULL != msg_) {
+            msg_->setStringProperty("JOB_NAME", job_name_);
+            msg_->setIntProperty("JOB_NUMBER", job_number_);
+            msg_->setStringProperty("JOB_STATUS", status_message_);
+        }
+    }
+
+    virtual void ReceiveMessageContent() {
+        job_name_ = msg_->getStringProperty("JOB_NAME");
+        job_number_ = msg_->getIntProperty("JOB_NUMBER");
+        status_message_ = msg_->getStringProperty("JOB_STATUS");
+    }
+};
+
+// Not used in single process, single pipeline stage, architecture
 struct AMQSegmentReadyMessage : AMQMessage, MPFSegmentReadyMessage {
 
     AMQSegmentReadyMessage() = default;
@@ -92,6 +173,7 @@ struct AMQSegmentReadyMessage : AMQMessage, MPFSegmentReadyMessage {
     }
 };
 
+// Not used in single process, single pipeline stage, architecture
 struct AMQFrameReadyMessage : AMQMessage, MPFFrameReadyMessage {
 
     AMQFrameReadyMessage() {};
@@ -124,6 +206,7 @@ struct AMQFrameReadyMessage : AMQMessage, MPFFrameReadyMessage {
 
 };  
 
+// Not used in single process, single pipeline stage, architecture
 struct AMQReleaseFrameMessage : AMQMessage, MPFReleaseFrameMessage {
 
     AMQReleaseFrameMessage(const std::string &job_name,
@@ -149,92 +232,41 @@ struct AMQReleaseFrameMessage : AMQMessage, MPFReleaseFrameMessage {
 
 };
 
-struct AMQJobStatusMessage : AMQMessage, MPFJobStatusMessage {
+// No longer needed: replaced by ActivityAlert message
+// struct AMQNewTrackAlertMessage : AMQMessage, MPFNewTrackAlertMessage {
 
-    AMQJobStatusMessage(const std::string &job_name,
-                        const uint32_t job_number,
-                        const std::string &msg)
-            : MPFJobStatusMessage(job_name, job_number, msg) {}
+//     AMQNewTrackAlertMessage(const std::string &job_name,
+//                              const uint32_t job_number,
+//                              uint32_t seg_num,
+//                              uint32_t frame_num,
+//                              const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks)
+//             : MPFNewTrackAlertMessage(job_name, job_number, seg_num, frame_num, tracks) {}
+//     ~AMQNewTrackAlertMessage() = default;
 
-    void InitMessage(cms::Session *session) {
-        msg_.reset(session->createMessage());
-        if (NULL != msg_) {
-            msg_->setStringProperty("JOB_NAME", job_name_);
-            msg_->setIntProperty("JOB_NUMBER", job_number_);
-            msg_->setStringProperty("JOB_STATUS", status_message_);
-        }
-    }
+//     void InitMessage(cms::Session *session) {
+//         msg_.reset(session->createBytesMessage());
+//         if (NULL != msg_) {
+//             msg_->setStringProperty("JOB_NAME", job_name_);
+//             msg_->setIntProperty("JOB_NUMBER", job_number_);
+//             msg_->setIntProperty("SEGMENT_NUMBER", segment_number_);
+//             msg_->setIntProperty("FRAME_INDEX", frame_index_);
+//             //TODO: Need to pack the tracks vector into a protobuf and
+//             //      set the body of the message.
+//         }
+//     }
 
-    virtual void ReceiveMessageContent() {
-        job_name_ = msg_->getStringProperty("JOB_NAME");
-        job_number_ = msg_->getIntProperty("JOB_NUMBER");
-        status_message_ = msg_->getStringProperty("JOB_STATUS");
-    }
+//     virtual void ReceiveMessageContent() {
+//         job_name_ = msg_->getStringProperty("JOB_NAME");
+//         job_number_ = msg_->getIntProperty("JOB_NUMBER");
+//         segment_number_ = msg_->getIntProperty("SEGMENT_NUMBER");
+//         frame_index_ = msg_->getIntProperty("FRAME_INDEX");
+//         //TODO: Need to unpack the tracks vector from the protobuf
+//         //      in the message body.
+//     }
 
-};
+// };
 
-struct AMQNewTrackAlertMessage : AMQMessage, MPFNewTrackAlertMessage {
-
-    AMQNewTrackAlertMessage(const std::string &job_name,
-                             const uint32_t job_number,
-                             uint32_t seg_num,
-                             uint32_t frame_num,
-                             const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks)
-            : MPFNewTrackAlertMessage(job_name, job_number, seg_num, frame_num, tracks) {}
-    ~AMQNewTrackAlertMessage() = default;
-
-    void InitMessage(cms::Session *session) {
-        msg_.reset(session->createBytesMessage());
-        if (NULL != msg_) {
-            msg_->setStringProperty("JOB_NAME", job_name_);
-            msg_->setIntProperty("JOB_NUMBER", job_number_);
-            msg_->setIntProperty("SEGMENT_NUMBER", segment_number_);
-            msg_->setIntProperty("FRAME_INDEX", frame_index_);
-            //TODO: Need to pack the tracks vector into a protobuf and
-            //      set the body of the message.
-        }
-    }
-
-    virtual void ReceiveMessageContent() {
-        job_name_ = msg_->getStringProperty("JOB_NAME");
-        job_number_ = msg_->getIntProperty("JOB_NUMBER");
-        segment_number_ = msg_->getIntProperty("SEGMENT_NUMBER");
-        frame_index_ = msg_->getIntProperty("FRAME_INDEX");
-        //TODO: Need to unpack the tracks vector from the protobuf
-        //      in the message body.
-    }
-
-};
-
-struct AMQSegmentSummaryMessage : AMQMessage, MPFSegmentSummaryMessage {
-
-    AMQSegmentSummaryMessage(const std::string &job_name,
-                             const uint32_t job_number,
-                             uint32_t seg_num,
-                             const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks)
-            : MPFSegmentSummaryMessage(job_name, job_number, seg_num, tracks) {}
-
-    void InitMessage(cms::Session *session) {
-        msg_.reset(session->createBytesMessage());
-        if (NULL != msg_) {
-            msg_->setStringProperty("JOB_NAME", job_name_);
-            msg_->setIntProperty("JOB_NUMBER", job_number_);
-            msg_->setIntProperty("SEGMENT_NUMBER", segment_number_);
-            //TODO: Need to pack the tracks vector into a protobuf and
-            //      set the body of the message.
-        }
-    }
-
-    virtual void ReceiveMessageContent() {
-        job_name_ = msg_->getStringProperty("JOB_NAME");
-        job_number_ = msg_->getIntProperty("JOB_NUMBER");
-        segment_number_ = msg_->getIntProperty("SEGMENT_NUMBER");
-        //TODO: Need to unpack the tracks vector from the protobuf
-        //      in the message body.
-    }
-
-};
-
+// Not used in single process, single pipeline stage, architecture
 struct AMQVideoWrittenMessage : AMQMessage, MPFVideoWrittenMessage {
 
     AMQVideoWrittenMessage(const std::string &job_name,

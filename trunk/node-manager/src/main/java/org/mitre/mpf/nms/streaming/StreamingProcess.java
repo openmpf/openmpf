@@ -81,9 +81,10 @@ public class StreamingProcess {
 	}
 
 
-	public void pause() {
-		_syncOps.pause();
-	}
+	//TODO: For future use. Untested.
+//	public void pause() {
+//		_syncOps.pause();
+//	}
 
 
 	public void quit() {
@@ -140,18 +141,18 @@ public class StreamingProcess {
 		private boolean _processIsRunning;
 
 
-		// synchronized to make sure process is not currently restarting.
+		// Synchronized to make sure process is not currently restarting.
 		public synchronized void quit() {
 			_stopRequested = true;
 			sendCommand("quit");
 		}
 
-
-		// synchronized to make sure process is not currently restarting.
-		public synchronized void pause() {
-			_stopRequested = true;
-			sendCommand("pause");
-		}
+		//TODO: For future use. Untested.
+		// Synchronized to make sure process is not currently restarting.
+//		public synchronized void pause() {
+//			_stopRequested = true;
+//			sendCommand("pause");
+//		}
 
 
 		private void sendCommand(String command) {
@@ -162,7 +163,7 @@ public class StreamingProcess {
 		}
 
 
-		// synchronized lock to make sure that any stop requests are either executed before or after the process has
+		// Synchronized to make sure that any stop requests are either executed before or after the process has
 		// finished restarting.
 		// If the stop request is processed before the process begins to restart,
 		// then the process will not be restarted.

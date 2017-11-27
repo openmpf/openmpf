@@ -30,27 +30,87 @@ import org.apache.commons.lang3.builder.RecursiveToStringStyle;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.Map;
 
 @SuppressWarnings("PublicField")
 public class StreamingJobLaunchMessage implements StreamingJobMessage, Serializable {
 
 	public final long jobId;
 
-	public final FrameReaderLaunchMessage frameReaderLaunchMessage;
+	public final String streamUri;
 
-	public final VideoWriterLaunchMessage videoWriterLaunchMessage;
+	public final int segmentSize;
 
-	public final List<ComponentLaunchMessage> componentLaunchMessages;
+	public final double stallTimeout;
 
+	public final double stallAlertThreshold;
 
-	public StreamingJobLaunchMessage(long jobId, FrameReaderLaunchMessage frameReaderLaunchMessage,
-	                                 VideoWriterLaunchMessage videoWriterLaunchMessage,
-	                                 List<ComponentLaunchMessage> componentLaunchMessages) {
+	public final String componentName;
+
+	public final String componentLibraryPath;
+
+	public final Map<String, String> componentEnvironmentVariables;
+
+	public final Map<String, String> jobProperties;
+
+	public final Map<String, String> mediaProperties;
+
+	public final String messageBrokerUri;
+
+	public final String jobStatusQueue;
+
+	public final String activityAlertQueue;
+
+	public final String summaryReportQueue;
+
+	//TODO: For future use. Untested.
+//	public final FrameReaderLaunchMessage frameReaderLaunchMessage;
+//
+//	public final VideoWriterLaunchMessage videoWriterLaunchMessage;
+//
+//	public final List<ComponentLaunchMessage> componentLaunchMessages;
+//
+//
+	//TODO: For future use. Untested.
+//	public StreamingJobLaunchMessage(long jobId, FrameReaderLaunchMessage frameReaderLaunchMessage,
+//	                                 VideoWriterLaunchMessage videoWriterLaunchMessage,
+//	                                 List<ComponentLaunchMessage> componentLaunchMessages) {
+//		this.jobId = jobId;
+//		this.frameReaderLaunchMessage = frameReaderLaunchMessage;
+//		this.videoWriterLaunchMessage = videoWriterLaunchMessage;
+//		this.componentLaunchMessages = componentLaunchMessages;
+//	}
+
+	public StreamingJobLaunchMessage(
+			long jobId,
+			String streamUri,
+			int segmentSize,
+			double stallTimeout,
+			double stallAlertThreshold,
+			String componentName,
+			String componentLibraryPath,
+			Map<String, String> componentEnvironmentVariables,
+			Map<String, String> jobProperties,
+			Map<String, String> mediaProperties,
+			String messageBrokerUri,
+			String jobStatusQueue,
+			String activityAlertQueue,
+			String summaryReportQueue) {
+
 		this.jobId = jobId;
-		this.frameReaderLaunchMessage = frameReaderLaunchMessage;
-		this.videoWriterLaunchMessage = videoWriterLaunchMessage;
-		this.componentLaunchMessages = componentLaunchMessages;
+		this.streamUri = streamUri;
+		this.segmentSize = segmentSize;
+		this.stallTimeout = stallTimeout;
+		this.stallAlertThreshold = stallAlertThreshold;
+		this.componentName = componentName;
+		this.componentLibraryPath = componentLibraryPath;
+		this.componentEnvironmentVariables = componentEnvironmentVariables;
+		this.jobProperties = jobProperties;
+		this.mediaProperties = mediaProperties;
+		this.messageBrokerUri = messageBrokerUri;
+		this.jobStatusQueue = jobStatusQueue;
+		this.activityAlertQueue = activityAlertQueue;
+		this.summaryReportQueue = summaryReportQueue;
 	}
 
 

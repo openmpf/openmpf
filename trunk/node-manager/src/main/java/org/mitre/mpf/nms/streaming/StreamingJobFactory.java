@@ -26,14 +26,11 @@
 
 package org.mitre.mpf.nms.streaming;
 
-import org.mitre.mpf.nms.streaming.messages.ComponentLaunchMessage;
 import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 @Component
 public class StreamingJobFactory {
@@ -47,24 +44,35 @@ public class StreamingJobFactory {
 		_iniManager = iniManager;
 	}
 
-
 	public StreamingJob createJob(StreamingJobLaunchMessage launchMessage) {
 		JobIniFiles jobIniFiles = _iniManager.createJobIniFiles(launchMessage);
-		StreamingProcess frameReader = _processFactory.createFrameReaderProcess(jobIniFiles.getFrameReaderIniPath());
-		StreamingProcess videoWriter = _processFactory.createVideoWriterProcess(jobIniFiles.getVideoWriterIniPath());
+		Path componentIniPath = jobIniFiles.getJobIniPath();
+		StreamingProcess componentProcess = _processFactory.createComponentProcess(
+				componentIniPath, launchMessage.componentEnvironmentVariables);
 
-		List<StreamingProcess> componentProcesses = new ArrayList<>();
-		for (ComponentLaunchMessage componentMessage : launchMessage.componentLaunchMessages) {
-			for (int i = 0; i < componentMessage.numInstances; i++) {
-				Path componentIniPath = jobIniFiles.getComponentIniPath(componentMessage.componentName,
-				                                                        componentMessage.stage);
-				componentProcesses.add(_processFactory.createComponentProcess(
-						componentIniPath, componentMessage.environmentVariables));
-
-			}
-		}
-
-		return new StreamingJob(launchMessage.jobId, jobIniFiles, frameReader, videoWriter, componentProcesses);
-
+		return new StreamingJob(launchMessage.jobId, jobIniFiles, componentProcess);
 	}
+
+
+	//TODO: For future use. Untested.
+//	public StreamingJob createJob(StreamingJobLaunchMessage launchMessage) {
+//		JobIniFiles jobIniFiles = _iniManager.createJobIniFiles(launchMessage);
+//		StreamingProcess frameReader = _processFactory.createFrameReaderProcess(jobIniFiles.getFrameReaderIniPath());
+//		StreamingProcess videoWriter = _processFactory.createVideoWriterProcess(jobIniFiles.getVideoWriterIniPath());
+//
+//		List<StreamingProcess> componentProcesses = new ArrayList<>();
+//		for (ComponentLaunchMessage componentMessage : launchMessage.componentLaunchMessages) {
+//			for (int i = 0; i < componentMessage.numInstances; i++) {
+//				Path componentIniPath = jobIniFiles.getComponentIniPath(componentMessage.componentName,
+//				                                                        componentMessage.stage);
+//				componentProcesses.add(_processFactory.createComponentProcess(
+//						componentIniPath, componentMessage.environmentVariables));
+//
+//			}
+//		}
+//
+//		return new StreamingJob(launchMessage.jobId, jobIniFiles, frameReader, videoWriter, componentProcesses);
+//
+//	}
+
 }

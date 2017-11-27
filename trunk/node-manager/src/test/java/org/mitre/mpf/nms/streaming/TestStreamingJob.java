@@ -28,8 +28,6 @@ package org.mitre.mpf.nms.streaming;
 
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
@@ -39,61 +37,151 @@ import static org.mockito.Mockito.*;
 public class TestStreamingJob {
 
 
+	//TODO: For future use.
+//	@Test
+//	public void testShutdownOrder() throws InterruptedException {
+//		JobIniFiles jobIniFiles = mock(JobIniFiles.class);
+//
+//		StreamingProcess frameReader = mock(StreamingProcess.class);
+//		ProcessController frameReaderCtrl = setupMockProcess(frameReader);
+//
+//		StreamingProcess videoWriter = mock(StreamingProcess.class);
+//		ProcessController videoWriterCtrl = setupMockProcess(videoWriter);
+//
+//
+//		StreamingProcess component1 = mock(StreamingProcess.class);
+//		ProcessController componentCtrl1 = setupMockProcess(component1);
+//
+//		StreamingProcess component2 = mock(StreamingProcess.class);
+//		ProcessController componentCtrl2 = setupMockProcess(component2);
+//
+//		StreamingJob job = new StreamingJob(1, jobIniFiles, frameReader, videoWriter,
+//		                                    Arrays.asList(component1, component2));
+//
+//		job.startJob();
+//
+//		verifyStarted(frameReader, videoWriter, component1, component2);
+//
+//
+//		// Job will begin to shutdown the processes, but the processes won't exit until allowExit() is manually called.
+//		CompletableFuture<Void> jobCompleteFuture = job.stopJob();
+//
+//		assertFalse("Job completed before all processes exited.", jobCompleteFuture.isDone());
+//
+//		verifyQuitCommandSent(videoWriter, component1, component2);
+//		verify(frameReader)
+//				.pause();
+//
+//		verifyQuitNotSent(frameReader); // FrameReader should not exit until all other processes have exited.
+//
+//
+//		// Make sure FrameReader doesn't exit until after all non-FrameReader processes exit.
+//		componentCtrl1.allowExit();
+//		verifyQuitNotSent(frameReader);
+//
+//		videoWriterCtrl.allowExit();
+//		verifyQuitNotSent(frameReader);
+//
+//		componentCtrl2.allowExit();
+//
+//		verify(frameReader)
+//				.quit();
+//
+//		assertFalse("Job completed before FrameReader exited", jobCompleteFuture.isDone());
+//
+//		verify(jobIniFiles, never())
+//				.deleteIniFiles();
+//
+//		frameReaderCtrl.allowExit();
+//
+//		assertTrue(jobCompleteFuture.isDone());
+//
+//		verify(jobIniFiles)
+//				.deleteIniFiles();
+//
+//		jobCompleteFuture.join();
+//	}
+
+
+
+//	@Test
+//	public void testShutdownException() {
+//		JobIniFiles jobIniFiles = mock(JobIniFiles.class);
+//
+//		StreamingProcess frameReader = mock(StreamingProcess.class);
+//		ProcessController frameReaderCtrl = setupMockProcess(frameReader);
+//
+//		StreamingProcess videoWriter = mock(StreamingProcess.class);
+//		ProcessController videoWriterCtrl = setupMockProcess(videoWriter);
+//
+//
+//		StreamingProcess component = mock(StreamingProcess.class);
+//		ProcessController componentCtrl = setupMockProcess(component);
+//
+//		StreamingJob job = new StreamingJob(1, jobIniFiles, frameReader, videoWriter,
+//		                                    Collections.singletonList(component));
+//		job.startJob();
+//
+//
+//		verifyStarted(frameReader, videoWriter, component);
+//
+//		CompletableFuture<Void> jobCompleteFuture = job.stopJob();
+//
+//
+//		videoWriterCtrl.causeException();
+//
+//		verifyQuitNotSent(frameReader);
+//
+//		componentCtrl.allowExit();
+//
+//		verify(frameReader)
+//				.quit();
+//
+//		assertFalse("Job completed before FrameReader exited", jobCompleteFuture.isDone());
+//
+//		verify(jobIniFiles, never())
+//				.deleteIniFiles();
+//
+//		frameReaderCtrl.allowExit();
+//
+//		assertTrue(jobCompleteFuture.isDone());
+//
+//		verify(jobIniFiles)
+//				.deleteIniFiles();
+//
+//		try {
+//			jobCompleteFuture.join();
+//			fail("Expected CompletionException");
+//		}
+//		catch (CompletionException expected) {
+//		}
+//	}
+
 	@Test
 	public void testShutdownOrder() throws InterruptedException {
 		JobIniFiles jobIniFiles = mock(JobIniFiles.class);
 
-		StreamingProcess frameReader = mock(StreamingProcess.class);
-		ProcessController frameReaderCtrl = setupMockProcess(frameReader);
+		StreamingProcess streamingProcess = mock(StreamingProcess.class);
+		ProcessController processCtrl = setupMockProcess(streamingProcess);
 
-		StreamingProcess videoWriter = mock(StreamingProcess.class);
-		ProcessController videoWriterCtrl = setupMockProcess(videoWriter);
-
-
-		StreamingProcess component1 = mock(StreamingProcess.class);
-		ProcessController componentCtrl1 = setupMockProcess(component1);
-
-		StreamingProcess component2 = mock(StreamingProcess.class);
-		ProcessController componentCtrl2 = setupMockProcess(component2);
-
-		StreamingJob job = new StreamingJob(1, jobIniFiles, frameReader, videoWriter,
-		                                    Arrays.asList(component1, component2));
+		StreamingJob job = new StreamingJob(1, jobIniFiles, streamingProcess);
 
 		job.startJob();
 
-		verifyStarted(frameReader, videoWriter, component1, component2);
-
+		verifyStarted(streamingProcess);
 
 		// Job will begin to shutdown the processes, but the processes won't exit until allowExit() is manually called.
 		CompletableFuture<Void> jobCompleteFuture = job.stopJob();
 
+		verifyQuitCommandSent(streamingProcess);
+
 		assertFalse("Job completed before all processes exited.", jobCompleteFuture.isDone());
-
-		verifyQuitCommandSent(videoWriter, component1, component2);
-		verify(frameReader)
-				.pause();
-
-		verifyQuitNotSent(frameReader); // FrameReader should not exit until all other processes have exited.
-
-
-		// Make sure FrameReader doesn't exit until after all non-FrameReader processes exit.
-		componentCtrl1.allowExit();
-		verifyQuitNotSent(frameReader);
-
-		videoWriterCtrl.allowExit();
-		verifyQuitNotSent(frameReader);
-
-		componentCtrl2.allowExit();
-
-		verify(frameReader)
-				.quit();
-
-		assertFalse("Job completed before FrameReader exited", jobCompleteFuture.isDone());
-
 		verify(jobIniFiles, never())
 				.deleteIniFiles();
 
-		frameReaderCtrl.allowExit();
+
+		processCtrl.allowExit();
+
 
 		assertTrue(jobCompleteFuture.isDone());
 
@@ -105,45 +193,31 @@ public class TestStreamingJob {
 
 
 
+
 	@Test
 	public void testShutdownException() {
 		JobIniFiles jobIniFiles = mock(JobIniFiles.class);
 
-		StreamingProcess frameReader = mock(StreamingProcess.class);
-		ProcessController frameReaderCtrl = setupMockProcess(frameReader);
+		StreamingProcess streamingProcess = mock(StreamingProcess.class);
+		ProcessController processCtrl = setupMockProcess(streamingProcess);
 
-		StreamingProcess videoWriter = mock(StreamingProcess.class);
-		ProcessController videoWriterCtrl = setupMockProcess(videoWriter);
+		StreamingJob job = new StreamingJob(1, jobIniFiles, streamingProcess);
 
-
-		StreamingProcess component = mock(StreamingProcess.class);
-		ProcessController componentCtrl = setupMockProcess(component);
-
-		StreamingJob job = new StreamingJob(1, jobIniFiles, frameReader, videoWriter,
-		                                    Collections.singletonList(component));
 		job.startJob();
 
 
-		verifyStarted(frameReader, videoWriter, component);
+		verifyStarted(streamingProcess);
 
+		// Job will begin to shutdown the processes, but the processes won't exit until allowExit() is manually called.
 		CompletableFuture<Void> jobCompleteFuture = job.stopJob();
 
+		verifyQuitCommandSent(streamingProcess);
 
-		videoWriterCtrl.causeException();
-
-		verifyQuitNotSent(frameReader);
-
-		componentCtrl.allowExit();
-
-		verify(frameReader)
-				.quit();
-
-		assertFalse("Job completed before FrameReader exited", jobCompleteFuture.isDone());
-
+		assertFalse("Job completed before all processes exited.", jobCompleteFuture.isDone());
 		verify(jobIniFiles, never())
 				.deleteIniFiles();
 
-		frameReaderCtrl.allowExit();
+		processCtrl.causeException();
 
 		assertTrue(jobCompleteFuture.isDone());
 
@@ -156,9 +230,8 @@ public class TestStreamingJob {
 		}
 		catch (CompletionException expected) {
 		}
+
 	}
-
-
 
 	private static void verifyStarted(StreamingProcess... processes) {
 		for (StreamingProcess process : processes) {

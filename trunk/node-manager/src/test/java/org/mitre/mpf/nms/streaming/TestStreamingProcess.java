@@ -45,10 +45,43 @@ public class TestStreamingProcess {
 	@Rule
 	public TemporaryFolder _tempDir = new TemporaryFolder();
 
+//TODO: For future use.
+//	@Test
+//	public void videoWriterRunsUntilQuitRequested() throws InterruptedException, ExecutionException, IOException {
+//		StreamingProcess videoWriter = createProcess("VideoWriter", 0.5);
+//		Future<Void> future = videoWriter.start();
+//
+//		assertFalse(future.isDone());
+//
+//		videoWriter.quit();
+//		assertFalse(future.isDone());
+//
+//		Thread.sleep(1000);
+//
+//		assertProcessExitedSuccessfully(future);
+//	}
+
+
+//	@Test
+//	public void frameReaderRunsUntilQuitRequested() throws InterruptedException, ExecutionException, IOException {
+//		StreamingProcess frameReader = createProcess("FrameReader", 0);
+//		Future<Void> future = frameReader.start();
+//
+//		frameReader.pause();
+//
+//		Thread.sleep(200);
+//		assertFalse(future.isDone());
+//
+//		frameReader.quit();
+//		Thread.sleep(200);
+//
+//		assertProcessExitedSuccessfully(future);
+//	}
+
 
 	@Test
-	public void videoWriterRunsUntilQuitRequested() throws InterruptedException, ExecutionException, IOException {
-		StreamingProcess videoWriter = createProcess("VideoWriter", 0.5);
+	public void componentRunsUntilQuitRequested() throws InterruptedException, ExecutionException, IOException {
+		StreamingProcess videoWriter = createProcess("Component", 0.5);
 		Future<Void> future = videoWriter.start();
 
 		assertFalse(future.isDone());
@@ -57,23 +90,6 @@ public class TestStreamingProcess {
 		assertFalse(future.isDone());
 
 		Thread.sleep(1000);
-
-		assertProcessExitedSuccessfully(future);
-	}
-
-
-	@Test
-	public void frameReaderRunsUntilQuitRequested() throws InterruptedException, ExecutionException, IOException {
-		StreamingProcess frameReader = createProcess("FrameReader", 0);
-		Future<Void> future = frameReader.start();
-
-		frameReader.pause();
-
-		Thread.sleep(200);
-		assertFalse(future.isDone());
-
-		frameReader.quit();
-		Thread.sleep(200);
 
 		assertProcessExitedSuccessfully(future);
 	}
@@ -90,12 +106,12 @@ public class TestStreamingProcess {
 	private void testRestartCount(int restartLimit) throws IOException, InterruptedException {
 		Path countFile = _tempDir.newFile().toPath();
 
-		String[] cmdline = {"python", StreamingJobTestUtil.TEST_PROCESS_PATH, "VideoWriter", "fake-path", "0",
+		String[] cmdline = {"python", StreamingJobTestUtil.TEST_PROCESS_PATH, "MyComponent", "fake-path", "0",
 				countFile.toAbsolutePath().toString()};
 		ProcessBuilder builder = new ProcessBuilder(cmdline)
 				.redirectErrorStream(true);
 
-		StreamingProcess process = new StreamingProcess("VideoWriter", builder, restartLimit);
+		StreamingProcess process = new StreamingProcess("MyComponent", builder, restartLimit);
 		CompletableFuture<Void> future = process.start();
 
 		try {

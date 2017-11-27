@@ -60,11 +60,12 @@ public class ITStreamingJob {
 
 		_mockProcessFactory = mock(StreamingProcessFactory.class);
 
-		when(_mockProcessFactory.createFrameReaderProcess(any()))
-				.then(createProcess("FrameReader"));
-
-		when(_mockProcessFactory.createVideoWriterProcess(any()))
-				.then(createProcess("VideoWriter"));
+		//TODO: For future use.
+//		when(_mockProcessFactory.createFrameReaderProcess(any()))
+//				.then(createProcess("FrameReader"));
+//
+//		when(_mockProcessFactory.createVideoWriterProcess(any()))
+//				.then(createProcess("VideoWriter"));
 
 		when(_mockProcessFactory.createComponentProcess(any(), any()))
 				.then(createProcess("Component"));

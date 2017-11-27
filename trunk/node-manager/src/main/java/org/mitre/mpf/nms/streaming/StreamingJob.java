@@ -29,7 +29,6 @@ package org.mitre.mpf.nms.streaming;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class StreamingJob {
@@ -40,67 +39,36 @@ public class StreamingJob {
 
 	private final JobIniFiles _jobIniFiles;
 
-	private final StreamingProcess _frameReaderProcess;
+	private final StreamingProcess _jobProcess;
 
-	private final StreamingProcess _videoWriterProcess;
-
-	private final List<StreamingProcess> _componentProcesses;
+//	private final StreamingProcess _frameReaderProcess;
+//
+//	private final StreamingProcess _videoWriterProcess;
+//
+//	private final List<StreamingProcess> _componentProcesses;
 
 	private CompletableFuture<Void> _jobCompleteFuture;
 
 
-	public StreamingJob(
-			long jobId,
-			JobIniFiles jobIniFiles,
-			StreamingProcess frameReader,
-			StreamingProcess videoWriter,
-			List<StreamingProcess> components) {
+
+	public StreamingJob(long jobId, JobIniFiles jobIniFiles, StreamingProcess jobProcess) {
 		_jobId = jobId;
 		_jobIniFiles = jobIniFiles;
-		_frameReaderProcess = frameReader;
-		_videoWriterProcess = videoWriter;
-		_componentProcesses = components;
-
+		_jobProcess = jobProcess;
 	}
 
 
+
 	public CompletableFuture<Void> startJob() {
-		CompletableFuture<Void> frameReaderFuture = _frameReaderProcess.start();
-
-		CompletableFuture<Void> videoWriterAndComponentFuture = _videoWriterProcess.start();
-
-		for (StreamingProcess componentProcess : _componentProcesses) {
-			CompletableFuture<Void> componentFuture = componentProcess.start();
-			videoWriterAndComponentFuture = CompletableFuture.allOf(videoWriterAndComponentFuture, componentFuture);
-		}
-
-		_jobCompleteFuture = videoWriterAndComponentFuture
-				// Schedule tasks that need to be run after video writer and all component processes exit.
-				.whenComplete((none, error) -> onVideoWriterAndComponentExit(error))
-				// Schedule tasks that need to run after all processes exit and previous clean up stage completes.
-				.runAfterBoth(frameReaderFuture,
-				              () -> { /* Pass through so clean up tasks run even if there is an error. */ })
+		_jobCompleteFuture = _jobProcess.start()
 				.whenComplete((none, error) -> onAllProcessesExit(error));
 		return _jobCompleteFuture;
 	}
 
 
-
 	public CompletableFuture<Void> stopJob() {
-		_frameReaderProcess.pause();
-		_videoWriterProcess.quit();
-		_componentProcesses.forEach(StreamingProcess::quit);
+		_jobProcess.quit();
 		return _jobCompleteFuture;
-	}
-
-
-	private void onVideoWriterAndComponentExit(Throwable error) {
-		LOG.info("Job {}: VideoWriter and all component processes have exited", _jobId);
-		_frameReaderProcess.quit();
-
-		if (error != null) {
-			handleStreamingProcessException(error);
-		}
 	}
 
 	private void onAllProcessesExit(Throwable error) {
@@ -108,18 +76,83 @@ public class StreamingJob {
 		_jobIniFiles.deleteIniFiles();
 
 		if (error != null) {
-			handleFrameReaderProcessException(error);
+			LOG.error("Streaming Process error: ", error);
+			throw new IllegalStateException(error);
 		}
 	}
 
 
-	private static void handleStreamingProcessException(Throwable error) {
-		LOG.error("Streaming Process error: ", error);
-		throw new IllegalStateException(error);
-	}
+	//TODO: For future use. Untested.
+//	public StreamingJob(
+//			long jobId,
+//			JobIniFiles jobIniFiles,
+//			StreamingProcess frameReader,
+//			StreamingProcess videoWriter,
+//			List<StreamingProcess> components) {
+//		_jobId = jobId;
+//		_jobIniFiles = jobIniFiles;
+//		_frameReaderProcess = frameReader;
+//		_videoWriterProcess = videoWriter;
+//		_componentProcesses = components;
+//	}
 
-	private static void handleFrameReaderProcessException(Throwable error) {
-		LOG.error("Frame Reader error: ", error);
-		throw new IllegalStateException(error);
-	}
+
+//	public CompletableFuture<Void> startJob() {
+//		CompletableFuture<Void> frameReaderFuture = _frameReaderProcess.start();
+//
+//		CompletableFuture<Void> videoWriterAndComponentFuture = _videoWriterProcess.start();
+//
+//		for (StreamingProcess componentProcess : _componentProcesses) {
+//			CompletableFuture<Void> componentFuture = componentProcess.start();
+//			videoWriterAndComponentFuture = CompletableFuture.allOf(videoWriterAndComponentFuture, componentFuture);
+//		}
+//
+//		_jobCompleteFuture = videoWriterAndComponentFuture
+//				// Schedule tasks that need to be run after video writer and all component processes exit.
+//				.whenComplete((none, error) -> onVideoWriterAndComponentExit(error))
+//				// Schedule tasks that need to run after all processes exit and previous clean up stage completes.
+//				.runAfterBoth(frameReaderFuture,
+//				              () -> { /* Pass through so clean up tasks run even if there is an error. */ })
+//				.whenComplete((none, error) -> onAllProcessesExit(error));
+//		return _jobCompleteFuture;
+//	}
+
+//	public CompletableFuture<Void> stopJob() {
+//		_frameReaderProcess.pause();
+//		_videoWriterProcess.quit();
+//		_componentProcesses.forEach(StreamingProcess::quit);
+//		return _jobCompleteFuture;
+//	}
+
+
+
+//	private void onVideoWriterAndComponentExit(Throwable error) {
+//		LOG.info("Job {}: VideoWriter and all component processes have exited", _jobId);
+//		_frameReaderProcess.quit();
+//
+//		if (error != null) {
+//			handleStreamingProcessException(error);
+//		}
+//	}
+
+//	private void onAllProcessesExit(Throwable error) {
+//		LOG.info("Job {}: All processes have exited.", _jobId);
+//		_jobIniFiles.deleteIniFiles();
+//
+//		if (error != null) {
+//			handleFrameReaderProcessException(error);
+//		}
+//	}
+
+
+
+//	private static void handleStreamingProcessException(Throwable error) {
+//		LOG.error("Streaming Process error: ", error);
+//		throw new IllegalStateException(error);
+//	}
+
+//	private static void handleFrameReaderProcessException(Throwable error) {
+//		LOG.error("Frame Reader error: ", error);
+//		throw new IllegalStateException(error);
+//	}
 }

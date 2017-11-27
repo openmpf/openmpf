@@ -29,6 +29,8 @@ package org.mitre.mpf.nms.streaming.messages;
 import java.io.Serializable;
 import java.util.Map;
 
+
+//TODO: For future use. Untested.
 public class LastStageComponentLaunchMessage extends ComponentLaunchMessage implements Serializable {
 
 	public final String newTrackAlertQueue;

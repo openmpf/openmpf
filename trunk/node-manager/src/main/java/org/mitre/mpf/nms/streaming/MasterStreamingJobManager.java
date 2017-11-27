@@ -64,6 +64,7 @@ public class MasterStreamingJobManager {
 		synchronized (_jobLocationCounter) {
 			String nodeWithMinJobs = getNodeWithMinJobs(runningNodes);
 			_jobLocationCounter.addJob(launchMessage.jobId, nodeWithMinJobs);
+			LOG.info("Sending StreamingJobLaunchMessage for job {} to node {}", launchMessage.jobId, nodeWithMinJobs);
 			_channelNode.sendToChild(nodeWithMinJobs, launchMessage);
 		}
 	}
@@ -78,6 +79,7 @@ public class MasterStreamingJobManager {
 						stopMessage.jobId);
 				return;
 			}
+			LOG.info("Sending StopStreamingJobMessage for job {} to node {}", stopMessage.jobId, nodeHostname);
 			_channelNode.sendToChild(nodeHostname, stopMessage);
 		}
 	}

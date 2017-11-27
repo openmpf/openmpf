@@ -26,8 +26,6 @@
 
 package org.mitre.mpf.nms.streaming;
 
-import com.google.common.collect.ImmutableTable;
-import com.google.common.collect.Table;
 import org.springframework.util.FileSystemUtils;
 
 import java.nio.file.Path;
@@ -36,33 +34,47 @@ public class JobIniFiles {
 
 	private final Path _jobIniDir;
 
-	private final Path _frameReaderIniPath;
+	private final Path _jobIniPath;
 
-	private final Path _videoWriterIniPath;
+	//TODO: For future use. Untested.
+//	private final Path _frameReaderIniPath;
+//
+//	private final Path _videoWriterIniPath;
+//
+//	private final ImmutableTable<String, Integer, Path> _componentIniPaths;
 
-	private final ImmutableTable<String, Integer, Path> _componentIniPaths;
 
+	//TODO: For future use. Untested.
+//	public JobIniFiles(Path jobIniDir, Path frameReaderIniPath, Path videoWriterIniPath,
+//	                   Table<String, Integer, Path> componentIniPaths) {
+//		_jobIniDir = jobIniDir;
+//		_frameReaderIniPath = frameReaderIniPath;
+//		_videoWriterIniPath = videoWriterIniPath;
+//		_componentIniPaths = ImmutableTable.copyOf(componentIniPaths);
+//	}
 
-	public JobIniFiles(Path jobIniDir, Path frameReaderIniPath, Path videoWriterIniPath,
-	                   Table<String, Integer, Path> componentIniPaths) {
+	public JobIniFiles(Path jobIniDir, Path jobIniPath) {
 		_jobIniDir = jobIniDir;
-		_frameReaderIniPath = frameReaderIniPath;
-		_videoWriterIniPath = videoWriterIniPath;
-		_componentIniPaths = ImmutableTable.copyOf(componentIniPaths);
+		_jobIniPath = jobIniPath;
+
 	}
 
-
-	public Path getFrameReaderIniPath() {
-		return _frameReaderIniPath;
+	public Path getJobIniPath() {
+		return _jobIniPath;
 	}
 
-	public Path getVideoWriterIniPath() {
-		return _videoWriterIniPath;
-	}
-
-	public Path getComponentIniPath(String componentName, int stage) {
-		return _componentIniPaths.get(componentName, stage);
-	}
+	//TODO: For future use. Untested.
+//	public Path getFrameReaderIniPath() {
+//		return _frameReaderIniPath;
+//	}
+//
+//	public Path getVideoWriterIniPath() {
+//		return _videoWriterIniPath;
+//	}
+//
+//	public Path getComponentIniPath(String componentName, int stage) {
+//		return _componentIniPaths.get(componentName, stage);
+//	}
 
 	public void deleteIniFiles() {
 		FileSystemUtils.deleteRecursively(_jobIniDir.toFile());

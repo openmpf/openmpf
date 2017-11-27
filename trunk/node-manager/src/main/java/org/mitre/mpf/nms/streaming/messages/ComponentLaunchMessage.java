@@ -30,6 +30,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+//TODO: For future use. Untested.
 @SuppressWarnings("PublicField")
 public class ComponentLaunchMessage implements Serializable {
 

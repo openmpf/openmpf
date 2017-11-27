@@ -36,6 +36,7 @@ import org.mitre.mpf.nms.*;
 import org.mitre.mpf.nms.NodeManagerConstants.States;
 import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -297,6 +298,6 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 	@Override
 	public void streamingJobExited(StreamingJobExitedMessage message) {
 		// TODO: Determine appropriate JobStatus
-//		streamingJobRequestBo.jobCompleted(message.jobId, JobStatus.CANCELLED);
+		streamingJobRequestBo.jobCompleted(message.jobId, JobStatus.COMPLETE);
 	}
 }

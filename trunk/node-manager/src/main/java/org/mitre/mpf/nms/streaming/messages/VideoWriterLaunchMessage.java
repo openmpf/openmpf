@@ -28,6 +28,7 @@ package org.mitre.mpf.nms.streaming.messages;
 
 import java.io.Serializable;
 
+//TODO: For future use. Untested.
 public class VideoWriterLaunchMessage implements Serializable {
 
 	public final long jobId;

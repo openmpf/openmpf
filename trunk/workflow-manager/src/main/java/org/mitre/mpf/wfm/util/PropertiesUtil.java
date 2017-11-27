@@ -507,6 +507,12 @@ public class PropertiesUtil {
 	}
 
 
+	@Value("${mpf.streaming.stall.alert.threshold}")
+	private double streamingJobStallAlertThreshold;
+	public double getStreamingJobStallAlertThreshold() {
+		return streamingJobStallAlertThreshold;
+	}
+
 	private void createConfigFiles() throws IOException {
 		if (!mediaTypesFile.exists()) {
 			copyResource(mediaTypesFile, mediaTypesTemplate);

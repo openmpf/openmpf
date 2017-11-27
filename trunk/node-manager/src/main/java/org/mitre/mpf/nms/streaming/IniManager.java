@@ -26,12 +26,10 @@
 
 package org.mitre.mpf.nms.streaming;
 
-import com.google.common.collect.ImmutableTable;
-import com.google.common.collect.Table;
 import org.ini4j.Ini;
 import org.ini4j.Profile;
 import org.mitre.mpf.nms.NodeManagerProperties;
-import org.mitre.mpf.nms.streaming.messages.*;
+import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +37,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 
 @Component
 public class IniManager {
@@ -47,6 +44,8 @@ public class IniManager {
 	public static final String DEFAULT_SECTION = "Job Config";
 
 	public static final String JOB_PROPERTIES_SECTION = "Job Properties";
+
+	public static final String MEDIA_PROPERTIES_SECTION = "Media Properties";
 
 	private final NodeManagerProperties _properties;
 
@@ -57,22 +56,18 @@ public class IniManager {
 	}
 
 
+
 	public JobIniFiles createJobIniFiles(StreamingJobLaunchMessage launchMessage) {
 		try {
 			Files.createDirectories(_properties.getIniFilesDir());
 			Path jobIniDir = Files.createTempDirectory(
-						_properties.getIniFilesDir(),
-						String.format("mpf-job-%s-ini-files", launchMessage.jobId))
+					_properties.getIniFilesDir(),
+					String.format("mpf-job-%s-ini-files", launchMessage.jobId))
 					.toAbsolutePath();
 
 			jobIniDir.toFile().deleteOnExit();
-
-			Path frameReaderIniPath = createIniFile(launchMessage.frameReaderLaunchMessage, jobIniDir);
-			Path videoWriterIniPath = createIniFile(launchMessage.videoWriterLaunchMessage, jobIniDir);
-			Table<String, Integer, Path> componentIniPaths =
-					createComponentIniFiles(launchMessage.componentLaunchMessages, jobIniDir);
-
-			return new JobIniFiles(jobIniDir, frameReaderIniPath, videoWriterIniPath, componentIniPaths);
+			Path iniFile = createIniFile(launchMessage, jobIniDir);
+			return new JobIniFiles(jobIniDir, iniFile);
 		}
 		catch (IOException e) {
 			throw new UncheckedIOException(
@@ -94,74 +89,124 @@ public class IniManager {
 	}
 
 
-	private static Path createIniFile(FrameReaderLaunchMessage launchMessage, Path iniDir) {
+	private static Path createIniFile(StreamingJobLaunchMessage launchMessage, Path iniDir) {
 		Ini ini = new Ini();
 		Profile.Section jobConfig = ini.add(DEFAULT_SECTION);
 		jobConfig.put("jobId", launchMessage.jobId);
 		jobConfig.put("streamUri", launchMessage.streamUri);
 		jobConfig.put("segmentSize", launchMessage.segmentSize);
-		jobConfig.put("frameDataBufferSize", launchMessage.frameDataBufferSize);
 		jobConfig.put("stallTimeout", launchMessage.stallTimeout);
-		jobConfig.put("messageBrokerUri", launchMessage.messageBrokerUri);
-		jobConfig.put("segmentOutputQueue", launchMessage.segmentOutputQueue);
-		jobConfig.put("componentFrameQueue", launchMessage.componentFrameQueue);
-		jobConfig.put("videoWriterFrameQueue", launchMessage.videoWriterFrameQueue);
-		jobConfig.put("releaseFrameQueue", launchMessage.releaseFrameQueue);
-		jobConfig.put("stallAlertQueue", launchMessage.stallAlertQueue);
-		return writeIniFile(ini, "frame-reader", iniDir);
-	}
-
-
-	private static Path createIniFile(VideoWriterLaunchMessage launchMessage, Path iniDir) {
-		Ini ini = new Ini();
-		Profile.Section jobConfig = ini.add(DEFAULT_SECTION);
-		jobConfig.put("jobId", launchMessage.jobId);
-		jobConfig.put("videoFileOutputPath", launchMessage.videoFileOutputPath);
-		jobConfig.put("frameInputQueue", launchMessage.frameInputQueue);
-		jobConfig.put("frameOutputQueue", launchMessage.frameOutputQueue);
-		jobConfig.put("segmentOutputQueue", launchMessage.segmentOutputQueue);
-
-		return writeIniFile(ini, "video-writer", iniDir);
-	}
-
-
-
-	private static Table<String, Integer, Path> createComponentIniFiles(
-			Collection<ComponentLaunchMessage> launchMessages, Path iniDir) {
-
-		ImmutableTable.Builder<String, Integer, Path> builder = ImmutableTable.builder();
-		for (ComponentLaunchMessage launchMessage : launchMessages) {
-			builder.put(launchMessage.componentName, launchMessage.stage, createIniFile(launchMessage, iniDir));
-		}
-		return builder.build();
-	}
-
-
-	private static Path createIniFile(ComponentLaunchMessage launchMessage, Path iniDir) {
-		Ini ini = new Ini();
-		Profile.Section jobConfig = ini.add(DEFAULT_SECTION);
-		jobConfig.put("jobId", launchMessage.jobId);
+		jobConfig.put("stallAlertThreshold", launchMessage.stallAlertThreshold);
 		jobConfig.put("componentName", launchMessage.componentName);
-		jobConfig.put("stage", launchMessage.stage);
-		jobConfig.put("segmentInputQueue", launchMessage.segmentInputQueue);
-		jobConfig.put("frameInputQueue", launchMessage.frameInputQueue);
-		jobConfig.put("frameOutputQueue", launchMessage.frameOutputQueue);
-
-		if (launchMessage instanceof LastStageComponentLaunchMessage) {
-			addLastStageFields((LastStageComponentLaunchMessage) launchMessage, jobConfig);
-		}
+		jobConfig.put("componentLibraryPath", launchMessage.componentLibraryPath);
+		jobConfig.put("messageBrokerUri", launchMessage.messageBrokerUri);
+		jobConfig.put("jobStatusQueue", launchMessage.jobStatusQueue);
+		jobConfig.put("activityAlertQueue", launchMessage.activityAlertQueue);
+		jobConfig.put("summaryReportQueue", launchMessage.summaryReportQueue);
 
 		if (!launchMessage.jobProperties.isEmpty()) {
 			ini.add(JOB_PROPERTIES_SECTION).putAll(launchMessage.jobProperties);
 		}
+		if (!launchMessage.mediaProperties.isEmpty()) {
+			ini.add(MEDIA_PROPERTIES_SECTION).putAll(launchMessage.mediaProperties);
+		}
 
-		return writeIniFile(ini, launchMessage.componentName + '-' + launchMessage.stage, iniDir);
+		return writeIniFile(ini, "streaming-job", iniDir);
 	}
 
 
+//TODO: For future use. Untested.
+//	public JobIniFiles createJobIniFiles(StreamingJobLaunchMessage launchMessage) {
+//		try {
+//			Files.createDirectories(_properties.getIniFilesDir());
+//			Path jobIniDir = Files.createTempDirectory(
+//						_properties.getIniFilesDir(),
+//						String.format("mpf-job-%s-ini-files", launchMessage.jobId))
+//					.toAbsolutePath();
+//
+//			jobIniDir.toFile().deleteOnExit();
+//
+//			Path frameReaderIniPath = createIniFile(launchMessage.frameReaderLaunchMessage, jobIniDir);
+//			Path videoWriterIniPath = createIniFile(launchMessage.videoWriterLaunchMessage, jobIniDir);
+//			Table<String, Integer, Path> componentIniPaths =
+//					createComponentIniFiles(launchMessage.componentLaunchMessages, jobIniDir);
+//
+//			return new JobIniFiles(jobIniDir, frameReaderIniPath, videoWriterIniPath, componentIniPaths);
+//		}
+//		catch (IOException e) {
+//			throw new UncheckedIOException(
+//					"An error occurred while trying to create INI files for job " + launchMessage.jobId, e);
+//		}
+//	}
 
-	private static void addLastStageFields(LastStageComponentLaunchMessage launchMessage, Profile.Section jobConfig) {
-		jobConfig.put("newTrackAlertQueue", launchMessage.newTrackAlertQueue);
-		jobConfig.put("summaryReportQueue", launchMessage.summaryReportQueue);
-	}
+
+//	private static Path createIniFile(FrameReaderLaunchMessage launchMessage, Path iniDir) {
+//		Ini ini = new Ini();
+//		Profile.Section jobConfig = ini.add(DEFAULT_SECTION);
+//		jobConfig.put("jobId", launchMessage.jobId);
+//		jobConfig.put("streamUri", launchMessage.streamUri);
+//		jobConfig.put("segmentSize", launchMessage.segmentSize);
+//		jobConfig.put("frameDataBufferSize", launchMessage.frameDataBufferSize);
+//		jobConfig.put("stallTimeout", launchMessage.stallTimeout);
+//	    jobConfig.put("messageBrokerUri", launchMessage.messageBrokerUri);
+//		jobConfig.put("segmentOutputQueue", launchMessage.segmentOutputQueue);
+//		jobConfig.put("componentFrameQueue", launchMessage.componentFrameQueue);
+//		jobConfig.put("videoWriterFrameQueue", launchMessage.videoWriterFrameQueue);
+//		jobConfig.put("releaseFrameQueue", launchMessage.releaseFrameQueue);
+//		jobConfig.put("stallAlertQueue", launchMessage.stallAlertQueue);
+//		return writeIniFile(ini, "frame-reader", iniDir);
+//	}
+//
+//
+//	private static Path createIniFile(VideoWriterLaunchMessage launchMessage, Path iniDir) {
+//		Ini ini = new Ini();
+//		Profile.Section jobConfig = ini.add(DEFAULT_SECTION);
+//		jobConfig.put("jobId", launchMessage.jobId);
+//		jobConfig.put("videoFileOutputPath", launchMessage.videoFileOutputPath);
+//		jobConfig.put("frameInputQueue", launchMessage.frameInputQueue);
+//		jobConfig.put("frameOutputQueue", launchMessage.frameOutputQueue);
+//		jobConfig.put("segmentOutputQueue", launchMessage.segmentOutputQueue);
+//
+//		return writeIniFile(ini, "video-writer", iniDir);
+//	}
+//
+//
+//
+//	private static Table<String, Integer, Path> createComponentIniFiles(
+//			Collection<ComponentLaunchMessage> launchMessages, Path iniDir) {
+//
+//		ImmutableTable.Builder<String, Integer, Path> builder = ImmutableTable.builder();
+//		for (ComponentLaunchMessage launchMessage : launchMessages) {
+//			builder.put(launchMessage.componentName, launchMessage.stage, createIniFile(launchMessage, iniDir));
+//		}
+//		return builder.build();
+//	}
+//
+//
+//	private static Path createIniFile(ComponentLaunchMessage launchMessage, Path iniDir) {
+//		Ini ini = new Ini();
+//		Profile.Section jobConfig = ini.add(DEFAULT_SECTION);
+//		jobConfig.put("jobId", launchMessage.jobId);
+//		jobConfig.put("componentName", launchMessage.componentName);
+//		jobConfig.put("stage", launchMessage.stage);
+//		jobConfig.put("segmentInputQueue", launchMessage.segmentInputQueue);
+//		jobConfig.put("frameInputQueue", launchMessage.frameInputQueue);
+//		jobConfig.put("frameOutputQueue", launchMessage.frameOutputQueue);
+//
+//		if (launchMessage instanceof LastStageComponentLaunchMessage) {
+//			addLastStageFields((LastStageComponentLaunchMessage) launchMessage, jobConfig);
+//		}
+//
+//		if (!launchMessage.jobProperties.isEmpty()) {
+//			ini.add(JOB_PROPERTIES_SECTION).putAll(launchMessage.jobProperties);
+//		}
+//
+//		return writeIniFile(ini, launchMessage.componentName + '-' + launchMessage.stage, iniDir);
+//	}
+//
+//
+//	private static void addLastStageFields(LastStageComponentLaunchMessage launchMessage, Profile.Section jobConfig) {
+//		jobConfig.put("newTrackAlertQueue", launchMessage.newTrackAlertQueue);
+//		jobConfig.put("summaryReportQueue", launchMessage.summaryReportQueue);
+//	}
 }

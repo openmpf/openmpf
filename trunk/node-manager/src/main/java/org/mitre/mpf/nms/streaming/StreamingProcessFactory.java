@@ -30,11 +30,16 @@ import org.mitre.mpf.nms.NodeManagerProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import static java.util.stream.Collectors.joining;
 
 @Component
 public class StreamingProcessFactory {
@@ -47,38 +52,66 @@ public class StreamingProcessFactory {
 	}
 
 
-	public StreamingProcess createFrameReaderProcess(Path iniPath) {
-		return createProcess("FrameReader", _properties.getStreamingFrameReaderExecutable(), iniPath);
-	}
+	//TODO: For future use. Untested.
+//	public StreamingProcess createFrameReaderProcess(Path iniPath) {
+//		return createProcess("FrameReader", _properties.getStreamingFrameReaderExecutable(), iniPath);
+//	}
+//
+//
+//	public StreamingProcess createVideoWriterProcess(Path iniPath) {
+//		return createProcess("VideoWriter", _properties.getStreamingVideoWriterExecutable(), iniPath);
+//	}
+//
+//
+//	private StreamingProcess createProcess(String name, String executable, Path iniPath) {
+//		return createProcess(name, executable, iniPath, Collections.emptyMap());
+//	}
 
 
-	public StreamingProcess createVideoWriterProcess(Path iniPath) {
-		return createProcess("VideoWriter", _properties.getStreamingVideoWriterExecutable(), iniPath);
-	}
+
+//	public StreamingProcess createComponentProcess(Path iniPath, Map<String, String> environmentVariables) {
+//		return createProcess("Component", _properties.getStreamingComponentExecutor(), iniPath,
+//		                     environmentVariables);
+//	}
+
+//private StreamingProcess createProcess(String name, String executable, Path iniPath,
+//                                       Map<String, String> environmentVariables) {
+//	List<String> cmdlineArgs = Arrays.asList(executable, name, iniPath.toString());
+//
+//
+//	ProcessBuilder processBuilder = new ProcessBuilder(cmdlineArgs)
+//			.redirectErrorStream(true);
+//	processBuilder.environment().putAll(environmentVariables);
+//
+//	return new StreamingProcess(name, processBuilder, _properties.getStreamingProcessMaxRestarts());
+//}
+
 
 	public StreamingProcess createComponentProcess(Path iniPath, Map<String, String> environmentVariables) {
-		return createProcess("Component", _properties.getStreamingComponentExecutor(), iniPath,
-		                     environmentVariables);
-	}
-
-
-
-	private StreamingProcess createProcess(String name, String executable, Path iniPath) {
-		return createProcess(name, executable, iniPath, Collections.emptyMap());
-	}
-
-
-	private StreamingProcess createProcess(String name, String executable, Path iniPath,
-	                                       Map<String, String> environmentVariables) {
+		String script = scriptToString();
 		// TODO: Remove python as first command line argument
-		List<String> cmdlineArgs = Arrays.asList("python", executable, name, iniPath.toString());
-//		List<String> cmdlineArgs = Arrays.asList(executable, name, iniPath.toString());
+		List<String> cmdlineArgs = Arrays.asList("python", "-c", script, "Component", iniPath.toString());
+//			List<String> cmdlineArgs = Arrays.asList(executable, name, iniPath.toString());
 
 
 		ProcessBuilder processBuilder = new ProcessBuilder(cmdlineArgs)
 				.redirectErrorStream(true);
 		processBuilder.environment().putAll(environmentVariables);
 
-		return new StreamingProcess(name, processBuilder, _properties.getStreamingProcessMaxRestarts());
+		return new StreamingProcess("Component", processBuilder, _properties.getStreamingProcessMaxRestarts());
+	}
+
+	// Script is stored in NodeManager jar so the path to the script cannot be used by python.
+	private String scriptToString() {
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+					_properties.getStreamingComponentExecutor().getInputStream()))) {
+			return reader
+					.lines()
+					.collect(joining("\n"));
+		}
+		catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+
 	}
 }

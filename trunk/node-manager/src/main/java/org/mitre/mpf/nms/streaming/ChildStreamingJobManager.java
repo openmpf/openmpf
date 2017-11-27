@@ -38,7 +38,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 @Component
 public class ChildStreamingJobManager {
@@ -60,44 +59,44 @@ public class ChildStreamingJobManager {
 
 
 	public void handle(StreamingJobMessage message) {
-		LOG.info("Received Message: {}", message);
-		if (message instanceof StreamingJobLaunchMessage) {
-			handleJobLaunch((StreamingJobLaunchMessage) message);
-		}
-		else if (message instanceof StopStreamingJobMessage) {
-			handleJobStop((StopStreamingJobMessage) message);
+		synchronized (_streamingJobs) {
+			if (message instanceof StreamingJobLaunchMessage) {
+				handleJobLaunch((StreamingJobLaunchMessage) message);
+			}
+			else if (message instanceof StopStreamingJobMessage) {
+				handleJobStop((StopStreamingJobMessage) message);
+			}
+			else {
+				throw new IllegalStateException("Unexpected message type: " + message);
+			}
 		}
 	}
 
 
 	private void handleJobLaunch(StreamingJobLaunchMessage message) {
-		synchronized (_streamingJobs) {
-			if (_streamingJobs.containsKey(message.jobId)) {
-				LOG.error("Received StreamingJobLaunchMessage for job id {}, but a job with that id is already running",
-				          message.jobId);
-				return;
-			}
-			StreamingJob job = _streamingJobFactory.createJob(message);
-			CompletableFuture<Void> jobCompleteFuture = job.startJob();
-
-			_streamingJobs.put(message.jobId, job);
-
-			jobCompleteFuture
-					.whenComplete((none, error) -> onJobExit(message.jobId, error));
+		if (_streamingJobs.containsKey(message.jobId)) {
+			LOG.error("Received StreamingJobLaunchMessage for job id {}, but a job with that id is already running",
+			          message.jobId);
+			return;
 		}
+		StreamingJob job = _streamingJobFactory.createJob(message);
+		_streamingJobs.put(message.jobId, job);
+
+		LOG.info("Starting streaming job: {}", message.jobId);
+
+		job.startJob()
+				.whenComplete((none, error) -> onJobExit(message.jobId, error));
 	}
 
 
 	private void handleJobStop(StopStreamingJobMessage stopMessage) {
-		synchronized (_streamingJobs) {
-			StreamingJob job = _streamingJobs.get(stopMessage.jobId);
-			if (job == null) {
-				LOG.info("Received StopStreamingJobMessage for job id {}, but that job has already completed or does not exist.",
-				         stopMessage.jobId);
-				return;
-			}
-			job.stopJob();
+		StreamingJob job = _streamingJobs.get(stopMessage.jobId);
+		if (job == null) {
+			LOG.info("Received StopStreamingJobMessage for job id {}, but that job has already completed or does not exist.",
+			         stopMessage.jobId);
+			return;
 		}
+		job.stopJob();
 	}
 
 

@@ -51,6 +51,7 @@ import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
 import org.mitre.mpf.wfm.util.JmsUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -129,6 +130,10 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     @Autowired
     private JobProgress jobProgressStore;
+
+
+    @Autowired
+    private StreamingJobMessageSender streamingJobMessageSender;
 
     /**
      * Converts a pipeline represented in JSON to a {@link TransientPipeline} instance.
@@ -439,6 +444,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             // persist the pipeline and streaming job in REDIS
             TransientPipeline transientPipeline = buildPipeline(jsonStreamingJobRequest.getPipeline());
             TransientStreamingJob transientStreamingJob = buildStreamingJob(jobId, streamingJobRequestEntity, transientPipeline, jsonStreamingJobRequest);
+            streamingJobMessageSender.launchJob(transientStreamingJob);
 
         } catch (Exception e) {
             // mark any exception as a failure by recording the error in the persistent database and throwing an exception

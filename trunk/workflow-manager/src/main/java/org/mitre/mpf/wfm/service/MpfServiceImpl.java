@@ -237,13 +237,13 @@ public class MpfServiceImpl implements MpfService {
 	}
 
 	/**
-	 * Send a streaming job Health Report to the health report callback associated with that streaming job.
+	 * Send a periodic Health Report for a streaming job to the health report callback associated with that streaming job.
 	 * @param jobId unique id for the streaming job to be reported on
 	 * @throws WfmProcessingException thrown if an error occurs
 	 */
 	@Override
-	public void sendHealthReportCallback(long jobId) throws WfmProcessingException {
-		streamingJobRequestBo.sendHealthReportCallback(jobId);
+	public void sendPeriodicHealthReportToCallback(long jobId) throws WfmProcessingException {
+		streamingJobRequestBo.sendPeriodicHealthReportToCallback(jobId);
 	}
 
 

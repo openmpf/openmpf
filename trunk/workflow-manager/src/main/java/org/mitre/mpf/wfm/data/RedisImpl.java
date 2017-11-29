@@ -26,6 +26,9 @@
 
 package org.mitre.mpf.wfm.data;
 
+import java.time.DateTimeException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.transients.*;
@@ -756,15 +759,19 @@ public class RedisImpl implements Redis {
     /**
      * Store the timestamp of the last health report that was sent for the specified streaming job.
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
+     * Note that internally, health report timestamps are stored in REDIS as a ISO-8601 formatted string.
      * @param jobId The MPF-assigned ID of the streaming job, must be unique.
-     * @param lastHealthReportTimestamp The timestamp (in seconds) to be stored for this streaming job
+     * @param lastHealthReportTimestamp The timestamp to be stored for this streaming job.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job, or if the passed
-     * lastHealthReportTimestamp is null.
+     * lastHealthReportTimestamp is null. DateTimeException will be thrown if the lastHealthReportTimestamp could not be stored
+     * in REDIS because it could not be formatted as a ISO-8601 formatted string.
      */
-    public synchronized void setHealthReportLastTimestamp(long jobId, Long lastHealthReportTimestamp) throws WfmProcessingException {
+    public synchronized void setHealthReportLastTimestamp(long jobId, LocalDateTime lastHealthReportTimestamp) throws WfmProcessingException, DateTimeException {
         if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
             if ( lastHealthReportTimestamp != null ) {
-                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(LAST_HEALTH_REPORT_TIMESTAMP, lastHealthReportTimestamp);
+            	// Internally, health report timestamps are being stored in REDIS using ISO-8601 format.
+                String timestamp = DateTimeFormatter.ISO_INSTANT.format(lastHealthReportTimestamp);
+                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(LAST_HEALTH_REPORT_TIMESTAMP, timestamp);
             } else {
                 log.error("Illegal, can't set last health report timestamp to null for streaming job #{}.", jobId);
                 throw new WfmProcessingException("Illegal, can't set last health report timestamp to null for streaming job " + jobId);
@@ -778,16 +785,25 @@ public class RedisImpl implements Redis {
     /**
      * Return the timestamp of the last health report that was sent for the specified streaming job.
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
+     * Note that internally, health report timestamps are stored in REDIS as a ISO-8601 formatted string.
      * @param jobId The MPF-assigned ID of the streaming job, must be unique.
      * @return The last health report timestamp (in seconds) that was stored in the health report for this streaming job.
      * Returned value may be null if a health report timestamp for this streaming job has not yet been set.
-     * @exception WfmProcessingException will be thrown if the specified job is not a streaming job
+     * @exception WfmProcessingException will be thrown if the specified job is not a streaming job.
+     * DateTimeException will be thrown if the last health report timestamp could not be pulled
+     * from REDIS because it could not be parsed as a ISO-8601 formatted string.
      */
-    public synchronized Long getHealthReportLastTimestamp(long jobId) throws WfmProcessingException {
+    public synchronized LocalDateTime getHealthReportLastTimestamp(long jobId) throws WfmProcessingException, DateTimeException {
         if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
             // confirmed that the specified job is a streaming job
             Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
-            return (Long) jobHash.get(LAST_HEALTH_REPORT_TIMESTAMP);
+            String timestamp = (String) jobHash.get(LAST_HEALTH_REPORT_TIMESTAMP);
+            if ( timestamp != null ) {
+                return (LocalDateTime) DateTimeFormatter.ISO_INSTANT.parse(timestamp);
+            } else {
+                // return null to indicate that a health report for this streaming job has not yet been sent.
+                return (LocalDateTime) null;
+            }
         } else {
             log.error("Job #{} is not a streaming job, so we can't get the last health report timestamp", jobId);
             throw new WfmProcessingException("Error: Job " + jobId + " is not a streaming job. Only streaming jobs send health reports.");

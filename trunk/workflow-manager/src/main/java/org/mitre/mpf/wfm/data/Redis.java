@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.data;
 
+import java.time.LocalDateTime;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
@@ -260,8 +261,8 @@ public interface Redis {
 	 */
 	boolean isJobTypeStreaming(final long jobId);
 
-	void setHealthReportLastTimestamp(long jobId, Long lastHealthReportTimestamp) throws WfmProcessingException;
-	Long getHealthReportLastTimestamp(long jobId) throws WfmProcessingException;
+	void setHealthReportLastTimestamp(long jobId, LocalDateTime lastHealthReportTimestamp) throws WfmProcessingException;
+	LocalDateTime getHealthReportLastTimestamp(long jobId) throws WfmProcessingException;
 
     void setHealthReportLastNewActivityAlertFrameId(long jobId, String lastNewActivityAlertFrameId) throws WfmProcessingException;
     String getHealthReportLastNewActivityAlertFrameId(long jobId) throws WfmProcessingException;

@@ -28,13 +28,19 @@ package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Date;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;;
 
 public class JsonHealthReportDataCallbackBody extends JsonCallbackBody {
 
-    private Date reportDate = null;
-    public Date getReportDate() {
-        return reportDate;
+    private LocalDateTime reportDate = null;
+    /**
+     * The date/time that this Health Report is being issued.
+     * @return The date/time that this Health Report is being issued, should be returned as a ISO-8601 formatted String
+     */
+    public String getReportDate() {
+        return DateTimeFormatter.ISO_INSTANT.format(reportDate);
     }
 
     private String /*JobStatus*/ jobStatus;
@@ -47,35 +53,46 @@ public class JsonHealthReportDataCallbackBody extends JsonCallbackBody {
      * Get the last new activity alert frame id from this Health Report.
      * Value stored internally as a String to accommodate for potential for this value to be sized as an unsigned long.
      * Since no arithmetic operations are being performed on this parameter within this class, this is an acceptable data type.
-     * @return the last new activity alert frame id from this Health Report as a String.
+     * @return the last new activity alert frame id from this Health Report as a String. May be null if
+     * a New Activity Alert has not been issued for this streaming job.
      */
     public String getLastNewActivityAlertFrameId() { return lastNewActivityAlertFrameId; }
 
     /**
-     * Get the elapsed time of this streaming job, in seconds.
-     * Preferred implementation would be to define this parameter as java.timing.Duration, but usage of Java8 isn't supported in this module.
-     * @return the elapsed time of this streaming job, in seconds.
+     * Get the run time for this streaming job, should be returned as a String using ISO-8601 seconds based representation.
+     * @return the run time of this streaming job, returned as a String using ISO-8601 seconds based representation. May
+     * be null if the run time for this streaming job is not known.
      */
-    private Long elapsedTime = null;
-    public Long getElapsedTime() { return elapsedTime; }
+    private Duration jobRunTime = null;
+    public String getElapsedTime() {
+        if ( jobRunTime != null ) {
+            return jobRunTime.toString();
+        } else {
+            return null;
+        }
+    }
 
     /**
      * Constructor
      * @param jobId job id for this streaming job
-     * @param reportDate date/time that this Health Report was issued
+     * @param externalId external id for this streaming job. May be null if an external id was not defined.
      * @param jobStatus status of this streaming job
-     * @param elapsedTime duration of this streaming job, in seconds. May be null if duration of this job is not available.
-     * @param lastNewActivityAlertFrameId frame id from the last new activity alert issued for this streaming job. May be null if not applicable.
+     * @param reportDate date/time that this Health Report was issued, should be passed as a ISO-8601 formatted String.
+     * @param jobRunTime How long this streaming job has been running, should be passed as a String using ISO-8601 seconds based representation.
+     * May be null if the run time for this streaming job is not known.
+     * @param lastNewActivityAlertFrameId frame id from the last new activity alert issued for this streaming job. May be null if
+     * a New Activity Alert has not been issued for this streaming job.
      */
     @JsonCreator
     public JsonHealthReportDataCallbackBody(@JsonProperty("jobId") long jobId, @JsonProperty("externalId") String externalId,
-        @JsonProperty("reportDate") Date reportDate, @JsonProperty("jobStatus") String /*JobStatus*/ jobStatus,
-        @JsonProperty("elapsedTime") Long elapsedTime,
+        @JsonProperty("jobStatus") String /*JobStatus*/ jobStatus,
+        @JsonProperty("reportDate") LocalDateTime reportDate,
+        @JsonProperty("jobRunTime") Duration jobRunTime,
         @JsonProperty("lastNewActivityAlertFrameId") String lastNewActivityAlertFrameId ) {
         super(jobId,externalId);
         this.reportDate = reportDate;
         this.jobStatus = jobStatus;
-        this.elapsedTime = elapsedTime;
+        this.jobRunTime = jobRunTime;
         this.lastNewActivityAlertFrameId = lastNewActivityAlertFrameId;
     }
 

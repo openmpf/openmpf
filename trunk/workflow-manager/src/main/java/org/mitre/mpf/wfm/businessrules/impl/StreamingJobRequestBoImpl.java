@@ -27,6 +27,9 @@
 package org.mitre.mpf.wfm.businessrules.impl;
 
 import java.io.UnsupportedEncodingException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.commons.lang3.StringUtils;
@@ -653,7 +656,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     /**
-     * Send the streaming jobs Health Report to the health report callback.
+     * Immediately send the streaming jobs Health Report to the health report callback, health report to be sent in a newly started thread.
+     * REDIS will record the time when this health report is actually sent by the thread.
      * @param jobId unique id for this streaming job
      * @throws WfmProcessingException
      */
@@ -664,42 +668,23 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             final String jsonCallbackMethod = redis.getCallbackMethod(jobId);
             if (jsonHealthReportCallbackURL != null && jsonCallbackMethod != null && (
                 jsonCallbackMethod.equals("POST") || jsonCallbackMethod.equals("GET"))) {
-                log.info("Starting " + jsonCallbackMethod + " health report callback to "
+                log.info("Starting " + jsonCallbackMethod + " health report callback send to "
                     + jsonHealthReportCallbackURL);
-                try {
-                    long currentTimeMsec = System.currentTimeMillis();
-                    Date reportDate = new Date(currentTimeMsec);
-                    // get the timestamp (in seconds) which marks when the health report for this streaming job was last sent.
-                    // Note that lastHealthReportTimestamp may be 0L if a health report for this streaming job has not yet been sent.
-                    Long lastHealthReportTimestamp = redis.getHealthReportLastTimestamp(jobId);
-                    Long elapsedTime = null;
-                    if (lastHealthReportTimestamp != null) {
-                        elapsedTime = Long.valueOf(
-                            currentTimeMsec / 1000 - lastHealthReportTimestamp.longValue());
-                    }
-                    JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(
-                        jobId, redis.getExternalId(jobId),
-                        reportDate, redis.getJobStatus(jobId).toString(), elapsedTime,
-                        redis.getHealthReportLastNewActivityAlertFrameId(jobId));
-                    new Thread(new CallbackThread(jsonHealthReportCallbackURL, jsonCallbackMethod,
-                        jsonBody)).start();
-                    // TODO, can this be set when the thread is actually run?
-                    redis.setHealthReportLastTimestamp(jobId, Long.valueOf(currentTimeMsec / 1000));
-                } catch (IOException ioe) {
-                    log.warn("Failed to issue {} callback to '{}' due to an I/O exception.",
-                        jsonCallbackMethod, jsonHealthReportCallbackURL, ioe);
-                }
+                // send the health report to the callback URL in a newly started thread
+                new Thread(new HealthReportCallbackThread(jobId, jsonHealthReportCallbackURL, jsonCallbackMethod)).start();
             }
         }
     }
 
     /**
-     * Send the streaming jobs Health Report to the health report callback.
+     * Send the periodic Health Report about the specified streaming job to the health report callback.
+     * Note that out-of-cycle health reports that may have been sent due to a change in job status will not
+     * delay sending of the scheduled health report.
      * @param jobId unique id for the streaming job to be reported on
      * @throws WfmProcessingException thrown if an error occurs
      */
-    public void sendHealthReportCallback(long jobId) throws WfmProcessingException {
-        log.info("sendHealthReportCallback: sending Health Report for jobId " + jobId);
+    public void sendPeriodicHealthReportToCallback(long jobId) throws WfmProcessingException {
+        log.info("sendHealthReportCallback: sending periodic Health Report for jobId " + jobId);
         healthReportCallback(jobId);
     }
 
@@ -747,50 +732,28 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     /**
-     * Thread to handle the Callback to a URL given a HTTP method.
+     * Thread to handle a general Callback to a URL given a HTTP method.
      */
     public class CallbackThread implements Runnable {
         private String callbackURL;
         private String callbackMethod;
         private HttpUriRequest req;
 
-        private String setGetMethodParametersForCallbackURL(String callbackURL, JsonHealthReportDataCallbackBody body) {
-            String jsonCallbackURL2 = setGetMethodParametersForCallbackURL(callbackURL,(JsonCallbackBody)body);
-            if (body.getReportDate() != null) {
-                jsonCallbackURL2 += "&reportDate=" + body.getReportDate();
-            }
-            if (body.getJobStatus() != null) {
-                jsonCallbackURL2 += "&jobStatus=" + body.getJobStatus();
-            }
-            if (body.getLastNewActivityAlertFrameId() != null) {
-                jsonCallbackURL2 += "&lastNewActivityAlertFrameId =" + body.getLastNewActivityAlertFrameId();
-            }
-            if (body.getElapsedTime() != null) {
-                jsonCallbackURL2 += "&elapsedTime =" + body.getElapsedTime();
-            }
-            return jsonCallbackURL2;
-        }
-
-        private String setGetMethodParametersForCallbackURL(String callbackURL, JsonCallbackBody body) {
-            String jsonCallbackURL2 = callbackURL;
-            if (jsonCallbackURL2.contains("?")) {
-                jsonCallbackURL2 += "&";
-            } else {
-                jsonCallbackURL2 += "?";
-            }
-            jsonCallbackURL2 += "jobid=" + body.getJobId();
-            if (body.getExternalId() != null) {
-                jsonCallbackURL2 += "&externalid=" + body.getExternalId();
-            }
-            return jsonCallbackURL2;
-        }
-
        public CallbackThread(String callbackURL, String callbackMethod, JsonCallbackBody body) throws UnsupportedEncodingException {
             this.callbackURL = callbackURL;
             this.callbackMethod = callbackMethod;
 
             if (callbackMethod.equals("GET")) {
-                String jsonCallbackURL2 = setGetMethodParametersForCallbackURL(callbackURL,body);
+                String jsonCallbackURL2 = callbackURL;
+                if (jsonCallbackURL2.contains("?")) {
+                    jsonCallbackURL2 += "&";
+                } else {
+                    jsonCallbackURL2 += "?";
+                }
+                jsonCallbackURL2 += "jobid=" + body.getJobId();
+                if (body.getExternalId() != null) {
+                    jsonCallbackURL2 += "&externalid=" + body.getExternalId();
+                }
                 req = new HttpGet(jsonCallbackURL2);
             } else { // this is for a POST
                 HttpPost post = new HttpPost(callbackURL);
@@ -812,6 +775,93 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 log.info("{} Callback issued to '{}' (Response={}).", callbackMethod, callbackURL, response);
             } catch (Exception exception) {
                 log.warn("Failed to issue {} callback to '{}' due to an I/O exception.", callbackMethod, callbackURL, exception);
+            }
+        }
+    }
+
+
+    /**
+     * Thread to handle the Health Report Callback to a URL given a HTTP method. Note that sending of the
+     * health report requires that the time that the health report was sent be stored in REDIS. To properly
+     * mark the time, the timestamp should be constructed and stored in the run method.
+     */
+    public class HealthReportCallbackThread implements Runnable {
+        private long jobId;
+        private String callbackURL;
+        private String callbackMethod;
+        private HttpUriRequest req;
+
+        public HealthReportCallbackThread(long jobId, String callbackURL, String callbackMethod) {
+            this.jobId = jobId;
+            this.callbackURL = callbackURL;
+            this.callbackMethod = callbackMethod;
+        }
+
+        @Override
+        public void run() {
+            final HttpClient httpClient = HttpClientBuilder.create().build();
+            try {
+                HttpUriRequest req = null;
+                LocalDateTime currentDateTime = LocalDateTime.now();
+
+                // get other information from REDIS about this streaming job.
+                String externalId = redis.getExternalId(jobId);
+                String jobStatus = redis.getJobStatus(jobId).toString();
+                String lastNewActivityAlertFrameId = redis.getHealthReportLastNewActivityAlertFrameId(jobId);
+
+                // TODO will job run time be stored in REDIS?  For now, set job run time to null for JSON response
+                Duration jobRunTime = null;
+
+                if (callbackMethod.equals("GET")) {
+                    String jsonCallbackURL2 = callbackURL;
+                    if (jsonCallbackURL2.contains("?")) {
+                        jsonCallbackURL2 += "&";
+                    } else {
+                        jsonCallbackURL2 += "?";
+                    }
+                    jsonCallbackURL2 += "jobid=" + jobId;
+                    if (externalId!= null) {
+                        jsonCallbackURL2 += "&externalid=" + externalId;
+                    }
+                    jsonCallbackURL2 += "&reportDate=" + DateTimeFormatter.ISO_INSTANT.format(currentDateTime);
+                    if (jobStatus != null) {
+                        jsonCallbackURL2 += "&jobStatus=" + jobStatus;
+                    }
+                    if (lastNewActivityAlertFrameId != null) {
+                        jsonCallbackURL2 += "&lastNewActivityAlertFrameId =" + lastNewActivityAlertFrameId;
+                    }
+                    if (jobRunTime != null) {
+                        jsonCallbackURL2 += "&elapsedTime =" + jobRunTime.toString();
+                    }
+                    req = new HttpGet(jsonCallbackURL2);
+                } else { // this is for a POST
+                    HttpPost post = new HttpPost(callbackURL);
+                    post.addHeader("Content-Type", "application/json");
+                    try {
+                        JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(jobId, externalId, jobStatus,
+                                                                                currentDateTime, jobRunTime, lastNewActivityAlertFrameId);
+                        post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
+                        req = post;
+                    } catch (WfmProcessingException e) {
+                        log.error("Cannot serialize JsonHealthReportDataCallbackBody", e);
+                    }
+                }
+
+                // if the http request was properly constructed, then send it and record the time the health report was sent in REDIS
+                if ( req != null ) {
+
+                    HttpResponse response = httpClient.execute(req);
+                    log.info("{} HealthReportCallback issued to '{}' (Response={}).", callbackMethod, callbackURL, response);
+
+                    // record the time this health report was sent to the callbackURL in REDIS
+                    redis.setHealthReportLastTimestamp(jobId, currentDateTime);
+
+                 }
+
+            } catch (UnsupportedEncodingException uee) {
+                log.warn("Failed to issue {} HealthReportCallback to '{}' due to an UnsupportedEncodingException.", callbackMethod, callbackURL, uee);
+            } catch (Exception exception) {
+                log.warn("Failed to issue {} HealthReportCallback to '{}' due to an I/O exception.", callbackMethod, callbackURL, exception);
             }
         }
     }

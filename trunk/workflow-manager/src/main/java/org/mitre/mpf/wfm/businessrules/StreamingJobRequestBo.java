@@ -80,5 +80,5 @@ public interface StreamingJobRequestBo {
 	 */
 	void cancel(long jobId, boolean doCleanup) throws WfmProcessingException;
 
-	public void sendHealthReportCallback(long jobId) throws WfmProcessingException;
+	public void sendPeriodicHealthReportToCallback(long jobId) throws WfmProcessingException;
 }

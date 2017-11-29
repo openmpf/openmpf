@@ -320,7 +320,7 @@ public class StreamingJobController {
             } catch (JobAlreadyCancellingWfmProcessingException | JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException we ) {
                 // If the job was marked for cancellation, but one of these warning exceptions were caught,
                 // log the warning and forward the warning along in the mpfResponse.
-                // TODO when openmpf issue #334 is implemented, handling for JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException will be moved someplace else
+                // TODO once Node Manager supports reporting when executor processes have halted, handling for JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException will be moved someplace else
                 log.warn("Got a warning when cancelling streaming job with id {}, warning is '{}'",
                     jobId, we.getMessage());
                 cancelResponse = new StreamingJobCancelResponse(jobId,
@@ -328,7 +328,7 @@ public class StreamingJobController {
                     MpfResponse.RESPONSE_CODE_WARNING, we.getMessage());
 
             } catch (JobCancellationInvalidOutputObjectDirectoryWfmProcessingException idee ) {
-                // TODO when openmpf issue #334 is implemented, handling for JobCancellationInvalidOutputObjectDirectoryWfmProcessingException will be moved someplace else
+                // TODO once Node Manager supports reporting when executor processes have halted, handling for JobCancellationInvalidOutputObjectDirectoryWfmProcessingException will be moved someplace else
                 // If the streaming job was marked for cancellation, but the
                 // jobs output object directory couldn't be deleted due to an error,
                 // log the error and forward the error along in the mpfResponse.

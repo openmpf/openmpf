@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
     string app_dir = (this_app->applicationDirPath()).toStdString();
     delete this_app;
 
-    log4cxx::xml::DOMConfigurator::configure(app_dir + "/Log4cxxConfig.xml");
+    log4cxx::xml::DOMConfigurator::configure(app_dir + "/../config/Log4cxxConfig.xml");
     log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("org.mitre.mpf.framereader");
 
     int job_id;

@@ -331,7 +331,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     @Override
     public synchronized void cancel(long jobId, boolean doCleanup) throws WfmProcessingException {
 
-        log.debug("[Job {}:*:*] Received request to cancel this streaming job.", jobId);
+        log.debug("[Streaming Job {}:*:*] Received request to cancel this streaming job.", jobId);
         StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
         if (streamingJobRequest == null) {
             throw new JobCancellationInvalidJobIdWfmProcessingException("A streaming job with the id " + jobId + " is not known to the system.");
@@ -354,7 +354,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                     // the system should not be affected, but the streaming job may not complete any faster.
                     // TODO tell the master node manager to cancel the streaming job
                     log.warn(
-                        "[Job {}:*:*] Cancellation of streaming job via master node manager not yet implemented.",
+                        "[Streaming Job {}:*:*] Cancellation of streaming job via master node manager not yet implemented.",
                         jobId);
 
                     // set job status as cancelling, and persist that changed state in the database
@@ -387,11 +387,11 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                             if (!outputObjectDirectoryFile.exists()) {
                                 // it is not an error if the streaming job has been marked for cancellation, doCleanup is enabled, but the output object directory doesn't exist. Just log that fact and continue.
                                 log.info(
-                                    "[Job {}:*:*] streaming job is cancelling. Output object directory '{}' not deleted because it doesn't exist.",
+                                    "[Streaming Job {}:*:*] streaming job is cancelling. Output object directory '{}' not deleted because it doesn't exist.",
                                     jobId, outputObjectDirectory);
                             } else if ( outputObjectDirectoryFile.isDirectory() ) {
                                 // as requested, delete the output object directory for this streaming job.
-                                log.info("[Job {}:*:*] streaming job is cancelling. Output object directory '{}' is being deleted as requested within the cancel request.",
+                                log.info("[Streaming Job {}:*:*] streaming job is cancelling. Output object directory '{}' is being deleted as requested within the cancel request.",
                                     jobId, outputObjectDirectory);
                                 try {
 
@@ -414,7 +414,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                                         } else {
                                             // the output object directory was successfully deleted, log this fact
                                             log.info(
-                                                "[Job {}:*:*] streaming job is cancelling. Output object directory '{}' was successfully deleted as requested within the cancel request.",
+                                                "[Streaming Job {}:*:*] Streaming job is cancelling. Output object directory '{}' was successfully deleted as requested within the cancel request.",
                                                 jobId, outputObjectDirectory);
                                         }
                                     } else {
@@ -528,7 +528,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         } // end of Exception catch
 
         // TODO send the streaming job to the master node manager
-        log.info(this.getClass().getName() + ".runInternal: TODO notification of new streaming job " + streamingJobRequestEntity.getId() + " to Components via Master Node Manager");
+        log.info(this.getClass().getName() + ".runInternal: TODO notification of new streaming job " + streamingJobRequestEntity.getId() + " to Components via Master Node Manager.");
 
         return streamingJobRequestEntity;
     }
@@ -624,7 +624,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 try {
                     consumer.onNotification(this, new JobCompleteNotification(jobId));
                 } catch (Exception exception) {
-                    log.warn("Completion streaming job consumer '{}' threw an exception.", consumer, exception);
+                    log.warn("Completion Streaming Job {} consumer '{}' threw an exception.", jobId, consumer, exception);
                 }
             }
         }
@@ -704,7 +704,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     private void destroy(long jobId) throws WfmProcessingException {
         TransientStreamingJob transientStreamingJob = redis.getStreamingJob(jobId);
 
-        log.debug("StreamingJobRequest.destroy: destruction of stream data NYI for Streaming Job {} ", jobId);
+        log.debug("StreamingJobRequest.destroy: destruction of stream data NYI for Streaming Job {}.", jobId);
 
 // keep this commented section here for reference until streaming job processing is finalized
 //		for(TransientMedia transientMedia : transientStreamingJob.getMedia()) {
@@ -762,7 +762,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                     post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(body)));
                     req = post;
                 } catch (WfmProcessingException e) {
-                    log.error("Cannot serialize CallbackBody");
+                    log.error("Cannot serialize CallbackBody.",e);
                 }
             }
         }

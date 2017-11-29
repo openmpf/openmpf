@@ -24,6 +24,10 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+//TODO: The MPFFrameStore class is for future use and is untested.
+// Not used in single process, single pipeline stage, architecture
+
+
 #ifndef MPF_FRAME_STORE_H_
 #define MPF_FRAME_STORE_H_
 

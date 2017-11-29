@@ -25,6 +25,9 @@
  ******************************************************************************/
 
 
+//TODO: All functions in this file are for future use and are untested.
+// Not used in single process, single pipeline stage, architecture
+
 
 #ifndef OPENMPF_OCVFRAMEREADER_H
 #define OPENMPF_OCVFRAMEREADER_H

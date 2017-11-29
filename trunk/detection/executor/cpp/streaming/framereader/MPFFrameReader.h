@@ -25,6 +25,9 @@
  ******************************************************************************/
 
 
+//TODO: All code in this file is for future use and is untested.
+// Not used in single process, single pipeline stage, architecture
+
 
 #ifndef OPENMPF_CPP_FRAME_READER_H
 #define OPENMPF_CPP_FRAME_READER_H

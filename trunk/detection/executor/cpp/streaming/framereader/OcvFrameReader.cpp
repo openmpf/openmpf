@@ -24,6 +24,9 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+//TODO: All functions in this file are for future use and are untested.
+// Not used in single process, single pipeline stage, architecture
+
 #include "OcvFrameReader.h"
 #include "detectionComponentUtils.h"
 

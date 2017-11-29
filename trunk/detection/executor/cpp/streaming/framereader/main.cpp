@@ -24,6 +24,11 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+//TODO: This file contains simple test code for testing the ActiveMQ
+// messaging. The frame reader component itself is not used in single
+// process, single pipeline stage, architecture.
+
+
 #include <iostream>
 #include <string>
 #include <sys/types.h>

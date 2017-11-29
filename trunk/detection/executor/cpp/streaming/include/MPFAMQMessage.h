@@ -148,6 +148,7 @@ struct AMQJobStatusMessage : AMQMessage, MPFJobStatusMessage {
     }
 };
 
+//TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture
 struct AMQSegmentReadyMessage : AMQMessage, MPFSegmentReadyMessage {
 
@@ -173,6 +174,7 @@ struct AMQSegmentReadyMessage : AMQMessage, MPFSegmentReadyMessage {
     }
 };
 
+//TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture
 struct AMQFrameReadyMessage : AMQMessage, MPFFrameReadyMessage {
 
@@ -206,6 +208,7 @@ struct AMQFrameReadyMessage : AMQMessage, MPFFrameReadyMessage {
 
 };  
 
+//TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture
 struct AMQReleaseFrameMessage : AMQMessage, MPFReleaseFrameMessage {
 
@@ -232,40 +235,8 @@ struct AMQReleaseFrameMessage : AMQMessage, MPFReleaseFrameMessage {
 
 };
 
-// No longer needed: replaced by ActivityAlert message
-// struct AMQNewTrackAlertMessage : AMQMessage, MPFNewTrackAlertMessage {
 
-//     AMQNewTrackAlertMessage(const std::string &job_name,
-//                              const uint32_t job_number,
-//                              uint32_t seg_num,
-//                              uint32_t frame_num,
-//                              const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks)
-//             : MPFNewTrackAlertMessage(job_name, job_number, seg_num, frame_num, tracks) {}
-//     ~AMQNewTrackAlertMessage() = default;
-
-//     void InitMessage(cms::Session *session) {
-//         msg_.reset(session->createBytesMessage());
-//         if (NULL != msg_) {
-//             msg_->setStringProperty("JOB_NAME", job_name_);
-//             msg_->setIntProperty("JOB_NUMBER", job_number_);
-//             msg_->setIntProperty("SEGMENT_NUMBER", segment_number_);
-//             msg_->setIntProperty("FRAME_INDEX", frame_index_);
-//             //TODO: Need to pack the tracks vector into a protobuf and
-//             //      set the body of the message.
-//         }
-//     }
-
-//     virtual void ReceiveMessageContent() {
-//         job_name_ = msg_->getStringProperty("JOB_NAME");
-//         job_number_ = msg_->getIntProperty("JOB_NUMBER");
-//         segment_number_ = msg_->getIntProperty("SEGMENT_NUMBER");
-//         frame_index_ = msg_->getIntProperty("FRAME_INDEX");
-//         //TODO: Need to unpack the tracks vector from the protobuf
-//         //      in the message body.
-//     }
-
-// };
-
+//TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture
 struct AMQVideoWrittenMessage : AMQMessage, MPFVideoWrittenMessage {
 

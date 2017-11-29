@@ -24,6 +24,10 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+//TODO: All functions in this file are for future use and are untested.
+// Not used in single process, single pipeline stage, architecture
+
+
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <errno.h>
@@ -35,7 +39,6 @@
 
 using namespace MPF;
 using namespace std;
-
 
 int MPFFrameStore::Create(const string &frame_store_name,
                           const size_t buffer_size,

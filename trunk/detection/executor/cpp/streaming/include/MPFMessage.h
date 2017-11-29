@@ -84,6 +84,7 @@ struct MPFJobStatusMessage : MPFMessage {
 };
 
 /****************************************************************/
+//TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture
 struct MPFSegmentReadyMessage : MPFMessage {
 
@@ -96,6 +97,7 @@ struct MPFSegmentReadyMessage : MPFMessage {
     ~MPFSegmentReadyMessage() = default;
 };
 
+//TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture
 struct MPFFrameReadyMessage : MPFMessage {
 
@@ -115,6 +117,8 @@ struct MPFFrameReadyMessage : MPFMessage {
     ~MPFFrameReadyMessage() = default;
 };  
 
+//TODO: For future use. Untested.
+// Not used in single process, single pipeline stage, architecture
 struct MPFReleaseFrameMessage : MPFMessage {
 
     uint64_t frame_offset_bytes_;
@@ -126,23 +130,7 @@ struct MPFReleaseFrameMessage : MPFMessage {
     ~MPFReleaseFrameMessage() = default;
 };
 
-// No longer needed: replaced by ActivityAlert message
-// struct MPFNewTrackAlertMessage : MPFMessage {
-//     uint32_t segment_number_;
-//     uint32_t frame_index_;
-//     std::vector<MPF::COMPONENT::MPFVideoTrack> tracks_;
-//     MPFNewTrackAlertMessage(const std::string &job_name,
-//                              const uint32_t job_number,
-//                              const uint32_t seg_num,
-//                              const uint32_t frame_num,
-//                              const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks)
-//             : MPFMessage(job_name, job_number),
-//               segment_number_(seg_num),
-//               frame_index_(frame_num),
-//               tracks_(tracks) {}
-//     ~MPFNewTrackAlertMessage() = default;
-// };
-
+//TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture
 struct MPFVideoWrittenMessage : MPFMessage {
     int segment_number_;

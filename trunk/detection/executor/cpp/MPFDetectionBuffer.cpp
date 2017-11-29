@@ -105,7 +105,7 @@ void MPFDetectionBuffer::GetVideoRequest(MPFDetectionVideoRequest &video_request
         for (auto loc : detection_request.video_request().feed_forward_track().frame_locations()) {
             Properties tmp_props;
             for (auto prop : loc.image_location().detection_properties()) {
-                tmp_props[prop.key()] = tmp_props[prop.value()];
+                tmp_props[prop.key()] = prop.value();
             }
             MPFImageLocation tmp_loc(loc.image_location().x_left_upper(),
                                      loc.image_location().y_left_upper(),

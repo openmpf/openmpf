@@ -90,9 +90,6 @@ public class TransientStream {
 	public void setSegmentSize(int segmentSize) { this.segmentSize = segmentSize; }
 	public int getSegmentSize() { return segmentSize; }
 
-	private int frameDataBufferSize;
-	public void setFrameDataBufferSize(int frameDataBufferSize) { this.frameDataBufferSize = frameDataBufferSize; }
-	public int getFrameDataBufferSize() { return frameDataBufferSize; }
 
 	@JsonIgnore
 	public MediaType getMediaType() { return MediaType.VIDEO; }

@@ -55,10 +55,6 @@ public class JobCreationStreamData {
     public void setSegmentSize(int segmentSize) { this.segmentSize=segmentSize; }
     public int getSegmentSize() { return segmentSize; }
 
-    private int frameDataBufferSize;
-    public void setFrameDataBufferSize(int frameDataBufferSize) { this.frameDataBufferSize = frameDataBufferSize; }
-    public int getFrameDataBufferSize() { return frameDataBufferSize; }
-
     /** this method will check the current settings within this job creation stream data,
      * and will return true if the current settings are set within the constraints defined for
      * streaming job data, false otherwise

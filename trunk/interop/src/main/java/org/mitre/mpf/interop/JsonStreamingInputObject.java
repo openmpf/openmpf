@@ -31,7 +31,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @JsonTypeName("StreamingInputObject")
@@ -45,9 +44,6 @@ public class JsonStreamingInputObject {
     private int segmentSize;
     public int getSegmentSize() { return segmentSize; }
 
-    private int frameDataBufferSize;
-    public int getFrameDataBufferSize() { return frameDataBufferSize; }
-
     @JsonPropertyDescription("A map of medium-specific properties that override algorithm properties.")
     private Map<String,String> mediaProperties;
     public Map<String,String> getMediaProperties() { return mediaProperties; }
@@ -59,12 +55,10 @@ public class JsonStreamingInputObject {
     public JsonStreamingInputObject(
             @JsonProperty("streamUri") String streamUri,
             @JsonProperty("segmentSize") int segmentSize,
-            @JsonProperty("frameDataBufferSize") int frameDataBufferSize,
             @JsonProperty("mediaProperties") Map<String, String> mediaProperties) {
 
         this.streamUri = streamUri;
         this.segmentSize = segmentSize;
-        this.frameDataBufferSize = frameDataBufferSize;
         this.mediaProperties = mediaProperties;
     }
 

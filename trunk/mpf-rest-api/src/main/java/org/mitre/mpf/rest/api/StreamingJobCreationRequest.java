@@ -27,8 +27,6 @@
 package org.mitre.mpf.rest.api;
 
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 public class StreamingJobCreationRequest {
@@ -61,10 +59,6 @@ public class StreamingJobCreationRequest {
 	public Map<String, String> getMediaProperties() { return stream.getMediaProperties(); }
 	public int getSegmentSize() {
 		return stream.getSegmentSize();
-	}
-
-	public int getFrameDataBufferSize() {
-		return stream.getFrameDataBufferSize();
 	}
 
 	public Map<String, String> getJobProperties() {

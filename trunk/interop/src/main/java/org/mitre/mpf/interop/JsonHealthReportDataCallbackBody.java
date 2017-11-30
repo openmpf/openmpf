@@ -34,13 +34,17 @@ import java.time.format.DateTimeFormatter;;
 
 public class JsonHealthReportDataCallbackBody extends JsonCallbackBody {
 
+    public static final String TIMESTAMP_PATTERN = "yyyy-MM-dd kk:mm:ss.S";
+    private DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN);
+
     private LocalDateTime reportDate = null;
     /**
      * The date/time that this Health Report is being issued.
-     * @return The date/time that this Health Report is being issued, should be returned as a ISO-8601 formatted String
+     * @return The date/time that this Health Report is being issued. This timestamp will be returned as a String
+     * matching the TIMESTAMP_PATTERN, which is currently defined as {@value #TIMESTAMP_PATTERN}
      */
     public String getReportDate() {
-        return DateTimeFormatter.ISO_INSTANT.format(reportDate);
+        return timestampFormatter.format(reportDate);
     }
 
     private String /*JobStatus*/ jobStatus;
@@ -50,18 +54,33 @@ public class JsonHealthReportDataCallbackBody extends JsonCallbackBody {
 
     private String lastNewActivityAlertFrameId = null;
     /**
-     * Get the last new activity alert frame id from this Health Report.
-     * Value stored internally as a String to accommodate for potential for this value to be sized as an unsigned long.
+     * The frame id from the last new Activity Alert received for this streaming job.
+     * Value stored internally as a String to accommodate for this value to be sized in the Components as an unsigned long.
      * Since no arithmetic operations are being performed on this parameter within this class, this is an acceptable data type.
-     * @return the last new activity alert frame id from this Health Report as a String. May be null if
+     * @return the last New Activity Alert frame id. May be null if
      * a New Activity Alert has not been issued for this streaming job.
      */
     public String getLastNewActivityAlertFrameId() { return lastNewActivityAlertFrameId; }
 
+    private LocalDateTime lastNewActivityAlertTimestamp = null;
+    /**
+     * The timestamp from the last new Activity Alert received for this streaming job.
+     * @return The last New Activity Alert timestamp. May be null if
+     * a New Activity Alert has not been issued for this streaming job. If valid, this timestamp will be returned as a String
+     * matching the TIMESTAMP_PATTERN, which is currently defined as {@value #TIMESTAMP_PATTERN}
+     */
+    public String getLastNewActivityAlertTimeStamp() {
+        if ( lastNewActivityAlertTimestamp != null ) {
+            return timestampFormatter.format(lastNewActivityAlertTimestamp);
+        } else {
+            return (String) null;
+        }
+    }
+
+    // TODO need to get clarification as to whether or not streaming job run time is to be included in the health report
     /**
      * Get the run time for this streaming job, should be returned as a String using ISO-8601 seconds based representation.
-     * @return the run time of this streaming job, returned as a String using ISO-8601 seconds based representation. May
-     * be null if the run time for this streaming job is not known.
+     * @return run time of this streaming job. May be null if the run time for this streaming job is not known.
      */
     private Duration jobRunTime = null;
     public String getElapsedTime() {
@@ -74,13 +93,15 @@ public class JsonHealthReportDataCallbackBody extends JsonCallbackBody {
 
     /**
      * Constructor
-     * @param jobId job id for this streaming job
+     * @param jobId job id for this streaming job.
      * @param externalId external id for this streaming job. May be null if an external id was not defined.
-     * @param jobStatus status of this streaming job
-     * @param reportDate date/time that this Health Report was issued, should be passed as a ISO-8601 formatted String.
-     * @param jobRunTime How long this streaming job has been running, should be passed as a String using ISO-8601 seconds based representation.
+     * @param jobStatus status of this streaming job.
+     * @param reportDate date/time that this Health Report was issued.
+     * @param jobRunTime How long this streaming job has been running.
      * May be null if the run time for this streaming job is not known.
-     * @param lastNewActivityAlertFrameId frame id from the last new activity alert issued for this streaming job. May be null if
+     * @param lastNewActivityAlertFrameId frame id from the last new activity alert that was issued for this streaming job. May be null if
+     * a New Activity Alert has not been issued for this streaming job.
+     * @param lastNewActivityAlertTimestamp timestamp from the last new activity alert that was issued for this streaming job. May be null if
      * a New Activity Alert has not been issued for this streaming job.
      */
     @JsonCreator
@@ -88,7 +109,8 @@ public class JsonHealthReportDataCallbackBody extends JsonCallbackBody {
         @JsonProperty("jobStatus") String /*JobStatus*/ jobStatus,
         @JsonProperty("reportDate") LocalDateTime reportDate,
         @JsonProperty("jobRunTime") Duration jobRunTime,
-        @JsonProperty("lastNewActivityAlertFrameId") String lastNewActivityAlertFrameId ) {
+        @JsonProperty("lastNewActivityAlertFrameId") String lastNewActivityAlertFrameId,
+        @JsonProperty("lastNewActivityAlertTimestamp") LocalDateTime lastNewActivityAlertTimestamp) {
         super(jobId,externalId);
         this.reportDate = reportDate;
         this.jobStatus = jobStatus;

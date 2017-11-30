@@ -267,4 +267,8 @@ public interface Redis {
     void setHealthReportLastNewActivityAlertFrameId(long jobId, String lastNewActivityAlertFrameId) throws WfmProcessingException;
     String getHealthReportLastNewActivityAlertFrameId(long jobId) throws WfmProcessingException;
 
+	void setHealthReportLastNewActivityAlertTimestamp(long jobId, LocalDateTime lastNewActivityAlertTimestamp) throws WfmProcessingException;
+	LocalDateTime getHealthReportLastNewActivityAlertTimestamp(long jobId) throws WfmProcessingException;
+
 	}
+

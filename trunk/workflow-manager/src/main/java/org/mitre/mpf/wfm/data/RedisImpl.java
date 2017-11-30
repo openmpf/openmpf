@@ -49,6 +49,13 @@ import java.util.*;
 
 @Component(RedisImpl.REF)
 public class RedisImpl implements Redis {
+
+    /** All LocalDateTime objects are stored internally in REDIS by converting the object to a String formatted using the REDIS_TIMESTAMP_PATTERN,
+     * which is currently defined as {@value #REDIS_TIMESTAMP_PATTERN}.
+     */
+	public static final String REDIS_TIMESTAMP_PATTERN = "yyyy-MM-dd kk:mm:ss.S";
+	private DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern(REDIS_TIMESTAMP_PATTERN);
+
 	public static final String REF = "redisImpl";
 	private static final Logger log = LoggerFactory.getLogger(RedisImpl.class);
 
@@ -101,7 +108,8 @@ public class RedisImpl implements Redis {
 			STALL_TIMEOUT = "STALL_TIMEOUT",
 			HEALTH_REPORT_CALLBACK_URI = "HEALTH_REPORT_CALLBACK_URI",
             LAST_HEALTH_REPORT_TIMESTAMP = "LAST_HEALTH_REPORT_TIMESTAMP",
-            LAST_HEALTH_REPORT_NEW_ACTIVITY_FRAME_ID = "LAST_HEALTH_REPORT_NEW_ACTIVITY_FRAME_ID",
+			LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID = "LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID",
+			LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_TIMESTAMP = "LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_TIMESTAMP",
 			SUMMARY_REPORT_CALLBACK_URI = "SUMMARY_REPORT_CALLBACK_URI",
 			NEW_TRACK_ALERT_CALLBACK_URI = "NEW_TRACK_ALERT_CALLBACK_URI";
 
@@ -759,25 +767,26 @@ public class RedisImpl implements Redis {
     /**
      * Store the timestamp of the last health report that was sent for the specified streaming job.
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
-     * Note that internally, health report timestamps are stored in REDIS as a ISO-8601 formatted string.
+     * Note that internally, health report timestamps are stored in REDIS by converting the object to a string
+     * formatted using the REDIS_TIMESTAMP_PATTERN, which is currently defined as {@value #REDIS_TIMESTAMP_PATTERN}.
      * @param jobId The MPF-assigned ID of the streaming job, must be unique.
-     * @param lastHealthReportTimestamp The timestamp to be stored for this streaming job.
+     * @param lastHealthReportTimestamp The timestamp of the last health report that was sent for this streaming job.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job, or if the passed
      * lastHealthReportTimestamp is null. DateTimeException will be thrown if the lastHealthReportTimestamp could not be stored
-     * in REDIS because it could not be formatted as a ISO-8601 formatted string.
+     * in REDIS because it could not be formatted as a String.
      */
     public synchronized void setHealthReportLastTimestamp(long jobId, LocalDateTime lastHealthReportTimestamp) throws WfmProcessingException, DateTimeException {
         if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
             if ( lastHealthReportTimestamp != null ) {
             	// Internally, health report timestamps are being stored in REDIS using ISO-8601 format.
-                String timestamp = DateTimeFormatter.ISO_INSTANT.format(lastHealthReportTimestamp);
+                String timestamp = timestampFormatter.format(lastHealthReportTimestamp);
                 redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(LAST_HEALTH_REPORT_TIMESTAMP, timestamp);
             } else {
-                log.error("Illegal, can't set last health report timestamp to null for streaming job #{}.", jobId);
-                throw new WfmProcessingException("Illegal, can't set last health report timestamp to null for streaming job " + jobId);
+                log.error("Illegal, can't set the last health report timestamp to null for a streaming job #{}.", jobId);
+                throw new WfmProcessingException("Illegal: Streaming Job " + jobId + ", can't set the last health report timestamp to null.");
             }
         } else {
-            log.error("Job #{} is not a streaming job, so we can't set the last health report timestamp", jobId);
+            log.error("Job #{} is not a streaming job, so we can't set the last health report timestamp.", jobId);
             throw new WfmProcessingException("Error: Job " + jobId + " is not a streaming job. Only streaming jobs send health reports.");
         }
     }
@@ -785,13 +794,14 @@ public class RedisImpl implements Redis {
     /**
      * Return the timestamp of the last health report that was sent for the specified streaming job.
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
-     * Note that internally, health report timestamps are stored in REDIS as a ISO-8601 formatted string.
+     * Note that internally, health report timestamps are stored in REDIS by converting the object to a string
+     * formatted using the REDIS_TIMESTAMP_PATTERN, which is currently defined as {@value #REDIS_TIMESTAMP_PATTERN}.
      * @param jobId The MPF-assigned ID of the streaming job, must be unique.
-     * @return The last health report timestamp (in seconds) that was stored in the health report for this streaming job.
-     * Returned value may be null if a health report timestamp for this streaming job has not yet been set.
+     * @return The timestamp of the last health report that was set for this streaming job.
+     * Returned value may be null if a health report for this streaming job has not yet been sent.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job.
      * DateTimeException will be thrown if the last health report timestamp could not be pulled
-     * from REDIS because it could not be parsed as a ISO-8601 formatted string.
+     * from REDIS because it could not be parsed as a String.
      */
     public synchronized LocalDateTime getHealthReportLastTimestamp(long jobId) throws WfmProcessingException, DateTimeException {
         if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
@@ -799,7 +809,7 @@ public class RedisImpl implements Redis {
             Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
             String timestamp = (String) jobHash.get(LAST_HEALTH_REPORT_TIMESTAMP);
             if ( timestamp != null ) {
-                return (LocalDateTime) DateTimeFormatter.ISO_INSTANT.parse(timestamp);
+                return (LocalDateTime) timestampFormatter.parse(timestamp);
             } else {
                 // return null to indicate that a health report for this streaming job has not yet been sent.
                 return (LocalDateTime) null;
@@ -821,32 +831,88 @@ public class RedisImpl implements Redis {
     public synchronized void setHealthReportLastNewActivityAlertFrameId(long jobId, String lastNewActivityAlertFrameId ) throws WfmProcessingException {
         if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
             if ( lastNewActivityAlertFrameId != null ) {
-                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(LAST_HEALTH_REPORT_TIMESTAMP, lastNewActivityAlertFrameId );
+                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID, lastNewActivityAlertFrameId );
             } else {
-                log.error("Illegal, can't set health report last new activity alert frame id to null for streaming job #{}.", jobId);
-                throw new WfmProcessingException("Illegal, can't set health report last new activity alert frame id to null for streaming job " + jobId);
+                log.error("Illegal, can't set health report last New Activity Alert frame id to null for streaming job #{}.", jobId);
+                throw new WfmProcessingException("Illegal: Streaming Job " + jobId + ", can't set the last New Activity Alert frame id to null.");
             }
         } else {
-            log.error("Job #{} is not a streaming job, so we can't set the health report last new activity alert frame id ", jobId);
+            log.error("Job #{} is not a streaming job, so we can't set the health report last New Activity Alert frame id.", jobId);
             throw new WfmProcessingException("Error: Job " + jobId + " is not a streaming job. Only streaming jobs send health reports.");
         }
     }
 
     /**
-     * Return the last new activity frame id that was stored in the health report for the specified streaming job.
+     * Return the last New Activity Alert frame id that was stored in the health report for the specified streaming job.
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
      * @param jobId The MPF-assigned ID of the streaming job, must be unique.
      * @return The last new activity frame id that was stored for this streaming job.
-     * Returned value may be null if the last new activity frame id in the health report for this streaming job has not yet been set.
+     * Returned value may be null if a health report or a New Activity Alert for this streaming job has not yet been sent.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job
      */
     public synchronized String getHealthReportLastNewActivityAlertFrameId(long jobId) throws WfmProcessingException {
         if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
             // confirmed that the specified job is a streaming job
             Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
-            return (String) jobHash.get(LAST_HEALTH_REPORT_NEW_ACTIVITY_FRAME_ID);
+            return (String) jobHash.get(LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID);
         } else {
-            log.error("Job #{} is not a streaming job, so we can't get the health report last new activity alert frame id ", jobId);
+            log.error("Job #{} is not a streaming job, so we can't get the health report last New Activity Alert frame id.", jobId);
+            throw new WfmProcessingException("Error: Job " + jobId + " is not a streaming job. Only streaming jobs send health reports.");
+        }
+    }
+
+    /**
+     * Store the last New Activity Alert timestamp that was sent in a health report for the specified streaming job.
+     * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
+     * Note that internally, health report timestamps are stored in REDIS by converting the object to a string
+     * formatted using the REDIS_TIMESTAMP_PATTERN, which is currently defined as {@value #REDIS_TIMESTAMP_PATTERN}.
+     * @param jobId The MPF-assigned ID of the streaming job, must be unique.
+     * @param lastNewActivityAlertTimestamp The last health report New Activity Alert timestamp for this streaming job.
+     * @exception WfmProcessingException will be thrown if the specified job is not a streaming job, or if the passed
+     * lastNewActivityAlertTimestamp is null. DateTimeException will be thrown if the lastNewActivityAlertTimestamp could not be stored
+     * in REDIS because it could not be formatted as a String.
+     */
+    public synchronized void setHealthReportLastNewActivityAlertTimestamp(long jobId, LocalDateTime lastNewActivityAlertTimestamp) throws WfmProcessingException, DateTimeException {
+        if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+            if ( lastNewActivityAlertTimestamp != null ) {
+                // Internally, health report timestamps are being stored in REDIS using ISO-8601 format.
+                String timestamp = timestampFormatter.format(lastNewActivityAlertTimestamp);
+                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_TIMESTAMP, timestamp);
+            } else {
+                log.error("Illegal, can't set the last health report New Activity Alert timestamp to null for a streaming job #{}.", jobId);
+                throw new WfmProcessingException("Illegal: Streaming Job " + jobId + ", can't set the last health report New Activity Alert timestamp to null.");
+            }
+        } else {
+            log.error("Job #{} is not a streaming job, so we can't set the last health report New Activity Alert timestamp.", jobId);
+            throw new WfmProcessingException("Error: Job " + jobId + " is not a streaming job. Only streaming jobs send health reports.");
+        }
+    }
+
+    /**
+     * Return the last New Activity Alert timestamp that was sent in a health report for the specified streaming job.
+     * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
+     * Note that internally, health report timestamps are stored in REDIS by converting the object to a string
+     * formatted using the REDIS_TIMESTAMP_PATTERN, which is currently defined as {@value #REDIS_TIMESTAMP_PATTERN}.
+     * @param jobId The MPF-assigned ID of the streaming job, must be unique.
+     * @return The last health report New Activity Alert timestamp for this streaming job.
+     * Returned value may be null if a health report or a New Activity Alert for this streaming job has not yet been sent.
+     * @exception WfmProcessingException will be thrown if the specified job is not a streaming job.
+     * DateTimeException will be thrown if the last New Activity Alert timestamp could not be pulled
+     * from REDIS because it could not be parsed as a String.
+     */
+    public synchronized LocalDateTime getHealthReportLastNewActivityAlertTimestamp(long jobId) throws WfmProcessingException, DateTimeException {
+        if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+            // confirmed that the specified job is a streaming job
+            Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
+            String timestamp = (String) jobHash.get(LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_TIMESTAMP);
+            if ( timestamp != null ) {
+                return (LocalDateTime) timestampFormatter.parse(timestamp);
+            } else {
+                // return null to indicate that a health report for this streaming job has not yet been sent.
+                return (LocalDateTime) null;
+            }
+        } else {
+            log.error("Job #{} is not a streaming job, so we can't get the last health report New Activity Alert timestamp.", jobId);
             throw new WfmProcessingException("Error: Job " + jobId + " is not a streaming job. Only streaming jobs send health reports.");
         }
     }

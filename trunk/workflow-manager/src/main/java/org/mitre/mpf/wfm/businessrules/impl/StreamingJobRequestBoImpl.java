@@ -808,6 +808,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 String externalId = redis.getExternalId(jobId);
                 String jobStatus = redis.getJobStatus(jobId).toString();
                 String lastNewActivityAlertFrameId = redis.getHealthReportLastNewActivityAlertFrameId(jobId);
+                LocalDateTime lastNewActivityAlertTimestamp = redis.getHealthReportLastNewActivityAlertTimestamp(jobId);
 
                 // TODO will job run time be stored in REDIS?  For now, set job run time to null for JSON response
                 Duration jobRunTime = null;
@@ -839,7 +840,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                     post.addHeader("Content-Type", "application/json");
                     try {
                         JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(jobId, externalId, jobStatus,
-                                                                                currentDateTime, jobRunTime, lastNewActivityAlertFrameId);
+                                                                                currentDateTime, jobRunTime,
+                                                                                lastNewActivityAlertFrameId, lastNewActivityAlertTimestamp);
                         post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
                         req = post;
                     } catch (WfmProcessingException e) {

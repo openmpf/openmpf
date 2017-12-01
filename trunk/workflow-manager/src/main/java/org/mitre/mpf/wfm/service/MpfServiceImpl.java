@@ -246,7 +246,6 @@ public class MpfServiceImpl implements MpfService {
 		streamingJobRequestBo.sendPeriodicHealthReportToCallback(jobId);
 	}
 
-
 	@Override
 	public MarkupResult getMarkupResult(long id) {
 		return markupResultDao.findById(id);

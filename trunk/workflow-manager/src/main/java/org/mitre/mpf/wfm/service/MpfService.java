@@ -39,8 +39,6 @@ import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import java.util.List;
 import java.util.Map;
 
-
-
 public interface MpfService {
 
 	// ====================

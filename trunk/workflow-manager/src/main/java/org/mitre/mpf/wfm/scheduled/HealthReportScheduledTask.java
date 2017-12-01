@@ -53,10 +53,9 @@ public class HealthReportScheduledTask {
     private StreamingJobRequestBo streamingJobRequestBo;
 
     @Scheduled(fixedDelayString = "${streaming.healthReport.callbackRate:30000}" )
-    public void sendHealthReports() {
-        log.info("HealthReportScheduledTask: timestamp=" + System.currentTimeMillis() + " msec");
-        List<Long> jobIds = mpfService.getAllStreamingJobIds();
-        jobIds.stream().forEach( jobId -> mpfService.sendPeriodicHealthReportToCallback(jobId) );
+    public void sendPeriodicHealthReports() {
+        log.info("sendPeriodicHealthReports: timestamp=" + System.currentTimeMillis() + " msec");
+        mpfService.sendPeriodicHealthReportToCallback();
     }
 
 }

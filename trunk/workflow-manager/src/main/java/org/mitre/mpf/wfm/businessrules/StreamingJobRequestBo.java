@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.businessrules;
 
+import java.util.List;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -80,5 +81,10 @@ public interface StreamingJobRequestBo {
 	 */
 	void cancel(long jobId, boolean doCleanup) throws WfmProcessingException;
 
-	public void sendPeriodicHealthReportToCallback(long jobId) throws WfmProcessingException;
+	/**
+	 * Send a periodic Health Report for all streaming jobs to the health report callback associated with each streaming job.
+     * @param jobIds all job ids to send health reports for.
+	 * @throws WfmProcessingException thrown if an error occurs
+	 */
+	public void sendPeriodicHealthReportToCallback(List<Long> jobIds) throws WfmProcessingException;
 }

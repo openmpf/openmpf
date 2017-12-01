@@ -28,14 +28,13 @@ package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;;
 
-public class JsonHealthReportDataCallbackBody extends JsonCallbackBody {
-
-    public static final String TIMESTAMP_PATTERN = "yyyy-MM-dd kk:mm:ss.S";
-    private DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN);
+public class JsonHealthReportDataCallbackBody {
 
     private LocalDateTime reportDate = null;
     /**
@@ -47,75 +46,105 @@ public class JsonHealthReportDataCallbackBody extends JsonCallbackBody {
         return timestampFormatter.format(reportDate);
     }
 
-    private String /*JobStatus*/ jobStatus;
-    public String /*JobStatus*/ getJobStatus() {
-        return jobStatus;
+    public static final String TIMESTAMP_PATTERN = "yyyy-MM-dd kk:mm:ss.S";
+    private DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN);
+
+    /** The internal job identifier(s) assigned to these jobs by MPF. May be 1 to many. */
+    private List<Long> jobIds = null;
+    public List<Long> getJobIds() { return jobIds; }
+
+    /** The external ID(s) that were provided for these jobs when they were was initially submitted. Note that some of these values may be null. */
+    private List<String> externalids = null;
+    public List<String> getExternalIds() { return externalids; }
+
+    private List<String> /*JobStatus*/ jobStatuses = null;
+    public List<String> /*JobStatus*/ getJobStatuses() {
+        return jobStatuses;
     }
 
-    private String lastNewActivityAlertFrameId = null;
+    private List<String> lastNewActivityAlertFrameIds = null;
     /**
-     * The frame id from the last new Activity Alert received for this streaming job.
+     * The frame ids from the last new Activity Alerts received for these streaming jobs.
      * Value stored internally as a String to accommodate for this value to be sized in the Components as an unsigned long.
      * Since no arithmetic operations are being performed on this parameter within this class, this is an acceptable data type.
-     * @return the last New Activity Alert frame id. May be null if
-     * a New Activity Alert has not been issued for this streaming job.
+     * @return the last New Activity Alert frame ids associated with each streaming job. Values may be null if
+     * a New Activity Alert has not been issued for a streaming job.
      */
-    public String getLastNewActivityAlertFrameId() { return lastNewActivityAlertFrameId; }
+    public List<String> getLastNewActivityAlertFrameIds() { return lastNewActivityAlertFrameIds; }
 
-    private LocalDateTime lastNewActivityAlertTimestamp = null;
+    private List<LocalDateTime> lastNewActivityAlertTimestamps = null;
     /**
-     * The timestamp from the last new Activity Alert received for this streaming job.
-     * @return The last New Activity Alert timestamp. May be null if
-     * a New Activity Alert has not been issued for this streaming job. If valid, this timestamp will be returned as a String
+     * The timestamp from the last new Activity Alert received for each streaming job.
+     * @return The last New Activity Alert timestamps for each streaming. Values may be null if
+     * a New Activity Alert has not been issued for a streaming job. If not null, the timestamp will be returned as a String
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value #TIMESTAMP_PATTERN}
      */
-    public String getLastNewActivityAlertTimeStamp() {
-        if ( lastNewActivityAlertTimestamp != null ) {
-            return timestampFormatter.format(lastNewActivityAlertTimestamp);
-        } else {
+    public List<String> getLastNewActivityAlertTimeStamps() {
+        return lastNewActivityAlertTimestamps.stream().map(timestamp -> getTimestampAsString(timestamp)).collect(
+            Collectors.toList());
+    }
+
+    private String getTimestampAsString(LocalDateTime timestamp) {
+        if ( timestamp == null ) {
             return (String) null;
-        }
-    }
-
-    // TODO need to get clarification as to whether or not streaming job run time is to be included in the health report
-    /**
-     * Get the run time for this streaming job, should be returned as a String using ISO-8601 seconds based representation.
-     * @return run time of this streaming job. May be null if the run time for this streaming job is not known.
-     */
-    private Duration jobRunTime = null;
-    public String getElapsedTime() {
-        if ( jobRunTime != null ) {
-            return jobRunTime.toString();
         } else {
-            return null;
+            return timestampFormatter.format(timestamp);
         }
     }
 
-    /**
-     * Constructor
+     /**
+     * Constructor used to create a health report for a single job
+     * @param reportDate timestamp for this Health Report.
      * @param jobId job id for this streaming job.
      * @param externalId external id for this streaming job. May be null if an external id was not defined.
      * @param jobStatus status of this streaming job.
-     * @param reportDate date/time that this Health Report was issued.
-     * @param jobRunTime How long this streaming job has been running.
-     * May be null if the run time for this streaming job is not known.
      * @param lastNewActivityAlertFrameId frame id from the last new activity alert that was issued for this streaming job. May be null if
-     * a New Activity Alert has not been issued for this streaming job.
+     * a New Activity Alert has not yet been issued for this streaming job.
      * @param lastNewActivityAlertTimestamp timestamp from the last new activity alert that was issued for this streaming job. May be null if
-     * a New Activity Alert has not been issued for this streaming job.
+     * a New Activity Alert has not yet been issued for this streaming job.
      */
     @JsonCreator
-    public JsonHealthReportDataCallbackBody(@JsonProperty("jobId") long jobId, @JsonProperty("externalId") String externalId,
+    public JsonHealthReportDataCallbackBody(@JsonProperty("reportDate") LocalDateTime reportDate,
+        @JsonProperty("jobId") long jobId, @JsonProperty("externalId") String externalId,
         @JsonProperty("jobStatus") String /*JobStatus*/ jobStatus,
-        @JsonProperty("reportDate") LocalDateTime reportDate,
-        @JsonProperty("jobRunTime") Duration jobRunTime,
         @JsonProperty("lastNewActivityAlertFrameId") String lastNewActivityAlertFrameId,
         @JsonProperty("lastNewActivityAlertTimestamp") LocalDateTime lastNewActivityAlertTimestamp) {
-        super(jobId,externalId);
         this.reportDate = reportDate;
-        this.jobStatus = jobStatus;
-        this.jobRunTime = jobRunTime;
-        this.lastNewActivityAlertFrameId = lastNewActivityAlertFrameId;
+        jobIds = new ArrayList<>();
+        jobIds.add(jobId);
+        externalids = new ArrayList<>();
+        externalids.add(externalId);
+        jobStatuses = new ArrayList<>();
+        jobStatuses.add(jobStatus);
+        lastNewActivityAlertFrameIds = new ArrayList<>();
+        lastNewActivityAlertFrameIds.add(lastNewActivityAlertFrameId);
+        lastNewActivityAlertTimestamps = new ArrayList<>();
+        lastNewActivityAlertTimestamps.add(lastNewActivityAlertTimestamp);
+    }
+
+    /**
+     * Constructor used to create a health report for multiple jobs
+     * @param reportDate timestamp for this Health Report.
+     * @param jobIds job ids being reported on.
+     * @param externalIds external ids for each streaming job. May be null if an external id was not defined.
+     * @param jobStatuses status of each streaming job.
+     * @param lastNewActivityAlertFrameIds frame ids from the last new activity alert that was issued for each streaming job. May be null if
+     * a New Activity Alert has not yet been issued for the streaming job.
+     * @param lastNewActivityAlertTimestamps timestamps from the last new activity alert that was issued for each streaming job. May be null if
+     * a New Activity Alert has not yet been issued for the streaming job.
+     */
+    @JsonCreator
+    public JsonHealthReportDataCallbackBody(@JsonProperty("reportDate") LocalDateTime reportDate,
+        @JsonProperty("jobIds") List<Long> jobIds, @JsonProperty("externalIds") List<String> externalIds,
+        @JsonProperty("jobStatuses") List<String> /*JobStatus*/ jobStatuses,
+        @JsonProperty("lastNewActivityAlertFrameIds") List<String> lastNewActivityAlertFrameIds,
+        @JsonProperty("lastNewActivityAlertTimestamps") List<LocalDateTime> lastNewActivityAlertTimestamps) {
+        this.reportDate = reportDate;
+        this.jobIds = jobIds;
+        this.externalids = externalIds;
+        this.jobStatuses = jobStatuses;
+        this.lastNewActivityAlertFrameIds = lastNewActivityAlertFrameIds;
+        this.lastNewActivityAlertTimestamps = lastNewActivityAlertTimestamps;
     }
 
 }

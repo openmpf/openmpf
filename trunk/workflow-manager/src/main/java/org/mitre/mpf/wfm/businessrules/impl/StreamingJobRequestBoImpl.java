@@ -28,11 +28,11 @@ package org.mitre.mpf.wfm.businessrules.impl;
 
 import java.io.UnsupportedEncodingException;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpResponse;
@@ -657,8 +657,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     /**
-     * Immediately send the streaming jobs Health Report to the health report callback, health report to be sent in a newly started thread.
-     * REDIS will record the time when this health report is actually sent by the thread.
+     * Immediately send the streaming jobs Health Report to the health report callback.
+     * The health report will be sent in a newly started thread. The time when this health report is actually sent by the thread
+     * will be recorded in REDIS.
      * @param jobId unique id for this streaming job
      * @throws WfmProcessingException
      */
@@ -678,15 +679,53 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     /**
-     * Send the periodic Health Report about the specified streaming job to the health report callback.
+     * Immediately send a Health Report listing health for all requested streaming jobs to the specified health report callback.
+     * The health report will be sent in a newly started thread. The time when this health report is actually sent by the thread
+     * will be recorded in REDIS.
+     * @param activeStreamingJobIds unique ids for the active streaming jobs to be reported on
+     * @param commonHealthReportCallbackUri the common health report callback URI for all of these active streaming jobs.
+     * @throws WfmProcessingException may be thrown if jobIds is null
+     */
+    private void healthReportCallback(List<Long> activeStreamingJobIds, String commonHealthReportCallbackUri) throws WfmProcessingException {
+
+        // even though these streaming jobs all requested a common callback URI, they may have specified different delivery methods.
+        List<String> jsonCallbackMethods = redis.getCallbackMethod(activeStreamingJobIds);
+
+        if ( commonHealthReportCallbackUri != null &&
+             jsonCallbackMethods.stream().filter(method-> (method.equalsIgnoreCase("POST") || method.equalsIgnoreCase("GET"))).count()==0 ) {
+            log.info("Starting health report callback send to common " + commonHealthReportCallbackUri + " for active Streaming jobs " + activeStreamingJobIds);
+            // send the health report to the callback URL in a newly started thread
+            new Thread(new HealthReportCallbackThread(activeStreamingJobIds, commonHealthReportCallbackUri, jsonCallbackMethods)).start();
+        } else if ( commonHealthReportCallbackUri == null ) {
+            throw new WfmProcessingException("Error, commonHealthReportCallbackUri can't be null.");
+        } else {
+            throw new WfmProcessingException("Error, one of the callback methods defined for Streaming jobs " + activeStreamingJobIds +" is not POST or GET.");
+        }
+    }
+
+    /**
+     * Send the periodic Health Report for all streaming jobs to the health report callback associated with that streaming jobs.
+     * Note that OpenMPF supports sending periodic health reports that contain health for all streaming jobs who have
+     * defined the same HealthReportCallbackUri. This method will filter out jobIds for any jobs which are not active streaming jobs.
      * Note that out-of-cycle health reports that may have been sent due to a change in job status will not
-     * delay sending of the scheduled health report.
-     * @param jobId unique id for the streaming job to be reported on
+     * delay sending of the periodic (i.e. scheduled) health report.
+     * @param jobIds unique ids for the streaming jobs to be reported on
      * @throws WfmProcessingException thrown if an error occurs
      */
-    public void sendPeriodicHealthReportToCallback(long jobId) throws WfmProcessingException {
-        log.info("sendHealthReportCallback: sending periodic Health Report for jobId " + jobId);
-        healthReportCallback(jobId);
+    public void sendPeriodicHealthReportToCallback(List<Long> jobIds) throws WfmProcessingException {
+        if ( jobIds == null ) {
+            throw new WfmProcessingException("Error: jobIds must not be null");
+        } else {
+            // get the list of all active, streaming job ids.
+            List<Long> activeStreamingJobIds = jobIds.stream().filter(jobId->redis.isJobTypeStreaming(jobId)).collect(Collectors.toList());
+            // get the list of callback URIs associated with these active streaming jobs.  Note that
+            // this usage will eliminate duplicate HealthReportCallbackURIs, so streaming jobs which specify
+            // the same HealthReportCallbackURI will only receive the health report once, and that health report
+            // will contain health for all streaming jobs with the same HealthReportCallbackURI.  Note that if there are
+            // no duplicates, then the number of HealthReportCallbackURIs will be the same as the number of jobIds.
+            Map<String,List<Long>> callbackUriJobIdMap = redis.getJobsHealthReportCommonCallbackURIs(activeStreamingJobIds);
+            callbackUriJobIdMap.keySet().stream().forEach(callbackUri -> healthReportCallback(callbackUriJobIdMap.get(callbackUri),callbackUri));
+        }
     }
 
     // TODO finalize what needs to be done to mark a streaming job as completed in the WFM, method copied over from StreamingJobCompleteProcessorImpl.java
@@ -787,15 +826,38 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * mark the time, the timestamp should be constructed and stored in the run method.
      */
     public class HealthReportCallbackThread implements Runnable {
-        private long jobId;
-        private String callbackURL;
-        private String callbackMethod;
+        private List<Long> jobIds = null;
+        private String callbackURL = null;
+        private List<String> callbackMethods = null;
+
         private HttpUriRequest req;
 
+        /**
+         * Constructor used for sending a health report for a single streaming job
+         * @param jobId unique id for the streaming job
+         * @param callbackURL health report callback URI for that single streaming job
+         * @param callbackMethod callback method defined for that single streaming job
+         */
         public HealthReportCallbackThread(long jobId, String callbackURL, String callbackMethod) {
-            this.jobId = jobId;
+            jobIds = new ArrayList<>();
+            jobIds.add(Long.valueOf(jobId));
             this.callbackURL = callbackURL;
-            this.callbackMethod = callbackMethod;
+            callbackMethods = new ArrayList<>();
+            callbackMethods.add(callbackMethod);
+        }
+
+        /**
+         * Constructor used for sending a health report for a set of streaming jobs, which have
+         * all defined the same health report callback URI, but may have requested different
+         * callback methods
+         * @param jobIds unique ids for the streaming jobs
+         * @param callbackURL common health report callback URI defined for all these streaming jobs
+         * @param callbackMethods callback methods defined for these streaming jobs
+         */
+        public HealthReportCallbackThread(List<Long> jobIds, String callbackURL, List<String> callbackMethods) {
+            this.jobIds = jobIds;
+            this.callbackURL = callbackURL;
+            this.callbackMethods = callbackMethods;
         }
 
         @Override
@@ -810,9 +872,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 String jobStatus = redis.getJobStatus(jobId).toString();
                 String lastNewActivityAlertFrameId = redis.getHealthReportLastNewActivityAlertFrameId(jobId);
                 LocalDateTime lastNewActivityAlertTimestamp = redis.getHealthReportLastNewActivityAlertTimestamp(jobId);
-
-                // TODO will job run time be stored in REDIS?  For now, set job run time to null for JSON response
-                Duration jobRunTime = null;
 
                 if (callbackMethod.equals("GET")) {
                     String jsonCallbackURL2 = callbackURL;
@@ -832,16 +891,12 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                     if (lastNewActivityAlertFrameId != null) {
                         jsonCallbackURL2 += "&lastNewActivityAlertFrameId =" + lastNewActivityAlertFrameId;
                     }
-                    if (jobRunTime != null) {
-                        jsonCallbackURL2 += "&elapsedTime =" + jobRunTime.toString();
-                    }
                     req = new HttpGet(jsonCallbackURL2);
                 } else { // this is for a POST
                     HttpPost post = new HttpPost(callbackURL);
                     post.addHeader("Content-Type", "application/json");
                     try {
-                        JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(jobId, externalId, jobStatus,
-                                                                                currentDateTime, jobRunTime,
+                        JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(currentDateTime, jobId, externalId, jobStatus,
                                                                                 lastNewActivityAlertFrameId, lastNewActivityAlertTimestamp);
                         post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
                         req = post;

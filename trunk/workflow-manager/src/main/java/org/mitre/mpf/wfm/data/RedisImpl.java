@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.data;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.transients.*;
@@ -107,6 +108,7 @@ public class RedisImpl implements Redis {
 			STREAM = "STREAM",
 			STALL_TIMEOUT = "STALL_TIMEOUT",
 			HEALTH_REPORT_CALLBACK_URI = "HEALTH_REPORT_CALLBACK_URI",
+            STREAMING_JOB_ASSOCIATIONS_HEALTH_REPORT_CALLBACK_URI = "STREAMING_JOB_ASSOCIATIONS_HEALTH_REPORT_CALLBACK_URI",
             LAST_HEALTH_REPORT_TIMESTAMP = "LAST_HEALTH_REPORT_TIMESTAMP",
 			LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID = "LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID",
 			LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_TIMESTAMP = "LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_TIMESTAMP",
@@ -719,7 +721,7 @@ public class RedisImpl implements Redis {
 		jobHash.put(OUTPUT_OBJECT_PATH, transientStreamingJob.getOutputObjectDirectory());
 		jobHash.put(CANCELLED, transientStreamingJob.isCancelled());
 
-		// Finally, persist the data to Redis.
+		// Finally, persist the streaming job data to Redis.
 		redisTemplate
 				.boundHashOps(key(STREAMING_JOB, transientStreamingJob.getId())) // e.g., STREAMING_JOB:5
 				.putAll(jobHash);
@@ -730,9 +732,29 @@ public class RedisImpl implements Redis {
 		redisTemplate
 				.boundSetOps(STREAMING_JOB) // e.g., STREAMING_JOB
 				.add(Long.toString(transientStreamingJob.getId()));
+
+		// Persist the HealthReportCallbackURI streaming jobId associations to REDIS. The key will be constructed using
+        // the HealthReportCallbackURI defined for this streaming job,
+        // i.e. STREAMING_JOB_ASSOCIATIONS_HEALTH_REPORT_CALLBACK_URI:<HEALTH_REPORT_CALLBACK_URI>.
+        // This key will provide access to the list of streaming job ids whose HealthReportCallbackURIs are identical.
+        redisTemplate
+            .boundSetOps(key(STREAMING_JOB_ASSOCIATIONS_HEALTH_REPORT_CALLBACK_URI,
+                transientStreamingJob.getHealthReportCallbackURI())).add(Long.toString(transientStreamingJob.getId()));
 	}
 
-	/**
+    /**
+     * Get the list of callback URIs associated with these active streaming jobs.  Note that
+     * this usage will eliminate duplicate HealthReportCallbackURIs, so streaming jobs which specify
+     * the same HealthReportCallbackURI will only receive the health report once, and that health report
+     * will contain health for all streaming jobs with the same HealthReportCallbackURI.  Note that if there are
+     * no duplicates, then the number of HealthReportCallbackURIs will be the same as the number of jobIds.
+     */
+    public Map<String,List<Long>> getJobsHealthReportCommonCallbackURIs(List<Long> jobIds) {
+
+    }
+
+
+    /**
 	 * Set the current task index of the specified batch job.  Note: stage tracking is not supported for streaming jobs
 	 * @param jobId The MPF-assigned ID of the batch job, must be unique.
 	 * @param taskIndex The index of the task which should be used as the "current" task.
@@ -993,7 +1015,17 @@ public class RedisImpl implements Redis {
 		}
 	}
 
-	@Override
+    @Override
+    public List<String> getCallbackMethod(List<Long> jobIds) throws WfmProcessingException {
+	    if ( jobIds == null ) {
+            throw new WfmProcessingException("Error, jobIds can't be null");
+        } else {
+            return jobIds.stream().map(jobId -> getCallbackMethod(jobId))
+                .collect(Collectors.toList());
+        }
+    }
+
+    @Override
 	public String getExternalId(long jobId) throws WfmProcessingException {
 		if(redisTemplate.boundSetOps("BATCH_JOB").members().contains(Long.toString(jobId))) {
 			Map jobHash = redisTemplate.boundHashOps(key("BATCH_JOB", jobId)).entries();

@@ -149,11 +149,10 @@ public interface MpfService {
 	void cancelStreamingJob(long jobId, boolean doCleanup) throws WfmProcessingException;
 
     /**
-     * Send a periodic Health Report for a streaming job to the health report callback associated with that streaming job.
-     * @param jobId unique id for the streaming job to be reported on
+     * Send a periodic Health Report for all streaming jobs to the health report callback associated with each streaming job.
      * @throws WfmProcessingException thrown if an error occurs
      */
-	public void sendPeriodicHealthReportToCallback(long jobId) throws WfmProcessingException;
+    public void sendPeriodicHealthReportToCallback() throws WfmProcessingException;
 
 	/** Gets the marked-up media with the specified (batch job) id. */
 	public MarkupResult getMarkupResult(long id);

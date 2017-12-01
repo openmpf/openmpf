@@ -242,6 +242,14 @@ public interface Redis {
 	String getCallbackMethod(final long jobId) throws WfmProcessingException;
 
 	/**
+	 * The callback method for each job. Should be POST or GET.
+	 * @param jobIds The MPF-assigned IDs of the jobs to which this Callback Method will refer to.
+	 * @return The callback method for each job. Should be POST or GET.
+	 * @throws WfmProcessingException
+	 */
+	List<String> getCallbackMethod(final List<Long> jobIds) throws WfmProcessingException;
+
+	/**
 	 * Returns the external id assigned to a job with JobId.
 	 * @param jobId The MPF-assigned ID of the job.
 	 * @return returns a job external_id or null if no job.

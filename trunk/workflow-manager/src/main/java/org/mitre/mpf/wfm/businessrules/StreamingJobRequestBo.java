@@ -33,6 +33,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
+import org.mitre.mpf.wfm.WfmProcessingException;
 
 import java.util.Map;
 
@@ -72,13 +73,13 @@ public interface StreamingJobRequestBo {
 	StreamingJobRequest initialize(JsonStreamingJobRequest streamingJobRequest) throws WfmProcessingException;
 
 	/**
-	 * Cancel a streaming job.
-	 * @param jobId The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job
-	 * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job
-	 * @return
-	 * @throws WfmProcessingException
+	 * Marks a streaming job as CANCELLING in both REDIS and in the long-term database.
+	 * @param jobId     The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
+	 * @param doCleanup if true, delete the streaming job files from disk as part of cancelling the streaming job.
+	 * @exception WfmProcessingException may be thrown if a warning or error occurs.
+	 * The exception message will provide a summary of the warning or error that occurred.
 	 */
-	boolean cancel(long jobId, boolean doCleanup) throws WfmProcessingException;
+	void cancel(long jobId, boolean doCleanup) throws WfmProcessingException;
 
 
 	public void jobCompleted(long jobId, JobStatus jobStatus);

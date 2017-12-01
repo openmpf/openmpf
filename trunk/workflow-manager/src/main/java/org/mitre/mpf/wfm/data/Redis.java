@@ -32,7 +32,6 @@ import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
 import org.mitre.mpf.wfm.enums.JobStatus;
-import org.mitre.mpf.wfm.util.Status;
 
 import java.util.*;
 

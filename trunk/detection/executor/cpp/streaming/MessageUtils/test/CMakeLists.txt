@@ -35,10 +35,11 @@ if (${GTEST_FOUND})
     enable_testing()
     find_package(GTest REQUIRED)
 
-#    include_directories(..)
     add_executable(MessageTest messenger_test.cpp)
     target_link_libraries(MessageTest mpfStreamMsg gtest ${LOG4CXX_LIBRARIES})
 
     add_test(NAME MessageTest COMMAND MessageTest)
+
+    add_custom_command(TARGET MessageTest POST_BUILD COMMAND MessageTest)
 
 endif()

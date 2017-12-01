@@ -119,7 +119,7 @@ void AMQMessagingManager::Shutdown() {
                 connection_->close();
                 connection_.release();
             }
-
+            connected_ = false;
             // Shut down ActiveMQ library
             ActiveMQCPP::shutdownLibrary();
         } catch (CMSException& e) {
@@ -137,101 +137,101 @@ void AMQMessagingManager::Shutdown() {
 AMQMessenger
 *******************/
 
-void AMQMessenger::InitQueue(const string &queue_name,
-                             const Properties &queue_properties) {
+// void AMQMessenger::InitQueue(const string &queue_name,
+//                              const Properties &queue_properties) {
 
-    if (mesg_mgr_->isConnected()) {
-        try {
-            session_.reset(mesg_mgr_->getConnection()->createSession());
-            msg_queue_.reset(session_->createQueue(queue_name));
-            initialized_ = true;
-        } catch (CMSException& e) {
-            string msg = "CMSException caught in AMQMessenger::InitQueue: " + e.getMessage() + "\n" + e.getStackTraceString();
-            MPFMessageError err = MESSENGER_INIT_QUEUE_FAILURE;
-            MPFMessageException exc(msg.c_str(), err);
-            throw(exc);
-        }
-    }
-    else {
-        MPFMessageError err = MESSENGER_NOT_CONNECTED;
-        string msg = "AMQMessenger::InitQueue: MessageManager not connected";
-        MPFMessageException exc(msg.c_str(), err);
-        throw(exc);
-    }
-}
-
-
-void AMQMessenger::CreateConsumer() {
-    if (mesg_mgr_->isConnected()) {
-        if (initialized_) {
-            try {
-                consumer_.reset(session_->createConsumer(msg_queue_.get()));
-            } catch (CMSException& e) {
-                string err_msg = "CMSException caught in AMQMessenger::CreateConsumer: " + e.getMessage() + "\n" + e.getStackTraceString();
-                MPFMessageError err = MESSENGER_CREATE_CONSUMER_FAILURE;
-                MPFMessageException exc(err_msg.c_str(), err);
-                throw(exc);
-            }
-        }
-        else {
-            MPFMessageError err = MESSENGER_QUEUE_NOT_INITIALIZED;
-            string err_msg = "AMQMessenger::CreateConsumer: Queue not initialized";
-            MPFMessageException exc(err_msg.c_str(), err);
-            throw(exc);
-        }
-    }
-    else {
-        MPFMessageError err = MESSENGER_NOT_CONNECTED;
-        string err_msg = "AMQMessenger::CreateConsumer: Message Manager not connected";
-        MPFMessageException exc(err_msg.c_str(), err);
-        throw(exc);
-    }
-}
-
-void AMQMessenger::CreateProducer() {
-    if (mesg_mgr_->isConnected()) {
-        if (initialized_) {
-            try {
-                producer_.reset(session_->createProducer(msg_queue_.get()));
-            } catch (CMSException& e) {
-                string err_msg = "CMSException caught in AMQMessenger::CreateProducer: " + e.getMessage() + "\n" + e.getStackTraceString();
-                MPFMessageError err = MESSENGER_CREATE_PRODUCER_FAILURE;
-                MPFMessageException exc(err_msg.c_str(), err);
-                throw(exc);
-            }
-        }
-        else {
-            MPFMessageError err = MESSENGER_QUEUE_NOT_INITIALIZED;
-            string msg = "AMQMessenger::CreateProducer: Queue not initialized";
-            MPFMessageException exc(msg.c_str(), err);
-            throw(exc);
-        }
-    }
-    else {
-        MPFMessageError err = MESSENGER_NOT_CONNECTED;
-        string msg = "AMQMessenger::CreateConsumer: Message Manager not connected";
-        MPFMessageException exc(msg.c_str(), err);
-        throw(exc);
-    }
-}
+//     if (mesg_mgr_->isConnected()) {
+//         try {
+//             session_.reset(mesg_mgr_->getConnection()->createSession());
+//             msg_queue_.reset(session_->createQueue(queue_name));
+//             initialized_ = true;
+//         } catch (CMSException& e) {
+//             string msg = "CMSException caught in AMQMessenger::InitQueue: " + e.getMessage() + "\n" + e.getStackTraceString();
+//             MPFMessageError err = MESSENGER_INIT_QUEUE_FAILURE;
+//             MPFMessageException exc(msg.c_str(), err);
+//             throw(exc);
+//         }
+//     }
+//     else {
+//         MPFMessageError err = MESSENGER_NOT_CONNECTED;
+//         string msg = "AMQMessenger::InitQueue: MessageManager not connected";
+//         MPFMessageException exc(msg.c_str(), err);
+//         throw(exc);
+//     }
+// }
 
 
-void AMQMessenger::Close() {
+// void AMQMessenger::CreateConsumer() {
+//     if (mesg_mgr_->isConnected()) {
+//         if (initialized_) {
+//             try {
+//                 consumer_.reset(session_->createConsumer(msg_queue_.get()));
+//             } catch (CMSException& e) {
+//                 string err_msg = "CMSException caught in AMQMessenger::CreateConsumer: " + e.getMessage() + "\n" + e.getStackTraceString();
+//                 MPFMessageError err = MESSENGER_CREATE_CONSUMER_FAILURE;
+//                 MPFMessageException exc(err_msg.c_str(), err);
+//                 throw(exc);
+//             }
+//         }
+//         else {
+//             MPFMessageError err = MESSENGER_QUEUE_NOT_INITIALIZED;
+//             string err_msg = "AMQMessenger::CreateConsumer: Queue not initialized";
+//             MPFMessageException exc(err_msg.c_str(), err);
+//             throw(exc);
+//         }
+//     }
+//     else {
+//         MPFMessageError err = MESSENGER_NOT_CONNECTED;
+//         string err_msg = "AMQMessenger::CreateConsumer: Message Manager not connected";
+//         MPFMessageException exc(err_msg.c_str(), err);
+//         throw(exc);
+//     }
+// }
 
-    if ((initialized_) && (NULL != session_)) {
-        try {
-            consumer_.release();
-            producer_.release();
-            msg_queue_.release();
-            session_->close();
-            session_.release();
-        } catch (CMSException& e) {
-            string err_msg = "CMSException caught in AMQMessenger::Close: " + e.getMessage() + "\n" + e.getStackTraceString();
-            MPFMessageError err = MESSENGER_CLOSE_FAILURE;
-            MPFMessageException exc(err_msg.c_str(), err);
-            throw(exc);
-        }
-    }
+// void AMQMessenger::CreateProducer() {
+//     if (mesg_mgr_->isConnected()) {
+//         if (initialized_) {
+//             try {
+//                 producer_.reset(session_->createProducer(msg_queue_.get()));
+//             } catch (CMSException& e) {
+//                 string err_msg = "CMSException caught in AMQMessenger::CreateProducer: " + e.getMessage() + "\n" + e.getStackTraceString();
+//                 MPFMessageError err = MESSENGER_CREATE_PRODUCER_FAILURE;
+//                 MPFMessageException exc(err_msg.c_str(), err);
+//                 throw(exc);
+//             }
+//         }
+//         else {
+//             MPFMessageError err = MESSENGER_QUEUE_NOT_INITIALIZED;
+//             string msg = "AMQMessenger::CreateProducer: Queue not initialized";
+//             MPFMessageException exc(msg.c_str(), err);
+//             throw(exc);
+//         }
+//     }
+//     else {
+//         MPFMessageError err = MESSENGER_NOT_CONNECTED;
+//         string msg = "AMQMessenger::CreateConsumer: Message Manager not connected";
+//         MPFMessageException exc(msg.c_str(), err);
+//         throw(exc);
+//     }
+// }
+
+
+// void AMQMessenger::Close() {
+
+//     if ((initialized_) && (NULL != session_)) {
+//         try {
+//             consumer_.release();
+//             producer_.release();
+//             msg_queue_.release();
+//             session_->close();
+//             session_.release();
+//         } catch (CMSException& e) {
+//             string err_msg = "CMSException caught in AMQMessenger::Close: " + e.getMessage() + "\n" + e.getStackTraceString();
+//             MPFMessageError err = MESSENGER_CLOSE_FAILURE;
+//             MPFMessageException exc(err_msg.c_str(), err);
+//             throw(exc);
+//         }
+//     }
             
-}
+// }
 

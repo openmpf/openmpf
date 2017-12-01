@@ -23,53 +23,22 @@
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
+
 cmake_minimum_required(VERSION 3.6)
+#project(message-tests)
 
-## Find Qt
-include(${QT_USE_FILE})
-add_definitions(${QT_DEFINITIONS})
+set(CMAKE_CXX_STANDARD 11)
 
-## Find ProtoBufs
-#include_directories(${PROTOBUF_INCLUDE_DIRS})
-#include_directories(${MPF_PROTO_PATH})
+find_package(GTest)
+if (${GTEST_FOUND})
 
-## Find and install activemq-cpp
-find_package(PkgConfig)
-set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:/usr/local/lib/pkgconfig")
-pkg_search_module(ACTIVEMQ-CPP REQUIRED activemq-cpp)
-include_directories(${ACTIVEMQ-CPP_INCLUDE_DIRS})
+    enable_testing()
+    find_package(GTest REQUIRED)
 
-file(GLOB MATCHING_FILES
-	 ${ACTIVEMQ-CPP_LIBRARY_DIRS}/libactivemq-cpp.so* )
-install(FILES ${MATCHING_FILES} DESTINATION lib)
+#    include_directories(..)
+    add_executable(MessageTest messenger_test.cpp)
+    target_link_libraries(MessageTest mpfStreamMsg gtest ${LOG4CXX_LIBRARIES})
 
-## Find Apache Portable Runtime
-set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:/usr/local/apr/lib/pkgconfig")
-pkg_search_module(APR REQUIRED apr-1)
-include_directories(${APR_INCLUDEDIR})
+    add_test(NAME MessageTest COMMAND MessageTest)
 
-## Install Apache Portable Runtime
-file(GLOB MATCHING_FILES ${APR_LIBDIR}/libapr*.so* )
-install(FILES ${MATCHING_FILES} DESTINATION lib)
-
-include_directories(${MPF_PROTO_PATH})
-
-find_package(OpenCV 3.3 EXACT REQUIRED PATHS /opt/opencv-3.3.0
-    COMPONENTS opencv_core opencv_imgcodecs opencv_imgproc opencv_videoio)
-
-
-if(DEFINED ENV{MPF_SDK_INSTALL_PATH})
-	list(APPEND CMAKE_PREFIX_PATH $ENV{MPF_SDK_INSTALL_PATH}/lib/cmake)
 endif()
-list(APPEND CMAKE_PREFIX_PATH $ENV{HOME}/mpf-sdk-install/lib/cmake)
-find_package(mpfComponentInterface REQUIRED)
-find_package(mpfDetectionComponentApi REQUIRED)
-
-include_directories($<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
-
-include_directories(MessageUtils)
-add_subdirectory(MessageUtils)
-
-#include_directories(FrameStore)
-add_subdirectory(framereader)
-

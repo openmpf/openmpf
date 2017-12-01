@@ -25,38 +25,6 @@
 #############################################################################
 cmake_minimum_required(VERSION 3.6)
 
-set(SRC OcvFrameReader main)
-
-## Find Qt
-include(${QT_USE_FILE})
-add_definitions(${QT_DEFINITIONS})
-
-## Find ProtoBufs
-#include_directories(${PROTOBUF_INCLUDE_DIRS})
-#include_directories(${MPF_PROTO_PATH})
-
-## Find and install activemq-cpp
-find_package(PkgConfig)
-set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:/usr/local/lib/pkgconfig")
-pkg_search_module(ACTIVEMQ-CPP REQUIRED activemq-cpp)
-include_directories(${ACTIVEMQ-CPP_INCLUDE_DIRS})
-
-file(GLOB MATCHING_FILES
-	 ${ACTIVEMQ-CPP_LIBRARY_DIRS}/libactivemq-cpp.so* )
-install(FILES ${MATCHING_FILES} DESTINATION lib)
-
-## Find Apache Portable Runtime
-set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:/usr/local/apr/lib/pkgconfig")
-pkg_search_module(APR REQUIRED apr-1)
-include_directories(${APR_INCLUDEDIR})
-
-## Install Apache Portable Runtime
-file(GLOB MATCHING_FILES ${APR_LIBDIR}/libapr*.so* )
-install(FILES ${MATCHING_FILES} DESTINATION lib)
-
-#include_directories(${MPF_PROTO_PATH})
-
-
 if(DEFINED ENV{MPF_SDK_INSTALL_PATH})
 	list(APPEND CMAKE_PREFIX_PATH $ENV{MPF_SDK_INSTALL_PATH}/lib/cmake)
 endif()
@@ -66,9 +34,7 @@ find_package(mpfDetectionComponentApi REQUIRED)
 
 include_directories($<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
 
-include_directories(../include)
-
-add_executable(frame_reader_component ${SRC})
+add_executable(frame_reader_component main)
 target_link_libraries(frame_reader_component mpfStreamMsg ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES})
 
 install(TARGETS frame_reader_component

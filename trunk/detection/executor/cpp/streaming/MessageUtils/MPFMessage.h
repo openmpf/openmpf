@@ -39,7 +39,7 @@ struct MPFMessage {
     uint32_t job_number_;
     virtual ~MPFMessage() = default;
   protected:
-    MPFMessage() : job_number_(0) {}
+    MPFMessage() : job_name_(""), job_number_(0) {}
     MPFMessage(const std::string &job_name, const uint32_t job_number)
             : job_name_(job_name), job_number_(job_number) {}
 };
@@ -48,6 +48,7 @@ struct MPFMessage {
 struct MPFSegmentSummaryMessage : MPFMessage {
     int segment_number_;
     std::vector<MPF::COMPONENT::MPFVideoTrack> tracks_;
+    MPFSegmentSummaryMessage() = default;
     MPFSegmentSummaryMessage(const std::string &job_name,
                              const uint32_t job_number,
                              const int seg_num,
@@ -62,6 +63,7 @@ struct MPFActivityAlertMessage : MPFMessage {
     uint32_t segment_number_;
     uint32_t frame_index_;
     double activity_time_;
+    MPFActivityAlertMessage() = default;
     MPFActivityAlertMessage(const std::string &job_name,
                             const uint32_t job_number,
                             const uint32_t seg_num,
@@ -76,6 +78,7 @@ struct MPFActivityAlertMessage : MPFMessage {
 
 struct MPFJobStatusMessage : MPFMessage {
     std::string status_message_;
+    MPFJobStatusMessage() = default;
     MPFJobStatusMessage(const std::string &job_name,
                         const uint32_t job_number,
                         const std::string &msg)
@@ -86,6 +89,7 @@ struct MPFJobStatusMessage : MPFMessage {
 /****************************************************************/
 //TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture
+#if 0
 struct MPFSegmentReadyMessage : MPFMessage {
 
     uint32_t segment_number_;
@@ -144,7 +148,7 @@ struct MPFVideoWrittenMessage : MPFMessage {
               video_output_pathname_(path) {}
     ~MPFVideoWrittenMessage() = default;
 };
-
+#endif
 
 } // namespace MPF
 

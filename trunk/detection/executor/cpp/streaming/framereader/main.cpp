@@ -35,7 +35,6 @@
 #include <sys/time.h>
 #include <cstdlib>
 #include <unistd.h>
-#include <dlfcn.h>  // for dlopen(), dlsym(), etc.
 
 #include <log4cxx/logger.h>
 #include <log4cxx/xml/domconfigurator.h>
@@ -48,21 +47,11 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 
-#include <QDir>
-#include <QMap>
-#include <QHash>
-#include <QFile>
-#include <QObject>
-#include <QString>
-#include <QStringList>
 #include <QCoreApplication>
-#include <QTime>
 
 #include "MPFDetectionComponent.h"
-#include "OcvFrameReader.h"
 #include "MPFAMQMessage.h"
 #include "MPFAMQMessenger.h"
-#include "MPFFrameStore.h"
 
 using std::exception;
 using std::string;
@@ -72,15 +61,6 @@ using std::vector;
 using namespace MPF;
 using namespace COMPONENT;
 namespace pt = boost::property_tree;
-
-string GetFileName(const string& s) {
-    size_t i = s.rfind('/', s.length());
-    if (i != string::npos) {
-        return s.substr(i+1, s.length()-i);
-    }
-    return s;
-}
-
 
 template<typename T>
 void getArg(pt::ptree &Ptree,
@@ -92,6 +72,12 @@ template<typename T>
 int getArg(pt::ptree &Ptree,
            const string &prop_tree_path,
            T &arg);
+
+//*******TODO**********
+// This program does not yet implement any of the frame reader
+// functionality. It currently only executes a very simple test of the
+// JobStatusMessenger methods.
+//*******TODO**********
 
 /**
  * This is the main program for the Streaming Video Frame Reader.
@@ -161,9 +147,8 @@ int main(int argc, char* argv[]) {
         exit;
     }
 
-    AMQMessenger messenger(msg_mgr, logger);
+    JobStatusMessenger messenger(msg_mgr, logger);
 
-    // Initialize the frame ready message queue
     string queue_name;
     rc = getArg<string>(jobArgs, "queue_name", queue_name);
     if (rc) return rc;
@@ -203,29 +188,28 @@ int main(int argc, char* argv[]) {
         exit;
     }
 
+
     try {
-        std::unique_ptr<AMQFrameReadyMessage> msg(new AMQFrameReadyMessage(job_name,job_id, 1, 2, 3));
+        MPFJobStatusMessage msg(job_name,job_id, "IN_PROGRESS");
         std::cout << __LINE__ << ": PutMessage" << std::endl;
-        messenger.PutMessage<AMQFrameReadyMessage>(std::move(msg));
+        messenger.SendMessage(msg);
     }
     catch (MPFMessageException &e) {
-        LOG4CXX_ERROR(logger, job_name <<  ": Failed to connect to send the message");
+        LOG4CXX_ERROR(logger, job_name <<  ": Failed to send the message: " << e.what());
         exit;
     }
 
     try {
         std::cout << __LINE__ << ": GetMessage" << std::endl;
-        std::unique_ptr<AMQFrameReadyMessage> frame_ready_message = messenger.GetMessage<AMQFrameReadyMessage>();
+        MPFJobStatusMessage status_msg = messenger.GetMessage();
         std::cout << "Message received:"
-                  << "\n  job name: " << frame_ready_message->job_name_
-                  << "\n  job id: " << frame_ready_message->job_number_
-                  << "\n segment number: " << frame_ready_message->segment_number_
-                  << "\n frame index: " << frame_ready_message->frame_index_
-                  << "\n frame offset bytes: " << frame_ready_message->frame_offset_bytes_
+                  << "\n  job name: " << status_msg.job_name_
+                  << "\n  job id: " << status_msg.job_number_
+                  << "\n  status message: " << status_msg.status_message_
                   << std::endl;
     }
     catch (MPFMessageException &e) {
-        LOG4CXX_ERROR(logger, job_name <<  ": Failed to send the message: MPFMessageException caught");
+        LOG4CXX_ERROR(logger, job_name <<  ": Failed to get the message: " << e.what());
         std::cout << "MPFMessageException caught: " << e.what() << std::endl;
         exit;
     }

@@ -29,9 +29,9 @@ package org.mitre.mpf.nms.streaming;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import org.mitre.mpf.nms.ChannelNode;
+import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
-import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,11 +60,11 @@ public class MasterStreamingJobManager {
 
 
 
-	public void startJob(StreamingJobLaunchMessage launchMessage, Collection<String> runningNodes) {
+	public void startJob(LaunchStreamingJobMessage launchMessage, Collection<String> runningNodes) {
 		synchronized (_jobLocationCounter) {
 			String nodeWithMinJobs = getNodeWithMinJobs(runningNodes);
 			_jobLocationCounter.addJob(launchMessage.jobId, nodeWithMinJobs);
-			LOG.info("Sending StreamingJobLaunchMessage for job {} to node {}", launchMessage.jobId, nodeWithMinJobs);
+			LOG.info("Sending LaunchStreamingJobMessage for job {} to node {}", launchMessage.jobId, nodeWithMinJobs);
 			_channelNode.sendToChild(nodeWithMinJobs, launchMessage);
 		}
 	}

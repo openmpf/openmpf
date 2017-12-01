@@ -29,7 +29,7 @@ package org.mitre.mpf.nms.streaming.messages;
 import java.io.Serializable;
 
 //TODO: For future use. Untested.
-public class VideoWriterLaunchMessage implements Serializable {
+public class LaunchVideoWriterMessage implements Serializable {
 
 	public final long jobId;
 
@@ -41,7 +41,7 @@ public class VideoWriterLaunchMessage implements Serializable {
 
 	public final String segmentOutputQueue;
 
-	public VideoWriterLaunchMessage(
+	public LaunchVideoWriterMessage(
 			long jobId,
 			String videoFileOutputPath,
 			String frameInputQueue,

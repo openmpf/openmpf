@@ -29,7 +29,7 @@ package org.mitre.mpf.nms.streaming;
 import org.ini4j.Ini;
 import org.ini4j.Profile;
 import org.mitre.mpf.nms.NodeManagerProperties;
-import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
+import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -57,7 +57,7 @@ public class IniManager {
 
 
 
-	public JobIniFiles createJobIniFiles(StreamingJobLaunchMessage launchMessage) {
+	public JobIniFiles createJobIniFiles(LaunchStreamingJobMessage launchMessage) {
 		try {
 			Files.createDirectories(_properties.getIniFilesDir());
 			Path jobIniDir = Files.createTempDirectory(
@@ -89,7 +89,7 @@ public class IniManager {
 	}
 
 
-	private static Path createIniFile(StreamingJobLaunchMessage launchMessage, Path iniDir) {
+	private static Path createIniFile(LaunchStreamingJobMessage launchMessage, Path iniDir) {
 		Ini ini = new Ini();
 		Profile.Section jobConfig = ini.add(DEFAULT_SECTION);
 		jobConfig.put("jobId", launchMessage.jobId);
@@ -116,7 +116,7 @@ public class IniManager {
 
 
 //TODO: For future use. Untested.
-//	public JobIniFiles createJobIniFiles(StreamingJobLaunchMessage launchMessage) {
+//	public JobIniFiles createJobIniFiles(LaunchStreamingJobMessage launchMessage) {
 //		try {
 //			Files.createDirectories(_properties.getIniFilesDir());
 //			Path jobIniDir = Files.createTempDirectory(
@@ -126,10 +126,10 @@ public class IniManager {
 //
 //			jobIniDir.toFile().deleteOnExit();
 //
-//			Path frameReaderIniPath = createIniFile(launchMessage.frameReaderLaunchMessage, jobIniDir);
-//			Path videoWriterIniPath = createIniFile(launchMessage.videoWriterLaunchMessage, jobIniDir);
+//			Path frameReaderIniPath = createIniFile(launchMessage.launchFrameReaderMessage, jobIniDir);
+//			Path videoWriterIniPath = createIniFile(launchMessage.launchVideoWriterMessage, jobIniDir);
 //			Table<String, Integer, Path> componentIniPaths =
-//					createComponentIniFiles(launchMessage.componentLaunchMessages, jobIniDir);
+//					createComponentIniFiles(launchMessage.launchComponentMessages, jobIniDir);
 //
 //			return new JobIniFiles(jobIniDir, frameReaderIniPath, videoWriterIniPath, componentIniPaths);
 //		}
@@ -140,7 +140,7 @@ public class IniManager {
 //	}
 
 
-//	private static Path createIniFile(FrameReaderLaunchMessage launchMessage, Path iniDir) {
+//	private static Path createIniFile(LaunchFrameReaderMessage launchMessage, Path iniDir) {
 //		Ini ini = new Ini();
 //		Profile.Section jobConfig = ini.add(DEFAULT_SECTION);
 //		jobConfig.put("jobId", launchMessage.jobId);
@@ -158,7 +158,7 @@ public class IniManager {
 //	}
 //
 //
-//	private static Path createIniFile(VideoWriterLaunchMessage launchMessage, Path iniDir) {
+//	private static Path createIniFile(LaunchVideoWriterMessage launchMessage, Path iniDir) {
 //		Ini ini = new Ini();
 //		Profile.Section jobConfig = ini.add(DEFAULT_SECTION);
 //		jobConfig.put("jobId", launchMessage.jobId);
@@ -173,17 +173,17 @@ public class IniManager {
 //
 //
 //	private static Table<String, Integer, Path> createComponentIniFiles(
-//			Collection<ComponentLaunchMessage> launchMessages, Path iniDir) {
+//			Collection<LaunchComponentMessage> launchMessages, Path iniDir) {
 //
 //		ImmutableTable.Builder<String, Integer, Path> builder = ImmutableTable.builder();
-//		for (ComponentLaunchMessage launchMessage : launchMessages) {
+//		for (LaunchComponentMessage launchMessage : launchMessages) {
 //			builder.put(launchMessage.componentName, launchMessage.stage, createIniFile(launchMessage, iniDir));
 //		}
 //		return builder.build();
 //	}
 //
 //
-//	private static Path createIniFile(ComponentLaunchMessage launchMessage, Path iniDir) {
+//	private static Path createIniFile(LaunchComponentMessage launchMessage, Path iniDir) {
 //		Ini ini = new Ini();
 //		Profile.Section jobConfig = ini.add(DEFAULT_SECTION);
 //		jobConfig.put("jobId", launchMessage.jobId);
@@ -193,8 +193,8 @@ public class IniManager {
 //		jobConfig.put("frameInputQueue", launchMessage.frameInputQueue);
 //		jobConfig.put("frameOutputQueue", launchMessage.frameOutputQueue);
 //
-//		if (launchMessage instanceof LastStageComponentLaunchMessage) {
-//			addLastStageFields((LastStageComponentLaunchMessage) launchMessage, jobConfig);
+//		if (launchMessage instanceof LaunchLastStageComponentMessage) {
+//			addLastStageFields((LaunchLastStageComponentMessage) launchMessage, jobConfig);
 //		}
 //
 //		if (!launchMessage.jobProperties.isEmpty()) {
@@ -205,7 +205,7 @@ public class IniManager {
 //	}
 //
 //
-//	private static void addLastStageFields(LastStageComponentLaunchMessage launchMessage, Profile.Section jobConfig) {
+//	private static void addLastStageFields(LaunchLastStageComponentMessage launchMessage, Profile.Section jobConfig) {
 //		jobConfig.put("newTrackAlertQueue", launchMessage.newTrackAlertQueue);
 //		jobConfig.put("summaryReportQueue", launchMessage.summaryReportQueue);
 //	}

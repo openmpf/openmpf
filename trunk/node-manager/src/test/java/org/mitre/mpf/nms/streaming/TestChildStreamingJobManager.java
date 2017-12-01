@@ -31,9 +31,9 @@ import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.nms.ChannelNode;
+import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
-import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
 import org.mockito.InjectMocks;
 import org.mockito.Matchers;
 import org.mockito.Mock;
@@ -70,8 +70,8 @@ public class TestChildStreamingJobManager {
 		StreamingJob job2 = mock(StreamingJob.class);
 		JobController jobCtrl2 = setupMockJob(job2);
 
-		StreamingJobLaunchMessage launchMessage = StreamingJobTestUtil.createLaunchMessage(1);
-		StreamingJobLaunchMessage launchMessage2 = StreamingJobTestUtil.createLaunchMessage(2);
+		LaunchStreamingJobMessage launchMessage = StreamingJobTestUtil.createLaunchMessage(1);
+		LaunchStreamingJobMessage launchMessage2 = StreamingJobTestUtil.createLaunchMessage(2);
 
 		when(_mockJobFactory.createJob(launchMessage))
 				.thenReturn(job);

@@ -28,9 +28,9 @@ package org.mitre.mpf.nms;
 
 import org.jgroups.Message;
 import org.mitre.mpf.nms.streaming.MasterStreamingJobManager;
+import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
-import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -234,7 +234,7 @@ public class MasterNodeStateManager extends ChannelReceiver {
     }
 
 
-    public void startStreamingJob(StreamingJobLaunchMessage launchMessage) {
+    public void startStreamingJob(LaunchStreamingJobMessage launchMessage) {
         streamingJobManager.startJob(launchMessage, getRunningNodes());
     }
 

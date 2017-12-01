@@ -29,8 +29,8 @@ package org.mitre.mpf.wfm.service;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.nms.MasterNode;
+import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
-import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
@@ -128,7 +128,7 @@ public class TestStreamingJobMessageSender {
 		job.setStream(stream);
 		job.getOverriddenJobProperties().put("OVERRIDDEN JOB PROPERTY", "Job Overridden Value");
 
-		ArgumentCaptor<StreamingJobLaunchMessage> msgCaptor = ArgumentCaptor.forClass(StreamingJobLaunchMessage.class);
+		ArgumentCaptor<LaunchStreamingJobMessage> msgCaptor = ArgumentCaptor.forClass(LaunchStreamingJobMessage.class);
 
 		List<EnvironmentVariableModel> envVars = Arrays.asList(
 				new EnvironmentVariableModel("LD_LIB_PATH", "/opt/mpf", null),
@@ -154,7 +154,7 @@ public class TestStreamingJobMessageSender {
 		verify(_mockMasterNode)
 				.startStreamingJob(msgCaptor.capture());
 
-		StreamingJobLaunchMessage launchMessage = msgCaptor.getValue();
+		LaunchStreamingJobMessage launchMessage = msgCaptor.getValue();
 
 		assertEquals(jobId, launchMessage.jobId);
 		assertEquals(stream.getUri(), launchMessage.streamUri);

@@ -32,8 +32,7 @@ import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import java.io.Serializable;
 import java.util.Map;
 
-@SuppressWarnings("PublicField")
-public class StreamingJobLaunchMessage implements StreamingJobMessage, Serializable {
+public class LaunchStreamingJobMessage implements StreamingJobMessage, Serializable {
 
 	public final long jobId;
 
@@ -64,24 +63,24 @@ public class StreamingJobLaunchMessage implements StreamingJobMessage, Serializa
 	public final String summaryReportQueue;
 
 	//TODO: For future use. Untested.
-//	public final FrameReaderLaunchMessage frameReaderLaunchMessage;
+//	public final LaunchFrameReaderMessage launchFrameReaderMessage;
 //
-//	public final VideoWriterLaunchMessage videoWriterLaunchMessage;
+//	public final LaunchVideoWriterMessage launchVideoWriterMessage;
 //
-//	public final List<ComponentLaunchMessage> componentLaunchMessages;
+//	public final List<LaunchComponentMessage> launchComponentMessages;
 //
 //
 	//TODO: For future use. Untested.
-//	public StreamingJobLaunchMessage(long jobId, FrameReaderLaunchMessage frameReaderLaunchMessage,
-//	                                 VideoWriterLaunchMessage videoWriterLaunchMessage,
-//	                                 List<ComponentLaunchMessage> componentLaunchMessages) {
+//	public LaunchStreamingJobMessage(long jobId, LaunchFrameReaderMessage launchFrameReaderMessage,
+//	                                 LaunchVideoWriterMessage launchVideoWriterMessage,
+//	                                 List<LaunchComponentMessage> launchComponentMessages) {
 //		this.jobId = jobId;
-//		this.frameReaderLaunchMessage = frameReaderLaunchMessage;
-//		this.videoWriterLaunchMessage = videoWriterLaunchMessage;
-//		this.componentLaunchMessages = componentLaunchMessages;
+//		this.launchFrameReaderMessage = launchFrameReaderMessage;
+//		this.launchVideoWriterMessage = launchVideoWriterMessage;
+//		this.launchComponentMessages = launchComponentMessages;
 //	}
 
-	public StreamingJobLaunchMessage(
+	public LaunchStreamingJobMessage(
 			long jobId,
 			String streamUri,
 			int segmentSize,

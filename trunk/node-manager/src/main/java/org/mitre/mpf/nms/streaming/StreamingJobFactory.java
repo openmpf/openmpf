@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.nms.streaming;
 
-import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
+import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +44,7 @@ public class StreamingJobFactory {
 		_iniManager = iniManager;
 	}
 
-	public StreamingJob createJob(StreamingJobLaunchMessage launchMessage) {
+	public StreamingJob createJob(LaunchStreamingJobMessage launchMessage) {
 		JobIniFiles jobIniFiles = _iniManager.createJobIniFiles(launchMessage);
 		Path componentIniPath = jobIniFiles.getJobIniPath();
 		StreamingProcess componentProcess = _processFactory.createComponentProcess(
@@ -55,13 +55,13 @@ public class StreamingJobFactory {
 
 
 	//TODO: For future use. Untested.
-//	public StreamingJob createJob(StreamingJobLaunchMessage launchMessage) {
+//	public StreamingJob createJob(LaunchStreamingJobMessage launchMessage) {
 //		JobIniFiles jobIniFiles = _iniManager.createJobIniFiles(launchMessage);
 //		StreamingProcess frameReader = _processFactory.createFrameReaderProcess(jobIniFiles.getFrameReaderIniPath());
 //		StreamingProcess videoWriter = _processFactory.createVideoWriterProcess(jobIniFiles.getVideoWriterIniPath());
 //
 //		List<StreamingProcess> componentProcesses = new ArrayList<>();
-//		for (ComponentLaunchMessage componentMessage : launchMessage.componentLaunchMessages) {
+//		for (LaunchComponentMessage componentMessage : launchMessage.launchComponentMessages) {
 //			for (int i = 0; i < componentMessage.numInstances; i++) {
 //				Path componentIniPath = jobIniFiles.getComponentIniPath(componentMessage.componentName,
 //				                                                        componentMessage.stage);

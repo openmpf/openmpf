@@ -27,9 +27,9 @@
 package org.mitre.mpf.nms.streaming;
 
 import org.mitre.mpf.nms.ChannelNode;
+import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
-import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
 import org.mitre.mpf.nms.streaming.messages.StreamingJobMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,8 +60,8 @@ public class ChildStreamingJobManager {
 
 	public void handle(StreamingJobMessage message) {
 		synchronized (_streamingJobs) {
-			if (message instanceof StreamingJobLaunchMessage) {
-				handleJobLaunch((StreamingJobLaunchMessage) message);
+			if (message instanceof LaunchStreamingJobMessage) {
+				handleJobLaunch((LaunchStreamingJobMessage) message);
 			}
 			else if (message instanceof StopStreamingJobMessage) {
 				handleJobStop((StopStreamingJobMessage) message);
@@ -73,9 +73,9 @@ public class ChildStreamingJobManager {
 	}
 
 
-	private void handleJobLaunch(StreamingJobLaunchMessage message) {
+	private void handleJobLaunch(LaunchStreamingJobMessage message) {
 		if (_streamingJobs.containsKey(message.jobId)) {
-			LOG.error("Received StreamingJobLaunchMessage for job id {}, but a job with that id is already running",
+			LOG.error("Received LaunchStreamingJobMessage for job id {}, but a job with that id is already running",
 			          message.jobId);
 			return;
 		}

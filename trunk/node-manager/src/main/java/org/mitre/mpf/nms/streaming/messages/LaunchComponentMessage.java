@@ -27,56 +27,53 @@
 package org.mitre.mpf.nms.streaming.messages;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 //TODO: For future use. Untested.
-public class FrameReaderLaunchMessage implements Serializable {
+public class LaunchComponentMessage implements Serializable {
 
 	public final long jobId;
 
-	public final String streamUri;
+	public final String componentName;
 
-	public final int segmentSize;
+	public final int stage;
 
-	public final int frameDataBufferSize;
+	public final String libraryPath;
 
-	public final long stallTimeout;
+	public final Map<String, String> environmentVariables;
 
-	public final String messageBrokerUri;
+	public final int numInstances;
 
-	public final String segmentOutputQueue;
+	public final Map<String, String> jobProperties;
 
-	public final String componentFrameQueue;
+	public final String segmentInputQueue;
 
-	public final String videoWriterFrameQueue;
+	public final String frameInputQueue;
 
-	public final String releaseFrameQueue;
+	public final String frameOutputQueue;
 
-	public final String stallAlertQueue;
-
-
-	public FrameReaderLaunchMessage(
+	public LaunchComponentMessage(
 			long jobId,
-			String streamUri,
-			int segmentSize,
-			int frameDataBufferSize,
-			long stallTimeout,
-			String messageBrokerUri,
-			String segmentOutputQueue,
-			String componentFrameQueue,
-			String videoWriterFrameQueue,
-			String releaseFrameQueue,
-			String stallAlertQueue) {
+			String componentName,
+			int stage,
+			String libraryPath,
+			Map<String, String> environmentVariables,
+			int numInstances,
+			Map<String, String> jobProperties,
+			String segmentInputQueue,
+			String frameInputQueue,
+			String frameOutputQueue) {
 
 		this.jobId = jobId;
-		this.streamUri = streamUri;
-		this.segmentSize = segmentSize;
-		this.frameDataBufferSize = frameDataBufferSize;
-		this.stallTimeout = stallTimeout;
-		this.messageBrokerUri = messageBrokerUri;
-		this.segmentOutputQueue = segmentOutputQueue;
-		this.componentFrameQueue = componentFrameQueue;
-		this.videoWriterFrameQueue = videoWriterFrameQueue;
-		this.releaseFrameQueue = releaseFrameQueue;
-		this.stallAlertQueue = stallAlertQueue;
+		this.componentName = componentName;
+		this.stage = stage;
+		this.libraryPath = libraryPath;
+		this.environmentVariables = new HashMap<>(environmentVariables);
+		this.numInstances = numInstances;
+		this.jobProperties = new HashMap<>(jobProperties);
+		this.segmentInputQueue = segmentInputQueue;
+		this.frameInputQueue = frameInputQueue;
+		this.frameOutputQueue = frameOutputQueue;
 	}
 }

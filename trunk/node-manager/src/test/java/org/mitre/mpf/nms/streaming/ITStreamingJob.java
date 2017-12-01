@@ -31,7 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.nms.NodeManagerProperties;
-import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
+import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mockito.stubbing.Answer;
 
 import java.nio.file.Path;
@@ -76,9 +76,9 @@ public class ITStreamingJob {
 	public void testStreamingJobWithPythonProcess() throws InterruptedException, ExecutionException {
 		StreamingJobFactory jobFactory = new StreamingJobFactory(_mockProcessFactory, new IniManager(_mockProperties));
 
-		StreamingJobLaunchMessage jobLaunchMessage = StreamingJobTestUtil.createLaunchMessage();
+		LaunchStreamingJobMessage launchJobMessage = StreamingJobTestUtil.createLaunchMessage();
 
-		StreamingJob job = jobFactory.createJob(jobLaunchMessage);
+		StreamingJob job = jobFactory.createJob(launchJobMessage);
 
 		job.startJob();
 

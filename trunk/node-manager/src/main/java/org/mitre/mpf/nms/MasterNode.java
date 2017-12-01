@@ -27,8 +27,8 @@ package org.mitre.mpf.nms;
 
 import org.jgroups.Address;
 import org.mitre.mpf.nms.NodeManagerConstants.States;
+import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
-import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
 import org.mitre.mpf.nms.xml.NodeManager;
 import org.mitre.mpf.nms.xml.NodeManagers;
 import org.mitre.mpf.nms.xml.Service;
@@ -305,7 +305,7 @@ public class MasterNode {
     }
 
 
-    public void startStreamingJob(StreamingJobLaunchMessage message) {
+    public void startStreamingJob(LaunchStreamingJobMessage message) {
         nodeStateManager.startStreamingJob(message);
     }
 

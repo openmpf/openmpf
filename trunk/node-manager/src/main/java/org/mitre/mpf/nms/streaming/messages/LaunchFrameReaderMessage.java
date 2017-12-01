@@ -27,42 +27,56 @@
 package org.mitre.mpf.nms.streaming.messages;
 
 import java.io.Serializable;
-import java.util.Map;
-
 
 //TODO: For future use. Untested.
-public class LastStageComponentLaunchMessage extends ComponentLaunchMessage implements Serializable {
+public class LaunchFrameReaderMessage implements Serializable {
 
-	public final String newTrackAlertQueue;
+	public final long jobId;
 
-	public final String summaryReportQueue;
+	public final String streamUri;
 
-	public LastStageComponentLaunchMessage(
+	public final int segmentSize;
+
+	public final int frameDataBufferSize;
+
+	public final long stallTimeout;
+
+	public final String messageBrokerUri;
+
+	public final String segmentOutputQueue;
+
+	public final String componentFrameQueue;
+
+	public final String videoWriterFrameQueue;
+
+	public final String releaseFrameQueue;
+
+	public final String stallAlertQueue;
+
+
+	public LaunchFrameReaderMessage(
 			long jobId,
-			String componentName,
-			int stage,
-			String libraryPath,
-			Map<String, String> environmentVariables,
-			int numInstances,
-			Map<String, String> jobProperties,
-			String segmentInputQueue,
-			String frameInputQueue,
-			String frameOutputQueue,
-			String newTrackAlertQueue,
-			String summaryReportQueue) {
+			String streamUri,
+			int segmentSize,
+			int frameDataBufferSize,
+			long stallTimeout,
+			String messageBrokerUri,
+			String segmentOutputQueue,
+			String componentFrameQueue,
+			String videoWriterFrameQueue,
+			String releaseFrameQueue,
+			String stallAlertQueue) {
 
-		super(jobId,
-		      componentName,
-		      stage,
-		      libraryPath,
-		      environmentVariables,
-		      numInstances,
-		      jobProperties,
-		      segmentInputQueue,
-		      frameInputQueue,
-		      frameOutputQueue);
-
-		this.newTrackAlertQueue = newTrackAlertQueue;
-		this.summaryReportQueue = summaryReportQueue;
+		this.jobId = jobId;
+		this.streamUri = streamUri;
+		this.segmentSize = segmentSize;
+		this.frameDataBufferSize = frameDataBufferSize;
+		this.stallTimeout = stallTimeout;
+		this.messageBrokerUri = messageBrokerUri;
+		this.segmentOutputQueue = segmentOutputQueue;
+		this.componentFrameQueue = componentFrameQueue;
+		this.videoWriterFrameQueue = videoWriterFrameQueue;
+		this.releaseFrameQueue = releaseFrameQueue;
+		this.stallAlertQueue = stallAlertQueue;
 	}
 }

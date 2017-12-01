@@ -27,34 +27,17 @@
 package org.mitre.mpf.nms.streaming.messages;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Map;
 
+
 //TODO: For future use. Untested.
-@SuppressWarnings("PublicField")
-public class ComponentLaunchMessage implements Serializable {
+public class LaunchLastStageComponentMessage extends LaunchComponentMessage implements Serializable {
 
-	public final long jobId;
+	public final String newTrackAlertQueue;
 
-	public final String componentName;
+	public final String summaryReportQueue;
 
-	public final int stage;
-
-	public final String libraryPath;
-
-	public final Map<String, String> environmentVariables;
-
-	public final int numInstances;
-
-	public final Map<String, String> jobProperties;
-
-	public final String segmentInputQueue;
-
-	public final String frameInputQueue;
-
-	public final String frameOutputQueue;
-
-	public ComponentLaunchMessage(
+	public LaunchLastStageComponentMessage(
 			long jobId,
 			String componentName,
 			int stage,
@@ -64,17 +47,22 @@ public class ComponentLaunchMessage implements Serializable {
 			Map<String, String> jobProperties,
 			String segmentInputQueue,
 			String frameInputQueue,
-			String frameOutputQueue) {
+			String frameOutputQueue,
+			String newTrackAlertQueue,
+			String summaryReportQueue) {
 
-		this.jobId = jobId;
-		this.componentName = componentName;
-		this.stage = stage;
-		this.libraryPath = libraryPath;
-		this.environmentVariables = new HashMap<>(environmentVariables);
-		this.numInstances = numInstances;
-		this.jobProperties = new HashMap<>(jobProperties);
-		this.segmentInputQueue = segmentInputQueue;
-		this.frameInputQueue = frameInputQueue;
-		this.frameOutputQueue = frameOutputQueue;
+		super(jobId,
+		      componentName,
+		      stage,
+		      libraryPath,
+		      environmentVariables,
+		      numInstances,
+		      jobProperties,
+		      segmentInputQueue,
+		      frameInputQueue,
+		      frameOutputQueue);
+
+		this.newTrackAlertQueue = newTrackAlertQueue;
+		this.summaryReportQueue = summaryReportQueue;
 	}
 }

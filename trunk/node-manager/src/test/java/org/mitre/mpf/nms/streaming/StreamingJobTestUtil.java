@@ -27,7 +27,7 @@
 package org.mitre.mpf.nms.streaming;
 
 import com.google.common.collect.ImmutableMap;
-import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
+import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 
 import java.util.Collections;
 
@@ -41,13 +41,13 @@ public class StreamingJobTestUtil {
 
 
 	//TODO: For future use. Untested.
-//	public static StreamingJobLaunchMessage createLaunchMessage() {
+//	public static LaunchStreamingJobMessage createLaunchMessage() {
 //		return createLaunchMessage(1234);
 //	}
 //
 //
-//	public static StreamingJobLaunchMessage createLaunchMessage(long jobId) {
-//		FrameReaderLaunchMessage frameReaderLaunch = new FrameReaderLaunchMessage(
+//	public static LaunchStreamingJobMessage createLaunchMessage(long jobId) {
+//		LaunchFrameReaderMessage frameReaderLaunch = new LaunchFrameReaderMessage(
 //				jobId,
 //				"stream://theStream",
 //				10,
@@ -60,7 +60,7 @@ public class StreamingJobTestUtil {
 //				String.format("MPF.%s__RELEASE_FRAME", jobId),
 //              "MPF.WFM_STREAMING_JOB_STALLED"));
 //
-//		VideoWriterLaunchMessage videoWriterLaunchMessage = new VideoWriterLaunchMessage(
+//		LaunchVideoWriterMessage launchVideoWriterMessage = new LaunchVideoWriterMessage(
 //				jobId,
 //				"fake-path/output",
 //				String.format("MPF.Job_%s__VideoWriter_Frame_Input", jobId),
@@ -72,7 +72,7 @@ public class StreamingJobTestUtil {
 //				"firstStageProp1Key", "firstStageProp1Value",
 //				"firstStageProp2Key", "firstStageProp2Value");
 //
-//		ComponentLaunchMessage firstStageMessage = new ComponentLaunchMessage(
+//		LaunchComponentMessage firstStageMessage = new LaunchComponentMessage(
 //				jobId,
 //				"MyComponent",
 //				1,
@@ -89,7 +89,7 @@ public class StreamingJobTestUtil {
 //				"lastStageProp1Key", "lastStageProp1Value",
 //				"lastStageProp2Key", "lastStageProp2Value");
 //
-//		LastStageComponentLaunchMessage lastStageMessage = new LastStageComponentLaunchMessage(
+//		LaunchLastStageComponentMessage lastStageMessage = new LaunchLastStageComponentMessage(
 //				jobId,
 //				"MyComponent2",
 //				2,
@@ -103,20 +103,20 @@ public class StreamingJobTestUtil {
 //				"MPF.WFM_NEW_TRACK_ALERTS",
 //				"MPF.WFM_SUMMARY_REPORTS");
 //
-//		StreamingJobLaunchMessage jobLaunchMessage = new StreamingJobLaunchMessage(
-//				jobId, frameReaderLaunch, videoWriterLaunchMessage,
+//		LaunchStreamingJobMessage jobLaunchMessage = new LaunchStreamingJobMessage(
+//				jobId, frameReaderLaunch, launchVideoWriterMessage,
 //				Arrays.asList(firstStageMessage, lastStageMessage));
 //
 //		return jobLaunchMessage;
 //	}
 
 
-	public static StreamingJobLaunchMessage createLaunchMessage() {
+	public static LaunchStreamingJobMessage createLaunchMessage() {
 		return createLaunchMessage(1234);
 	}
 
 
-	public static StreamingJobLaunchMessage createLaunchMessage(long jobId) {
+	public static LaunchStreamingJobMessage createLaunchMessage(long jobId) {
 
 		ImmutableMap<String, String> firstStageProps = ImmutableMap.of(
 				"firstStageProp1Key", "firstStageProp1Value",
@@ -126,7 +126,7 @@ public class StreamingJobTestUtil {
 				"streamProp1", "streamVal1",
 				"streamProp2", "streamVal2");
 
-		StreamingJobLaunchMessage launchMessage = new StreamingJobLaunchMessage(
+		LaunchStreamingJobMessage launchMessage = new LaunchStreamingJobMessage(
 				jobId,
 				"stream://theStream",
 				10,

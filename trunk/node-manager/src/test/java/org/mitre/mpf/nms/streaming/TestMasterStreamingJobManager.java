@@ -29,9 +29,9 @@ package org.mitre.mpf.nms.streaming;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.nms.ChannelNode;
+import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
-import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -80,8 +80,8 @@ public class TestMasterStreamingJobManager {
 
 	@Test
 	public void doesNotStartSameJobMultipleTimes() {
-		StreamingJobLaunchMessage launchMessage = createLaunchMessage(1);
-		StreamingJobLaunchMessage dupLaunchMessage = createLaunchMessage(1);
+		LaunchStreamingJobMessage launchMessage = createLaunchMessage(1);
+		LaunchStreamingJobMessage dupLaunchMessage = createLaunchMessage(1);
 
 		startJob(launchMessage);
 
@@ -150,7 +150,7 @@ public class TestMasterStreamingJobManager {
 
 
 
-	private String startJob(StreamingJobLaunchMessage launchMessage, Collection<String> availableNodes) {
+	private String startJob(LaunchStreamingJobMessage launchMessage, Collection<String> availableNodes) {
 		_streamingJobManager.startJob(launchMessage, availableNodes);
 		ArgumentCaptor<String> hostnameCaptor = ArgumentCaptor.forClass(String.class);
 		verify(_mockChannel)
@@ -161,7 +161,7 @@ public class TestMasterStreamingJobManager {
 	}
 
 
-	private String startJob(StreamingJobLaunchMessage launchMessage) {
+	private String startJob(LaunchStreamingJobMessage launchMessage) {
 		return startJob(launchMessage, TEST_NODES);
 	}
 

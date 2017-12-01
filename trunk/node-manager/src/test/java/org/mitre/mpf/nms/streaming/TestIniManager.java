@@ -32,7 +32,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.nms.NodeManagerProperties;
-import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
+import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -64,29 +64,29 @@ public class TestIniManager {
 //	@Test
 //	public void canCreateIniFiles() throws IOException, NoSuchFieldException, IllegalAccessException {
 //		IniManager iniManager = new IniManager(_mockProperties);
-//		StreamingJobLaunchMessage launchMessage = StreamingJobTestUtil.createLaunchMessage();
+//		LaunchStreamingJobMessage launchMessage = StreamingJobTestUtil.createLaunchMessage();
 //
 //		JobIniFiles jobIniFiles = iniManager.createJobIniFiles(launchMessage);
 //
-//		assertFieldsWritten(launchMessage.frameReaderLaunchMessage, jobIniFiles.getFrameReaderIniPath(), 11);
-//		assertFieldsWritten(launchMessage.videoWriterLaunchMessage, jobIniFiles.getVideoWriterIniPath(), 5);
+//		assertFieldsWritten(launchMessage.launchFrameReaderMessage, jobIniFiles.getFrameReaderIniPath(), 11);
+//		assertFieldsWritten(launchMessage.launchVideoWriterMessage, jobIniFiles.getVideoWriterIniPath(), 5);
 //
-//		for (ComponentLaunchMessage componentLaunchMessage : launchMessage.componentLaunchMessages) {
-//			int expectedFieldCount = componentLaunchMessage instanceof LastStageComponentLaunchMessage ? 8 : 6;
-//			Path componentIniPath = jobIniFiles.getComponentIniPath(componentLaunchMessage.componentName,
-//			                                                        componentLaunchMessage.stage);
+//		for (LaunchComponentMessage launchComponentMessage : launchMessage.launchComponentMessages) {
+//			int expectedFieldCount = launchComponentMessage instanceof LaunchLastStageComponentMessage ? 8 : 6;
+//			Path componentIniPath = jobIniFiles.getComponentIniPath(launchComponentMessages.componentName,
+//			                                                        launchComponentMessage.stage);
 //
-//			assertFieldsWritten(componentLaunchMessage, componentIniPath, expectedFieldCount);
-//			assertJobPropertiesWritten(componentLaunchMessage.jobProperties, componentIniPath);
+//			assertFieldsWritten(launchComponentMessage, componentIniPath, expectedFieldCount);
+//			assertJobPropertiesWritten(launchComponentMessage.jobProperties, componentIniPath);
 //		}
 //
 //
 //		jobIniFiles.deleteIniFiles();
 //		assertTrue(Files.notExists(jobIniFiles.getFrameReaderIniPath()));
 //		assertTrue(Files.notExists(jobIniFiles.getVideoWriterIniPath()));
-//		for (ComponentLaunchMessage componentLaunchMessage : launchMessage.componentLaunchMessages) {
-//			Path componentIniPath = jobIniFiles.getComponentIniPath(componentLaunchMessage.componentName,
-//			                                                        componentLaunchMessage.stage);
+//		for (LaunchComponentMessage launchComponentMessage : launchMessage.launchComponentMessages) {
+//			Path componentIniPath = jobIniFiles.getComponentIniPath(launchComponentMessage.componentName,
+//			                                                        launchComponentMessage.stage);
 //			assertTrue(Files.notExists(componentIniPath));
 //		}
 //	}
@@ -94,7 +94,7 @@ public class TestIniManager {
 	@Test
 	public void canCreateIniFiles() throws IOException, NoSuchFieldException, IllegalAccessException {
 		IniManager iniManager = new IniManager(_mockProperties);
-		StreamingJobLaunchMessage launchMessage = StreamingJobTestUtil.createLaunchMessage();
+		LaunchStreamingJobMessage launchMessage = StreamingJobTestUtil.createLaunchMessage();
 
 		JobIniFiles jobIniFiles = iniManager.createJobIniFiles(launchMessage);
 		assertFieldsWritten(launchMessage, jobIniFiles.getJobIniPath(), 11);

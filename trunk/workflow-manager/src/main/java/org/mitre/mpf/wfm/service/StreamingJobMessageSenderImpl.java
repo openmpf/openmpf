@@ -27,8 +27,8 @@
 package org.mitre.mpf.wfm.service;
 
 import org.mitre.mpf.nms.MasterNode;
+import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
-import org.mitre.mpf.nms.streaming.messages.StreamingJobLaunchMessage;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
 import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
@@ -70,7 +70,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 
 	@Override
 	public void launchJob(TransientStreamingJob job) {
-		StreamingJobLaunchMessage launchMessage = createStreamingJobLaunchMessage(job);
+		LaunchStreamingJobMessage launchMessage = createLaunchStreamingJobMessage(job);
 		_masterNode.startStreamingJob(launchMessage);
 	}
 
@@ -82,7 +82,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 
 
 
-	private StreamingJobLaunchMessage createStreamingJobLaunchMessage(TransientStreamingJob job) {
+	private LaunchStreamingJobMessage createLaunchStreamingJobMessage(TransientStreamingJob job) {
 		TransientAction action = getAction(job);
 		StreamingServiceModel streamingService = _streamingServiceManager.getServices().stream()
 				.filter(sm -> sm.getAlgorithmName().equals(action.getAlgorithm()))
@@ -97,7 +97,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 		Map<String, String> jobProperties = AggregateJobPropertiesUtil.getCombinedJobProperties(
 				_pipelineService.getAlgorithm(action.getAlgorithm()), action, job);
 
-		return new StreamingJobLaunchMessage(
+		return new LaunchStreamingJobMessage(
 				job.getId(),
 				job.getStream().getUri(),
 				job.getStream().getSegmentSize(),
@@ -136,17 +136,17 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 
 
 	//TODO: For future use. Untested.
-//	private StreamingJobLaunchMessage createStreamingJobLaunchMessage(TransientStreamingJob job) {
-//		FrameReaderLaunchMessage frameReaderMessage = createFrameReaderMessage(job);
-//		VideoWriterLaunchMessage videoWriterMessage = createVideoWriterMessage(job);
-//		List<ComponentLaunchMessage> componentMessages = createComponentLaunchMessages(job);
+//	private LaunchStreamingJobMessage createLaunchStreamingJobMessage(TransientStreamingJob job) {
+//		LaunchFrameReaderMessage frameReaderMessage = createFrameReaderMessage(job);
+//		LaunchVideoWriterMessage videoWriterMessage = createVideoWriterMessage(job);
+//		List<LaunchComponentMessage> componentMessages = createLaunchComponentMessages(job);
 //
-//		return new StreamingJobLaunchMessage(
+//		return new LaunchStreamingJobMessage(
 //				job.getId(), frameReaderMessage, videoWriterMessage , componentMessages);
 //	}
 
 
-//	private FrameReaderLaunchMessage createFrameReaderMessage(TransientStreamingJob job) {
+//	private LaunchFrameReaderMessage createFrameReaderMessage(TransientStreamingJob job) {
 //		long jobId = job.getId();
 //
 //		String segmentOutputQueue = getAllSegmentQueues(jobId, job.getPipeline().getStages().size());
@@ -154,7 +154,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 //		String videoWriterFrameQueue = getVideoWriterFrameInput(jobId);
 //		String releaseFrameQueue = getReleaseFrameQueueName(jobId);
 //
-//		return new FrameReaderLaunchMessage(
+//		return new LaunchFrameReaderMessage(
 //				jobId,
 //				job.getStream().getUri(),
 //				job.getStream().getSegmentSize(),
@@ -169,13 +169,13 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 //	}
 
 
-//	private static VideoWriterLaunchMessage createVideoWriterMessage(TransientStreamingJob job) {
+//	private static LaunchVideoWriterMessage createVideoWriterMessage(TransientStreamingJob job) {
 //		long jobId = job.getId();
 //		String frameInputQueue = getVideoWriterFrameInput(jobId);
 //		String frameOutputQueue = StreamingEndpoints.DONE_WITH_FRAME.queueName();
 //		String segmentOutputQueue = StreamingEndpoints.WFM_SUMMARY_REPORTS.queueName();
 //
-//		return new VideoWriterLaunchMessage(
+//		return new LaunchVideoWriterMessage(
 //				jobId,
 //				job.getOutputObjectDirectory(),
 //				frameInputQueue,
@@ -185,18 +185,18 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 
 
 
-//	private List<ComponentLaunchMessage> createComponentLaunchMessages(TransientStreamingJob job) {
+//	private List<LaunchComponentMessage> createLaunchComponentMessages(TransientStreamingJob job) {
 //		List<TransientStage> stages = job.getPipeline().getStages();
-//		List<ComponentLaunchMessage> launchMessages = new ArrayList<>();
+//		List<LaunchComponentMessage> launchMessages = new ArrayList<>();
 //		for (int i = 0; i < stages.size(); i++) {
-//			ComponentLaunchMessage message = createComponentLaunchMessage(stages.get(i), i + 1, job);
+//			LaunchComponentMessage message = createLaunchComponentMessage(stages.get(i), i + 1, job);
 //			launchMessages.add(message);
 //		}
 //		return launchMessages;
 //	}
 
 
-//	private ComponentLaunchMessage createComponentLaunchMessage(
+//	private LaunchComponentMessage createLaunchComponentMessage(
 //			TransientStage stage, int stageNumber, TransientStreamingJob job) {
 //
 //		long jobId = job.getId();
@@ -230,7 +230,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 //			String frameOutputQueue = StreamingEndpoints.DONE_WITH_FRAME.queueName();
 //			String newTrackAlertQueue =	StreamingEndpoints.WFM_NEW_TRACK_ALERTS.queueName();
 //			String summaryReportQueue = StreamingEndpoints.WFM_SUMMARY_REPORTS.queueName();
-//			return new LastStageComponentLaunchMessage(
+//			return new LaunchLastStageComponentMessage(
 //					jobId,
 //					serviceName,
 //					stageNumber,
@@ -246,7 +246,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 //		}
 //		else {
 //			String frameOutputQueue =  getFramesQueueName(jobId, stageNumber);
-//			return new ComponentLaunchMessage(
+//			return new LaunchComponentMessage(
 //					jobId,
 //					serviceName,
 //					stageNumber,

@@ -30,12 +30,17 @@ import io.swagger.annotations.*;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.mvc.util.ModelUtils;
+import org.mitre.mpf.rest.api.MpfResponse;
 import org.mitre.mpf.rest.api.StreamingJobCancelResponse;
 import org.mitre.mpf.rest.api.StreamingJobInfo;
 import org.mitre.mpf.rest.api.StreamingJobCreationRequest;
 import org.mitre.mpf.rest.api.StreamingJobCreationResponse;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.event.JobProgress;
+import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidJobIdWfmProcessingException;
+import org.mitre.mpf.wfm.exceptions.JobAlreadyCancellingWfmProcessingException;
+import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidOutputObjectDirectoryWfmProcessingException;
+import org.mitre.mpf.wfm.exceptions.JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.StreamResource;
@@ -124,6 +129,22 @@ public class StreamingJobController {
         }
     }
 
+    /*
+     * GET /streaming/jobs
+     */
+    //EXTERNAL
+    @RequestMapping(value = "/rest/streaming/jobs", method = RequestMethod.GET)
+    @ApiOperation(value = "Gets a list of job ids for all streaming jobs.",
+        produces = "application/json", response=Long.class, responseContainer="List")
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successful response"),
+        @ApiResponse(code = 401, message = "Bad credentials")})
+    @ResponseBody
+    public List<Long> getStreamingJobsInfoRest() {
+        //get a list of all of the streaming job ids
+        return mpfService.getAllStreamingJobIds();
+    }
+
 // TODO:
 // /rest/streaming/jobs/{id}/output/detection
 // /streaming/jobs/output-object
@@ -171,7 +192,7 @@ public class StreamingJobController {
         if ( streamingJobExternalId != null ) {
             errBuilder.append(String.format(" with external id '%s'", streamingJobExternalId));
         }
-        errBuilder.append(" due to "+errorReason+". Please check the request parameters against the constraints defined in the REST API.");
+        errBuilder.append(" due to " + errorReason + ". Please check the request parameters against the constraints defined in the REST API.");
         String err = errBuilder.toString();
         log.error(err);
         return new StreamingJobCreationResponse(1, err);
@@ -182,12 +203,12 @@ public class StreamingJobController {
         try {
             if ( !streamingJobCreationRequest.isValidRequest() ) {
                 // The streaming job failed the API syntax check, the job request is malformed. Reject the job and send an error response.
-                return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),"malformed request");
+                return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(), "malformed request");
             } else if ( !StreamResource.isSupportedUriScheme(streamingJobCreationRequest.getStreamUri()) ) {
                 // The streaming job failed the check for supported stream protocol check, so OpenMPF can't process the requested stream URI.
                 // Reject the job and send an error response.
                 return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),
-                                                               "malformed or unsupported stream URI: "+streamingJobCreationRequest.getStreamUri());
+                                                               "malformed or unsupported stream URI: " + streamingJobCreationRequest.getStreamUri());
             } else {
                 boolean enableOutputToDisk = propertiesUtil.isOutputObjectsEnabled();
                 if ( streamingJobCreationRequest.getEnableOutputToDisk() != null ) {
@@ -220,7 +241,7 @@ public class StreamingJobController {
                 // is persisted in the long term database, and the streaming jobs output object file system
                 // will be created using the assigned jobId, if the creation of output objects is enabled .
                 long jobId = mpfService.submitJob(jsonStreamingJobRequest);
-                log.debug("Successful creation of streaming JobId: {}", jobId);
+                log.debug("Successful creation of streaming JobId {}", jobId);
 
                 // get the streamingJobRequest so we can pass along the output object directory in the
                 // streaming job creation response.
@@ -277,16 +298,56 @@ public class StreamingJobController {
     }
 
     private StreamingJobCancelResponse cancelStreamingJobInternal(long jobId, boolean doCleanup) {
-        log.debug("Attempting to cancel streaming job with id: {}.", jobId);
+        StreamingJobCancelResponse cancelResponse = null;
+        log.debug("Attempting to cancel streaming job with id {}.", jobId);
+
         StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
-        if ( mpfService.cancelStreamingJob(jobId, doCleanup ) ) {
-            log.debug("Successful cancellation of streaming job with id: {}",jobId);
-            return new StreamingJobCancelResponse(jobId,streamingJobRequest.getOutputObjectDirectory(), doCleanup);
+        if ( streamingJobRequest == null ) {
+            // if the requested streaming job doesn't exist, it can't be marked for cancellation, so this is an error.
+            cancelResponse = new StreamingJobCancelResponse(jobId, "", doCleanup,
+                MpfResponse.RESPONSE_CODE_ERROR, "Streaming job with id " + jobId + " doesn't exist.");
+        } else {
+            try {
+
+                mpfService.cancelStreamingJob(jobId, doCleanup);
+
+                log.info("Successfully marked for cancellation streaming job with id {}", jobId);
+
+                cancelResponse = new StreamingJobCancelResponse(jobId,
+                    streamingJobRequest.getOutputObjectDirectory(), doCleanup,
+                    MpfResponse.RESPONSE_CODE_SUCCESS, "success");
+
+            } catch (JobAlreadyCancellingWfmProcessingException | JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException we ) {
+                // If the job was marked for cancellation, but one of these warning exceptions were caught,
+                // log the warning and forward the warning along in the mpfResponse.
+                // TODO once Node Manager supports reporting when executor processes have halted, handling for JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException will be moved someplace else
+                log.warn("Got a warning when cancelling streaming job with id {}, warning is '{}'",
+                    jobId, we.getMessage());
+                cancelResponse = new StreamingJobCancelResponse(jobId,
+                    streamingJobRequest.getOutputObjectDirectory(), doCleanup,
+                    MpfResponse.RESPONSE_CODE_WARNING, we.getMessage());
+
+            } catch (JobCancellationInvalidOutputObjectDirectoryWfmProcessingException idee ) {
+                // TODO once Node Manager supports reporting when executor processes have halted, handling for JobCancellationInvalidOutputObjectDirectoryWfmProcessingException will be moved someplace else
+                // If the streaming job was marked for cancellation, but the
+                // jobs output object directory couldn't be deleted due to an error,
+                // log the error and forward the error along in the mpfResponse.
+                log.error("Got an output object directory error when cancelling streaming job with id {}, error is '{}'",
+                    jobId, idee.getMessage());
+                cancelResponse = new StreamingJobCancelResponse(jobId,
+                    streamingJobRequest.getOutputObjectDirectory(), doCleanup,
+                    MpfResponse.RESPONSE_CODE_ERROR, idee.getMessage());
+
+            } catch (JobCancellationInvalidJobIdWfmProcessingException cee ) {
+                // If the job could not be marked for cancellation because the streaming job Id was invalid,
+                // log the error and forward the error along in the mpfResponse.
+                log.error("Streaming job with id {} couldn't be cancelled, error is '{}'",
+                    jobId, cee.getMessage());
+                cancelResponse = new StreamingJobCancelResponse(jobId,
+                    streamingJobRequest.getOutputObjectDirectory(), doCleanup,
+                    MpfResponse.RESPONSE_CODE_ERROR, cee.getMessage());
+            }
         }
-        String errorStr = "Failed to cancel the streaming job with id '" + Long.toString(jobId)
-                + "'. Please check to make sure the streaming job exists before submitting a cancel request. "
-                + "Also consider checking the server logs for more information on this error.";
-        log.error(errorStr);
-        return new StreamingJobCancelResponse( doCleanup, 1, errorStr);
+        return cancelResponse;
     }
 }

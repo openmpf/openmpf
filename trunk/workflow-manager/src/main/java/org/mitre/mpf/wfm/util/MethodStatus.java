@@ -26,16 +26,33 @@
 
 package org.mitre.mpf.wfm.util;
 
-public class Status {
+public class MethodStatus {
+
+    public enum StatusCode {UNDEFINED, SUCCESS, ERROR, WARNING };
+	private StatusCode statusCode=StatusCode.UNDEFINED;
+	public StatusCode getStatus() { return statusCode; };
+
 	private String summary;
 	public String getSummary() { return summary; }
 
 	private String detail;
 	public String getDetail() { return detail; }
 
-	public Status(String summary) { this(summary, null); }
-	public Status(String summary, String detail) {
-		this.summary = summary;
-		this.detail = detail;
-	}
+    public MethodStatus(StatusCode statusCode, String summary) { this(statusCode, summary, null); }
+    public MethodStatus(StatusCode statusCode, String summary, String detail) {
+	    this.statusCode = statusCode;
+        this.summary = summary;
+        this.detail = detail;
+    }
+
+    public boolean isSuccess() { return statusCode == StatusCode.SUCCESS; }
+    public boolean isError() { return statusCode == StatusCode.ERROR; }
+    public boolean isWarning() { return statusCode == StatusCode.WARNING; }
+    public boolean isUndefined() { return statusCode == StatusCode.UNDEFINED; }
+
+    @Override
+    public String toString() {
+	    return "statusCode: " + statusCode + ", summary: " + summary + ", detail: " + detail;
+    }
+
 }

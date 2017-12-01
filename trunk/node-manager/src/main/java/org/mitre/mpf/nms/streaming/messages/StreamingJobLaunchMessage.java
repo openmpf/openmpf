@@ -43,7 +43,7 @@ public class StreamingJobLaunchMessage implements StreamingJobMessage, Serializa
 
 	public final double stallTimeout;
 
-	public final double stallAlertThreshold;
+	public final int stallAlertThreshold;
 
 	public final String componentName;
 
@@ -86,7 +86,7 @@ public class StreamingJobLaunchMessage implements StreamingJobMessage, Serializa
 			String streamUri,
 			int segmentSize,
 			double stallTimeout,
-			double stallAlertThreshold,
+			int stallAlertThreshold,
 			String componentName,
 			String componentLibraryPath,
 			Map<String, String> componentEnvironmentVariables,

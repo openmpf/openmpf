@@ -83,15 +83,15 @@ public class ChannelNode {
 
     /**
      *
-     * @param address : dest address or NULL for bcast
-     * @param object : object to send (any serializeable)
+     * @param address : destination address or null for broadcast
+     * @param object : object to send
      */
     public void send(Address address, Serializable object) {
         // send
         try {
             channel.send(address, object);
         } catch (Exception e) {
-            log.error("Failed to send to channel because of an exception.", e);
+            throw new IllegalStateException(e);
         }
     }
 
@@ -121,7 +121,8 @@ public class ChannelNode {
         return getChannel().getView().getMembers().stream()
                 .filter(addr -> searchPair.equals(AddressParser.parse(addr)))
                 .findAny()
-                .orElse(null);
+		        .orElseThrow(() -> new IllegalStateException(String.format(
+                        "Unable to locate node with hostname \"%s\" and type %s", hostname, nodeType)));
     }
 
 

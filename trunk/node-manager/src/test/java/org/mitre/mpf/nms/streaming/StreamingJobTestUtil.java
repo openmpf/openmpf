@@ -131,7 +131,7 @@ public class StreamingJobTestUtil {
 				"stream://theStream",
 				10,
 				5,
-				10.25,
+				10,
 				"MyComponent",
 				"my-lib-path/lib/libmyComponent.so",
 				Collections.emptyMap(),

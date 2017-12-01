@@ -501,17 +501,18 @@ public class PropertiesUtil {
 
 
 	@Value("${mpf.output.objects.activemq.hostname}")
-	private String activeMqUri;
-	public String getActiveMqUri() {
-		return activeMqUri;
+	private String amqUri;
+	public String getAmqUri() {
+		return amqUri;
 	}
 
 
-	@Value("${mpf.streaming.stall.alert.threshold}")
-	private double streamingJobStallAlertThreshold;
-	public double getStreamingJobStallAlertThreshold() {
+	@Value("${streaming.stallAlert.detectionThreshold}")
+	private int streamingJobStallAlertThreshold;
+	public int getStreamingJobStallAlertThreshold() {
 		return streamingJobStallAlertThreshold;
 	}
+
 
 	private void createConfigFiles() throws IOException {
 		if (!mediaTypesFile.exists()) {

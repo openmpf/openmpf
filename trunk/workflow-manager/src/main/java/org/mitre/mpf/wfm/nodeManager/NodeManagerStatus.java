@@ -75,7 +75,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 			isRunning = true;
 		}
 		try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
-			if (masterNode.loadConfigFile(inStream, propertiesUtil.getActiveMqUri())) {
+			if (masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri())) {
 				masterNode.launchAllNodes();
 			}
 		}

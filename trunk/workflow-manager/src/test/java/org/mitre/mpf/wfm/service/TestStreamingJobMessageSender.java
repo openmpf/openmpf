@@ -80,12 +80,12 @@ public class TestStreamingJobMessageSender {
 
 	@Test
 	public void testLaunch() {
-		double stallAlertThreshold = 234.1;
+		int stallAlertThreshold = 234;
 		when(_mockProperties.getStreamingJobStallAlertThreshold())
 				.thenReturn(stallAlertThreshold);
 
 		String activeMqUri = "failover://(tcp://localhost.localdomain:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1";
-		when(_mockProperties.getActiveMqUri())
+		when(_mockProperties.getAmqUri())
 				.thenReturn(activeMqUri);
 
 		AlgorithmDefinition algoDef = new AlgorithmDefinition(ActionType.DETECTION, "TEST ALGO", "Algo Description", true,

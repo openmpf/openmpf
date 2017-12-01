@@ -34,13 +34,11 @@ import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
-import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -96,7 +94,8 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 		Map<String, String> environmentVariables = streamingService.getEnvironmentVariables().stream()
 				.collect(toMap(EnvironmentVariableModel::getName, EnvironmentVariableModel::getValue));
 
-		Map<String, String> jobProperties = getCombinedJobProperties(job, action);
+		Map<String, String> jobProperties = AggregateJobPropertiesUtil.getCombinedJobProperties(
+				_pipelineService.getAlgorithm(action.getAlgorithm()), action, job);
 
 		return new StreamingJobLaunchMessage(
 				job.getId(),
@@ -109,7 +108,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 				environmentVariables,
 				jobProperties,
 				job.getStream().getMetadata(),
-				_properties.getActiveMqUri(),
+				_properties.getAmqUri(),
 				StreamingEndpoints.WFM_STREAMING_JOB_STATUS.queueName(),
 				StreamingEndpoints.WFM_STREAMING_JOB_ACTIVITY.queueName(),
 				StreamingEndpoints.WFM_STREAMING_JOB_SUMMARY_REPORTS.queueName());
@@ -134,28 +133,6 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 	}
 
 
-	private Map<String, String> getCombinedJobProperties(TransientStreamingJob job, TransientAction action) {
-		Map<String, String> modifiedMap = getAlgorithmProperties(action.getAlgorithm());
-		modifiedMap.putAll(action.getProperties());
-		modifiedMap.putAll(job.getOverriddenJobProperties());
-
-		Map<String, String> overriddenAlgoProps = job.getOverriddenAlgorithmProperties().get(action.getAlgorithm());
-		if (overriddenAlgoProps != null) {
-			modifiedMap.putAll(overriddenAlgoProps);
-		}
-
-		modifiedMap.putAll(job.getStream().getMediaProperties());
-
-		return modifiedMap;
-	}
-
-
-	private Map<String, String> getAlgorithmProperties(String algorithmName) {
-		AlgorithmDefinition algorithm = _pipelineService.getAlgorithm(algorithmName);
-		return algorithm.getProvidesCollection().getAlgorithmProperties().stream()
-				.collect(toMap(PropertyDefinition::getName, PropertyDefinition::getDefaultValue,
-				               (x, y) -> y, HashMap::new));
-	}
 
 
 	//TODO: For future use. Untested.

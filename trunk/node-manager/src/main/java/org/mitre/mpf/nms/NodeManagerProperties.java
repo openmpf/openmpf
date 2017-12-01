@@ -93,27 +93,27 @@ public class NodeManagerProperties {
 
 
 	//TODO: For future use. Untested.
-//	@Value("${mpf.streaming.frame.reader.executable}")
+//	@Value("${streaming.frame.reader.executable}")
 //	private String streamingFrameReaderExecutable;
 //	public String getStreamingFrameReaderExecutable() {
 //		return streamingFrameReaderExecutable;
 //	}
 //
 //
-//	@Value("${mpf.streaming.video.writer.executable}")
+//	@Value("${streaming.video.writer.executable}")
 //	private String streamingVideoWriterExecutable;
 //	public String getStreamingVideoWriterExecutable() {
 //		return streamingVideoWriterExecutable;
 //	}
 //
 //
-//	@Value("${mpf.streaming.component.executor.executable}")
+//	@Value("${streaming.component.executable}")
 //	private String streamingComponentExecutor;
 //	public String getStreamingComponentExecutor() {
 //		return streamingComponentExecutor;
 //	}
 
-	@Value("${mpf.streaming.component.executor.executable}")
+	@Value("${streaming.component.executable}")
 	private Resource streamingComponentExecutor;
 	public Resource getStreamingComponentExecutor() {
 		return streamingComponentExecutor;

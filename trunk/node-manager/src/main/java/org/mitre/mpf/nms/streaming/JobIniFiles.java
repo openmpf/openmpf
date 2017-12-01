@@ -34,6 +34,10 @@ public class JobIniFiles {
 
 	private final Path _jobIniDir;
 
+	// Path to an .ini file that contains all job information.
+	// When support for multi-stage streaming pipelines is added, this file will no longer be used.
+	// Instead, there will be a separate ini file for each executor that only
+	// contains the information relevant to that executor.
 	private final Path _jobIniPath;
 
 	//TODO: For future use. Untested.

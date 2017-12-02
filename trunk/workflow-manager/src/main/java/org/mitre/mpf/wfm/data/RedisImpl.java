@@ -108,7 +108,6 @@ public class RedisImpl implements Redis {
 			STREAM = "STREAM",
 			STALL_TIMEOUT = "STALL_TIMEOUT",
 			HEALTH_REPORT_CALLBACK_URI = "HEALTH_REPORT_CALLBACK_URI",
-            STREAMING_JOB_ASSOCIATIONS_HEALTH_REPORT_CALLBACK_URI = "STREAMING_JOB_ASSOCIATIONS_HEALTH_REPORT_CALLBACK_URI",
             LAST_HEALTH_REPORT_TIMESTAMP = "LAST_HEALTH_REPORT_TIMESTAMP",
 			LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID = "LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID",
 			LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_TIMESTAMP = "LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_TIMESTAMP",
@@ -732,27 +731,31 @@ public class RedisImpl implements Redis {
 		redisTemplate
 				.boundSetOps(STREAMING_JOB) // e.g., STREAMING_JOB
 				.add(Long.toString(transientStreamingJob.getId()));
-
-		// Persist the HealthReportCallbackURI streaming jobId associations to REDIS. The key will be constructed using
-        // the HealthReportCallbackURI defined for this streaming job,
-        // i.e. STREAMING_JOB_ASSOCIATIONS_HEALTH_REPORT_CALLBACK_URI:<HEALTH_REPORT_CALLBACK_URI>.
-        // This key will provide access to the list of streaming job ids whose HealthReportCallbackURIs are identical.
-        redisTemplate
-            .boundSetOps(key(STREAMING_JOB_ASSOCIATIONS_HEALTH_REPORT_CALLBACK_URI,
-                transientStreamingJob.getHealthReportCallbackURI())).add(Long.toString(transientStreamingJob.getId()));
 	}
 
     /**
-     * Get the list of callback URIs associated with these active streaming jobs.  Note that
-     * this usage will eliminate duplicate HealthReportCallbackURIs, so streaming jobs which specify
-     * the same HealthReportCallbackURI will only receive the health report once, and that health report
-     * will contain health for all streaming jobs with the same HealthReportCallbackURI.  Note that if there are
-     * no duplicates, then the number of HealthReportCallbackURIs will be the same as the number of jobIds.
+     * TODO filter out any jobs which may have already terminated
+     * Get the list of unique health report callback URIs associated with the specified jobs.
+     * @param jobIds unique job ids of streaming jobs
+     * @return Map of healthReportCallbackUri (keys), with each key mapping to the List of jobIds that specified that healthReportCallbackUri
      */
-    public Map<String,List<Long>> getJobsHealthReportCommonCallbackURIs(List<Long> jobIds) {
-
+    public Map<String,List<Long>> getUniqueHealthReportCallbackURIs(List<Long> jobIds) {
+        Map<String,List<Long>> healthReportCallbackJobIdListMap = new HashMap<>();
+        for ( final Long jobId : jobIds ) {
+            String healthReportCallbackURI = getStreamingJob(jobId).getHealthReportCallbackURI();
+            if ( healthReportCallbackJobIdListMap.containsKey(healthReportCallbackURI) ) {
+                // some other streaming job has already registered this health report callback URI, add this job to the list
+                List<Long> jobList = healthReportCallbackJobIdListMap.get(healthReportCallbackURI);
+                jobList.add(Long.valueOf(jobId));
+            } else {
+                // This is the first streaming job to register this health report callback URI
+                List<Long> jobList = new ArrayList<>();
+                jobList.add(Long.valueOf(jobId));
+                healthReportCallbackJobIdListMap.put(healthReportCallbackURI,jobList);
+            }
+        }
+        return healthReportCallbackJobIdListMap;
     }
-
 
     /**
 	 * Set the current task index of the specified batch job.  Note: stage tracking is not supported for streaming jobs
@@ -1015,13 +1018,29 @@ public class RedisImpl implements Redis {
 		}
 	}
 
+    private String getCallbackMethod(Long jobId) throws WfmProcessingException {
+	    return getCallbackMethod(jobId.longValue());
+    }
+
     @Override
-    public List<String> getCallbackMethod(List<Long> jobIds) throws WfmProcessingException {
+    public List<String> getJobIdCallbackMethodAsList(List<Long> jobIds) throws WfmProcessingException {
 	    if ( jobIds == null ) {
             throw new WfmProcessingException("Error, jobIds can't be null");
         } else {
-            return jobIds.stream().map(jobId -> getCallbackMethod(jobId))
-                .collect(Collectors.toList());
+            return jobIds.stream().map(jobId -> getCallbackMethod(jobId)).collect(Collectors.toList());
+        }
+    }
+
+    @Override
+    public Map<Long,String> getJobIdCallbackMethodAsMap(List<Long> jobIds) throws WfmProcessingException {
+        if ( jobIds == null ) {
+            throw new WfmProcessingException("Error, jobIds can't be null");
+        } else {
+            HashMap<Long,String> map = new HashMap<>();
+            for ( final Long jobId : jobIds ) {
+                map.put(jobId,getCallbackMethod(jobId));
+            }
+            return map;
         }
     }
 

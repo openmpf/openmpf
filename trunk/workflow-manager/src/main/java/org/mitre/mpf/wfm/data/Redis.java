@@ -233,21 +233,36 @@ public interface Redis {
 	 */
 	String getHealthReportCallbackURI(final long jobId) throws WfmProcessingException;
 
-	/**
-	 * The METHOD of the Callback to connect to when the job is completed. POST or GET.
-	 * @param jobId The MPF-assigned ID of the job to which this Callback Method will refer to.
-	 * @return The METHOD of the Callback to connect to when the job is completed. POST or GET.
-	 * @throws WfmProcessingException
-	 */
+    /**
+     * Get the list of unique health report callback URIs associated with the specified jobs.
+     * @param jobIds unique job ids of streaming jobs
+     * @return Map of healthReportCallbackUri (keys), with each key mapping to the List of jobIds that specified that healthReportCallbackUri
+     */
+    Map<String,List<Long>> getUniqueHealthReportCallbackURIs(List<Long> jobIds);
+
+    /**
+     * The METHOD of the Callback to connect to when the job is completed. POST or GET.
+     * @param jobId The MPF-assigned ID of the job to which this Callback Method will refer to.
+     * @return The METHOD of the Callback to connect to when the job is completed. POST or GET.
+     * @throws WfmProcessingException
+     */
 	String getCallbackMethod(final long jobId) throws WfmProcessingException;
 
 	/**
-	 * The callback method for each job. Should be POST or GET.
+	 * The callback method for each job as a List. Should be POST or GET.
 	 * @param jobIds The MPF-assigned IDs of the jobs to which this Callback Method will refer to.
-	 * @return The callback method for each job. Should be POST or GET.
+	 * @return List of callback methods for each job. Should be POST or GET.
 	 * @throws WfmProcessingException
 	 */
-	List<String> getCallbackMethod(final List<Long> jobIds) throws WfmProcessingException;
+	List<String> getJobIdCallbackMethodAsList(final List<Long> jobIds) throws WfmProcessingException;
+
+    /**
+     * The callback method for each job assicated in a Map. Should be POST or GET.
+     * @param jobIds The MPF-assigned IDs of the jobs to which this Callback Method will refer to.
+     * @return Map of callback methods for each job. Should be POST or GET.
+     * @throws WfmProcessingException
+     */
+    Map<Long,String> getJobIdCallbackMethodAsMap(List<Long> jobIds) throws WfmProcessingException;
 
 	/**
 	 * Returns the external id assigned to a job with JobId.

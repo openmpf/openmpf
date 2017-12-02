@@ -47,7 +47,7 @@ public class JsonHealthReportDataCallbackBody {
     }
 
     public static final String TIMESTAMP_PATTERN = "yyyy-MM-dd kk:mm:ss.S";
-    private DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN);
+    public static final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN);
 
     /** The internal job identifier(s) assigned to these jobs by MPF. May be 1 to many. */
     private List<Long> jobIds = null;

@@ -683,21 +683,21 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * The health report will be sent in a newly started thread. The time when this health report is actually sent by the thread
      * will be recorded in REDIS.
      * @param activeStreamingJobIds unique ids for the active streaming jobs to be reported on
-     * @param commonHealthReportCallbackUri the common health report callback URI for all of these active streaming jobs.
+     * @param healthReportCallbackUri the single health report callback URI defined for all of these active streaming jobs.
      * @throws WfmProcessingException may be thrown if jobIds is null
      */
-    private void healthReportCallback(List<Long> activeStreamingJobIds, String commonHealthReportCallbackUri) throws WfmProcessingException {
+    private void healthReportCallback(List<Long> activeStreamingJobIds, String healthReportCallbackUri) throws WfmProcessingException {
 
         // even though these streaming jobs all requested a common callback URI, they may have specified different delivery methods.
-        List<String> jsonCallbackMethods = redis.getCallbackMethod(activeStreamingJobIds);
+        Map<Long,String> jobIdCallbackMethodMap = redis.getJobIdCallbackMethodAsMap(activeStreamingJobIds);
 
-        if ( commonHealthReportCallbackUri != null &&
-             jsonCallbackMethods.stream().filter(method-> (method.equalsIgnoreCase("POST") || method.equalsIgnoreCase("GET"))).count()==0 ) {
-            log.info("Starting health report callback send to common " + commonHealthReportCallbackUri + " for active Streaming jobs " + activeStreamingJobIds);
+        if ( healthReportCallbackUri != null &&
+            jobIdCallbackMethodMap.values().stream().filter(method-> (method.equalsIgnoreCase("POST") || method.equalsIgnoreCase("GET"))).count()==0 ) {
+            log.info("Starting health report callback send to single " + healthReportCallbackUri + " for active Streaming jobs " + activeStreamingJobIds);
             // send the health report to the callback URL in a newly started thread
-            new Thread(new HealthReportCallbackThread(activeStreamingJobIds, commonHealthReportCallbackUri, jsonCallbackMethods)).start();
-        } else if ( commonHealthReportCallbackUri == null ) {
-            throw new WfmProcessingException("Error, commonHealthReportCallbackUri can't be null.");
+            new Thread(new HealthReportCallbackThread(healthReportCallbackUri, jobIdCallbackMethodMap)).start();
+        } else if ( healthReportCallbackUri == null ) {
+            throw new WfmProcessingException("Error, healthReportCallbackUri can't be null.");
         } else {
             throw new WfmProcessingException("Error, one of the callback methods defined for Streaming jobs " + activeStreamingJobIds +" is not POST or GET.");
         }
@@ -716,15 +716,15 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         if ( jobIds == null ) {
             throw new WfmProcessingException("Error: jobIds must not be null");
         } else {
-            // get the list of all active, streaming job ids.
-            List<Long> activeStreamingJobIds = jobIds.stream().filter(jobId->redis.isJobTypeStreaming(jobId)).collect(Collectors.toList());
-            // get the list of callback URIs associated with these active streaming jobs.  Note that
+            // Get the list of health report callback URIs associated with the specified jobs. Note that
             // this usage will eliminate duplicate HealthReportCallbackURIs, so streaming jobs which specify
             // the same HealthReportCallbackURI will only receive the health report once, and that health report
-            // will contain health for all streaming jobs with the same HealthReportCallbackURI.  Note that if there are
+            // will contain health for all streaming jobs with the same HealthReportCallbackURI. Note that if there are
             // no duplicates, then the number of HealthReportCallbackURIs will be the same as the number of jobIds.
-            Map<String,List<Long>> callbackUriJobIdMap = redis.getJobsHealthReportCommonCallbackURIs(activeStreamingJobIds);
-            callbackUriJobIdMap.keySet().stream().forEach(callbackUri -> healthReportCallback(callbackUriJobIdMap.get(callbackUri),callbackUri));
+            Map<String,List<Long>> healthReportCallbackUriToJobIdListMap = redis.getUniqueHealthReportCallbackURIs(jobIds);
+            // For each healthReportCallbackUri, send a health report containing health information for each streaming jog
+            // that specifies that healthReportCallbackUri
+            healthReportCallbackUriToJobIdListMap.keySet().stream().forEach(callbackUri -> healthReportCallback(healthReportCallbackUriToJobIdListMap.get(callbackUri),callbackUri));
         }
     }
 
@@ -826,10 +826,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * mark the time, the timestamp should be constructed and stored in the run method.
      */
     public class HealthReportCallbackThread implements Runnable {
-        private List<Long> jobIds = null;
         private String callbackURL = null;
-        private List<String> callbackMethods = null;
-
+        private Map<Long,String> jobIdCallbackMethodMap = null;
         private HttpUriRequest req;
 
         /**
@@ -839,87 +837,95 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
          * @param callbackMethod callback method defined for that single streaming job
          */
         public HealthReportCallbackThread(long jobId, String callbackURL, String callbackMethod) {
-            jobIds = new ArrayList<>();
-            jobIds.add(Long.valueOf(jobId));
             this.callbackURL = callbackURL;
-            callbackMethods = new ArrayList<>();
-            callbackMethods.add(callbackMethod);
+            jobIdCallbackMethodMap = new HashMap<>();
+            jobIdCallbackMethodMap.put(Long.valueOf(jobId),callbackMethod);
         }
 
         /**
          * Constructor used for sending a health report for a set of streaming jobs, which have
          * all defined the same health report callback URI, but may have requested different
-         * callback methods
-         * @param jobIds unique ids for the streaming jobs
-         * @param callbackURL common health report callback URI defined for all these streaming jobs
-         * @param callbackMethods callback methods defined for these streaming jobs
+         * callback methods.
+         * @param callbackURL single health report callback URI defined for all these streaming jobs.
+         * @param jobIdCallbackMethodMap map of jobId to callback methods defined for each of the streaming jobs sending to this single health report callback URI.
          */
-        public HealthReportCallbackThread(List<Long> jobIds, String callbackURL, List<String> callbackMethods) {
-            this.jobIds = jobIds;
+        public HealthReportCallbackThread(String callbackURL, Map<Long,String> jobIdCallbackMethodMap) {
             this.callbackURL = callbackURL;
-            this.callbackMethods = callbackMethods;
+            this.jobIdCallbackMethodMap = jobIdCallbackMethodMap;
         }
 
         @Override
         public void run() {
-            final HttpClient httpClient = HttpClientBuilder.create().build();
-            try {
-                HttpUriRequest req = null;
-                LocalDateTime currentDateTime = LocalDateTime.now();
+            if ( jobIdCallbackMethodMap == null ) {
+                log.warn("Failed to issue HealthReportCallback to '{}' because map of jobIds,callbackMethods is null",callbackURL);
+            } else {
+                final HttpClient httpClient = HttpClientBuilder.create().build();
+                try {
+                    HttpUriRequest req = null;
+                    LocalDateTime currentDateTime = LocalDateTime.now();
 
-                // get other information from REDIS about this streaming job.
-                String externalId = redis.getExternalId(jobId);
-                String jobStatus = redis.getJobStatus(jobId).toString();
-                String lastNewActivityAlertFrameId = redis.getHealthReportLastNewActivityAlertFrameId(jobId);
-                LocalDateTime lastNewActivityAlertTimestamp = redis.getHealthReportLastNewActivityAlertTimestamp(jobId);
+                    // Construct HealthReportData for all jobIds included in the jobIdCallbackMethodMap
+                    List<Long> jobIds = jobIdCallbackMethodMap.keySet().stream().collect(Collectors.toList());
 
-                if (callbackMethod.equals("GET")) {
-                    String jsonCallbackURL2 = callbackURL;
-                    if (jsonCallbackURL2.contains("?")) {
-                        jsonCallbackURL2 += "&";
-                    } else {
-                        jsonCallbackURL2 += "?";
+                    // get other information from REDIS about this streaming job.
+                    List<String> externalIds = redis.getExternalId(jobIds);
+                    List<String> jobStatuses = redis.getJobStatus(jobIds);
+                    List<String> lastNewActivityAlertFrameIds = redis.getHealthReportLastNewActivityAlertFrameId(jobIds);
+                    List<LocalDateTime> lastNewActivityAlertTimestamps = redis.getHealthReportLastNewActivityAlertTimestamp(jobIds);
+
+                    // If any of these jobs requested sending to the callback using GET method, then send that health report using the GET method
+                    if ( jobIdCallbackMethodMap.values().stream().anyMatch(callbackMethod -> callbackMethod.equalsIgnoreCase("GET")) ) {
+                        String jsonCallbackURL2 = callbackURL;
+                        if (jsonCallbackURL2.contains("?")) {
+                            jsonCallbackURL2 += "&";
+                        } else {
+                            jsonCallbackURL2 += "?";
+                        }
+                        jsonCallbackURL2 += "jobid=" + jobIds;
+                        jsonCallbackURL2 += "&externalid=" + externalIds; // TODO need convert to comma delimited String and handle null values in List
+                        jsonCallbackURL2 += "&reportDate=" + JsonHealthReportDataCallbackBody.timestampFormatter.format(currentDateTime);
+                        jsonCallbackURL2 += "&jobStatus=" + jobStatuses;  // TODO need convert to comma delimited String and handle null values in List
+                        jsonCallbackURL2 += "&lastNewActivityAlertFrameId =" + lastNewActivityAlertFrameIds; // TODO need convert to comma delimited String and handle null values in List
+
+                        // TODO need parse from LocalDateTime, and convert to comma delimited String and handle null values in List
+                        jsonCallbackURL2 += "&lastNewActivityAlertFrameId =" + JsonHealthReportDataCallbackBody.timestampFormatter.format(lastNewActivityAlertTimestamps);
+                        req = new HttpGet(jsonCallbackURL2);
+
+                        // if the http request was properly constructed, then send it
+                        if (req != null) {
+                            HttpResponse response = httpClient.execute(req);
+                            log.info("{} HealthReportCallback issued to '{GET}' (Response={}).", callbackURL, response);
+                        }
                     }
-                    jsonCallbackURL2 += "jobid=" + jobId;
-                    if (externalId!= null) {
-                        jsonCallbackURL2 += "&externalid=" + externalId;
+
+                    // If any of these jobs requested sending to the callback using POST method, then send that health report using the POST method
+                    if ( jobIdCallbackMethodMap.values().stream().anyMatch(callbackMethod -> callbackMethod.equalsIgnoreCase("POST")) ) {
+                        HttpPost post = new HttpPost(callbackURL);
+                        post.addHeader("Content-Type", "application/json");
+                        try {
+                            JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(
+                                currentDateTime, jobIds, externalIds, jobStatuses,
+                                lastNewActivityAlertFrameIds, lastNewActivityAlertTimestamps);
+                            post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
+                            req = post;
+
+                            // if the http request was properly constructed, then send it
+                            if (req != null) {
+                                HttpResponse response = httpClient.execute(req);
+                                log.info("{} HealthReportCallback issued to '{POST}' (Response={}).", callbackURL, response);
+                            }
+                        } catch (UnsupportedEncodingException uee) {
+                            log.warn(
+                                "Failed to issue {POST} HealthReportCallback to '{}' due to an UnsupportedEncodingException.",
+                                callbackURL, uee);
+                        } catch (WfmProcessingException e) {
+                            log.error("Cannot serialize JsonHealthReportDataCallbackBody", e);
+                        }
                     }
-                    jsonCallbackURL2 += "&reportDate=" + DateTimeFormatter.ISO_INSTANT.format(currentDateTime);
-                    if (jobStatus != null) {
-                        jsonCallbackURL2 += "&jobStatus=" + jobStatus;
-                    }
-                    if (lastNewActivityAlertFrameId != null) {
-                        jsonCallbackURL2 += "&lastNewActivityAlertFrameId =" + lastNewActivityAlertFrameId;
-                    }
-                    req = new HttpGet(jsonCallbackURL2);
-                } else { // this is for a POST
-                    HttpPost post = new HttpPost(callbackURL);
-                    post.addHeader("Content-Type", "application/json");
-                    try {
-                        JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(currentDateTime, jobId, externalId, jobStatus,
-                                                                                lastNewActivityAlertFrameId, lastNewActivityAlertTimestamp);
-                        post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
-                        req = post;
-                    } catch (WfmProcessingException e) {
-                        log.error("Cannot serialize JsonHealthReportDataCallbackBody", e);
-                    }
+
+                } catch (Exception exception) {
+                    log.warn("Failed to issue HealthReportCallback to '{}' due to an I/O exception.", callbackURL, exception);
                 }
-
-                // if the http request was properly constructed, then send it and record the time the health report was sent in REDIS
-                if ( req != null ) {
-
-                    HttpResponse response = httpClient.execute(req);
-                    log.info("{} HealthReportCallback issued to '{}' (Response={}).", callbackMethod, callbackURL, response);
-
-                    // record the time this health report was sent to the callbackURL in REDIS
-                    redis.setHealthReportLastTimestamp(jobId, currentDateTime);
-
-                 }
-
-            } catch (UnsupportedEncodingException uee) {
-                log.warn("Failed to issue {} HealthReportCallback to '{}' due to an UnsupportedEncodingException.", callbackMethod, callbackURL, uee);
-            } catch (Exception exception) {
-                log.warn("Failed to issue {} HealthReportCallback to '{}' due to an I/O exception.", callbackMethod, callbackURL, exception);
             }
         }
     }

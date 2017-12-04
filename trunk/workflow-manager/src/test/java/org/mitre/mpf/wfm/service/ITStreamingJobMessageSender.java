@@ -118,6 +118,7 @@ public class ITStreamingJobMessageSender {
 	}
 
 
+	// TODO: Remove when real streaming component executor is available.
 	@Test
 	public void testJobStartStop() throws InterruptedException {
 
@@ -140,10 +141,11 @@ public class ITStreamingJobMessageSender {
 
 		_jobSender.stopJob(123);
 
+		// The python test process is used for this test. The test process sleeps for 3 seconds before exiting.
 		verify(_mockStreamingJobRequestBo, never())
 				.jobCompleted(anyLong(), any(JobStatus.class));
 
-		Thread.sleep(1000);
+		Thread.sleep(3200);
 
 		verify(_mockStreamingJobRequestBo, timeout(30_000))
 				.jobCompleted(eq(123L), notNull(JobStatus.class));

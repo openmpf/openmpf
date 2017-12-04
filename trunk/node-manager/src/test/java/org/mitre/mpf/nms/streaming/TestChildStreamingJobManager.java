@@ -65,10 +65,10 @@ public class TestChildStreamingJobManager {
 	@Test
 	public void canHandleJobStartAndStop() {
 		StreamingJob job = mock(StreamingJob.class);
-		JobController jobCtrl = setupMockJob(job);
+		TestJobController jobCtrl = setupMockJob(job);
 
 		StreamingJob job2 = mock(StreamingJob.class);
-		JobController jobCtrl2 = setupMockJob(job2);
+		TestJobController jobCtrl2 = setupMockJob(job2);
 
 		LaunchStreamingJobMessage launchMessage = StreamingJobTestUtil.createLaunchMessage(1);
 		LaunchStreamingJobMessage launchMessage2 = StreamingJobTestUtil.createLaunchMessage(2);
@@ -113,7 +113,7 @@ public class TestChildStreamingJobManager {
 				.sendToMaster(jobExitMessage(2, StreamingJobExitedMessage.Reason.CANCELLED));
 		// job1 is still running
 		verify(_mockChannel, never())
-				.sendToMaster(jobExitMessage(1, null));
+				.sendToMaster(jobExitMessage(1));
 
 
 		jobCtrl.allowComplete();
@@ -127,7 +127,7 @@ public class TestChildStreamingJobManager {
 	@Test
 	public void canHandleStreamStalled() {
 		StreamingJob job = mock(StreamingJob.class);
-		JobController jobCtrl = setupMockJob(job);
+		TestJobController jobCtrl = setupMockJob(job);
 
 		LaunchStreamingJobMessage launchMessage = StreamingJobTestUtil.createLaunchMessage(1);
 
@@ -142,7 +142,7 @@ public class TestChildStreamingJobManager {
 				.startJob();
 
 		verify(_mockChannel, never())
-				.sendToMaster(jobExitMessage(1, null));
+				.sendToMaster(jobExitMessage(1));
 
 		jobCtrl.causeException(new StreamStalledException());
 
@@ -154,7 +154,7 @@ public class TestChildStreamingJobManager {
 	@Test
 	public void canHandleGeneralJobException() {
 		StreamingJob job = mock(StreamingJob.class);
-		JobController jobCtrl = setupMockJob(job);
+		TestJobController jobCtrl = setupMockJob(job);
 
 		LaunchStreamingJobMessage launchMessage = StreamingJobTestUtil.createLaunchMessage(1);
 
@@ -169,7 +169,7 @@ public class TestChildStreamingJobManager {
 				.startJob();
 
 		verify(_mockChannel, never())
-				.sendToMaster(jobExitMessage(1, null));
+				.sendToMaster(jobExitMessage(1));
 
 		jobCtrl.causeException(new IllegalStateException("Intentional"));
 
@@ -179,7 +179,7 @@ public class TestChildStreamingJobManager {
 
 
 
-	private static StreamingJobExitedMessage jobExitMessage(long jobId, StreamingJobExitedMessage.Reason reason) {
+	private static StreamingJobExitedMessage jobExitMessage(long jobId) {
 		return Matchers.argThat(new BaseMatcher<StreamingJobExitedMessage>() {
 			@Override
 			public void describeTo(Description description) {
@@ -189,13 +189,30 @@ public class TestChildStreamingJobManager {
 			@Override
 			public boolean matches(Object item) {
 				StreamingJobExitedMessage message = (StreamingJobExitedMessage) item;
-				return jobId == message.jobId && (reason == null || reason == message.reason);
+				return jobId == message.jobId;
 			}
 		});
 	}
 
 
-	private static JobController setupMockJob(StreamingJob job) {
+	private static StreamingJobExitedMessage jobExitMessage(long jobId, StreamingJobExitedMessage.Reason reason) {
+		return Matchers.argThat(new BaseMatcher<StreamingJobExitedMessage>() {
+			@Override
+			public void describeTo(Description description) {
+				description.appendText("StreamingJobExitedMessage.jobId = ").appendValue(jobId)
+					.appendText(" and StreamingJobExitedMessage.reason = ").appendValue(reason);
+			}
+
+			@Override
+			public boolean matches(Object item) {
+				StreamingJobExitedMessage message = (StreamingJobExitedMessage) item;
+				return jobId == message.jobId && reason == message.reason;
+			}
+		});
+	}
+
+
+	private static TestJobController setupMockJob(StreamingJob job) {
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		when(job.startJob())
 				.thenReturn(future);
@@ -203,7 +220,7 @@ public class TestChildStreamingJobManager {
 		when(job.stopJob())
 				.thenReturn(future);
 
-		return new JobController() {
+		return new TestJobController() {
 			public void allowComplete() {
 				future.complete(null);
 			}
@@ -215,7 +232,7 @@ public class TestChildStreamingJobManager {
 	}
 
 
-	private static interface JobController {
+	private static interface TestJobController {
 		void allowComplete();
 
 		void causeException(Exception e);

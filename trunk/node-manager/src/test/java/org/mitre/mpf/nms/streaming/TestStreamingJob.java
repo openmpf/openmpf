@@ -29,9 +29,9 @@ package org.mitre.mpf.nms.streaming;
 import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class TestStreamingJob {
@@ -84,8 +84,7 @@ public class TestStreamingJob {
 //
 //		componentCtrl2.allowExit();
 //
-//		verify(frameReader)
-//				.quit();
+//		verifyQuitNotSent(frameReader);
 //
 //		assertFalse("Job completed before FrameReader exited", jobCompleteFuture.isDone());
 //
@@ -99,7 +98,7 @@ public class TestStreamingJob {
 //		verify(jobIniFiles)
 //				.deleteIniFiles();
 //
-//		jobCompleteFuture.join();
+//	    assertFalse(jobCompleteFuture.isCompletedExceptionally());
 //	}
 
 
@@ -134,8 +133,7 @@ public class TestStreamingJob {
 //
 //		componentCtrl.allowExit();
 //
-//		verify(frameReader)
-//				.quit();
+//	    verifyQuitCommandSent(frameReader);
 //
 //		assertFalse("Job completed before FrameReader exited", jobCompleteFuture.isDone());
 //
@@ -149,16 +147,12 @@ public class TestStreamingJob {
 //		verify(jobIniFiles)
 //				.deleteIniFiles();
 //
-//		try {
-//			jobCompleteFuture.join();
-//			fail("Expected CompletionException");
-//		}
-//		catch (CompletionException expected) {
-//		}
+//	    assertTrue(jobCompleteFuture.isCompletedExceptionally());
 //	}
 
+
 	@Test
-	public void testShutdownOrder() throws InterruptedException {
+	public void testShutdownOrder() {
 		JobIniFiles jobIniFiles = mock(JobIniFiles.class);
 
 		StreamingProcess streamingProcess = mock(StreamingProcess.class);
@@ -188,9 +182,8 @@ public class TestStreamingJob {
 		verify(jobIniFiles)
 				.deleteIniFiles();
 
-		jobCompleteFuture.join();
+		assertFalse(jobCompleteFuture.isCompletedExceptionally());
 	}
-
 
 
 
@@ -224,14 +217,9 @@ public class TestStreamingJob {
 		verify(jobIniFiles)
 				.deleteIniFiles();
 
-		try {
-			jobCompleteFuture.join();
-			fail("Expected CompletionException");
-		}
-		catch (CompletionException expected) {
-		}
-
+		assertTrue(jobCompleteFuture.isCompletedExceptionally());
 	}
+
 
 	private static void verifyStarted(StreamingProcess... processes) {
 		for (StreamingProcess process : processes) {

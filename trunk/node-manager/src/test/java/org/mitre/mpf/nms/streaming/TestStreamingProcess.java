@@ -34,10 +34,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 import static org.junit.Assert.*;
 
@@ -97,29 +94,31 @@ public class TestStreamingProcess {
 
 
 	@Test
-	public void throwsStallException() {
+	public void throwsStallException() throws InterruptedException, TimeoutException {
+		// 76 is exit code for terminated due to stall.
 		ProcessBuilder builder = new ProcessBuilder("python", "-c", "import sys; sys.exit(76)");
 		StreamingProcess process = new StreamingProcess("StallTest", builder, 3);
 
 		try {
-			process.start().join();
-			fail("Expected CompletionException");
+			CompletableFuture<Void> processFuture = process.start();
+			processFuture.get(5, TimeUnit.SECONDS);
+			fail("Expected ExecutionException");
 		}
-		catch (CompletionException e) {
+		catch (ExecutionException e) {
 			assertTrue(e.getCause() instanceof StreamStalledException);
 		}
 	}
 
 
 	@Test
-	public void testRestartLimit() throws IOException, InterruptedException {
+	public void testRestartLimit() throws IOException, InterruptedException, TimeoutException {
 		testRestartCount(0);
 		testRestartCount(1);
 		testRestartCount(3);
 	}
 
 
-	private void testRestartCount(int restartLimit) throws IOException, InterruptedException {
+	private void testRestartCount(int restartLimit) throws IOException, InterruptedException, TimeoutException {
 		Path countFile = _tempDir.newFile().toPath();
 
 		String[] cmdline = {"python", StreamingJobTestUtil.TEST_PROCESS_PATH, "MyComponent", "fake-path", "0",
@@ -131,7 +130,7 @@ public class TestStreamingProcess {
 		CompletableFuture<Void> future = process.start();
 
 		try {
-			future.get();
+			future.get(5, TimeUnit.SECONDS);
 			fail("Expected ExecutionException");
 		}
 		catch (ExecutionException e) {

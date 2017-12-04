@@ -35,7 +35,10 @@ import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mockito.stubbing.Answer;
 
 import java.nio.file.Path;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -73,7 +76,7 @@ public class ITStreamingJob {
 
 
 	@Test
-	public void testStreamingJobWithPythonProcess() throws InterruptedException, ExecutionException {
+	public void testStreamingJobWithPythonProcess() throws InterruptedException, TimeoutException, ExecutionException {
 		StreamingJobFactory jobFactory = new StreamingJobFactory(_mockProcessFactory, new IniManager(_mockProperties));
 
 		LaunchStreamingJobMessage launchJobMessage = StreamingJobTestUtil.createLaunchMessage();
@@ -84,7 +87,9 @@ public class ITStreamingJob {
 
 		Thread.sleep(1000);
 
-		job.stopJob().join();
+		CompletableFuture<Void> jobCompleteFuture = job.stopJob();
+
+		jobCompleteFuture.get(10, TimeUnit.SECONDS);  // Make sure no exceptions thrown
 	}
 
 

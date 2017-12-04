@@ -140,8 +140,10 @@ public class TestMasterStreamingJobManager {
 		// If stopJob removed job immediately, then n1 would have been selected since it would have no jobs.
 		assertEquals(n2, startJob(createLaunchMessage(4), Arrays.asList(n1, n2)));
 
-		_streamingJobManager.streamingJobExited(new StreamingJobExitedMessage(1));
-		_streamingJobManager.streamingJobExited(new StreamingJobExitedMessage(2));
+		_streamingJobManager.streamingJobExited(new StreamingJobExitedMessage(
+				1, StreamingJobExitedMessage.Reason.CANCELLED));
+		_streamingJobManager.streamingJobExited(new StreamingJobExitedMessage(
+				2, StreamingJobExitedMessage.Reason.CANCELLED));
 
 		// At this point n1 should have 0 jobs and n2 should 1 job so n1 should be selected
 		assertEquals(n1, startJob(createLaunchMessage(5), Arrays.asList(n1, n2)));

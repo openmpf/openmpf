@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -95,6 +96,20 @@ public class TestStreamingProcess {
 	}
 
 
+	@Test
+	public void throwsStallException() {
+		ProcessBuilder builder = new ProcessBuilder("python", "-c", "import sys; sys.exit(76)");
+		StreamingProcess process = new StreamingProcess("StallTest", builder, 3);
+
+		try {
+			process.start().join();
+			fail("Expected CompletionException");
+		}
+		catch (CompletionException e) {
+			assertTrue(e.getCause() instanceof StreamStalledException);
+		}
+	}
+
 
 	@Test
 	public void testRestartLimit() throws IOException, InterruptedException {
@@ -102,6 +117,7 @@ public class TestStreamingProcess {
 		testRestartCount(1);
 		testRestartCount(3);
 	}
+
 
 	private void testRestartCount(int restartLimit) throws IOException, InterruptedException {
 		Path countFile = _tempDir.newFile().toPath();

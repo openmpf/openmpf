@@ -36,11 +36,11 @@ import java.util.concurrent.Executors;
 
 public class StreamingProcess {
 
-	private static final Logger log = LoggerFactory.getLogger(StreamingProcess.class);
-
+	private static final Logger LOG = LoggerFactory.getLogger(StreamingProcess.class);
 
 	private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
 
+	private static final int STREAM_STALLED_EXIT_CODE = 76;
 
 	private final String _executable;
 
@@ -72,7 +72,7 @@ public class StreamingProcess {
 		}
 
 		for (int i = 0; i < _maxNumRestarts; i++) {
-			log.warn("Restarting the {} process. The process has been started {} times.", _executable, i + 1);
+			LOG.warn("Restarting the {} process. The process has been started {} times.", _executable, i + 1);
 			if (awaitExit(createProcess())) {
 				return;
 			}
@@ -104,10 +104,10 @@ public class StreamingProcess {
 
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
 			reader.lines()
-					.forEach(line -> log.info("[{}]: {}", _executable, line));
+					.forEach(line -> LOG.info("[{}]: {}", _executable, line));
 		}
 		catch (IOException e) {
-			log.error(String.format("Exception while running process: %s", _executable), e);
+			LOG.error(String.format("Exception while running process: %s", _executable), e);
 			return false;
 		}
 
@@ -121,7 +121,10 @@ public class StreamingProcess {
 			// will be set preventing the service from being restarted.
 			_syncOps.onProcessExit();
 
-			log.info("Process: {} exited with exit code {}", _executable, exitCode);
+			LOG.info("Process: {} exited with exit code {}", _executable, exitCode);
+			if (exitCode == STREAM_STALLED_EXIT_CODE) {
+				throw new StreamStalledException();
+			}
 			return exitCode == 0;
 		}
 		catch (InterruptedException e) {

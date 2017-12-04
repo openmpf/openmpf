@@ -104,10 +104,21 @@ public class ChildStreamingJobManager {
 	private void onJobExit(long jobId, Throwable error) {
 		synchronized (_streamingJobs) {
 			_streamingJobs.remove(jobId);
-			if (error != null) {
-				LOG.warn("An error occurred during the execution of job: " + jobId, error);
+
+			StreamingJobExitedMessage.Reason reason;
+			if (error == null) {
+				reason = StreamingJobExitedMessage.Reason.CANCELLED;
 			}
-			_channelNode.sendToMaster(new StreamingJobExitedMessage(jobId));
+			else if (error instanceof StreamStalledException) {
+				LOG.warn("Stream stalled during execution of job: " + jobId, error);
+				reason = StreamingJobExitedMessage.Reason.STREAM_STALLED;
+			}
+			else {
+				LOG.warn("An error occurred during the execution of job: " + jobId, error);
+				reason = StreamingJobExitedMessage.Reason.ERROR;
+			}
+
+			_channelNode.sendToMaster(new StreamingJobExitedMessage(jobId, reason));
 		}
 	}
 }

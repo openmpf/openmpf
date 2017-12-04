@@ -110,20 +110,76 @@ public class TestChildStreamingJobManager {
 		jobCtrl2.allowComplete();
 
 		verify(_mockChannel)
-				.sendToMaster(exitMessageWithId(2));
+				.sendToMaster(jobExitMessage(2, StreamingJobExitedMessage.Reason.CANCELLED));
 		// job1 is still running
 		verify(_mockChannel, never())
-				.sendToMaster(exitMessageWithId(1));
+				.sendToMaster(jobExitMessage(1, null));
 
 
 		jobCtrl.allowComplete();
 
 		verify(_mockChannel)
-				.sendToMaster(exitMessageWithId(1));
+				.sendToMaster(jobExitMessage(1, StreamingJobExitedMessage.Reason.CANCELLED));
 
 	}
 
-	private static StreamingJobExitedMessage exitMessageWithId(long jobId) {
+
+	@Test
+	public void canHandleStreamStalled() {
+		StreamingJob job = mock(StreamingJob.class);
+		JobController jobCtrl = setupMockJob(job);
+
+		LaunchStreamingJobMessage launchMessage = StreamingJobTestUtil.createLaunchMessage(1);
+
+		when(_mockJobFactory.createJob(launchMessage))
+				.thenReturn(job);
+
+
+		_childStreamingJobManager.handle(launchMessage);
+
+
+		verify(job)
+				.startJob();
+
+		verify(_mockChannel, never())
+				.sendToMaster(jobExitMessage(1, null));
+
+		jobCtrl.causeException(new StreamStalledException());
+
+		verify(_mockChannel)
+				.sendToMaster(jobExitMessage(1, StreamingJobExitedMessage.Reason.STREAM_STALLED));
+	}
+
+
+	@Test
+	public void canHandleGeneralJobException() {
+		StreamingJob job = mock(StreamingJob.class);
+		JobController jobCtrl = setupMockJob(job);
+
+		LaunchStreamingJobMessage launchMessage = StreamingJobTestUtil.createLaunchMessage(1);
+
+		when(_mockJobFactory.createJob(launchMessage))
+				.thenReturn(job);
+
+
+		_childStreamingJobManager.handle(launchMessage);
+
+
+		verify(job)
+				.startJob();
+
+		verify(_mockChannel, never())
+				.sendToMaster(jobExitMessage(1, null));
+
+		jobCtrl.causeException(new IllegalStateException("Intentional"));
+
+		verify(_mockChannel)
+				.sendToMaster(jobExitMessage(1, StreamingJobExitedMessage.Reason.ERROR));
+	}
+
+
+
+	private static StreamingJobExitedMessage jobExitMessage(long jobId, StreamingJobExitedMessage.Reason reason) {
 		return Matchers.argThat(new BaseMatcher<StreamingJobExitedMessage>() {
 			@Override
 			public void describeTo(Description description) {
@@ -132,8 +188,8 @@ public class TestChildStreamingJobManager {
 
 			@Override
 			public boolean matches(Object item) {
-				long otherJobId = ((StreamingJobExitedMessage) item).jobId;
-				return jobId == otherJobId;
+				StreamingJobExitedMessage message = (StreamingJobExitedMessage) item;
+				return jobId == message.jobId && (reason == null || reason == message.reason);
 			}
 		});
 	}
@@ -147,13 +203,22 @@ public class TestChildStreamingJobManager {
 		when(job.stopJob())
 				.thenReturn(future);
 
-		return () -> future.complete(null);
+		return new JobController() {
+			public void allowComplete() {
+				future.complete(null);
+			}
+
+			public void causeException(Exception e) {
+				future.completeExceptionally(e);
+			}
+		};
 	}
 
 
-	@FunctionalInterface
 	private static interface JobController {
 		void allowComplete();
+
+		void causeException(Exception e);
 	}
 }
 

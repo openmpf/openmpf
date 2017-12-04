@@ -24,23 +24,8 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.nms.streaming.messages;
 
-public class StreamingJobExitedMessage implements StreamingJobMessage {
+package org.mitre.mpf.nms.streaming;
 
-	public final long jobId;
-
-	public final Reason reason;
-
-	public StreamingJobExitedMessage(long jobId, Reason reason) {
-		this.jobId = jobId;
-		this.reason = reason;
-	}
-
-
-	public enum Reason {
-		CANCELLED,
-		ERROR,
-		STREAM_STALLED
-	}
+public class StreamStalledException extends RuntimeException {
 }

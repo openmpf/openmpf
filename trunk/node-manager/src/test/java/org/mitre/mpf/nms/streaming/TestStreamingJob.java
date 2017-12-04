@@ -84,7 +84,7 @@ public class TestStreamingJob {
 //
 //		componentCtrl2.allowExit();
 //
-//		verifyQuitNotSent(frameReader);
+//		verifyQuitCommandSent(frameReader);
 //
 //		assertFalse("Job completed before FrameReader exited", jobCompleteFuture.isDone());
 //

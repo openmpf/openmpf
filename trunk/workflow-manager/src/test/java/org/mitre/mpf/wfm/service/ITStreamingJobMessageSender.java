@@ -52,6 +52,7 @@ import java.util.Collections;
 import static org.mockito.Mockito.*;
 
 
+// TODO: Remove when real streaming component executor is available.
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextHierarchy({
 		@ContextConfiguration(locations = "classpath:applicationContext.xml"),
@@ -118,7 +119,6 @@ public class ITStreamingJobMessageSender {
 	}
 
 
-	// TODO: Remove when real streaming component executor is available.
 	@Test
 	public void testJobStartStop() throws InterruptedException {
 

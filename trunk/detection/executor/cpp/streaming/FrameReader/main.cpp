@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
     }
     catch (MPFMessageException &e) {
         LOG4CXX_ERROR(logger, job_name <<  ": Failed to connect to the activemq broker");
-        exit;
+        return EXIT_FAILURE;
     }
 
     JobStatusMessenger messenger(msg_mgr, logger);
@@ -160,7 +160,7 @@ int main(int argc, char* argv[]) {
     }
     catch (MPFMessageException &e) {
         LOG4CXX_ERROR(logger, job_name <<  ": Failed to initialize the queue");
-        exit;
+        return EXIT_FAILURE;
     }
 
     try {
@@ -168,7 +168,7 @@ int main(int argc, char* argv[]) {
     }
     catch (MPFMessageException &e) {
         LOG4CXX_ERROR(logger, job_name <<  ": Failed to create the producer");
-        exit;
+        return EXIT_FAILURE;
     }
 
     try {
@@ -177,7 +177,7 @@ int main(int argc, char* argv[]) {
     }
     catch (MPFMessageException &e) {
         LOG4CXX_ERROR(logger, job_name <<  ": Failed to create the consumer");
-        exit;
+        return EXIT_FAILURE;
     }
 
     try {
@@ -185,7 +185,7 @@ int main(int argc, char* argv[]) {
     }
     catch (MPFMessageException &e) {
         LOG4CXX_ERROR(logger, job_name <<  ": Failed to start activemq connection");
-        exit;
+        return EXIT_FAILURE;
     }
 
 
@@ -196,7 +196,7 @@ int main(int argc, char* argv[]) {
     }
     catch (MPFMessageException &e) {
         LOG4CXX_ERROR(logger, job_name <<  ": Failed to send the message: " << e.what());
-        exit;
+        return EXIT_FAILURE;
     }
 
     try {
@@ -211,11 +211,11 @@ int main(int argc, char* argv[]) {
     catch (MPFMessageException &e) {
         LOG4CXX_ERROR(logger, job_name <<  ": Failed to get the message: " << e.what());
         std::cout << "MPFMessageException caught: " << e.what() << std::endl;
-        exit;
+        return EXIT_FAILURE;
     }
     catch (std::exception &e) {
         LOG4CXX_ERROR(logger, job_name <<  ": Failed to send the message: std::exception caught");
-        exit;
+        return EXIT_FAILURE;
     }
 
     try {
@@ -223,7 +223,7 @@ int main(int argc, char* argv[]) {
     }
     catch (MPFMessageException &e) {
         LOG4CXX_ERROR(logger, job_name <<  ": Failed to stop activemq connection");
-        exit;
+        return EXIT_FAILURE;
     }
 
     try {
@@ -231,20 +231,20 @@ int main(int argc, char* argv[]) {
     }
     catch (MPFMessageException &e) {
         LOG4CXX_ERROR(logger, job_name <<  ": Failed to close the messenger");
-        exit;
+        return EXIT_FAILURE;
     }
     try {
         msg_mgr->Shutdown();
     }
     catch (MPFMessageException &e) {
         LOG4CXX_ERROR(logger, job_name <<  ": Failed to shut down activemq connection");
-        exit;
+        return EXIT_FAILURE;
     }
 
 
     // Close the logger
     log4cxx::LogManager::shutdown();
-    return 0;
+    return EXIT_SUCCESS;
 }
     
 

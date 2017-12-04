@@ -71,5 +71,5 @@ include_directories(MessageUtils)
 add_subdirectory(MessageUtils)
 
 #include_directories(FrameStore)
-add_subdirectory(framereader)
+add_subdirectory(FrameReader)
 

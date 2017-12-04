@@ -56,6 +56,7 @@ class AMQMessageConverter {
 
 
 class AMQSegmentSummaryConverter : public AMQMessageConverter<MPFSegmentSummaryMessage> {
+  public:
     MPFSegmentSummaryMessage fromCMSMessage(const cms::Message &msg) override {
         //TODO: Unpack the Video Track info from the protobuf in the cms message.
         std::vector<MPF::COMPONENT::MPFVideoTrack> mpfTracks;
@@ -81,8 +82,8 @@ class AMQSegmentSummaryConverter : public AMQMessageConverter<MPFSegmentSummaryM
 };
 
 
-struct AMQActivityAlertConverter : public AMQMessageConverter<MPFActivityAlertMessage> {
-
+class AMQActivityAlertConverter : public AMQMessageConverter<MPFActivityAlertMessage> {
+  public:
     MPFActivityAlertMessage fromCMSMessage(const cms::Message &msg) override {
         return MPFActivityAlertMessage(
                 msg.getStringProperty("JOB_NAME"),
@@ -103,8 +104,8 @@ struct AMQActivityAlertConverter : public AMQMessageConverter<MPFActivityAlertMe
 };
 
 
-struct AMQJobStatusConverter : public AMQMessageConverter<MPFJobStatusMessage> {
-
+class AMQJobStatusConverter : public AMQMessageConverter<MPFJobStatusMessage> {
+  public:
     MPFJobStatusMessage fromCMSMessage(const cms::Message &msg) override {
         return MPFJobStatusMessage(
                 msg.getStringProperty("JOB_NAME"),
@@ -121,7 +122,7 @@ struct AMQJobStatusConverter : public AMQMessageConverter<MPFJobStatusMessage> {
 
 #if 0 //TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture
-struct AMQSegmentReadyMessage : AMQMessage, MPFSegmentReadyMessage {
+class AMQSegmentReadyMessage : AMQMessage, MPFSegmentReadyMessage {
 
     AMQSegmentReadyMessage() = default;
     AMQSegmentReadyMessage(const std::string &job_name,
@@ -147,7 +148,7 @@ struct AMQSegmentReadyMessage : AMQMessage, MPFSegmentReadyMessage {
 
 //TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture
-struct AMQFrameReadyMessage : AMQMessage, MPFFrameReadyMessage {
+class AMQFrameReadyMessage : AMQMessage, MPFFrameReadyMessage {
 
     AMQFrameReadyMessage() {};
     AMQFrameReadyMessage(const std::string &job_name,
@@ -181,7 +182,7 @@ struct AMQFrameReadyMessage : AMQMessage, MPFFrameReadyMessage {
 
 //TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture
-struct AMQReleaseFrameMessage : AMQMessage, MPFReleaseFrameMessage {
+class AMQReleaseFrameMessage : AMQMessage, MPFReleaseFrameMessage {
 
     AMQReleaseFrameMessage(const std::string &job_name,
                            const uint32_t job_number,
@@ -209,7 +210,7 @@ struct AMQReleaseFrameMessage : AMQMessage, MPFReleaseFrameMessage {
 
 //TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture
-struct AMQVideoWrittenMessage : AMQMessage, MPFVideoWrittenMessage {
+class AMQVideoWrittenMessage : AMQMessage, MPFVideoWrittenMessage {
 
     AMQVideoWrittenMessage(const std::string &job_name,
                            const uint32_t job_number,

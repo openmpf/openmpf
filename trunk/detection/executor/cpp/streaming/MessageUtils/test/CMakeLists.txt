@@ -35,8 +35,8 @@ if (${GTEST_FOUND})
     enable_testing()
     find_package(GTest REQUIRED)
 
-    add_executable(MessageTest messenger_test.cpp)
-    target_link_libraries(MessageTest mpfStreamMsg gtest ${LOG4CXX_LIBRARIES})
+    add_executable(MessageTest test_messenger.cpp)
+    target_link_libraries(MessageTest mpfStreamMsg GTest::GTest GTest::Main ${LOG4CXX_LIBRARIES})
 
     add_test(NAME MessageTest COMMAND MessageTest)
 

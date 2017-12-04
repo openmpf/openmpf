@@ -50,7 +50,7 @@ public class MasterStreamingJobManager {
 
 	private final ChannelNode _channelNode;
 
-	private final JobLocationCounter _jobLocationCounter = new JobLocationCounter();
+	private final JobToNodeMapper _jobToNodeMapper = new JobToNodeMapper();
 
 
 	@Autowired
@@ -61,9 +61,9 @@ public class MasterStreamingJobManager {
 
 
 	public void startJob(LaunchStreamingJobMessage launchMessage, Collection<String> runningNodes) {
-		synchronized (_jobLocationCounter) {
-			String nodeWithMinJobs = getNodeWithMinJobs(runningNodes);
-			_jobLocationCounter.addJob(launchMessage.jobId, nodeWithMinJobs);
+		synchronized (_jobToNodeMapper) {
+			String nodeWithMinJobs = _jobToNodeMapper.getNodeWithMinJobs(runningNodes);
+			_jobToNodeMapper.addJob(launchMessage.jobId, nodeWithMinJobs);
 			LOG.info("Sending LaunchStreamingJobMessage for job {} to node {}", launchMessage.jobId, nodeWithMinJobs);
 			_channelNode.sendToChild(nodeWithMinJobs, launchMessage);
 		}
@@ -71,8 +71,8 @@ public class MasterStreamingJobManager {
 
 
 	public void stopJob(StopStreamingJobMessage stopMessage) {
-		synchronized (_jobLocationCounter) {
-			String nodeHostname = _jobLocationCounter.getJobLocation(stopMessage.jobId);
+		synchronized (_jobToNodeMapper) {
+			String nodeHostname = _jobToNodeMapper.getJobNode(stopMessage.jobId);
 			if (nodeHostname == null) {
 				LOG.warn(
 						"Received stop request for streaming job {}, but that job has already exited or does not exist.",
@@ -86,36 +86,32 @@ public class MasterStreamingJobManager {
 
 
 	public void streamingJobExited(StreamingJobExitedMessage message) {
-		synchronized (_jobLocationCounter) {
+		synchronized (_jobToNodeMapper) {
 			LOG.info("Job {} has exited.", message.jobId);
-			_jobLocationCounter.removeJob(message.jobId);
+			_jobToNodeMapper.removeJob(message.jobId);
 		}
 	}
 
 
-	private String getNodeWithMinJobs(Collection<String> runningNodes) {
-		return runningNodes.stream()
-				.min(Comparator.comparingInt(_jobLocationCounter::getJobCount))
-				.orElseThrow(() -> new IllegalStateException(
-						"Unable to start streaming job because there are no running nodes."));
-	}
 
-
-
-	private static class JobLocationCounter {
+	private static class JobToNodeMapper {
 		private final Map<Long, String> _jobToNodeMap = new HashMap<>();
 		private final Multiset<String> _nodeJobCounts = HashMultiset.create();
 
-		public String getJobLocation(long jobId) {
+		public String getJobNode(long jobId) {
 			return _jobToNodeMap.get(jobId);
 		}
 
-		public int getJobCount(String node) {
-			return _nodeJobCounts.count(node);
+		public String getNodeWithMinJobs(Collection<String> runningNodes) {
+			return runningNodes.stream()
+					.min(Comparator.comparingInt(_nodeJobCounts::count))
+					.orElseThrow(() -> new IllegalStateException(
+							"Unable to start streaming job because there are no running nodes."));
+
 		}
 
 		public void addJob(long jobId, String node) {
-			String existingJobLocation = getJobLocation(jobId);
+			String existingJobLocation = getJobNode(jobId);
 			if (existingJobLocation != null) {
 				throw new IllegalStateException(String.format(
 						"Unable to start job with id %s because it is already running on %s",

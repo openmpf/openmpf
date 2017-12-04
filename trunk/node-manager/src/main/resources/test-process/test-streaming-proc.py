@@ -75,7 +75,7 @@ def write_count_file(count_file):
 
 def run_frame_reader(stop_delay):
     command = wait_for_input(['quit', 'pause'])
-    time.sleep(stop_delay)
+    time.sleep(stop_delay)  # pausing frame reader will take time
 
     if command == 'quit':
         sys.exit('quit called before pause')

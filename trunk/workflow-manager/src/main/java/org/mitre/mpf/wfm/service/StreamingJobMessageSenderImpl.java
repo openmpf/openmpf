@@ -117,6 +117,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 
 	private static TransientAction getAction(TransientStreamingJob job) {
 		List<TransientStage> stages = job.getPipeline().getStages();
+		//TODO: Remove method when support for the multi-stage pipelines is added.
 		if (stages.size() > 1) {
 			throw new IllegalStateException(String.format(
 					"Streaming job %s uses the %s pipeline which has multiple stages, but streaming pipelines only support one stage.",
@@ -228,7 +229,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 //		boolean isFinalStage = stageNumber == job.getPipeline().getStages().size();
 //		if (isFinalStage) {
 //			String frameOutputQueue = StreamingEndpoints.DONE_WITH_FRAME.queueName();
-//			String newTrackAlertQueue =	StreamingEndpoints.WFM_NEW_TRACK_ALERTS.queueName();
+//			String newTrackAlertQueue =	StreamingEndpoints.WFM_STREAMING_JOB_NEW_TRACK_ALERTS.queueName();
 //			String summaryReportQueue = StreamingEndpoints.WFM_SUMMARY_REPORTS.queueName();
 //			return new LaunchLastStageComponentMessage(
 //					jobId,

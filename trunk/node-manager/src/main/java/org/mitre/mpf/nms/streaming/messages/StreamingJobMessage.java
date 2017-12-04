@@ -28,5 +28,8 @@ package org.mitre.mpf.nms.streaming.messages;
 
 import java.io.Serializable;
 
+/**
+ * Marker interface for messages related to streaming jobs
+ */
 public interface StreamingJobMessage extends Serializable {
 }

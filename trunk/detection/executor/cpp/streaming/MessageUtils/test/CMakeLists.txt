@@ -40,6 +40,4 @@ if (${GTEST_FOUND})
 
     add_test(NAME MessageTest COMMAND MessageTest)
 
-    add_custom_command(TARGET MessageTest POST_BUILD COMMAND MessageTest)
-
 endif()

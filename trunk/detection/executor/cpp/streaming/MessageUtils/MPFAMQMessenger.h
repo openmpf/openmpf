@@ -169,7 +169,7 @@ class AMQMessenger {
                 throw(exc);
             }
             catch (std::exception& e) {
-                std::string err_str = "std::exception caught in AMQInputMessenger::GetMessage" + std::string(e.what());
+                std::string err_str = "std::exception caught in AMQInputMessenger::GetMessage: " + std::string(e.what());
                 MPFMessageError err = MESSENGER_GET_MESSAGE_FAILURE;
                 MPFMessageException exc(err_str.c_str(), err);
                 throw(exc);
@@ -196,13 +196,13 @@ class AMQMessenger {
                 }
             }
             catch (cms::CMSException& e) {
-                std::string err_str = "CMSException caught in AMQMessenger::GetMessage: " + e.getMessage() + "\n" + e.getStackTraceString();
+                std::string err_str = "CMSException caught in AMQMessenger::GetMessageNoWait: " + e.getMessage() + "\n" + e.getStackTraceString();
                 MPFMessageError err = MESSENGER_GET_MESSAGE_FAILURE;
                 MPFMessageException exc(err_str.c_str(), err);
                 throw(exc);
             }
             catch (std::exception& e) {
-                std::string err_str = "std::exception caught in AMQInputMessenger::GetMessage" + std::string(e.what());
+                std::string err_str = "std::exception caught in AMQInputMessenger::GetMessageNoWait: " + std::string(e.what());
                 MPFMessageError err = MESSENGER_GET_MESSAGE_FAILURE;
                 MPFMessageException exc(err_str.c_str(), err);
                 throw(exc);
@@ -225,13 +225,13 @@ class AMQMessenger {
                 producer_->send(cmsMsg.get());
             }
             catch (cms::CMSException& e) {
-                std::string err_str = "CMSException caught in AMQMessenger::PutMessage(): " + e.getMessage() + "\n" + e.getStackTraceString();
+                std::string err_str = "CMSException caught in AMQMessenger::SendMessage: " + e.getMessage() + "\n" + e.getStackTraceString();
                 MPFMessageError err = MESSENGER_GET_MESSAGE_FAILURE;
                 MPFMessageException exc(err_str.c_str(), err);
                 throw(exc);
             }
             catch (std::exception& e) {
-                std::string err_str = "std::exception caught in AMQInputMessenger::PutMessage()" + std::string(e.what());
+                std::string err_str = "std::exception caught in AMQInputMessenger::SendMessage: " + std::string(e.what());
                 MPFMessageError err = MESSENGER_PUT_MESSAGE_FAILURE;
                 MPFMessageException exc(err_str.c_str(), err);
                 throw(exc);

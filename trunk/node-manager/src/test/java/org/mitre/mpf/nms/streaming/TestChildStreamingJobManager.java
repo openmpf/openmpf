@@ -109,18 +109,14 @@ public class TestChildStreamingJobManager {
 		// since there could be situations where one job takes longer than another to exit.
 		jobCtrl2.allowComplete();
 
-		verify(_mockChannel)
-				.sendToMaster(jobExitMessage(2, StreamingJobExitedMessage.Reason.CANCELLED));
+		verifyExitMessageSent(2, StreamingJobExitedMessage.Reason.CANCELLED);
 		// job1 is still running
-		verify(_mockChannel, never())
-				.sendToMaster(jobExitMessage(1));
+		verifyNoExitMessageSentForJob(1);
 
 
 		jobCtrl.allowComplete();
 
-		verify(_mockChannel)
-				.sendToMaster(jobExitMessage(1, StreamingJobExitedMessage.Reason.CANCELLED));
-
+		verifyExitMessageSent(1, StreamingJobExitedMessage.Reason.CANCELLED);
 	}
 
 
@@ -141,13 +137,11 @@ public class TestChildStreamingJobManager {
 		verify(job)
 				.startJob();
 
-		verify(_mockChannel, never())
-				.sendToMaster(jobExitMessage(1));
+		verifyNoExitMessageSentForJob(1);
 
 		jobCtrl.causeException(new StreamStalledException());
 
-		verify(_mockChannel)
-				.sendToMaster(jobExitMessage(1, StreamingJobExitedMessage.Reason.STREAM_STALLED));
+		verifyExitMessageSent(1, StreamingJobExitedMessage.Reason.STREAM_STALLED);
 	}
 
 
@@ -168,45 +162,44 @@ public class TestChildStreamingJobManager {
 		verify(job)
 				.startJob();
 
-		verify(_mockChannel, never())
-				.sendToMaster(jobExitMessage(1));
+		verifyNoExitMessageSentForJob(1);
 
 		jobCtrl.causeException(new IllegalStateException("Intentional"));
 
+		verifyExitMessageSent(1, StreamingJobExitedMessage.Reason.ERROR);
+	}
+
+
+
+
+	private void verifyNoExitMessageSentForJob(long jobId) {
+		verify(_mockChannel, never())
+				.sendToMaster(jobExitMessage(jobId, null));
+	}
+
+
+	private void verifyExitMessageSent(long jobId, StreamingJobExitedMessage.Reason reason) {
 		verify(_mockChannel)
-				.sendToMaster(jobExitMessage(1, StreamingJobExitedMessage.Reason.ERROR));
+				.sendToMaster(jobExitMessage(jobId, reason));
 	}
 
-
-
-	private static StreamingJobExitedMessage jobExitMessage(long jobId) {
-		return Matchers.argThat(new BaseMatcher<StreamingJobExitedMessage>() {
-			@Override
-			public void describeTo(Description description) {
-				description.appendText("StreamingJobExitedMessage.jobId = ").appendValue(jobId);
-			}
-
-			@Override
-			public boolean matches(Object item) {
-				StreamingJobExitedMessage message = (StreamingJobExitedMessage) item;
-				return jobId == message.jobId;
-			}
-		});
-	}
 
 
 	private static StreamingJobExitedMessage jobExitMessage(long jobId, StreamingJobExitedMessage.Reason reason) {
 		return Matchers.argThat(new BaseMatcher<StreamingJobExitedMessage>() {
 			@Override
 			public void describeTo(Description description) {
-				description.appendText("StreamingJobExitedMessage.jobId = ").appendValue(jobId)
-					.appendText(" and StreamingJobExitedMessage.reason = ").appendValue(reason);
+				description.appendText("StreamingJobExitedMessage { jobId = ").appendValue(jobId);
+				if (reason != null) {
+					description.appendText(", reason = ").appendValue(reason);
+				}
+				description.appendText(" }");
 			}
 
 			@Override
 			public boolean matches(Object item) {
 				StreamingJobExitedMessage message = (StreamingJobExitedMessage) item;
-				return jobId == message.jobId && reason == message.reason;
+				return jobId == message.jobId && (reason == null || reason == message.reason);
 			}
 		});
 	}

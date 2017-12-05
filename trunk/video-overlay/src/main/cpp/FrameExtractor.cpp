@@ -137,6 +137,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                     return 8700;
                 }
 
+                int currFrameIndex = -1;
                 Mat frame;
                 int a = 0, r = 0, g = 0, b = 0;
 
@@ -174,13 +175,26 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                     int nextFrameIndex = (int)unboxed;
 
                     // Tell OpenCV to go to that frame next...
-                    src.set(cv::CAP_PROP_POS_FRAMES, nextFrameIndex);
 
-                    // Get the frame...
-                    src >> frame;
+                    // NOTE: When working with certain .mp4 videos, seeking to position results in extracting the wrong frame.
+                    // This may be related to the existence of B frames in the video and/or a bug in the way OpenCV uses FFmpeg.
+                    // To avoid this, we iterate over every frame in the video to get to the frame we want to extract.
 
-                    // If that frame is empty, we've reached the end of the video.
-                    if (frame.empty()) { break; }
+                    // old way
+                    // src.set(cv::CAP_PROP_POS_FRAMES, nextFrameIndex);
+                    // src >> frame;
+
+                    // new way
+                    do {
+                        // Get the frame
+                        src >> frame;
+                        currFrameIndex++;
+                    }  while ((currFrameIndex != nextFrameIndex) && !frame.empty());
+
+                    // If the desired frame is empty, we've reached the end of the video prematurely.
+                    if (frame.empty()) {
+                        break; // don't return an error code; the caller will determine which frames have been successfully extracted
+                    }
 
                     // Otherwise, extract that frame.
                     jstring filename = (jstring)env->CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnMakeFilename, destinationPath, unboxed);

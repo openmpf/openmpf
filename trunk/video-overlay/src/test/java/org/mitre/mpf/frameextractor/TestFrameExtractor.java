@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 public class TestFrameExtractor {
@@ -45,15 +47,16 @@ public class TestFrameExtractor {
 
     @Test
     public void testFrameExtractorOnVideo() {
-        extractFrames("video-overlay/src/test/resources/samples/five-second-marathon-clip.mkv");
+        extractFrames("video-overlay/src/test/resources/samples/five-second-marathon-clip-numbered.mp4",
+                Arrays.asList(0, 1, 2, 4, 8, 100, 1000, 1500, 1998, 1999));
     }
 
     @Test
     public void testFrameExtractorOnGif() {
-        extractFrames("video-overlay/src/test/resources/samples/face-morphing.gif");
+        extractFrames("video-overlay/src/test/resources/samples/face-morphing.gif", Arrays.asList(2, 4, 8));
     }
 
-    private void extractFrames(String filePath) {
+    private void extractFrames(String filePath, List<Integer> frames) {
         try {
             File sourceFile = new File(filePath);
 
@@ -65,10 +68,12 @@ public class TestFrameExtractor {
             outputDirectory.mkdir();
 
             FrameExtractor extractor = new FrameExtractor(sourceFile.toURI(), outputDirectory.toURI());
-            extractor.getFrames().add(2);
-            extractor.getFrames().add(4);
-            extractor.getFrames().add(8);
+            extractor.getFrames().addAll(frames);
             extractor.execute();
+
+            Assert.assertEquals("Output directory \"" + outputDirectory.getAbsolutePath() +
+                            "\" does not contain the proper number of extracted artifacts: ",
+                    frames.size(), outputDirectory.listFiles().length);
 
         } catch (IOException ioe) {
             Assert.fail(String.format("Encountered an exception when none was expected. %s", ioe));

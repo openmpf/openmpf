@@ -128,6 +128,9 @@ public class StreamingJobCreationRequest {
 	 */
 	public String getCallbackMethod() { return callbackMethod; }
 	public void setCallbackMethod(String callbackMethod) { this.callbackMethod = callbackMethod; }
+	private boolean isCallbackMethodValid() {
+		return ( callbackMethod != null && (callbackMethod.equalsIgnoreCase("POST") || callbackMethod.equalsIgnoreCase("GET")) );
+	}
 
 	/** this method will check the current settings within this streaming job creation request,
 	 * and will return true if the current settings are set within the constraints defined for a
@@ -137,7 +140,7 @@ public class StreamingJobCreationRequest {
 	public boolean isValidRequest() {
 		// do error checks on the streaming job request.
 		// TODO check the pipeline name specified in the create streaming job request and make sure it's streaming-capable
-		if ( getStream().isValidStreamData() && getStallTimeout() != -1L ) {
+		if ( isCallbackMethodValid() && getStream().isValidStreamData() && getStallTimeout() != -1L ) {
 			return true;
 		} else {
 			return false;

@@ -26,6 +26,8 @@
 
 package org.mitre.mpf.wfm;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
@@ -41,6 +43,7 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonCallbackBody;
+import org.mitre.mpf.interop.JsonHealthReportDataCallbackBody;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.ui.Utils;
 import org.mitre.mpf.wfm.enums.JobStatus;
@@ -74,7 +77,7 @@ public class ITWebREST {
 	private static int testCtr = 0;
 	private static final int MINUTES = 1000 * 60; // 1000 milliseconds/sec, 60 sec/minute
 	private static long processedJobId = -1;	
-	protected static String rest_url = Utils.BASE_URL + "/workflow-manager/rest/";	
+	protected static String rest_url = Utils.BASE_URL + "/workflow-manager/rest/";
 	protected static String MPF_AUTHORIZATION = "Basic bXBmOm1wZjEyMw==";// mpf user base64 <username:password>
 	protected static String ADMIN_AUTHORIZATION = "Basic YWRtaW46bXBmYWRtCg";// admin user base64 <username:password>
 	private static final String TEST_PIPELINE_NAME = "OCV FACE DETECTION PIPELINE";
@@ -321,7 +324,7 @@ public class ITWebREST {
 		endTest("test_Jobs_SerializedOutput - postJobsUrl");
 				
 		log.info("Job now complete using pipeline '{}'", detPipeline);
-		String baseOutputUrl = rest_url + "jobs/" +  completeJobId + "/output/" ;	
+		String baseOutputUrl = rest_url + "jobs/" +  completeJobId + "/output/" ;
 
 		String outputObjectType = "detection";
 		String url = baseOutputUrl + outputObjectType;
@@ -712,7 +715,7 @@ public class ITWebREST {
 		//make sure service is in the response message
 		Assert.assertTrue(mpfResponse.getMessage().contains("service"));
 				
-		url = rest_url + "nodes/services/" + service_name + "/start" ;		
+		url = rest_url + "nodes/services/" + service_name + "/start" ;
 		log.info("test_NodeManager_shutdown_startService get {}",url);		
 		paramsList = new ArrayList<NameValuePair>();
 		//requires admin auth
@@ -1233,33 +1236,203 @@ public class ITWebREST {
 		}
 	}
 
-	private void setupSpark(){
-		Spark.port(20159);
-		Spark.get("/callback", new Route() {
-			@Override
-			public Object handle(Request request, Response resp) throws Exception {
-				log.info("Spark Servicing request..GET..from " + request.requestMethod());
-				sparkIds[0] = Long.parseLong(request.queryParams("jobid"));
-				sparkIds[1] = Long.parseLong(request.queryParams("externalid"));
-				log.info("Spark GET Callback jobid=" + sparkIds[0] + " externalid="+sparkIds[1]);
-				sparkresponse[1] = true;
-				return "";
-			}
-		});
-		Spark.post("/callback", new Route() {
-			@Override
-			public Object handle(Request request, Response resp) throws Exception {
-				log.info("Spark Servicing request..POST..from " + request.requestMethod() + " body:"+request.body());
-				ObjectMapper jsonObjectMapper = new ObjectMapper();
-				JsonCallbackBody callbackBody = jsonObjectMapper.readValue(request.bodyAsBytes(), JsonCallbackBody.class);
-				sparkIds[0] = callbackBody.getJobId();
-				sparkIds[1] = Long.parseLong(callbackBody.getExternalId());
-				log.info("Spark POST Callback jobid=" + sparkIds[0] + " externalid="+sparkIds[1]);
-				sparkresponse[1] = true;
-				return "";
-			}
-		});
+    private void setupSpark(){
+        Spark.port(20159);
+        Spark.get("/callback", new Route() {
+            @Override
+            public Object handle(Request request, Response resp) throws Exception {
+                log.info("Spark Servicing request..GET..from " + request.requestMethod());
+                sparkIds[0] = Long.parseLong(request.queryParams("jobid"));
+                sparkIds[1] = Long.parseLong(request.queryParams("externalid"));
+                log.info("Spark GET Callback jobid=" + sparkIds[0] + " externalid="+sparkIds[1]);
+                sparkresponse[1] = true;
+                return "";
+            }
+        });
+        Spark.post("/callback", new Route() {
+            @Override
+            public Object handle(Request request, Response resp) throws Exception {
+                log.info("Spark Servicing request..POST..from " + request.requestMethod() + " body:"+request.body());
+                ObjectMapper jsonObjectMapper = new ObjectMapper();
+                JsonCallbackBody callbackBody = jsonObjectMapper.readValue(request.bodyAsBytes(), JsonCallbackBody.class);
+                sparkIds[0] = callbackBody.getJobId();
+                sparkIds[1] = Long.parseLong(callbackBody.getExternalId());
+                log.info("Spark POST Callback jobid=" + sparkIds[0] + " externalid="+sparkIds[1]);
+                sparkresponse[1] = true;
+                return "";
+            }
+        });
 
-		Spark.awaitInitialization();
-	}
+        Spark.awaitInitialization();
+    } // method used to setup Spark for a simple callback that only contains jobid and externalid
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    final int healthReportCallbackPort = 20160;
+    boolean healthSparkGetResponse = false;
+    boolean healthSparkPostResponse = false;
+    JsonHealthReportDataCallbackBody healthReportCallbackBody = null;
+    String healthDateTimeStamp = null;
+    long[] healthJobIds = null;
+    String[] healthExternalIds = null;
+
+    @Test(timeout = 5*MINUTES)
+    public void testStreamingJobWithHealthReportCallback() throws Exception {
+        String myExternalId =  "myExternalId is "+700;
+        try {
+            log.info("Beginning test #{} testStreamingJobWithHealthReportCallback()", testCtr);
+            testCtr++;
+            log.info("Creating new Streaming Job");
+            String url = rest_url + "streaming/jobs";
+
+            // create a StreamingJobCreationRequest
+            JSONObject params = new JSONObject();
+            params.put("pipelineName", "OCV FACE DETECTION PIPELINE");
+
+            JSONObject stream = new JSONObject();
+            // using this sample video for initial testing.
+            stream.put("streamUri", "rtsp://home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/obama-basketball.mp4");
+            stream.put("mediaProperties", new org.json.simple.JSONObject());
+            stream.put("segmentSize", 100);
+
+            params.put("stream", stream);
+            params.put("stallTimeout",180);
+            params.put("externalId",myExternalId);
+            params.put("enableOutputToDisk", true);
+            params.put("priority", 0);
+            params.put("healthReportCallbackUri","http://0.0.0.0:" + healthReportCallbackPort + "/callback");
+            params.put("callbackMethod","POST");
+            String param_string = params.toString();
+
+            healthSparkGetResponse = false;
+            healthSparkPostResponse = false;
+
+            setupSparkForHealthReport(); //start the listener for health reports
+
+            //submit a streaming job request with a POST callback
+            log.info("testStreamingJobWithHealthReportCallback: Post to: " + url + " Params: " + param_string);
+            JSONstring = PostJSON(new URL(url), param_string, MPF_AUTHORIZATION);
+            log.info("testStreamingJobWithHealthReportCallback: results:" + JSONstring);// {"errorCode":0,"errorMessage":null,"jobId":5}
+            JSONObject obj = new JSONObject(JSONstring);
+            long jobId =  Long.valueOf(obj.getInt("jobId"));
+            log.info("testStreamingJobWithHealthReportCallback: streaming jobId " + jobId + " created with POST method.");
+
+            // Wait for it to callback, should get some periodic health reports - listen for one.
+            int count = 0;
+            while (healthSparkPostResponse != true && count < 100) {
+                log.info("testStreamingJobWithHealthReportCallback: time="+ DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now()) +
+                         ", Waiting for POST Health Report callback...");
+                Thread.sleep(500);
+                count++;
+            }
+            if ( healthSparkPostResponse ) {
+                if (healthReportCallbackBody != null) {
+                    Assert.assertTrue(
+                        healthReportCallbackBody.getJobId().contains(Long.valueOf(jobId))
+                            && myExternalId.equals(healthReportCallbackBody.getExternalId()));
+                } else {
+                    log.error("testStreamingJobWithHealthReportCallback: Error, couldn't form a Health Report from the POST request test");
+                }
+            } else {
+                log.error("testStreamingJobWithHealthReportCallback: Error, didn't receive a response to the POST request test");
+            }
+
+            //test GET
+            params.put("callbackMethod","GET");
+            param_string = params.toString();
+            log.info("testStreamingJobWithHealthReportCallback: Post to: " + url + " Params: " + param_string);
+            JSONstring = PostJSON(new URL(url), param_string, MPF_AUTHORIZATION);
+            log.info("testStreamingJobWithHealthReportCallback: results:" + JSONstring);// {"errorCode":0,"errorMessage":null,"jobId":5}
+            obj = new JSONObject(JSONstring);
+            jobId =  Long.valueOf(obj.getInt("jobId"));
+            log.info("testStreamingJobWithHealthReportCallback: streaming jobId " + jobId + " created with GET method.");
+
+            //wait for it to callback
+            count = 0;
+            while (healthSparkGetResponse != true  && count < 100) {
+                log.info("testStreamingJobWithHealthReportCallback: Waiting for GET callback...");
+                Thread.sleep(500);
+                count++;
+            }
+
+            if ( healthSparkGetResponse ) {
+                if (healthReportCallbackBody != null) {
+                    Assert.assertTrue(
+                        healthReportCallbackBody.getJobId().contains(Long.valueOf(jobId))
+                            && myExternalId.equals(healthReportCallbackBody.getExternalId()));
+                } else {
+                    log.error("testStreamingJobWithHealthReportCallback: Error, couldn't form a Health Report from the GET request test");
+                }
+            } else {
+                log.error("testStreamingJobWithHealthReportCallback: Error, didn't receive a response to the GET request test");
+            }
+
+            log.info("testStreamingJobWithHealthReportCallback: Finished test testJobWithCallback()");
+        } finally {
+            Spark.stop();
+        }
+    } // end of method testStreamingJobWithHealthReportCallback
+
+
+    private void setupSparkForHealthReport(){
+        Spark.port(healthReportCallbackPort);
+        Spark.get("/callback", new Route() {
+            @Override
+            public Object handle(Request request, Response resp) throws Exception {
+                log.info("Spark Servicing request..GET..from " + request.requestMethod());
+                // TODO: this won't work for health reports that have more than one job in them.
+                LocalDateTime reportDate = JsonHealthReportDataCallbackBody.parseStringAsLocalDateTime(request.queryParams("reportDate"));
+                Long jsonJobId = Long.valueOf(request.queryParams("jobid"));
+                String jsonExternalId = request.queryParams("externalid");
+                String jsonJobStatus = request.queryParams("jobStatus");
+                String jsonLastNewActivityAlertFrameId = request.queryParams("lastNewActivityAlertFrameId");
+                LocalDateTime jsonLastNewActivityAlertTimestamp = JsonHealthReportDataCallbackBody.parseStringAsLocalDateTime(request.queryParams("lastNewActivityAlertTimestamp"));
+                healthReportCallbackBody = new JsonHealthReportDataCallbackBody(reportDate,jsonJobId,jsonExternalId,jsonJobStatus,
+                                                                            jsonLastNewActivityAlertFrameId, jsonLastNewActivityAlertTimestamp);
+                log.info("Spark GET Callback, received Health Report with timestamp "+healthReportCallbackBody.getReportDate());
+                log.info("  jobIds="+healthReportCallbackBody.getJobIdsAsDelimitedString(","));
+                log.info("  externalIds="+healthReportCallbackBody.getExternalIdsAsDelimitedString(","));
+                log.info("  jobStatus="+healthReportCallbackBody.getJobStatusAsDelimitedString(","));
+                log.info("  lastNewActivityAlertFrameId="+healthReportCallbackBody.getLastNewActivityAlertFrameIdAsDelimitedString(","));
+                log.info("  lastNewActivityAlertTimestamp="+healthReportCallbackBody.getLastNewActivityAlertTimeStampAsDelimitedString(","));
+                healthSparkGetResponse = true;
+                return "";
+            }
+        });
+        Spark.post("/callback", new Route() {
+            @Override
+            public Object handle(Request request, Response resp) throws Exception {
+                log.info("Spark Servicing request..POST..from " + request.requestMethod() + " body:"+request.body());
+                ObjectMapper jsonObjectMapper = new ObjectMapper();
+                healthReportCallbackBody = jsonObjectMapper.readValue(request.bodyAsBytes(), JsonHealthReportDataCallbackBody.class);
+                log.info("Spark POST Callback, received Health Report with timestamp "+healthReportCallbackBody.getReportDate());
+                log.info("  jobIds="+healthReportCallbackBody.getJobIdsAsDelimitedString(","));
+                log.info("  externalIds="+healthReportCallbackBody.getExternalIdsAsDelimitedString(","));
+                log.info("  jobStatus="+healthReportCallbackBody.getJobStatusAsDelimitedString(","));
+                log.info("  lastNewActivityAlertFrameId="+healthReportCallbackBody.getLastNewActivityAlertFrameIdAsDelimitedString(","));
+                log.info("  lastNewActivityAlertTimestamp="+healthReportCallbackBody.getLastNewActivityAlertTimeStampAsDelimitedString(","));
+                healthSparkPostResponse = true;
+                return "";
+            }
+        });
+
+        Spark.awaitInitialization();
+    } // method used to setup Spark for a Health Report callback
+
+
 }

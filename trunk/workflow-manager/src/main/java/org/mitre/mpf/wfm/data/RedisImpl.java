@@ -377,7 +377,25 @@ public class RedisImpl implements Redis {
 		}
 	}
 
-	/**
+    /** This method is the same as {@link #getJobStatus(long)}, it's just adapted for use with Lists.
+     * @param jobIds List of jobIds
+     * @return List of JobStatus for the specified jobs. The List may contain nulls for invalid jobIds.
+     */
+    @SuppressWarnings("unchecked")
+    public List<JobStatus> getJobStatus(List<Long> jobIds) {
+        return jobIds.stream().map(jobId->getJobStatus(jobId.longValue())).collect(Collectors.toList());
+    }
+
+    /** This method is the same as {@link #getJobStatus(long)}, it's just adapted for use with Lists.
+     * @param jobIds List of jobIds
+     * @return List of JobStatus as Strings for the specified jobs. The List may contain nulls for invalid jobIds.
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> getJobStatusAsString(List<Long> jobIds) {
+        return getJobStatus(jobIds).stream().map(jobStatus->jobStatus.toString()).collect(Collectors.toList());
+    }
+
+    /**
 	 * Get the detection errors for the batch job
 	 * @param jobId The MPF-assigned ID of the batch job.
 	 * @param mediaId The MPF-assigned media ID.
@@ -734,24 +752,32 @@ public class RedisImpl implements Redis {
 	}
 
     /**
-     * TODO filter out any jobs which may have already terminated
-     * Get the list of unique health report callback URIs associated with the specified jobs.
-     * @param jobIds unique job ids of streaming jobs
-     * @return Map of healthReportCallbackUri (keys), with each key mapping to the List of jobIds that specified that healthReportCallbackUri
+     * Get the list of unique health report callback URIs associated with the specified streaming jobs.
+     * @param jobIds unique job ids of active streaming jobs that are available in REDIS. May be empty.
+     * @return Map of healthReportCallbackUri (keys), with each key value mapping to the List of jobIds that specified that healthReportCallbackUri. May be
+     * empty if the jobIds List is empty.
+     * @exception WfmProcessingException is thrown if one of the streaming jobs listed in jobIds isn't in REDIS (i.e. it is not an active job).
      */
-    public Map<String,List<Long>> getUniqueHealthReportCallbackURIs(List<Long> jobIds) {
+    public Map<String,List<Long>> getUniqueHealthReportCallbackURIs(List<Long> jobIds) throws WfmProcessingException{
         Map<String,List<Long>> healthReportCallbackJobIdListMap = new HashMap<>();
         for ( final Long jobId : jobIds ) {
-            String healthReportCallbackURI = getStreamingJob(jobId).getHealthReportCallbackURI();
-            if ( healthReportCallbackJobIdListMap.containsKey(healthReportCallbackURI) ) {
-                // some other streaming job has already registered this health report callback URI, add this job to the list
-                List<Long> jobList = healthReportCallbackJobIdListMap.get(healthReportCallbackURI);
-                jobList.add(Long.valueOf(jobId));
+            TransientStreamingJob transientJob = getStreamingJob(jobId);
+            if ( transientJob == null ) {
+                // Throw an exception if any job that may be in the long term database, but isn't in REDIS (i.e. it is not an active job), is passed to this method.
+                throw new WfmProcessingException("Error: jobId " + " is not the id of an active Streaming job");
             } else {
-                // This is the first streaming job to register this health report callback URI
-                List<Long> jobList = new ArrayList<>();
-                jobList.add(Long.valueOf(jobId));
-                healthReportCallbackJobIdListMap.put(healthReportCallbackURI,jobList);
+                // Check the health report callback for this active, streaming job.
+                String healthReportCallbackURI = transientJob.getHealthReportCallbackURI();
+                if (healthReportCallbackJobIdListMap.containsKey(healthReportCallbackURI)) {
+                    // some other streaming job has already registered this health report callback URI, add this job to the list
+                    List<Long> jobList = healthReportCallbackJobIdListMap.get(healthReportCallbackURI);
+                    jobList.add(Long.valueOf(jobId));
+                } else {
+                    // This is the first streaming job to register this health report callback URI
+                    List<Long> jobList = new ArrayList<>();
+                    jobList.add(Long.valueOf(jobId));
+                    healthReportCallbackJobIdListMap.put(healthReportCallbackURI, jobList);
+                }
             }
         }
         return healthReportCallbackJobIdListMap;
@@ -845,6 +871,16 @@ public class RedisImpl implements Redis {
         }
     }
 
+    /** This method is the same as {@link #getHealthReportLastTimestamp(long)}, it's just adapted for use with Lists.
+     * @param jobIds List of jobIds for streaming jobs
+     * @return List of timestamps
+     * @throws WfmProcessingException
+     * @throws DateTimeException
+     */
+    public synchronized List<LocalDateTime> getHealthReportLastTimestamp(List<Long> jobIds) throws WfmProcessingException, DateTimeException {
+        return jobIds.stream().map(jobId->getHealthReportLastTimestamp(jobId.longValue())).collect(Collectors.toList());
+    }
+
     /**
      * Store the last new activity frame id from the last health report that was sent for the specified streaming job.
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
@@ -884,6 +920,15 @@ public class RedisImpl implements Redis {
             log.error("Job #{} is not a streaming job, so we can't get the health report last New Activity Alert frame id.", jobId);
             throw new WfmProcessingException("Error: Job " + jobId + " is not a streaming job. Only streaming jobs send health reports.");
         }
+    }
+
+    /** This method is the same as {@link #getHealthReportLastNewActivityAlertFrameId(long)}, it's just adapted for use with Lists.
+     * @param jobIds List of jobIds for streaming jobs
+     * @return List of last new activity alert frame ids
+     * @throws WfmProcessingException
+     */
+    public synchronized List<String> getHealthReportLastNewActivityAlertFrameId(List<Long> jobIds) throws WfmProcessingException {
+        return jobIds.stream().map(jobId->getHealthReportLastNewActivityAlertFrameId(jobId.longValue())).collect(Collectors.toList());
     }
 
     /**
@@ -940,6 +985,16 @@ public class RedisImpl implements Redis {
             log.error("Job #{} is not a streaming job, so we can't get the last health report New Activity Alert timestamp.", jobId);
             throw new WfmProcessingException("Error: Job " + jobId + " is not a streaming job. Only streaming jobs send health reports.");
         }
+    }
+
+    /** This method is the same as {@link #getHealthReportLastNewActivityAlertTimestamp(long)}, it's just adapted for use with Lists.
+     * @param jobIds List of jobIds for streaming jobs
+     * @return List of last new activity alert timestamps
+     * @throws WfmProcessingException
+     * @throws DateTimeException
+     */
+    public synchronized List<LocalDateTime> getHealthReportLastNewActivityAlertTimestamp(List<Long> jobIds) throws WfmProcessingException, DateTimeException {
+        return jobIds.stream().map(jobId->getHealthReportLastNewActivityAlertTimestamp(jobId.longValue())).collect(Collectors.toList());
     }
 
     /**
@@ -1044,6 +1099,12 @@ public class RedisImpl implements Redis {
         }
     }
 
+    /**
+     * Returns the external id assigned to a job with JobId.
+     * @param jobId The MPF-assigned ID of the job.
+     * @return returns the external_id specified for that job or null if an external id was not specified for the job.
+     * @throws WfmProcessingException
+     */
     @Override
 	public String getExternalId(long jobId) throws WfmProcessingException {
 		if(redisTemplate.boundSetOps("BATCH_JOB").members().contains(Long.toString(jobId))) {
@@ -1058,7 +1119,17 @@ public class RedisImpl implements Redis {
 		}
 	}
 
-	/**Method will return true if the specified jobId is a batch job stored in the transient data store
+    /** This method is the same as {@link #getExternalId(long)}, it's just adapted for use with Lists.
+     * @param jobIds List of jobIds
+     * @return List of external ids for the specified jobs. The List may contain nulls for jobs that did not specify an external id.
+     * @throws WfmProcessingException
+     */
+    @Override
+    public List<String> getExternalId(List<Long> jobIds) throws WfmProcessingException {
+        return jobIds.stream().map(jobId->getExternalId(jobId.longValue())).collect(Collectors.toList());
+    }
+
+    /**Method will return true if the specified jobId is a batch job stored in the transient data store
 	 * @param jobId The MPF-assigned ID of the job
 	 * @return true if the specified jobId is a batch job stored in the transient data store, false otherwise
 	 */
@@ -1073,5 +1144,8 @@ public class RedisImpl implements Redis {
 	public boolean isJobTypeStreaming(final long jobId) {
 		return(redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)));
 	}
+    public boolean isJobTypeStreaming(final Long jobId) {
+        return(isJobTypeStreaming(jobId.longValue()));
+    }
 
 }

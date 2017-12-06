@@ -70,6 +70,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 
 
 	public void init(boolean reloadConfig) {
+		log.info("!!!streamingJobRequestBo = " + streamingJobRequestBo);
 		if(!reloadConfig) {
 			masterNode.run();
 			isRunning = true;

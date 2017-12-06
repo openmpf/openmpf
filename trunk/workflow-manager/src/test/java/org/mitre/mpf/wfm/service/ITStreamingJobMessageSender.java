@@ -116,6 +116,7 @@ public class ITStreamingJobMessageSender {
 		doReturn(algorithmDef)
 				.when(_pipelineServiceSpy)
 					.getAlgorithm(algorithmDef.getName());
+		System.out.println("!!! _pipelineServiceSpy = " + _pipelineServiceSpy);
 	}
 
 

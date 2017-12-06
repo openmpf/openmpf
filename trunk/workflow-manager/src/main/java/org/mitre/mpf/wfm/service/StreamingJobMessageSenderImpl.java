@@ -36,6 +36,8 @@ import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -46,6 +48,8 @@ import static java.util.stream.Collectors.toMap;
 
 @Service
 public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender {
+
+	private static final Logger LOG = LoggerFactory.getLogger(StreamingJobMessageSenderImpl.class);
 
 	private final PropertiesUtil _properties;
 
@@ -65,6 +69,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 		_masterNode = masterNode;
 		_pipelineService = pipelineService;
 		_streamingServiceManager = streamingServiceManager;
+		LOG.info("!!! pipelineService = " + pipelineService);
 	}
 
 

@@ -80,7 +80,7 @@ public class TestStreamingJobMessageSender {
 
 	@Test
 	public void testLaunch() {
-		int stallAlertThreshold = 234;
+		long stallAlertThreshold = 234;
 		when(_mockProperties.getStreamingJobStallAlertThreshold())
 				.thenReturn(stallAlertThreshold);
 
@@ -159,8 +159,8 @@ public class TestStreamingJobMessageSender {
 		assertEquals(jobId, launchMessage.jobId);
 		assertEquals(stream.getUri(), launchMessage.streamUri);
 		assertEquals(stream.getSegmentSize(), launchMessage.segmentSize);
-		assertEquals(job.getStallTimeout(), launchMessage.stallTimeout, 0.1);
-		assertEquals(stallAlertThreshold, launchMessage.stallAlertThreshold, 0.1);
+		assertEquals(job.getStallTimeout(), launchMessage.stallTimeout);
+		assertEquals(stallAlertThreshold, launchMessage.stallAlertThreshold);
 		assertEquals(streamingServiceModel.getServiceName(), launchMessage.componentName);
 		assertEquals(streamingServiceModel.getLibraryPath(), launchMessage.componentLibraryPath);
 

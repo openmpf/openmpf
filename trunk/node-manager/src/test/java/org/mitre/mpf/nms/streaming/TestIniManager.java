@@ -68,7 +68,7 @@ public class TestIniManager {
 //
 //		JobIniFiles jobIniFiles = iniManager.createJobIniFiles(launchMessage);
 //
-//		assertFieldsWritten(launchMessage.launchFrameReaderMessage, jobIniFiles.getFrameReaderIniPath(), 11);
+//		assertFieldsWritten(launchMessage.launchFrameReaderMessage, jobIniFiles.getFrameReaderIniPath(), 12);
 //		assertFieldsWritten(launchMessage.launchVideoWriterMessage, jobIniFiles.getVideoWriterIniPath(), 5);
 //
 //		for (LaunchComponentMessage launchComponentMessage : launchMessage.launchComponentMessages) {

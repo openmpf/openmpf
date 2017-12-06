@@ -41,6 +41,8 @@ public class LaunchFrameReaderMessage implements Serializable {
 
 	public final long stallTimeout;
 
+	public final long stallAlertThreshold;
+
 	public final String messageBrokerUri;
 
 	public final String segmentOutputQueue;
@@ -60,6 +62,7 @@ public class LaunchFrameReaderMessage implements Serializable {
 			int segmentSize,
 			int frameDataBufferSize,
 			long stallTimeout,
+			long stallAlertThreshold,
 			String messageBrokerUri,
 			String segmentOutputQueue,
 			String componentFrameQueue,
@@ -72,6 +75,7 @@ public class LaunchFrameReaderMessage implements Serializable {
 		this.segmentSize = segmentSize;
 		this.frameDataBufferSize = frameDataBufferSize;
 		this.stallTimeout = stallTimeout;
+		this.stallAlertThreshold = stallAlertThreshold;
 		this.messageBrokerUri = messageBrokerUri;
 		this.segmentOutputQueue = segmentOutputQueue;
 		this.componentFrameQueue = componentFrameQueue;

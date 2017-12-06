@@ -508,8 +508,8 @@ public class PropertiesUtil {
 
 
 	@Value("${streaming.stallAlert.detectionThreshold}")
-	private int streamingJobStallAlertThreshold;
-	public int getStreamingJobStallAlertThreshold() {
+	private long streamingJobStallAlertThreshold;
+	public long getStreamingJobStallAlertThreshold() {
 		return streamingJobStallAlertThreshold;
 	}
 

@@ -148,6 +148,7 @@ public class IniManager {
 //		jobConfig.put("segmentSize", launchMessage.segmentSize);
 //		jobConfig.put("frameDataBufferSize", launchMessage.frameDataBufferSize);
 //		jobConfig.put("stallTimeout", launchMessage.stallTimeout);
+//      jobConfig.put("stallAlertThreshold", launchMessage.stallAlertThreshold)
 //	    jobConfig.put("messageBrokerUri", launchMessage.messageBrokerUri);
 //		jobConfig.put("segmentOutputQueue", launchMessage.segmentOutputQueue);
 //		jobConfig.put("componentFrameQueue", launchMessage.componentFrameQueue);

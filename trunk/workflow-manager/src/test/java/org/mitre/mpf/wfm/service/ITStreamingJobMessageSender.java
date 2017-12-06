@@ -44,7 +44,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.ContextHierarchy;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.Collections;
@@ -54,9 +53,7 @@ import static org.mockito.Mockito.*;
 
 // TODO: Remove when real streaming component executor is available.
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextHierarchy({
-		@ContextConfiguration(locations = "classpath:applicationContext.xml"),
-		@ContextConfiguration(classes = ITStreamingJobMessageSender.TestConfig.class)})
+@ContextConfiguration(locations = "classpath:applicationContext.xml")
 public class ITStreamingJobMessageSender {
 
 

@@ -112,6 +112,7 @@ public class ChannelNode {
 
 
     public void sendToChild(String hostname, Serializable message) {
+        logAllAddresses();
         Address nodeAddress = getNodeAddress(hostname, NodeTypes.NodeManager);
         send(nodeAddress, message);
     }
@@ -127,12 +128,18 @@ public class ChannelNode {
 
 
     public void sendToMaster(Serializable message) {
+        logAllAddresses();
         try {
             channel.send(getMasterNodeAddress(), message);
         }
         catch (Exception e) {
         	throw new IllegalStateException(e);
         }
+    }
+
+    private void logAllAddresses() {
+        log.info("!!! Known Addresses: ");
+        getChannel().getView().getMembers().forEach(addr -> log.info("!!! Address: {}", AddressParser.parse(addr)));
     }
 
 

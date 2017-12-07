@@ -25,7 +25,7 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.service;
+package org.mitre.mpf.mst;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -38,27 +38,27 @@ import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.ValueType;
+import org.mitre.mpf.wfm.service.*;
 import org.mitre.mpf.wfm.service.component.ComponentLanguage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.ContextHierarchy;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.Collections;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.notNull;
 import static org.mockito.Mockito.*;
 
 
-// TODO: Remove when real streaming component executor is available.
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextHierarchy({
-		@ContextConfiguration(locations = "classpath:applicationContext.xml"),
-		@ContextConfiguration(classes = ITStreamingJobMessageSender.TestConfig.class)})
-public class ITStreamingJobMessageSender {
-
+@ContextConfiguration(initializers = TestSystemWithDefaultConfig.AppCtxInit.class)
+public class TestStreamingJobStartStop {
 
 	private static final StreamingJobRequestBo _mockStreamingJobRequestBo = mock(StreamingJobRequestBo.class);
 
@@ -66,6 +66,7 @@ public class ITStreamingJobMessageSender {
 
 	private static PipelineService _pipelineServiceSpy;
 
+	// TODO: Remove mocks when real streaming component executor is available.
 	@Configuration
 	public static class TestConfig {
 
@@ -89,9 +90,7 @@ public class ITStreamingJobMessageSender {
 			}
 			return _pipelineServiceSpy;
 		}
-
 	}
-
 
 	@Autowired
 	private StreamingJobMessageSender _jobSender;
@@ -115,7 +114,7 @@ public class ITStreamingJobMessageSender {
 
 		doReturn(algorithmDef)
 				.when(_pipelineServiceSpy)
-					.getAlgorithm(algorithmDef.getName());
+				.getAlgorithm(algorithmDef.getName());
 	}
 
 

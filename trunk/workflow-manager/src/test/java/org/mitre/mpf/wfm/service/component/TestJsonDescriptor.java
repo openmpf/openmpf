@@ -45,12 +45,8 @@ public class TestJsonDescriptor {
         assertEquals("CplusplusHelloWorld", descriptor.componentName);
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
         assertEquals("1.0.0", descriptor.componentVersion);
-        assertEquals(Collections.singletonList(
-                "${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so"),
-                descriptor.launchArgs);
-
-        assertTrue(descriptor.algorithm.supportsBatchProcessing);
-        assertFalse(descriptor.algorithm.supportsStreamProcessing);
+        assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so", descriptor.batchLibraryPath);
+        assertNull(descriptor.streamLibraryPath);
 
         assertEquals(3, descriptor.algorithm.providesCollection.properties.size());
 
@@ -71,12 +67,8 @@ public class TestJsonDescriptor {
         assertEquals("CplusplusHelloCustomPipelinesComponent", descriptor.componentName);
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
         assertEquals("1.0.0", descriptor.componentVersion);
-        assertEquals(Collections.singletonList(
-                "${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so"),
-                descriptor.launchArgs);
-
-        assertTrue(descriptor.algorithm.supportsBatchProcessing);
-        assertFalse(descriptor.algorithm.supportsStreamProcessing);
+        assertEquals("${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so", descriptor.batchLibraryPath);
+        assertNull(descriptor.streamLibraryPath);
 
         assertEquals(3, descriptor.algorithm.providesCollection.properties.size());
 
@@ -127,16 +119,13 @@ public class TestJsonDescriptor {
         assertEquals(ComponentLanguage.JAVA, descriptor.sourceLanguage);
         assertEquals("1.0.0", descriptor.componentVersion);
         assertEquals("1.0.0", descriptor.middlewareVersion);
-        assertEquals("mpf-java-test-detection-component-1.0.0.jar", descriptor.pathName);
-        assertTrue(descriptor.launchArgs.isEmpty());
+        assertEquals("mpf-java-test-detection-component-1.0.0.jar", descriptor.batchLibraryPath);
+        assertNull(descriptor.streamLibraryPath);
         assertEquals(1, descriptor.environmentVariables.size());
         JsonComponentDescriptor.EnvironmentVariable envVar = descriptor.environmentVariables.get(0);
         assertTrue(envVar.name.equals("DUMMY_VAR")
                 && envVar.value.equals("nothing")
                 && envVar.sep == null);
-
-        assertTrue(descriptor.algorithm.supportsBatchProcessing);
-        assertFalse(descriptor.algorithm.supportsStreamProcessing);
 
         assertEquals(3, descriptor.algorithm.providesCollection.properties.size());
 

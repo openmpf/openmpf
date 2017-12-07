@@ -47,9 +47,10 @@ public class TestDescriptorFactory {
 
     public static JsonComponentDescriptor get() {
         JsonComponentDescriptor descriptor = new JsonComponentDescriptor();
-        descriptor.launchArgs = Arrays.asList("launch-arg1", "launch-arg2");
         descriptor.sourceLanguage = ComponentLanguage.CPP;
         descriptor.componentName = COMPONENT_NAME;
+        descriptor.batchLibraryPath = "/path/to/batch/lib.so";
+        descriptor.streamLibraryPath = "/path/to/stream/lib.so";;
 
         JsonComponentDescriptor.EnvironmentVariable envVar1 = new JsonComponentDescriptor.EnvironmentVariable();
         envVar1.name = "env var1 name";
@@ -66,8 +67,6 @@ public class TestDescriptorFactory {
         descriptor.algorithm.name = "Test Algorithm Name";
         descriptor.algorithm.actionType = ActionType.DETECTION;
         descriptor.algorithm.description = "Test Algorithm Description";
-        descriptor.algorithm.supportsBatchProcessing = true;
-        descriptor.algorithm.supportsStreamProcessing = true;
 
         descriptor.algorithm.requiresCollection = new JsonComponentDescriptor.AlgoRequires();
         descriptor.algorithm.requiresCollection.states = Arrays.asList("r-state1", "r-state2");

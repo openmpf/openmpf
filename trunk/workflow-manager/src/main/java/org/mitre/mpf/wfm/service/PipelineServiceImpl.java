@@ -391,13 +391,13 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public boolean pipelineSupportsBatch(String pipelineName) {
-    	return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::getSupportsBatchProcessing);
+    	return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::supportsBatchProcessing);
     }
 
 
     @Override
     public boolean pipelineSupportsStreaming(String pipelineName) {
-        return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::getSupportsStreamProcessing);
+        return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::supportsStreamProcessing);
     }
 
 
@@ -411,12 +411,12 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public boolean taskSupportsBatch(String taskName) {
-    	return taskSupportsProcessingType(taskName, AlgorithmDefinition::getSupportsBatchProcessing);
+    	return taskSupportsProcessingType(taskName, AlgorithmDefinition::supportsBatchProcessing);
     }
 
     @Override
     public boolean taskSupportsStreaming(String taskName) {
-        return taskSupportsProcessingType(taskName, AlgorithmDefinition::getSupportsStreamProcessing);
+        return taskSupportsProcessingType(taskName, AlgorithmDefinition::supportsStreamProcessing);
 
     }
 
@@ -429,12 +429,12 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public boolean actionSupportsBatch(String actionName) {
-        return actionSupportsProcessingType(actionName, AlgorithmDefinition::getSupportsBatchProcessing);
+        return actionSupportsProcessingType(actionName, AlgorithmDefinition::supportsBatchProcessing);
     }
 
     @Override
     public boolean actionSupportsStreaming(String actionName) {
-        return actionSupportsProcessingType(actionName, AlgorithmDefinition::getSupportsStreamProcessing);
+        return actionSupportsProcessingType(actionName, AlgorithmDefinition::supportsStreamProcessing);
     }
 
 

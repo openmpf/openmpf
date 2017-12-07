@@ -208,26 +208,22 @@ public class ITComponentLifecycle {
 
         // create service
         JSONParser parser = new JSONParser();
+        String componentName = "";
         String sourceLanguage = "";
-        String pathName = "";
+        String batchLibraryPath = "";
         String serviceName = "";
         String algDesc = "";
         String algName = "";
         ActionType algorithmActionType = ActionType.UNDEFINED;
-        List<String> componentLaunchArguments = null;
         List<EnvironmentVariable> componentEnvVars = null;
         try {
             Object obj = parser.parse(new FileReader(filePath));
             JSONObject jsonObject = (JSONObject) obj;
+            componentName = (String) jsonObject.get("componentName");
             sourceLanguage = (String) jsonObject.get("sourceLanguage");
-            pathName = (String) jsonObject.get("pathName");
-            JSONArray launchArgs = (JSONArray) jsonObject.get("launchArgs");
+            batchLibraryPath = (String) jsonObject.get("batchLibraryPath");
             JSONArray envVars = (JSONArray) jsonObject.get("environmentVariables");
             JSONObject algorithm = (JSONObject) jsonObject.get("algorithm");
-            componentLaunchArguments = new ArrayList<String>();
-            for (int i = 0; i < launchArgs.size(); i++) {
-                componentLaunchArguments.add(launchArgs.get(i).toString());
-            }
             componentEnvVars = new ArrayList<EnvironmentVariable>();
             for (int j = 0; j < envVars.size(); j++) {
                 JSONObject var = (JSONObject) envVars.get(j);
@@ -252,27 +248,26 @@ public class ITComponentLifecycle {
             log.error("ParseException occurred while trying to create new service");
             e.printStackTrace();
         }
+
+        String queueName = "MPF." + algorithmActionType.toString() +  "_" + algName + "_REQUEST";
         Service algorithmService;
-        if (!sourceLanguage.equalsIgnoreCase("java")) {
-            algorithmService = new Service(serviceName, "${MPF_HOME}/bin/" + pathName);
-            String queueName = "MPF." + algorithmActionType.toString() +  "_" + algName + "_REQUEST";
-            componentLaunchArguments.add(1, queueName.toString());
-            algorithmService.setLauncher("simple");
-            algorithmService.setWorkingDirectory(null);
-            algorithmService.setEnvVars(componentEnvVars);
-        } else {
+
+        if (sourceLanguage.equalsIgnoreCase("java")) {
             algorithmService = new Service(serviceName, "${MPF_HOME}/bin/start-java-component.sh");
-            algorithmService.addArg(pathName);
-            String queueName = "MPF." + algorithmActionType.toString() +  "_" + algName + "_REQUEST";
+            algorithmService.addArg(batchLibraryPath);
             algorithmService.addArg(queueName);
             algorithmService.addArg(serviceName);
+            algorithmService.setLauncher("generic");
             algorithmService.setWorkingDirectory("${MPF_HOME}/jars");
-
-        }
-        for (String componentLaunchArgument : componentLaunchArguments) {
-            algorithmService.addArg(componentLaunchArgument);
+        } else { // C++
+            algorithmService = new Service(serviceName, "${MPF_HOME}/bin/amq_detection_component");
+            algorithmService.addArg(batchLibraryPath);
+            algorithmService.addArg(queueName);
+            algorithmService.setLauncher("simple");
+            algorithmService.setWorkingDirectory("${MPF_HOME}/plugins/" + componentName);
         }
         algorithmService.setDescription(algDesc);
+        algorithmService.setEnvVars(componentEnvVars);
 
         // get current node config
         List<NodeManagerModel> nodeManagerModels = getNodeConfig();

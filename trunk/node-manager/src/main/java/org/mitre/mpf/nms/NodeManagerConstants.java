@@ -26,31 +26,11 @@
 package org.mitre.mpf.nms;
 
 public class NodeManagerConstants {
-    //public static final String NODE_TYPES   = "nodeTypes";
-
-    // These are the strings that should be used for node types in config file and elsewhere
-  /*  public static final String GENERIC_TYPE = "Generic";
-    public static final String TRACKER_TYPE = "Tracker";
-    public static final String DETECTOR_TYPE = "Detector";*/
 
     public static enum ServiceTypes {
         Generic, Tracker, Detector, Unknown;
     }
 
-    // String matching is used with these later, so make sure they are unique and not subsets of one another
-    // public static final String NODE_MANAGER_TAG = "NodeManager";  // all node managers shall have this as part of their name
-    //public static final String MASTER_MANAGER_TAG = "MasterManager";  // all master controllers will have this in their name
-    // @FIXME Pick one set
-    //public static final String MASTER_TAG       = "MasterNode";
-    /**
-     * JGroup Node Types
-     *
-     * public static enum NodeTypes { NodeManager, MasterNodeManager }
-     */
-    public static final String AMQ_HOSTNAME_PARAM = "activeMqHostname";
-    public static final String JGROUPS_CONFIG_PARAM = "jgroupsConfig";
-
-    public static final String DEFAULT_CHANNEL = "MPF_Channel";
 
     /**
      * Broadcast states of Services.

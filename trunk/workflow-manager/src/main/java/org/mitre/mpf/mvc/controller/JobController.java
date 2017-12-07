@@ -103,6 +103,7 @@ public class JobController {
             produces = "application/json", response = JobCreationResponse.class)
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "Job created"),
+            @ApiResponse(code = 400, message = "Bad request"),
             @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
     @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
@@ -344,11 +345,16 @@ public class JobController {
 
             JsonJobRequest jsonJobRequest;
             List<JsonMediaInputObject> media = new ArrayList<>();
+            // Iterate over all media in the batch job creation request.  If for any media, the media protocol check fails, then
+            // that media will be ignored from the batch job
             for (JobCreationMediaData mediaRequest : jobCreationRequest.getMedia()) {
-                JsonMediaInputObject medium = new JsonMediaInputObject(mediaRequest.getMediaUri());
+                JsonMediaInputObject medium = new JsonMediaInputObject(
+                    mediaRequest.getMediaUri());
                 if (mediaRequest.getProperties() != null) {
-                    for (Map.Entry<String, String> property : mediaRequest.getProperties().entrySet()) {
-                        medium.getProperties().put(property.getKey().toUpperCase(), property.getValue());
+                    for (Map.Entry<String, String> property : mediaRequest.getProperties()
+                        .entrySet()) {
+                        medium.getProperties()
+                            .put(property.getKey().toUpperCase(), property.getValue());
                     }
                 }
                 media.add(medium);
@@ -379,7 +385,7 @@ public class JobController {
             if (useSession) {
                 sessionModel.getSessionJobs().add(jobId);
             }
-
+            // the job request has been successfully parsed, construct the job creation response
             return new JobCreationResponse(jobId);
         } catch (InvalidPipelineObjectWfmProcessingException ex) {
             String err = createErrorString(jobCreationRequest, ex.getMessage());
@@ -388,6 +394,7 @@ public class JobController {
         } catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
             String err = createErrorString(jobCreationRequest, null);
             log.error(err, ex);
+            // the job request did not parse successfully, construct the job creation response describing the error that occurred.
             return new JobCreationResponse(1, err);
         }
     }

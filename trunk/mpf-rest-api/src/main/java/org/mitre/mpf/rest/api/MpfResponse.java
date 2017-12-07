@@ -27,41 +27,67 @@
 package org.mitre.mpf.rest.api;
 
 public class MpfResponse {
-	//TODO: need to develop error codes...
-	//0 = no error and message will be null, 1 = error and message will be populate
-	
+	//TODO: wishlist task #343 created to refactor the rest of the codebase to use these static data members instead of hardcoding 0 or 1, plus need to develop additional error codes...
+	//0 = no error and message will be null, 1 = error and message will be populated, 2 = warning and message will be populated
+	public static final int RESPONSE_CODE_SUCCESS = 0;
+	public static final int RESPONSE_CODE_ERROR = 1;
+	public static final int RESPONSE_CODE_WARNING = 2;
+
 	/*
 	 * Fields and getters
 	 */
-	private int responseCode = 0;
+	private int responseCode = RESPONSE_CODE_SUCCESS;
+
+    /**
+     * Get the response code associated with this MpfResponse.
+     * @return response code, which should be one of the predefined response codes defined for a MpfResponse.
+     */
 	public int getResponseCode() {
 		return responseCode;
 	}
+
+    /**
+     * Set the mpf response code
+     * @param responseCode one of the pre-defined mpfResponse response codes
+     */
 	public void setResponseCode(int responseCode) {
-		this.responseCode = responseCode;
-		//force null message on response code of 0
-		if(this.responseCode == 0) {
-			this.message = null;
-		}
-	}
+        this.responseCode = responseCode;
+        //force null message on response code of 0
+        if (this.responseCode == RESPONSE_CODE_SUCCESS) {
+            this.message = null;
+        }
+    }
 
 	private String message = null;
+
+    /**
+     * Get the message associated with this MpfResponse.
+     * @return message associated with this MpfResponse.
+     */
 	public String getMessage() {
 		return message;
 	}
-	//cannot set the message without a responseCode
+    /**
+     * Set the mpf response code and message for this MpfResponse. Cannot set the message without a responseCode.
+     * @param responseCode one of the pre-defined mpfResponse response codes
+     * @param message mpf response message
+     */
 	public void setMessage(int responseCode, String message) {
-		this.responseCode = responseCode;
-		this.message = message;
-	}
+        this.responseCode = responseCode;
+        this.message = message;
+    }
 	
 	/*
 	 * Constructors
 	 */
 	public MpfResponse() { }
-	
+
+    /**
+     * Construct a mpf response with a response code and response message
+     * @param responseCode one of the pre-defined mpfResponse response codes
+     * @param message mpf response message
+     */
 	public MpfResponse(int responseCode, String message) {
-		this.responseCode = responseCode;
-		this.message = message;
+	    setMessage(responseCode, message);
 	}	
 }

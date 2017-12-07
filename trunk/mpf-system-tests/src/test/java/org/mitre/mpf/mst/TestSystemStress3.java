@@ -86,9 +86,9 @@ public class TestSystemStress3 extends TestSystemWithDefaultConfig {
         executor.shutdown();
         executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
 
-        Assert.assertEquals("Number of files to process={} doesn't match actual number of jobs run={} (one job/file)",
+        Assert.assertEquals("Number of files to process doesn't match actual number of jobs run (one job/file):",
                 files.size(), manyJobsNumFilesProcessed);
-        log.info("Successfully ran {} jobs for {} files, one file per job, without a hiccup",
+        log.info("Successfully ran {} jobs for {} files, one file per job.",
                 manyJobsNumFilesProcessed, files.size());
         log.info("Finished test runFaceOcvDetectImageManyJobs()");
     }
@@ -105,7 +105,7 @@ public class TestSystemStress3 extends TestSystemWithDefaultConfig {
             try {
                 while (!fQueue.isEmpty()) {
                     List<JsonMediaInputObject> media = new LinkedList<>();
-                    media.add(new JsonMediaInputObject(fQueue.take().getAbsoluteFile().toURI().toString()));
+                    media.add(new JsonMediaInputObject(fQueue.take().getAbsoluteFile().toPath().toUri().toString()));
                     runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
                             propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
                     manyJobsNumFilesProcessed++;

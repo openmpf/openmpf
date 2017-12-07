@@ -40,18 +40,21 @@
 using org::mitre::mpf::wfm::buffers::DetectionError;
 using org::mitre::mpf::wfm::buffers::DetectionRequest;
 using org::mitre::mpf::wfm::buffers::DetectionRequest_DataType;
+using org::mitre::mpf::wfm::buffers::DetectionRequest_VideoRequest;
 using org::mitre::mpf::wfm::buffers::DetectionRequest_AudioRequest;
 using org::mitre::mpf::wfm::buffers::DetectionRequest_ImageRequest;
-using org::mitre::mpf::wfm::buffers::DetectionRequest_VideoRequest;
+using org::mitre::mpf::wfm::buffers::DetectionRequest_GenericRequest;
 using org::mitre::mpf::wfm::buffers::DetectionResponse;
 using org::mitre::mpf::wfm::buffers::DetectionResponse_DataType;
-using org::mitre::mpf::wfm::buffers::DetectionResponse_AudioResponse;
-using org::mitre::mpf::wfm::buffers::AudioTrack;
-using org::mitre::mpf::wfm::buffers::ImageLocation;
-using org::mitre::mpf::wfm::buffers::DetectionResponse_ImageResponse;
 using org::mitre::mpf::wfm::buffers::DetectionResponse_VideoResponse;
+using org::mitre::mpf::wfm::buffers::DetectionResponse_AudioResponse;;
+using org::mitre::mpf::wfm::buffers::DetectionResponse_ImageResponse;
+using org::mitre::mpf::wfm::buffers::DetectionResponse_GenericResponse;
 using org::mitre::mpf::wfm::buffers::VideoTrack;
 using org::mitre::mpf::wfm::buffers::VideoTrack_FrameLocationMap;
+using org::mitre::mpf::wfm::buffers::AudioTrack;
+using org::mitre::mpf::wfm::buffers::ImageLocation;
+using org::mitre::mpf::wfm::buffers::GenericTrack;
 using org::mitre::mpf::wfm::buffers::PropertyMap;
 
 using std::map;
@@ -78,6 +81,11 @@ struct MPFDetectionAudioRequest {
 struct MPFDetectionImageRequest {
     bool has_feed_forward_location = false;
     MPFImageLocation feed_forward_location;
+};
+
+struct MPFDetectionGenericRequest {
+    bool has_feed_forward_track = false;
+    MPFGenericTrack feed_forward_track;
 };
 
 class MPFDetectionBuffer {
@@ -118,6 +126,8 @@ public:
 
     void GetImageRequest(MPFDetectionImageRequest &image_request);
 
+    void GetGenericRequest(MPFDetectionGenericRequest &generic_request);
+
     unsigned char *PackErrorResponse(
             const MPFMessageMetadata *const msg_metadata,
             const MPFDetectionDataType data_type,
@@ -142,6 +152,14 @@ public:
 
     unsigned char *PackImageResponse(
             const vector<MPFImageLocation> &locations,
+            const MPFMessageMetadata *const msg_metadata,
+            const MPFDetectionDataType data_type,
+            const string detection_type,
+            int *packed_length,
+            const MPFDetectionError error) const;
+
+    unsigned char *PackGenericResponse(
+            const vector<MPFGenericTrack> &tracks,
             const MPFMessageMetadata *const msg_metadata,
             const MPFDetectionDataType data_type,
             const string detection_type,

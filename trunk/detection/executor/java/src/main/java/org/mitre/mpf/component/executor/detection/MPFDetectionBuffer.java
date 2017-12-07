@@ -31,10 +31,6 @@ import java.util.*;
 import com.google.common.base.Joiner;
 import org.apache.commons.io.FilenameUtils;
 import org.mitre.mpf.component.api.detection.*;
-import org.mitre.mpf.component.api.messaging.MPFMessageMetadata;
-import org.mitre.mpf.component.api.messaging.detection.MPFDetectionAudioRequest;
-import org.mitre.mpf.component.api.messaging.detection.MPFDetectionImageRequest;
-import org.mitre.mpf.component.api.messaging.detection.MPFDetectionVideoRequest;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer.AlgorithmProperty;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
@@ -178,6 +174,20 @@ public class MPFDetectionBuffer {
     }
 
 
+    public MPFDetectionGenericRequest getGenericRequest() {
+        if (detectionRequest.getGenericRequest().hasFeedForwardTrack()) {
+            DetectionProtobuf.GenericTrack track = detectionRequest.getGenericRequest().getFeedForwardTrack();
+            // Copy the properties
+            Map<String, String> trackProps = copyProperties(track.getDetectionPropertiesList());
+            MPFGenericTrack new_track = new MPFGenericTrack(track.getConfidence(), trackProps);
+            return new MPFDetectionGenericRequest(new_track);
+        }
+        else {
+            return new MPFDetectionGenericRequest();
+        }
+    }
+
+
     private DetectionResponse.Builder packCommonFields(
             final MPFMessageMetadata msgMetadata,
             final MPFDetectionError msgError) {
@@ -312,6 +322,39 @@ public class MPFDetectionBuffer {
 
             }
 
+        }
+
+        responseContents = detectionResponseBuilder
+                .setRequestId(msgMetadata.getRequestId())
+                .setDataType(translateMPFDetectionDataType(msgMetadata.getDataType()))
+                .build()
+                .toByteArray();
+
+        return responseContents;
+    }
+
+    public byte[] createGenericResponseMessage(final MPFMessageMetadata msgMetadata,
+                                               final String detectionType,
+                                               final List<MPFGenericTrack> tracks,
+                                               final MPFDetectionError msgError) {
+        byte[] responseContents = null;
+
+        DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder = packCommonFields(msgMetadata, msgError);
+
+        DetectionProtobuf.DetectionResponse.GenericResponse.Builder genericResponseBuilder = detectionResponseBuilder.addGenericResponsesBuilder();
+        genericResponseBuilder.setDetectionType(detectionType);
+
+        if (!tracks.isEmpty()) {
+            LOG.debug("Number of generic tracks in detection response for request ID " +
+                    msgMetadata.getRequestId() + " = " + tracks.size());
+
+            for (int i = 0; i < tracks.size(); i++) {
+
+                DetectionProtobuf.GenericTrack genericTrack = genericResponseBuilder.addGenericTracksBuilder()
+                        .setConfidence(tracks.get(i).getConfidence())
+                        .addAllDetectionProperties(convertProperties(tracks.get(i).getDetectionProperties()))
+                        .build();
+            }
         }
 
         responseContents = detectionResponseBuilder

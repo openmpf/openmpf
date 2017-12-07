@@ -57,7 +57,10 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
     public static final Pattern FQN_PATTERN = Pattern.compile("^([^:]+):([^:]+):(.*)");
 
     // the interface to JGroups
-    private ChannelNode msgChannel;
+    private final ChannelNode msgChannel;
+
+    private final NodeManagerProperties properties;
+
     // key is FQN of the service: for example, mpf1:Markup:1
     private final Map<String, ServiceDescriptor> serviceTable = new ConcurrentHashMap<>();
     // key is target (logical) host name: mpf1
@@ -65,8 +68,6 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
 
     private ClusterChangeNotifier notifier;          // For callbacks when changing node states
 
-    // Figure our hostname for help in naming us to JGroups
-    private static String myHost = "UnknownHostname";
 
     /**
      * NodeTypes (types of ChannelReceiver).
@@ -85,20 +86,11 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         }
     }
 
-    //removed a static initializer that contained this code, it must be called by all constructors
-    private static void determineHost() {
-        myHost = System.getenv("THIS_MPF_NODE");
-        LOG.debug("Hostname is: '{}'.", myHost);
-        
-        if(myHost == null) {
-            LOG.error("Could not determine the hostname.");
-        }
-    }
 
 
-    protected ChannelReceiver() {
-    	determineHost();
-        msgChannel = new ChannelNode();
+    protected ChannelReceiver(NodeManagerProperties properties, ChannelNode channelNode) {
+        this.properties = properties;
+        msgChannel = channelNode;
     }
 
 
@@ -320,15 +312,11 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         return nodeTable;
     }
 
-    protected static String getMyHost() {
-        return myHost;
-    }
-
     protected ClusterChangeNotifier getNotifier() {
         return notifier;
     }
 
-    public void startReceiving(InputStream jgroupsConfigXml, String channelName, NodeTypes nodeType, String description) {
+    public void startReceiving(NodeTypes nodeType, String description) {
         // build fqn
         if (null == description) {
             description = "";
@@ -336,15 +324,10 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         if (null == nodeType) {
             nodeType = NodeTypes.ReceiverNode;
         }
-        String fqn = nodeType.name() + FQN_SEP + myHost + FQN_SEP + description;
+        String fqn = nodeType.name() + FQN_SEP + properties.getThisMpfNode() + FQN_SEP + description;
 
         LOG.debug("{} starting up", fqn);
-        msgChannel = new ChannelNode();
-        if (null == jgroupsConfigXml) {
-            String jgConfig = System.getProperty(NodeManagerConstants.JGROUPS_CONFIG_PARAM, "jGroupsTCPConfig.xml");
-            jgroupsConfigXml = NodeManager.class.getClassLoader().getResourceAsStream(jgConfig);
-        }
         // this connects us to the jgroups channel defined, we are now live and ready for comm
-        msgChannel.connect(jgroupsConfigXml, channelName, fqn, this);
+        msgChannel.connect(fqn, this);
     }
 }

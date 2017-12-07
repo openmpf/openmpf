@@ -620,3 +620,12 @@ table.dataTable span.highlight {
     cursor:pointer;
     color:#428bca;
 }
+
+
+.progress-bar {
+    padding: .2em;
+}
+
+.progress {
+    background-image: linear-gradient(to bottom,#CCCCCC 0,#BBBBBB 100%);
+}

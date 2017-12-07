@@ -56,11 +56,6 @@ public class PropertiesUtil {
 
 	@PostConstruct
 	private void init() throws IOException, WfmProcessingException {
-		//java 8 to clean up any empty extensions - if there are no custom extensions present, the list has one empty string element
-		//and that must be removed
-		//I would like to do this in the @Value expression, but I could not find a good solution
-		serverMediaTreeCustomExtensions.removeIf(item -> item == null || item.trim().isEmpty());
-		log.info("Server media tree custom extensions are '{}'.", serverMediaTreeCustomExtensions.toString());
 		createConfigFiles();
 
 		Set<PosixFilePermission> permissions = new HashSet<>();
@@ -368,6 +363,18 @@ public class PropertiesUtil {
 		return getDataResource(nodeManagerConfigData, nodeManagerConfigTemplate);
 	}
 
+
+	@Value("${data.streamingprocesses.file}")
+	private FileSystemResource streamingServicesData;
+
+	@Value("${data.streamingprocesses.template}")
+	private Resource streamingServicesTemplate;
+
+	public WritableResource getStreamingServices() {
+		return getDataResource(streamingServicesData, streamingServicesTemplate);
+	}
+
+
 	//
 	// Component upload and registration properties
 	//
@@ -442,12 +449,6 @@ public class PropertiesUtil {
 	@Value("${web.server.media.tree.base}")
 	private String serverMediaTreeRoot;
 	public String getServerMediaTreeRoot() { return serverMediaTreeRoot; }
-
-	@Value("#{'${web.server.media.tree.custom.extensions}'.split(',')}")
-	private List<String> serverMediaTreeCustomExtensions; // modifications are made in @PostConstruct
-	public List<String> getServerMediaTreeCustomExtensions() {
-		return serverMediaTreeCustomExtensions;
-	}
 
 	@Value("${web.max.file.upload.cnt}")
 	private int webMaxFileUploadCnt;

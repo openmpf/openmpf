@@ -235,3 +235,27 @@ message DetectionResponse {
     }
     repeated ImageResponse image_responses = 503;
 }
+
+//// Used for streaming video job segment summary message
+
+message StreamingDetectionResponse {
+
+    optional DetectionError error = 3;
+
+    optional int32 segment_number = 4;
+
+    optional int32 start_frame = 5; // Start frame relative to the
+                                    // beginning of stream processing:
+                                    // segment 1 will start with frame 0
+
+    optional int32 stop_frame = 6;
+
+    // Profiling metrics.
+    optional MetricsMessage metrics = 405;
+
+    message VideoResponse {
+        repeated VideoTrack video_tracks = 2;
+    }
+
+    repeated VideoResponse video_responses = 501;
+}

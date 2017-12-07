@@ -56,11 +56,58 @@ class AMQMessageConverter {
 
 
 class AMQSegmentSummaryConverter : public AMQMessageConverter<MPFSegmentSummaryMessage> {
+  private:
+    typedef org::mitre::mpf::wfm::buffers::StreamingDetectionResponse StreamingResponse;
+    typedef org::mitre::mpf::wfm::buffers::StreamingDetectionResponse_VideoResponse VideoResponse;
+    typedef org::mitre::mpf::wfm::buffers::VideoTrack MessageTrack;
+    typedef org::mitre::mpf::wfm::buffers::PropertyMap MessagePropertyMap;
+    typedef org::mitre::mpf::wfm::buffers::VideoTrack_FrameLocationMap MessageLocationsMap;
+    typedef org::mitre::mpf::wfm::buffers::ImageLocation MessageImageLocation;
   public:
     MPFSegmentSummaryMessage fromCMSMessage(const cms::Message &msg) override {
-        //TODO: Unpack the Video Track info from the protobuf in the cms message.
+        //Unpack the Video Track info from the protobuf in the cms message.
         std::vector<MPF::COMPONENT::MPFVideoTrack> mpfTracks;
         int seg_num = -1;
+
+        const cms::BytesMessage &bytes_msg = dynamic_cast<const cms::BytesMessage&>(msg);
+        int length = bytes_msg.getBodyLength();
+        std::unique_ptr<unsigned char[]> contents(new unsigned char[length]());
+        if (NULL != contents) {
+            bytes_msg.readBytes(contents.get(), length);
+            StreamingResponse response;
+            response.ParseFromArray(static_cast<const void *>(contents.get()), length);
+            seg_num = response.segment_number();
+            for (auto &info : response.video_responses()) {
+                for (auto &msg_track : info.video_tracks()) {
+                    MPF::COMPONENT::MPFVideoTrack mpf_track;
+                    mpf_track.start_frame = msg_track.start_frame();
+                    mpf_track.stop_frame = msg_track.stop_frame();
+                    mpf_track.confidence = msg_track.confidence();
+                    // Copy the frame locations
+                    for (auto &loc : msg_track.frame_locations()) {
+                        MPF::COMPONENT::Properties tmp_props;
+                        for (auto prop : loc.image_location().detection_properties()) {
+                            tmp_props[prop.key()] = prop.value();
+                        }
+                        MPF::COMPONENT::MPFImageLocation tmp_loc(
+                            loc.image_location().x_left_upper(),
+                            loc.image_location().y_left_upper(),
+                            loc.image_location().width(),
+                            loc.image_location().height(),
+                            loc.image_location().confidence(),
+                            tmp_props);
+
+                        mpf_track.frame_locations[loc.frame()] = tmp_loc;
+                    }
+                    // Copy the track properties
+                    for (auto &prop : msg_track.detection_properties()) {
+                        mpf_track.detection_properties[prop.key()] = prop.value();
+                    }
+                    // Add the track to the track vector
+                    mpfTracks.push_back(mpf_track);
+                }
+            }
+        }
 
         return MPFSegmentSummaryMessage(msg.getStringProperty("JOB_NAME"),
                                         msg.getIntProperty("JOB_NUMBER"),
@@ -70,11 +117,45 @@ class AMQSegmentSummaryConverter : public AMQMessageConverter<MPFSegmentSummaryM
 
     virtual void toCMSMessage(const MPFSegmentSummaryMessage &mpfMsg, cms::Message &msg) override {
 
-        //TODO: Serialize the vector of tracks in the mpfMsg into a
-        //protobuf and add it to the cms message.
+        msg.setStringProperty("JOB_NAME", mpfMsg.job_name_);
+        msg.setIntProperty("JOB_NUMBER", mpfMsg.job_number_);
+        // Serialize the vector of tracks in the mpfMsg into a
+        // protobuf and add it to the cms message.
         cms::BytesMessage &bytes_msg = dynamic_cast<cms::BytesMessage&>(msg);
-        bytes_msg.setStringProperty("JOB_NAME", mpfMsg.job_name_);
-        bytes_msg.setIntProperty("JOB_NUMBER", mpfMsg.job_number_);
+        StreamingResponse response;
+        response.set_segment_number(mpfMsg.segment_number_);
+        VideoResponse* video_response = response.add_video_responses();
+        for (auto &track : mpfMsg.tracks_) {
+            MessageTrack* msg_track = video_response->add_video_tracks();
+            msg_track->set_start_frame(track.start_frame);
+            msg_track->set_stop_frame(track.stop_frame);
+            msg_track->set_confidence(track.confidence);
+            for (auto &prop : track.detection_properties) {
+                MessagePropertyMap* detection_props = msg_track->add_detection_properties();
+                detection_props->set_key(prop.first);
+                detection_props->set_value(prop.second);
+            }
+            for (auto &loc : track.frame_locations) {
+                MPF::COMPONENT::MPFImageLocation detection = loc.second;
+                MessageLocationsMap* msg_loc_map = msg_track->add_frame_locations();
+                msg_loc_map->set_frame(loc.first);
+                MessageImageLocation* msg_loc = msg_loc_map->mutable_image_location();
+                msg_loc->set_x_left_upper(detection.x_left_upper);
+                msg_loc->set_y_left_upper(detection.y_left_upper);
+                msg_loc->set_width(detection.width);
+                msg_loc->set_height(detection.height);
+                msg_loc->set_confidence(detection.confidence);
+                for (auto &prop : detection.detection_properties) {
+                    MessagePropertyMap* det_prop = msg_loc->add_detection_properties();
+                    det_prop->set_key(prop.first);
+                    det_prop->set_value(prop.second);
+                }
+            }
+        }
+        // Now serialize and set the message body
+        std::unique_ptr<unsigned char[]> response_contents(new unsigned char[response.ByteSize()]);
+        response.SerializeToArray(static_cast<void *>(response_contents.get()), response.ByteSize());
+        bytes_msg.setBodyBytes(response_contents.get(), response.ByteSize());
 
         return;
     }

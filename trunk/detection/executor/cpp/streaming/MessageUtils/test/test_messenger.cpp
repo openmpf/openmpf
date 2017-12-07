@@ -101,7 +101,7 @@ TEST_F(AMQMessengerTest, TestActivityAlertMessage) {
     ActivityAlertMessenger messenger(msg_mgr_, logger);
     EXPECT_FALSE(messenger.IsInitialized());
 
-    std::string queue_name = "MPF_ACTIVITY_ALERTS";
+    std::string queue_name = "GTEST_MPF_ACTIVITY_ALERTS";
     MPF::COMPONENT::Properties props;
 
     ASSERT_NO_THROW(messenger.InitQueue(queue_name, props));
@@ -141,12 +141,12 @@ TEST_F(AMQMessengerTest, TestJobStatusMessage) {
 
     log4cxx::LoggerPtr logger = log4cxx::Logger::getRootLogger();
 
-    // Creae a Job Status messenger
+    // Create a Job Status messenger
     ASSERT_TRUE(msg_mgr_->IsConnected());
     JobStatusMessenger messenger(msg_mgr_, logger);
     EXPECT_FALSE(messenger.IsInitialized());
 
-    std::string queue_name = "MPF_JOB_STATUS";
+    std::string queue_name = "GTEST_MPF_JOB_STATUS";
     MPF::COMPONENT::Properties props;
 
     ASSERT_NO_THROW(messenger.InitQueue(queue_name, props));
@@ -174,6 +174,101 @@ TEST_F(AMQMessengerTest, TestJobStatusMessage) {
     ASSERT_NO_THROW(messenger.Close());
 }
 
-// TEST(MessengerTests, TestSegmentSummaryMessage) {
+TEST_F(AMQMessengerTest, TestSegmentSummaryMessage) {
+    log4cxx::LoggerPtr logger = log4cxx::Logger::getRootLogger();
 
-// }
+    // Create a Segment Summary messenger
+    ASSERT_TRUE(msg_mgr_->IsConnected());
+    SegmentSummaryMessenger messenger(msg_mgr_, logger);
+    EXPECT_FALSE(messenger.IsInitialized());
+
+    std::string queue_name = "GTEST_MPF_SEGMENT_SUMMARY";
+    MPF::COMPONENT::Properties props;
+
+    ASSERT_NO_THROW(messenger.InitQueue(queue_name, props));
+    EXPECT_TRUE(messenger.IsInitialized());
+
+    ASSERT_NO_THROW(messenger.CreateProducer());
+
+    ASSERT_NO_THROW(messenger.CreateConsumer());
+
+    ASSERT_TRUE(msg_mgr_->IsStarted());
+    int job_id = 5000;
+    string job_name("streaming_job_" + std::to_string(job_id));
+    int seg_num = 45;
+
+    int num_tracks = 3;
+    int num_images_per_track = 2;
+    // Create the segment summary tracks
+    std::vector<MPF::COMPONENT::MPFVideoTrack> tracks;
+
+    for (int i = 0; i < num_tracks; i++) {
+        std::map<int, MPF::COMPONENT::MPFImageLocation> loc_map;
+        for (int j = 0; j < num_images_per_track; j++) {
+            MPF::COMPONENT::Properties imageprops;
+            imageprops["IMAGE_PROPERTY_J1"] = std::to_string(j+1);
+            imageprops["IMAGE_PROPERTY_J2"] = std::to_string(j+2);
+            MPF::COMPONENT::MPFImageLocation loc(/*x_left_upper*/ j+1,
+                                                 /*y_left_upper*/ j+2,
+                                                 /*width*/ j+3,
+                                                 /*height*/ j+4,
+                                                 /*confidence*/ (j+5)*0.001,
+                                                 imageprops);
+            loc_map[j+1] = loc;
+        }
+        MPF::COMPONENT::Properties trackprops;
+        trackprops["TRACK_PROPERTY_I3"] = std::to_string(i+3);
+        trackprops["TRACK_PROPERTY_I4"] = std::to_string(i+4);
+        MPF::COMPONENT::MPFVideoTrack new_track(/*start_frame*/ i+10,
+                                                /*stop_frame*/ i+20,
+                                                /*confidence*/(i+30)*0.5,
+                                                trackprops);
+        new_track.frame_locations = loc_map;
+        tracks.push_back(new_track);
+    }
+
+    MPFSegmentSummaryMessage src_msg(job_name, job_id, seg_num, tracks);
+    ASSERT_NO_THROW(messenger.SendMessage(src_msg));
+
+    MPFSegmentSummaryMessage dst_msg;
+    ASSERT_NO_THROW(dst_msg = messenger.GetMessage());
+
+    EXPECT_EQ(job_id, dst_msg.job_number_);
+    EXPECT_EQ(job_name, dst_msg.job_name_);
+    EXPECT_EQ(seg_num, dst_msg.segment_number_);
+
+    // Check the segment summary tracks
+    // First make sure we received the right number of tracks.
+    ASSERT_EQ(num_tracks, dst_msg.tracks_.size());
+    // Now check the contents of each track
+    for (int i = 0; i < num_tracks; i++) {
+        MPF::COMPONENT::MPFVideoTrack track = dst_msg.tracks_[i];
+        EXPECT_EQ(i+10, track.start_frame);
+        EXPECT_EQ(i+20, track.stop_frame);
+        EXPECT_FLOAT_EQ((i+30)*0.5, track.confidence);
+        EXPECT_EQ(std::to_string(i+3), track.detection_properties["TRACK_PROPERTY_I3"]);
+        EXPECT_EQ(std::to_string(i+4), track.detection_properties["TRACK_PROPERTY_I4"]);
+
+        // Make sure we got the right number of image locations
+        ASSERT_EQ(num_images_per_track, track.frame_locations.size());
+        for (int j = 0; j < num_images_per_track; j++) {
+            // Check whether the image location key we are looking for is
+            // in the map
+            auto loc_iter = track.frame_locations.find(j+1);
+            ASSERT_NE(track.frame_locations.end(), loc_iter);
+            MPF::COMPONENT::MPFImageLocation loc = track.frame_locations[j+1];
+            // Check the properties of this image location
+            EXPECT_EQ(std::to_string(j+1), loc.detection_properties["IMAGE_PROPERTY_J1"]);
+            EXPECT_EQ(std::to_string(j+2), loc.detection_properties["IMAGE_PROPERTY_J2"]);
+            // Check the other members
+            EXPECT_EQ(j+1, loc.x_left_upper);
+            EXPECT_EQ(j+2, loc.y_left_upper);
+            EXPECT_EQ(j+3, loc.width);
+            EXPECT_EQ(j+4, loc.height);
+            EXPECT_FLOAT_EQ((j+5)*0.001, loc.confidence);
+        }
+    }
+
+    ASSERT_NO_THROW(messenger.Close());
+
+}

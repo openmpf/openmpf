@@ -658,26 +658,14 @@ sub runGTests {
     my @gtestPaths = File::Find::Rule->directory->name('test')->in($detectionPath);
     # printDebug("gtestPaths:\n", join("\n", @gtestPaths), "\n");
 
+    my $trunkBuildPath = File::Spec->catfile($mpfPath,'openmpf/trunk/build');
+    push(@gtestPaths, File::Find::Rule->directory->name('test')->in($trunkBuildPath));
+    # printDebug("gtestPaths:\n", join("\n", @gtestPaths), "\n");
+
     my @tests = File::Find::Rule->file->executable->name('*Test')->in(@gtestPaths);
     # printDebug("tests:\n", join("\n", @tests), "\n");
 
     foreach my $test (@tests) {
-        chdir(File::Basename::dirname($test));
-        printInfo("Beginning gtest $test.\n");
-        my $rcTemp = system "$test --gtest_output='xml:$test.junit.xml'";
-        if ($rcTemp != 0) {
-            $rc = $rcTemp;
-        }
-    }
-
-    my $trunkBuildPath = File::Spec->catfile($mpfPath,'openmpf/trunk/build');
-    my @trunkGtestsPaths = File::Find::Rule->directory->name('test')->in($trunkBuildPath);
-    # printDebug("trunkGtestsPaths:\n", join("\n", @trunkGtestsPaths), "\n");
-
-    my @trunkTests = File::Find::Rule->file->executable->name('*Test')->in(@trunkGtestsPaths);
-    # printDebug("trunkTests:\n", join("\n", @trunkTests), "\n");
-
-    foreach my $test (@trunkTests) {
         chdir(File::Basename::dirname($test));
         printInfo("Beginning gtest $test.\n");
         my $rcTemp = system "$test --gtest_output='xml:$test.junit.xml'";

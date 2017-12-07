@@ -116,7 +116,7 @@ TEST_F(AMQMessengerTest, TestActivityAlertMessage) {
     string job_name("activity_alert_job_" + std::to_string(job_id));
     int segment_number = 54;
     int frame_index = 321;
-    double activity_time = 1005.9;
+    long activity_time = 10059;
 
     MPFActivityAlertMessage src_msg(job_name, job_id, 
                                     segment_number, frame_index,
@@ -130,7 +130,7 @@ TEST_F(AMQMessengerTest, TestActivityAlertMessage) {
     EXPECT_EQ(job_name, dst_msg.job_name_);
     EXPECT_EQ(segment_number, dst_msg.segment_number_);
     EXPECT_EQ(frame_index, dst_msg.frame_index_);
-    EXPECT_DOUBLE_EQ(activity_time, dst_msg.activity_time_);
+    EXPECT_EQ(activity_time, dst_msg.activity_time_);
 
     ASSERT_NO_THROW(messenger.Close());
 

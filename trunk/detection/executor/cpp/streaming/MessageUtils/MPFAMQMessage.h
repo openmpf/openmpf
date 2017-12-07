@@ -90,7 +90,7 @@ class AMQActivityAlertConverter : public AMQMessageConverter<MPFActivityAlertMes
                 msg.getIntProperty("JOB_NUMBER"),
                 msg.getIntProperty("SEGMENT_NUMBER"),
                 msg.getIntProperty("FRAME_INDEX"),
-                msg.getDoubleProperty("ACTIVITY_DETECT_TIME")
+                msg.getLongProperty("ACTIVITY_DETECT_TIME")
         );
     }
 
@@ -99,7 +99,7 @@ class AMQActivityAlertConverter : public AMQMessageConverter<MPFActivityAlertMes
         msg.setIntProperty("JOB_NUMBER", activityAlert.job_number_);
         msg.setIntProperty("SEGMENT_NUMBER", activityAlert.segment_number_);
         msg.setIntProperty("FRAME_INDEX", activityAlert.frame_index_);
-        msg.setDoubleProperty("ACTIVITY_DETECT_TIME", activityAlert.activity_time_);
+        msg.setLongProperty("ACTIVITY_DETECT_TIME", activityAlert.activity_time_);
     }
 };
 

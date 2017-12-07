@@ -62,13 +62,13 @@ struct MPFSegmentSummaryMessage : MPFMessage {
 struct MPFActivityAlertMessage : MPFMessage {
     uint32_t segment_number_;
     uint32_t frame_index_;
-    double activity_time_;
+    long activity_time_;
     MPFActivityAlertMessage() = default;
     MPFActivityAlertMessage(const std::string &job_name,
                             const uint32_t job_number,
                             const uint32_t seg_num,
                             const uint32_t frame_num,
-                            const double time)
+                            const long time)
             : MPFMessage(job_name, job_number),
               segment_number_(seg_num),
               frame_index_(frame_num),

@@ -144,8 +144,12 @@ public class ChannelNode {
                 .getView()
                 .getMembers()
                 .stream()
-                .map(AddressParser::parse)
-                .map(pair -> String.format("%s %s", pair.getLeft(), pair.getRight()))
+		        .map(addr -> {
+                    Pair<String, NodeTypes> parsed = AddressParser.parse(addr);
+                    return String.format("%s | %s | %s", addr, parsed.getLeft(), parsed.getRight());
+                })
+//                .map(AddressParser::parse)
+//                .map(pair -> String.format("%s %s", pair.getLeft(), pair.getRight()))
                 .collect(joining("\n"));
 
         log.info("!!! {} Known Addresses.", getChannel().getView().getMembers().size());

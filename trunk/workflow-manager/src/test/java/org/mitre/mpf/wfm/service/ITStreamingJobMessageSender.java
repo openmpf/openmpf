@@ -39,6 +39,7 @@ import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.ValueType;
 import org.mitre.mpf.wfm.service.component.ComponentLanguage;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -93,6 +94,9 @@ public class ITStreamingJobMessageSender {
 	@Autowired
 	private StreamingJobMessageSender _jobSender;
 
+	@Autowired
+	private PropertiesUtil _properties;
+
 
 	@Before
 	public void init() {
@@ -119,6 +123,7 @@ public class ITStreamingJobMessageSender {
 
 	@Test
 	public void testJobStartStop() throws InterruptedException {
+		System.out.println("!!! _properties.getAlgorithmDefinitions() = " + _properties.getAlgorithmDefinitions());
 
 		TransientStage stage1 = new TransientStage("stage1", "description", ActionType.DETECTION);
 		stage1.getActions().add(new TransientAction("Action1", "descrption", "STREAMING_ALGO"));

@@ -102,7 +102,8 @@ execute_process(COMMAND ${CMAKE_COMMAND} -D TARGET_BINARY_LOCATION=${FFMPEG_BINA
 
 
 # Build the common detection component executable amq_detection_component
-add_subdirectory(detection/executor/cpp)
+add_subdirectory(detection/executor/cpp/batch)
+add_subdirectory(detection/executor/cpp/streaming)
 
 # Build the video overlay utility
 add_subdirectory(video-overlay)

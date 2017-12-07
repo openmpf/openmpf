@@ -38,6 +38,8 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.List;
 
+import static java.util.stream.Collectors.joining;
+
 /**
  * Light-weight access class for connecting to a JGroups channel
  */
@@ -138,8 +140,16 @@ public class ChannelNode {
     }
 
     private void logAllAddresses() {
-        log.info("!!! Known Addresses: ");
-        getChannel().getView().getMembers().forEach(addr -> log.info("!!! Address: {}", AddressParser.parse(addr)));
+        String addresses = getChannel()
+                .getView()
+                .getMembers()
+                .stream()
+                .map(AddressParser::parse)
+                .map(pair -> String.format("%s %s", pair.getLeft(), pair.getRight()))
+                .collect(joining("\n"));
+
+        log.info("!!! {} Known Addresses.", getChannel().getView().getMembers().size());
+        log.info("!!! Addresses: {}", addresses);
     }
 
 

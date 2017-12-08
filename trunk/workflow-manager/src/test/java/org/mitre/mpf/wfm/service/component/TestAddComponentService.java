@@ -186,7 +186,7 @@ public class TestAddComponentService {
                 .thenReturn(Collections.emptyMap());
 
         when(_mockNodeManager.addService(whereArg(s -> s.getName().equals(COMPONENT_NAME)
-                    && s.getArgs().contains("launch-arg1"))))
+                    && s.getArgs().contains("/path/to/batch/lib.so"))))
                 .thenReturn(true);
 
         // Act

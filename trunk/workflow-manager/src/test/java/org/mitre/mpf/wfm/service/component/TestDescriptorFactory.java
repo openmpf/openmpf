@@ -38,12 +38,7 @@ import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.*;
 
 public class TestDescriptorFactory {
 
-
-
-
-    private TestDescriptorFactory() {
-
-    }
+    private TestDescriptorFactory() {}
 
     public static JsonComponentDescriptor get() {
         JsonComponentDescriptor descriptor = new JsonComponentDescriptor();

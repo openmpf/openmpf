@@ -160,7 +160,7 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	private void purgeQueues() throws Exception {
 		Map<String, Object> map = new HashMap<>();
 		map.put(JMXConnector.CREDENTIALS, new String[]{propertiesUtil.getAmqBrokerAdminUsername(), propertiesUtil.getAmqBrokerAdminPassword()});
-		JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(propertiesUtil.getAmqBrokerUri()));
+		JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(propertiesUtil.getAmqBrokerJmxUri()));
 		connector.connect();
 		MBeanServerConnection mBeanServerConnection = connector.getMBeanServerConnection();
 		ObjectName activeMQ = new ObjectName("org.apache.activemq:brokerName=localhost,type=Broker");

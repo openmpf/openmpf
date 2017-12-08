@@ -25,6 +25,7 @@
  ******************************************************************************/
 package org.mitre.mpf.nms;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
@@ -43,8 +44,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static java.util.stream.Collectors.joining;
 
@@ -52,9 +51,6 @@ import static java.util.stream.Collectors.joining;
 public abstract class ChannelReceiver extends ReceiverAdapter {
 
     private static final Logger LOG = LoggerFactory.getLogger(ChannelReceiver.class);
-
-    public static final char FQN_SEP = ':';
-    public static final Pattern FQN_PATTERN = Pattern.compile("^([^:]+):([^:]+):(.*)");
 
     // the interface to JGroups
     private final ChannelNode msgChannel;
@@ -67,24 +63,6 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
     private final Map<String, NodeDescriptor> nodeTable = new ConcurrentHashMap<>();
 
     private ClusterChangeNotifier notifier;          // For callbacks when changing node states
-
-
-    /**
-     * NodeTypes (types of ChannelReceiver).
-     */
-    public enum NodeTypes {
-
-        ReceiverNode, NodeManager, MasterNode;
-
-        public static NodeTypes lookup(String name) {
-            try {
-                return NodeTypes.valueOf(name);
-            } catch (IllegalArgumentException iae) {
-                LOG.warn(String.format("Failed to lookup node type with name: %s", name), iae);
-                return null;
-            }
-        }
-    }
 
 
 
@@ -160,20 +138,13 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
             String name = addr.toString();
             LOG.debug("viewAccepted from {}", name);
             // If it's a node manager then track it, it's name contains the machine name upon which it resides
-            Matcher mo = FQN_PATTERN.matcher(name);
-            if (!mo.matches()) {
-                LOG.warn("Not well formed name, skipping {}", name);
+            Pair<String, NodeTypes> hostNodeTypePair = AddressParser.parse(addr);
+            if (hostNodeTypePair == null) {
                 continue;
             }
-            // see if we know what type this is
-            NodeTypes ntype = NodeTypes.lookup(mo.group(1));
-            if (null == ntype) {
-                LOG.warn("Unknown Node Type: {}", mo.group(1));
-                continue;
-            }
-            switch (ntype) {
+            switch (hostNodeTypePair.getRight()) {
                 case NodeManager:
-                    String mgrHost = mo.group(2);
+                    String mgrHost = hostNodeTypePair.getLeft();
                     managersInView.put(mgrHost, Boolean.TRUE);
 
                     // Normally, managers are known in advance by masters after loading an XML configuration file
@@ -324,7 +295,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         if (null == nodeType) {
             nodeType = NodeTypes.ReceiverNode;
         }
-        String fqn = nodeType.name() + FQN_SEP + properties.getThisMpfNode() + FQN_SEP + description;
+        String fqn = AddressParser.createFqn(nodeType, properties.getThisMpfNode(), description);
 
         LOG.debug("{} starting up", fqn);
         // this connects us to the jgroups channel defined, we are now live and ready for comm

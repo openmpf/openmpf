@@ -26,12 +26,19 @@
 
 package org.mitre.mpf.wfm.util;
 
-import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinitionRef;
-import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
 import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
+import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinitionRef;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+
+import static java.util.stream.Collectors.toMap;
 
 // Updated calculateValue methods to support new algorithmProperties.  Note the need to support actionProperties both as
 // a Map<String,String> and as a Collection<PropertyDefinitionRef>.  Also, need to allow for passing in which algorithm is to be checked
@@ -184,4 +191,45 @@ public class AggregateJobPropertiesUtil {
         return null;
     }
 
+
+    public static Map<String, String> getCombinedJobProperties(
+            AlgorithmDefinition algorithm,
+            TransientAction action,
+            TransientStreamingJob job) {
+
+    	Map<String, String> overriddenJobProps = job.getOverriddenJobProperties();
+        Map<String, String> overriddenAlgoProps = job.getOverriddenAlgorithmProperties().get(algorithm.getName());
+        if (overriddenAlgoProps == null) {
+            overriddenAlgoProps = Collections.emptyMap();
+        }
+        Map<String, String> mediaSpecificProps = job.getStream().getMediaProperties();
+        return getCombinedJobProperties(algorithm, action, overriddenJobProps, overriddenAlgoProps, mediaSpecificProps);
+    }
+
+
+    public static Map<String, String> getCombinedJobProperties(
+            AlgorithmDefinition algorithm,
+            TransientAction action,
+            Map<String, String> overriddenJobProperties,
+            Map<String, String> overriddenAlgorithmProperties,
+            Map<String, String> mediaSpecificProperties) {
+
+    	Map<String, String> combined = getAlgorithmProperties(algorithm);
+    	combined.putAll(action.getProperties());
+    	combined.putAll(overriddenJobProperties);
+    	combined.putAll(overriddenAlgorithmProperties);
+    	combined.putAll(mediaSpecificProperties);
+    	return combined;
+    }
+
+
+    private static Map<String, String> getAlgorithmProperties(AlgorithmDefinition algorithm) {
+        return algorithm
+                .getProvidesCollection()
+                .getAlgorithmProperties()
+                .stream()
+                .collect(toMap(PropertyDefinition::getName,
+                               PropertyDefinition::getDefaultValue,
+                               (x, y) -> y, HashMap::new));
+    }
 }

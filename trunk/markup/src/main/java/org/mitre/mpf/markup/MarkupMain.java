@@ -47,21 +47,28 @@ public class MarkupMain {
      */
     public static void main(String[] args) throws InterruptedException {
         LOG.info("Beginning markup initialization");
+
         if (args.length > 0) {
             ACTIVEMQHOST = args[0];
         } else if (System.getenv("ACTIVE_MQ_HOST") != null && !System.getenv("ACTIVE_MQ_HOST").isEmpty()) {
             ACTIVEMQHOST = System.getenv("ACTIVE_MQ_HOST");
         }
         LOG.trace("ACTIVE_MQ_HOST=" + ACTIVEMQHOST);
-        AbstractApplicationContext context = new ClassPathXmlApplicationContext("classpath:appConfig.xml");
-        context.registerShutdownHook();
-        System.out.println("Enter 'q' to quit:");
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        try {
-            while (reader.readLine().compareTo("q") != 0) ;
-        } catch (IOException e) {
-            LOG.error(e.getMessage(), e);
+
+        try (ClassPathXmlApplicationContext context
+                     = new ClassPathXmlApplicationContext("applicationContext.xml")) {
+
+            context.registerShutdownHook();
+
+            System.out.println("Enter 'q' to quit:");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+            try {
+                while (reader.readLine().compareTo("q") != 0) ;
+            } catch (IOException e) {
+                LOG.error(e.getMessage(), e);
+            }
+
+            System.exit(0);
         }
-        System.exit(0);
     }
 }

@@ -344,10 +344,10 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
 
         if (action.algorithm.equals(descriptor.algorithm.name)) {
             Set<ProcessingType> actionProcessingType = EnumSet.noneOf(ProcessingType.class);
-            if (descriptor.algorithm.supportsBatchProcessing) {
+            if (descriptor.supportsBatchProcessing()) {
                 actionProcessingType.add(ProcessingType.BATCH);
             }
-            if (descriptor.algorithm.supportsStreamProcessing) {
+            if (descriptor.supportsStreamProcessing()) {
                 actionProcessingType.add(ProcessingType.STREAMING);
             }
             return actionProcessingType;
@@ -401,10 +401,10 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
         }
 
         Set<ProcessingType> actionProcessingTypes = EnumSet.noneOf(ProcessingType.class);
-        if (existingAlgo.getSupportsBatchProcessing()) {
+        if (existingAlgo.supportsBatchProcessing()) {
             actionProcessingTypes.add(ProcessingType.BATCH);
         }
-        if (existingAlgo.getSupportsStreamProcessing()) {
+        if (existingAlgo.supportsStreamProcessing()) {
             actionProcessingTypes.add(ProcessingType.STREAMING);
         }
         return actionProcessingTypes;

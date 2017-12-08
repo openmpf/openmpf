@@ -186,7 +186,7 @@ public class TestAddComponentService {
                 .thenReturn(Collections.emptyMap());
 
         when(_mockNodeManager.addService(whereArg(s -> s.getName().equals(COMPONENT_NAME)
-                    && s.getArgs().contains("launch-arg1"))))
+                    && s.getArgs().contains("/path/to/batch/lib.so"))))
                 .thenReturn(true);
 
         // Act
@@ -237,8 +237,8 @@ public class TestAddComponentService {
     private void verifyDescriptorAlgoSaved(JsonComponentDescriptor descriptor) {
         verify(_mockPipelineService)
                 .saveAlgorithm(whereArg(algo -> algo.getName().equals(descriptor.algorithm.name.toUpperCase())
-                        && algo.getSupportsBatchProcessing() == descriptor.algorithm.supportsBatchProcessing
-                        && algo.getSupportsStreamProcessing() == descriptor.algorithm.supportsStreamProcessing));
+                        && algo.supportsBatchProcessing() == descriptor.supportsBatchProcessing()
+                        && algo.supportsStreamProcessing() == descriptor.supportsStreamProcessing()));
 
     }
 

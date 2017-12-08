@@ -207,11 +207,11 @@ public class AddComponentServiceImpl implements AddComponentService {
             model.getPipelines().addAll(savedPipelines);
 
             if (descriptor.algorithm != null) {
-                if (descriptor.algorithm.supportsBatchProcessing) {
+                if (descriptor.supportsBatchProcessing()) {
                     String serviceName = saveBatchService(descriptor, algorithmDef);
                     model.setServiceName(serviceName);
                 }
-                if (descriptor.algorithm.supportsStreamProcessing) {
+                if (descriptor.supportsStreamProcessing()) {
                     String streamingServiceName = saveStreamingService(descriptor, algorithmDef);
                     model.setStreamingServiceName(streamingServiceName);
                 }
@@ -259,8 +259,8 @@ public class AddComponentServiceImpl implements AddComponentService {
                 jsonAlgo.actionType,
                 descriptor.algorithm.name.toUpperCase(),
                 jsonAlgo.description,
-                jsonAlgo.supportsBatchProcessing,
-                jsonAlgo.supportsStreamProcessing);
+                descriptor.supportsBatchProcessing(),
+                descriptor.supportsStreamProcessing());
 
         jsonAlgo
                 .requiresCollection
@@ -452,26 +452,24 @@ public class AddComponentServiceImpl implements AddComponentService {
             throw new ComponentRegistrationSubsystemException(String.format(
                     "Couldn't add the %s service because another service already has that name", serviceName));
         }
-        List<String> componentLaunchArguments = new ArrayList<>(descriptor.launchArgs);
         String queueName = String.format("MPF.%s_%s_REQUEST", algorithmDef.getActionType(), algorithmDef.getName());
         Service algorithmService;
 
         if (descriptor.sourceLanguage == ComponentLanguage.JAVA) {
             algorithmService = new Service(serviceName, "${MPF_HOME}/bin/start-java-component.sh");
-            algorithmService.addArg(descriptor.pathName);
+            algorithmService.addArg(descriptor.batchLibrary);
             algorithmService.addArg(queueName);
             algorithmService.addArg(serviceName);
+            algorithmService.setLauncher("generic");
             algorithmService.setWorkingDirectory("${MPF_HOME}/jars");
         }
-        else {
-            algorithmService = new Service(serviceName, "${MPF_HOME}/bin/" + descriptor.pathName);
-            componentLaunchArguments.add(1, queueName);
+        else { // ComponentLanguage.CPP
+            algorithmService = new Service(serviceName, "${MPF_HOME}/bin/amq_detection_component");
+            algorithmService.addArg(descriptor.batchLibrary);
+            algorithmService.addArg(queueName);
             algorithmService.setLauncher("simple");
-            String workingDirectory = "${MPF_HOME}/plugins/" + descriptor.componentName;
-            algorithmService.setWorkingDirectory(workingDirectory);
+            algorithmService.setWorkingDirectory("${MPF_HOME}/plugins/" + descriptor.componentName);
         }
-
-        componentLaunchArguments.forEach(algorithmService::addArg);
 
         algorithmService.setDescription(algorithmDef.getDescription());
         algorithmService.setEnvVars(convertJsonEnvVars(descriptor));
@@ -500,8 +498,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         }
 
         if (descriptor.sourceLanguage == ComponentLanguage.CPP) {
-        	// TODO: make separate field in descriptor for lib path
-            String libPath = descriptor.launchArgs.get(0);
+            String libPath = descriptor.streamLibrary;
             List<EnvironmentVariableModel> envVars = descriptor.environmentVariables.stream()
                     .map(descEnv -> new EnvironmentVariableModel(descEnv.name, descEnv.value, descEnv.sep))
                     .collect(toList());

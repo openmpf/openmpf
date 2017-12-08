@@ -206,8 +206,8 @@ public class TestCustomPipelineValidator {
         setupReferencedAlgo();
 
         JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();
-        descriptor.algorithm.supportsBatchProcessing = false;
-        descriptor.algorithm.supportsStreamProcessing = true;
+        descriptor.batchLibrary = null;
+        descriptor.streamLibrary = "/path/to/stream/lib.so";;
 
         AlgorithmDefinition batchAndStreamingAlgo = new AlgorithmDefinition(ActionType.DETECTION,
                                                                             "BATCH_AND_STREAMING", "", true, true);

@@ -61,7 +61,7 @@ import static org.mockito.Mockito.*;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(initializers = TestSystemWithDefaultConfig.AppCtxInit.class)
 @ActiveProfiles("jenkins")
-@DirtiesContext // Make sure TestStreamingJobStartStop and TestSystemOnDiff do not use the same application context
+@DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
 public class TestStreamingJobStartStop {
 
 	private static final StreamingJobRequestBo _mockStreamingJobRequestBo = mock(StreamingJobRequestBo.class);

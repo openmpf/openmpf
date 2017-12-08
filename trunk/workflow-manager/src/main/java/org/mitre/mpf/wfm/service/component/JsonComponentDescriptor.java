@@ -47,7 +47,7 @@ import java.util.List;
  */
 @SuppressWarnings("PublicField")
 @ScriptAssert(lang = "javascript", script = "_this.supportsBatchProcessing() || _this.supportsStreamProcessing()",
-        message = "must contain batchLibraryPath, streamLibraryPath, or both")
+        message = "must contain batchLibrary, streamLibrary, or both")
 public class JsonComponentDescriptor {
 
     @NotBlank
@@ -66,16 +66,16 @@ public class JsonComponentDescriptor {
     @NotNull(message = "must be java or c++")
     public ComponentLanguage sourceLanguage;
 
-    public String batchLibraryPath;
+    public String batchLibrary;
 
     public boolean supportsBatchProcessing() {
-        return batchLibraryPath != null;
+        return batchLibrary != null;
     }
 
-    public String streamLibraryPath;
+    public String streamLibrary;
 
     public boolean supportsStreamProcessing() {
-        return streamLibraryPath != null;
+        return streamLibrary != null;
     }
 
     @NotNull

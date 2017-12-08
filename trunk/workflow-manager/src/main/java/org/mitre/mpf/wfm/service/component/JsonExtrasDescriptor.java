@@ -47,10 +47,10 @@ public class JsonExtrasDescriptor {
     public ComponentLanguage sourceLanguage;
 
     @Null
-    public String batchLibraryPath;
+    public String batchLibrary;
 
     @Null
-    public String streamLibraryPath;
+    public String streamLibrary;
 
     @Null
     public List<JsonComponentDescriptor.EnvironmentVariable> environmentVariables;
@@ -72,8 +72,8 @@ public class JsonExtrasDescriptor {
         this.componentVersion     = jsonDescriptor.componentVersion;
         this.middlewareVersion    = jsonDescriptor.middlewareVersion;
         this.sourceLanguage       = jsonDescriptor.sourceLanguage;
-        this.batchLibraryPath     = jsonDescriptor.batchLibraryPath;
-        this.streamLibraryPath    = jsonDescriptor.streamLibraryPath;
+        this.batchLibrary         = jsonDescriptor.batchLibrary;
+        this.streamLibrary        = jsonDescriptor.streamLibrary;
         this.environmentVariables = jsonDescriptor.environmentVariables;
         this.algorithm            = jsonDescriptor.algorithm;
         this.actions              = jsonDescriptor.actions;

@@ -457,7 +457,7 @@ public class AddComponentServiceImpl implements AddComponentService {
 
         if (descriptor.sourceLanguage == ComponentLanguage.JAVA) {
             algorithmService = new Service(serviceName, "${MPF_HOME}/bin/start-java-component.sh");
-            algorithmService.addArg(descriptor.batchLibraryPath);
+            algorithmService.addArg(descriptor.batchLibrary);
             algorithmService.addArg(queueName);
             algorithmService.addArg(serviceName);
             algorithmService.setLauncher("generic");
@@ -465,7 +465,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         }
         else { // ComponentLanguage.CPP
             algorithmService = new Service(serviceName, "${MPF_HOME}/bin/amq_detection_component");
-            algorithmService.addArg(descriptor.batchLibraryPath);
+            algorithmService.addArg(descriptor.batchLibrary);
             algorithmService.addArg(queueName);
             algorithmService.setLauncher("simple");
             algorithmService.setWorkingDirectory("${MPF_HOME}/plugins/" + descriptor.componentName);
@@ -498,7 +498,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         }
 
         if (descriptor.sourceLanguage == ComponentLanguage.CPP) {
-            String libPath = descriptor.streamLibraryPath;
+            String libPath = descriptor.streamLibrary;
             List<EnvironmentVariableModel> envVars = descriptor.environmentVariables.stream()
                     .map(descEnv -> new EnvironmentVariableModel(descEnv.name, descEnv.value, descEnv.sep))
                     .collect(toList());

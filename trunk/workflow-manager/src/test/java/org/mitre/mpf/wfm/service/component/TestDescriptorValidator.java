@@ -120,16 +120,16 @@ public class TestDescriptorValidator {
         JsonComponentDescriptor descriptor = new JsonComponentDescriptor();
         assertValidationErrors(descriptor, doesNotSupportBatchOrStream());
 
-        descriptor.streamLibraryPath = "/path/to/stream/lib.so";
-        descriptor.batchLibraryPath = null;
+        descriptor.streamLibrary = "/path/to/stream/lib.so";
+        descriptor.batchLibrary = null;
         assertNoValidationErrors(descriptor, doesNotSupportBatchOrStream());
 
-        descriptor.streamLibraryPath = null;
-        descriptor.batchLibraryPath = "/path/to/batch/lib.so";
+        descriptor.streamLibrary = null;
+        descriptor.batchLibrary = "/path/to/batch/lib.so";
         assertNoValidationErrors(descriptor, doesNotSupportBatchOrStream());
 
-        descriptor.streamLibraryPath = "/path/to/stream/lib.so";
-        descriptor.batchLibraryPath = "/path/to/batch/lib.so";
+        descriptor.streamLibrary = "/path/to/stream/lib.so";
+        descriptor.batchLibrary = "/path/to/batch/lib.so";
         assertNoValidationErrors(descriptor, doesNotSupportBatchOrStream());
     }
 
@@ -399,6 +399,6 @@ public class TestDescriptorValidator {
 
 
     private static String doesNotSupportBatchOrStream() {
-    	return "must contain batchLibraryPath, streamLibraryPath, or both";
+    	return "must contain batchLibrary, streamLibrary, or both";
     }
 }

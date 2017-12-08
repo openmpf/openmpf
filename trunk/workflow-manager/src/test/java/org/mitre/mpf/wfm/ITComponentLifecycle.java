@@ -210,7 +210,7 @@ public class ITComponentLifecycle {
         JSONParser parser = new JSONParser();
         String componentName = "";
         String sourceLanguage = "";
-        String batchLibraryPath = "";
+        String batchLibrary = "";
         String serviceName = "";
         String algDesc = "";
         String algName = "";
@@ -221,7 +221,7 @@ public class ITComponentLifecycle {
             JSONObject jsonObject = (JSONObject) obj;
             componentName = (String) jsonObject.get("componentName");
             sourceLanguage = (String) jsonObject.get("sourceLanguage");
-            batchLibraryPath = (String) jsonObject.get("batchLibraryPath");
+            batchLibrary = (String) jsonObject.get("batchLibrary");
             JSONArray envVars = (JSONArray) jsonObject.get("environmentVariables");
             JSONObject algorithm = (JSONObject) jsonObject.get("algorithm");
             componentEnvVars = new ArrayList<EnvironmentVariable>();
@@ -254,14 +254,14 @@ public class ITComponentLifecycle {
 
         if (sourceLanguage.equalsIgnoreCase("java")) {
             algorithmService = new Service(serviceName, "${MPF_HOME}/bin/start-java-component.sh");
-            algorithmService.addArg(batchLibraryPath);
+            algorithmService.addArg(batchLibrary);
             algorithmService.addArg(queueName);
             algorithmService.addArg(serviceName);
             algorithmService.setLauncher("generic");
             algorithmService.setWorkingDirectory("${MPF_HOME}/jars");
         } else { // C++
             algorithmService = new Service(serviceName, "${MPF_HOME}/bin/amq_detection_component");
-            algorithmService.addArg(batchLibraryPath);
+            algorithmService.addArg(batchLibrary);
             algorithmService.addArg(queueName);
             algorithmService.setLauncher("simple");
             algorithmService.setWorkingDirectory("${MPF_HOME}/plugins/" + componentName);

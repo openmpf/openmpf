@@ -45,8 +45,8 @@ public class TestJsonDescriptor {
         assertEquals("CplusplusHelloWorld", descriptor.componentName);
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
         assertEquals("1.0.0", descriptor.componentVersion);
-        assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so", descriptor.batchLibraryPath);
-        assertNull(descriptor.streamLibraryPath);
+        assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so", descriptor.batchLibrary);
+        assertNull(descriptor.streamLibrary);
 
         assertEquals(3, descriptor.algorithm.providesCollection.properties.size());
 
@@ -67,8 +67,8 @@ public class TestJsonDescriptor {
         assertEquals("CplusplusHelloCustomPipelinesComponent", descriptor.componentName);
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
         assertEquals("1.0.0", descriptor.componentVersion);
-        assertEquals("${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so", descriptor.batchLibraryPath);
-        assertNull(descriptor.streamLibraryPath);
+        assertEquals("${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so", descriptor.batchLibrary);
+        assertNull(descriptor.streamLibrary);
 
         assertEquals(3, descriptor.algorithm.providesCollection.properties.size());
 
@@ -119,8 +119,8 @@ public class TestJsonDescriptor {
         assertEquals(ComponentLanguage.JAVA, descriptor.sourceLanguage);
         assertEquals("1.0.0", descriptor.componentVersion);
         assertEquals("1.0.0", descriptor.middlewareVersion);
-        assertEquals("mpf-java-test-detection-component-1.0.0.jar", descriptor.batchLibraryPath);
-        assertNull(descriptor.streamLibraryPath);
+        assertEquals("mpf-java-test-detection-component-1.0.0.jar", descriptor.batchLibrary);
+        assertNull(descriptor.streamLibrary);
         assertEquals(1, descriptor.environmentVariables.size());
         JsonComponentDescriptor.EnvironmentVariable envVar = descriptor.environmentVariables.get(0);
         assertTrue(envVar.name.equals("DUMMY_VAR")

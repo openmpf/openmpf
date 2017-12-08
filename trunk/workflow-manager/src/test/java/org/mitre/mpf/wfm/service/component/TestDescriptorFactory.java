@@ -44,8 +44,8 @@ public class TestDescriptorFactory {
         JsonComponentDescriptor descriptor = new JsonComponentDescriptor();
         descriptor.sourceLanguage = ComponentLanguage.CPP;
         descriptor.componentName = COMPONENT_NAME;
-        descriptor.batchLibraryPath = "/path/to/batch/lib.so";
-        descriptor.streamLibraryPath = "/path/to/stream/lib.so";;
+        descriptor.batchLibrary = "/path/to/batch/lib.so";
+        descriptor.streamLibrary = "/path/to/stream/lib.so";;
 
         JsonComponentDescriptor.EnvironmentVariable envVar1 = new JsonComponentDescriptor.EnvironmentVariable();
         envVar1.name = "env var1 name";

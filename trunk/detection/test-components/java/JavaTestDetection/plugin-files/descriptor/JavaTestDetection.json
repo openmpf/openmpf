@@ -3,7 +3,7 @@
   "componentVersion" : "1.0.0",
   "middlewareVersion" : "1.0.0",
   "sourceLanguage" : "java",
-  "batchLibraryPath" : "mpf-java-test-detection-component-1.0.0.jar",
+  "batchLibrary" : "mpf-java-test-detection-component-1.0.0.jar",
   "environmentVariables" : [ {
     "name" : "DUMMY_VAR",
     "value" : "nothing",

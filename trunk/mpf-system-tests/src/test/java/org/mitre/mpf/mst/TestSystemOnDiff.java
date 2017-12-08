@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.*;
 
@@ -68,6 +69,7 @@ import static org.junit.Assert.*;
  */
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@DirtiesContext // Make sure TestStreamingJobStartStop and TestSystemOnDiff do not use the same application context
 public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 	@Test(timeout = 5 * MINUTES)

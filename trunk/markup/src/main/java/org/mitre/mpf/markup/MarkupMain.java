@@ -28,7 +28,6 @@ package org.mitre.mpf.markup;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.io.BufferedReader;
@@ -56,7 +55,7 @@ public class MarkupMain {
         LOG.trace("ACTIVE_MQ_HOST=" + ACTIVEMQHOST);
 
         try (ClassPathXmlApplicationContext context
-                     = new ClassPathXmlApplicationContext("applicationContext.xml")) {
+                     = new ClassPathXmlApplicationContext("classpath:appConfig.xml")) {
 
             context.registerShutdownHook();
 
@@ -67,8 +66,6 @@ public class MarkupMain {
             } catch (IOException e) {
                 LOG.error(e.getMessage(), e);
             }
-
-            System.exit(0);
         }
     }
 }

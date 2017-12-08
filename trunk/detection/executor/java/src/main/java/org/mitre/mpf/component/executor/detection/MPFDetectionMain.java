@@ -114,7 +114,6 @@ public class MPFDetectionMain {
             if (detectionMessenger != null) {
                 detectionMessenger.shutdown();
             }
-            System.exit(0);
         }
     }
 

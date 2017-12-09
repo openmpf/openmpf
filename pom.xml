@@ -75,7 +75,6 @@
         <org.springframework.integration.spring-integration-core.version>2.0.5.RELEASE</org.springframework.integration.spring-integration-core.version>
         <org.apache.geronimo.specs.geronimo-servlet_3.0_spec.version>1.0</org.apache.geronimo.specs.geronimo-servlet_3.0_spec.version>
       <!--updated om.fasterxml.jackson.dataformat.jackson-dataformat-smile version from 2.5.0 to 2.6.2 to be consistent with jackson-core version -->
-      <!--<com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>2.5.0</com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>-->
       <com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>2.9.2</com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>
         <org.springframework.integration.spring-integration-jms.version>2.0.5.RELEASE</org.springframework.integration.spring-integration-jms.version>
         <redis.clients.jedis.version>2.7.3</redis.clients.jedis.version>
@@ -99,7 +98,7 @@
         <exec.maven.plugin.version>1.4.0</exec.maven.plugin.version>
         <rpm.maven.plugin.version>2.1.4</rpm.maven.plugin.version>
         <jackson.mapper.asl.version>1.9.13</jackson.mapper.asl.version>
-        <!-- updated jackson version from 2.6.1 to 2.6.7 to better support JSON serialization of Java8 time -->
+        <!-- updated jackson version from 2.6.1 to 2.9.2 to better support JSON serialization of Java8 time -->
         <jackson.version>2.9.2</jackson.version>
 
         <!-- more added properties for release 0.4 -->

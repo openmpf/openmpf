@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.businessrules.impl;
 
 import java.io.UnsupportedEncodingException;
 
+import java.net.URI;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -41,6 +42,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.mitre.mpf.interop.JsonAction;
@@ -712,8 +714,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             throw new WfmProcessingException("Error: jobIds must not be empty.");
         } else {
             // While we are receiving the list of all job ids known to the system, some of these jobs may not be in REDIS.
-            // Only active (current) jobs are stored in REDIS.  Reduce the List of jobIds to exclude any jobIds that aren't in REDIS.
-            List<Long> activeJobIds = jobIds.stream().filter(jobId -> !redis.isJobTypeStreaming(jobId)).collect(Collectors.toList());
+            // Only active (current) jobs are stored in REDIS. Reduce the List of jobIds to ony include jobIds that are in REDIS.
+            List<Long> activeJobIds = jobIds.stream().filter(jobId -> redis.isJobTypeStreaming(jobId)).collect(Collectors.toList());
 
             // Get the list of health report callback URIs associated with the specified active jobs. Note that
             // this usage will return unique healthReportCallbackUris. Doing this so streaming jobs which specify
@@ -868,73 +870,115 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                     LocalDateTime currentDateTime = LocalDateTime.now();
 
                     // Construct HealthReportData for all specified jobIds
-                    List<Long> jobIds = jobIdToCallbackMethodMap.keySet().stream()
-                        .collect(Collectors.toList());
+                    List<Long> jobIds = jobIdToCallbackMethodMap.keySet().stream().collect(Collectors.toList());
 
                     // get other information from REDIS about this streaming job.
                     List<String> externalIds = redis.getExternalId(jobIds);
                     List<String> jobStatuses = redis.getJobStatusAsString(jobIds);
-                    List<String> lastNewActivityAlertFrameIds = redis
-                        .getHealthReportLastNewActivityAlertFrameId(jobIds);
-                    List<LocalDateTime> lastNewActivityAlertTimestamps = redis
-                        .getHealthReportLastNewActivityAlertTimestamp(jobIds);
+                    List<String> lastNewActivityAlertFrameIds = redis.getHealthReportLastNewActivityAlertFrameId(jobIds);
+                    List<LocalDateTime> lastNewActivityAlertTimestamps = redis.getHealthReportLastNewActivityAlertTimestamp(jobIds);
 
                     // If any of the streaming jobs requested sending to the callback using the GET method, then send the health report using the GET method
                     if (jobIdToCallbackMethodMap.values().stream().anyMatch(callbackMethod -> callbackMethod.equalsIgnoreCase("GET"))) {
 
                         // Send the Health Report to the callback using GET.
-                        String jsonCallbackURL2 = callbackURL;
-                        if (jsonCallbackURL2.contains("?")) {
-                            jsonCallbackURL2 += "&";
-                        } else {
-                            jsonCallbackURL2 += "?";
-                        }
-                        // Stamp the Health Report with current time.
-                        jsonCallbackURL2 +=
-                            "&reportDate=" + JsonHealthReportDataCallbackBody.timestampFormatter
-                                .format(currentDateTime);
 
-                        // Represent the jobIds parameter as a JSON array.
-                        jsonCallbackURL2 +=
-                            "jobid={" + jobIds.stream().map(jobId -> jobId.toString())
-                                .collect(Collectors.joining(",")) + "}";
+                        URIBuilder builder = new URIBuilder(callbackURL);
 
-                        // Represent the jobIds parameter as a JSON array. Note that the List of externalIds may contain null values.  This would be the
-                        // case for a streaming job which did not specify an externalId. For all null values in a List, this method
-                        // will represent that null as a empty String ('') in the JSON array.
-                        jsonCallbackURL2 +=
-                            "&externalid={" + externalIds.stream().map(externalId -> {
-                                if (externalId == null) {
+                        // Build the URL, note requirement for handling of possible nulls in the Lists.
+                        builder.addParameter("reportDate", JsonHealthReportDataCallbackBody.formatLocalDateTimeAsString(currentDateTime))
+                            .addParameter("jobId", "[" + jobIds.stream().map(jobId -> "'" + jobId.toString() + "'").collect(Collectors.joining(",")) + "]")
+                            .addParameter("externalId", "[" + externalIds.stream().map(externalId -> {
+                                if ( externalId == null ) {
                                     return "''";
                                 } else {
-                                    return externalId;
+                                    return "'" + externalId + "'";
                                 }
-                            }).collect(Collectors.joining(",")) + "}";
+                            }).collect(Collectors.joining(",")) + "]")
+                            .setParameter("jobStatus", "[" + jobStatuses.stream().map(jobStatus -> "'" + jobStatus.toString() + "'").collect(Collectors.joining(",")) + "]")
+                            .setParameter("lastNewActivityAlertFrameId", "[" + lastNewActivityAlertFrameIds.stream().map(frameId -> {
+                                    if ( frameId == null ) {
+                                        return "''";
+                                    } else {
+                                        return "'" + frameId + "'";
+                                    }
+                                }).collect(Collectors.joining(",")) + "]")
+                            .setParameter("lastNewActivityAlertTimestamp", "[" + lastNewActivityAlertTimestamps.stream().map( ts -> {
+                                    if ( ts == null ) {
+                                        return "''";
+                                    } else {
+                                        return JsonHealthReportDataCallbackBody.formatLocalDateTimeAsString(ts);
+                                    }
+                                }).collect(Collectors.joining(",")) + "]");
+                        URI uri = builder.build();
+                        log.info("HealthReportCallback to '{GET}', Debug: callbackURL is {}.", callbackURL);
+                        log.info("HealthReportCallback to '{GET}', Debug: uri is {}.",uri);
+                        req = new HttpGet(uri);
+                        log.info("HealthReportCallback to '{GET}', Debug: req is {}.",req);
+                        System.out.println("HealthReportCallback to '{GET}', Debug: req.getURI()="+req.getURI());
 
-                        // Represent the jobStatus parameter as a JSON array.
-                        jsonCallbackURL2 += "&jobStatus={" + jobStatuses.stream()
-                            .map(jobStatus -> jobStatus.toString()).collect(Collectors.joining(","))
-                            + "}";
 
-                        // Represent the lastNewActivityAlertFrameId parameter as a JSON array. Note that the array may contain null values.  This would be the
-                        // case for a job which has not had a New Activity Alert.
-                        jsonCallbackURL2 +=
-                            "&lastNewActivityAlertFrameId={" + lastNewActivityAlertFrameIds + "}";
-
-                        // Represent the lastNewActivityAlertTimestamp parameter as a JSON array. Note that the array may contain null values. Where not null,
-                        // the timestamp must be formatted as a String.
-                        jsonCallbackURL2 += "&lastNewActivityAlertTimestamp={" +
-                            lastNewActivityAlertTimestamps.stream().map(
-                                localDateTime -> JsonHealthReportDataCallbackBody.timestampFormatter
-                                    .format(localDateTime)).collect(Collectors.joining(",")) + "}";
-
-                        req = new HttpGet(jsonCallbackURL2);
+//
+//
+//
+//
+//
+//
+//                        String jsonCallbackURL2 = callbackURL;
+//                        if ( !jsonCallbackURL2.contains("?") ) {
+//                            jsonCallbackURL2 += "?";
+//                        }
+//                        // First, stamp the Health Report with current time.
+//                        jsonCallbackURL2 += "reportDate='" + JsonHealthReportDataCallbackBody.timestampFormatter.format(currentDateTime)+"'";
+//
+//                        // Represent the jobIds parameter as a JSON array.
+//                        jsonCallbackURL2 += "&jobId=[" + jobIds.stream().map(jobId -> jobId.toString()).collect(Collectors.joining(",")) + "]";
+//
+//                        // Represent the jobIds parameter as a JSON array. Note that the List of externalIds may contain null values.  This would be the
+//                        // case for a streaming job which did not specify an externalId. For all null values in a List, this method
+//                        // will represent that null as a empty String ('') in the JSON array.
+//                        jsonCallbackURL2 += "&externalid=[" + externalIds.stream().map(externalId -> {
+//                                if (externalId == null) {
+//                                    return "''";
+//                                } else {
+//                                    return "'" + externalId + "'";
+//                                }
+//                            }).collect(Collectors.joining(",")) + "]";
+//
+//                        // Represent the jobStatus parameter as a JSON array.
+//                        jsonCallbackURL2 += "&jobStatus=[" + jobStatuses.stream().map(jobStatus -> "'" + jobStatus.toString() + "'").collect(Collectors.joining(",")) + "]";
+//
+//                        // Represent the lastNewActivityAlertFrameId parameter as a JSON array. Note that the array may contain null values.
+//                        // This would be the case for a job which has not had a New Activity Alert. Replace nulls with empty string.
+//                        jsonCallbackURL2 += "&lastNewActivityAlertFrameId=[" + lastNewActivityAlertFrameIds.stream().map(frameId -> {
+//                            if ( frameId == null ) {
+//                                return "''";
+//                            } else {
+//                                return "'" + frameId + "'";
+//                            }
+//                        }).collect(Collectors.joining(",")) + "]";
+//
+//                        // Represent the lastNewActivityAlertTimestamp parameter as a JSON array. Note that the array may contain null values.
+//                        // Replace any nulls with empty string. Where not null, the timestamp must be formatted as a String.
+//                        jsonCallbackURL2 += "&lastNewActivityAlertTimestamp=[" +
+//                            lastNewActivityAlertTimestamps.stream().map(
+//                                localDateTime -> {
+//                                    if (localDateTime == null) {
+//                                        return "''";
+//                                    } else {
+//                                        return "'" + JsonHealthReportDataCallbackBody.timestampFormatter.format(localDateTime) + "'";
+//                                    }
+//                                }).collect(Collectors.joining(",")) + "]";
+//
+//                        req = new HttpGet(jsonCallbackURL2);
 
                         // If the http request was properly constructed, then send it.
                         if (req != null) {
                             HttpResponse response = httpClient.execute(req);
-                            log.info("{} HealthReportCallback issued to '{GET}' (Response={}).",
-                                callbackURL, response);
+                            log.info("{} HealthReportCallback issued to '{GET}' (Response={}).", callbackURL, response);
+                        } else {
+                            log.error("{} Error sending HealthReportCallback issued to '{GET}' req is null, uri=", callbackURL,
+                                uri);
                         }
                     }
 
@@ -948,16 +992,19 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                             JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(
                                 currentDateTime, jobIds, externalIds, jobStatuses,
                                 lastNewActivityAlertFrameIds, lastNewActivityAlertTimestamps);
-                            post.setEntity(
-                                new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
+                            log.info("HealthReportCallback, sending POST of healthReport jsonBody= "+jsonBody);
+                            log.info("HealthReportCallback, sending POST of healthReport jsonUtils.serializeAsTextString(jsonBody)= "+jsonUtils.serializeAsTextString(jsonBody));
+                            log.info("HealthReportCallback, sending POST of healthReport new StringEntity(jsonUtils.serializeAsTextString(jsonBody))= "+new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
+                            post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
                             req = post;
 
                             // If the http request was properly constructed, then send it.
                             if (req != null) {
+                                log.info("HealthReportCallback, sending POST of healthReport HTTP req="+req);
                                 HttpResponse response = httpClient.execute(req);
-                                log.info(
-                                    "{} HealthReportCallback issued to '{POST}' (Response={}).",
-                                    callbackURL, response);
+                                log.info("{} HealthReportCallback issued to '{POST}' (Response={}).", callbackURL, response);
+                            } else {
+                                log.error("{} Error sending HealthReportCallback issued to '{POS}' req is null, jsonBody=", callbackURL, jsonBody);
                             }
                         } catch (UnsupportedEncodingException uee) {
                             log.warn(

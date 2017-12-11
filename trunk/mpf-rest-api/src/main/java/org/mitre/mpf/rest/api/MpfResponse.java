@@ -89,9 +89,4 @@ public class MpfResponse {
 	public MpfResponse(int responseCode, String message) {
 	    setMessage(responseCode, message);
 	}
-
-
-	public boolean isSuccessful() {
-		return responseCode == RESPONSE_CODE_SUCCESS;
-	}
 }

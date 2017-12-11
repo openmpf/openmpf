@@ -109,7 +109,7 @@ public class JobController {
     @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
     public ResponseEntity<JobCreationResponse> createJobRest(@ApiParam(required = true, value = "JobCreationRequest") @RequestBody JobCreationRequest jobCreationRequest) {
         JobCreationResponse createResponse = createJobInternal(jobCreationRequest, false);
-        if (createResponse.getMpfResponse().isSuccessful()) {
+        if (createResponse.getMpfResponse().getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
             return new ResponseEntity<>(createResponse, HttpStatus.CREATED);
         } else {
             log.error("Error creating job");
@@ -281,7 +281,7 @@ public class JobController {
     public ResponseEntity<JobCreationResponse> resubmitJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId,
                                                                @ApiParam(value = "Job priority (0-9 with 0 being the lowest) - OPTIONAL") @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam) {
         JobCreationResponse resubmitResponse = resubmitJobInternal(jobId, jobPriorityParam);
-        if (resubmitResponse.getMpfResponse().isSuccessful()) {
+        if (resubmitResponse.getMpfResponse().getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
             return new ResponseEntity<>(resubmitResponse, HttpStatus.OK);
         } else {
             log.error("Error resubmitting job with id '{}'", jobId);
@@ -315,7 +315,7 @@ public class JobController {
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<MpfResponse> cancelJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) {
         MpfResponse mpfResponse = cancelJobInternal(jobId);
-        if (mpfResponse.isSuccessful()) {
+        if (mpfResponse.getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
             return new ResponseEntity<>(mpfResponse, HttpStatus.OK);
         } else {
             log.error("Error cancelling job with id '{}'", jobId);

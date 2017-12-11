@@ -40,9 +40,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class StreamingJobRoutesBuilder extends RouteBuilder {
 
-	@Autowired
-	private StreamingJobRequestBo streamingJobRequestBo;
+	private final StreamingJobRequestBo _streamingJobRequestBo;
 
+	@Autowired
+	public StreamingJobRoutesBuilder(StreamingJobRequestBo streamingJobRequestBo) {
+		_streamingJobRequestBo = streamingJobRequestBo;
+
+	}
 
 	@Override
 	public void configure() {
@@ -51,7 +55,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 				.log(LoggingLevel.INFO, "Received job status message: ${headers}")
 				.process(exchange -> {
 					Message msg = exchange.getIn();
-					streamingJobRequestBo.handleJobStatusChange(
+					_streamingJobRequestBo.handleJobStatusChange(
 							msg.getHeader("JOB_ID", long.class),
 							msg.getHeader("JOB_STATUS", JobStatus.class),
 							msg.getHeader("STATUS_CHANGE_TIMESTAMP", long.class));
@@ -63,7 +67,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 				.log(LoggingLevel.INFO, "Received activity alert message: ${headers}")
 				.process(exchange -> {
 					Message msg = exchange.getIn();
-					streamingJobRequestBo.handleNewActivityAlert(
+					_streamingJobRequestBo.handleNewActivityAlert(
 							msg.getHeader("JOB_ID", long.class),
 							msg.getHeader("FRAME_INDEX", long.class),
 							msg.getHeader("ACTIVITY_DETECT_TIME", long.class));
@@ -77,7 +81,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 				.log(LoggingLevel.INFO, "Received summary report message: ${headers}")
 				.process(exchange -> {
 					Message msg = exchange.getIn();
-					streamingJobRequestBo.handleNewSummaryReport(
+					_streamingJobRequestBo.handleNewSummaryReport(
 							msg.getHeader("JOB_ID", long.class),
 							msg.getBody(Object.class)
 					);

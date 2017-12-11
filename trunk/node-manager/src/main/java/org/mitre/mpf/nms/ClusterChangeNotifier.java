@@ -26,6 +26,8 @@
 
 package org.mitre.mpf.nms;
 
+import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
+
 public interface ClusterChangeNotifier {
 
     /**
@@ -70,4 +72,7 @@ public interface ClusterChangeNotifier {
      * @param service
      */
 	public void serviceReadyToRemove(ServiceDescriptor serviceDescriptor);
+
+
+	public void streamingJobExited(StreamingJobExitedMessage message);
 }

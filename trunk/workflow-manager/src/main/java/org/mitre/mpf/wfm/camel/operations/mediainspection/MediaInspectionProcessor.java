@@ -120,8 +120,9 @@ public class MediaInspectionProcessor extends WfmProcessor {
 						break;
 
 					default:
-						transientMedia.setFailed(true);
-						transientMedia.setMessage("Unsupported file format.");
+						// DEBUG
+						//transientMedia.setFailed(true);
+						//transientMedia.setMessage("Unsupported file format.");
 						break;
 				}
 			} catch (Exception exception) {

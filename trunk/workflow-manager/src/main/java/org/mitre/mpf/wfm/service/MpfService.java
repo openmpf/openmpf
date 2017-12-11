@@ -30,6 +30,7 @@ import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
@@ -37,6 +38,8 @@ import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 
 import java.util.List;
 import java.util.Map;
+
+
 
 public interface MpfService {
 
@@ -83,8 +86,6 @@ public interface MpfService {
 	 * @param externalId
 	 * @param buildOutput
 	 * @param priority
-	 * @param stallAlertDetectionThreshold
-	 * @param stallAlertRate
 	 * @param stallTimeout
 	 * @param healthReportCallbackURI
 	 * @param summaryReportCallbackURI
@@ -97,8 +98,6 @@ public interface MpfService {
 													  Map<String,String> jobProperties,
 													  String pipelineName, String externalId,
 													  boolean buildOutput, int priority,
-													  long stallAlertDetectionThreshold,
-													  long stallAlertRate,
 													  long stallTimeout,
 													  String healthReportCallbackURI,
 													  String summaryReportCallbackURI,
@@ -142,14 +141,14 @@ public interface MpfService {
 	 */
 	boolean cancel(long jobId);
 
-	/**
-	 * Attempts to cancel a streaming job that is currently executing. If the streaming job does not
-	 * exist or otherwise cannot be cancelled, this method will return {@literal false}.
-	 * @param jobId The MPF-assigned identifier for the streaming job. The job must be a streaming job.
-	 * @param doCleanup if true, delete the streaming job files from disk after canceling the streaming job
-	 * @return {@literal true} iff the streaming job exists and was cancelled successfully.
-	 */
-	boolean cancelStreamingJob(long jobId, boolean doCleanup);
+    /**
+     * Marks a streaming job as CANCELLING in both REDIS and in the long-term database.
+     * @param jobId     The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
+     * @param doCleanup if true, delete the streaming job files from disk as part of cancelling the streaming job.
+     * @exception WfmProcessingException may be thrown if a warning or error occurs.
+     * The exception message will provide a summary of the warning or error that occurred.
+     */
+	void cancelStreamingJob(long jobId, boolean doCleanup) throws WfmProcessingException;
 
 	/** Gets the marked-up media with the specified (batch job) id. */
 	public MarkupResult getMarkupResult(long id);
@@ -180,6 +179,11 @@ public interface MpfService {
 	 * Gets all of the StreamingJobRequest (streaming job) instances in the persistent data store.
 	 */
 	public List<StreamingJobRequest> getAllStreamingJobRequests();
+
+	/**
+	 * Gets the job ids of all of the StreamingJobRequest (streaming job) instances in the persistent data store.
+	 */
+	public List<Long> getAllStreamingJobIds();
 
 	public List<SystemMessage> getSystemMessagesByType(String filterbyType);
 

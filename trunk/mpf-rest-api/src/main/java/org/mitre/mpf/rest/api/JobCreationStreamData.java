@@ -34,7 +34,7 @@ public class JobCreationStreamData {
     private String streamUri;
     public JobCreationStreamData() {}
     public JobCreationStreamData(String uri) {
-        this.streamUri=uri;
+        setStreamUri(uri);
     }
     public String getStreamUri() {
         return streamUri;
@@ -52,7 +52,7 @@ public class JobCreationStreamData {
     }
 
     private int segmentSize = 0;
-    public void setSegmentSize(int seg_size) { this.segmentSize=seg_size; }
+    public void setSegmentSize(int segmentSize) { this.segmentSize=segmentSize; }
     public int getSegmentSize() { return segmentSize; }
 
     /** this method will check the current settings within this job creation stream data,

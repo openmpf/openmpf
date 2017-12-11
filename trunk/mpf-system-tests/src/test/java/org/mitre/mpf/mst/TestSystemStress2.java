@@ -63,7 +63,7 @@ public class TestSystemStress2 extends TestSystemWithDefaultConfig {
         Collection<File> files = FileUtils.listFiles(new File("/mpfdata/datasets/mugshots_10000"), fileFilter, null);
         int i = 0;
         for (File file : files) {
-            media.add(new JsonMediaInputObject(file.getAbsoluteFile().toURI().toString()));
+            media.add(new JsonMediaInputObject(file.getAbsoluteFile().toPath().toUri().toString()));
             i++;
         }
         long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),

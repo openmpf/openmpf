@@ -60,6 +60,7 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -74,6 +75,7 @@ import java.util.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ActiveProfiles("jenkins")
+@DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
 public abstract class TestSystem {
 
 	protected static final Logger log = LoggerFactory.getLogger(TestSystem.class);
@@ -229,11 +231,11 @@ public abstract class TestSystem {
 	}
 
 	protected long runPipelineOnStream(String pipelineName, JsonStreamingInputObject stream, Map<String, String> jobProperties, boolean buildOutput, int priority,
-									   long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout) {
+									   long stallTimeout) throws Exception {
 		JsonStreamingJobRequest jsonStreamingJobRequest = streamingJobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, stream,
 				Collections.emptyMap(), jobProperties,
 				buildOutput, priority,
-				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
+				stallTimeout,
 				null,null,null,null);
 		long jobRequestId = mpfService.submitJob(jsonStreamingJobRequest);
 		Assert.assertTrue(waitFor(jobRequestId));

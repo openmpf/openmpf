@@ -25,7 +25,6 @@
  ******************************************************************************/
 
 package org.mitre.mpf.nms;
-import org.jgroups.Address;
 import java.io.Serializable;
 
 
@@ -36,9 +35,9 @@ import java.io.Serializable;
  * discovered.
  */
 public class NodeDescriptor implements Serializable {
-    private String hostname;
-    private Address jAddr = null;
-    private int minServiceTimeupMillis;
+
+    private final String hostname;
+
     private  NodeManagerConstants.States lastKnownState =  NodeManagerConstants.States.Unknown;
 
     public  NodeDescriptor(String hostname) {
@@ -64,12 +63,4 @@ public class NodeDescriptor implements Serializable {
     public boolean doesHostMatch(String host) {
         return (hostname.compareTo(host) == 0);
     }
-
-	public int getMinServiceTimeupMillis() {
-		return minServiceTimeupMillis;
-	}
-
-	public void setMinServiceTimeupMillis(int minServiceTimeupMillis) {
-		this.minServiceTimeupMillis = minServiceTimeupMillis;
-	}
 }

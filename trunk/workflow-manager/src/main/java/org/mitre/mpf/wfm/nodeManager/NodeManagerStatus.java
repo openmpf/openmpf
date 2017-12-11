@@ -26,19 +26,21 @@
 
 package org.mitre.mpf.wfm.nodeManager;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
 import org.jgroups.Address;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.AtmosphereChannel;
 import org.mitre.mpf.nms.*;
-import org.mitre.mpf.nms.ChannelReceiver.NodeTypes;
 import org.mitre.mpf.nms.NodeManagerConstants.States;
+import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -47,72 +49,47 @@ import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
 
 @Component
 public class NodeManagerStatus implements ClusterChangeNotifier {
 
 	private static final Logger log = LoggerFactory.getLogger(NodeManagerStatus.class);
 
-	@Value("${activemq.hostname}")
-	private String activeMqHostname;
-
 	@Autowired
 	private PropertiesUtil propertiesUtil;
 
-	private volatile boolean isRunning = false;
+	@Autowired
 	private MasterNode masterNode;
-	private Map<String, ServiceDescriptor> serviceDescriptorMap = new ConcurrentHashMap<String, ServiceDescriptor>();
 
-	public NodeManagerStatus() {
-		String fHostName = System.getenv("THIS_MPF_NODE");
-		log.debug("Hostname is: '{}'.", fHostName);
+	@Autowired
+	private StreamingJobRequestBo streamingJobRequestBo;
 
-		if(fHostName == null) {
-			log.error("Could not determine the hostname.");
-		}
-	}
+	private volatile boolean isRunning = false;
+
+	private Map<String, ServiceDescriptor> serviceDescriptorMap = new ConcurrentHashMap<>();
+
 
 	public void init(boolean reloadConfig) {
-		InputStream tcpConfig = null, nodeManagerConfig = null;
-		try {
-			if(!reloadConfig) {
-				isRunning = true;
-				tcpConfig = MasterNode.class.getClassLoader().getResourceAsStream("jGroupsTCPConfig.xml");
-				masterNode = new MasterNode(tcpConfig,
-						NodeManagerConstants.DEFAULT_CHANNEL, "MPF-MasterNode");
-			}
-
-			try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
-				if (masterNode.loadConfigFile(inStream, activeMqHostname)) {
-					masterNode.launchAllNodes();
-				}
-			}
-
-			if(!reloadConfig) {		
-				masterNode.setCallback(this);
-			}
-			
-			updateServiceDescriptors();
-		} catch (IOException ex) {
-			throw new UncheckedIOException(ex);
-		} finally {
-			if (tcpConfig != null) {
-				try {
-					tcpConfig.close();
-				} catch (IOException e) {
-					log.error(e.getMessage(), e);
-				}
-			}
-			if (nodeManagerConfig != null) {
-				try {
-					nodeManagerConfig.close();
-				} catch (IOException e) {
-					log.error(e.getMessage(), e);
-				}
+		if(!reloadConfig) {
+			masterNode.run();
+			isRunning = true;
+		}
+		try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
+			if (masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri())) {
+				masterNode.launchAllNodes();
 			}
 		}
+		catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+
+		if(!reloadConfig) {
+			masterNode.setCallback(this);
+		}
+
+		updateServiceDescriptors();
 	}
+
 
 	public void stop() {
 		try {
@@ -156,15 +133,13 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 		for (Address addr : masterNode.getCurrentNodeManagerHosts()) {
 			String name = addr.toString();
 			//If it's a node manager then track it, it's name contains the machine name upon which it resides
-			Matcher mo = ChannelReceiver.FQN_PATTERN.matcher(name);
-			if (!mo.matches()) {
-				log.debug("\tNot well formed name, skipping {}", name);
+			Pair<String, NodeTypes> hostNodeTypePair = AddressParser.parse(addr);
+			if (hostNodeTypePair == null) {
 				continue;
 			}
 			//see if we know what type this is
-			NodeTypes ntype = NodeTypes.lookup(mo.group(1));
-			if(ntype != null && ntype == NodeTypes.NodeManager) {
-				String mgrHost = mo.group(2);
+			if(hostNodeTypePair.getRight() == NodeTypes.NodeManager) {
+				String mgrHost = hostNodeTypePair.getLeft();
 				availableNodeManagerHostsAddressMap.put(mgrHost, addr);
 			}
 		}
@@ -306,7 +281,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 		log.info("Reloading the node manager config");
         Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.NodeManagerStatus.reloadNodeManagerConfig").start();
         init(true);
-        split.stop();     
+        split.stop();
 	}
 
 	@Override
@@ -318,5 +293,26 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 			serviceDescriptorMap.remove(serviceDescriptor.getName());
 			broadcast( serviceDescriptor, "OnServiceReadyToRemove" );
 		}
-	}	
+	}
+
+
+	@Override
+	public void streamingJobExited(StreamingJobExitedMessage message) {
+		JobStatus status;
+		switch (message.reason) {
+			case CANCELLED:
+				status = JobStatus.COMPLETE;
+				break;
+			case ERROR:
+				status = JobStatus.ERROR;
+				break;
+			case STREAM_STALLED:
+				status = JobStatus.STALLED;
+				break;
+			default:
+				throw new IllegalStateException(String.format(
+						"Job %s exited with unexpected exit reason: %s.", message.jobId, message.reason));
+		}
+		streamingJobRequestBo.jobCompleted(message.jobId, status);
+	}
 }

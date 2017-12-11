@@ -26,11 +26,8 @@
 
 package org.mitre.mpf.wfm.businessrules.impl;
 
-import java.io.UnsupportedEncodingException;
-import java.util.concurrent.ConcurrentSkipListSet;
-
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -38,12 +35,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.mitre.mpf.interop.JsonAction;
-import org.mitre.mpf.interop.JsonCallbackBody;
-import org.mitre.mpf.interop.JsonPipeline;
-import org.mitre.mpf.interop.JsonStage;
-import org.mitre.mpf.interop.JsonStreamingJobRequest;
-import org.mitre.mpf.interop.JsonStreamingInputObject;
+import org.mitre.mpf.interop.*;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -53,21 +45,18 @@ import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
+import org.mitre.mpf.wfm.exceptions.JobAlreadyCancellingWfmProcessingException;
+import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidJobIdWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidOutputObjectDirectoryWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException;
-import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidJobIdWfmProcessingException;
-import org.mitre.mpf.wfm.exceptions.JobAlreadyCancellingWfmProcessingException;
 import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
 import org.mitre.mpf.wfm.util.JmsUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -80,7 +69,11 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.io.UnsupportedEncodingException;
+import java.util.Date;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 @Component
 public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
@@ -138,6 +131,10 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     @Autowired
     private JobProgress jobProgressStore;
+
+
+    @Autowired
+    private StreamingJobMessageSender streamingJobMessageSender;
 
     /**
      * Converts a pipeline represented in JSON to a {@link TransientPipeline} instance.
@@ -502,6 +499,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             // persist the pipeline and streaming job in REDIS
             TransientPipeline transientPipeline = buildPipeline(jsonStreamingJobRequest.getPipeline());
             TransientStreamingJob transientStreamingJob = buildStreamingJob(jobId, streamingJobRequestEntity, transientPipeline, jsonStreamingJobRequest);
+            streamingJobMessageSender.launchJob(transientStreamingJob);
 
         } catch (Exception e) {
             // mark any exception as a failure by recording the error in the persistent database and throwing an exception
@@ -596,7 +594,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * @param jobId unique id for a streaming job
      * @throws WfmProcessingException
      */
+    @Override
     public synchronized void jobCompleted(long jobId, JobStatus jobStatus) throws WfmProcessingException {
+        // TODO: cleanup the summary reports and other output files
         markJobCompleted(jobId, jobStatus);
 
         try {

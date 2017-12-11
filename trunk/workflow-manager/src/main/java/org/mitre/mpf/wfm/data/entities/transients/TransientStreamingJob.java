@@ -29,9 +29,7 @@ package org.mitre.mpf.wfm.data.entities.transients;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class TransientStreamingJob {
@@ -64,9 +62,9 @@ public class TransientStreamingJob {
 	public void setStream(TransientStream stream) { this.stream = stream; }
 	public void addStreamMetaData(String key, String value) { getStream().addMetadata(key, value); }
 
-	private Map<String, Map> overriddenAlgorithmProperties;
-	public Map<String, Map> getOverriddenAlgorithmProperties() { return overriddenAlgorithmProperties; }
-	public void setOverriddenAlgorithmProperties(Map<String, Map> overriddenAlgorithmProperties) { this.overriddenAlgorithmProperties = overriddenAlgorithmProperties; }
+	private Map<String, Map<String, String>> overriddenAlgorithmProperties;
+	public Map<String, Map<String, String>> getOverriddenAlgorithmProperties() { return overriddenAlgorithmProperties; }
+	public void setOverriddenAlgorithmProperties(Map<String, Map<String, String>> overriddenAlgorithmProperties) { this.overriddenAlgorithmProperties = overriddenAlgorithmProperties; }
 
 	private Map<String, String> overriddenJobProperties;
 	public Map<String, String> getOverriddenJobProperties() { return overriddenJobProperties; }

@@ -99,7 +99,7 @@ public class StreamingJobController {
     @ResponseBody
     public ResponseEntity<StreamingJobCreationResponse> createStreamingJobRest(@ApiParam(required = true, value = "StreamingJobCreationRequest") @RequestBody StreamingJobCreationRequest streamingJobCreationRequest) {
         StreamingJobCreationResponse createResponse = createStreamingJobInternal(streamingJobCreationRequest);
-        if (createResponse.getMpfResponse().getResponseCode() == 0) {
+        if (createResponse.getMpfResponse().isSuccessful()) {
             return new ResponseEntity<>(createResponse, HttpStatus.CREATED);
         } else {
             log.error("Error creating streaming job");
@@ -169,7 +169,7 @@ public class StreamingJobController {
                                                                                        defaultValue = "false") @RequestParam("doCleanup")
                                                                                        boolean doCleanup) {
         StreamingJobCancelResponse cancelResponse = cancelStreamingJobInternal(jobId, doCleanup);
-        if (cancelResponse.getMpfResponse().getResponseCode() == 0) {
+        if (cancelResponse.getMpfResponse().isSuccessful()) {
             return new ResponseEntity<>(cancelResponse, HttpStatus.OK);
         } else {
             log.error("Error cancelling streaming job with id '{}'", jobId);

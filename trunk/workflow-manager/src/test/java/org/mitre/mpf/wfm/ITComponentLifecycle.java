@@ -374,7 +374,7 @@ public class ITComponentLifecycle {
         	MpfResponse mpfResponse =  
         			customClient.customPostParams(url, params, MpfResponse.class, 200);
         	assertNotNull(mpfResponse);
-        	assertTrue(mpfResponse.getResponseCode() == 0);
+        	assertTrue(mpfResponse.isSuccessful());
         	assertTrue(mpfResponse.getMessage() == null);
             setCredentials(false);
         } catch (Exception e) {

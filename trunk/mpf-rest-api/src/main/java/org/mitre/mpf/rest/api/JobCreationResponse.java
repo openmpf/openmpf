@@ -41,7 +41,7 @@ public class JobCreationResponse {
 	}
 
 	public JobCreationResponse(long jobId) {
-		this.mpfResponse.setResponseCode(0);
+		this.mpfResponse.setResponseCode(MpfResponse.RESPONSE_CODE_SUCCESS);
 		this.jobId = jobId;
 	}
 	

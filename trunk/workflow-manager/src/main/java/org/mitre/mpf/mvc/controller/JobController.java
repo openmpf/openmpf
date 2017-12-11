@@ -109,7 +109,7 @@ public class JobController {
     @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
     public ResponseEntity<JobCreationResponse> createJobRest(@ApiParam(required = true, value = "JobCreationRequest") @RequestBody JobCreationRequest jobCreationRequest) {
         JobCreationResponse createResponse = createJobInternal(jobCreationRequest, false);
-        if (createResponse.getMpfResponse().getResponseCode() == 0) {
+        if (createResponse.getMpfResponse().isSuccessful()) {
             return new ResponseEntity<>(createResponse, HttpStatus.CREATED);
         } else {
             log.error("Error creating job");
@@ -281,7 +281,7 @@ public class JobController {
     public ResponseEntity<JobCreationResponse> resubmitJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId,
                                                                @ApiParam(value = "Job priority (0-9 with 0 being the lowest) - OPTIONAL") @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam) {
         JobCreationResponse resubmitResponse = resubmitJobInternal(jobId, jobPriorityParam);
-        if (resubmitResponse.getMpfResponse().getResponseCode() == 0) {
+        if (resubmitResponse.getMpfResponse().isSuccessful()) {
             return new ResponseEntity<>(resubmitResponse, HttpStatus.OK);
         } else {
             log.error("Error resubmitting job with id '{}'", jobId);
@@ -315,7 +315,7 @@ public class JobController {
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<MpfResponse> cancelJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) {
         MpfResponse mpfResponse = cancelJobInternal(jobId);
-        if (mpfResponse.getResponseCode() == 0) {
+        if (mpfResponse.isSuccessful()) {
             return new ResponseEntity<>(mpfResponse, HttpStatus.OK);
         } else {
             log.error("Error cancelling job with id '{}'", jobId);
@@ -483,11 +483,11 @@ public class JobController {
         log.debug("Attempting to cancel job with id: {}.", jobId);
         if (mpfService.cancel(jobId)) {
             log.debug("Successful cancellation of job with id: {}");
-            return new MpfResponse(0, null);
+            return new MpfResponse(MpfResponse.RESPONSE_CODE_SUCCESS, null);
         }
         String errorStr = "Failed to cancel the job with id '" + Long.toString(jobId) + "'. Please check to make sure the job exists before submitting a cancel request. "
                 + "Also consider checking the server logs for more information on this error.";
         log.error(errorStr);
-        return new MpfResponse(1, errorStr);
+        return new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
     }
 }

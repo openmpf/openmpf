@@ -27,6 +27,8 @@ package org.mitre.mpf.nms;
 
 import org.jgroups.Address;
 import org.mitre.mpf.nms.NodeManagerConstants.States;
+import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
+import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
 import org.mitre.mpf.nms.xml.NodeManager;
 import org.mitre.mpf.nms.xml.NodeManagers;
 import org.mitre.mpf.nms.xml.Service;
@@ -65,7 +67,7 @@ public class MasterNode {
 
 
     public void run() {
-        nodeStateManager.startReceiving(ChannelReceiver.NodeTypes.MasterNode, "MPF-MasterNode");
+        nodeStateManager.startReceiving(NodeTypes.MasterNode, "MPF-MasterNode");
     }
 
 
@@ -300,6 +302,15 @@ public class MasterNode {
 
     public Collection<ServiceDescriptor> getServices() {
         return Collections.unmodifiableCollection(nodeStateManager.getServiceTable().values());
+    }
+
+
+    public void startStreamingJob(LaunchStreamingJobMessage message) {
+        nodeStateManager.startStreamingJob(message);
+    }
+
+    public void stopStreamingJob(StopStreamingJobMessage message) {
+        nodeStateManager.stopStreamingJob(message);
     }
 }
 

@@ -30,6 +30,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
+import java.nio.file.Path;
+
 @Component
 public class NodeManagerProperties {
 
@@ -72,5 +75,47 @@ public class NodeManagerProperties {
 	private boolean nodeStatusPageEnabled;
 	public boolean isNodeStatusPageEnabled() {
 		return nodeStatusPageEnabled;
+	}
+
+
+	@Value("${mpf.streaming.job.ini.dir}")
+	private File iniFilesDir;
+	public Path getIniFilesDir() {
+		return iniFilesDir.toPath();
+	}
+
+
+	@Value("${mpf.streaming.process.max.restarts}")
+	private int streamingProcessMaxRestarts;
+	public int getStreamingProcessMaxRestarts() {
+		return streamingProcessMaxRestarts;
+	}
+
+
+	//TODO: For future use. Untested.
+//	@Value("${streaming.frame.reader.executable}")
+//	private String streamingFrameReaderExecutable;
+//	public String getStreamingFrameReaderExecutable() {
+//		return streamingFrameReaderExecutable;
+//	}
+//
+//
+//	@Value("${streaming.video.writer.executable}")
+//	private String streamingVideoWriterExecutable;
+//	public String getStreamingVideoWriterExecutable() {
+//		return streamingVideoWriterExecutable;
+//	}
+//
+//
+//	@Value("${streaming.component.executable}")
+//	private String streamingComponentExecutor;
+//	public String getStreamingComponentExecutor() {
+//		return streamingComponentExecutor;
+//	}
+
+	@Value("${streaming.component.executable}")
+	private Resource streamingComponentExecutor;
+	public Resource getStreamingComponentExecutor() {
+		return streamingComponentExecutor;
 	}
 }

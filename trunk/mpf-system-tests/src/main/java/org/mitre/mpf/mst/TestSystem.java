@@ -60,6 +60,7 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -74,6 +75,7 @@ import java.util.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ActiveProfiles("jenkins")
+@DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
 public abstract class TestSystem {
 
 	protected static final Logger log = LoggerFactory.getLogger(TestSystem.class);

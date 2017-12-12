@@ -115,13 +115,13 @@ public class SystemMessageController {
                 if ( op.equals( "POST" ) && systemMessage != null ) {
                     mpfService.addSystemMessage(systemMessage);
                     logmsg = "Successfully added the system message.";
-                    mpfResponse = new MpfResponse(0, logmsg);
+                    mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_SUCCESS, logmsg);
                     httpStatus = HttpStatus.CREATED;
                 }
                 else if ( op.equals( "PUT" ) && systemMessage != null ) {
                     mpfService.addSystemMessage(systemMessage);
                     logmsg = "Successfully added the system message.";
-                    mpfResponse = new MpfResponse(0, logmsg);
+                    mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_SUCCESS, logmsg);
                     httpStatus = HttpStatus.CREATED;
                 }
 //                else if ( op.equals( "PUT_standard" ) && msgID != null ) {
@@ -133,19 +133,20 @@ public class SystemMessageController {
                 else if ( op.equals( "DELETE" ) && id > 0 ) {
                     systemMessage = mpfService.deleteSystemMessage( id );
                     logmsg = "Successfully deleted the system message.";
-                    mpfResponse = new MpfResponse(0, logmsg);
+                    mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_SUCCESS, logmsg);
                     httpStatus = HttpStatus.OK;
                 }
                 else {
                     // should never get there, since this is a private method
                     logmsg = "Bad request.";
-                    mpfResponse = new MpfResponse(1, logmsg);
+                    mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR, logmsg);
                     httpStatus = HttpStatus.BAD_REQUEST;
                 }
                 log.info( logmsg + "  The message " + ( (systemMessage==null) ? "did not exist in the database." : "was:  " + systemMessage.getMsg() ) );
             }
             else {
-                mpfResponse = new MpfResponse(1, "Only admins can add system messages.");
+                mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR,
+                                              "Only admins can add system messages.");
                 httpStatus = HttpStatus.UNAUTHORIZED;
                 log.error("Invalid/non-admin user with name '{}' is attempting to save a new system message.", authenticationModel.getUserPrincipalName());
                 // do not continue! - leads to false return
@@ -153,7 +154,8 @@ public class SystemMessageController {
         }
         else {
             // should never get here
-            mpfResponse = new MpfResponse(1, "Error while processing system message.");
+            mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR,
+                                          "Error while processing system message.");
             httpStatus = HttpStatus.BAD_REQUEST;
             log.error("Null httpServletRequest - this should not happen.");
             // do not continue! - leads to false return

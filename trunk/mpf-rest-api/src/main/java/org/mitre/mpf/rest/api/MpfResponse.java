@@ -27,7 +27,6 @@
 package org.mitre.mpf.rest.api;
 
 public class MpfResponse {
-	//TODO: wishlist task #343 created to refactor the rest of the codebase to use these static data members instead of hardcoding 0 or 1, plus need to develop additional error codes...
 	//0 = no error and message will be null, 1 = error and message will be populated, 2 = warning and message will be populated
 	public static final int RESPONSE_CODE_SUCCESS = 0;
 	public static final int RESPONSE_CODE_ERROR = 1;
@@ -89,5 +88,5 @@ public class MpfResponse {
      */
 	public MpfResponse(int responseCode, String message) {
 	    setMessage(responseCode, message);
-	}	
+	}
 }

@@ -67,11 +67,11 @@ public class AlgorithmDefinition {
 
 	@XStreamAsAttribute
 	private boolean supportsBatchProcessing;
-	public boolean getSupportsBatchProcessing() { return supportsBatchProcessing; }
+	public boolean supportsBatchProcessing() { return supportsBatchProcessing; }
 
 	@XStreamAsAttribute
 	private boolean supportsStreamProcessing;
-	public boolean getSupportsStreamProcessing() { return supportsStreamProcessing; }
+	public boolean supportsStreamProcessing() { return supportsStreamProcessing; }
 
 	/** Creates a new instance of this class using the specified parameters.
 	 *

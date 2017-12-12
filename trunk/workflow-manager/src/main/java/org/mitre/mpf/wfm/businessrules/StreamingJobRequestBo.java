@@ -33,7 +33,6 @@ import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.WfmProcessingException;
 
 import java.util.Map;
 
@@ -82,5 +81,11 @@ public interface StreamingJobRequestBo {
 	void cancel(long jobId, boolean doCleanup) throws WfmProcessingException;
 
 
-	public void jobCompleted(long jobId, JobStatus jobStatus);
+	void jobCompleted(long jobId, JobStatus jobStatus);
+
+	void handleJobStatusChange(long jobId, JobStatus status, long timestamp);
+
+	void handleNewActivityAlert(long jobId, long frameId, long timestamp);
+
+	void handleNewSummaryReport(long jobId, Object summaryReport);
 }

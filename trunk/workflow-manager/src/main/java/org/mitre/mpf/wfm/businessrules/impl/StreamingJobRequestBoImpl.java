@@ -70,6 +70,9 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
@@ -629,6 +632,28 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         jobProgressStore.setJobProgress(jobId, 100.0f);
         log.info("[Streaming Job {}:*:*] Streaming Job complete!", jobId);
 
+    }
+
+    @Override
+    public void handleJobStatusChange(long jobId, JobStatus status, long timestamp) {
+    	// TODO: Replace logging with implementation of handleJobStatusChange
+    	log.info("handleJobStatusChange(jobId = {}, status = {}, time = {})", jobId, status, millisToDateTime(timestamp));
+    }
+
+    @Override
+    public void handleNewActivityAlert(long jobId, long frameId, long timestamp) {
+        // TODO: Replace logging with implementation of handleNewActivityAlert
+        log.info("handleNewActivityAlert(jobId = {}, frameId = {}, time = {})", jobId, frameId, millisToDateTime(timestamp));
+    }
+
+    @Override
+    public void handleNewSummaryReport(long jobId, Object summaryReport) {
+        // TODO: Replace logging with implementation of handleNewSummaryReport
+        log.info("handleNewSummaryReport(jobId = {}, summaryReport = {})", jobId, summaryReport);
+    }
+
+    private static LocalDateTime millisToDateTime(long millis) {
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneId.systemDefault());
     }
 
     /**

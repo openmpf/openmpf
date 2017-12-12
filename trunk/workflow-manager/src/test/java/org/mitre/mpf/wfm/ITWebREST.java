@@ -1271,7 +1271,12 @@ public class ITWebREST {
     } // method used to setup Spark for a simple callback that only contains jobid and externalid
 
     // Revised in this section to test the Health Report Callbacks, testing both the GET and POST methods.
+    // Note: needed to add confirmation of jobId in the health callbacks, because scheduled callbacks from a job created
+    // earlier was causing the callback to capture a health report sent before a later job under test was scheduled, and
+    // causing the test to fail.
     final int healthReportCallbackPort = 20160;
+    long jobIdGetTest = -1L;
+    long jobIdPostTest = -1L;
     boolean healthSparkGetResponse = false;
     boolean healthSparkPostResponse = false;
     JsonHealthReportDataCallbackBody healthReportGetCallbackBody = null;
@@ -1316,21 +1321,23 @@ public class ITWebREST {
             JSONstring = PostJSON(new URL(url), param_string, MPF_AUTHORIZATION);
             log.info("testStreamingJobWithHealthReportCallback: create streaming job POST results:" + JSONstring); // {"jobId":5, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
             JSONObject obj = new JSONObject(JSONstring);
-            long jobId1 =  Long.valueOf(obj.getInt("jobId"));
-            log.info("testStreamingJobWithHealthReportCallback: streaming jobId " + jobId1 + " created with POST method.");
+            jobIdPostTest =  Long.valueOf(obj.getInt("jobId"));
+            log.info("testStreamingJobWithHealthReportCallback: streaming jobId " + jobIdPostTest + " created with POST method.");
 
-            // Wait for a Health Report callback. Health reports should periodically be sent every 30 seconds, listen for at least one Health Report POST.
+            // Wait for a Health Report callback that includes the jobId of this test job.
+            // Health reports should periodically be sent every 30 seconds, listen for at least one Health Report POST that includes
+            // our jobId
             int count = 0;
-            while (healthSparkPostResponse != true && count < 60) {
+            while (healthSparkPostResponse != true && count < 120) {
                 Thread.sleep(1000);
                 count++;
             }
             if ( healthSparkPostResponse ) {
-                log.info("testStreamingJobWithHealthReportCallback: received a Spark POST response, healthReportPostCallbackBody="+healthReportPostCallbackBody);
+                log.info("testStreamingJobWithHealthReportCallback: received a Spark POST response, while testing jobIdPostTest=" + jobIdPostTest +", healthReportPostCallbackBody="+healthReportPostCallbackBody);
                 if (healthReportPostCallbackBody != null) {
                     // Test to make sure the received health report is from the 1st streaming job.
                     Assert.assertTrue(
-                        healthReportPostCallbackBody.getJobId().contains(Long.valueOf(jobId1))
+                        healthReportPostCallbackBody.getJobId().contains(Long.valueOf(jobIdPostTest))
                             && healthReportPostCallbackBody.getExternalId().contains(myExternalId1));
                 } else {
                     log.error("testStreamingJobWithHealthReportCallback: Error, couldn't form a Health Report from the POST request test");
@@ -1340,7 +1347,7 @@ public class ITWebREST {
             }
 
             // Wait till ready to attempt a streaming job cancellation
-            String urlStreamingJobId1Status = rest_url + "streaming/jobs/" + jobId1;
+            String urlStreamingJobId1Status = rest_url + "streaming/jobs/" + jobIdPostTest;
             StreamingJobInfo streamingJobInfo = null;
             do {
                 String jsonStreamingJobInfo = GetJSON(new URL(urlStreamingJobId1Status), MPF_AUTHORIZATION);
@@ -1350,14 +1357,14 @@ public class ITWebREST {
                 Thread.sleep(3000);
             } while( streamingJobInfo == null );
 
-            // After running the POST test, clear the 1st streaming job from REDIS.
-            JSONObject cancelParams = new JSONObject();
-            cancelParams.put("doCleanup", true);
-            String cancelUrl = rest_url + "streaming/jobs/" + Long.toString(jobId1) + "/cancel";
+            // After running the POST test, clear the 1st streaming job from REDIS with doCleanup enabled.
+            List<NameValuePair> cancelParams = new ArrayList<NameValuePair>();
+            cancelParams.add(new BasicNameValuePair("doCleanup", "true"));
+            URL cancelUrl = new URL(rest_url + "streaming/jobs/" + Long.toString(jobIdPostTest) + "/cancel");
+            String response = PostParams(cancelUrl, cancelParams, MPF_AUTHORIZATION, 200);
             log.info("testStreamingJobWithHealthReportCallback: finished POST test, cancelling 1st streaming job using cancelUrl=" + cancelUrl +
                 " and cancelParams=" + cancelParams);
-            JSONstring = PostJSON(new URL(cancelUrl), cancelParams.toString(), MPF_AUTHORIZATION);
-            log.info("testStreamingJobWithHealthReportCallback: finished POST test, cancelled 1st streaming job with results:" + JSONstring);
+            log.info("testStreamingJobWithHealthReportCallback: finished POST test, cancelled 1st streaming job with results:" + response);
 
             // Submit 2nd streaming job request with a GET callback
             log.info("testStreamingJobWithHealthReportCallback: Creating a new Streaming Job for the GET test");
@@ -1368,22 +1375,24 @@ public class ITWebREST {
             JSONstring = PostJSON(new URL(url), param_string, MPF_AUTHORIZATION);
             log.info("testStreamingJobWithHealthReportCallback: create streaming job GET results:" + JSONstring); // {"jobId":6, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
             obj = new JSONObject(JSONstring);
-            long jobId2 =  Long.valueOf(obj.getInt("jobId"));
-            log.info("testStreamingJobWithHealthReportCallback: streaming jobId " + jobId2 + " created with GET method.");
+            jobIdGetTest =  Long.valueOf(obj.getInt("jobId"));
+            log.info("testStreamingJobWithHealthReportCallback: streaming jobId " + jobIdGetTest + " created with GET method.");
 
-            // Wait for a Health Report callback. Health reports should periodically be sent every 30 seconds, listen for at least one Health Report GET.
+            // Wait for a Health Report callback that includes the jobId of this test job.
+            // Health reports should periodically be sent every 30 seconds, listen for at least one Health Report POST that includes
+            // our jobId
             count = 0;
-            while (healthSparkGetResponse != true  && count < 60) {
+            while (healthSparkGetResponse != true  && count < 120) {
                 Thread.sleep(1000);
                 count++;
             }
 
             if ( healthSparkGetResponse ) {
-                log.info("testStreamingJobWithHealthReportCallback: received a Spark GET response, healthReportGetCallbackBody="+healthReportGetCallbackBody);
+                log.info("testStreamingJobWithHealthReportCallback: received a Spark GET response while testing jobIdGetTest=" + jobIdGetTest +", healthReportGetCallbackBody="+healthReportGetCallbackBody);
                 if (healthReportGetCallbackBody != null) {
                     // Test to make sure the received health report is from the 2nd streaming job.
                     Assert.assertTrue(
-                        healthReportGetCallbackBody.getJobId().contains(Long.valueOf(jobId2))
+                        healthReportGetCallbackBody.getJobId().contains(Long.valueOf(jobIdGetTest))
                             && healthReportGetCallbackBody.getExternalId().contains(myExternalId2));
                 } else {
                     log.error("testStreamingJobWithHealthReportCallback: Error, couldn't form a Health Report from the GET request test");
@@ -1393,7 +1402,7 @@ public class ITWebREST {
             }
 
             // Wait till ready to attempt a streaming job cancellation
-            String urlStreamingJobId2Status = rest_url + "streaming/jobs/" + jobId2;
+            String urlStreamingJobId2Status = rest_url + "streaming/jobs/" + jobIdGetTest;
             streamingJobInfo = null;
             do {
                 String jsonStreamingJobInfo = GetJSON(new URL(urlStreamingJobId2Status), MPF_AUTHORIZATION);
@@ -1403,12 +1412,12 @@ public class ITWebREST {
                 Thread.sleep(3000);
             } while( streamingJobInfo == null );
 
-            // After running the GET test, clear the 2nd streaming job from REDIS.
-            cancelUrl = rest_url + "streaming/jobs/" + Long.toString(jobId2) + "/cancel";
+            // After running the GET test, clear the 2nd streaming job from REDIS with doCleanup enabled.
+            cancelUrl = new URL(rest_url + "streaming/jobs/" + Long.toString(jobIdGetTest) + "/cancel");
+            response = PostParams(cancelUrl, cancelParams, MPF_AUTHORIZATION, 200);
             log.info("testStreamingJobWithHealthReportCallback: finished GET test, cancelling 2nd streaming job using cancelUrl=" + cancelUrl +
                 " and cancelParams=" + cancelParams);
-            JSONstring = PostJSON(new URL(cancelUrl), cancelParams.toString(), MPF_AUTHORIZATION);
-            log.info("testStreamingJobWithHealthReportCallback: Finished GET test, cancelled 2nd streaming job with results:" + JSONstring);
+            log.info("testStreamingJobWithHealthReportCallback: finished GET test, cancelled 2nd streaming job with results:" + response);
 
             log.info("testStreamingJobWithHealthReportCallback: Finished POST and GET tests of health report callbacks");
         } finally {
@@ -1447,8 +1456,12 @@ public class ITWebREST {
                     log.info("  jobStatus=" + healthReportGetCallbackBody.getJobStatus());
                     log.info("  lastNewActivityAlertFrameId=" + healthReportGetCallbackBody.getLastNewActivityAlertFrameId());
                     log.info("  lastNewActivityAlertTimestamp=" + healthReportGetCallbackBody.getLastNewActivityAlertTimeStamp());
-                    // Set indicator that a health report sent using GET method has been received.
-                    healthSparkGetResponse = true;
+                    // If this health report includes the jobId for our GET test, then set indicator
+                    // that a health report sent using GET method has been received. Need to add this check
+                    // to ensure a periodic health report sent prior to creation of our test job doesn't prematurely stop the test.
+                    if ( healthReportGetCallbackBody.getJobId().contains(jobIdGetTest) ) {
+                        healthSparkGetResponse = true;
+                    }
                 } catch (Exception e) {
                     log.error("Error, Exception caught while processing Health Report GET callback.", e);
                 }
@@ -1472,8 +1485,12 @@ public class ITWebREST {
                     log.info("  jobStatus=" + healthReportPostCallbackBody.getJobStatus());
                     log.info("  lastNewActivityAlertFrameId=" + healthReportPostCallbackBody.getLastNewActivityAlertFrameId());
                     log.info("  lastNewActivityAlertTimestamp=" + healthReportPostCallbackBody.getLastNewActivityAlertTimeStamp());
-                    // Set indicator that a health report sent using POST method has been received.
-                    healthSparkPostResponse = true;
+                    // If this health report includes the jobId for our POST test, then set indicator
+                    // that a health report sent using POST method has been received. Need to add this check
+                    // to ensure a periodic health report sent prior to creation of our test job doesn't prematurely stop the test.
+                    if ( healthReportPostCallbackBody.getJobId().contains(jobIdPostTest) ) {
+                        healthSparkPostResponse = true;
+                    }
                 } catch (Exception e) {
                     log.error("Error, Exception caught while processing Health Report POST callback.", e);
                 }
@@ -1483,6 +1500,5 @@ public class ITWebREST {
 
         Spark.awaitInitialization();
     } // method used to setup Spark for a Health Report callback
-
 
 }

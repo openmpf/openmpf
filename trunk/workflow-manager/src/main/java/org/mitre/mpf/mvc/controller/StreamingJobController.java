@@ -155,7 +155,7 @@ public class StreamingJobController {
      * POST /streaming/jobs/{id}/cancel
      */
     //EXTERNAL
-    @RequestMapping(value = "/rest/streaming/jobs/{id}/cancel", method = RequestMethod.POST, params = {"doCleanup"} )
+    @RequestMapping(value = "/rest/streaming/jobs/{id}/cancel", method = RequestMethod.POST)
     @ApiOperation(value = "Cancels the streaming job with the supplied job id. If doCleanup is true, then the HTTP Response to this request may be delayed while OpenMPF processes the cleanup.",
             produces = "application/json", response = StreamingJobCancelResponse.class)
     @ApiResponses(value = {
@@ -167,6 +167,7 @@ public class StreamingJobController {
     public ResponseEntity<StreamingJobCancelResponse> cancelStreamingJobRest(@ApiParam(required = true, value = "Streaming Job id") @PathVariable("id") long jobId,
                                                                              @ApiParam(name = "doCleanup", value = "doCleanup", required = false,
                                                                                        defaultValue = "false") @RequestParam(value = "doCleanup", required = false) boolean doCleanup) {
+        log.info("cancelStreamingJobRest: received cancellation request for jobId=" + jobId + ", doCleanup=" + doCleanup);
         StreamingJobCancelResponse cancelResponse = cancelStreamingJobInternal(jobId, doCleanup);
         if (cancelResponse.getMpfResponse().getResponseCode() == 0) {
             return new ResponseEntity<>(cancelResponse, HttpStatus.OK);

@@ -28,6 +28,8 @@ package org.mitre.mpf.nms;
 
 import org.jgroups.Address;
 import org.jgroups.Message;
+import org.mitre.mpf.nms.streaming.messages.StreamingJobMessage;
+import org.mitre.mpf.nms.streaming.ChildStreamingJobManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,13 +48,17 @@ public class ChildNodeStateManager extends ChannelReceiver {
 
     private final NodeManagerProperties properties;
 
+    private final ChildStreamingJobManager streamingJobManager;
+
     private final Map<String, BaseServiceLauncher> launchedAppsMap = new HashMap<>();
 
 
     @Autowired
-    public ChildNodeStateManager(NodeManagerProperties properties, ChannelNode channelNode) {
+    public ChildNodeStateManager(NodeManagerProperties properties, ChannelNode channelNode,
+                                 ChildStreamingJobManager streamingJobManager) {
         super(properties, channelNode);
         this.properties = properties;
+        this.streamingJobManager = streamingJobManager;
     }
 
 
@@ -62,7 +68,10 @@ public class ChildNodeStateManager extends ChannelReceiver {
         Address sender = msg.getSrc();  // handle so we can send a response back (if desired)
 
         //log.info("Received message from {}", sender);
-        if (obj instanceof ServiceStatusUpdate) {
+	    if (obj instanceof StreamingJobMessage) {
+	       streamingJobManager.handle((StreamingJobMessage) obj);
+        }
+        else if (obj instanceof ServiceStatusUpdate) {
             LOG.debug("Received a ServiceStatusUpdate from {}", sender);
             ServiceStatusUpdate ssu = (ServiceStatusUpdate) obj;
             ServiceDescriptor sd = ssu.getServiceDescriptor();

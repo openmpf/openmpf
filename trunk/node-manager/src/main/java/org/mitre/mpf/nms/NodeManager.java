@@ -47,7 +47,7 @@ public class NodeManager implements Runnable {
 
     @Override
     public void run() {
-        nodeStateManager.startReceiving(ChannelReceiver.NodeTypes.NodeManager, "NodeManager");
+        nodeStateManager.startReceiving(NodeTypes.NodeManager, "NodeManager");
         nodeStateManager.run();
 
         nodeStateManager.shutdown();
@@ -65,6 +65,7 @@ public class NodeManager implements Runnable {
 
         try (ClassPathXmlApplicationContext context
                      = new ClassPathXmlApplicationContext("applicationContext-nm.xml")) {
+            context.registerShutdownHook();
 
             NodeManagerProperties properties = context.getBean(NodeManagerProperties.class);
             if (properties.isNodeStatusPageEnabled()) {

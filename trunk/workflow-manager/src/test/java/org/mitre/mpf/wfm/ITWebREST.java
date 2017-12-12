@@ -301,7 +301,7 @@ public class ITWebREST {
 		JobCreationResponse jobCreationResponse = objectMapper.readValue(response, JobCreationResponse.class);
 		
 		//check message, responseCode, and jobId
-		Assert.assertTrue(jobCreationResponse.getMpfResponse().getResponseCode() == 0);
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCreationResponse.getMpfResponse().getResponseCode());
 		Assert.assertNull(jobCreationResponse.getMpfResponse().getMessage());
 		Assert.assertTrue(jobCreationResponse.getJobId() >= 1);
 		
@@ -585,7 +585,7 @@ public class ITWebREST {
 		MpfResponse mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
 		
 		//verify that the config did save
-		Assert.assertTrue(mpfResponse.getResponseCode() == 0);
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.getResponseCode());
 		Assert.assertNull(mpfResponse.getMessage());
 		log.info("[saveNodeManagerConfigPOST]  Waiting 10 seconds for changes to complete");
 		Thread.sleep(10000);
@@ -612,7 +612,7 @@ public class ITWebREST {
 		log.debug("post results:"+JSONstring);
 		
 		mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
-		Assert.assertTrue(mpfResponse.getResponseCode() == 0);
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.getResponseCode());
 		Assert.assertNull(mpfResponse.getMessage());
 		
 		log.info("Waiting 10 seconds for changes to complete");
@@ -663,7 +663,7 @@ public class ITWebREST {
 		//convert JSONString to mpfResponse
 		MpfResponse mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
 		//not a success
-		Assert.assertTrue(mpfResponse.getResponseCode() != 0);
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_ERROR, mpfResponse.getResponseCode());
 		//make sure service is in the response message
 		Assert.assertTrue(mpfResponse.getMessage().contains("service"));
 		
@@ -674,7 +674,7 @@ public class ITWebREST {
 		//convert JSONString to mpfResponse
 		mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
 		//success
-		Assert.assertTrue(mpfResponse.getResponseCode() == 0);
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.getResponseCode());
 		//make sure service is null on success
 		Assert.assertTrue(mpfResponse.getMessage() == null);
 		Thread.sleep(3000);// give it some time to shut down
@@ -713,7 +713,7 @@ public class ITWebREST {
 		//convert JSONString to mpfResponse
 		mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
 		//not a success
-		Assert.assertTrue(mpfResponse.getResponseCode() != 0);
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_ERROR, mpfResponse.getResponseCode());
 		//make sure service is in the response message
 		Assert.assertTrue(mpfResponse.getMessage().contains("service"));
 				
@@ -725,7 +725,7 @@ public class ITWebREST {
 		//convert JSONString to mpfResponse
 		mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
 		//success
-		Assert.assertTrue(mpfResponse.getResponseCode() == 0);
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.getResponseCode());
 		//make sure service is null on success
 		Assert.assertTrue(mpfResponse.getMessage() == null);
 		Thread.sleep(3000);// give it some time to shut down
@@ -782,7 +782,7 @@ public class ITWebREST {
 		JobCreationResponse jobCreationResponse = objectMapper.readValue(response, JobCreationResponse.class);
 		
 		//null error message and JobId >= 1, could check error code as well
-		Assert.assertTrue(jobCreationResponse.getMpfResponse().getResponseCode() == 0);
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCreationResponse.getMpfResponse().getResponseCode());
 		Assert.assertNull(jobCreationResponse.getMpfResponse().getMessage());
 		Assert.assertTrue(jobCreationResponse.getJobId() >= 1);
 		
@@ -820,7 +820,7 @@ public class ITWebREST {
 		MpfResponse mpfResponse = objectMapper.readValue(response, MpfResponse.class);
 		
 		//looking for isSuccess to be true and null error message
-		Assert.assertTrue(mpfResponse.getResponseCode() == 0);
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.getResponseCode());
 		Assert.assertNull(mpfResponse.getMessage());
 		
 		singleJobInfo = null;
@@ -869,7 +869,7 @@ public class ITWebREST {
 		JobCreationResponse jobCreationResponse = objectMapper.readValue(response, JobCreationResponse.class);
 		
 		//null error message and verifying the resubmitted job id is equal to the processedJobId
-		Assert.assertTrue(jobCreationResponse.getMpfResponse().getResponseCode() == 0);
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCreationResponse.getMpfResponse().getResponseCode());
 		Assert.assertNull(jobCreationResponse.getMpfResponse().getMessage());
 		Assert.assertEquals(jobCreationResponse.getJobId(), ITWebREST.processedJobId);
 		

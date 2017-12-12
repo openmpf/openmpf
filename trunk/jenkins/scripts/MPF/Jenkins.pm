@@ -658,6 +658,10 @@ sub runGTests {
     my @gtestPaths = File::Find::Rule->directory->name('test')->in($detectionPath);
     # printDebug("gtestPaths:\n", join("\n", @gtestPaths), "\n");
 
+    my $trunkBuildPath = File::Spec->catfile($mpfPath,'openmpf/trunk/build');
+    push(@gtestPaths, File::Find::Rule->directory->name('test')->in($trunkBuildPath));
+    # printDebug("gtestPaths:\n", join("\n", @gtestPaths), "\n");
+
     my @tests = File::Find::Rule->file->executable->name('*Test')->in(@gtestPaths);
     # printDebug("tests:\n", join("\n", @tests), "\n");
 

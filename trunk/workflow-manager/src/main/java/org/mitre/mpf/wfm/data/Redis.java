@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.data;
 
+import java.math.BigInteger;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import org.javasimon.aop.Monitored;
@@ -293,9 +294,9 @@ public interface Redis {
 	LocalDateTime getHealthReportLastTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
     List<LocalDateTime> getHealthReportLastTimestamp(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
 
-    void setHealthReportLastNewActivityAlertFrameId(long jobId, String lastNewActivityAlertFrameId) throws WfmProcessingException;
-    String getHealthReportLastNewActivityAlertFrameId(long jobId) throws WfmProcessingException;
-    List<String> getHealthReportLastNewActivityAlertFrameId(List<Long> jobIds) throws WfmProcessingException;
+    void setHealthReportLastNewActivityAlertFrameId(long jobId, BigInteger lastNewActivityAlertFrameId) throws WfmProcessingException;
+    BigInteger getHealthReportLastNewActivityAlertFrameId(long jobId) throws WfmProcessingException;
+    List<BigInteger> getHealthReportLastNewActivityAlertFrameId(List<Long> jobIds) throws WfmProcessingException;
 
 	void setHealthReportLastNewActivityAlertTimestamp(long jobId, LocalDateTime lastNewActivityAlertTimestamp) throws WfmProcessingException;
 	LocalDateTime getHealthReportLastNewActivityAlertTimestamp(long jobId) throws WfmProcessingException, DateTimeException;

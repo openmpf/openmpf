@@ -166,8 +166,7 @@ public class StreamingJobController {
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<StreamingJobCancelResponse> cancelStreamingJobRest(@ApiParam(required = true, value = "Streaming Job id") @PathVariable("id") long jobId,
                                                                              @ApiParam(name = "doCleanup", value = "doCleanup", required = false,
-                                                                                       defaultValue = "false") @RequestParam("doCleanup")
-                                                                                       boolean doCleanup) {
+                                                                                       defaultValue = "false") @RequestParam(value = "doCleanup", required = false) boolean doCleanup) {
         StreamingJobCancelResponse cancelResponse = cancelStreamingJobInternal(jobId, doCleanup);
         if (cancelResponse.getMpfResponse().getResponseCode() == 0) {
             return new ResponseEntity<>(cancelResponse, HttpStatus.OK);

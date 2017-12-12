@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.data;
 
+import java.math.BigInteger;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -889,10 +890,10 @@ public class RedisImpl implements Redis {
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job, or if the passed
      * lastHealthReportTimestamp is null.
      */
-    public synchronized void setHealthReportLastNewActivityAlertFrameId(long jobId, String lastNewActivityAlertFrameId ) throws WfmProcessingException {
+    public synchronized void setHealthReportLastNewActivityAlertFrameId(long jobId, BigInteger lastNewActivityAlertFrameId ) throws WfmProcessingException {
         if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
             if ( lastNewActivityAlertFrameId != null ) {
-                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID, lastNewActivityAlertFrameId );
+                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID, lastNewActivityAlertFrameId.toString() );
             } else {
                 log.error("Illegal, can't set health report last New Activity Alert frame id to null for streaming job #{}.", jobId);
                 throw new WfmProcessingException("Illegal: Streaming Job " + jobId + ", can't set the last New Activity Alert frame id to null.");
@@ -911,11 +912,16 @@ public class RedisImpl implements Redis {
      * Returned value may be null if a health report or a New Activity Alert for this streaming job has not yet been sent.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job
      */
-    public synchronized String getHealthReportLastNewActivityAlertFrameId(long jobId) throws WfmProcessingException {
+    public synchronized BigInteger getHealthReportLastNewActivityAlertFrameId(long jobId) throws WfmProcessingException {
         if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
             // confirmed that the specified job is a streaming job
             Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
-            return (String) jobHash.get(LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID);
+            String frameId = (String) jobHash.get(LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID);
+            if ( frameId == null ) {
+                return (BigInteger) null;
+            } else {
+                return new BigInteger(frameId);
+            }
         } else {
             log.error("Job #{} is not a streaming job, so we can't get the health report last New Activity Alert frame id.", jobId);
             throw new WfmProcessingException("Error: Job " + jobId + " is not a streaming job. Only streaming jobs send health reports.");
@@ -927,7 +933,7 @@ public class RedisImpl implements Redis {
      * @return List of last new activity alert frame ids
      * @throws WfmProcessingException
      */
-    public synchronized List<String> getHealthReportLastNewActivityAlertFrameId(List<Long> jobIds) throws WfmProcessingException {
+    public synchronized List<BigInteger> getHealthReportLastNewActivityAlertFrameId(List<Long> jobIds) throws WfmProcessingException {
         return jobIds.stream().map(jobId->getHealthReportLastNewActivityAlertFrameId(jobId.longValue())).collect(Collectors.toList());
     }
 
@@ -972,13 +978,13 @@ public class RedisImpl implements Redis {
      */
     public synchronized LocalDateTime getHealthReportLastNewActivityAlertTimestamp(long jobId) throws WfmProcessingException, DateTimeException {
         if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
-            // confirmed that the specified job is a streaming job
+            // Confirmed that the specified job is a streaming job.
             Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
             String timestamp = (String) jobHash.get(LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_TIMESTAMP);
             if ( timestamp != null ) {
                 return (LocalDateTime) timestampFormatter.parse(timestamp);
             } else {
-                // return null to indicate that a health report for this streaming job has not yet been sent.
+                // Return null to indicate that a health report for this streaming job has not yet been sent.
                 return (LocalDateTime) null;
             }
         } else {
@@ -988,8 +994,8 @@ public class RedisImpl implements Redis {
     }
 
     /** This method is the same as {@link #getHealthReportLastNewActivityAlertTimestamp(long)}, it's just adapted for use with Lists.
-     * @param jobIds List of jobIds for streaming jobs
-     * @return List of last new activity alert timestamps
+     * @param jobIds List of jobIds for streaming jobs.
+     * @return List of last new activity alert timestamps. The list may contain null if a health report or a New Activity Alert for a streaming job has not yet been sent.
      * @throws WfmProcessingException
      * @throws DateTimeException
      */

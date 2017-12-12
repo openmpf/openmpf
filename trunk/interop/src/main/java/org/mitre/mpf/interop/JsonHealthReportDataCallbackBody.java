@@ -32,18 +32,18 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.io.PrintStream;
+
+import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.springframework.format.annotation.DateTimeFormat;;
 
 public class JsonHealthReportDataCallbackBody {
+
+    // All timestamps in OpenMPF should adhere to this date/time pattern.
     private static final String TIMESTAMP_PATTERN = "yyyy-MM-dd kk:mm:ss.S";
     private static final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN);
 
@@ -58,7 +58,6 @@ public class JsonHealthReportDataCallbackBody {
         return timestampFormatter.format(reportDate);
     }
     @JsonSetter("reportDate")
-//    @DateTimeFormat(iso = timestampFormatter)
     @JsonFormat(pattern = TIMESTAMP_PATTERN)
     public void setReportDate(String s) throws DateTimeParseException {
         this.reportDate = parseStringAsLocalDateTime(s);
@@ -77,8 +76,6 @@ public class JsonHealthReportDataCallbackBody {
     public void setJobId(List<Long> jobId) { this.jobId = jobId; }
     @JsonGetter
     public List<Long> getJobId() { return jobId; }
-//    @JsonIgnore
-//    public String getJobIdsAsDelimitedString(String delimiter) { return jobId.stream().map(jobId -> jobId.toString()).collect(Collectors.joining(delimiter));}
 
     /** The external ID(s) that were specified for these jobs when they were requested. Note that an externalId may be null if not specified for a streaming job.
     **/
@@ -89,49 +86,44 @@ public class JsonHealthReportDataCallbackBody {
     public List<String> getExternalId() {
         return externalId.stream().map(externalId -> {
         if ( externalId == null ) {
-            return "";
+            return (String) "";
         } else {
             return externalId;
         }
     }).collect(Collectors.toList()); }
-
-//    @JsonIgnore
-//    public String getExternalIdsAsDelimitedString(String delimiter) { return externalId.stream().map(externalId -> externalId.toString()).collect(Collectors.joining(delimiter));}
 
     private List<String> /*JobStatus*/ jobStatus = new ArrayList<>();
     @JsonSetter("jobStatus")
     public void setJobStatus(List<String> jobStatus) { this.jobStatus = jobStatus; }
     @JsonGetter("jobStatus")
     public List<String> /*JobStatus*/ getJobStatus() {
-        return jobStatus;
+        return jobStatus.stream().map(status -> {
+            if ( status == null ) {
+                return (String) "";
+            } else {
+                return status;
+            }
+        }).collect(Collectors.toList());
     }
 
-//    @JsonIgnore
-//    public String getJobStatusAsDelimitedString(String delimiter) { return jobStatus.stream().map(jobStatus -> jobStatus.toString()).collect(Collectors.joining(delimiter));}
-
-    private List<String> lastNewActivityAlertFrameId = new ArrayList<>();
+    public static final BigInteger INVALID_FRAME_ID = BigInteger.valueOf(-1L);
+    private List<BigInteger> lastNewActivityAlertFrameId = new ArrayList<>();
     @JsonSetter("lastNewActivityAlertFrameId")
-    public void setLastNewActivityAlertFrameId(List<String> lastNewActivityAlertFrameId) { this.lastNewActivityAlertFrameId = lastNewActivityAlertFrameId; }
+    public void setLastNewActivityAlertFrameId(List<BigInteger> lastNewActivityAlertFrameId) { this.lastNewActivityAlertFrameId = lastNewActivityAlertFrameId; }
     /**
      * The frame ids from the last new Activity Alerts received for these streaming jobs.
-     * Value stored internally as a String to accommodate for this value to be sized in the Components as an unsigned long.
-     * Since no arithmetic operations are being performed on this parameter within this class, this is an acceptable data type.
-     * @return the last New Activity Alert frame ids associated with each streaming job. Values within the List will be empty string if
+     * Value stored internally as a BigInteger to accommodate for this value to be sized in the Components as an unsigned long.
+     * @return the last New Activity Alert frame ids associated with each streaming job. Values within the List will be INVALID_FRAME_ID if
      * a New Activity Alert has not been issued for a streaming job.
      */
     @JsonGetter("lastNewActivityAlertFrameId")
-    public List<String> getLastNewActivityAlertFrameId() { return lastNewActivityAlertFrameId.stream().map(frameId -> {
+    public List<BigInteger> getLastNewActivityAlertFrameId() { return lastNewActivityAlertFrameId.stream().map(frameId -> {
         if ( frameId == null ) {
-            return "";
+            return INVALID_FRAME_ID;
         } else {
             return frameId;
         }
     }).collect(Collectors.toList()); }
-
-//    @JsonIgnore
-//    public String getLastNewActivityAlertFrameIdAsDelimitedString(String delimiter) {
-//        return lastNewActivityAlertFrameId.stream().map(lastNewActivityAlertFrameId -> lastNewActivityAlertFrameId.toString()).collect(Collectors.joining(delimiter));
-//    }
 
     private List<LocalDateTime> lastNewActivityAlertTimestamp = new ArrayList<>();
     /**
@@ -160,16 +152,6 @@ public class JsonHealthReportDataCallbackBody {
         }).collect(Collectors.toList());
     }
 
-//    /**
-//     * Same as method {@link #getLastNewActivityAlertTimeStamp()}, except the timestamps are returned as a delimited string.
-//     * @param delimiter delimiter to be used in the returned string.
-//     * @return data returned as a delimited string.
-//     */
-//    @JsonIgnore
-//    public String getLastNewActivityAlertTimeStampAsDelimitedString(String delimiter) {
-//        return getLastNewActivityAlertTimeStamp().stream().map(timestamp -> timestamp.toString()).collect(Collectors.joining(delimiter));
-//    }
-
     @JsonIgnore
     private String getTimestampAsString(LocalDateTime timestamp) {
         if ( timestamp == null ) {
@@ -194,10 +176,9 @@ public class JsonHealthReportDataCallbackBody {
     public JsonHealthReportDataCallbackBody(@JsonProperty("reportDate") LocalDateTime reportDate,
         @JsonProperty("jobId") long jobId, @JsonProperty("externalId") String externalId,
         @JsonProperty("jobStatus") String /*JobStatus*/ jobStatus,
-        @JsonProperty("lastNewActivityAlertFrameId") String lastNewActivityAlertFrameId,
+        @JsonProperty("lastNewActivityAlertFrameId") BigInteger lastNewActivityAlertFrameId,
         @JsonProperty("lastNewActivityAlertTimestamp") LocalDateTime lastNewActivityAlertTimestamp) {
 
-         System.out.println("JsonHealthReportDataCallbackBody called LocalDateTime constructor without Lists");
         this.reportDate = reportDate;
         this.jobId.add(jobId);
         this.jobStatus.add(jobStatus);
@@ -211,7 +192,6 @@ public class JsonHealthReportDataCallbackBody {
         if ( lastNewActivityAlertTimestamp != null ) {
             this.lastNewActivityAlertTimestamp.add(lastNewActivityAlertTimestamp);
         }
-         System.out.println("JsonHealthReportDataCallbackBody called LocalDateTime constructor without Lists, returning this="+this);
     }
 
     /**
@@ -229,9 +209,8 @@ public class JsonHealthReportDataCallbackBody {
     public JsonHealthReportDataCallbackBody(@JsonProperty("reportDate") LocalDateTime reportDate,
         @JsonProperty("jobId") List<Long> jobId, @JsonProperty("externalId") List<String> externalId,
         @JsonProperty("jobStatus") List<String> /*JobStatus*/ jobStatus,
-        @JsonProperty("lastNewActivityAlertFrameId") List<String> lastNewActivityAlertFrameId,
+        @JsonProperty("lastNewActivityAlertFrameId") List<BigInteger> lastNewActivityAlertFrameId,
         @JsonProperty("lastNewActivityAlertTimestamp") List<LocalDateTime> lastNewActivityAlertTimestamp) {
-        System.out.println("JsonHealthReportDataCallbackBody called LocalDateTime constructor with Lists");
         this.reportDate = reportDate;
         this.jobId = jobId;
         this.jobStatus = jobStatus;
@@ -245,7 +224,6 @@ public class JsonHealthReportDataCallbackBody {
         if ( lastNewActivityAlertTimestamp != null ) {
             this.lastNewActivityAlertTimestamp = lastNewActivityAlertTimestamp;
         }
-        System.out.println("JsonHealthReportDataCallbackBody called LocalDateTime constructor with Lists, returning this="+this);
     }
 
     /**
@@ -264,9 +242,8 @@ public class JsonHealthReportDataCallbackBody {
     public JsonHealthReportDataCallbackBody(@JsonProperty("reportDate") String reportDate,
         @JsonProperty("jobId") List<Long> jobId, @JsonProperty("externalId") List<String> externalId,
         @JsonProperty("jobStatus") List<String> /*JobStatus*/ jobStatus,
-        @JsonProperty("lastNewActivityAlertFrameId") List<String> lastNewActivityAlertFrameId,
+        @JsonProperty("lastNewActivityAlertFrameId") List<BigInteger> lastNewActivityAlertFrameId,
         @JsonProperty("lastNewActivityAlertTimestamp") List<String> lastNewActivityAlertTimestamp) throws DateTimeParseException{
-        System.out.println("JsonHealthReportDataCallbackBody called jsoncreator constructor");
         setReportDate(reportDate);
         this.jobId = jobId;
         this.jobStatus = jobStatus;
@@ -280,19 +257,8 @@ public class JsonHealthReportDataCallbackBody {
         if ( lastNewActivityAlertTimestamp != null ) {
             setLastNewActivityAlertTimestamp(lastNewActivityAlertTimestamp);
         }
-        System.out.println("JsonHealthReportDataCallbackBody jsoncreator constructor debug, returning this="+this);
     }
 
-//    @JsonIgnore
-//    public void print(PrintStream out) {
-//        out.println("reportDate = " + reportDate);
-//        out.println("jobId = " + getJobIdsAsDelimitedString(","));
-//        out.println("externalId = " + getExternalIdsAsDelimitedString(","));
-//        out.println("jobStatus = " + getJobStatusAsDelimitedString(","));
-//        out.println("lastNewActivityAlertFrameId = " + getLastNewActivityAlertFrameIdAsDelimitedString(","));
-//        out.println("lastNewActivityAlertTimestamp = " + getLastNewActivityAlertTimeStampAsDelimitedString(","));
-//    }
-//
     @JsonIgnore
     public String toString() {
         return "reportDate = " + reportDate + ", jobId = " + getJobId() + ", externalId = " + getExternalId() +

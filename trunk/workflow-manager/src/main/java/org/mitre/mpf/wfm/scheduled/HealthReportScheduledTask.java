@@ -52,6 +52,7 @@ public class HealthReportScheduledTask {
     @Qualifier(StreamingJobRequestBoImpl.REF)
     private StreamingJobRequestBo streamingJobRequestBo;
 
+    // TODO how can this be tied to PropertiesUtil.getHealthReportCallbackRate?
     @Scheduled(fixedDelayString = "${streaming.healthReport.callbackRate:30000}" )
     public void sendPeriodicHealthReports() {
         mpfService.sendPeriodicHealthReportToCallback();

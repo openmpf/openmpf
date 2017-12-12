@@ -544,25 +544,25 @@ public class PropertiesUtil {
 
     // Health report callback rate defaults to 30 seconds if system property is not set.
     @Value("${streaming.healthReport.callbackRate:30000}")
-    private int healthReportCallbackRate;
+    private long healthReportCallbackRate;
 
     /**
-     * Get the health report callback rate, in seconds
-     * @return health report callback rate, in seconds
+     * Get the health report callback rate, in milliseconds
+     * @return health report callback rate, in milliseconds
      */
-    public int getHealthReportCallbackRate() {
+    public long getHealthReportCallbackRate() {
         return healthReportCallbackRate;
     }
 
     // Stall alert detection threshold defaults to 30 seconds if system property is not set.
     @Value("${streaming.stallAlert.detectionThreshold:30000}")
-    private int stallAlertDetectionThreshold;
+    private long stallAlertDetectionThreshold;
 
     /**
-     * Get the stall alert detection threshold, in seconds
-     * @return stall alert detection threshold, in seconds
+     * Get the stall alert detection threshold, in milliseconds
+     * @return stall alert detection threshold, in milliseconds
      */
-    public int getStallAlertDetectionThreshold() {
+    public long getStallAlertDetectionThreshold() {
         return stallAlertDetectionThreshold;
     }
 

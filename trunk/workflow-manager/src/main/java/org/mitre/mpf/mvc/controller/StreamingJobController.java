@@ -195,7 +195,7 @@ public class StreamingJobController {
         errBuilder.append(" due to " + errorReason + ". Please check the request parameters against the constraints defined in the REST API.");
         String err = errBuilder.toString();
         log.error(err);
-        return new StreamingJobCreationResponse(1, err);
+        return new StreamingJobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
     }
 
     private StreamingJobCreationResponse createStreamingJobInternal(StreamingJobCreationRequest streamingJobCreationRequest) {
@@ -259,7 +259,7 @@ public class StreamingJobController {
             String err = errBuilder.toString();
 
             log.error(err, ex);
-            return new StreamingJobCreationResponse(1, err);
+            return new StreamingJobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
         }
     }
 

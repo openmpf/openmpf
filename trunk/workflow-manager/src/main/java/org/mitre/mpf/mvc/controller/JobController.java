@@ -390,12 +390,12 @@ public class JobController {
         } catch (InvalidPipelineObjectWfmProcessingException ex) {
             String err = createErrorString(jobCreationRequest, ex.getMessage());
             log.error(err, ex);
-            return new JobCreationResponse(1, err);
+            return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
         } catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
             String err = createErrorString(jobCreationRequest, null);
             log.error(err, ex);
             // the job request did not parse successfully, construct the job creation response describing the error that occurred.
-            return new JobCreationResponse(1, err);
+            return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
         }
     }
 
@@ -471,12 +471,12 @@ public class JobController {
         } catch (WfmProcessingException wpe) {
             String errorStr = "Failed to resubmit the job with id '" + Long.toString(jobId) + "'. " + wpe.getMessage();
             log.error(errorStr);
-            return new JobCreationResponse(1, errorStr);
+            return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
         }
         String errorStr = "Failed to resubmit the job with id '" + Long.toString(jobId) + "'. Please check to make sure the job exists before submitting a resubmit request. "
                 + "Also consider checking the server logs for more information on this error.";
         log.error(errorStr);
-        return new JobCreationResponse(1, errorStr);
+        return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
     }
 
     private MpfResponse cancelJobInternal(long jobId) {

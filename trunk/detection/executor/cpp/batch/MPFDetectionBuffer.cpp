@@ -408,6 +408,7 @@ DetectionResponse_DataType MPFDetectionBuffer::translateMPFDetectionDataType(
     }
 }
 
+#if 0
 DetectionError MPFDetectionBuffer::translateMPFDetectionError(
         const MPFDetectionError &err) const {
 
@@ -462,3 +463,4 @@ DetectionError MPFDetectionBuffer::translateMPFDetectionError(
             return DetectionError::UNRECOGNIZED_DETECTION_ERROR;
     }
 }
+#endif

@@ -196,7 +196,10 @@ TEST_F(AMQMessengerTest, TestSegmentSummaryMessage) {
     int job_id = 5000;
     string job_name("streaming_job_" + std::to_string(job_id));
     int seg_num = 45;
-
+    int start_frame = 1000;
+    int stop_frame = 1750;
+    std::string type("FACE");
+    MPF::COMPONENT::MPFDetectionError err = MPF_INVALID_DATAFILE_URI;
     int num_tracks = 3;
     int num_images_per_track = 2;
     // Create the segment summary tracks
@@ -227,7 +230,9 @@ TEST_F(AMQMessengerTest, TestSegmentSummaryMessage) {
         tracks.push_back(new_track);
     }
 
-    MPFSegmentSummaryMessage src_msg(job_name, job_id, seg_num, tracks);
+    MPFSegmentSummaryMessage src_msg(job_name, job_id, seg_num,
+                                     start_frame, stop_frame,
+                                     type, err,tracks);
     ASSERT_NO_THROW(messenger.SendMessage(src_msg));
 
     MPFSegmentSummaryMessage dst_msg;
@@ -236,6 +241,10 @@ TEST_F(AMQMessengerTest, TestSegmentSummaryMessage) {
     EXPECT_EQ(job_id, dst_msg.job_number_);
     EXPECT_EQ(job_name, dst_msg.job_name_);
     EXPECT_EQ(seg_num, dst_msg.segment_number_);
+    EXPECT_EQ(start_frame, dst_msg.segment_start_frame_);
+    EXPECT_EQ(stop_frame, dst_msg.segment_stop_frame_);
+    EXPECT_EQ(type, dst_msg.detection_type_);
+    EXPECT_EQ(err, dst_msg.segment_error_);
 
     // Check the segment summary tracks
     // First make sure we received the right number of tracks.

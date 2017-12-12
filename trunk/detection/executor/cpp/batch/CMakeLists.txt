@@ -66,7 +66,11 @@ list(APPEND CMAKE_PREFIX_PATH $ENV{HOME}/mpf-sdk-install/lib/cmake)
 find_package(mpfComponentInterface REQUIRED)
 find_package(mpfDetectionComponentApi REQUIRED)
 
-add_executable(amq_detection_component ${SRC})
+set(MSG_UTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../common)
+set(MSG_UTILS_FILE ${MSG_UTILS_DIR}/MPFMessageUtils.cpp)
+include_directories(${MSG_UTILS_DIR})
+
+add_executable(amq_detection_component ${SRC} ${MSG_UTILS_FILE})
 target_link_libraries(amq_detection_component mpfComponentInterface ${MPF_PROTOBUF_LIB} ${PROTOBUF_LIBRARY}
 	${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES})
 

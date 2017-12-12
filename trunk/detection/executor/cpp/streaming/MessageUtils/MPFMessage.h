@@ -30,7 +30,7 @@
 #include <string>
 
 #include "MPFDetectionComponent.h"
-
+#include "MPFMessageUtils.h"
 
 namespace MPF {
 
@@ -47,14 +47,25 @@ struct MPFMessage {
 
 struct MPFSegmentSummaryMessage : MPFMessage {
     int segment_number_;
+    int segment_start_frame_;
+    int segment_stop_frame_;
+    std::string detection_type_;  // such as: "FACE", "PERSON", "MOTION"
+    MPF::COMPONENT::MPFDetectionError segment_error_;
     std::vector<MPF::COMPONENT::MPFVideoTrack> tracks_;
     MPFSegmentSummaryMessage() = default;
     MPFSegmentSummaryMessage(const std::string &job_name,
                              const uint32_t job_number,
                              const int seg_num,
+                             const int start_frame,
+                             const int stop_frame,
+                             const std::string type,
+                             MPF::COMPONENT::MPFDetectionError segment_error_,
                              const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks)
             : MPFMessage(job_name, job_number),
               segment_number_(seg_num),
+              segment_start_frame_(start_frame),
+              segment_stop_frame_(stop_frame),
+              detection_type_(type),
               tracks_(tracks) {}
     ~MPFSegmentSummaryMessage() = default;
 };

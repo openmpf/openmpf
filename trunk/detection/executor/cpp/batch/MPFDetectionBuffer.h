@@ -34,7 +34,7 @@
 
 #include <MPFDetectionComponent.h>
 #include "detection.pb.h"
-
+#include "MPFMessageUtils.h"
 #include "MPFMessenger.h"
 
 using org::mitre::mpf::wfm::buffers::DetectionError;
@@ -170,7 +170,7 @@ public:
 
     DetectionResponse_DataType translateMPFDetectionDataType(const MPFDetectionDataType &dataType) const;
 
-    DetectionError translateMPFDetectionError(const MPFDetectionError &err) const;
+    // DetectionError translateMPFDetectionError(const MPFDetectionError &err) const;
 };
 
 #endif /* MPF_DETECTION_BUFFER_H_ */

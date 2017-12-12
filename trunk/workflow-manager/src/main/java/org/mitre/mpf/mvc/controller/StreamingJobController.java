@@ -99,7 +99,7 @@ public class StreamingJobController {
     @ResponseBody
     public ResponseEntity<StreamingJobCreationResponse> createStreamingJobRest(@ApiParam(required = true, value = "StreamingJobCreationRequest") @RequestBody StreamingJobCreationRequest streamingJobCreationRequest) {
         StreamingJobCreationResponse createResponse = createStreamingJobInternal(streamingJobCreationRequest);
-        if (createResponse.getMpfResponse().getResponseCode() == 0) {
+        if (createResponse.getMpfResponse().getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
             return new ResponseEntity<>(createResponse, HttpStatus.CREATED);
         } else {
             log.error("Error creating streaming job");
@@ -169,7 +169,7 @@ public class StreamingJobController {
                                                                                        defaultValue = "false") @RequestParam("doCleanup")
                                                                                        boolean doCleanup) {
         StreamingJobCancelResponse cancelResponse = cancelStreamingJobInternal(jobId, doCleanup);
-        if (cancelResponse.getMpfResponse().getResponseCode() == 0) {
+        if (cancelResponse.getMpfResponse().getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
             return new ResponseEntity<>(cancelResponse, HttpStatus.OK);
         } else {
             log.error("Error cancelling streaming job with id '{}'", jobId);
@@ -195,7 +195,7 @@ public class StreamingJobController {
         errBuilder.append(" due to " + errorReason + ". Please check the request parameters against the constraints defined in the REST API.");
         String err = errBuilder.toString();
         log.error(err);
-        return new StreamingJobCreationResponse(1, err);
+        return new StreamingJobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
     }
 
     private StreamingJobCreationResponse createStreamingJobInternal(StreamingJobCreationRequest streamingJobCreationRequest) {
@@ -259,7 +259,7 @@ public class StreamingJobController {
             String err = errBuilder.toString();
 
             log.error(err, ex);
-            return new StreamingJobCreationResponse(1, err);
+            return new StreamingJobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
         }
     }
 

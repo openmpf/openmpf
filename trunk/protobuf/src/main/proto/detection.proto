@@ -246,7 +246,7 @@ message StreamingDetectionResponse {
 
     optional int32 start_frame = 3; // Start frame relative to the
                                     // beginning of stream processing:
-                                    // segment 1 will start with frame 0
+                                    // segment 0 will start with frame 0
 
     optional int32 stop_frame = 4;
 

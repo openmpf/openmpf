@@ -29,6 +29,12 @@
 #include <MPFDetectionComponent.h>
 #include "detection.pb.h"
 
+MPF::COMPONENT::MPFDetectionDataType
+translateProtobufDataType(const org::mitre::mpf::wfm::buffers::DetectionRequest_DataType &dataType);
+
+org::mitre::mpf::wfm::buffers::DetectionResponse_DataType
+translateMPFDetectionDataType(const MPF::COMPONENT::MPFDetectionDataType &dataType);
+
 // Translate an MPFDetectionError to the corresponding detection
 // protobuf error.
 org::mitre::mpf::wfm::buffers::DetectionError
@@ -39,4 +45,4 @@ translateMPFDetectionError(const MPF::COMPONENT::MPFDetectionError err);
 MPF::COMPONENT::MPFDetectionError
 translateProtobufError(org::mitre::mpf::wfm::buffers::DetectionError err);
 
-#endif
+#endif  // MPF_DETECTION_EXECUTOR_CPP_COMMON_MESSAGEUTILS_H_

@@ -166,11 +166,6 @@ public:
             int *packed_length,
             const MPFDetectionError error) const;
 
-    MPFDetectionDataType translateProtobufDataType(const DetectionRequest_DataType &dataType) const;
-
-    DetectionResponse_DataType translateMPFDetectionDataType(const MPFDetectionDataType &dataType) const;
-
-    // DetectionError translateMPFDetectionError(const MPFDetectionError &err) const;
 };
 
 #endif /* MPF_DETECTION_BUFFER_H_ */

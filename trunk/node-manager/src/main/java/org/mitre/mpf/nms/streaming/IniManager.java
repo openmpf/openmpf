@@ -90,7 +90,7 @@ public class IniManager {
 
 
 	private static Path createIniFile(LaunchStreamingJobMessage launchMessage, Path iniDir) {
-		Ini ini = new Ini();
+		Ini ini = newIni();
 		Profile.Section jobConfig = ini.add(DEFAULT_SECTION);
 		jobConfig.put("jobId", launchMessage.jobId);
 		jobConfig.put("streamUri", launchMessage.streamUri);
@@ -112,6 +112,13 @@ public class IniManager {
 		}
 
 		return writeIniFile(ini, "streaming-job", iniDir);
+	}
+
+
+	private static Ini newIni() {
+		Ini ini = new Ini();
+		ini.getConfig().setEscape(false);
+		return ini;
 	}
 
 

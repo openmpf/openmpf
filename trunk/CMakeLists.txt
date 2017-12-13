@@ -100,6 +100,8 @@ execute_process(COMMAND ${CMAKE_COMMAND} -D TARGET_BINARY_LOCATION=${FFMPEG_BINA
    -D DEP_LIBS_INSTALL_LOCATION=${CMAKE_INSTALL_PREFIX}/lib
    -P ${CopySharedLibDependencies_LOCATION})
 
+set(MSG_UTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/detection/executor/cpp/common)
+set(MSG_UTILS_FILE ${MSG_UTILS_DIR}/MPFMessageUtils.cpp)
 
 # Build the common detection component executable amq_detection_component
 add_subdirectory(detection/executor/cpp/batch)

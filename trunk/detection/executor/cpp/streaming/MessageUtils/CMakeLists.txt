@@ -25,8 +25,6 @@
 #############################################################################
 cmake_minimum_required(VERSION 3.6)
 
-set(MSG_UTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../common)
-set(MSG_UTILS_FILE ${MSG_UTILS_DIR}/MPFMessageUtils.cpp)
 include_directories(${MSG_UTILS_DIR})
 
 set(SRCS MPFMessage.h MPFAMQMessage.h MPFMessenger.h MPFAMQMessenger.h MPFAMQMessenger.cpp)

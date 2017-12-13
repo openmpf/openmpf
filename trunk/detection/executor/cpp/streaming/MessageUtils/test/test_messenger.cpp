@@ -200,9 +200,10 @@ TEST_F(AMQMessengerTest, TestSegmentSummaryMessage) {
     int stop_frame = 1750;
     std::string type("FACE");
     MPF::COMPONENT::MPFDetectionError err = MPF_INVALID_DATAFILE_URI;
+
+    // Create the segment summary tracks
     int num_tracks = 3;
     int num_images_per_track = 2;
-    // Create the segment summary tracks
     std::vector<MPF::COMPONENT::MPFVideoTrack> tracks;
 
     for (int i = 0; i < num_tracks; i++) {
@@ -232,7 +233,7 @@ TEST_F(AMQMessengerTest, TestSegmentSummaryMessage) {
 
     MPFSegmentSummaryMessage src_msg(job_name, job_id, seg_num,
                                      start_frame, stop_frame,
-                                     type, err,tracks);
+                                     type, err, tracks);
     ASSERT_NO_THROW(messenger.SendMessage(src_msg));
 
     MPFSegmentSummaryMessage dst_msg;

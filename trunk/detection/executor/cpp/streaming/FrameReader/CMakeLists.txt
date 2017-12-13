@@ -33,6 +33,7 @@ find_package(mpfComponentInterface REQUIRED)
 find_package(mpfDetectionComponentApi REQUIRED)
 
 include_directories($<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
+include_directories(${MSG_UTILS_DIR})
 
 add_executable(frame_reader_component main)
 target_link_libraries(frame_reader_component mpfStreamMsg ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES})

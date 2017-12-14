@@ -26,7 +26,25 @@
 
 package org.mitre.mpf.wfm;
 
+import static org.mitre.mpf.test.TestUtil.anyNonNull;
+import static org.mitre.mpf.test.TestUtil.whereArg;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.ACTION1_PROP_NAMES;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.ACTION1_PROP_VALUES;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.ACTION_NAMES;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.COMPONENT_NAME;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.DESCRIPTOR_PATH;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.PIPELINE_NAME;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.REFERENCED_ALGO_NAME;
+import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.TASK_NAMES;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.io.File;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -40,6 +58,7 @@ import org.json.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -47,8 +66,27 @@ import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonCallbackBody;
 import org.mitre.mpf.interop.JsonHealthReportDataCallbackBody;
 import org.mitre.mpf.rest.api.*;
+import org.mitre.mpf.rest.api.component.ComponentState;
+import org.mitre.mpf.rest.api.component.RegisterComponentModel;
+import org.mitre.mpf.wfm.service.NodeManagerService;
+import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.service.StreamingServiceManager;
+import org.mitre.mpf.wfm.service.component.AddComponentServiceImpl;
+import org.mitre.mpf.wfm.service.component.ComponentDeploymentService;
+import org.mitre.mpf.wfm.service.component.ComponentDescriptorValidator;
+import org.mitre.mpf.wfm.service.component.ComponentStateService;
+import org.mitre.mpf.wfm.service.component.CustomPipelineValidator;
+import org.mitre.mpf.wfm.service.component.DuplicateComponentException;
+import org.mitre.mpf.wfm.service.component.JsonComponentDescriptor;
+import org.mitre.mpf.wfm.service.component.JsonComponentDescriptor.Pipeline;
+import org.mitre.mpf.wfm.service.component.RemoveComponentService;
+import org.mitre.mpf.wfm.service.component.TestDescriptorConstants;
+import org.mitre.mpf.wfm.service.component.TestDescriptorFactory;
 import org.mitre.mpf.wfm.ui.Utils;
 import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,6 +165,44 @@ public class ITWebREST {
 			"DlibFaceDetection", "OalprLicensePlateTextDetection" };
 
 	private static boolean test_ready = true;
+
+    @Mock
+    private ComponentDeploymentService _mockDeploymentService;
+
+    @Mock
+    private ComponentStateService _mockStateService;
+
+    @Mock
+    private ObjectMapper _mockObjectMapper;
+
+    @Mock
+    private NodeManagerService _mockNodeManager;
+
+    @InjectMocks
+    private AddComponentServiceImpl _addComponentService;
+
+    @Mock
+    private PipelineService _mockPipelineService;
+
+    @Mock
+    private ComponentDescriptorValidator _mockDescriptorValidator;
+
+    @Mock
+    private CustomPipelineValidator _mockPipelineValidator;
+
+    @Mock
+    private RemoveComponentService _mockRemoveComponentService;
+
+    @Mock
+    private StreamingServiceManager _mockStreamingServiceManager;
+
+    private static final String _testPackageName = "test-package.tar.gz";
+
+    @Before
+    public void init() {
+        MockitoAnnotations.initMocks(this);
+    }
+
 	// run before each test
 	@BeforeClass
 	public static void setup() throws InterruptedException, JsonParseException, JsonMappingException, IOException {
@@ -1271,7 +1347,9 @@ public class ITWebREST {
     } // method used to setup Spark for a simple callback that only contains jobid and externalid
 
     // Revised in this section to test the Health Report Callbacks, testing both the GET and POST methods.
-    // Note: needed to add confirmation of jobId in the health callbacks, because scheduled callbacks from a job created
+	// Note #1: Need to create 2 streaming jobs for these tests, but the components don't yet support streaming. Working around this
+    // issue by spoofing the WFM by using a place-holder streaming component created using Mockito.
+    // Note #2: Needed to add confirmation of jobId in the health callbacks, because scheduled callbacks from a job created
     // earlier was causing the callback to capture a health report sent before a later job under test was scheduled, and
     // causing the test to fail.
     final int healthReportCallbackPort = 20160;
@@ -1282,6 +1360,62 @@ public class ITWebREST {
     JsonHealthReportDataCallbackBody healthReportGetCallbackBody = null;
     JsonHealthReportDataCallbackBody healthReportPostCallbackBody = null;
 
+    /** Create a StreamingJobCreationRequest for the Health Report system tests. Issue: the components don't yet support streaming. Working around this
+     * issue by spoofing the WFM by using a streaming component created using Mockito as a place-holder.
+     */
+    private String createStreamingJobForHealthReportTest(String url, String customPipelineName, String externalId, String callbackMethod) throws MalformedURLException{
+
+        // create a request for a new streaming job using a component that supports streaming jobs.
+        JSONObject params = new JSONObject();
+        params.put("pipelineName", customPipelineName);
+
+        JSONObject stream = new JSONObject();
+        // Using this sample video for initial testing.
+        stream.put("streamUri", "rtsp://home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/obama-basketball.mp4");
+        stream.put("mediaProperties", new org.json.simple.JSONObject());
+        stream.put("segmentSize", 100);
+
+        params.put("stream", stream);
+        params.put("stallTimeout", 180);
+        params.put("externalId", externalId);
+        params.put("enableOutputToDisk", true);
+        params.put("priority", 0);
+        params.put("healthReportCallbackUri", "http://0.0.0.0:" + healthReportCallbackPort + "/callback");
+        params.put("callbackMethod", callbackMethod);
+        String param_string = params.toString();
+
+        log.info("createStreamingJobForHealthReportTest: create streaming job request sent to: " + url + ", Params: " + param_string);
+        return PostJSON(new URL(url), param_string, MPF_AUTHORIZATION);
+    }
+
+    private void setUpMocksForDescriptor(JsonComponentDescriptor descriptor) throws DuplicateComponentException, IOException {
+        RegisterComponentModel rcm = new RegisterComponentModel();
+        rcm.setComponentState(ComponentState.UPLOADED);
+        rcm.setPackageFileName(_testPackageName);
+
+        when(_mockStateService.getByPackageFile(_testPackageName))
+            .thenReturn(Optional.of(rcm));
+
+        when(_mockDeploymentService.deployComponent(_testPackageName))
+            .thenReturn(DESCRIPTOR_PATH);
+
+        when(_mockObjectMapper.readValue(new File(DESCRIPTOR_PATH), JsonComponentDescriptor.class))
+            .thenReturn(descriptor);
+    }
+
+    private void verifyDescriptorAlgoSaved(JsonComponentDescriptor descriptor) {
+        verify(_mockPipelineService)
+            .saveAlgorithm(whereArg(algo -> algo.getName().equals(descriptor.algorithm.name.toUpperCase())
+                && algo.supportsBatchProcessing() == descriptor.supportsBatchProcessing()
+                && algo.supportsStreamProcessing() == descriptor.supportsStreamProcessing()));
+
+    }
+
+    private void assertNeverUndeployed() {
+        verify(_mockDeploymentService, never())
+            .undeployComponent(any());
+    }
+
     @Test(timeout = 5*MINUTES)
     public void testStreamingJobWithHealthReportCallback() throws Exception {
         String myExternalId1 =  "myExternalId is "+701;
@@ -1289,49 +1423,102 @@ public class ITWebREST {
         try {
             log.info("Beginning test #{} testStreamingJobWithHealthReportCallback()", testCtr);
             testCtr++;
-            log.info("testStreamingJobWithHealthReportCallback: Creating a new Streaming Job for the POST test");
-            String url = rest_url + "streaming/jobs";
 
-            // create a StreamingJobCreationRequest
-            JSONObject params = new JSONObject();
-            params.put("pipelineName", "OCV FACE DETECTION PIPELINE");
+            // Spoof the WFM by using a streaming component created using Mockito as a place-holder.
+            // Create a Mock component descriptor which supports streaming jobs, and creates the custom pipeline named PIPELINE_NAME
+            JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();
+            setUpMocksForDescriptor(descriptor);
 
-            JSONObject stream = new JSONObject();
-            // using this sample video for initial testing.
-            stream.put("streamUri", "rtsp://home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/obama-basketball.mp4");
-            stream.put("mediaProperties", new org.json.simple.JSONObject());
-            stream.put("segmentSize", 100);
+            when(_mockNodeManager.getServiceModels())
+                .thenReturn(Collections.singletonMap("fake name", null));
 
-            params.put("stream", stream);
-            params.put("stallTimeout",180);
-            params.put("externalId",myExternalId1);
-            params.put("enableOutputToDisk", true);
-            params.put("priority", 0);
-            params.put("healthReportCallbackUri","http://0.0.0.0:" + healthReportCallbackPort + "/callback");
-            params.put("callbackMethod","POST");
-            String param_string = params.toString();
+            when(_mockNodeManager.addService(anyNonNull()))
+                .thenReturn(true);
+
+            // Act
+            _addComponentService.registerComponent(_testPackageName);
+
+            // Assert
+            verify(_mockStateService)
+                .replacePackageState(_testPackageName, ComponentState.REGISTERING);
+
+            verify(_mockStateService, atLeastOnce())
+                .update(whereArg(
+                    rcm -> rcm.getActions().containsAll(ACTION_NAMES)
+                        && rcm.getTasks().containsAll(TASK_NAMES)
+                        && rcm.getPipelines().contains(PIPELINE_NAME)));
+
+            verifyDescriptorAlgoSaved(descriptor);
+
+            verify(_mockPipelineService, times(3))
+                .saveAction(whereArg(ad -> ad.getAlgorithmRef().equals(REFERENCED_ALGO_NAME)));
+
+            verify(_mockPipelineService)
+                .saveAction(whereArg(ad -> ad.getName().equals(ACTION_NAMES.get(0))
+                    && ad.getProperties().stream()
+                    .anyMatch(pd -> pd.getName().equals(ACTION1_PROP_NAMES.get(0))
+                        && pd.getValue().equals(ACTION1_PROP_VALUES.get(0)))));
+
+            verify(_mockPipelineService)
+                .saveTask(whereArg(t ->
+                    t.getName().equals(TASK_NAMES.get(0))
+                        && t.getDescription().equals(TASK_NAMES.get(0) + " description")
+                        && t.getActions().size() == 1));
+
+            verify(_mockPipelineService)
+                .saveTask(whereArg(t ->
+                    t.getName().equals(TASK_NAMES.get(1))
+                        && t.getDescription().equals(TASK_NAMES.get(1) + " description")
+                        && t.getActions().size() == 2));
+
+            verify(_mockPipelineService)
+                .savePipeline(whereArg(p ->
+                    p.getName().equals(PIPELINE_NAME)
+                        && p.getDescription().contains("description")
+                        && p.getTaskRefs().size() == 2));
+
+            verify(_mockNodeManager)
+                .addService(whereArg(s -> s.getName().equals(COMPONENT_NAME)));
+
+            verify(_mockStreamingServiceManager)
+                .addService(whereArg(
+                    s -> s.getServiceName().equals(COMPONENT_NAME)
+                        && s.getAlgorithmName().equals(descriptor.algorithm.name.toUpperCase())
+                        && s.getEnvironmentVariables().size() == descriptor.environmentVariables.size()));
+
+            assertNeverUndeployed();
+
+            Optional<Pipeline> customPipeline = descriptor.pipelines.stream().findFirst();
+
+            // Should have a custom pipeline that supports streaming for this test.
+            Assert.assertTrue(customPipeline.isPresent());
+            Assert.assertTrue(descriptor.supportsStreamProcessing());
+
+            // End of section to create a Mock component descriptor which supports streaming jobs
 
             healthSparkGetResponse = false;
             healthSparkPostResponse = false;
 
-            setupSparkForHealthReport(); //start the listener for health reports
+            setupSparkForHealthReport(); // Start the listener for health reports.
 
             // Submit 1st streaming job request with a POST callback
-            log.info("testStreamingJobWithHealthReportCallback: create streaming job POST to: " + url + " Params: " + param_string);
-            JSONstring = PostJSON(new URL(url), param_string, MPF_AUTHORIZATION);
-            log.info("testStreamingJobWithHealthReportCallback: create streaming job POST results:" + JSONstring); // {"jobId":5, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
-            JSONObject obj = new JSONObject(JSONstring);
+            log.info("testStreamingJobWithHealthReportCallback: Creating a new Streaming Job for the POST test");
+            String url = rest_url + "streaming/jobs";
+            // jobCreationResponse should be something like {"jobId":5, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
+            String jobCreationResponse = createStreamingJobForHealthReportTest(url, customPipeline.get().name, myExternalId1, "POST");
+
+            JSONObject obj = new JSONObject(jobCreationResponse);
             jobIdPostTest =  Long.valueOf(obj.getInt("jobId"));
-            log.info("testStreamingJobWithHealthReportCallback: streaming jobId " + jobIdPostTest + " created with POST method.");
+            log.info("testStreamingJobWithHealthReportCallback: streaming jobId " + jobIdPostTest + " created with POST method, jobCreationResponse=" + jobCreationResponse);
 
             // Wait for a Health Report callback that includes the jobId of this test job.
-            // Health reports should periodically be sent every 30 seconds, listen for at least one Health Report POST that includes
-            // our jobId
+            // Health reports should periodically be sent every 30 seconds. Listen for at least one Health Report POST that includes our jobId.
             int count = 0;
             while (healthSparkPostResponse != true && count < 120) {
                 Thread.sleep(1000);
                 count++;
             }
+
             if ( healthSparkPostResponse ) {
                 log.info("testStreamingJobWithHealthReportCallback: received a Spark POST response, while testing jobIdPostTest=" + jobIdPostTest +", healthReportPostCallbackBody="+healthReportPostCallbackBody);
                 if (healthReportPostCallbackBody != null) {
@@ -1346,7 +1533,7 @@ public class ITWebREST {
                 log.error("testStreamingJobWithHealthReportCallback: Error, didn't receive a response to the POST request test");
             }
 
-            // Wait till ready to attempt a streaming job cancellation
+            // Wait till ready to attempt a streaming job cancellation.
             String urlStreamingJobId1Status = rest_url + "streaming/jobs/" + jobIdPostTest;
             StreamingJobInfo streamingJobInfo = null;
             do {
@@ -1361,26 +1548,23 @@ public class ITWebREST {
             List<NameValuePair> cancelParams = new ArrayList<NameValuePair>();
             cancelParams.add(new BasicNameValuePair("doCleanup", "true"));
             URL cancelUrl = new URL(rest_url + "streaming/jobs/" + Long.toString(jobIdPostTest) + "/cancel");
-            String response = PostParams(cancelUrl, cancelParams, MPF_AUTHORIZATION, 200);
+            String jobCancelResponse = PostParams(cancelUrl, cancelParams, MPF_AUTHORIZATION, 200);
             log.info("testStreamingJobWithHealthReportCallback: finished POST test, cancelling 1st streaming job using cancelUrl=" + cancelUrl +
                 " and cancelParams=" + cancelParams);
-            log.info("testStreamingJobWithHealthReportCallback: finished POST test, cancelled 1st streaming job with results:" + response);
+            log.info("testStreamingJobWithHealthReportCallback: finished POST test, cancelled 1st streaming job with results:" + jobCancelResponse);
 
-            // Submit 2nd streaming job request with a GET callback
+            // Submit 2nd streaming job request with a GET callback.
             log.info("testStreamingJobWithHealthReportCallback: Creating a new Streaming Job for the GET test");
-            params.put("callbackMethod","GET");
-            params.put("externalId",myExternalId2); // Make sure the GET method changes externalId to the external id of the 2nd job.
-            param_string = params.toString();
-            log.info("testStreamingJobWithHealthReportCallback: create streaming job GET to: " + url + " Params: " + param_string);
-            JSONstring = PostJSON(new URL(url), param_string, MPF_AUTHORIZATION);
-            log.info("testStreamingJobWithHealthReportCallback: create streaming job GET results:" + JSONstring); // {"jobId":6, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
-            obj = new JSONObject(JSONstring);
+
+            // jobCreationResponse should be something like {"jobId":6, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
+            jobCreationResponse = createStreamingJobForHealthReportTest(url, customPipeline.get().name, myExternalId2, "GET");
+            log.info("testStreamingJobWithHealthReportCallback: create streaming job GET results:" + jobCreationResponse);
+            obj = new JSONObject(jobCreationResponse);
             jobIdGetTest =  Long.valueOf(obj.getInt("jobId"));
-            log.info("testStreamingJobWithHealthReportCallback: streaming jobId " + jobIdGetTest + " created with GET method.");
+            log.info("testStreamingJobWithHealthReportCallback: streaming jobId " + jobIdGetTest + " created with GET method, jobCreationResponse=" + jobCreationResponse);
 
             // Wait for a Health Report callback that includes the jobId of this test job.
-            // Health reports should periodically be sent every 30 seconds, listen for at least one Health Report POST that includes
-            // our jobId
+            // Health reports should periodically be sent every 30 second. Listen for at least one Health Report GET that includes our jobId.
             count = 0;
             while (healthSparkGetResponse != true  && count < 120) {
                 Thread.sleep(1000);
@@ -1414,10 +1598,10 @@ public class ITWebREST {
 
             // After running the GET test, clear the 2nd streaming job from REDIS with doCleanup enabled.
             cancelUrl = new URL(rest_url + "streaming/jobs/" + Long.toString(jobIdGetTest) + "/cancel");
-            response = PostParams(cancelUrl, cancelParams, MPF_AUTHORIZATION, 200);
+            jobCancelResponse = PostParams(cancelUrl, cancelParams, MPF_AUTHORIZATION, 200);
             log.info("testStreamingJobWithHealthReportCallback: finished GET test, cancelling 2nd streaming job using cancelUrl=" + cancelUrl +
                 " and cancelParams=" + cancelParams);
-            log.info("testStreamingJobWithHealthReportCallback: finished GET test, cancelled 2nd streaming job with results:" + response);
+            log.info("testStreamingJobWithHealthReportCallback: finished GET test, cancelled 2nd streaming job with results:" + jobCancelResponse);
 
             log.info("testStreamingJobWithHealthReportCallback: Finished POST and GET tests of health report callbacks");
         } finally {

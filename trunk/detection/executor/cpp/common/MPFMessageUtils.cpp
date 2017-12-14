@@ -32,7 +32,7 @@ using org::mitre::mpf::wfm::buffers::DetectionResponse_DataType;
 using namespace MPF;
 using namespace COMPONENT;
 
-//-----------------------------------------------------------------------------
+
 MPFDetectionDataType
 translateProtobufDataType( const DetectionRequest_DataType &dataType) {
 

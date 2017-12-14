@@ -29,19 +29,25 @@
 #include <MPFDetectionComponent.h>
 #include "detection.pb.h"
 
+// Translate a protobu data type to the corresponding
+// MPFDetectionDataType. This is used for batch processing detection
+// requests.
 MPF::COMPONENT::MPFDetectionDataType
 translateProtobufDataType(const org::mitre::mpf::wfm::buffers::DetectionRequest_DataType &dataType);
 
+// Translate an MPFDetectionDataType to the corresponding protobuf
+// data type. This used for batch processing detection responses.
 org::mitre::mpf::wfm::buffers::DetectionResponse_DataType
 translateMPFDetectionDataType(const MPF::COMPONENT::MPFDetectionDataType &dataType);
 
 // Translate an MPFDetectionError to the corresponding detection
-// protobuf error.
+// protobuf error. This is used in both batch and streaming processing jobs.
 org::mitre::mpf::wfm::buffers::DetectionError
 translateMPFDetectionError(const MPF::COMPONENT::MPFDetectionError err);
 
 // Translate a detection protobuf error to the corresponding
-// MPFDetectionError.
+// MPFDetectionError. This is currently only used in the streaming
+// message unit tests.
 MPF::COMPONENT::MPFDetectionError
 translateProtobufError(org::mitre::mpf::wfm::buffers::DetectionError err);
 

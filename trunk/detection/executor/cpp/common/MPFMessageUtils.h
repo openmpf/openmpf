@@ -29,7 +29,7 @@
 #include <MPFDetectionComponent.h>
 #include "detection.pb.h"
 
-// Translate a protobu data type to the corresponding
+// Translate a protobuf data type to the corresponding
 // MPFDetectionDataType. This is used for batch processing detection
 // requests.
 MPF::COMPONENT::MPFDetectionDataType

@@ -217,7 +217,7 @@ class AMQMessenger {
     }
 
 
-    void SendMessage(typename MSG_CONVERTER::msg_type mpfMessage) {
+    void SendMessage(typename MSG_CONVERTER::msg_type &mpfMessage) {
         if (mesg_mgr_->IsConnected() && mesg_mgr_->IsStarted()) {
             try {
                 std::unique_ptr<cms::BytesMessage> cmsMsg(session_->createBytesMessage());

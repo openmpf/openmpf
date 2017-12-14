@@ -25,8 +25,10 @@
 #############################################################################
 cmake_minimum_required(VERSION 3.6)
 
+include_directories(${MSG_UTILS_DIR})
+
 set(SRCS MPFMessage.h MPFAMQMessage.h MPFMessenger.h MPFAMQMessenger.h MPFAMQMessenger.cpp)
-add_library(mpfStreamMsg SHARED ${SRCS})
+add_library(mpfStreamMsg SHARED ${SRCS} ${MSG_UTILS_FILE})
 
 target_link_libraries(mpfStreamMsg mpfComponentInterface ${ACTIVEMQ-CPP_LIBRARIES} ${PROTOBUF_LIBRARY} ${OpenCV_LIBS})
 

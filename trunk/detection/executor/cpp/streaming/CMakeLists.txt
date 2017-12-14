@@ -29,10 +29,6 @@ cmake_minimum_required(VERSION 3.6)
 include(${QT_USE_FILE})
 add_definitions(${QT_DEFINITIONS})
 
-## Find ProtoBufs
-#include_directories(${PROTOBUF_INCLUDE_DIRS})
-#include_directories(${MPF_PROTO_PATH})
-
 ## Find and install activemq-cpp
 find_package(PkgConfig)
 set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:/usr/local/lib/pkgconfig")

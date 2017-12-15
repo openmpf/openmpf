@@ -37,10 +37,12 @@ list(REMOVE_AT JNI_LIBRARIES_WITHOUT_AWT 0)
 
 target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${JNI_LIBRARIES_WITHOUT_AWT} ${Log_LIBS})
 
-add_custom_command(TARGET mpfopencvjni POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -D TARGET_BINARY_LOCATION="$<TARGET_FILE:mpfopencvjni>"
-    -D DEP_LIBS_INSTALL_LOCATION="${CMAKE_INSTALL_PREFIX}/lib"
-    -P ${CopySharedLibDependencies_LOCATION})
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_custom_command(TARGET mpfopencvjni POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -D TARGET_BINARY_LOCATION="$<TARGET_FILE:mpfopencvjni>"
+        -D DEP_LIBS_INSTALL_LOCATION="${CMAKE_INSTALL_PREFIX}/lib"
+        -P ${CopySharedLibDependencies_LOCATION})
+endif()
 
 install(TARGETS mpfopencvjni
         RUNTIME DESTINATION bin

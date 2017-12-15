@@ -236,6 +236,20 @@ public class MpfServiceImpl implements MpfService {
 		streamingJobRequestBo.cancel(jobId, doCleanup);
 	}
 
+	/**
+	 * Send a periodic Health Report for all streaming jobs to the health report callback associated with each streaming job.
+     * This method will just return if there are no streaming jobs.
+     * TODO: should this method exclude streaming jobs where are marked as terminated?
+	 * @throws WfmProcessingException thrown if an error occurs
+	 */
+	@Override
+	public void sendPeriodicHealthReportToCallback() throws WfmProcessingException {
+		List<Long> jobIds = getAllStreamingJobIds();
+		if ( !jobIds.isEmpty() ) {
+            streamingJobRequestBo.sendPeriodicHealthReportToCallback(jobIds);
+        }
+	}
+
 	@Override
 	public MarkupResult getMarkupResult(long id) {
 		return markupResultDao.findById(id);
@@ -271,8 +285,8 @@ public class MpfServiceImpl implements MpfService {
 	}
 
 	/**
-	 * Get the list of all streaming job requests
-	 * @return
+	 * Get the list of all streaming job requests from the long term database.
+	 * @return List of all streaming job requests from the long term database.
 	 */
 	@Override
 	public List<StreamingJobRequest> getAllStreamingJobRequests() {
@@ -280,8 +294,8 @@ public class MpfServiceImpl implements MpfService {
 	}
 
 	/**
-	 * Get the list of all streaming job ids
-	 * @return list of all streaming job ids
+	 * Get the list of all streaming job ids from the long term database.
+	 * @return list of all streaming job ids from the long term database.
 	 */
 	@Override
 	public List<Long> getAllStreamingJobIds() {

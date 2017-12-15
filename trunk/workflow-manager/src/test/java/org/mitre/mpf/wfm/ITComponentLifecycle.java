@@ -67,12 +67,10 @@ import static org.junit.Assert.*;
 public class ITComponentLifecycle {
 
     private static final Logger log = LoggerFactory.getLogger(ITComponentLifecycle.class);
-    private static final String mpfCredentials = "Basic bXBmOm1wZjEyMw==";
-    private static final String adminCredentials = "Basic YWRtaW46bXBmYWRtCg";
     private static RestClient client;
     private static CustomRestClient customClient;
     private final int MINUTES = 60 * 1000;  // millisec
-    
+
     // use url with port 8080 for testing with Intellij and 8181 for running mvn verify
     private static String urlBase = "http://localhost:8080/workflow-manager/rest/";
 //    private static String urlBase = "http://localhost:8181/workflow-manager/rest/";
@@ -106,9 +104,9 @@ public class ITComponentLifecycle {
             @Override
             public void intercept(HttpRequestBase request) {
             	if(asAdmin) {
-            		request.addHeader("Authorization", adminCredentials);
+            		request.addHeader("Authorization", WebRESTUtils.ADMIN_AUTHORIZATION);
             	} else {
-            		request.addHeader("Authorization", mpfCredentials);
+            		request.addHeader("Authorization", WebRESTUtils.MPF_AUTHORIZATION);
             	}                
             }
         };

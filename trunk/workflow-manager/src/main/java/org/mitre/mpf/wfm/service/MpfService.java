@@ -39,8 +39,6 @@ import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import java.util.List;
 import java.util.Map;
 
-
-
 public interface MpfService {
 
 	// ====================
@@ -149,6 +147,12 @@ public interface MpfService {
      * The exception message will provide a summary of the warning or error that occurred.
      */
 	void cancelStreamingJob(long jobId, boolean doCleanup) throws WfmProcessingException;
+
+    /**
+     * Send a periodic Health Report for all streaming jobs to the health report callback associated with each streaming job.
+     * @throws WfmProcessingException thrown if an error occurs
+     */
+    public void sendPeriodicHealthReportToCallback() throws WfmProcessingException;
 
 	/** Gets the marked-up media with the specified (batch job) id. */
 	public MarkupResult getMarkupResult(long id);

@@ -32,7 +32,6 @@ import org.mitre.mpf.wfm.pipeline.xml.ValueType;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -46,7 +45,7 @@ public class TestJsonDescriptor {
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
         assertEquals("1.0.0", descriptor.componentVersion);
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so", descriptor.batchLibrary);
-        assertNull(descriptor.streamLibrary);
+        assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfStreamingCplusplusHelloWorld.so", descriptor.streamLibrary);
 
         assertEquals(3, descriptor.algorithm.providesCollection.properties.size());
 

@@ -73,12 +73,13 @@ public class ITWebStreamingHealthReports {
 	private static final String ALGORITHM_NAME = "CPLUSPLUSSTREAMTEST";
 	private static final String PIPELINE_NAME = ALGORITHM_NAME + " DETECTION PIPELINE";
 
-	private final Logger log = LoggerFactory.getLogger(ITWebStreamingHealthReports.class);
+	private static final int HEALTH_REPORT_CALLBACK_PORT = 20160;
+
+	private static final Logger log = LoggerFactory.getLogger(ITWebStreamingHealthReports.class);
 
 	// for converting the JSON response to the actual java object
 	private ObjectMapper objectMapper = new ObjectMapper();
 
-	private final int healthReportCallbackPort = 20160;
 	private long healthReportGetJobId = -1L;
 	private long healthReportPostJobId = -1L;
 	private boolean gotHealthReportGetResponse = false;
@@ -232,7 +233,7 @@ public class ITWebStreamingHealthReports {
 	}
 
 	private void setupSparkPost() {
-		Spark.port(healthReportCallbackPort);
+		Spark.port(HEALTH_REPORT_CALLBACK_PORT);
 
 		Spark.post("/callback", new Route() {
 			@Override
@@ -243,10 +244,10 @@ public class ITWebStreamingHealthReports {
 					// The health report uses Java8 time, so we need to include the external JavaTimeModule which provides support for Java 8 Time.
 					JavaTimeModule javaTimeModule = new JavaTimeModule();
 					jsonObjectMapper.registerModule(javaTimeModule);
-					log.info("Spark POST Callback, received health report at time="+ DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now())
+					log.info("Spark POST health report callback, received health report at time="+ DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now())
 							+ ", constructing JsonHealthReportDataCallbackBody");
 					healthReportPostCallbackBody = jsonObjectMapper.readValue(request.bodyAsBytes(), JsonHealthReportDataCallbackBody.class);
-					log.info("Spark POST Callback, received health report " + healthReportPostCallbackBody);
+					log.info("Spark POST health report callback, received health report " + healthReportPostCallbackBody);
 					log.info("  jobIds=" + healthReportPostCallbackBody.getJobId());
 					log.info("  externalIds=" + healthReportPostCallbackBody.getExternalId());
 					log.info("  jobStatus=" + healthReportPostCallbackBody.getJobStatus());
@@ -270,7 +271,7 @@ public class ITWebStreamingHealthReports {
 	}
 
 	private void setupSparkGet() {
-		Spark.port(healthReportCallbackPort);
+		Spark.port(HEALTH_REPORT_CALLBACK_PORT);
 
 		Spark.get("/callback", new Route() {
 			@Override
@@ -339,7 +340,7 @@ public class ITWebStreamingHealthReports {
 		params.put("externalId", externalId);
 		params.put("enableOutputToDisk", true);
 		params.put("priority", 0);
-		params.put("healthReportCallbackUri", "http://0.0.0.0:" + healthReportCallbackPort + "/callback");
+		params.put("healthReportCallbackUri", "http://0.0.0.0:" + HEALTH_REPORT_CALLBACK_PORT + "/callback");
 		params.put("callbackMethod", callbackMethod);
 		String param_string = params.toString();
 

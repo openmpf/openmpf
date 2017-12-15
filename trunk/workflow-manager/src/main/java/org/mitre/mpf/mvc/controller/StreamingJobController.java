@@ -80,10 +80,7 @@ public class StreamingJobController {
      *	POST /streaming/jobs
      */
     //EXTERNAL
-    @RequestMapping(value = {"/rest/streaming/jobs"},
-            method = RequestMethod.POST,
-            consumes = "application/json",
-            produces = "application/json")
+    @RequestMapping(value = {"/rest/streaming/jobs"}, method = RequestMethod.POST)
     @ApiOperation(value = "Creates and submits a streaming job using a JSON StreamingJobCreationRequest object as the request body.",
             notes = "The pipelineName should be one of the values in 'rest/pipelines'. The stream should contain a valid streamUri, " +
                     "for example: rtsp://example.com/media.mp4.  Optional segmentSize, mediaProperties, "+
@@ -94,8 +91,7 @@ public class StreamingJobController {
                     "An optional algorithmProperties object containing <String,Map> key-value pairs can override jobProperties for a specific algorithm defined in the pipeline.  "+
                     "For algorithmProperties, the key should be the algorithm name, and the value should be a Map of String key-value pairs representing properties specific to the named algorithm. "+
                     "Note that the batch jobs and streaming jobs share a range of valid job ids.  OpenMPF guarantees that the ids of a streaming job and a batch job will be unique.",
-            produces = "application/json",
-            response = StreamingJobCreationResponse.class)
+            produces = "application/json", response = StreamingJobCreationResponse.class)
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "Streaming Job created"),
             @ApiResponse(code = 400, message = "Bad request"),

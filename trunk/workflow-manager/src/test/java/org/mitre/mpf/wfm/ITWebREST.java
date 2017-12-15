@@ -32,11 +32,7 @@ import org.joda.time.DateTime;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonCallbackBody;
@@ -66,11 +62,11 @@ import java.util.*;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ITWebREST {
 
-	private static final int MINUTES = 1000 * 60; // 1000 milliseconds/sec, 60 sec/minute
-	private static final String TEST_PIPELINE_NAME = "OCV FACE DETECTION PIPELINE";
+	private final int MINUTES = 1000 * 60; // 1000 milliseconds/sec, 60 sec/minute
+	private final String TEST_PIPELINE_NAME = "OCV FACE DETECTION PIPELINE";
 
 	// based on the registered components, this may not be a complete list of pipelines
-	private final String[] test_pipelines = {
+	private static final String[] TEST_PIPELINES = {
 			"MOG MOTION DETECTION (WITH TRACKING) PIPELINE",
 			"OALPR LICENSE PLATE TEXT DETECTION PIPELINE",
 			"OALPR LICENSE PLATE TEXT DETECTION (WITH MARKUP) PIPELINE",
@@ -101,7 +97,7 @@ public class ITWebREST {
 	};
 
 	// based on the registered components, this may not be a complete list of services
-	private final String[] test_services = { "Markup",
+	private static final String[] TEST_SERVICES = { "Markup",
 			"OcvPersonDetection", "SphinxSpeechDetection",
 			"MogMotionDetection", "OcvFaceDetection",
 			"DlibFaceDetection", "OalprLicensePlateTextDetection" };
@@ -109,19 +105,18 @@ public class ITWebREST {
 	private static final Logger log = LoggerFactory.getLogger(ITWebREST.class);
 
 	//for converting the JSON response to the actual java object
-	private static ObjectMapper objectMapper = new ObjectMapper();
+	private ObjectMapper objectMapper = new ObjectMapper();
 
-	private static long job_created_id = -1L;
-	private static boolean test_ready = true;
-	private static String JSONstring;
-
+	private long job_created_id = -1L;
+	private boolean test_ready = true;
+	private String JSONstring;
 	private int testCtr = 0;
 	private long processedJobId = -1;
 	private long starttime = 0;
 
 	// run before each test
-	@BeforeClass
-	public static void setup() throws InterruptedException, IOException {
+	@Before
+	public void initialize() throws InterruptedException, IOException {
 		log.info("Starting the REST Tests");
 		job_created_id = createNewJob();
 		if (!WebRESTUtils.waitForJobToTerminate(job_created_id, 5000)) {
@@ -131,8 +126,8 @@ public class ITWebREST {
 	}
 
 	// run once
-	@AfterClass
-	public void aftertest() {
+	@After
+	public void shutdown() {
 		log.info("Finished REST Tests");
 	}
 
@@ -420,8 +415,8 @@ public class ITWebREST {
 		Assert.assertTrue(pipelines.length() >= 0);
 		log.info("Pipelines available: (" + pipelines.length() + ") ");
 		log.debug("Pipelines available: " + JSONstring);
-		log.info("Pipelines testing : (" + test_pipelines.length + ")");
-		JSONArray testing_pipelines = new JSONArray(test_pipelines);
+		log.info("Pipelines testing : (" + TEST_PIPELINES.length + ")");
+		JSONArray testing_pipelines = new JSONArray(TEST_PIPELINES);
 		Assert.assertTrue(testing_pipelines.length() >= 0);
 
 		for (int i = 0; i < testing_pipelines.length(); i++) {
@@ -466,7 +461,7 @@ public class ITWebREST {
 		log.info("array length (should be >= 2):" + array.length()); // assume at least two services are running
 		Assert.assertTrue(array.length() >= 2);
 
-		for (String test_service : test_services) {
+		for (String test_service : TEST_SERVICES) {
 			log.debug("service:" + test_service);
 			JSONObject service = null;
 			for (int i = 0; i < array.length(); i++) {
@@ -521,7 +516,7 @@ public class ITWebREST {
 		Assert.assertTrue(services.length() >= 0);
 		log.info("[test_NodeManager_getNodeManagerConfig] services :" + services.length());
 
-		for (String test_service : test_services) {
+		for (String test_service : TEST_SERVICES) {
 			log.info("[test_NodeManager_getNodeManagerConfig] Verifying Service Exists:" + test_service);
 			JSONObject service = null;
 			for (int i = 0; i < services.length(); i++) {
@@ -948,7 +943,7 @@ public class ITWebREST {
 	// Helpers
 	// ///////////////////////////
 
-	public static long createNewJob() throws MalformedURLException, InterruptedException {
+	public long createNewJob() throws MalformedURLException, InterruptedException {
 		log.info("Creating new Job");
 		String url = WebRESTUtils.REST_URL + "jobs";
 		// create a JobCreationRequest

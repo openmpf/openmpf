@@ -1238,6 +1238,7 @@
                             <outputDirectory>src/main/webapp/resources/mytheme/downloads</outputDirectory>
                             <tarLongFileMode>gnu</tarLongFileMode>
                             <appendAssemblyId>false</appendAssemblyId>
+                            <attach>false</attach>
                         </configuration>
                     </execution>
                 </executions>

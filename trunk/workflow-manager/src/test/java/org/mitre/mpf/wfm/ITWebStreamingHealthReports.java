@@ -48,6 +48,7 @@ import spark.Response;
 import spark.Route;
 import spark.Spark;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -91,7 +92,7 @@ public class ITWebStreamingHealthReports {
 	private AddComponentServiceImpl addComponentService;
 
 	@Before // runs before each test
-	public void initialize() throws ComponentRegistrationException, MalformedURLException {
+	public void initialize() throws ComponentRegistrationException, IOException {
 		// TODO: When streaming components are implemented, consider using a real streaming component pipeline.
 
 		String pipelinesUrl = WebRESTUtils.REST_URL + "pipelines";
@@ -102,9 +103,11 @@ public class ITWebStreamingHealthReports {
 			addComponentService.registerDeployedComponent(descriptorPath);
 
 			String registerUrl = WebRESTUtils.REST_URL + "component/registerViaFile?filePath=" + descriptorPath;
-			String registerResponse = WebRESTUtils.getJSON(new URL(registerUrl), WebRESTUtils.MPF_AUTHORIZATION);
 
-			Assert.assertEquals("Component successfully registered", registerResponse);
+			String registerResponseJson = WebRESTUtils.getJSON(new URL(registerUrl), WebRESTUtils.MPF_AUTHORIZATION);
+			MpfResponse registerResponse = objectMapper.readValue(registerResponseJson, MpfResponse.class);
+
+			Assert.assertEquals("Component successfully registered", registerResponse.getMessage());
 		}
 	}
 
@@ -134,8 +137,7 @@ public class ITWebStreamingHealthReports {
 				Thread.sleep(1000); // test will eventually timeout
 			}
 
-			log.info("Received a Spark POST response, while testing healthReportPostJobId="
-					+ healthReportPostJobId +", healthReportPostCallbackBody=" + healthReportPostCallbackBody);
+			log.info("Received a Spark POST response");
 
 			// Test to make sure the received health report is from the streaming job.
 			Assert.assertTrue(
@@ -161,7 +163,7 @@ public class ITWebStreamingHealthReports {
 			String jobCancelResponseJson = WebRESTUtils.postParams(new URL(cancelUrl), cancelParams, WebRESTUtils.MPF_AUTHORIZATION, 200);
 			StreamingJobCancelResponse jobCancelResponse = objectMapper.readValue(jobCancelResponseJson, StreamingJobCancelResponse.class);
 
-			log.info("Finished POST test, cancelled streaming job with results:" + jobCancelResponseJson);
+			log.info("Finished POST test, cancelled streaming job:\n     " + jobCancelResponseJson);
 
 			Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCancelResponse.getMpfResponse().getResponseCode());
 			Assert.assertTrue(jobCancelResponse.getDoCleanup());
@@ -196,8 +198,7 @@ public class ITWebStreamingHealthReports {
 				Thread.sleep(1000); // test will eventually timeout
 			}
 
-			log.info("Received a Spark GET response while testing healthReportGetJobId="
-					+ healthReportGetJobId +", healthReportGetCallbackBody=" + healthReportGetCallbackBody);
+			log.info("Received a Spark GET response");
 
 			// Test to make sure the received health report is from the streaming job.
 			Assert.assertTrue(
@@ -223,7 +224,7 @@ public class ITWebStreamingHealthReports {
 			String jobCancelResponseJson = WebRESTUtils.postParams(new URL(cancelUrl), cancelParams, WebRESTUtils.MPF_AUTHORIZATION, 200);
 			StreamingJobCancelResponse jobCancelResponse = objectMapper.readValue(jobCancelResponseJson, StreamingJobCancelResponse.class);
 
-			log.info("Finished GET test, cancelled streaming job with results:" + jobCancelResponseJson);
+			log.info("Finished GET test, cancelled streaming job:\n     " + jobCancelResponseJson);
 
 			Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCancelResponse.getMpfResponse().getResponseCode());
 			Assert.assertTrue(jobCancelResponse.getDoCleanup());
@@ -238,21 +239,18 @@ public class ITWebStreamingHealthReports {
 		Spark.post("/callback", new Route() {
 			@Override
 			public Object handle(Request request, Response resp) throws Exception {
-				log.info("Spark Servicing request..POST..from method " + request.requestMethod() + " body:"+request.body());
+				log.info("Spark servicing " + request.requestMethod() + " health report callback at "
+						+ DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now()) + ":\n     " + request.body());
 				try {
 					ObjectMapper jsonObjectMapper = new ObjectMapper();
+
 					// The health report uses Java8 time, so we need to include the external JavaTimeModule which provides support for Java 8 Time.
-					JavaTimeModule javaTimeModule = new JavaTimeModule();
-					jsonObjectMapper.registerModule(javaTimeModule);
-					log.info("Spark POST health report callback, received health report at time="+ DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now())
-							+ ", constructing JsonHealthReportDataCallbackBody");
+					jsonObjectMapper.registerModule(new JavaTimeModule());
+
 					healthReportPostCallbackBody = jsonObjectMapper.readValue(request.bodyAsBytes(), JsonHealthReportDataCallbackBody.class);
-					log.info("Spark POST health report callback, received health report " + healthReportPostCallbackBody);
-					log.info("  jobIds=" + healthReportPostCallbackBody.getJobId());
-					log.info("  externalIds=" + healthReportPostCallbackBody.getExternalId());
-					log.info("  jobStatus=" + healthReportPostCallbackBody.getJobStatus());
-					log.info("  lastNewActivityAlertFrameId=" + healthReportPostCallbackBody.getLastNewActivityAlertFrameId());
-					log.info("  lastNewActivityAlertTimestamp=" + healthReportPostCallbackBody.getLastNewActivityAlertTimeStamp());
+
+					log.info("Converted to JsonHealthReportDataCallbackBody:\n     " + healthReportPostCallbackBody);
+
 					// If this health report includes the jobId for our POST test, then set indicator
 					// that a health report sent using POST method has been received. Need to add this check
 					// to ensure a periodic health report sent prior to creation of our test job doesn't prematurely stop the test.
@@ -276,17 +274,9 @@ public class ITWebStreamingHealthReports {
 		Spark.get("/callback", new Route() {
 			@Override
 			public Object handle(Request request, Response resp) throws Exception {
-				log.info("Spark servicing request..  Received a health report GET Callback ..from method " + request.requestMethod());
+				log.info("Spark servicing " + request.requestMethod() + " health report callback at "
+						+ DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now()) + ":\n     " + request.queryString());
 				try {
-					log.info("Spark GET health report callback, request.queryParams(reportDate)=" + request.queryParams("reportDate"));
-					log.info("Spark GET health report callback, request.queryParams(jobId)=" + request.queryParams("jobId"));
-					log.info("Spark GET health report callback, request.queryParams(externalId)=" + request.queryParams("externalId"));
-					log.info("Spark GET health report callback, request.queryParams(jobStatus)=" + request.queryParams("jobStatus"));
-					log.info("Spark GET health report callback, request.queryParams(lastNewActivityAlertFrameId)="
-							+ request.queryParams("lastNewActivityAlertFrameId"));
-					log.info("Spark GET health report callback, request.queryParams(lastNewActivityAlertTimestamp)="
-							+ request.queryParams("lastNewActivityAlertTimestamp"));
-
 					// Convert from requests JSON parameters to String or List as needed to construct the health report.
 					ObjectMapper objectMapper = new ObjectMapper();
 					List<Long> jobIds = Arrays.asList(objectMapper.readValue(request.queryParams("jobId"), Long[].class));
@@ -296,16 +286,11 @@ public class ITWebStreamingHealthReports {
 							Arrays.asList(objectMapper.readValue(request.queryParams("lastNewActivityAlertFrameId"), BigInteger[].class));
 					List<String> lastNewActivityAlertTimestamps =
 							Arrays.asList(objectMapper.readValue(request.queryParams("lastNewActivityAlertTimestamp"), String[].class));
+
 					healthReportGetCallbackBody = new JsonHealthReportDataCallbackBody(request.queryParams("reportDate"),
 							jobIds, externalIds, jobStatuses, lastNewActivityAlertFrameIds, lastNewActivityAlertTimestamps);
 
-					log.info("Spark GET callback, received health report at time="+ DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now()) + ", with timestamp "
-							+ healthReportGetCallbackBody.getReportDate());
-					log.info("  jobIds=" + healthReportGetCallbackBody.getJobId());
-					log.info("  externalIds=" + healthReportGetCallbackBody.getExternalId());
-					log.info("  jobStatus=" + healthReportGetCallbackBody.getJobStatus());
-					log.info("  lastNewActivityAlertFrameId=" + healthReportGetCallbackBody.getLastNewActivityAlertFrameId());
-					log.info("  lastNewActivityAlertTimestamp=" + healthReportGetCallbackBody.getLastNewActivityAlertTimeStamp());
+					log.info("Converted to JsonHealthReportDataCallbackBody:\n     " + healthReportGetCallbackBody);
 
 					// If this health report includes the jobId for our GET test, then set indicator
 					// that a health report sent using GET method has been received. Need to add this check

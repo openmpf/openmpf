@@ -33,7 +33,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.junit.*;
-import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonCallbackBody;
 import org.mitre.mpf.rest.api.*;
@@ -42,8 +41,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import spark.Request;
 import spark.Response;
 import spark.Route;
@@ -57,13 +54,11 @@ import java.util.*;
 //mvn -Dtest=ITWebREST test if running tomcat before
 //mvn verify -Dtest=none -DfailIfNoTests=false -Dit.test=ITWebREST
 
-@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
-@RunWith(SpringJUnit4ClassRunner.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ITWebREST {
 
-	private final int MINUTES = 1000 * 60; // 1000 milliseconds/sec, 60 sec/minute
-	private final String TEST_PIPELINE_NAME = "OCV FACE DETECTION PIPELINE";
+	private static final int MINUTES = 1000 * 60; // 1000 milliseconds/sec, 60 sec/minute
+	private static final String TEST_PIPELINE_NAME = "OCV FACE DETECTION PIPELINE";
 
 	// based on the registered components, this may not be a complete list of pipelines
 	private static final String[] TEST_PIPELINES = {
@@ -107,16 +102,17 @@ public class ITWebREST {
 	//for converting the JSON response to the actual java object
 	private ObjectMapper objectMapper = new ObjectMapper();
 
-	private long job_created_id = -1L;
-	private boolean test_ready = true;
-	private String JSONstring;
+	private static long job_created_id = -1L;
+	private static boolean test_ready = true;
+	private static String JSONstring;
+
 	private int testCtr = 0;
 	private long processedJobId = -1;
 	private long starttime = 0;
 
-	// run before each test
-	@Before
-	public void initialize() throws InterruptedException, IOException {
+	// run once
+	@BeforeClass
+	public static void initialize() throws InterruptedException, IOException {
 		log.info("Starting the REST Tests");
 		job_created_id = createNewJob();
 		if (!WebRESTUtils.waitForJobToTerminate(job_created_id, 5000)) {
@@ -126,8 +122,8 @@ public class ITWebREST {
 	}
 
 	// run once
-	@After
-	public void shutdown() {
+	@AfterClass
+	public static void shutdown() {
 		log.info("Finished REST Tests");
 	}
 
@@ -943,7 +939,7 @@ public class ITWebREST {
 	// Helpers
 	// ///////////////////////////
 
-	public long createNewJob() throws MalformedURLException, InterruptedException {
+	public static long createNewJob() throws MalformedURLException, InterruptedException {
 		log.info("Creating new Job");
 		String url = WebRESTUtils.REST_URL + "jobs";
 		// create a JobCreationRequest

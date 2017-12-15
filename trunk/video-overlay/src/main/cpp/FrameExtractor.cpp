@@ -49,12 +49,11 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
   (JNIEnv *env, jobject frameExtractorInstance, jstring video, jstring destinationPath, jobject map)
 {
     if (env != NULL) {
-        // Get the bounding box map.
         jclass clzFrameExtractor = env->GetObjectClass(frameExtractorInstance);
         jmethodID clzFrameExtractor_fnGetFrames = env->GetMethodID(clzFrameExtractor, "getFrames", "()Ljava/util/Set;");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8700;
         }
         jmethodID clzFrameExtractor_fnMakeFilename = env->GetMethodID(clzFrameExtractor, "makeFilename", "(Ljava/lang/String;I)Ljava/lang/String;");
         if (env->ExceptionCheck()) {
@@ -64,64 +63,64 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
         jobject framesSet = env->CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetFrames);
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8702;
         }
 
         // Get the iterator class and methods.
         jclass clzIterator = env->FindClass("java/util/Iterator");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8703;
         }
         jmethodID clzIterator_fnNext = env->GetMethodID(clzIterator, "next", "()Ljava/lang/Object;");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8704;
         }
         jmethodID clzIterator_fnHasNext = env->GetMethodID(clzIterator, "hasNext", "()Z");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8705;
         }
 
         // Get Set class and methods.
         jclass clzSet = env->FindClass("java/util/TreeSet");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8706;
         }
         jmethodID clzSet_fnIterator = env->GetMethodID(clzSet, "iterator", "()Ljava/util/Iterator;");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8707;
         }
 
         // Get the Map class and methods.
         jclass clzMap = env->FindClass("java/util/Map");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8708;
         }
         jmethodID clzMap_fnPut = env->GetMethodID(clzMap, "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8709;
         }
 
         jclass clzInteger = env->FindClass("java/lang/Integer");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8710;
         }
         jmethodID clzInteger_fnValueOf = env->GetStaticMethodID(clzInteger, "valueOf", "(I)Ljava/lang/Integer;");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8711;
         }
         jmethodID clzInteger_fnIntValue = env->GetMethodID(clzInteger, "intValue", "()I");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8712;
         }
 
         // Set up the videos...
@@ -134,7 +133,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                     // Cleanup...
                     env->ReleaseStringUTFChars(video, inChars);
 
-                    return 8700;
+                    return 8713;
                 }
 
                 Mat frame;
@@ -144,7 +143,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                 if (env->ExceptionCheck()) {
                     env->ReleaseStringUTFChars(video, inChars);
                     env->ExceptionClear();
-                    return 8701;
+                    return 8714;
                 }
 
                 // While there are more frames in the set...
@@ -152,14 +151,14 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                     if (env->ExceptionCheck()) {
                         env->ReleaseStringUTFChars(video, inChars);
                         env->ExceptionClear();
-                        return 8701;
+                        return 8715;
                     }
                     // Get the next frame index from the set...
                     jobject boxed = env->CallObjectMethod(iterator, clzIterator_fnNext);
                     if (env->ExceptionCheck()) {
                         env->ReleaseStringUTFChars(video, inChars);
                         env->ExceptionClear();
-                        return 8701;
+                        return 8716;
                     }
 
                     // Unbox it because Java...
@@ -167,7 +166,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                     if (env->ExceptionCheck()) {
                         env->ReleaseStringUTFChars(video, inChars);
                         env->ExceptionClear();
-                        return 8701;
+                        return 8717;
                     }
 
                     // Cast it to something OpenCV can use...
@@ -187,13 +186,13 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                     if (env->ExceptionCheck()) {
                         env->ReleaseStringUTFChars(video, inChars);
                         env->ExceptionClear();
-                        return 8701;
+                        return 8718;
                     }
                     env->CallObjectMethod(map, clzMap_fnPut, boxed, filename);
                     if (env->ExceptionCheck()) {
                         env->ReleaseStringUTFChars(video, inChars);
                         env->ExceptionClear();
-                        return 8701;
+                        return 8719;
                     }
 
                     if (filename != NULL) {
@@ -205,12 +204,12 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                                 env->ReleaseStringUTFChars(filename, destChars);
                                 env->ReleaseStringUTFChars(video, inChars);
                                 env->ExceptionClear();
-                                return 8701;
+                                return 8720;
                             }
                             env->ReleaseStringUTFChars(filename, destChars);
                         } else {
                             env->ReleaseStringUTFChars(video, inChars);
-                            return 8701;
+                            return 8721;
                         }
                     }
                 }
@@ -218,13 +217,13 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
 
                 env->ReleaseStringUTFChars(video, inChars);
             } catch (cv::Exception) {
-                return 8701;
+                return 8722;
             }
         } else {
-            return 8701;
+            return 8723;
         }
     } else {
-        return 8701;
+        return 8724;
     }
     return 0;
 }

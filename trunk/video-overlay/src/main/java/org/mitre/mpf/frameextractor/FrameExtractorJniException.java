@@ -33,27 +33,8 @@ public class FrameExtractorJniException extends IOException {
     public int getErrorCode() { return errorCode; }
     public void setErrorCode(int errorCode) { this.errorCode = errorCode; }
 
-    public FrameExtractorJniException() { super(); }
     public FrameExtractorJniException(int errorCode) {
-        this();
-        this.errorCode = errorCode;
-    }
-
-    public FrameExtractorJniException(String message) { super(message); }
-    public FrameExtractorJniException(String message, int errorCode) {
-        this(message);
-        this.errorCode = errorCode;
-    }
-
-    public FrameExtractorJniException(String message, Throwable cause) { super(message, cause); }
-    public FrameExtractorJniException(String message, Throwable cause, int errorCode) {
-        this(message, cause);
-        this.errorCode = errorCode;
-    }
-
-    public FrameExtractorJniException(Throwable cause) { super(cause); }
-    public FrameExtractorJniException(Throwable cause, int errorCode) {
-        this(cause);
+        super("Native method invocation returned error code " + errorCode + ".");
         this.errorCode = errorCode;
     }
 }

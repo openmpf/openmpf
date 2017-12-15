@@ -42,4 +42,8 @@ set(CPP_HELLO_WORLD_SOURCE_FILES HelloWorld.h HelloWorld.cpp)
 add_library(mpfCplusplusHelloWorld SHARED ${CPP_HELLO_WORLD_SOURCE_FILES})
 target_link_libraries(mpfCplusplusHelloWorld mpfComponentInterface mpfDetectionComponentApi)
 
-configure_mpf_component(CplusplusHelloWorld mpfCplusplusHelloWorld)
+
+add_library(mpfStreamingCplusplusHelloWorld SHARED StreamingHelloWorld.cpp StreamingHelloWorld.h)
+target_link_libraries(mpfStreamingCplusplusHelloWorld mpfComponentInterface mpfDetectionComponentApi)
+
+configure_mpf_component(CplusplusHelloWorld TARGETS mpfCplusplusHelloWorld mpfStreamingCplusplusHelloWorld)

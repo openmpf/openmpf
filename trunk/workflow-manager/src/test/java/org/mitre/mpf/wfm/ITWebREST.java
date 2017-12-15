@@ -26,109 +26,51 @@
 
 package org.mitre.mpf.wfm;
 
-import static org.mitre.mpf.test.TestUtil.anyNonNull;
-import static org.mitre.mpf.test.TestUtil.whereArg;
-import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.ACTION1_PROP_NAMES;
-import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.ACTION1_PROP_VALUES;
-import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.ACTION_NAMES;
-import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.COMPONENT_NAME;
-import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.DESCRIPTOR_PATH;
-import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.PIPELINE_NAME;
-import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.REFERENCED_ALGO_NAME;
-import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.TASK_NAMES;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.io.File;
-import java.math.BigInteger;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.joda.time.DateTime;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonCallbackBody;
-import org.mitre.mpf.interop.JsonHealthReportDataCallbackBody;
 import org.mitre.mpf.rest.api.*;
-import org.mitre.mpf.rest.api.component.ComponentState;
-import org.mitre.mpf.rest.api.component.RegisterComponentModel;
-import org.mitre.mpf.wfm.service.NodeManagerService;
-import org.mitre.mpf.wfm.service.PipelineService;
-import org.mitre.mpf.wfm.service.StreamingServiceManager;
-import org.mitre.mpf.wfm.service.component.AddComponentServiceImpl;
-import org.mitre.mpf.wfm.service.component.ComponentDeploymentService;
-import org.mitre.mpf.wfm.service.component.ComponentDescriptorValidator;
-import org.mitre.mpf.wfm.service.component.ComponentStateService;
-import org.mitre.mpf.wfm.service.component.CustomPipelineValidator;
-import org.mitre.mpf.wfm.service.component.DuplicateComponentException;
-import org.mitre.mpf.wfm.service.component.JsonComponentDescriptor;
-import org.mitre.mpf.wfm.service.component.JsonComponentDescriptor.Pipeline;
-import org.mitre.mpf.wfm.service.component.RemoveComponentService;
-import org.mitre.mpf.wfm.service.component.TestDescriptorConstants;
-import org.mitre.mpf.wfm.service.component.TestDescriptorFactory;
 import org.mitre.mpf.wfm.ui.Utils;
-import org.mitre.mpf.wfm.enums.JobStatus;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import spark.Request;
 import spark.Response;
 import spark.Route;
 import spark.Spark;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
-import java.nio.charset.StandardCharsets;
 
 //mvn -Dtest=ITWebREST test if running tomcat before
 //mvn verify -Dtest=none -DfailIfNoTests=false -Dit.test=ITWebREST
+
+@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
+@RunWith(SpringJUnit4ClassRunner.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ITWebREST {
-	private static final Logger log = LoggerFactory.getLogger(ITWebREST.class);
-	private static int testCtr = 0;
+
 	private static final int MINUTES = 1000 * 60; // 1000 milliseconds/sec, 60 sec/minute
-	private static long processedJobId = -1;
-	protected static String rest_url = Utils.BASE_URL + "/workflow-manager/rest/";
-	protected static String MPF_AUTHORIZATION = "Basic bXBmOm1wZjEyMw==";// mpf user base64 <username:password>
-	protected static String ADMIN_AUTHORIZATION = "Basic YWRtaW46bXBmYWRtCg";// admin user base64 <username:password>
 	private static final String TEST_PIPELINE_NAME = "OCV FACE DETECTION PIPELINE";
-	protected long starttime = 0;
-	protected static String JSONstring;
-	protected static long job_created_id = -1L;
-	//for converting the JSON response to the actual java object
-	protected static ObjectMapper objectMapper = new ObjectMapper();
 
 	// based on the registered components, this may not be a complete list of pipelines
-	protected static String[] test_pipelines = {
+	private final String[] test_pipelines = {
 			"MOG MOTION DETECTION (WITH TRACKING) PIPELINE",
 			"OALPR LICENSE PLATE TEXT DETECTION PIPELINE",
 			"OALPR LICENSE PLATE TEXT DETECTION (WITH MARKUP) PIPELINE",
@@ -159,56 +101,30 @@ public class ITWebREST {
 	};
 
 	// based on the registered components, this may not be a complete list of services
-	protected static String[] test_services = { "Markup",
+	private final String[] test_services = { "Markup",
 			"OcvPersonDetection", "SphinxSpeechDetection",
 			"MogMotionDetection", "OcvFaceDetection",
 			"DlibFaceDetection", "OalprLicensePlateTextDetection" };
 
+	private static final Logger log = LoggerFactory.getLogger(ITWebREST.class);
+
+	//for converting the JSON response to the actual java object
+	private static ObjectMapper objectMapper = new ObjectMapper();
+
+	private static long job_created_id = -1L;
 	private static boolean test_ready = true;
+	private static String JSONstring;
 
-	@Mock
-	private ComponentDeploymentService _mockDeploymentService;
-
-	@Mock
-	private ComponentStateService _mockStateService;
-
-	@Mock
-	private ObjectMapper _mockObjectMapper;
-
-	@Mock
-	private NodeManagerService _mockNodeManager;
-
-	@InjectMocks
-	private AddComponentServiceImpl _addComponentService;
-
-	@Mock
-	private PipelineService _mockPipelineService;
-
-	@Mock
-	private ComponentDescriptorValidator _mockDescriptorValidator;
-
-	@Mock
-	private CustomPipelineValidator _mockPipelineValidator;
-
-	@Mock
-	private RemoveComponentService _mockRemoveComponentService;
-
-	@Mock
-	private StreamingServiceManager _mockStreamingServiceManager;
-
-	private static final String _testPackageName = "test-package.tar.gz";
-
-	@Before
-	public void init() {
-		MockitoAnnotations.initMocks(this);
-	}
+	private int testCtr = 0;
+	private long processedJobId = -1;
+	private long starttime = 0;
 
 	// run before each test
 	@BeforeClass
-	public static void setup() throws InterruptedException, JsonParseException, JsonMappingException, IOException {
+	public static void setup() throws InterruptedException, IOException {
 		log.info("Starting the REST Tests");
-		ITWebREST.job_created_id = ITWebREST.createNewJob();
-		if(!ITWebREST.waitForJobToTerminate(ITWebREST.job_created_id, 5000)) {
+		job_created_id = createNewJob();
+		if (!WebRESTUtils.waitForJobToTerminate(job_created_id, 5000)) {
 			test_ready = false;
 			throw new InterruptedException("job did not end");
 		}
@@ -216,12 +132,12 @@ public class ITWebREST {
 
 	// run once
 	@AfterClass
-	public static void aftertest() {
+	public void aftertest() {
 		log.info("Finished REST Tests");
 	}
 
-	protected void startTest(String testname,String url) throws MalformedURLException {
-		test_ready=false;
+	private void startTest(String testname, String url) throws MalformedURLException {
+		test_ready = false;
 		testCtr++;
 		log.info("Beginning test {} #{} REST: [{}]", testname,testCtr, url);
 		starttime = DateTime.now().getMillis();
@@ -229,7 +145,7 @@ public class ITWebREST {
 		log.debug("[startTest] ");
 	}
 
-	protected void endTest(String testname) {
+	private void endTest(String testname) {
 		long end = DateTime.now().getMillis() - starttime;
 		log.info("Finished test #{} Time elapsed: {} milliseconds ", testCtr,end);
 		test_ready=true;
@@ -242,10 +158,10 @@ public class ITWebREST {
 	@Test(timeout = 1 * MINUTES, expected = RuntimeException.class)
 	public void testRestNoAuth() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "jobs/stats.json";
+		String url = WebRESTUtils.REST_URL + "jobs/stats.json";
 		testCtr++;
 		log.info("Beginning test {} #{} REST: [{}]", "testRestNoAuth",testCtr, url);
-		GetJSON(new URL(url), null);
+		WebRESTUtils.getJSON(new URL(url), null);
 	}
 
 	/*
@@ -254,9 +170,9 @@ public class ITWebREST {
 //	@Test(timeout = 1 * MINUTES)
 //	public void testPing_Jobs_Status() throws Exception {
 //		if(!test_ready){log.info("A test failed");return;}
-//		String url = rest_url + "jobs.json";
+//		String url = WebRESTUtils.REST_URL + "jobs.json";
 //		startTest("testPing_Jobs_Status",url);
-//		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+//		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 //		JSONArray array = new JSONArray(JSONstring);
 //		log.info("array length :" + array.length());
 //		Assert.assertTrue(array.length() >= 0);
@@ -269,9 +185,9 @@ public class ITWebREST {
 //	@Test(timeout = 1 * MINUTES)
 //	public void test_Jobs_Status() throws Exception {
 //		if(!test_ready){log.info("A test failed");return;}
-//		String url = rest_url + "jobs.json";
+//		String url = WebRESTUtils.REST_URL + "jobs.json";
 //		startTest("test_Jobs_Status",url);
-//		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+//		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 //		JSONArray array = new JSONArray(JSONstring);
 //		log.info("array length :" + array.length());
 //		if (array.length() == 0) {
@@ -310,9 +226,9 @@ public class ITWebREST {
 	@Test(timeout = 1 * MINUTES)
 	public void test_Jobs_Status_Single() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "jobs/" + job_created_id + ".json";
+		String url = WebRESTUtils.REST_URL + "jobs/" + job_created_id + ".json";
 		startTest("test_Jobs_Status",url);
-		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 
 		boolean found = false;
 		//find our job
@@ -344,9 +260,9 @@ public class ITWebREST {
 	public void testPing_Jobs_SerializedOutput() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
 		// just see if endpoint is there
-		String url = rest_url + "jobs/" +  job_created_id + "/output/detection" ;
+		String url = WebRESTUtils.REST_URL + "jobs/" +  job_created_id + "/output/detection" ;
 		startTest("testPing_Jobs_SerializedOutput",url);
-		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		Assert.assertTrue(JSONstring != null);
 		endTest("testPing_Jobs_SerializedOutput");
 	}
@@ -355,7 +271,7 @@ public class ITWebREST {
 	public void test_Jobs_SerializedOutput() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
 
-		String postJobsUrl = rest_url + "jobs";
+		String postJobsUrl = WebRESTUtils.REST_URL + "jobs";
 		startTest("test_Jobs_SerializedOutput - postJobsUrl",postJobsUrl);
 		String detPipeline = "OCV FACE DETECTION PIPELINE";
 
@@ -372,7 +288,7 @@ public class ITWebREST {
 		String params = objectMapper.writeValueAsString(jobCreationRequest);
 
 		URL actualUrl = new URL(postJobsUrl);
-		String response = PostJSON(actualUrl, params, MPF_AUTHORIZATION);
+		String response = WebRESTUtils.postJSON(actualUrl, params, WebRESTUtils.MPF_AUTHORIZATION);
 
 		JobCreationResponse jobCreationResponse = objectMapper.readValue(response, JobCreationResponse.class);
 
@@ -387,12 +303,12 @@ public class ITWebREST {
 
 		//Need to wait for the job to complete
 		log.info("Waiting for job with id '{}' to complete", completeJobId);
-		String urlJobsStatus = rest_url + "jobs/" + completeJobId;
+		String urlJobsStatus = WebRESTUtils.REST_URL + "jobs/" + completeJobId;
 
 		SingleJobInfo singleJobInfo = null;
 		//wait till ready to attempt a job cancellation
 		do {
-			String jsonSingleJobInfoStr = GetJSON(new URL(urlJobsStatus), MPF_AUTHORIZATION);
+			String jsonSingleJobInfoStr = WebRESTUtils.getJSON(new URL(urlJobsStatus), WebRESTUtils.MPF_AUTHORIZATION);
 			singleJobInfo  = objectMapper.readValue(jsonSingleJobInfoStr, SingleJobInfo.class);
 
 			//check every three seconds
@@ -402,12 +318,12 @@ public class ITWebREST {
 		endTest("test_Jobs_SerializedOutput - postJobsUrl");
 
 		log.info("Job now complete using pipeline '{}'", detPipeline);
-		String baseOutputUrl = rest_url + "jobs/" +  completeJobId + "/output/" ;
+		String baseOutputUrl = WebRESTUtils.REST_URL + "jobs/" +  completeJobId + "/output/" ;
 
 		String outputObjectType = "detection";
 		String url = baseOutputUrl + outputObjectType;
 		startTest("test_Jobs_SerializedOutput - " + outputObjectType,url);
-		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		Assert.assertTrue(JSONstring != null);// returns a path to the file
 		// created during job creation
 		log.info("[test_Jobs_SerializedOutput] json length :" + JSONstring.length());
@@ -439,9 +355,9 @@ public class ITWebREST {
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_Jobs_Stats() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "jobs/stats.json";
+		String url = WebRESTUtils.REST_URL + "jobs/stats.json";
 		startTest("testPing_Jobs_Stats",url);
-		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONObject obj = new JSONObject(JSONstring);
 		Assert.assertTrue(obj.has("totalJobs") && obj.has("aggregatePipelineStatsMap")
 				&& obj.has("elapsedTimeMs") && obj.has("jobTypes"));
@@ -453,9 +369,9 @@ public class ITWebREST {
 	@Test(timeout = 1 * MINUTES)
 	public void test_Jobs_Stats() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "jobs/stats.json";
+		String url = WebRESTUtils.REST_URL + "jobs/stats.json";
 		startTest("test_Jobs_Stats",url);
-		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("[test_Jobs_Stats] json:" + JSONstring);
 		JSONObject objs = new JSONObject(JSONstring);
 		boolean found = false;
@@ -480,9 +396,9 @@ public class ITWebREST {
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_Pipelines_Available() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "pipelines.json";
+		String url = WebRESTUtils.REST_URL + "pipelines.json";
 		startTest("testPing_Pipelines_Available",url);
-		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONArray array = new JSONArray(JSONstring);
 		log.info("array length :" + array.length());
 		Assert.assertTrue(array.length() >= 0);
@@ -497,9 +413,9 @@ public class ITWebREST {
 	@Test(timeout = 1 * MINUTES)
 	public void test_Pipelines_Available() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "pipelines.json";
+		String url = WebRESTUtils.REST_URL + "pipelines.json";
 		startTest("test_Pipelines_Available",url);
-		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONArray pipelines = new JSONArray(JSONstring);
 		Assert.assertTrue(pipelines.length() >= 0);
 		log.info("Pipelines available: (" + pipelines.length() + ") ");
@@ -529,9 +445,9 @@ public class ITWebREST {
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManager_getNodeManagerInfo() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "nodes/info.json";
+		String url = WebRESTUtils.REST_URL + "nodes/info.json";
 		startTest("testPing_NodeManager_getNodeManagerInfo",url);
-		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONObject obj = new JSONObject(JSONstring);
 		JSONArray array = obj.getJSONArray("nodeModels");
 		log.info("array length :" + array.length());
@@ -542,9 +458,9 @@ public class ITWebREST {
 	@Test(timeout = 1 * MINUTES)
 	public void test_NodeManager_getNodeManagerInfo() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "nodes/info.json";
+		String url = WebRESTUtils.REST_URL + "nodes/info.json";
 		startTest("test_NodeManager_getNodeManagerInfo",url);
-		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONObject obj = new JSONObject(JSONstring);
 		JSONArray array = obj.getJSONArray("nodeModels");
 		log.info("array length (should be >= 2):" + array.length()); // assume at least two services are running
@@ -573,9 +489,9 @@ public class ITWebREST {
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManager_getNodeManagerConfig() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "nodes/config.json";
+		String url = WebRESTUtils.REST_URL + "nodes/config.json";
 		startTest("testPing_NodeManager_getNodeManagerConfig",url);
-		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONArray array = new JSONArray(JSONstring);
 		log.info("array length :" + array.length());
 		Assert.assertTrue(array.length() >= 0);
@@ -590,11 +506,11 @@ public class ITWebREST {
 	 * Test the first node for a few services and make sure
 	 * they have some correct fields
 	 **/
-	protected void test_NodeManager_getNodeManagerConfig() throws Exception {
+	private void test_NodeManager_getNodeManagerConfig() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "nodes/config.json";
+		String url = WebRESTUtils.REST_URL + "nodes/config.json";
 		startTest("test_NodeManager_getNodeManagerConfig",url);
-		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("[test_NodeManager_getNodeManagerConfig] GET:"+url);
 		JSONArray array = new JSONArray(JSONstring);
 		Assert.assertTrue(array.length() >= 0);
@@ -630,11 +546,11 @@ public class ITWebREST {
 	@Test(timeout = 1 * MINUTES)
 	public void test_NodeManager_saveNodeManagerConfigPOST() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "nodes/config";
+		String url = WebRESTUtils.REST_URL + "nodes/config";
 		//get the current config
-		String config = rest_url + "nodes/config.json";
+		String config = WebRESTUtils.REST_URL + "nodes/config.json";
 		startTest("test_NodeManager_saveNodeManagerConfigPOST",config);
-		JSONstring = GetJSON(new URL(config), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(config), WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("[saveNodeManagerConfigPOST] original config:"+JSONstring);
 		String orig_config =JSONstring;
 		JSONArray array = new JSONArray(JSONstring);
@@ -654,7 +570,7 @@ public class ITWebREST {
 		String params = array.toString();
 		log.debug("[saveNodeManagerConfigPOST]  post {} params:"+params,url);
 		//requires admin auth
-		JSONstring = PostJSON(new URL(url), params, ADMIN_AUTHORIZATION);
+		JSONstring = WebRESTUtils.postJSON(new URL(url), params, WebRESTUtils.ADMIN_AUTHORIZATION);
 		log.debug("[saveNodeManagerConfigPOST]  post results:"+JSONstring);//should return true
 
 		Assert.assertNotNull(JSONstring);
@@ -668,7 +584,7 @@ public class ITWebREST {
 
 		//verify changes by pulling the config and make sure the service is missing
 		log.debug("[saveNodeManagerConfigGet]  {}",url);
-		JSONstring = GetJSON(new URL(config), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(config), WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("[saveNodeManagerConfigPOST]  new config:"+JSONstring);
 		array = new JSONArray(JSONstring);
 		Assert.assertTrue(array.length() >= 0);
@@ -683,7 +599,7 @@ public class ITWebREST {
 		//cleanup - add back in for future tests if needed
 		log.info("Restoring original configuration - post {}",url);
 		//requires admin auth
-		JSONstring = PostJSON(new URL(url), orig_config, ADMIN_AUTHORIZATION);
+		JSONstring = WebRESTUtils.postJSON(new URL(url), orig_config, WebRESTUtils.ADMIN_AUTHORIZATION);
 
 		log.debug("post results:"+JSONstring);
 
@@ -702,7 +618,7 @@ public class ITWebREST {
 	public void test_NodeManager_shutdown_startService() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
 		startTest("test_NodeManager_shutdown_startService","");
-		JSONArray nodes = getNodes();
+		JSONArray nodes = WebRESTUtils.getNodes();
 		Assert.assertTrue(nodes.length() > 0);
 		// get the first node that is running
 		JSONObject node = null;
@@ -725,17 +641,17 @@ public class ITWebREST {
 		List<NameValuePair> paramsList = new ArrayList<NameValuePair>();
 
 		//make sure this fails with regular mpf auth (401)
-		String url = rest_url + "nodes/services/" + service_name + "/stop" ;
+		String url = WebRESTUtils.REST_URL + "nodes/services/" + service_name + "/stop" ;
 		log.info("test_NodeManager_shutdownService get {}",url);
 		//this will throw an IOException
-		JSONstring = PostParams(new URL(url), paramsList, MPF_AUTHORIZATION, 401);
+		JSONstring = WebRESTUtils.postParams(new URL(url), paramsList, WebRESTUtils.MPF_AUTHORIZATION, 401);
 		//make sure response is null
 		Assert.assertNull(JSONstring);
 
 		//try with bad service name cat:asdfjkl:4
-		url = rest_url + "nodes/services/" + "cat:asdfjkl:4" + "/stop" ;
+		url = WebRESTUtils.REST_URL + "nodes/services/" + "cat:asdfjkl:4" + "/stop" ;
 		log.info("test_NodeManager_shutdownService get {}",url);
-		JSONstring = PostParams(new URL(url), paramsList, ADMIN_AUTHORIZATION, 200);
+		JSONstring = WebRESTUtils.postParams(new URL(url), paramsList, WebRESTUtils.ADMIN_AUTHORIZATION, 200);
 		//convert JSONString to mpfResponse
 		MpfResponse mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
 		//not a success
@@ -744,9 +660,9 @@ public class ITWebREST {
 		Assert.assertTrue(mpfResponse.getMessage().contains("service"));
 
 		//requires admin auth
-		url = rest_url + "nodes/services/" + service_name + "/stop" ;
+		url = WebRESTUtils.REST_URL + "nodes/services/" + service_name + "/stop" ;
 		log.info("test_NodeManager_shutdownService get {}",url);
-		JSONstring = PostParams(new URL(url), paramsList, ADMIN_AUTHORIZATION, 200);
+		JSONstring = WebRESTUtils.postParams(new URL(url), paramsList, WebRESTUtils.ADMIN_AUTHORIZATION, 200);
 		//convert JSONString to mpfResponse
 		mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
 		//success
@@ -756,7 +672,7 @@ public class ITWebREST {
 		Thread.sleep(3000);// give it some time to shut down
 
 		// verify service is shut down
-		nodes = getNodes();
+		nodes = WebRESTUtils.getNodes();
 		Assert.assertTrue(nodes.length() > 0);
 		boolean completed = false;
 		for (int i = 0; i < nodes.length(); i++) {
@@ -775,17 +691,17 @@ public class ITWebREST {
 		 * start service tests
 		 */
 		//make sure this fails with regular mpf auth (401)
-		url = rest_url + "nodes/services/" + service_name + "/start" ;
+		url = WebRESTUtils.REST_URL + "nodes/services/" + service_name + "/start" ;
 		log.info("test_NodeManager_shutdownService get {}",url);
 		//this will throw an IOException
-		JSONstring = PostParams(new URL(url), paramsList, MPF_AUTHORIZATION, 401);
+		JSONstring = WebRESTUtils.postParams(new URL(url), paramsList, WebRESTUtils.MPF_AUTHORIZATION, 401);
 		//make sure response is null
 		Assert.assertNull(JSONstring);
 
 		//try with bad service name cat:asdfjkl:7
-		url = rest_url + "nodes/services/" + "cat:asdfjkl:7" + "/start" ;
+		url = WebRESTUtils.REST_URL + "nodes/services/" + "cat:asdfjkl:7" + "/start" ;
 		log.info("test_NodeManager_shutdownService get {}",url);
-		JSONstring = PostParams(new URL(url), paramsList, ADMIN_AUTHORIZATION, 200);
+		JSONstring = WebRESTUtils.postParams(new URL(url), paramsList, WebRESTUtils.ADMIN_AUTHORIZATION, 200);
 		//convert JSONString to mpfResponse
 		mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
 		//not a success
@@ -793,11 +709,11 @@ public class ITWebREST {
 		//make sure service is in the response message
 		Assert.assertTrue(mpfResponse.getMessage().contains("service"));
 
-		url = rest_url + "nodes/services/" + service_name + "/start" ;
+		url = WebRESTUtils.REST_URL + "nodes/services/" + service_name + "/start" ;
 		log.info("test_NodeManager_shutdown_startService get {}",url);
 		paramsList = new ArrayList<NameValuePair>();
 		//requires admin auth
-		JSONstring = PostParams(new URL(url), paramsList, ADMIN_AUTHORIZATION, 200);
+		JSONstring = WebRESTUtils.postParams(new URL(url), paramsList, WebRESTUtils.ADMIN_AUTHORIZATION, 200);
 		//convert JSONString to mpfResponse
 		mpfResponse = objectMapper.readValue(JSONstring, MpfResponse.class);
 		//success
@@ -807,7 +723,7 @@ public class ITWebREST {
 		Thread.sleep(3000);// give it some time to shut down
 
 		// verify service is shut down
-		nodes = getNodes();
+		nodes = WebRESTUtils.getNodes();
 		Assert.assertTrue(nodes.length() > 0);
 		completed = false;
 		for (int i = 0; i < nodes.length(); i++) {
@@ -838,7 +754,7 @@ public class ITWebREST {
 	@Test(timeout = 1 * MINUTES)
 	public void test1ProcessMedia() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "jobs";
+		String url = WebRESTUtils.REST_URL + "jobs";
 		startTest("test1ProcessMedia",url);
 
 		//a video will be good to test being able to cancel before completion!
@@ -853,7 +769,7 @@ public class ITWebREST {
 		String params = objectMapper.writeValueAsString(jobCreationRequest);
 
 		URL actualUrl = new URL(url);
-		String response = PostJSON(actualUrl, params, MPF_AUTHORIZATION);
+		String response = WebRESTUtils.postJSON(actualUrl, params, WebRESTUtils.MPF_AUTHORIZATION);
 
 		JobCreationResponse jobCreationResponse = objectMapper.readValue(response, JobCreationResponse.class);
 
@@ -862,9 +778,9 @@ public class ITWebREST {
 		Assert.assertNull(jobCreationResponse.getMpfResponse().getMessage());
 		Assert.assertTrue(jobCreationResponse.getJobId() >= 1);
 
-		ITWebREST.processedJobId = jobCreationResponse.getJobId();
+		processedJobId = jobCreationResponse.getJobId();
 		//use this id for resubmit and cancel testing
-		log.info("processedJobId: " + ITWebREST.processedJobId);
+		log.info("processedJobId: " + processedJobId);
 
 		endTest("test1ProcessMedia");
 	}
@@ -876,13 +792,13 @@ public class ITWebREST {
 	//using 2 after test to make sure this runs after jobs
 	public void test2CancelInProgressJob() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "jobs/" + Long.toString(ITWebREST.processedJobId) + "/cancel";
+		String url = WebRESTUtils.REST_URL + "jobs/" + Long.toString(processedJobId) + "/cancel";
 		startTest("test2CancelInProgressJob",url);
 
 		SingleJobInfo singleJobInfo = null;
 		//wait till ready to attempt a job cancellation
 		do {
-			singleJobInfo  = getSingleJobInfo(ITWebREST.processedJobId);
+			singleJobInfo = WebRESTUtils.getSingleJobInfo(processedJobId);
 
 			//check every three seconds
 			Thread.sleep(3000);
@@ -892,7 +808,7 @@ public class ITWebREST {
 		//create params object
 		List<NameValuePair> params = new ArrayList<NameValuePair>();
 		URL actualUrl = new URL(url);
-		String response = /*PostJSON*/ PostParams(actualUrl, params, MPF_AUTHORIZATION, 200);
+		String response = /*WebRESTUtils.postJSON*/ WebRESTUtils.postParams(actualUrl, params, WebRESTUtils.MPF_AUTHORIZATION, 200);
 		MpfResponse mpfResponse = objectMapper.readValue(response, MpfResponse.class);
 
 		//looking for isSuccess to be true and null error message
@@ -902,7 +818,7 @@ public class ITWebREST {
 		singleJobInfo = null;
 		//wait till job is in a CANCELLED state to verify the job has been CANCELLED
 		do {
-			singleJobInfo  = getSingleJobInfo(ITWebREST.processedJobId);
+			singleJobInfo = WebRESTUtils.getSingleJobInfo(processedJobId);
 
 			//check every three seconds
 			Thread.sleep(3000);
@@ -919,16 +835,16 @@ public class ITWebREST {
 	//using 3 after test to make sure this runs after jobs/{id}/cancel
 	public void test3ResubmitCancelledJob() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "jobs/" + Long.toString(ITWebREST.processedJobId) + "/resubmit";
+		String url = WebRESTUtils.REST_URL + "jobs/" + Long.toString(processedJobId) + "/resubmit";
 		startTest("test3ResubmitCancelledJob",url);
 
 		//need to make sure the job is in a terminal state before trying to resubmit!
-		String urlJobsStatus = rest_url + "jobs/" + ITWebREST.processedJobId + ".json";
+		String urlJobsStatus = WebRESTUtils.REST_URL + "jobs/" + processedJobId + ".json";
 
 		SingleJobInfo singleJobInfo = null;
 		//wait till ready to attempt a job resubmission
 		do {
-			singleJobInfo  = getSingleJobInfo(ITWebREST.processedJobId);
+			singleJobInfo = WebRESTUtils.getSingleJobInfo(processedJobId);
 
 			//check every three seconds
 			Thread.sleep(3000);
@@ -940,19 +856,19 @@ public class ITWebREST {
 		List<NameValuePair> params = new ArrayList<NameValuePair>();
 		params.add(new BasicNameValuePair("jobPriority", "9"));
 		URL actualUrl = new URL(url);
-		String response = PostParams(actualUrl, params, MPF_AUTHORIZATION, 200);
+		String response = WebRESTUtils.postParams(actualUrl, params, WebRESTUtils.MPF_AUTHORIZATION, 200);
 
 		JobCreationResponse jobCreationResponse = objectMapper.readValue(response, JobCreationResponse.class);
 
 		//null error message and verifying the resubmitted job id is equal to the processedJobId
 		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCreationResponse.getMpfResponse().getResponseCode());
 		Assert.assertNull(jobCreationResponse.getMpfResponse().getMessage());
-		Assert.assertEquals(jobCreationResponse.getJobId(), ITWebREST.processedJobId);
+		Assert.assertEquals(jobCreationResponse.getJobId(), processedJobId);
 
 		singleJobInfo = null;
 		//wait till job is complete to prevent logs from this job showing up in other tests...
 		do {
-			singleJobInfo  = getSingleJobInfo(ITWebREST.processedJobId);
+			singleJobInfo = WebRESTUtils.getSingleJobInfo(processedJobId);
 
 			//check every three seconds
 			Thread.sleep(3000);
@@ -966,9 +882,9 @@ public class ITWebREST {
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_Pipelines() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "pipelines.json";
+		String url = WebRESTUtils.REST_URL + "pipelines.json";
 		startTest("testPing_Pipelines",url);
-		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONArray array = new JSONArray(JSONstring);
 		log.info("array length :" + array.length());
 		Assert.assertTrue(array.length() >= 0);
@@ -978,9 +894,9 @@ public class ITWebREST {
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManagerInfo() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "nodes/info.json";
+		String url = WebRESTUtils.REST_URL + "nodes/info.json";
 		startTest("testPing_NodeManagerInfo",url);
-		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONObject obj = new JSONObject(JSONstring);
 		JSONArray array =obj.getJSONArray("nodeModels");
 		log.info("array length :" + array.length());
@@ -992,9 +908,9 @@ public class ITWebREST {
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManagerConfig() throws Exception {
 		if(!test_ready){log.info("A test failed");return;}
-		String url = rest_url + "nodes/config.json";
+		String url = WebRESTUtils.REST_URL + "nodes/config.json";
 		startTest("testPing_NodeManagerConfig",url);
-		JSONstring = GetJSON(new URL(url), MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONArray array = new JSONArray(JSONstring);
 		log.info("array length :" + array.length());
 		Assert.assertTrue(array.length() >= 0);
@@ -1011,7 +927,7 @@ public class ITWebREST {
 	public void createLotsOfJobs() throws Exception {
 		int num = 2500;
 		log.info("create "+num+" jobs");
-		String url = rest_url + "jobs";
+		String url = WebRESTUtils.REST_URL + "jobs";
 		JSONObject params = new JSONObject();
 		params.put("pipelineName", "OCV FACE DETECTION PIPELINE");
 		JSONArray params_media_urls = new JSONArray();
@@ -1023,7 +939,7 @@ public class ITWebREST {
 		String param_string = params.toString();
 		log.info("Post to: " + url + " Params: " + param_string);
 		for(int i =0; i< num;i++){
-			JSONstring = PostJSON(new URL(url), param_string, MPF_AUTHORIZATION);
+			JSONstring = WebRESTUtils.postJSON(new URL(url), param_string, WebRESTUtils.MPF_AUTHORIZATION);
 		}
 		log.info("create lots of jobs complete");
 	}
@@ -1032,165 +948,9 @@ public class ITWebREST {
 	// Helpers
 	// ///////////////////////////
 
-	protected JSONArray getNodes() throws JSONException, MalformedURLException {
-		String url = rest_url + "nodes/info.json";
-		log.debug("getNodes get {}",url);
-		JSONObject obj = new JSONObject(GetJSON(new URL(url), MPF_AUTHORIZATION));
-		return obj.getJSONArray("nodeModels");
-	}
-
-	protected static String GetJSON(URL url, String auth) {
-		HttpURLConnection conn = null;
-		log.debug("GetJSON url :" + url);
-		try {
-			conn = (HttpURLConnection) url.openConnection();
-			conn.setRequestMethod("GET");
-
-			conn.setRequestProperty("Accept", "application/json");
-
-			if (auth != null && auth.length() > 0)// add authorization
-				conn.setRequestProperty("Authorization", auth);
-
-			if (conn.getResponseCode() != 200) {
-				throw new RuntimeException("Failed : HTTP error code : "
-						+ conn.getResponseCode());
-			}
-			String results = getStringFromInputStream(conn.getInputStream());
-			log.debug("url :" + url + " json results:" + results);
-			return results;
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			if (conn != null)
-				conn.disconnect();
-		}
-		return null;
-	}
-
-	/***
-	 *
-	 * @param url
-	 * @param params
-	 *            i.e. "{\"qty\":100,\"name\":\"iPad 4\"}"
-	 * @return
-	 */
-	protected static String PostJSON(URL url, String params, String auth) {
-		log.debug("PostJSON url :" + url);
-		try {
-			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-			conn.setDoOutput(true);
-			conn.setRequestMethod("POST");
-			conn.setRequestProperty("Content-Type", "application/json");
-
-			if (auth != null && auth.length() > 0)// add authorization
-				conn.setRequestProperty("Authorization", auth);
-
-			if(params != null){
-				log.debug("url :" + url + " params:" + params);
-				OutputStream os = conn.getOutputStream();
-				os.write(params.getBytes());
-				os.flush();
-			}
-
-			if (conn.getResponseCode() != HttpURLConnection.HTTP_CREATED && conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
-				log.error("PostJSON Error: Failed to make HttpURLConnection, responseCode is " + conn.getResponseCode() + ", response message is " +
-						conn.getResponseMessage());
-				throw new RuntimeException("Failed : HTTP error code : "
-						+ conn.getResponseCode());
-			}
-
-			String results = getStringFromInputStream(conn.getInputStream());
-			log.debug("url :" + url + " json results:" + results);
-			conn.disconnect();
-			return results;
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-
-	/***
-	 *
-	 * @param url
-	 *            i.e. "param1=a&param2=b&param3=c"
-	 * @return
-	 * @throws IOException
-	 */
-	protected String PostParams(URL url, List<NameValuePair> paramsList, String auth, int httpResponseCode) {
-		try {
-			//URLEncodedUtils is a nice helper when building a params set for http requests
-			String urlParameters = URLEncodedUtils.format(paramsList, StandardCharsets.UTF_8);
-
-			byte[] postData = urlParameters.getBytes( StandardCharsets.UTF_8 );
-			int postDataLength = postData.length;
-
-			HttpURLConnection conn= (HttpURLConnection) url.openConnection();
-			conn.setDoOutput(true);
-			conn.setInstanceFollowRedirects(false);
-			conn.setRequestMethod( "POST" );
-			conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-			conn.setRequestProperty("charset", "utf-8");
-			conn.setRequestProperty("Content-Length", Integer.toString( postDataLength));
-			conn.setUseCaches(false);
-
-			if (auth != null && auth.length() > 0)// add authorization
-				conn.setRequestProperty("Authorization", auth);
-
-			OutputStream os = conn.getOutputStream();
-			os.write(postData);
-			os.flush();
-
-			if (conn.getResponseCode() != httpResponseCode) {
-				throw new RuntimeException("Failed : HTTP error code : "
-						+ conn.getResponseCode());
-			}
-
-			String results = getStringFromInputStream(conn.getInputStream());
-			conn.disconnect();
-			return results;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-
-	/***
-	 * Helper method to convert InputStream to String
-	 *
-	 * @param is
-	 * @return the data as a string
-	 */
-	private static String getStringFromInputStream(InputStream is) {
-		BufferedReader br = null;
-		StringBuilder sb = new StringBuilder();
-		String line;
-		try {
-			br = new BufferedReader(new InputStreamReader(is));
-			while ((line = br.readLine()) != null) {
-				sb.append(line);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			if (br != null) {
-				try {
-					br.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-		return sb.toString();
-	}
-
-	public static long createNewJob() throws MalformedURLException,
-			InterruptedException {
+	public static long createNewJob() throws MalformedURLException, InterruptedException {
 		log.info("Creating new Job");
-		String url = rest_url + "jobs";
+		String url = WebRESTUtils.REST_URL + "jobs";
 		// create a JobCreationRequest
 		JSONObject params = new JSONObject();
 		params.put("pipelineName", TEST_PIPELINE_NAME);
@@ -1202,42 +962,14 @@ public class ITWebREST {
 		params.put("priority", 9);
 		String param_string = params.toString();
 		log.info("Post to: " + url + " Params: " + param_string);
-		JSONstring = PostJSON(new URL(url), param_string, MPF_AUTHORIZATION);
+		JSONstring = WebRESTUtils.postJSON(new URL(url), param_string, WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("results:" + JSONstring);
 		JSONObject obj = new JSONObject(JSONstring);
 		return Long.valueOf(obj.getInt("jobId"));
 	}
 
-	public static SingleJobInfo getSingleJobInfo(long jobId) throws JsonParseException, JsonMappingException, IOException {
-		String urlJobsStatus = rest_url + "jobs/" + Long.toString(jobId) + ".json";
-		String jsonJobResponse = GetJSON(new URL(urlJobsStatus), MPF_AUTHORIZATION);
-		Assert.assertTrue("Failed to retrieve JSON when GETting job info for job id: " + Long.toString(jobId), jsonJobResponse.length() >= 0);
-		return objectMapper.readValue(jsonJobResponse, SingleJobInfo.class);
-	}
-
-	public static JobStatus getJobsStatus(long jobid)throws JsonParseException, JsonMappingException, IOException  {
-		SingleJobInfo singleJobInfo = getSingleJobInfo(jobid);
-		//convert to the enum and return
-		return JobStatus.valueOf(singleJobInfo.getJobStatus());
-	}
-
-	public static boolean waitForJobToTerminate(long jobid, long delay) throws InterruptedException, JsonParseException, JsonMappingException, IOException {
-		log.info("[waitForJobToTerminate] job {}, delay:{} ", jobid, delay);
-		int count=20;
-		JobStatus status;
-		do{
-			status = getJobsStatus(jobid);
-			log.info("[waitForJobToTerminate] job {}, status:{} delay:{} count{}" ,jobid,status,delay,count);
-			Thread.sleep(delay);
-			count--;
-		}
-		while(count > 0 && !status.isTerminal());
-		if(count > 0) return true;
-		return false;
-	}
-
-	final boolean[] sparkresponse = new boolean[2];
-	final long[] sparkIds = new long[2];
+	private final boolean[] sparkresponse = new boolean[2];
+	private final long[] sparkIds = new long[2];
 	@Test(timeout = 5*MINUTES)
 	public void testJobWithCallback() throws Exception {
 		long externalId =  555;
@@ -1245,7 +977,7 @@ public class ITWebREST {
 			log.info("Beginning test #{} testJobWithCallback()", testCtr);
 			testCtr++;
 			log.info("Creating new Job");
-			String url = rest_url + "jobs";
+			String url = WebRESTUtils.REST_URL + "jobs";
 
 			// create a JobCreationRequest
 			JSONObject params = new JSONObject();
@@ -1272,7 +1004,7 @@ public class ITWebREST {
 
 			//submit a job request with a POST callback
 			log.info("Post to: " + url + " Params: " + param_string);
-			JSONstring = PostJSON(new URL(url), param_string, MPF_AUTHORIZATION);
+			JSONstring = WebRESTUtils.postJSON(new URL(url), param_string, WebRESTUtils.MPF_AUTHORIZATION);
 			log.info("results:" + JSONstring);// {"errorCode":0,"errorMessage":null,"jobId":5}
 			JSONObject obj = new JSONObject(JSONstring);
 			long jobId =  Long.valueOf(obj.getInt("jobId"));
@@ -1295,7 +1027,7 @@ public class ITWebREST {
 			params.put("callbackMethod","GET");
 			param_string = params.toString();
 			log.info("Post to: " + url + " Params: " + param_string);
-			JSONstring = PostJSON(new URL(url), param_string, MPF_AUTHORIZATION);
+			JSONstring = WebRESTUtils.postJSON(new URL(url), param_string, WebRESTUtils.MPF_AUTHORIZATION);
 			log.info("results:" + JSONstring);// {"errorCode":0,"errorMessage":null,"jobId":5}
 			obj = new JSONObject(JSONstring);
 			jobId =  Long.valueOf(obj.getInt("jobId"));
@@ -1345,344 +1077,4 @@ public class ITWebREST {
 
 		Spark.awaitInitialization();
 	} // method used to setup Spark for a simple callback that only contains jobid and externalid
-
-	// Revised in this section to test the Health Report Callbacks, testing both the GET and POST methods.
-	// Note #1: Need to create 2 streaming jobs for these tests, but the components don't yet support streaming. Working around this
-	// issue by spoofing the WFM by using a place-holder streaming component created using Mockito.
-	// Note #2: Needed to add confirmation of jobId in the health callbacks, because scheduled callbacks from a job created
-	// earlier was causing the callback to capture a health report sent before a later job under test was scheduled, and
-	// causing the test to fail.
-	final int healthReportCallbackPort = 20160;
-	long jobIdGetTest = -1L;
-	long jobIdPostTest = -1L;
-	boolean healthSparkGetResponse = false;
-	boolean healthSparkPostResponse = false;
-	JsonHealthReportDataCallbackBody healthReportGetCallbackBody = null;
-	JsonHealthReportDataCallbackBody healthReportPostCallbackBody = null;
-
-	/** Create a StreamingJobCreationRequest for the Health Report system tests. Issue: the components don't yet support streaming. Working around this
-	 * issue by spoofing the WFM by using a streaming component created using Mockito as a place-holder.
-	 */
-	private String createStreamingJobForHealthReportTest(String url, String customPipelineName, String externalId, String callbackMethod) throws MalformedURLException{
-
-		// create a request for a new streaming job using a component that supports streaming jobs.
-		JSONObject params = new JSONObject();
-		params.put("pipelineName", customPipelineName);
-
-		JSONObject stream = new JSONObject();
-		// Using this sample video for initial testing.
-		stream.put("streamUri", "rtsp://home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/obama-basketball.mp4");
-		stream.put("mediaProperties", new org.json.simple.JSONObject());
-		stream.put("segmentSize", 100);
-
-		params.put("stream", stream);
-		params.put("stallTimeout", 180);
-		params.put("externalId", externalId);
-		params.put("enableOutputToDisk", true);
-		params.put("priority", 0);
-		params.put("healthReportCallbackUri", "http://0.0.0.0:" + healthReportCallbackPort + "/callback");
-		params.put("callbackMethod", callbackMethod);
-		String param_string = params.toString();
-
-		log.info("createStreamingJobForHealthReportTest: create streaming job request sent to: " + url + ", Params: " + param_string);
-		return PostJSON(new URL(url), param_string, MPF_AUTHORIZATION);
-	}
-
-	private void setUpMocksForDescriptor(JsonComponentDescriptor descriptor) throws DuplicateComponentException, IOException {
-		RegisterComponentModel rcm = new RegisterComponentModel();
-		rcm.setComponentState(ComponentState.UPLOADED);
-		rcm.setPackageFileName(_testPackageName);
-
-		when(_mockStateService.getByPackageFile(_testPackageName))
-				.thenReturn(Optional.of(rcm));
-
-		when(_mockDeploymentService.deployComponent(_testPackageName))
-				.thenReturn(DESCRIPTOR_PATH);
-
-		when(_mockObjectMapper.readValue(new File(DESCRIPTOR_PATH), JsonComponentDescriptor.class))
-				.thenReturn(descriptor);
-	}
-
-	private void verifyDescriptorAlgoSaved(JsonComponentDescriptor descriptor) {
-		verify(_mockPipelineService)
-				.saveAlgorithm(whereArg(algo -> algo.getName().equals(descriptor.algorithm.name.toUpperCase())
-						&& algo.supportsBatchProcessing() == descriptor.supportsBatchProcessing()
-						&& algo.supportsStreamProcessing() == descriptor.supportsStreamProcessing()));
-
-	}
-
-	private void assertNeverUndeployed() {
-		verify(_mockDeploymentService, never())
-				.undeployComponent(any());
-	}
-
-	@Test(timeout = 5*MINUTES)
-	public void testStreamingJobWithHealthReportCallback() throws Exception {
-		String myExternalId1 =  "myExternalId is "+701;
-		String myExternalId2 =  "myExternalId is "+702;
-		try {
-			log.info("Beginning test #{} testStreamingJobWithHealthReportCallback()", testCtr);
-			testCtr++;
-
-			// Spoof the WFM by using a streaming component created using Mockito as a place-holder.
-			// Create a Mock component descriptor which supports streaming jobs, and creates the custom pipeline named PIPELINE_NAME
-			JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();
-			setUpMocksForDescriptor(descriptor);
-
-			when(_mockNodeManager.getServiceModels())
-					.thenReturn(Collections.singletonMap("fake name", null));
-
-			when(_mockNodeManager.addService(anyNonNull()))
-					.thenReturn(true);
-
-			// Act
-			_addComponentService.registerComponent(_testPackageName);
-
-			// Assert
-			verify(_mockStateService)
-					.replacePackageState(_testPackageName, ComponentState.REGISTERING);
-
-			verify(_mockStateService, atLeastOnce())
-					.update(whereArg(
-							rcm -> rcm.getActions().containsAll(ACTION_NAMES)
-									&& rcm.getTasks().containsAll(TASK_NAMES)
-									&& rcm.getPipelines().contains(PIPELINE_NAME)));
-
-			verifyDescriptorAlgoSaved(descriptor);
-
-			verify(_mockPipelineService, times(3))
-					.saveAction(whereArg(ad -> ad.getAlgorithmRef().equals(REFERENCED_ALGO_NAME)));
-
-			verify(_mockPipelineService)
-					.saveAction(whereArg(ad -> ad.getName().equals(ACTION_NAMES.get(0))
-							&& ad.getProperties().stream()
-							.anyMatch(pd -> pd.getName().equals(ACTION1_PROP_NAMES.get(0))
-									&& pd.getValue().equals(ACTION1_PROP_VALUES.get(0)))));
-
-			verify(_mockPipelineService)
-					.saveTask(whereArg(t ->
-							t.getName().equals(TASK_NAMES.get(0))
-									&& t.getDescription().equals(TASK_NAMES.get(0) + " description")
-									&& t.getActions().size() == 1));
-
-			verify(_mockPipelineService)
-					.saveTask(whereArg(t ->
-							t.getName().equals(TASK_NAMES.get(1))
-									&& t.getDescription().equals(TASK_NAMES.get(1) + " description")
-									&& t.getActions().size() == 2));
-
-			verify(_mockPipelineService)
-					.savePipeline(whereArg(p ->
-							p.getName().equals(PIPELINE_NAME)
-									&& p.getDescription().contains("description")
-									&& p.getTaskRefs().size() == 2));
-
-			verify(_mockNodeManager)
-					.addService(whereArg(s -> s.getName().equals(COMPONENT_NAME)));
-
-			verify(_mockStreamingServiceManager)
-					.addService(whereArg(
-							s -> s.getServiceName().equals(COMPONENT_NAME)
-									&& s.getAlgorithmName().equals(descriptor.algorithm.name.toUpperCase())
-									&& s.getEnvironmentVariables().size() == descriptor.environmentVariables.size()));
-
-			assertNeverUndeployed();
-
-			Optional<Pipeline> customPipeline = descriptor.pipelines.stream().findFirst();
-
-			// Should have a custom pipeline that supports streaming for this test.
-			Assert.assertTrue(customPipeline.isPresent());
-			Assert.assertTrue(descriptor.supportsStreamProcessing());
-
-			// End of section to create a Mock component descriptor which supports streaming jobs
-
-			healthSparkGetResponse = false;
-			healthSparkPostResponse = false;
-
-			setupSparkForHealthReport(); // Start the listener for health reports.
-
-			// Submit 1st streaming job request with a POST callback
-			log.info("testStreamingJobWithHealthReportCallback: Creating a new Streaming Job for the POST test");
-			String url = rest_url + "streaming/jobs";
-			// jobCreationResponse should be something like {"jobId":5, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
-			String jobCreationResponse = createStreamingJobForHealthReportTest(url, customPipeline.get().name, myExternalId1, "POST");
-
-			JSONObject obj = new JSONObject(jobCreationResponse);
-			jobIdPostTest =  Long.valueOf(obj.getInt("jobId"));
-			log.info("testStreamingJobWithHealthReportCallback: streaming jobId " + jobIdPostTest + " created with POST method, jobCreationResponse=" + jobCreationResponse);
-
-			// Wait for a Health Report callback that includes the jobId of this test job.
-			// Health reports should periodically be sent every 30 seconds. Listen for at least one Health Report POST that includes our jobId.
-			int count = 0;
-			while (healthSparkPostResponse != true && count < 120) {
-				Thread.sleep(1000);
-				count++;
-			}
-
-			if ( healthSparkPostResponse ) {
-				log.info("testStreamingJobWithHealthReportCallback: received a Spark POST response, while testing jobIdPostTest=" + jobIdPostTest +", healthReportPostCallbackBody="+healthReportPostCallbackBody);
-				if (healthReportPostCallbackBody != null) {
-					// Test to make sure the received health report is from the 1st streaming job.
-					Assert.assertTrue(
-							healthReportPostCallbackBody.getJobId().contains(Long.valueOf(jobIdPostTest))
-									&& healthReportPostCallbackBody.getExternalId().contains(myExternalId1));
-				} else {
-					log.error("testStreamingJobWithHealthReportCallback: Error, couldn't form a Health Report from the POST request test");
-				}
-			} else {
-				log.error("testStreamingJobWithHealthReportCallback: Error, didn't receive a response to the POST request test");
-			}
-
-			// Wait till ready to attempt a streaming job cancellation.
-			String urlStreamingJobId1Status = rest_url + "streaming/jobs/" + jobIdPostTest;
-			StreamingJobInfo streamingJobInfo = null;
-			do {
-				String jsonStreamingJobInfo = GetJSON(new URL(urlStreamingJobId1Status), MPF_AUTHORIZATION);
-				streamingJobInfo  = objectMapper.readValue(jsonStreamingJobInfo, StreamingJobInfo.class);
-
-				// Check every three seconds
-				Thread.sleep(3000);
-			} while( streamingJobInfo == null );
-
-			// After running the POST test, clear the 1st streaming job from REDIS with doCleanup enabled.
-			List<NameValuePair> cancelParams = new ArrayList<NameValuePair>();
-			cancelParams.add(new BasicNameValuePair("doCleanup", "true"));
-			URL cancelUrl = new URL(rest_url + "streaming/jobs/" + Long.toString(jobIdPostTest) + "/cancel");
-			String jobCancelResponse = PostParams(cancelUrl, cancelParams, MPF_AUTHORIZATION, 200);
-			log.info("testStreamingJobWithHealthReportCallback: finished POST test, cancelling 1st streaming job using cancelUrl=" + cancelUrl +
-					" and cancelParams=" + cancelParams);
-			log.info("testStreamingJobWithHealthReportCallback: finished POST test, cancelled 1st streaming job with results:" + jobCancelResponse);
-
-			// Submit 2nd streaming job request with a GET callback.
-			log.info("testStreamingJobWithHealthReportCallback: Creating a new Streaming Job for the GET test");
-
-			// jobCreationResponse should be something like {"jobId":6, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
-			jobCreationResponse = createStreamingJobForHealthReportTest(url, customPipeline.get().name, myExternalId2, "GET");
-			log.info("testStreamingJobWithHealthReportCallback: create streaming job GET results:" + jobCreationResponse);
-			obj = new JSONObject(jobCreationResponse);
-			jobIdGetTest =  Long.valueOf(obj.getInt("jobId"));
-			log.info("testStreamingJobWithHealthReportCallback: streaming jobId " + jobIdGetTest + " created with GET method, jobCreationResponse=" + jobCreationResponse);
-
-			// Wait for a Health Report callback that includes the jobId of this test job.
-			// Health reports should periodically be sent every 30 second. Listen for at least one Health Report GET that includes our jobId.
-			count = 0;
-			while (healthSparkGetResponse != true  && count < 120) {
-				Thread.sleep(1000);
-				count++;
-			}
-
-			if ( healthSparkGetResponse ) {
-				log.info("testStreamingJobWithHealthReportCallback: received a Spark GET response while testing jobIdGetTest=" + jobIdGetTest +", healthReportGetCallbackBody="+healthReportGetCallbackBody);
-				if (healthReportGetCallbackBody != null) {
-					// Test to make sure the received health report is from the 2nd streaming job.
-					Assert.assertTrue(
-							healthReportGetCallbackBody.getJobId().contains(Long.valueOf(jobIdGetTest))
-									&& healthReportGetCallbackBody.getExternalId().contains(myExternalId2));
-				} else {
-					log.error("testStreamingJobWithHealthReportCallback: Error, couldn't form a Health Report from the GET request test");
-				}
-			} else {
-				log.error("testStreamingJobWithHealthReportCallback: Error, didn't receive a response to the GET request test");
-			}
-
-			// Wait till ready to attempt a streaming job cancellation
-			String urlStreamingJobId2Status = rest_url + "streaming/jobs/" + jobIdGetTest;
-			streamingJobInfo = null;
-			do {
-				String jsonStreamingJobInfo = GetJSON(new URL(urlStreamingJobId2Status), MPF_AUTHORIZATION);
-				streamingJobInfo  = objectMapper.readValue(jsonStreamingJobInfo, StreamingJobInfo.class);
-
-				// Check every three seconds
-				Thread.sleep(3000);
-			} while( streamingJobInfo == null );
-
-			// After running the GET test, clear the 2nd streaming job from REDIS with doCleanup enabled.
-			cancelUrl = new URL(rest_url + "streaming/jobs/" + Long.toString(jobIdGetTest) + "/cancel");
-			jobCancelResponse = PostParams(cancelUrl, cancelParams, MPF_AUTHORIZATION, 200);
-			log.info("testStreamingJobWithHealthReportCallback: finished GET test, cancelling 2nd streaming job using cancelUrl=" + cancelUrl +
-					" and cancelParams=" + cancelParams);
-			log.info("testStreamingJobWithHealthReportCallback: finished GET test, cancelled 2nd streaming job with results:" + jobCancelResponse);
-
-			log.info("testStreamingJobWithHealthReportCallback: Finished POST and GET tests of health report callbacks");
-		} finally {
-			Spark.stop();
-		}
-	} // end of method testStreamingJobWithHealthReportCallback
-
-	private void setupSparkForHealthReport(){
-		Spark.port(healthReportCallbackPort);
-		Spark.get("/callback", new Route() {
-			@Override
-			public Object handle(Request request, Response resp) throws Exception {
-				log.info("Spark Servicing request..  Received a HealthReport GET Callback ..from method " + request.requestMethod());
-				try {
-
-					log.info("Spark GET Health Report Callback, request.queryParams(reportDate)=" + request.queryParams("reportDate"));
-					log.info("Spark GET Health Report Callback, request.queryParams(jobId)=" + request.queryParams("jobId"));
-					log.info("Spark GET Health Report Callback, request.queryParams(externalId)=" + request.queryParams("externalId"));
-					log.info("Spark GET Health Report Callback, request.queryParams(jobStatus)=" + request.queryParams("jobStatus"));
-					log.info("Spark GET Health Report Callback, request.queryParams(lastNewActivityAlertFrameId)=" + request.queryParams("lastNewActivityAlertFrameId"));
-					log.info("Spark GET Health Report Callback, request.queryParams(lastNewActivityAlertTimestamp)=" + request.queryParams("lastNewActivityAlertTimestamp"));
-
-					// Convert from requests JSON parameters to String or List as needed to construct the health report.
-					ObjectMapper objectMapper = new ObjectMapper();
-					List<Long> jobIds = Arrays.asList(objectMapper.readValue(request.queryParams("jobId"), Long[].class));
-					List<String> externalIds = Arrays.asList(objectMapper.readValue(request.queryParams("externalId"), String[].class));
-					List<String> jobStatuses = Arrays.asList(objectMapper.readValue(request.queryParams("jobStatus"), String[].class));
-					List<BigInteger> lastNewActivityAlertFrameIds = Arrays.asList(objectMapper.readValue(request.queryParams("lastNewActivityAlertFrameId"), BigInteger[].class));
-					List<String> lastNewActivityAlertTimestamps = Arrays.asList(objectMapper.readValue(request.queryParams("lastNewActivityAlertTimestamp"), String[].class));
-					healthReportGetCallbackBody = new JsonHealthReportDataCallbackBody(request.queryParams("reportDate"),
-							jobIds, externalIds, jobStatuses, lastNewActivityAlertFrameIds, lastNewActivityAlertTimestamps);
-					log.info("Spark GET Callback, received Health Report at time="+ DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now()) + ", with timestamp "
-							+ healthReportGetCallbackBody.getReportDate());
-					log.info("  jobIds=" + healthReportGetCallbackBody.getJobId());
-					log.info("  externalIds=" + healthReportGetCallbackBody.getExternalId());
-					log.info("  jobStatus=" + healthReportGetCallbackBody.getJobStatus());
-					log.info("  lastNewActivityAlertFrameId=" + healthReportGetCallbackBody.getLastNewActivityAlertFrameId());
-					log.info("  lastNewActivityAlertTimestamp=" + healthReportGetCallbackBody.getLastNewActivityAlertTimeStamp());
-					// If this health report includes the jobId for our GET test, then set indicator
-					// that a health report sent using GET method has been received. Need to add this check
-					// to ensure a periodic health report sent prior to creation of our test job doesn't prematurely stop the test.
-					if ( healthReportGetCallbackBody.getJobId().contains(jobIdGetTest) ) {
-						healthSparkGetResponse = true;
-					}
-				} catch (Exception e) {
-					log.error("Error, Exception caught while processing Health Report GET callback.", e);
-				}
-				return "";
-			}
-		});
-		Spark.post("/callback", new Route() {
-			@Override
-			public Object handle(Request request, Response resp) throws Exception {
-				log.info("Spark Servicing request..POST..from method " + request.requestMethod() + " body:"+request.body());
-				try {
-					ObjectMapper jsonObjectMapper = new ObjectMapper();
-					// The health report uses Java8 time, so we need to include the external JavaTimeModule which provides support for Java 8 Time.
-					JavaTimeModule javaTimeModule = new JavaTimeModule();
-					jsonObjectMapper.registerModule(javaTimeModule);
-					log.info("Spark POST Callback, received Health Report at time="+ DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now()) + ", constructing JsonHealthReportDataCallbackBody");
-					healthReportPostCallbackBody = jsonObjectMapper.readValue(request.bodyAsBytes(), JsonHealthReportDataCallbackBody.class);
-					log.info("Spark POST Callback, received Health Report " + healthReportPostCallbackBody);
-					log.info("  jobIds=" + healthReportPostCallbackBody.getJobId());
-					log.info("  externalIds=" + healthReportPostCallbackBody.getExternalId());
-					log.info("  jobStatus=" + healthReportPostCallbackBody.getJobStatus());
-					log.info("  lastNewActivityAlertFrameId=" + healthReportPostCallbackBody.getLastNewActivityAlertFrameId());
-					log.info("  lastNewActivityAlertTimestamp=" + healthReportPostCallbackBody.getLastNewActivityAlertTimeStamp());
-					// If this health report includes the jobId for our POST test, then set indicator
-					// that a health report sent using POST method has been received. Need to add this check
-					// to ensure a periodic health report sent prior to creation of our test job doesn't prematurely stop the test.
-					if ( healthReportPostCallbackBody.getJobId().contains(jobIdPostTest) ) {
-						healthSparkPostResponse = true;
-					}
-				} catch (Exception e) {
-					log.error("Error, Exception caught while processing Health Report POST callback.", e);
-				}
-				return "";
-			}
-		});
-
-		Spark.awaitInitialization();
-	} // method used to setup Spark for a Health Report callback
-
 }

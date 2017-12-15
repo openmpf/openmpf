@@ -1,0 +1,47 @@
+{
+  "componentName" : "CplusplusStreamTest",
+  "componentVersion" : "1.0.0",
+  "middlewareVersion" : "1.0.0",
+  "sourceLanguage" : "c++",
+  "streamLibrary" : "${MPF_HOME}/plugins/CplusplusStreamTest/lib/libmpfCplusplusStreamTest.so",
+  "environmentVariables" : [{
+    "name":"LD_LIBRARY_PATH",
+    "value":"${MPF_HOME}/plugins/CplusplusStreamTest/lib",
+    "sep": ":"
+  }],
+  "algorithm" : {
+    "name" : "CplusplusStreamTest",
+    "description" : "A dummy C++ detection component.",
+    "actionType" : "DETECTION",
+    "requiresCollection" : {
+      "states" : []
+    },
+    "providesCollection" : {
+      "states" : [
+        "state1",
+        "state2"
+      ],
+      "properties" : [
+        {
+          "name" : "prop1",
+          "description" : "my prop 1",
+          "type" : "INT",
+          "defaultValue" : "2"
+        },
+        {
+          "name" : "prop2",
+          "description" : "my prop 2",
+          "type" : "BOOLEAN",
+          "defaultValue" : "true"
+        },
+        {
+          "name" : "prop3",
+          "description" : "my prop 3",
+          "type" : "STRING",
+          "defaultValue" : "string property"
+        }
+      ]
+    }
+  }
+}
+

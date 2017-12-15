@@ -71,9 +71,11 @@ MPFDetectionError StreamingHelloWorld::ProcessFrame(const cv::Mat &frame, bool &
 
 MPFDetectionError StreamingHelloWorld::GetVideoTracks(std::vector<MPFVideoTrack> &tracks) {
     LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Getting video tracks.")
-    MPFVideoTrack track1(10, 15, 0.5, { {"propName1", "propVal1"}, {"propName2", "propVal2"} });
-    track1.frame_locations[10] = MPFImageLocation(10, 15, 78, 63, 0.5);
-    track1.frame_locations[15] = MPFImageLocation(10, 15, 78, 63, 0.9);
+    MPFVideoTrack track1(10, 15, 0.5);
+    track1.frame_locations[10] = MPFImageLocation(10, 15, 78, 63, 0.5,
+                                                  { {"propName1", "propVal1"}, {"propName2", "propVal2"} });
+    track1.frame_locations[15] = MPFImageLocation(10, 15, 78, 63, 0.9,
+                                                  { {"propName3", "propVal3"} });
     tracks.push_back(std::move(track1));
 
     MPFVideoTrack track2(150, 200, 0.75);

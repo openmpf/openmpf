@@ -149,7 +149,7 @@ public class ArtifactExtractionProcessorImpl extends WfmProcessor implements Art
 				TransientMedia transientMedia = redis.getJob(request.getJobId()).getMedia().stream()
 						.filter(m -> m.getId() == request.getMediaId()).findAny().get();
 
-				transientMedia.setMessage("Error extracting frames. Check the Workflow Manager log for details.");
+				transientMedia.setMessage("Error extracting frame(s). Check the Workflow Manager log for details.");
 				redis.persistMedia(request.getJobId(), transientMedia);
 			}
 		}

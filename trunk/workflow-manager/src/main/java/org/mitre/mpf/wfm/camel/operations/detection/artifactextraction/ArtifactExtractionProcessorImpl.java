@@ -34,7 +34,9 @@ import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
+import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -100,6 +102,7 @@ public class ArtifactExtractionProcessorImpl extends WfmProcessor implements Art
 			// in the results map, the detection's artifact path should be set to 15's extracted frame.
 			SortedSet<Track> tracks = redis.getTracks(request.getJobId(), request.getMediaId(), request.getStageIndex(), actionIndex);
 
+			boolean error = false;
 			for(Track track : tracks) {
 
 				// An exemplar is a specific detection, so it must also be checked.
@@ -108,6 +111,7 @@ public class ArtifactExtractionProcessorImpl extends WfmProcessor implements Art
                     if(Objects.equals(exemplarMediaOffsetResult,ERROR_PATH)) {
 						track.getExemplar().setArtifactExtractionStatus(ArtifactExtractionStatus.FAILED);
 						track.getExemplar().setArtifactPath(null);
+						error = true;
 					} else if(Objects.equals(exemplarMediaOffsetResult,UNSUPPORTED_PATH)) {
 						track.getExemplar().setArtifactExtractionStatus(ArtifactExtractionStatus.UNSUPPORTED_MEDIA_TYPE);
 						track.getExemplar().setArtifactPath(null);
@@ -123,6 +127,7 @@ public class ArtifactExtractionProcessorImpl extends WfmProcessor implements Art
 						if(Objects.equals(detectionMediaOffsetResult,ERROR_PATH)) {
 							detection.setArtifactExtractionStatus(ArtifactExtractionStatus.FAILED);
 							detection.setArtifactPath(null);
+							error = true;
 						} else if(Objects.equals(detectionMediaOffsetResult,UNSUPPORTED_PATH)) {
 							detection.setArtifactExtractionStatus(ArtifactExtractionStatus.UNSUPPORTED_MEDIA_TYPE);
 							detection.setArtifactPath(null);
@@ -137,6 +142,16 @@ public class ArtifactExtractionProcessorImpl extends WfmProcessor implements Art
 			// It's likely we've updated at least one track, so the new values need to be pushed to the transient
 			// data store.
 			redis.setTracks(request.getJobId(), request.getMediaId(), request.getStageIndex(), actionIndex, tracks);
+
+			if (error) {
+				redis.setJobStatus(request.getJobId(), JobStatus.IN_PROGRESS_ERRORS);
+
+				TransientMedia transientMedia = redis.getJob(request.getJobId()).getMedia().stream()
+						.filter(m -> m.getId() == request.getMediaId()).findAny().get();
+
+				transientMedia.setMessage("Error extracting frame(s). Check the Workflow Manager log for details.");
+				redis.persistMedia(request.getJobId(), transientMedia);
+			}
 		}
 
 		exchange.getOut().getHeaders().put(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));

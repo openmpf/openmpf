@@ -78,7 +78,7 @@ public class FrameExtractor {
 
 
             if (response != 0) {
-                throw new FrameExtractorJniException(String.format("Native method invocation returned the error code %d.", response), response);
+                throw new FrameExtractorJniException(response);
             }
 
             return paths;

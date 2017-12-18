@@ -46,11 +46,9 @@ using namespace cv;
 JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
   (JNIEnv *env, jobject frameCounterInstance, jstring sourceVideoPath, bool bruteForce)
 {
-    int count = -8701;
+    int count = -8700;
 
     if (env != NULL) {
-
-        // Get the bounding box map.
         jclass clzFrameCounter = env->GetObjectClass(frameCounterInstance);
 
         // Set up the video...
@@ -63,7 +61,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
                     // Cleanup...
                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
 
-                    return -8700;
+                    return -8701;
                 }
 
                 if (bruteForce) {
@@ -78,13 +76,13 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
                 src.release();
                 env->ReleaseStringUTFChars(sourceVideoPath, inChars);
             } catch (cv::Exception) {
-                return -8701;
+                return -8702;
             }
         } else {
-            return -8701;
+            return -8703;
         }
     } else {
-        return -8701;
+        return -8704;
     }
     return (jint)count;
 }

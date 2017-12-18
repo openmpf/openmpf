@@ -49,13 +49,12 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
   (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceVideoPath, jstring destinationVideoPath)
 {
     if (env != NULL) {
-
         // Get the bounding box map.
         jclass clzBoundingBoxWriter = env->GetObjectClass(boundingBoxWriterInstance);
         jmethodID clzBoundingBoxWriter_fnGetBoundingBoxMap = env->GetMethodID(clzBoundingBoxWriter, "getBoundingBoxMap", "()Lorg/mitre/mpf/videooverlay/BoundingBoxMap;");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8700;
         }
         jobject boundingBoxMap = env->CallObjectMethod(boundingBoxWriterInstance, clzBoundingBoxWriter_fnGetBoundingBoxMap);
         if (env->ExceptionCheck()) {
@@ -68,12 +67,12 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
         jmethodID clzBoundingBoxMap_fnGet = env->GetMethodID(clzBoundingBoxMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;"); // May be a list.
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8702;
         }
         jmethodID clzBoundingBoxMap_fnContainsKey = env->GetMethodID(clzBoundingBoxMap, "containsKey", "(Ljava/lang/Object;)Z");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8703;
         }
         jint allFramesKey = env->GetStaticIntField(clzBoundingBoxMap, env->GetStaticFieldID(clzBoundingBoxMap, "ALL_FRAMES", "I"));
 
@@ -81,60 +80,60 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
         jclass clzList = env->FindClass("java/util/List");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8704;
         }
         jmethodID clzList_fnGet = env->GetMethodID(clzList, "get", "(I)Ljava/lang/Object;");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8705;
         }
         jmethodID clzList_fnSize = env->GetMethodID(clzList, "size", "()I");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8706;
         }
 
         // Get BoundingBox class and methods.
         jclass clzBoundingBox = env->FindClass("org/mitre/mpf/videooverlay/BoundingBox");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8707;
         }
         jmethodID clzBoundingBox_fnGetX = env->GetMethodID(clzBoundingBox, "getX", "()I");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8708;
         }
         jmethodID clzBoundingBox_fnGetY = env->GetMethodID(clzBoundingBox, "getY", "()I");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8709;
         }
         jmethodID clzBoundingBox_fnGetHeight = env->GetMethodID(clzBoundingBox, "getHeight", "()I");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8710;
         }
         jmethodID clzBoundingBox_fnGetWidth = env->GetMethodID(clzBoundingBox, "getWidth", "()I");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8711;
         }
         jmethodID clzBoundingBox_fnGetColor = env->GetMethodID(clzBoundingBox, "getColor", "()I");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8712;
         }
 
         jclass clzInteger = env->FindClass("java/lang/Integer");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8713;
         }
         jmethodID clzInteger_fnValueOf = env->GetStaticMethodID(clzInteger, "valueOf", "(I)Ljava/lang/Integer;");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8714;
         }
 
         // Set up the videos...
@@ -148,7 +147,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                     // Cleanup...
                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
 
-                    return 8700;
+                    return 8715;
                 }
 
                 Size cvSize = Size(static_cast<int>(src.get(cv::CAP_PROP_FRAME_WIDTH)),
@@ -163,7 +162,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                         env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                         env->ReleaseStringUTFChars(destinationVideoPath, outChars);
 
-                        return 8710;
+                        return 8716;
                     }
 
                     Mat frame;
@@ -177,7 +176,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                             env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                             env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                             env->ExceptionClear();
-                            return 8701;
+                            return 8717;
                         }
 
                         // Get the next frame.
@@ -196,7 +195,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                             env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                             env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                             env->ExceptionClear();
-                            return 8701;
+                            return 8718;
                         }
                         if(success == JNI_TRUE) {
                             // Map has elements which are to be drawn on every frame.
@@ -205,7 +204,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                                 env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                 env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                 env->ExceptionClear();
-                                return 8701;
+                                return 8719;
                             }
 
                             // Iterate through this list, drawing the box on the frame.
@@ -214,7 +213,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                                 env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                 env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                 env->ExceptionClear();
-                                return 8701;
+                                return 8720;
                             }
                             for(jint i = 0; i < size; i++) {
                                 jobject box = env->CallObjectMethod(allFramesElements, clzList_fnGet, i);
@@ -222,28 +221,28 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                     env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                     env->ExceptionClear();
-                                    return 8701;
+                                    return 8721;
                                 }
                                 jint x = env->CallIntMethod(box, clzBoundingBox_fnGetX);
                                 if (env->ExceptionCheck()) {
                                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                     env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                     env->ExceptionClear();
-                                    return 8701;
+                                    return 8722;
                                 }
                                 jint y = env->CallIntMethod(box, clzBoundingBox_fnGetY);
                                 if (env->ExceptionCheck()) {
                                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                     env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                     env->ExceptionClear();
-                                    return 8701;
+                                    return 8723;
                                 }
                                 jint height = env->CallIntMethod(box, clzBoundingBox_fnGetHeight);
                                 if (env->ExceptionCheck()) {
                                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                     env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                     env->ExceptionClear();
-                                    return 8701;
+                                    return 8724;
                                 }
                                 if(height == 0) {
                                     height = cvSize.height;
@@ -253,7 +252,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                     env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                     env->ExceptionClear();
-                                    return 8701;
+                                    return 8725;
                                 }
                                 if(width == 0) {
                                     width = cvSize.width;
@@ -263,7 +262,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                     env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                     env->ExceptionClear();
-                                    return 8701;
+                                    return 8726;
                                 }
 
                                 a = (((int)color) & 0xFF000000) >> 24;
@@ -281,7 +280,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                             env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                             env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                             env->ExceptionClear();
-                            return 8701;
+                            return 8727;
                         }
 
                         success = env->CallBooleanMethod(boundingBoxMap, clzBoundingBoxMap_fnContainsKey, boxed);
@@ -289,7 +288,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                             env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                             env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                             env->ExceptionClear();
-                            return 8701;
+                            return 8728;
                         }
                         if(success == JNI_TRUE) {
                             // Map has elements which are to be drawn on every frame.
@@ -298,7 +297,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                                 env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                 env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                 env->ExceptionClear();
-                                return 8701;
+                                return 8729;
                             }
 
                             // Iterate through this list, drawing the box on the frame.
@@ -307,7 +306,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                                 env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                 env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                 env->ExceptionClear();
-                                return 8701;
+                                return 8730;
                             }
                             for(jint i = 0; i < size; i++) {
                                 jobject box = env->CallObjectMethod(allFramesElements, clzList_fnGet, i);
@@ -315,28 +314,28 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                     env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                     env->ExceptionClear();
-                                    return 8701;
+                                    return 8731;
                                 }
                                 jint x = env->CallIntMethod(box, clzBoundingBox_fnGetX);
                                 if (env->ExceptionCheck()) {
                                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                     env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                     env->ExceptionClear();
-                                    return 8701;
+                                    return 8732;
                                 }
                                 jint y = env->CallIntMethod(box, clzBoundingBox_fnGetY);
                                 if (env->ExceptionCheck()) {
                                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                     env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                     env->ExceptionClear();
-                                    return 8701;
+                                    return 8733;
                                 }
                                 jint height = env->CallIntMethod(box, clzBoundingBox_fnGetHeight);
                                 if (env->ExceptionCheck()) {
                                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                     env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                     env->ExceptionClear();
-                                    return 8701;
+                                    return 8734;
                                 }
                                 if(height == 0) {
                                     height = cvSize.height;
@@ -346,7 +345,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                     env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                     env->ExceptionClear();
-                                    return 8701;
+                                    return 8735;
                                 }
                                 if(width == 0) {
                                     width = cvSize.width;
@@ -356,7 +355,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                     env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                     env->ExceptionClear();
-                                    return 8701;
+                                    return 8736;
                                 }
                                 a = (((int)color) & 0xFF000000) >> 24;
                                 b = (((int)color) & 0x00FF0000) >> 16;
@@ -378,17 +377,17 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVi
                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                     env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                 } else {
-                    return 8701;
+                    return 8737;
                 }
             } catch (cv::Exception) {
-                return 8701;
+                return 8738;
             }
         } else {
-            return 8701;
+            return 8739;
         }
 
     } else {
-        return 8701;
+        return 8740;
     }
     return 0;
 }
@@ -407,12 +406,12 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
         jmethodID clzBoundingBoxWriter_fnGetBoundingBoxMap = env->GetMethodID(clzBoundingBoxWriter, "getBoundingBoxMap", "()Lorg/mitre/mpf/videooverlay/BoundingBoxMap;");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8800;
         }
         jobject boundingBoxMap = env->CallObjectMethod(boundingBoxWriterInstance, clzBoundingBoxWriter_fnGetBoundingBoxMap);
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8801;
         }
 
         // Get BoundingBoxMap methods.
@@ -420,12 +419,12 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
         jmethodID clzBoundingBoxMap_fnGet = env->GetMethodID(clzBoundingBoxMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;"); // May be a list.
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8802;
         }
         jmethodID clzBoundingBoxMap_fnContainsKey = env->GetMethodID(clzBoundingBoxMap, "containsKey", "(Ljava/lang/Object;)Z");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8803;
         }
         jint allFramesKey = env->GetStaticIntField(clzBoundingBoxMap, env->GetStaticFieldID(clzBoundingBoxMap, "ALL_FRAMES", "I"));
 
@@ -433,60 +432,60 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
         jclass clzList = env->FindClass("java/util/List");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8804;
         }
         jmethodID clzList_fnGet = env->GetMethodID(clzList, "get", "(I)Ljava/lang/Object;");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8805;
         }
         jmethodID clzList_fnSize = env->GetMethodID(clzList, "size", "()I");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8806;
         }
 
         // Get BoundingBox class and methods.
         jclass clzBoundingBox = env->FindClass("org/mitre/mpf/videooverlay/BoundingBox");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8807;
         }
         jmethodID clzBoundingBox_fnGetX = env->GetMethodID(clzBoundingBox, "getX", "()I");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8808;
         }
         jmethodID clzBoundingBox_fnGetY = env->GetMethodID(clzBoundingBox, "getY", "()I");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8809;
         }
         jmethodID clzBoundingBox_fnGetHeight = env->GetMethodID(clzBoundingBox, "getHeight", "()I");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8810;
         }
         jmethodID clzBoundingBox_fnGetWidth = env->GetMethodID(clzBoundingBox, "getWidth", "()I");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8811;
         }
         jmethodID clzBoundingBox_fnGetColor = env->GetMethodID(clzBoundingBox, "getColor", "()I");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8812;
         }
 
         jclass clzInteger = env->FindClass("java/lang/Integer");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8813;
         }
         jmethodID clzInteger_fnValueOf = env->GetStaticMethodID(clzInteger, "valueOf", "(I)Ljava/lang/Integer;");
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
-            return 8701;
+            return 8814;
         }
 
         // Read in the image...
@@ -500,7 +499,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
                     // Cleanup...
                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
 
-                    return 8700;
+                    return 8815;
                 }
 
                 // Get the size of the image.
@@ -519,7 +518,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
                         env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                         env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                         env->ExceptionClear();
-                        return 8701;
+                        return 8816;
                     }
 
                     // Get the elements for Frame 0.
@@ -528,7 +527,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
                         env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                         env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                         env->ExceptionClear();
-                        return 8701;
+                        return 8817;
                     }
                     if(success == JNI_TRUE) {
                         jobject elements = env->CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet, boxed);
@@ -536,7 +535,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
                             env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                             env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                             env->ExceptionClear();
-                            return 8701;
+                            return 8818;
                         }
 
                         // Iterate through this list, drawing the box on the frame.
@@ -545,7 +544,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
                             env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                             env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                             env->ExceptionClear();
-                            return 8701;
+                            return 8819;
                         }
                         for(jint i = 0; i < size; i++) {
                             jobject box = env->CallObjectMethod(elements, clzList_fnGet, i);
@@ -553,28 +552,28 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
                                 env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                 env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                 env->ExceptionClear();
-                                return 8701;
+                                return 8820;
                             }
                             jint x = env->CallIntMethod(box, clzBoundingBox_fnGetX);
                             if (env->ExceptionCheck()) {
                                 env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                 env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                 env->ExceptionClear();
-                                return 8701;
+                                return 8821;
                             }
                             jint y = env->CallIntMethod(box, clzBoundingBox_fnGetY);
                             if (env->ExceptionCheck()) {
                                 env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                 env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                 env->ExceptionClear();
-                                return 8701;
+                                return 8822;
                             }
                             jint height = env->CallIntMethod(box, clzBoundingBox_fnGetHeight);
                             if (env->ExceptionCheck()) {
                                 env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                 env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                 env->ExceptionClear();
-                                return 8701;
+                                return 8823;
                             }
                             if(height == 0) {
                                 height = cvSize.height;
@@ -584,7 +583,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
                                 env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                 env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                 env->ExceptionClear();
-                                return 8701;
+                                return 8824;
                             }
                             if(width == 0) {
                                 width = cvSize.width;
@@ -594,7 +593,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
                                 env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                                 env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                                 env->ExceptionClear();
-                                return 8701;
+                                return 8825;
                             }
 
                             a = (((int)color) & 0xFF000000) >> 24;
@@ -615,7 +614,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
                         env->ReleaseStringUTFChars(sourceVideoPath, inChars);
                         env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                         image.release();
-                        return 8710;
+                        return 8826;
                     }
 
                     image.release();
@@ -624,16 +623,16 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
                     env->ReleaseStringUTFChars(destinationVideoPath, outChars);
                 } else {
                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                    return 8701;
+                    return 8827;
                 }
             } catch (cv::Exception) {
-                return 8701;
+                return 8828;
             }
         } else {
-            return 8701;
+            return 8829;
         }
     } else {
-          return 8701;
+          return 8830;
     }
     return 0;
 }

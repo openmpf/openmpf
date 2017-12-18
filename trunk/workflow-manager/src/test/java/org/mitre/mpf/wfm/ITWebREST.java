@@ -100,14 +100,14 @@ public class ITWebREST {
 	private static final Logger log = LoggerFactory.getLogger(ITWebREST.class);
 
 	//for converting the JSON response to the actual java object
-	private ObjectMapper objectMapper = new ObjectMapper();
+	private static ObjectMapper objectMapper = new ObjectMapper();
 
 	private static long job_created_id = -1L;
 	private static boolean test_ready = true;
 	private static String JSONstring;
+	private static int testCtr = 0;
+	private static long processedJobId = -1;
 
-	private int testCtr = 0;
-	private long processedJobId = -1;
 	private long starttime = 0;
 
 	// run once

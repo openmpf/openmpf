@@ -37,7 +37,7 @@ public class VideoOverlayJniException extends IOException {
     public void setErrorCode(int errorCode) { this.errorCode = errorCode; }
 
     public VideoOverlayJniException(int errorCode) {
-        super("Native method invocation returned error code " + errorCode + ".");
+        super("Error writing bounding box(es). Native error code " + errorCode + ".");
         this.errorCode = errorCode;
     }
 }

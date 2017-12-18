@@ -34,7 +34,7 @@ public class FrameCounterJniException extends IOException {
     public void setErrorCode(int errorCode) { this.errorCode = errorCode; }
 
     public FrameCounterJniException(int errorCode) {
-        super("Native method invocation returned error code " + errorCode + ".");
+        super("Error counting frames. Native error code " + errorCode + ".");
         this.errorCode = errorCode;
     }
 }

@@ -34,7 +34,7 @@ public class FrameExtractorJniException extends IOException {
     public void setErrorCode(int errorCode) { this.errorCode = errorCode; }
 
     public FrameExtractorJniException(int errorCode) {
-        super("Error extracting frames. Native error code " + errorCode + ".");
+        super("Error extracting frame(s). Native error code " + errorCode + ".");
         this.errorCode = errorCode;
     }
 }

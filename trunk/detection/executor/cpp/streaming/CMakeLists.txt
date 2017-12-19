@@ -24,6 +24,7 @@
 # limitations under the License.                                            #
 #############################################################################
 cmake_minimum_required(VERSION 3.6)
+set(CMAKE_CXX_STANDARD 11)
 
 ## Find Qt
 include(${QT_USE_FILE})

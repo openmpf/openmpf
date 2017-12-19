@@ -4,6 +4,7 @@
   "middlewareVersion" : "1.0.0",
   "sourceLanguage" : "c++",
   "batchLibrary" : "${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so",
+  "streamLibrary" : "${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfStreamingCplusplusHelloWorld.so",
   "environmentVariables" : [{
       "name":"LD_LIBRARY_PATH",
       "value":"${MPF_HOME}/plugins/CplusplusHelloWorld/lib",

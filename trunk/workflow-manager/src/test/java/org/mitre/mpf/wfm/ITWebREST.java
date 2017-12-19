@@ -47,6 +47,7 @@ import spark.Route;
 import spark.Spark;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
@@ -128,31 +129,162 @@ public class ITWebREST {
 	}
 
 	private void startTest(String testname, String url) throws MalformedURLException {
+		// an assumption failure causes the test to be ignored
+		Assume.assumeTrue("Skipping test. Not ready. A prior test or condition failed.", test_ready);
 		test_ready = false;
 		testCtr++;
-		log.info("Beginning test {} #{} REST: [{}]", testname,testCtr, url);
+		log.info("Beginning test #{}: {}. REST: [{}]", testCtr, testname, url);
 		starttime = DateTime.now().getMillis();
-		//added this argument to start the test without a GET request... in case a POST is needed
-		log.debug("[startTest] ");
 	}
 
-	private void endTest(String testname) {
+	private void endTest() {
 		long end = DateTime.now().getMillis() - starttime;
-		log.info("Finished test #{} Time elapsed: {} milliseconds ", testCtr,end);
-		test_ready=true;
+		log.info("Finished test #{}. Time elapsed: {} milliseconds ", testCtr,end);
+		test_ready = true;
 	}
 
 	// ///////////////////////////
 	// Tests
 	// ///////////////////////////
-	//expects an exception @throws Exception
-	@Test(timeout = 1 * MINUTES, expected = RuntimeException.class)
+
+	//rest/media/process
+	//will use the job id for cancel and resubmit
+	@Test(timeout = 1 * MINUTES)
+	public void test1ProcessMedia() throws Exception {
+		String url = WebRESTUtils.REST_URL + "jobs";
+		startTest("test1ProcessMedia",url);
+
+		//a video will be good to test being able to cancel before completion!
+		String mediaPathUrl = getClass().getClassLoader().getResource("samples/new_face_video.avi").toURI().toURL().toExternalForm();
+
+		JobCreationRequest jobCreationRequest = new JobCreationRequest();
+		jobCreationRequest.getMedia().add(new JobCreationMediaData(mediaPathUrl));
+		jobCreationRequest.setPipelineName("OCV FACE DETECTION PIPELINE");
+		//jobCreationRequest.setPriority(priority);
+
+		//convert params to json string
+		String params = objectMapper.writeValueAsString(jobCreationRequest);
+
+		URL actualUrl = new URL(url);
+		String response = WebRESTUtils.postJSON(actualUrl, params, WebRESTUtils.MPF_AUTHORIZATION);
+
+		JobCreationResponse jobCreationResponse = objectMapper.readValue(response, JobCreationResponse.class);
+
+		//null error message and JobId >= 1, could check error code as well
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCreationResponse.getMpfResponse().getResponseCode());
+		Assert.assertNull(jobCreationResponse.getMpfResponse().getMessage());
+		Assert.assertTrue(jobCreationResponse.getJobId() >= 1);
+
+		processedJobId = jobCreationResponse.getJobId();
+		//use this id for resubmit and cancel testing
+		log.info("processedJobId: " + processedJobId);
+
+		endTest();
+	}
+
+	/**
+	 * rest/jobs/{id}/cancel
+	 */
+	@Test(timeout = 5 * MINUTES) // it may take some time for the job to get to a terminal (CANCELLED) state
+	//using 2 after test to make sure this runs after jobs
+	public void test2CancelInProgressJob() throws Exception {
+		String url = WebRESTUtils.REST_URL + "jobs/" + Long.toString(processedJobId) + "/cancel";
+		startTest("test2CancelInProgressJob",url);
+
+		SingleJobInfo singleJobInfo = null;
+		//wait till ready to attempt a job cancellation
+		do {
+			singleJobInfo = WebRESTUtils.getSingleJobInfo(processedJobId);
+
+			//check every three seconds
+			Thread.sleep(3000);
+		} while( !(singleJobInfo != null && !singleJobInfo.isTerminal() && singleJobInfo.getJobStatus().equals("IN_PROGRESS")) );
+
+		//jobId - REQUIRED
+		//create params object
+		List<NameValuePair> params = new ArrayList<NameValuePair>();
+		URL actualUrl = new URL(url);
+		String response = /*WebRESTUtils.postJSON*/ WebRESTUtils.postParams(actualUrl, params, WebRESTUtils.MPF_AUTHORIZATION, 200);
+		MpfResponse mpfResponse = objectMapper.readValue(response, MpfResponse.class);
+
+		//looking for isSuccess to be true and null error message
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.getResponseCode());
+		Assert.assertNull(mpfResponse.getMessage());
+
+		singleJobInfo = null;
+		//wait till job is in a CANCELLED state to verify the job has been CANCELLED
+		do {
+			singleJobInfo = WebRESTUtils.getSingleJobInfo(processedJobId);
+
+			//check every three seconds
+			Thread.sleep(3000);
+		} while( !(singleJobInfo!= null && singleJobInfo.isTerminal() && singleJobInfo.getJobStatus().equals("CANCELLED")) );
+
+		//completed the do/while and that means the job has been successfully cancelled
+		endTest();
+	}
+
+	/**
+	 * rest/jobs/{id}/resubmit
+	 */
+	@Test(timeout = 2 * MINUTES)
+	//using 3 after test to make sure this runs after jobs/{id}/cancel
+	public void test3ResubmitCancelledJob() throws Exception {
+		String url = WebRESTUtils.REST_URL + "jobs/" + Long.toString(processedJobId) + "/resubmit";
+		startTest("test3ResubmitCancelledJob",url);
+
+		//need to make sure the job is in a terminal state before trying to resubmit!
+		String urlJobsStatus = WebRESTUtils.REST_URL + "jobs/" + processedJobId + ".json";
+
+		SingleJobInfo singleJobInfo = null;
+		//wait till ready to attempt a job resubmission
+		do {
+			singleJobInfo = WebRESTUtils.getSingleJobInfo(processedJobId);
+
+			//check every three seconds
+			Thread.sleep(3000);
+		} while( !(singleJobInfo!= null && singleJobInfo.isTerminal() && singleJobInfo.getJobStatus().equals("CANCELLED")) );
+
+		//jobId - REQUIRED - now a path variable
+		//jobPriority - OPTIONAL
+		//create params object
+		List<NameValuePair> params = new ArrayList<NameValuePair>();
+		params.add(new BasicNameValuePair("jobPriority", "9"));
+		URL actualUrl = new URL(url);
+		String response = WebRESTUtils.postParams(actualUrl, params, WebRESTUtils.MPF_AUTHORIZATION, 200);
+
+		JobCreationResponse jobCreationResponse = objectMapper.readValue(response, JobCreationResponse.class);
+
+		//null error message and verifying the resubmitted job id is equal to the processedJobId
+		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCreationResponse.getMpfResponse().getResponseCode());
+		Assert.assertNull(jobCreationResponse.getMpfResponse().getMessage());
+		Assert.assertEquals(jobCreationResponse.getJobId(), processedJobId);
+
+		singleJobInfo = null;
+		//wait till job is complete to prevent logs from this job showing up in other tests...
+		do {
+			singleJobInfo = WebRESTUtils.getSingleJobInfo(processedJobId);
+
+			//check every three seconds
+			Thread.sleep(3000);
+		} while( !(singleJobInfo!= null && singleJobInfo.isTerminal() && singleJobInfo.getJobStatus().equals("COMPLETE")) );
+
+		Assert.assertTrue(singleJobInfo.getJobStatus().equals("COMPLETE"));
+
+		endTest();
+	}
+
+	@Test(timeout = 1 * MINUTES)
 	public void testRestNoAuth() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
-		String url = WebRESTUtils.REST_URL + "jobs/stats.json";
-		testCtr++;
-		log.info("Beginning test {} #{} REST: [{}]", "testRestNoAuth",testCtr, url);
-		WebRESTUtils.getJSON(new URL(url), null);
+		String urlStr = WebRESTUtils.REST_URL + "jobs/stats.json";
+		startTest("testRestNoAuth", urlStr);
+
+		URL url = new URL(urlStr);
+		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		conn.setRequestMethod("GET");
+		Assert.assertEquals(401, conn.getResponseCode());
+
+		endTest();
 	}
 
 	/*
@@ -160,14 +292,13 @@ public class ITWebREST {
 	 */
 //	@Test(timeout = 1 * MINUTES)
 //	public void testPing_Jobs_Status() throws Exception {
-//		if(!test_ready){log.info("A test failed");return;}
 //		String url = WebRESTUtils.REST_URL + "jobs.json";
 //		startTest("testPing_Jobs_Status",url);
 //		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 //		JSONArray array = new JSONArray(JSONstring);
 //		log.info("array length :" + array.length());
 //		Assert.assertTrue(array.length() >= 0);
-//		endTest("testPing_Jobs_Status");
+//		endTest();
 //	}
 
 	/*
@@ -175,7 +306,6 @@ public class ITWebREST {
 	 */
 //	@Test(timeout = 1 * MINUTES)
 //	public void test_Jobs_Status() throws Exception {
-//		if(!test_ready){log.info("A test failed");return;}
 //		String url = WebRESTUtils.REST_URL + "jobs.json";
 //		startTest("test_Jobs_Status",url);
 //		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
@@ -207,7 +337,7 @@ public class ITWebREST {
 //			}
 //			Assert.assertTrue(found);
 //		}
-//		endTest("test_Jobs_Status");
+//		endTest();
 //	}
 
 	/*
@@ -216,7 +346,6 @@ public class ITWebREST {
 	 */
 	@Test(timeout = 1 * MINUTES)
 	public void test_Jobs_Status_Single() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
 		String url = WebRESTUtils.REST_URL + "jobs/" + job_created_id + ".json";
 		startTest("test_Jobs_Status",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
@@ -241,7 +370,7 @@ public class ITWebREST {
 
 		Assert.assertTrue(found);
 
-		endTest("test_Jobs_Status");
+		endTest();
 	}
 
 	/***
@@ -249,19 +378,16 @@ public class ITWebREST {
 	 */
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_Jobs_SerializedOutput() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
 		// just see if endpoint is there
 		String url = WebRESTUtils.REST_URL + "jobs/" +  job_created_id + "/output/detection" ;
 		startTest("testPing_Jobs_SerializedOutput",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		Assert.assertTrue(JSONstring != null);
-		endTest("testPing_Jobs_SerializedOutput");
+		endTest();
 	}
 
 	@Test(timeout = 2 * MINUTES)
 	public void test_Jobs_SerializedOutput() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
-
 		String postJobsUrl = WebRESTUtils.REST_URL + "jobs";
 		startTest("test_Jobs_SerializedOutput - postJobsUrl",postJobsUrl);
 		String detPipeline = "OCV FACE DETECTION PIPELINE";
@@ -306,7 +432,7 @@ public class ITWebREST {
 			Thread.sleep(3000);
 		} while( !(singleJobInfo != null && singleJobInfo.isTerminal() && singleJobInfo.getJobStatus().startsWith("COMPLETE")) );
 
-		endTest("test_Jobs_SerializedOutput - postJobsUrl");
+		endTest();
 
 		log.info("Job now complete using pipeline '{}'", detPipeline);
 		String baseOutputUrl = WebRESTUtils.REST_URL + "jobs/" +  completeJobId + "/output/" ;
@@ -339,13 +465,12 @@ public class ITWebREST {
 			//bad object type
 			Assert.assertTrue(false);
 		}
-		endTest("test_Jobs_SerializedOutput - " + outputObjectType);
+		endTest();
 	}
 
 	//TOOD: use the new model
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_Jobs_Stats() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
 		String url = WebRESTUtils.REST_URL + "jobs/stats.json";
 		startTest("testPing_Jobs_Stats",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
@@ -353,13 +478,12 @@ public class ITWebREST {
 		Assert.assertTrue(obj.has("totalJobs") && obj.has("aggregatePipelineStatsMap")
 				&& obj.has("elapsedTimeMs") && obj.has("jobTypes"));
 		//TODO: use model and do a comparison
-		endTest("testPing_Jobs_Stats");
+		endTest();
 	}
 
 	//TOOD: use the new model
 	@Test(timeout = 1 * MINUTES)
 	public void test_Jobs_Stats() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
 		String url = WebRESTUtils.REST_URL + "jobs/stats.json";
 		startTest("test_Jobs_Stats",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
@@ -381,19 +505,18 @@ public class ITWebREST {
 		//TODO: use model and do a comparison
 
 		Assert.assertTrue(found);
-		endTest("test_Jobs_Stats");
+		endTest();
 	}
 
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_Pipelines_Available() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
 		String url = WebRESTUtils.REST_URL + "pipelines.json";
 		startTest("testPing_Pipelines_Available",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONArray array = new JSONArray(JSONstring);
 		log.info("array length :" + array.length());
 		Assert.assertTrue(array.length() >= 0);
-		endTest("testPing_Pipelines_Available");
+		endTest();
 	}
 
 	/***
@@ -403,7 +526,6 @@ public class ITWebREST {
 	 */
 	@Test(timeout = 1 * MINUTES)
 	public void test_Pipelines_Available() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
 		String url = WebRESTUtils.REST_URL + "pipelines.json";
 		startTest("test_Pipelines_Available",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
@@ -430,12 +552,11 @@ public class ITWebREST {
 			Assert.assertTrue(found);
 		}
 
-		endTest("test_Pipelines_Available");
+		endTest();
 	}
 
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManager_getNodeManagerInfo() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
 		String url = WebRESTUtils.REST_URL + "nodes/info.json";
 		startTest("testPing_NodeManager_getNodeManagerInfo",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
@@ -443,12 +564,11 @@ public class ITWebREST {
 		JSONArray array = obj.getJSONArray("nodeModels");
 		log.info("array length :" + array.length());
 		Assert.assertTrue(array.length() >= 0);// 16
-		endTest("testPing_NodeManager_getNodeManagerInfo");
+		endTest();
 	}
 
 	@Test(timeout = 1 * MINUTES)
 	public void test_NodeManager_getNodeManagerInfo() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
 		String url = WebRESTUtils.REST_URL + "nodes/info.json";
 		startTest("test_NodeManager_getNodeManagerInfo",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
@@ -473,13 +593,12 @@ public class ITWebREST {
 			Assert.assertTrue(service.getString("kind").equals("simple")
 					|| service.getString("kind").equals("generic"));
 		}
-		endTest("test_NodeManager_getNodeManagerInfo");
+		endTest();
 	}
 
 	// nodes/config GET
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManager_getNodeManagerConfig() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
 		String url = WebRESTUtils.REST_URL + "nodes/config.json";
 		startTest("testPing_NodeManager_getNodeManagerConfig",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
@@ -489,16 +608,15 @@ public class ITWebREST {
 		JSONObject obj = array.getJSONObject(0);
 		JSONArray array2 = obj.getJSONArray("services");
 		Assert.assertTrue(array2.length() >= 0);
-		endTest("testPing_NodeManager_getNodeManagerConfig");
+		endTest();
 	}
 
-	/***
-	 * nodeManager/getNodeManagerConfig POST,GET
+	/**
 	 * Test the first node for a few services and make sure
 	 * they have some correct fields
 	 **/
-	private void test_NodeManager_getNodeManagerConfig() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
+	@Test(timeout = 1 * MINUTES)
+	public void test_NodeManager_getNodeManagerConfig() throws Exception {
 		String url = WebRESTUtils.REST_URL + "nodes/config.json";
 		startTest("test_NodeManager_getNodeManagerConfig",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
@@ -527,16 +645,11 @@ public class ITWebREST {
 			Assert.assertTrue(service.getString("cmd").length() >= 0);
 		}
 
-		endTest("test_NodeManager_getNodeManagerConfig");
-	}
-	@Test(timeout = 1 * MINUTES)
-	public void test_NodeManager_getNodeManagerConfigGET() throws Exception {
-		test_NodeManager_getNodeManagerConfig(/*false*/); //GET
+		endTest();
 	}
 
 	@Test(timeout = 1 * MINUTES)
 	public void test_NodeManager_saveNodeManagerConfigPOST() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
 		String url = WebRESTUtils.REST_URL + "nodes/config";
 		//get the current config
 		String config = WebRESTUtils.REST_URL + "nodes/config.json";
@@ -602,12 +715,11 @@ public class ITWebREST {
 		Thread.sleep(10000);
 		//Maybe verify it set?
 
-		endTest("test_NodeManager_saveNodeManagerConfigPOST");
+		endTest();
 	}
 
 	@Test(timeout = 1 * MINUTES)
 	public void test_NodeManager_shutdown_startService() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
 		startTest("test_NodeManager_shutdown_startService","");
 		JSONArray nodes = WebRESTUtils.getNodes();
 		Assert.assertTrue(nodes.length() > 0);
@@ -727,164 +839,29 @@ public class ITWebREST {
 			}
 		}
 		Assert.assertTrue(completed);
-		endTest("test_NodeManager_shutdown_startService");
+		endTest();
 	}
 
 	@Test(timeout = 1 * MINUTES)
 	public void test_MediaProcess() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
 		startTest("test_MediaProcess","");
 		Assert.assertTrue(job_created_id >= 0);
-		endTest("test_MediaProcess");
-	}
-
-
-	//rest/media/process
-	//will use the job id for cancel and resubmit
-	//using 1 after test to make sure this runs after before jobs/{id}/cancel and jobs/{id}/resubmit
-	@Test(timeout = 1 * MINUTES)
-	public void test1ProcessMedia() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
-		String url = WebRESTUtils.REST_URL + "jobs";
-		startTest("test1ProcessMedia",url);
-
-		//a video will be good to test being able to cancel before completion!
-		String mediaPathUrl = getClass().getClassLoader().getResource("samples/new_face_video.avi").toURI().toURL().toExternalForm();
-
-		JobCreationRequest jobCreationRequest = new JobCreationRequest();
-		jobCreationRequest.getMedia().add(new JobCreationMediaData(mediaPathUrl));
-		jobCreationRequest.setPipelineName("OCV FACE DETECTION PIPELINE");
-		//jobCreationRequest.setPriority(priority);
-
-		//convert params to json string	
-		String params = objectMapper.writeValueAsString(jobCreationRequest);
-
-		URL actualUrl = new URL(url);
-		String response = WebRESTUtils.postJSON(actualUrl, params, WebRESTUtils.MPF_AUTHORIZATION);
-
-		JobCreationResponse jobCreationResponse = objectMapper.readValue(response, JobCreationResponse.class);
-
-		//null error message and JobId >= 1, could check error code as well
-		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCreationResponse.getMpfResponse().getResponseCode());
-		Assert.assertNull(jobCreationResponse.getMpfResponse().getMessage());
-		Assert.assertTrue(jobCreationResponse.getJobId() >= 1);
-
-		processedJobId = jobCreationResponse.getJobId();
-		//use this id for resubmit and cancel testing
-		log.info("processedJobId: " + processedJobId);
-
-		endTest("test1ProcessMedia");
-	}
-
-	/**
-	 * rest/jobs/{id}/cancel
-	 */
-	@Test(timeout = 2 * MINUTES) //giving this an extra minute, it may take some time for the job to get to a terminal (CANCELLED) state
-	//using 2 after test to make sure this runs after jobs
-	public void test2CancelInProgressJob() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
-		String url = WebRESTUtils.REST_URL + "jobs/" + Long.toString(processedJobId) + "/cancel";
-		startTest("test2CancelInProgressJob",url);
-
-		SingleJobInfo singleJobInfo = null;
-		//wait till ready to attempt a job cancellation
-		do {
-			singleJobInfo = WebRESTUtils.getSingleJobInfo(processedJobId);
-
-			//check every three seconds
-			Thread.sleep(3000);
-		} while( !(singleJobInfo != null && !singleJobInfo.isTerminal() && singleJobInfo.getJobStatus().equals("IN_PROGRESS")) );
-
-		//jobId - REQUIRED
-		//create params object
-		List<NameValuePair> params = new ArrayList<NameValuePair>();
-		URL actualUrl = new URL(url);
-		String response = /*WebRESTUtils.postJSON*/ WebRESTUtils.postParams(actualUrl, params, WebRESTUtils.MPF_AUTHORIZATION, 200);
-		MpfResponse mpfResponse = objectMapper.readValue(response, MpfResponse.class);
-
-		//looking for isSuccess to be true and null error message
-		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.getResponseCode());
-		Assert.assertNull(mpfResponse.getMessage());
-
-		singleJobInfo = null;
-		//wait till job is in a CANCELLED state to verify the job has been CANCELLED
-		do {
-			singleJobInfo = WebRESTUtils.getSingleJobInfo(processedJobId);
-
-			//check every three seconds
-			Thread.sleep(3000);
-		} while( !(singleJobInfo!= null && singleJobInfo.isTerminal() && singleJobInfo.getJobStatus().equals("CANCELLED")) );
-
-		//completed the do/while and that means the job has been successfully cancelled
-		endTest("test2CancelInProgressJob");
-	}
-
-	/**
-	 * rest/jobs/{id}/resubmit
-	 */
-	@Test(timeout = 2 * MINUTES)
-	//using 3 after test to make sure this runs after jobs/{id}/cancel
-	public void test3ResubmitCancelledJob() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
-		String url = WebRESTUtils.REST_URL + "jobs/" + Long.toString(processedJobId) + "/resubmit";
-		startTest("test3ResubmitCancelledJob",url);
-
-		//need to make sure the job is in a terminal state before trying to resubmit!
-		String urlJobsStatus = WebRESTUtils.REST_URL + "jobs/" + processedJobId + ".json";
-
-		SingleJobInfo singleJobInfo = null;
-		//wait till ready to attempt a job resubmission
-		do {
-			singleJobInfo = WebRESTUtils.getSingleJobInfo(processedJobId);
-
-			//check every three seconds
-			Thread.sleep(3000);
-		} while( !(singleJobInfo!= null && singleJobInfo.isTerminal() && singleJobInfo.getJobStatus().equals("CANCELLED")) );
-
-		//jobId - REQUIRED - now a path variable
-		//jobPriority - OPTIONAL		
-		//create params object
-		List<NameValuePair> params = new ArrayList<NameValuePair>();
-		params.add(new BasicNameValuePair("jobPriority", "9"));
-		URL actualUrl = new URL(url);
-		String response = WebRESTUtils.postParams(actualUrl, params, WebRESTUtils.MPF_AUTHORIZATION, 200);
-
-		JobCreationResponse jobCreationResponse = objectMapper.readValue(response, JobCreationResponse.class);
-
-		//null error message and verifying the resubmitted job id is equal to the processedJobId
-		Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCreationResponse.getMpfResponse().getResponseCode());
-		Assert.assertNull(jobCreationResponse.getMpfResponse().getMessage());
-		Assert.assertEquals(jobCreationResponse.getJobId(), processedJobId);
-
-		singleJobInfo = null;
-		//wait till job is complete to prevent logs from this job showing up in other tests...
-		do {
-			singleJobInfo = WebRESTUtils.getSingleJobInfo(processedJobId);
-
-			//check every three seconds
-			Thread.sleep(3000);
-		} while( !(singleJobInfo!= null && singleJobInfo.isTerminal() && singleJobInfo.getJobStatus().equals("COMPLETE")) );
-
-		Assert.assertTrue(singleJobInfo.getJobStatus().equals("COMPLETE"));
-
-		endTest("test3ResubmitCancelledJob");
+		endTest();
 	}
 
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_Pipelines() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
 		String url = WebRESTUtils.REST_URL + "pipelines.json";
 		startTest("testPing_Pipelines",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONArray array = new JSONArray(JSONstring);
 		log.info("array length :" + array.length());
 		Assert.assertTrue(array.length() >= 0);
-		endTest("testPing_Pipelines");
+		endTest();
 	}
 
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManagerInfo() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
 		String url = WebRESTUtils.REST_URL + "nodes/info.json";
 		startTest("testPing_NodeManagerInfo",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
@@ -892,13 +869,12 @@ public class ITWebREST {
 		JSONArray array =obj.getJSONArray("nodeModels");
 		log.info("array length :" + array.length());
 		Assert.assertTrue(array.length() >= 0);
-		endTest("testPing_NodeManagerInfo");
+		endTest();
 	}
 
 	//nodes/config GET
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManagerConfig() throws Exception {
-		if(!test_ready){log.info("A test failed");return;}
 		String url = WebRESTUtils.REST_URL + "nodes/config.json";
 		startTest("testPing_NodeManagerConfig",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
@@ -908,7 +884,7 @@ public class ITWebREST {
 		JSONObject obj = array.getJSONObject(0);
 		JSONArray array2 =obj.getJSONArray("services");
 		Assert.assertTrue(array2.length() >= 0);
-		endTest("testPing_NodeManagerConfig");
+		endTest();
 	}
 
 
@@ -959,16 +935,20 @@ public class ITWebREST {
 		return Long.valueOf(obj.getInt("jobId"));
 	}
 
+	// /////////////////////////
+	// Callback
+	// ///////////////////////////
+
 	private final boolean[] sparkresponse = new boolean[2];
 	private final long[] sparkIds = new long[2];
-	@Test(timeout = 5*MINUTES)
+	@Test(timeout = 5 * MINUTES)
 	public void testJobWithCallback() throws Exception {
 		long externalId =  555;
 		try {
-			log.info("Beginning test #{} testJobWithCallback()", testCtr);
-			testCtr++;
-			log.info("Creating new Job");
 			String url = WebRESTUtils.REST_URL + "jobs";
+			startTest("testJobWithCallback",url);
+
+			log.info("Creating new Job");
 
 			// create a JobCreationRequest
 			JSONObject params = new JSONObject();
@@ -1033,7 +1013,7 @@ public class ITWebREST {
 			sparkresponse[0] = (jobId == sparkIds[0] && externalId == sparkIds[1]);
 			Assert.assertTrue(sparkresponse[0]);
 
-			log.info("Finished test testJobWithCallback()");
+			endTest();
 		} finally {
 			Spark.stop();
 		}

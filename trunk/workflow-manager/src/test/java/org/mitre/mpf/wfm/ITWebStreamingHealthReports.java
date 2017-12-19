@@ -32,7 +32,6 @@ import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 import org.junit.*;
-import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonHealthReportDataCallbackBody;
 import org.mitre.mpf.rest.api.*;
@@ -41,8 +40,6 @@ import org.mitre.mpf.wfm.service.component.ComponentRegistrationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import spark.Request;
 import spark.Response;
 import spark.Route;
@@ -63,15 +60,13 @@ import java.util.List;
 // NOTE: Needed to add confirmation of jobId in the health callbacks, because scheduled callbacks from a job created
 // earlier were causing the callback to capture a health report sent before a later job.
 
-@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
-@RunWith(SpringJUnit4ClassRunner.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ITWebStreamingHealthReports {
 
 	private static final int MINUTES = 1000 * 60; // 1000 milliseconds/sec, 60 sec/minute
 
-	private static final String DESCRIPTOR_NAME = "CplusplusStreamTestComponent.json";
-	private static final String ALGORITHM_NAME = "CPLUSPLUSSTREAMTEST";
+	private static final String DESCRIPTOR_NAME = "CplusplusHelloWorldComponent.json";
+	private static final String ALGORITHM_NAME = "CPLUSPLUSHELLOWORLD";
 	private static final String PIPELINE_NAME = ALGORITHM_NAME + " DETECTION PIPELINE";
 
 	private static final int HEALTH_REPORT_CALLBACK_PORT = 20160;
@@ -100,8 +95,6 @@ public class ITWebStreamingHealthReports {
 
 		if (!pipelinesResponse.contains(PIPELINE_NAME)) {
 			String descriptorPath = getClass().getClassLoader().getResource(DESCRIPTOR_NAME).getPath();
-			addComponentService.registerDeployedComponent(descriptorPath);
-
 			String registerUrl = WebRESTUtils.REST_URL + "component/registerViaFile?filePath=" + descriptorPath;
 
 			String registerResponseJson = WebRESTUtils.getJSON(new URL(registerUrl), WebRESTUtils.MPF_AUTHORIZATION);
@@ -122,10 +115,10 @@ public class ITWebStreamingHealthReports {
 
 			// Submit streaming job request with a POST callback
 			log.info("Creating a new Streaming Job for the POST test");
-			String streamUrl = WebRESTUtils.REST_URL + "streaming/jobs";
+			String createJobUrl = WebRESTUtils.REST_URL + "streaming/jobs";
 
 			// jobCreationResponseJson should be something like {"jobId":5, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
-			String jobCreationResponseJson = createStreamingJob(streamUrl, PIPELINE_NAME, externalId, "POST");
+			String jobCreationResponseJson = createStreamingJob(createJobUrl, PIPELINE_NAME, externalId, "POST");
 
 			JSONObject obj = new JSONObject(jobCreationResponseJson);
 			healthReportPostJobId = Long.valueOf(obj.getInt("jobId"));
@@ -183,10 +176,10 @@ public class ITWebStreamingHealthReports {
 
 			// Submit streaming job request with a GET callback
 			log.info("Creating a new Streaming Job for the GET test.");
-			String streamUrl = WebRESTUtils.REST_URL + "streaming/jobs";
+			String createJobUrl = WebRESTUtils.REST_URL + "streaming/jobs";
 
 			// jobCreationResponseJson should be something like {"jobId":6, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
-			String jobCreationResponseJson = createStreamingJob(streamUrl, PIPELINE_NAME, externalId, "GET");
+			String jobCreationResponseJson = createStreamingJob(createJobUrl, PIPELINE_NAME, externalId, "GET");
 
 			JSONObject obj = new JSONObject(jobCreationResponseJson);
 			healthReportGetJobId =  Long.valueOf(obj.getInt("jobId"));

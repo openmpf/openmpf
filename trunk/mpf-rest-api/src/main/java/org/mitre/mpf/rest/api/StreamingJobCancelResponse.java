@@ -32,6 +32,8 @@ public class StreamingJobCancelResponse {
 	private String outputObjectDirectory;
 	private MpfResponse mpfResponse = new MpfResponse();
 
+	public StreamingJobCancelResponse() {}
+
     /** Set response parameters.
      * @param jobId job id of this streaming job
      * @param outputObjectDirectory root directory for output objects created during this streaming job

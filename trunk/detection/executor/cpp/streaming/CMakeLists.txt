@@ -62,7 +62,6 @@ list(APPEND CMAKE_PREFIX_PATH $ENV{HOME}/mpf-sdk-install/lib/cmake)
 find_package(mpfComponentInterface REQUIRED)
 find_package(mpfDetectionComponentApi REQUIRED)
 
-include_directories($<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
 
 include_directories(MessageUtils)
 add_subdirectory(MessageUtils)
@@ -70,3 +69,9 @@ add_subdirectory(MessageUtils)
 #include_directories(FrameStore)
 add_subdirectory(FrameReader)
 
+set(streaming_component_executor_files main.cpp
+	QuitWatcher.cpp QuitWatcher.h)
+
+add_executable(streaming_component_executor ${streaming_component_executor_files})
+target_link_libraries(streaming_component_executor mpfDetectionComponentApi mpfComponentInterface dl
+	${LOG4CXX_LIBRARIES} ${OpenCV_LIBS})

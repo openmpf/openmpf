@@ -70,7 +70,8 @@ add_subdirectory(MessageUtils)
 add_subdirectory(FrameReader)
 
 set(streaming_component_executor_files main.cpp
-	QuitWatcher.cpp QuitWatcher.h)
+	QuitWatcher.cpp QuitWatcher.h
+	StreamingComponentHandle.cpp StreamingComponentHandle.h)
 
 add_executable(streaming_component_executor ${streaming_component_executor_files})
 target_link_libraries(streaming_component_executor mpfDetectionComponentApi mpfComponentInterface dl

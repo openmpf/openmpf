@@ -24,51 +24,38 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api;
+package org.mitre.mpf.wfm.scheduled;
 
-public class StreamingJobCancelResponse {
-	private Long jobId;
-	private boolean doCleanup = false;
-	private String outputObjectDirectory;
-	private MpfResponse mpfResponse = new MpfResponse();
+import java.util.List;
 
-	/** Set response parameters.
-	 * @param jobId job id of this streaming job
-	 * @param outputObjectDirectory root directory for output objects created during this streaming job
-	 * @param doCleanup if true, then the caller is requesting that the output object directory is cleaned up prior to cancelling this job
-	 */
-	private void setResponseParameters(Long jobId, String outputObjectDirectory, boolean doCleanup) {
-		this.jobId = jobId;
-		this.outputObjectDirectory = outputObjectDirectory;
-		this.doCleanup = doCleanup;
-	}
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-	public StreamingJobCancelResponse() {}
 
-	/** Constructor typically used for construction of a StreamingJobCancelResponse indicating an error.
-	 * @param jobId job id of this streaming job
-	 * @param outputObjectDirectory root directory for output objects created during this streaming job
-	 * @param doCleanup if true, then the caller is requesting that the output object directory is cleaned up prior to cancelling this job
-	 * @param errorCode error code to be set in the mpf response
-	 * @param errorMessage error message to be set in the mpf response
-	 */
-	public StreamingJobCancelResponse(Long jobId, String outputObjectDirectory, boolean doCleanup, int errorCode, String errorMessage) {
-		setResponseParameters(jobId, outputObjectDirectory, doCleanup);
-		mpfResponse.setMessage(errorCode, errorMessage);
-	}
+import org.mitre.mpf.wfm.service.MpfService;
 
-	public Long getJobId() {
-		return jobId;
-	}
+@Component
+public class HealthReportScheduledTask {
 
-	public boolean getDoCleanup() { return doCleanup; }
+    private static final Logger log = LoggerFactory.getLogger(HealthReportScheduledTask.class);
 
-	public String getOutputObjectDirectory() {
-		return outputObjectDirectory;
-	}
+    @Autowired //will grab the impl
+    private MpfService mpfService;
 
-	public MpfResponse getMpfResponse() {
-		return mpfResponse;
-	}
+    @Autowired
+    @Qualifier(StreamingJobRequestBoImpl.REF)
+    private StreamingJobRequestBo streamingJobRequestBo;
+
+    // TODO how can this be tied to PropertiesUtil.getHealthReportCallbackRate?
+    @Scheduled(fixedDelayString = "${streaming.healthReport.callbackRate:30000}" )
+    public void sendPeriodicHealthReports() {
+        mpfService.sendPeriodicHealthReportToCallback();
+    }
 
 }

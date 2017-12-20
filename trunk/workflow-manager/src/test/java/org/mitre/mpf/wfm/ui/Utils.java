@@ -51,7 +51,7 @@ public class Utils {
 			log.info("TOMCAT_BASE_URL Environment Variable NOT SET and BASE_URL: {}", Utils.BASE_URL);
 		}
 		Utils.IMG_NAME = "blue-cybernetic-background.jpg";
-		Utils.IMG_URL = Utils.BASE_URL+"/workflow-manager/resources/img/"+Utils.IMG_NAME;
+		Utils.IMG_URL = Utils.BASE_URL+"/workflow-manager/resources/img/" + Utils.IMG_NAME;
 
 	}
 	

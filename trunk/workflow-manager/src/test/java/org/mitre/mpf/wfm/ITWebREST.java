@@ -186,7 +186,7 @@ public class ITWebREST {
 	 * rest/jobs/{id}/cancel
 	 */
 	@Test(timeout = 5 * MINUTES) // it may take some time for the job to get to a terminal (CANCELLED) state
-	//using 2 after test to make sure this runs after jobs
+	// make sure this runs after test1ProcessMedia()
 	public void test2CancelInProgressJob() throws Exception {
 		String url = WebRESTUtils.REST_URL + "jobs/" + Long.toString(processedJobId) + "/cancel";
 		startTest("test2CancelInProgressJob",url);
@@ -196,9 +196,11 @@ public class ITWebREST {
 		do {
 			singleJobInfo = WebRESTUtils.getSingleJobInfo(processedJobId);
 
-			//check every three seconds
-			Thread.sleep(3000);
-		} while( !(singleJobInfo != null && !singleJobInfo.isTerminal() && singleJobInfo.getJobStatus().equals("IN_PROGRESS")) );
+			//check every 0.5 seconds
+			Thread.sleep(500);
+		} while (singleJobInfo == null || (!singleJobInfo.getJobStatus().equals("IN_PROGRESS") && !singleJobInfo.isTerminal()));
+
+		Assert.assertEquals("IN_PROGRESS", singleJobInfo.getJobStatus());
 
 		//jobId - REQUIRED
 		//create params object
@@ -212,15 +214,16 @@ public class ITWebREST {
 		Assert.assertNull(mpfResponse.getMessage());
 
 		singleJobInfo = null;
-		//wait till job is in a CANCELLED state to verify the job has been CANCELLED
+		//wait till job is in a terminal state to verify the job has been CANCELLED
 		do {
 			singleJobInfo = WebRESTUtils.getSingleJobInfo(processedJobId);
 
-			//check every three seconds
-			Thread.sleep(3000);
-		} while( !(singleJobInfo!= null && singleJobInfo.isTerminal() && singleJobInfo.getJobStatus().equals("CANCELLED")) );
+			//check every 0.5 seconds
+			Thread.sleep(500);
+		} while (singleJobInfo == null || !singleJobInfo.isTerminal());
 
-		//completed the do/while and that means the job has been successfully cancelled
+		Assert.assertEquals("CANCELLED", singleJobInfo.getJobStatus());
+
 		endTest();
 	}
 
@@ -228,7 +231,7 @@ public class ITWebREST {
 	 * rest/jobs/{id}/resubmit
 	 */
 	@Test(timeout = 2 * MINUTES)
-	//using 3 after test to make sure this runs after jobs/{id}/cancel
+	// make sure this runs after test2CancelInProgressJob()
 	public void test3ResubmitCancelledJob() throws Exception {
 		String url = WebRESTUtils.REST_URL + "jobs/" + Long.toString(processedJobId) + "/resubmit";
 		startTest("test3ResubmitCancelledJob",url);

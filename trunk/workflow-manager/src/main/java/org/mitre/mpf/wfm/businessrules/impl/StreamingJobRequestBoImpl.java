@@ -982,7 +982,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                             JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(
                                 currentDateTime, jobIds, externalIds, jobStatuses,
                                 lastNewActivityAlertFrameIds, lastNewActivityAlertTimestamps);
-                            log.info("HealthReportCallback, sending POST of healthReport, jsonBody= " + jsonBody);
+                            log.info("HealthReportCallbackThread.run(): sending health reports to POST callback:\n" + jsonBody);
                             post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
                             req = post;
 

@@ -35,11 +35,9 @@ import org.junit.*;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonHealthReportDataCallbackBody;
 import org.mitre.mpf.rest.api.*;
-import org.mitre.mpf.wfm.service.component.AddComponentServiceImpl;
 import org.mitre.mpf.wfm.service.component.ComponentRegistrationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import spark.Request;
 import spark.Response;
 import spark.Route;
@@ -74,7 +72,8 @@ public class ITWebStreamingHealthReports {
 	private static final Logger log = LoggerFactory.getLogger(ITWebStreamingHealthReports.class);
 
 	// for converting the JSON response to the actual java object
-	private ObjectMapper objectMapper = new ObjectMapper();
+	private static ObjectMapper objectMapper = new ObjectMapper();
+	private static boolean registeredComponent = false;
 
 	private long healthReportGetJobId = -1L;
 	private long healthReportPostJobId = -1L;
@@ -83,24 +82,39 @@ public class ITWebStreamingHealthReports {
 	private JsonHealthReportDataCallbackBody healthReportGetCallbackBody = null;
 	private JsonHealthReportDataCallbackBody healthReportPostCallbackBody = null;
 
-	@Autowired
-	private AddComponentServiceImpl addComponentService;
 
-	@Before // runs before each test
-	public void initialize() throws ComponentRegistrationException, IOException {
+	// run once
+	@BeforeClass
+	public static void initialize() throws ComponentRegistrationException, IOException {
 		// TODO: When streaming components are implemented, consider using a real streaming component pipeline.
 
 		String pipelinesUrl = WebRESTUtils.REST_URL + "pipelines";
 		String pipelinesResponse = WebRESTUtils.getJSON(new URL(pipelinesUrl), WebRESTUtils.MPF_AUTHORIZATION);
 
 		if (!pipelinesResponse.contains(PIPELINE_NAME)) {
-			String descriptorPath = getClass().getClassLoader().getResource(DESCRIPTOR_NAME).getPath();
+			String descriptorPath = ITWebStreamingHealthReports.class.getClassLoader().getResource(DESCRIPTOR_NAME).getPath();
 			String registerUrl = WebRESTUtils.REST_URL + "component/registerViaFile?filePath=" + descriptorPath;
 
 			String registerResponseJson = WebRESTUtils.getJSON(new URL(registerUrl), WebRESTUtils.MPF_AUTHORIZATION);
 			MpfResponse registerResponse = objectMapper.readValue(registerResponseJson, MpfResponse.class);
 
 			Assert.assertEquals("Component successfully registered", registerResponse.getMessage());
+
+			registeredComponent = true;
+		}
+	}
+
+	// run once
+	@AfterClass
+	public static void shutdown() throws IOException {
+		if (registeredComponent) {
+			String descriptorPath = ITWebStreamingHealthReports.class.getClassLoader().getResource(DESCRIPTOR_NAME).getPath();
+			String unregisterUrl = WebRESTUtils.REST_URL + "component/unregisterViaFile?filePath=" + descriptorPath;
+
+			String unregisterResponseJson = WebRESTUtils.getJSON(new URL(unregisterUrl), WebRESTUtils.MPF_AUTHORIZATION);
+			MpfResponse unregisterResponse = objectMapper.readValue(unregisterResponseJson, MpfResponse.class);
+
+			Assert.assertEquals("Component successfully unregistered", unregisterResponse.getMessage());
 		}
 	}
 

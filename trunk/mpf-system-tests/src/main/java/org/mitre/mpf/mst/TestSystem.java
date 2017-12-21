@@ -80,6 +80,7 @@ public abstract class TestSystem {
 
 	protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 	protected static int testCtr = 0;
+    protected static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	// is this running on Jenkins and/or is output checking desired?
 	protected static boolean jenkins = false;
@@ -91,8 +92,7 @@ public abstract class TestSystem {
 	}
 
 	private static final Logger log = LoggerFactory.getLogger(TestSystem.class);
-	private static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
+    
 
 	@Autowired
     @Qualifier(IoUtils.REF)

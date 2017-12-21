@@ -214,63 +214,47 @@ public interface Redis {
 	void setJobStatus(long jobId, JobStatus jobStatus);
 
 	/**
-	 * The URL of the Callback to connect to when the batch job is completed.
-	 * @param jobId The MPF-assigned ID of the batch job to which this Callback URL will refer to.
-	 * @return The URL of the Callback.
+	 * The URL of the callback to connect to when the batch job is completed.
+	 * @param jobId The OpenMPF-assigned ID of the batch job to which this callback URL will refer to.
+	 * @return The URL of the callback.
 	 * @throws WfmProcessingException
 	 */
 	String getCallbackURL(final long jobId) throws WfmProcessingException;
 
 	/**
-	 * The URL of the SummaryReportCallback to connect to when the streaming job is completed.
-	 * @param jobId The MPF-assigned ID of the streaming job to which this SummaryReportCallback URI will refer to.
+	 * The URI of the SummaryReportCallback to connect to when the streaming job is completed.
+	 * @param jobId The OpenMPF-assigned ID of the streaming job to which this SummaryReportCallback URI will refer to.
 	 * @return The URI of the SummaryReportCallback.
 	 * @throws WfmProcessingException
 	 */
 	String getSummaryReportCallbackURI(final long jobId) throws WfmProcessingException;
 
 	/**
-	 * The URL of the HealthReportCallback to connect to when the health report for a streaming job needs to be sent.
-	 * @param jobId The MPF-assigned ID of the streaming job to which this HealthReportCallback URI will refer to.
+	 * The URI of the HealthReportCallback to connect to when the health report for a streaming job needs to be sent.
+	 * @param jobId The OpenMPF-assigned ID of the streaming job to which this HealthReportCallback URI will refer to.
 	 * @return The URI of the HealthReportCallback.
 	 * @throws WfmProcessingException
 	 */
 	String getHealthReportCallbackURI(final long jobId) throws WfmProcessingException;
 
     /**
-     * Get the list of unique health report callback URIs associated with the specified jobs.
+     * Get the map of unique health report callback URIs associated with the specified jobs.
      * @param jobIds unique job ids of streaming jobs
      * @return Map of healthReportCallbackUri (keys), with each key mapping to the List of jobIds that specified that healthReportCallbackUri
      */
     Map<String,List<Long>> getUniqueHealthReportCallbackURIs(List<Long> jobIds);
 
     /**
-     * The METHOD of the Callback to connect to when the job is completed. POST or GET.
-     * @param jobId The MPF-assigned ID of the job to which this Callback Method will refer to.
-     * @return The METHOD of the Callback to connect to when the job is completed. POST or GET.
+     * The method of the callback to connect to when the job is completed. POST or GET.
+     * @param jobId The OpenMPF-assigned ID of the job to which this callback method will refer to.
+     * @return The method of the callback to connect to when the job is completed. POST or GET.
      * @throws WfmProcessingException
      */
 	String getCallbackMethod(final long jobId) throws WfmProcessingException;
 
 	/**
-	 * The callback method for each job as a List. Should be POST or GET.
-	 * @param jobIds The MPF-assigned IDs of the jobs to which this Callback Method will refer to.
-	 * @return List of callback methods for each job. Should be POST or GET.
-	 * @throws WfmProcessingException
-	 */
-	List<String> getJobIdCallbackMethodAsList(final List<Long> jobIds) throws WfmProcessingException;
-
-    /**
-     * The callback method for each job assicated in a Map. Should be POST or GET.
-     * @param jobIds The MPF-assigned IDs of the jobs to which this Callback Method will refer to.
-     * @return Map of callback methods for each job. Should be POST or GET.
-     * @throws WfmProcessingException
-     */
-    Map<Long,String> getJobIdCallbackMethodAsMap(List<Long> jobIds) throws WfmProcessingException;
-
-	/**
 	 * Returns the external id assigned to a job with JobId.
-	 * @param jobId The MPF-assigned ID of the job.
+	 * @param jobId The OpenMPF-assigned ID of the job.
 	 * @return returns the external_id specified for that job or null if an external id was not specified for the job.
 	 * @throws WfmProcessingException
      */
@@ -278,13 +262,13 @@ public interface Redis {
     List<String> getExternalId(List<Long> jobIds) throws WfmProcessingException;
 
 	/** Will return true if the specified jobId is a batch job stored in the transient data store
-	 * @param jobId The MPF-assigned ID of the job
+	 * @param jobId The OpenMPF-assigned ID of the job
 	 * @return true if the specified jobId is a batch job stored in the transient data store, false otherwise
 	 */
 	boolean isJobTypeBatch(final long jobId);
 
 	/** Will return true if the specified jobId is a streaming job stored in the transient data store
-	 * @param jobId The MPF-assigned ID of the job
+	 * @param jobId The OpenMPF-assigned ID of the job
 	 * @return true if the specified jobId is a streaming job stored in the transient data store, false otherwise
 	 */
 	boolean isJobTypeStreaming(final long jobId);
@@ -294,13 +278,13 @@ public interface Redis {
 	LocalDateTime getHealthReportLastTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
     List<LocalDateTime> getHealthReportLastTimestamp(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
 
-    void setHealthReportLastNewActivityAlertFrameId(long jobId, BigInteger lastNewActivityAlertFrameId) throws WfmProcessingException;
-    BigInteger getHealthReportLastNewActivityAlertFrameId(long jobId) throws WfmProcessingException;
-    List<BigInteger> getHealthReportLastNewActivityAlertFrameId(List<Long> jobIds) throws WfmProcessingException;
+    void setHealthReportLastActivityFrameId(long jobId, String lastNewActivityAlertFrameId) throws WfmProcessingException;
+    String getHealthReportLastActivityFrameId(long jobId) throws WfmProcessingException;
+    List<String> getHealthReportLastActivityFrameId(List<Long> jobIds) throws WfmProcessingException;
 
-	void setHealthReportLastNewActivityAlertTimestamp(long jobId, LocalDateTime lastNewActivityAlertTimestamp) throws WfmProcessingException;
-	LocalDateTime getHealthReportLastNewActivityAlertTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
-    List<LocalDateTime> getHealthReportLastNewActivityAlertTimestamp(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
+	void setHealthReportLastActivityTimestamp(long jobId, LocalDateTime lastNewActivityAlertTimestamp) throws WfmProcessingException;
+	LocalDateTime getHealthReportLastActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
+    List<LocalDateTime> getHealthReportLastActivityTimestamp(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
 
 	}
 

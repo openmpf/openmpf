@@ -85,8 +85,8 @@ public class StreamingJobController {
             notes = "The pipelineName should be one of the values in 'rest/pipelines'. The stream should contain a valid streamUri, " +
                     "for example: rtsp://example.com/media.mp4.  Optional segmentSize, mediaProperties, "+
                     "stallTimeout and stallCallbackUri may also be defined for the stream. " +
-                    "Additional streaming job options include summaryReportCallbackUri, healthReportCallbackUri, newTrackAlertCallbackUri and " +
-                    "callbackMethod (GET or POST). " +
+                    "Additional streaming job options include summaryReportCallbackUri and healthReportCallbackUri. Health and summary reports " +
+                    "will always be sent to the callback URIs using the HTTP POST method. " +
                     "Other streaming job options include jobProperties object which contains String key-value pairs which override the pipeline's job properties for this streaming job. " +
                     "An optional algorithmProperties object containing <String,Map> key-value pairs can override jobProperties for a specific algorithm defined in the pipeline.  "+
                     "For algorithmProperties, the key should be the algorithm name, and the value should be a Map of String key-value pairs representing properties specific to the named algorithm. "+
@@ -234,9 +234,7 @@ public class StreamingJobController {
                         priority,// Use the priority value if it is provided, otherwise use the default value from the properties file.
                         streamingJobCreationRequest.getStallTimeout(),
                         streamingJobCreationRequest.getHealthReportCallbackUri(),
-                        streamingJobCreationRequest.getSummaryReportCallbackUri(),
-                        streamingJobCreationRequest.getNewTrackAlertCallbackUri(),
-                        streamingJobCreationRequest.getCallbackMethod());
+                        streamingJobCreationRequest.getSummaryReportCallbackUri());
 
                 // submit the streaming job to MPF services.  Note that the jobId of the streaming job is
                 // created when the job is submitted to the MPF service because that is when the streaming job

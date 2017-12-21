@@ -176,7 +176,7 @@ public class MpfServiceImpl implements MpfService {
 		return jobRequestBo.resubmit(jobId, newPriority).getId();
 	}
 
-	/** Create a new streaming job which will execute the specified pipeline on the provided list of provided URIs
+	/** Create a new streaming job which will execute the specified pipeline on the stream.
 	 * @param json_stream JSON representation of the stream data
 	 * @param algorithmProperties A map of properties which will override the job properties on this job for a particular algorithm.
 	 * @param jobProperties A map of properties which will override the default and pipeline properties on this job.
@@ -187,8 +187,6 @@ public class MpfServiceImpl implements MpfService {
 	 * @param stallTimeout
 	 * @param healthReportCallbackURI The health report callback URI or null to disable health reports
 	 * @param summaryReportCallbackURI The summary callback URI or null to disable summary reports
-	 * @param newTrackAlertCallbackURI The new track alert callback URI or null to disable new track alerts
-	 * @param method The method to communicate the response body to the callback URL or null if no HTTP method for callbacks is defined
 	 * @return A {@link org.mitre.mpf.interop.JsonStreamingJobRequest} which summarizes this request
 	 */
 	@Override
@@ -198,14 +196,12 @@ public class MpfServiceImpl implements MpfService {
 													  boolean buildOutput, int priority,
 													  long stallTimeout,
 													  String healthReportCallbackURI,
-													  String summaryReportCallbackURI, String newTrackAlertCallbackURI,
-													  String method) {
+													  String summaryReportCallbackURI) {
 
-		log.debug("createStreamingJob: stream: {}, Pipeline: {}, Build Output: {}, Priority: {}, healthReportCallbackUri: {}, summaryReportCallbackUri: {}, newTrackAlertCallbackUri: {}, Method: {}", json_stream,
-				pipelineName, buildOutput, priority, healthReportCallbackURI, summaryReportCallbackURI, newTrackAlertCallbackURI, method);
+		log.debug("createStreamingJob: stream: {}, Pipeline: {}, Build Output: {}, Priority: {}, healthReportCallbackUri: {}, summaryReportCallbackUri: {}", json_stream,
+				pipelineName, buildOutput, priority, healthReportCallbackURI, summaryReportCallbackURI);
 		return streamingJobRequestBo.createRequest(externalId, pipelineName, json_stream, algorithmProperties, jobProperties, buildOutput, priority,
-				stallTimeout,
-				healthReportCallbackURI, summaryReportCallbackURI, newTrackAlertCallbackURI, method);
+				stallTimeout, healthReportCallbackURI, summaryReportCallbackURI);
 	}
 
 	/**
@@ -237,16 +233,16 @@ public class MpfServiceImpl implements MpfService {
 	}
 
 	/**
-	 * Send a periodic Health Report for all streaming jobs to the health report callback associated with each streaming job.
+	 * Send health report for all streaming jobs to the health report callback associated with each streaming job.
      * This method will just return if there are no streaming jobs.
      * TODO: should this method exclude streaming jobs where are marked as terminated?
 	 * @throws WfmProcessingException thrown if an error occurs
 	 */
 	@Override
-	public void sendPeriodicHealthReportToCallback() throws WfmProcessingException {
+	public void sendHealthReports() throws WfmProcessingException {
 		List<Long> jobIds = getAllStreamingJobIds();
-		if ( !jobIds.isEmpty() ) {
-            streamingJobRequestBo.sendPeriodicHealthReportToCallback(jobIds);
+		if ( jobIds != null && !jobIds.isEmpty() ) {
+            streamingJobRequestBo.sendHealthReports(jobIds);
         }
 	}
 

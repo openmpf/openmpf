@@ -110,10 +110,9 @@ public class RedisImpl implements Redis {
 			STALL_TIMEOUT = "STALL_TIMEOUT",
 			HEALTH_REPORT_CALLBACK_URI = "HEALTH_REPORT_CALLBACK_URI",
             LAST_HEALTH_REPORT_TIMESTAMP = "LAST_HEALTH_REPORT_TIMESTAMP",
-			LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID = "LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID",
-			LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_TIMESTAMP = "LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_TIMESTAMP",
-			SUMMARY_REPORT_CALLBACK_URI = "SUMMARY_REPORT_CALLBACK_URI",
-			NEW_TRACK_ALERT_CALLBACK_URI = "NEW_TRACK_ALERT_CALLBACK_URI";
+			LAST_HEALTH_REPORT_ACTIVITY_FRAME_ID = "LAST_HEALTH_REPORT_ACTIVITY_FRAME_ID",
+			LAST_HEALTH_REPORT_ACTIVITY_TIMESTAMP = "LAST_HEALTH_REPORT_ACTIVITY_TIMESTAMP",
+			SUMMARY_REPORT_CALLBACK_URI = "SUMMARY_REPORT_CALLBACK_URI";
 
 	/**
 	 * Creates a "key" from one or more components. This is a convenience method for creating
@@ -178,7 +177,7 @@ public class RedisImpl implements Redis {
 
 	/**
 	 * marked the batch or streaming job as CANCELLED in REDIS
-	 * @param jobId The MPF-assigned ID of the batch or streaming job (must be unique)
+	 * @param jobId The OpenMPF-assigned ID of the batch or streaming job (must be unique)
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
@@ -221,7 +220,7 @@ public class RedisImpl implements Redis {
 
 	/**
 	 * Clear the specified job from the REDIS database
-	 * @param jobId The MPF-assigned ID of the batch or streaming job to purge (must be unique)
+	 * @param jobId The OpenMPF-assigned ID of the batch or streaming job to purge (must be unique)
 	 * @throws WfmProcessingException
 	 */
     @SuppressWarnings("unchecked")
@@ -326,7 +325,7 @@ public class RedisImpl implements Redis {
 
 	/**
 	 * Get the task index for the specified batch job. Note that stage tracking is not supported for streaming jobs
-	 * @param jobId The MPF-assigned ID of the batch job to look up, must be unique.
+	 * @param jobId The OpenMPF-assigned ID of the batch job to look up, must be unique.
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
@@ -351,7 +350,7 @@ public class RedisImpl implements Redis {
 
 	/**
 	 * Get the job status for the specified job
-	 * @param jobId The MPF-assigned ID of the batch or streaming job, must be unique.
+	 * @param jobId The OpenMPF-assigned ID of the batch or streaming job, must be unique.
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
@@ -398,8 +397,8 @@ public class RedisImpl implements Redis {
 
     /**
 	 * Get the detection errors for the batch job
-	 * @param jobId The MPF-assigned ID of the batch job.
-	 * @param mediaId The MPF-assigned media ID.
+	 * @param jobId The OpenMPF-assigned ID of the batch job.
+	 * @param mediaId The OpenMPF-assigned media ID.
 	 * @param taskIndex The index of the task in the job's pipeline which generated these errors.
 	 * @param actionIndex The index of the action in the job's pipeline's task which generated these errors.
 	 * @return
@@ -440,7 +439,7 @@ public class RedisImpl implements Redis {
 	/**
 	 * Get the transient representation of the batch job as specified by the batch jobs unique jobId.
 	 * This method should not be called for streaming jobs.
-	 * @param jobId The MPF-assigned ID of the batch job, must be unique
+	 * @param jobId The OpenMPF-assigned ID of the batch job, must be unique
 	 * @param mediaIds Optionally, a list of mediaIds to load.  If values are provided for media ids, the returned
 	 *                 TransientJob will contain only the TransientMedia objects which relate to those ids. If no
 	 *                 values are provided, the TransientJob will include all associated TransientMedia.
@@ -496,7 +495,7 @@ public class RedisImpl implements Redis {
 	/**
 	 * Get the transient representation of the streaming job as specified by the streaming jobs unique jobId.
 	 * This method should not be called for batch jobs.
-	 * @param jobId The MPF-assigned ID of the streaming job, must be unique.
+	 * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
 	 * @return
 	 * @throws WfmProcessingException
 	 */
@@ -519,10 +518,7 @@ public class RedisImpl implements Redis {
 					(String) (jobHash.get(OUTPUT_OBJECT_PATH)),
 					(Boolean) (jobHash.get(CANCELLED)),
 					(String) (jobHash.get(HEALTH_REPORT_CALLBACK_URI)),
-					(String) (jobHash.get(SUMMARY_REPORT_CALLBACK_URI)),
-					(String) (jobHash.get(NEW_TRACK_ALERT_CALLBACK_URI)),
-					(String) (jobHash.get(CALLBACK_METHOD))
-			);
+					(String) (jobHash.get(SUMMARY_REPORT_CALLBACK_URI)));
 
 			transientStreamingJob.getOverriddenJobProperties().putAll(jsonUtils.deserialize((byte[])jobHash.get(OVERRIDDEN_JOB_PROPERTIES), HashMap.class));
 			transientStreamingJob.getOverriddenAlgorithmProperties().putAll(jsonUtils.deserialize((byte[])jobHash.get(OVERRIDDEN_ALGORITHM_PROPERTIES), HashMap.class));
@@ -547,7 +543,7 @@ public class RedisImpl implements Redis {
 
 	/**
 	 * Get the task count for the specified batch or streaming job
-	 * @param jobId The MPF-assigned ID of the batch or the streaming job, must be unique.
+	 * @param jobId The OpenMPF-assigned ID of the batch or the streaming job, must be unique.
 	 * @return
 	 * @throws WfmProcessingException
 	 */
@@ -571,8 +567,8 @@ public class RedisImpl implements Redis {
 	 * Note: to be consistent with legacy unit test processing, this method assumes that the job is a batch job.  This method should not be called for streaming jobs
 	 * This method will check to see if the specified jobId has been stored in REDIS and is associated with a streaming job.  If this is the case,
 	 * it will return a null
-	 * @param jobId The MPF-assigned ID of the batch job, must be unique
-	 * @param mediaId The MPF-assigned media ID.
+	 * @param jobId The OpenMPF-assigned ID of the batch job, must be unique
+	 * @param mediaId The OpenMPF-assigned media ID.
 	 * @param taskIndex The index of the task which created the tracks in the job's pipeline.
 	 * @param actionIndex The index of the action in the job's pipeline's task which generated the tracks.
 	 * @return
@@ -667,7 +663,7 @@ public class RedisImpl implements Redis {
 
 	/**
 	 * Persist the media data for a batch job by storing it in the REDIS database
-	 * @param job The MPF-assigned ID of the batch job, must be unique
+	 * @param job The OpenMPF-assigned ID of the batch job, must be unique
 	 * @param transientMedia The non-null media instance to persist.
 	 * @throws WfmProcessingException
 	 */
@@ -685,7 +681,7 @@ public class RedisImpl implements Redis {
 
 	/**
 	 * Persist the stream data for a streaming job by storing it in the REDIS database
-	 * @param job The MPF-assigned ID of the streaming job, must be unique
+	 * @param job The OpenMPF-assigned ID of the streaming job, must be unique
 	 * @param transientStream The non-null stream instance to persist.
 	 * @throws WfmProcessingException
 	 */
@@ -733,8 +729,6 @@ public class RedisImpl implements Redis {
 		jobHash.put(STALL_TIMEOUT, transientStreamingJob.getStallTimeout());
 		jobHash.put(HEALTH_REPORT_CALLBACK_URI, transientStreamingJob.getHealthReportCallbackURI());
 		jobHash.put(SUMMARY_REPORT_CALLBACK_URI, transientStreamingJob.getSummaryReportCallbackURI());
-		jobHash.put(NEW_TRACK_ALERT_CALLBACK_URI, transientStreamingJob.getNewTrackAlertCallbackURI());
-		jobHash.put(CALLBACK_METHOD, transientStreamingJob.getCallbackMethod());
 		jobHash.put(OUTPUT_ENABLED, transientStreamingJob.isOutputEnabled());
 		jobHash.put(OUTPUT_OBJECT_PATH, transientStreamingJob.getOutputObjectDirectory());
 		jobHash.put(CANCELLED, transientStreamingJob.isCancelled());
@@ -753,7 +747,7 @@ public class RedisImpl implements Redis {
 	}
 
     /**
-     * Get the list of unique health report callback URIs associated with the specified streaming jobs.
+     * Get the map of unique health report callback URIs associated with the specified streaming jobs.
      * @param jobIds unique job ids of active streaming jobs that are available in REDIS. May be empty.
      * @return Map of healthReportCallbackUri (keys), with each key value mapping to the List of jobIds that specified that healthReportCallbackUri. May be
      * empty if the jobIds List is empty.
@@ -786,7 +780,7 @@ public class RedisImpl implements Redis {
 
     /**
 	 * Set the current task index of the specified batch job.  Note: stage tracking is not supported for streaming jobs
-	 * @param jobId The MPF-assigned ID of the batch job, must be unique.
+	 * @param jobId The OpenMPF-assigned ID of the batch job, must be unique.
 	 * @param taskIndex The index of the task which should be used as the "current" task.
 	 */
     @SuppressWarnings("unchecked")
@@ -802,7 +796,7 @@ public class RedisImpl implements Redis {
 
 	/**
 	 * Set the job status of the specified batch or streaming job
-	 * @param jobId The MPF-assigned ID of the batch or streaming job, must be unique.
+	 * @param jobId The OpenMPF-assigned ID of the batch or streaming job, must be unique.
 	 * @param jobStatus The new status of the specified job.
 	 */
 	@SuppressWarnings("unchecked")
@@ -821,7 +815,7 @@ public class RedisImpl implements Redis {
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
      * Note that internally, health report timestamps are stored in REDIS by converting the object to a string
      * formatted using the REDIS_TIMESTAMP_PATTERN, which is currently defined as {@value #REDIS_TIMESTAMP_PATTERN}.
-     * @param jobId The MPF-assigned ID of the streaming job, must be unique.
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
      * @param lastHealthReportTimestamp The timestamp of the last health report that was sent for this streaming job.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job, or if the passed
      * lastHealthReportTimestamp is null. DateTimeException will be thrown if the lastHealthReportTimestamp could not be stored
@@ -848,7 +842,7 @@ public class RedisImpl implements Redis {
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
      * Note that internally, health report timestamps are stored in REDIS by converting the object to a string
      * formatted using the REDIS_TIMESTAMP_PATTERN, which is currently defined as {@value #REDIS_TIMESTAMP_PATTERN}.
-     * @param jobId The MPF-assigned ID of the streaming job, must be unique.
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
      * @return The timestamp of the last health report that was set for this streaming job.
      * Returned value may be null if a health report for this streaming job has not yet been sent.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job.
@@ -885,15 +879,15 @@ public class RedisImpl implements Redis {
     /**
      * Store the last new activity frame id from the last health report that was sent for the specified streaming job.
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
-     * @param jobId The MPF-assigned ID of the streaming job, must be unique.
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
      * @param lastNewActivityAlertFrameId  The last new activity frame id to be stored for this streaming job
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job, or if the passed
      * lastHealthReportTimestamp is null.
      */
-    public synchronized void setHealthReportLastNewActivityAlertFrameId(long jobId, BigInteger lastNewActivityAlertFrameId ) throws WfmProcessingException {
+    public synchronized void setHealthReportLastActivityFrameId(long jobId, String lastNewActivityAlertFrameId ) throws WfmProcessingException {
         if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
             if ( lastNewActivityAlertFrameId != null ) {
-                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID, lastNewActivityAlertFrameId.toString() );
+                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(LAST_HEALTH_REPORT_ACTIVITY_FRAME_ID, lastNewActivityAlertFrameId );
             } else {
                 log.error("Illegal, can't set health report last New Activity Alert frame id to null for streaming job #{}.", jobId);
                 throw new WfmProcessingException("Illegal: Streaming Job " + jobId + ", can't set the last New Activity Alert frame id to null.");
@@ -907,34 +901,30 @@ public class RedisImpl implements Redis {
     /**
      * Return the last New Activity Alert frame id that was stored in the health report for the specified streaming job.
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
-     * @param jobId The MPF-assigned ID of the streaming job, must be unique.
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
      * @return The last new activity frame id that was stored for this streaming job.
      * Returned value may be null if a health report or a New Activity Alert for this streaming job has not yet been sent.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job
      */
-    public synchronized BigInteger getHealthReportLastNewActivityAlertFrameId(long jobId) throws WfmProcessingException {
+    public synchronized String getHealthReportLastActivityFrameId(long jobId) throws WfmProcessingException {
         if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
             // confirmed that the specified job is a streaming job
             Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
-            String frameId = (String) jobHash.get(LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_FRAME_ID);
-            if ( frameId == null ) {
-                return (BigInteger) null;
-            } else {
-                return new BigInteger(frameId);
-            }
+            String frameId = (String) jobHash.get(LAST_HEALTH_REPORT_ACTIVITY_FRAME_ID);
+			return frameId;
         } else {
             log.error("Job #{} is not a streaming job, so we can't get the health report last New Activity Alert frame id.", jobId);
             throw new WfmProcessingException("Error: Job " + jobId + " is not a streaming job. Only streaming jobs send health reports.");
         }
     }
 
-    /** This method is the same as {@link #getHealthReportLastNewActivityAlertFrameId(long)}, it's just adapted for use with Lists.
+    /** This method is the same as {@link #getHealthReportLastActivityFrameId(long)}, it's just adapted for use with Lists.
      * @param jobIds List of jobIds for streaming jobs
      * @return List of last new activity alert frame ids
      * @throws WfmProcessingException
      */
-    public synchronized List<BigInteger> getHealthReportLastNewActivityAlertFrameId(List<Long> jobIds) throws WfmProcessingException {
-        return jobIds.stream().map(jobId->getHealthReportLastNewActivityAlertFrameId(jobId.longValue())).collect(Collectors.toList());
+    public synchronized List<String> getHealthReportLastActivityFrameId(List<Long> jobIds) throws WfmProcessingException {
+        return jobIds.stream().map(jobId->getHealthReportLastActivityFrameId(jobId.longValue())).collect(Collectors.toList());
     }
 
     /**
@@ -942,18 +932,18 @@ public class RedisImpl implements Redis {
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
      * Note that internally, health report timestamps are stored in REDIS by converting the object to a string
      * formatted using the REDIS_TIMESTAMP_PATTERN, which is currently defined as {@value #REDIS_TIMESTAMP_PATTERN}.
-     * @param jobId The MPF-assigned ID of the streaming job, must be unique.
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
      * @param lastNewActivityAlertTimestamp The last health report New Activity Alert timestamp for this streaming job.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job, or if the passed
      * lastNewActivityAlertTimestamp is null. DateTimeException will be thrown if the lastNewActivityAlertTimestamp could not be stored
      * in REDIS because it could not be formatted as a String.
      */
-    public synchronized void setHealthReportLastNewActivityAlertTimestamp(long jobId, LocalDateTime lastNewActivityAlertTimestamp) throws WfmProcessingException, DateTimeException {
+    public synchronized void setHealthReportLastActivityTimestamp(long jobId, LocalDateTime lastNewActivityAlertTimestamp) throws WfmProcessingException, DateTimeException {
         if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
             if ( lastNewActivityAlertTimestamp != null ) {
                 // Internally, health report timestamps are being stored in REDIS using ISO-8601 format.
                 String timestamp = timestampFormatter.format(lastNewActivityAlertTimestamp);
-                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_TIMESTAMP, timestamp);
+                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(LAST_HEALTH_REPORT_ACTIVITY_TIMESTAMP, timestamp);
             } else {
                 log.error("Illegal, can't set the last health report New Activity Alert timestamp to null for a streaming job #{}.", jobId);
                 throw new WfmProcessingException("Illegal: Streaming Job " + jobId + ", can't set the last health report New Activity Alert timestamp to null.");
@@ -969,18 +959,18 @@ public class RedisImpl implements Redis {
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
      * Note that internally, health report timestamps are stored in REDIS by converting the object to a string
      * formatted using the REDIS_TIMESTAMP_PATTERN, which is currently defined as {@value #REDIS_TIMESTAMP_PATTERN}.
-     * @param jobId The MPF-assigned ID of the streaming job, must be unique.
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
      * @return The last health report New Activity Alert timestamp for this streaming job.
      * Returned value may be null if a health report or a New Activity Alert for this streaming job has not yet been sent.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job.
      * DateTimeException will be thrown if the last New Activity Alert timestamp could not be pulled
      * from REDIS because it could not be parsed as a String.
      */
-    public synchronized LocalDateTime getHealthReportLastNewActivityAlertTimestamp(long jobId) throws WfmProcessingException, DateTimeException {
+    public synchronized LocalDateTime getHealthReportLastActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException {
         if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
             // Confirmed that the specified job is a streaming job.
             Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
-            String timestamp = (String) jobHash.get(LAST_HEALTH_REPORT_NEW_ACTIVITY_ALERT_TIMESTAMP);
+            String timestamp = (String) jobHash.get(LAST_HEALTH_REPORT_ACTIVITY_TIMESTAMP);
             if ( timestamp != null ) {
                 return (LocalDateTime) timestampFormatter.parse(timestamp);
             } else {
@@ -993,14 +983,14 @@ public class RedisImpl implements Redis {
         }
     }
 
-    /** This method is the same as {@link #getHealthReportLastNewActivityAlertTimestamp(long)}, it's just adapted for use with Lists.
+    /** This method is the same as {@link #getHealthReportLastActivityTimestamp(long)}, it's just adapted for use with Lists.
      * @param jobIds List of jobIds for streaming jobs.
      * @return List of last new activity alert timestamps. The list may contain null if a health report or a New Activity Alert for a streaming job has not yet been sent.
      * @throws WfmProcessingException
      * @throws DateTimeException
      */
-    public synchronized List<LocalDateTime> getHealthReportLastNewActivityAlertTimestamp(List<Long> jobIds) throws WfmProcessingException, DateTimeException {
-        return jobIds.stream().map(jobId->getHealthReportLastNewActivityAlertTimestamp(jobId.longValue())).collect(Collectors.toList());
+    public synchronized List<LocalDateTime> getHealthReportLastActivityTimestamp(List<Long> jobIds) throws WfmProcessingException, DateTimeException {
+        return jobIds.stream().map(jobId->getHealthReportLastActivityTimestamp(jobId.longValue())).collect(Collectors.toList());
     }
 
     /**
@@ -1008,8 +998,8 @@ public class RedisImpl implements Redis {
 	 * Note: to be consistent with legacy unit test processing, this method assumes that the job is a batch job.  This method should not be called for streaming jobs
 	 * This method will check to see if the specified jobId has been stored in REDIS and is associated with a streaming job.  If this is the case,
 	 * it will just log the warning
-	 * @param jobId The MPF-assigned ID of the batch job, must be unique
-	 * @param mediaId The MPF-assigned media ID.
+	 * @param jobId The OpenMPF-assigned ID of the batch job, must be unique
+	 * @param mediaId The OpenMPF-assigned media ID.
 	 * @param taskIndex The index of the task which created the tracks in the job's pipeline.
 	 * @param actionIndex The index of the action in the job's pipeline's task which generated the tracks.
 	 * @param tracks The collection of tracks to associate with the (job, media, task, action) 4-ple.
@@ -1066,13 +1056,14 @@ public class RedisImpl implements Redis {
 	}
 
 	@Override
+	/** Note: only batch jobs have callbackMethod defined. Streaming jobs will only use HTTP POST method. */
 	public String getCallbackMethod(long jobId) throws WfmProcessingException {
 		if(redisTemplate.boundSetOps("BATCH_JOB").members().contains(Long.toString(jobId))) {
 			Map jobHash = redisTemplate.boundHashOps(key("BATCH_JOB", jobId)).entries();
 			return (String) jobHash.get(CALLBACK_METHOD);
 		} else if(redisTemplate.boundSetOps("STREAMING_JOB").members().contains(Long.toString(jobId))) {
-			Map jobHash = redisTemplate.boundHashOps(key("STREAMING_JOB", jobId)).entries();
-			return (String) jobHash.get(CALLBACK_METHOD);
+			// Streaming jobs only support the HTTP POST method. Streaming jobs do not store callbackMethod in REDIS.
+            throw new WfmProcessingException("Error, streaming jobs only support the HTTP POST method. Streaming jobs do not store callbackMethod in REDIS");
 		} else {
 			log.warn("Job #{} was not found as a batch or a streaming job so we can't get the callback method", jobId);
 			return null;
@@ -1083,31 +1074,9 @@ public class RedisImpl implements Redis {
 	    return getCallbackMethod(jobId.longValue());
     }
 
-    @Override
-    public List<String> getJobIdCallbackMethodAsList(List<Long> jobIds) throws WfmProcessingException {
-	    if ( jobIds == null ) {
-            throw new WfmProcessingException("Error, jobIds can't be null");
-        } else {
-            return jobIds.stream().map(jobId -> getCallbackMethod(jobId)).collect(Collectors.toList());
-        }
-    }
-
-    @Override
-    public Map<Long,String> getJobIdCallbackMethodAsMap(List<Long> jobIds) throws WfmProcessingException {
-        if ( jobIds == null ) {
-            throw new WfmProcessingException("Error, jobIds can't be null");
-        } else {
-            HashMap<Long,String> map = new HashMap<>();
-            for ( final Long jobId : jobIds ) {
-                map.put(jobId,getCallbackMethod(jobId));
-            }
-            return map;
-        }
-    }
-
     /**
      * Returns the external id assigned to a job with JobId.
-     * @param jobId The MPF-assigned ID of the job.
+     * @param jobId The OpenMPF-assigned ID of the job.
      * @return returns the external_id specified for that job or null if an external id was not specified for the job.
      * @throws WfmProcessingException
      */
@@ -1136,7 +1105,7 @@ public class RedisImpl implements Redis {
     }
 
     /**Method will return true if the specified jobId is a batch job stored in the transient data store
-	 * @param jobId The MPF-assigned ID of the job
+	 * @param jobId The OpenMPF-assigned ID of the job
 	 * @return true if the specified jobId is a batch job stored in the transient data store, false otherwise
 	 */
 	public boolean isJobTypeBatch(final long jobId) {
@@ -1144,7 +1113,7 @@ public class RedisImpl implements Redis {
 	}
 
 	/**Method will return true if the specified jobId is a streaming job stored in the transient data store
-	 * @param jobId The MPF-assigned ID of the job
+	 * @param jobId The OpenMPF-assigned ID of the job
 	 * @return true if the specified jobId is a streaming job stored in the transient data store, false otherwise
 	 */
 	public boolean isJobTypeStreaming(final long jobId) {

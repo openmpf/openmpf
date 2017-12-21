@@ -49,7 +49,7 @@ public interface StreamingJobRequestBo {
 										  Map<String, Map<String,String>> algorithmProperties, Map<String, String> jobProperties,
 										  boolean buildOutput, int priority,
 										  long stallTimeout,
-										  String healthReportCallbackURI, String summaryReportCallbackURI, String newTrackAlertCallbackURI, String method);
+										  String healthReportCallbackURI, String summaryReportCallbackURI);
 
 	/**
 	 * Validates and begins executing the specified streamingJobRequest.
@@ -83,11 +83,11 @@ public interface StreamingJobRequestBo {
 	void cancel(long jobId, boolean doCleanup) throws WfmProcessingException;
 
 	/**
-	 * Send a periodic Health Report for all streaming jobs to the health report callback associated with each streaming job.
+	 * Send a health report for all streaming jobs to the health report callback associated with each streaming job.
      * @param jobIds all job ids to send health reports for.
 	 * @throws WfmProcessingException thrown if an error occurs
 	 */
-	void sendPeriodicHealthReportToCallback(List<Long> jobIds) throws WfmProcessingException;
+	void sendHealthReports(List<Long> jobIds) throws WfmProcessingException;
 
 	void jobCompleted(long jobId, JobStatus jobStatus);
 

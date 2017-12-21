@@ -87,8 +87,6 @@ public interface MpfService {
 	 * @param stallTimeout
 	 * @param healthReportCallbackURI
 	 * @param summaryReportCallbackURI
-	 * @param newTrackAlertCallbackURI
-	 * @param method
 	 * @return A {@link org.mitre.mpf.interop.JsonStreamingJobRequest} which summarizes this request.
 	 */
 	public JsonStreamingJobRequest createStreamingJob(JsonStreamingInputObject json_stream,
@@ -98,9 +96,7 @@ public interface MpfService {
 													  boolean buildOutput, int priority,
 													  long stallTimeout,
 													  String healthReportCallbackURI,
-													  String summaryReportCallbackURI,
-													  String newTrackAlertCallbackURI,
-													  String method);
+													  String summaryReportCallbackURI);
 
 	/**
 	 * Asynchronously submits a JSON-based batch job request and returns the identifier associated with the persistent job request which was created.
@@ -149,10 +145,10 @@ public interface MpfService {
 	void cancelStreamingJob(long jobId, boolean doCleanup) throws WfmProcessingException;
 
     /**
-     * Send a periodic Health Report for all streaming jobs to the health report callback associated with each streaming job.
+     * Send a health reports for all streaming jobs to the health report callback associated with each streaming job.
      * @throws WfmProcessingException thrown if an error occurs
      */
-    public void sendPeriodicHealthReportToCallback() throws WfmProcessingException;
+    public void sendHealthReports() throws WfmProcessingException;
 
 	/** Gets the marked-up media with the specified (batch job) id. */
 	public MarkupResult getMarkupResult(long id);

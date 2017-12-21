@@ -145,10 +145,12 @@ public interface MpfService {
 	void cancelStreamingJob(long jobId, boolean doCleanup) throws WfmProcessingException;
 
     /**
-     * Send a health reports for all streaming jobs to the health report callback associated with each streaming job.
+     * Send a health reports for all current streaming jobs to the health report callback associated with each streaming job.
+	 * @param isActive If true, then streaming jobs which have JobStatus of TERMINATED will be
+	 * filtered out. Otherwise, all current streaming jobs will be processed.
      * @throws WfmProcessingException thrown if an error occurs
      */
-    public void sendHealthReports() throws WfmProcessingException;
+    public void sendHealthReports(boolean isActive) throws WfmProcessingException;
 
 	/** Gets the marked-up media with the specified (batch job) id. */
 	public MarkupResult getMarkupResult(long id);

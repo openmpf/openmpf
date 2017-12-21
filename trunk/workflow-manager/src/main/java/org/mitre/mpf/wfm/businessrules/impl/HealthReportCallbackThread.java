@@ -1,0 +1,171 @@
+/******************************************************************************
+ * NOTICE                                                                     *
+ *                                                                            *
+ * This software (or technical data) was produced for the U.S. Government     *
+ * under contract, and is subject to the Rights in Data-General Clause        *
+ * 52.227-14, Alt. IV (DEC 2007).                                             *
+ *                                                                            *
+ * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ ******************************************************************************/
+
+/******************************************************************************
+ * Copyright 2017 The MITRE Corporation                                       *
+ *                                                                            *
+ * Licensed under the Apache License, Version 2.0 (the "License");            *
+ * you may not use this file except in compliance with the License.           *
+ * You may obtain a copy of the License at                                    *
+ *                                                                            *
+ *    http://www.apache.org/licenses/LICENSE-2.0                              *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the License is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ ******************************************************************************/
+
+package org.mitre.mpf.wfm.businessrules.impl;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.DateTimeException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
+import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.util.JsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.mitre.mpf.interop.JsonHealthReportData;
+import org.mitre.mpf.interop.JsonHealthReportDataCallbackBody;
+import org.mitre.mpf.wfm.WfmProcessingException;
+
+/**
+ * Thread creation class that supports sending of health reports to the requested health report callback URIs.
+ * Note that this class only supports the HTTP POST method, The HTTP GET method for sending of health reports is not supported in OpenMPF.
+ * Also note that sending of the health report requires that the time that the health report was sent be included in the health report.
+ * To properly record the time, the timestamp is set in the run method.
+ */
+public class HealthReportCallbackThread implements Runnable {
+
+    private static final Logger log = LoggerFactory.getLogger(HealthReportCallbackThread.class);
+    public static final String REF = "healthReportCallbackThread";
+
+    private String callbackUri = null;
+    private List<Long> jobIds = null;
+
+    @Autowired
+    @Qualifier(RedisImpl.REF)
+    private Redis redis;
+
+    @Autowired
+    private JsonUtils jsonUtils;
+
+    /**
+     * Constructor used for sending a health report for a single streaming job.
+     * @param jobId unique id for the streaming job.
+     * @param callbackUri health report callback URI for that single streaming job.
+     */
+    public HealthReportCallbackThread(long jobId, String callbackUri) {
+        this.callbackUri = callbackUri;
+        jobIds = new ArrayList<Long>();
+        jobIds.add(jobId);
+    }
+
+    /**
+     * Constructor used for sending a health report for a set of streaming jobs which have
+     * specified the same health report callback URI.
+     * @param jobIds list of unique ids for the streaming jobs which defined the same healthReportCallbackUri
+     * @param callbackUri single health report callback URI defined for all these streaming jobs.
+     */
+    public HealthReportCallbackThread(List<Long> jobIds, String callbackUri) {
+        this.callbackUri = callbackUri;
+        this.jobIds = jobIds;
+    }
+
+    // Send the health report to the URI identified by healthReportCallbackUri, using the HTTP POST method.
+    private void sendHealthReportToCallback(HttpClient httpClient, LocalDateTime currentDateTime) {
+
+        HttpUriRequest req = null;
+
+        // Get other information from REDIS about these streaming jobs.
+        List<String> externalIds = redis.getExternalIds(jobIds);
+        List<String> jobStatuses = redis.getJobStatusesAsString(jobIds);
+        List<String> lastActivityFrameIds = redis.getHealthReportLastActivityFrameIds(jobIds);
+        List<LocalDateTime> lastActivityTimestamps = redis.getHealthReportLastActivityTimestamps(jobIds);
+
+        // Send the health report to the callback using POST.
+        HttpPost post = new HttpPost(callbackUri);
+        post.addHeader("Content-Type", "application/json");
+        try {
+            JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(
+                currentDateTime, jobIds, externalIds, jobStatuses,
+                lastActivityFrameIds, lastActivityTimestamps);
+            log.info("HealthReportCallback, sending POST of healthReport, jsonBody= " + jsonBody);
+            post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
+            req = post;
+
+            // If the http request was properly constructed, then send it.
+            if (req != null) {
+                HttpResponse response = httpClient.execute(req);
+                log.info("{} HealthReportCallback issued to 'POST' (Response={}).", callbackUri, response);
+            } else {
+                log.error("{} Error sending HealthReportCallback issued to 'POST' req is null, jsonBody=", callbackUri, jsonBody);
+            }
+
+        } catch (UnsupportedEncodingException uee) {
+            log.error("Failed to issue 'POST' HealthReportCallback to '{}' due to an UnsupportedEncodingException.",
+                callbackUri, uee);
+
+        } catch (IOException e) {
+            log.error("{} Error sending HealthReportCallback to " + callbackUri
+                + ", issued to 'POST' due to IOException: " + e.getMessage(), e);
+
+        } catch (WfmProcessingException | MpfInteropUsageException e) {
+            log.error("Cannot serialize JsonHealthReportDataCallbackBody, couldn't send 'POST' callback to "
+                    + callbackUri, e);
+        }
+
+    }
+
+    @Override
+    public void run() {
+
+        if ( jobIds == null ) {
+
+            log.warn("Failed to issue HealthReportCallback to '{}' because jobIds is null",callbackUri);
+
+        } else {
+
+            final HttpClient httpClient = HttpClientBuilder.create().build();
+
+            // Set the current timestamp for the health report.
+            LocalDateTime currentDateTime = LocalDateTime.now();
+
+            // Send the health report describing health of all jobIds to the single callback URI using the POST method.
+            sendHealthReportToCallback(httpClient, currentDateTime);
+
+         }
+    }
+}

@@ -24,39 +24,19 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.scheduled;
+package org.mitre.mpf.interop.exceptions;
 
-import java.util.List;
+/**
+ * Exception thrown if an org.mitre.mpf.interop usage error is found.
+ */
+public class MpfInteropUsageException extends Exception {
 
-import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
-import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+    public MpfInteropUsageException(String msg) {
+        super(msg);
+    }
 
-
-import org.mitre.mpf.wfm.service.MpfService;
-
-@Component
-public class HealthReportScheduledTask {
-
-    private static final Logger log = LoggerFactory.getLogger(HealthReportScheduledTask.class);
-
-    @Autowired //will grab the impl
-    private MpfService mpfService;
-
-    @Autowired
-    @Qualifier(StreamingJobRequestBoImpl.REF)
-    private StreamingJobRequestBo streamingJobRequestBo;
-
-    // TODO how can this be tied to PropertiesUtil.getHealthReportCallbackRate?
-    @Scheduled(fixedDelayString = "${streaming.healthReport.callbackRate:30000}" )
-    public void sendHealthReports() {
-        boolean isActive = true; // only send periodic health reports for current, active streaming jobs.
-        mpfService.sendHealthReports(isActive);
+    public MpfInteropUsageException(String msg, Throwable e) {
+        super(msg, e);
     }
 
 }

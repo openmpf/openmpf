@@ -91,8 +91,8 @@ public interface Redis {
 	 * @return The status of the job.
 	 */
 	JobStatus getJobStatus(long jobId);
-    List<JobStatus> getJobStatus(List<Long> jobIds);
-    List<String> getJobStatusAsString(List<Long> jobIds);
+    List<JobStatus> getJobStatuses(List<Long> jobIds);
+    List<String> getJobStatusesAsString(List<Long> jobIds);
 
 	/**
 	 * Gets the collection of detection processing errors associated with a (job, media, task, action) 4-ple.
@@ -242,7 +242,7 @@ public interface Redis {
      * @param jobIds unique job ids of streaming jobs
      * @return Map of healthReportCallbackUri (keys), with each key mapping to the List of jobIds that specified that healthReportCallbackUri
      */
-    Map<String,List<Long>> getUniqueHealthReportCallbackURIs(List<Long> jobIds);
+    Map<String,List<Long>> getHealthReportCallbackURIAsMap(List<Long> jobIds);
 
     /**
      * The method of the callback to connect to when the job is completed. POST or GET.
@@ -255,36 +255,33 @@ public interface Redis {
 	/**
 	 * Returns the external id assigned to a job with JobId.
 	 * @param jobId The OpenMPF-assigned ID of the job.
-	 * @return returns the external_id specified for that job or null if an external id was not specified for the job.
+	 * @return returns the external id specified for that job or null if an external id was not specified for the job.
 	 * @throws WfmProcessingException
      */
 	String getExternalId(final long jobId) throws WfmProcessingException;
-    List<String> getExternalId(List<Long> jobIds) throws WfmProcessingException;
+    List<String> getExternalIds(List<Long> jobIds) throws WfmProcessingException;
 
 	/** Will return true if the specified jobId is a batch job stored in the transient data store
 	 * @param jobId The OpenMPF-assigned ID of the job
 	 * @return true if the specified jobId is a batch job stored in the transient data store, false otherwise
 	 */
-	boolean isJobTypeBatch(final long jobId);
+	boolean isJobTypeBatch(final Long jobId);
 
 	/** Will return true if the specified jobId is a streaming job stored in the transient data store
 	 * @param jobId The OpenMPF-assigned ID of the job
 	 * @return true if the specified jobId is a streaming job stored in the transient data store, false otherwise
 	 */
-	boolean isJobTypeStreaming(final long jobId);
     boolean isJobTypeStreaming(final Long jobId);
-
-	void setHealthReportLastTimestamp(long jobId, LocalDateTime lastHealthReportTimestamp) throws WfmProcessingException;
-	LocalDateTime getHealthReportLastTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
-    List<LocalDateTime> getHealthReportLastTimestamp(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
 
     void setHealthReportLastActivityFrameId(long jobId, String lastNewActivityAlertFrameId) throws WfmProcessingException;
     String getHealthReportLastActivityFrameId(long jobId) throws WfmProcessingException;
-    List<String> getHealthReportLastActivityFrameId(List<Long> jobIds) throws WfmProcessingException;
+    List<String> getHealthReportLastActivityFrameIds(List<Long> jobIds) throws WfmProcessingException;
 
 	void setHealthReportLastActivityTimestamp(long jobId, LocalDateTime lastNewActivityAlertTimestamp) throws WfmProcessingException;
 	LocalDateTime getHealthReportLastActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
-    List<LocalDateTime> getHealthReportLastActivityTimestamp(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
+    List<LocalDateTime> getHealthReportLastActivityTimestamps(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
+
+	public List<Long> getCurrentStreamingJobs(List<Long> jobIds, boolean isActive );
 
 	}
 

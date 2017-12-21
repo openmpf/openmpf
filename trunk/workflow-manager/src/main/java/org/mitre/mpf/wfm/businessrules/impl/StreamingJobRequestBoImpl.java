@@ -716,24 +716,27 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     /**
      * Send a health report to the health report callbacks associated with the streaming jobs.
      * Note that OpenMPF supports sending periodic health reports that contain health for all streaming jobs who have
-     * defined the same HealthReportCallbackUri. This method will filter out jobIds for any jobs which are not active streaming jobs.
+     * defined the same HealthReportCallbackUri. This method will filter out jobIds for any jobs which are not current streaming jobs,
+     * plus will optionally filter out inactive (i.e. TERMINATED) streaming jobs.
      * Note that out-of-cycle health reports that may have been sent due to a change in job status will not
      * delay sending of the periodic (i.e. scheduled) health report.
      * @param jobIds unique ids for the streaming jobs to be reported on. Must not be null or empty.
+     * @param isActive If true, then streaming jobs which have JobStatus of TERMINATED will be
+     * filtered out. Otherwise, all current streaming jobs will be processed.
      * @throws WfmProcessingException thrown if an error occurs
      */
-    public void sendHealthReports(List<Long> jobIds) throws WfmProcessingException {
+    public void sendHealthReports(List<Long> jobIds, boolean isActive) throws WfmProcessingException {
         if ( jobIds == null ) {
             throw new WfmProcessingException("Error: jobIds must not be null.");
         } else if ( jobIds.isEmpty() ) {
             throw new WfmProcessingException("Error: jobIds must not be empty.");
         } else {
-            // While we are receiving the list of all job ids known to the system, some of these jobs may not be in REDIS.
-            // Only active (current) jobs are stored in REDIS. Reduce the List of jobIds to ony include jobIds that are in REDIS.
-            List<Long> activeJobIds = jobIds.stream().filter(jobId -> redis.isJobTypeStreaming(jobId)).collect(Collectors.toList());
+            // While we are receiving the list of all job ids known to the system, some of these jobs may not be current streaming jobs in REDIS.
+            // Reduce the List of jobIds to ony include streaming jobIds that are in REDIS. Optionally reduce that set to only include non-TERMINATED jobs.
+            List<Long> currentActiveJobIds = redis.getCurrentStreamingJobs(jobIds, isActive );
 
             // If there are no active jobs, no health reports will be sent.
-            if ( activeJobIds != null && !activeJobIds.isEmpty() ) {
+            if ( currentActiveJobIds != null && !currentActiveJobIds.isEmpty() ) {
 
                 // Get the list of health report callback URIs associated with the specified active jobs. Note that
                 // this usage will return unique healthReportCallbackUris. Doing this so streaming jobs which specify
@@ -741,7 +744,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 // POST method is always used for sending health reports, GET method is not supported. The health report that is sent
                 // will contain health for all streaming jobs with the same healthReportCallbackUri.
                 // healthReportCallbackUriToJobIdListMap: key is the healthReportCallbackUri, value is the List of active jobIds that specified that healthReportCallbackUri.
-                Map<String, List<Long>> healthReportCallbackUriToActiveJobIdListMap = redis.getUniqueHealthReportCallbackURIs(activeJobIds);
+                Map<String, List<Long>> healthReportCallbackUriToActiveJobIdListMap = redis.getHealthReportCallbackURIAsMap(currentActiveJobIds);
 
                 // For each healthReportCallbackUri, send a health report containing health information for each streaming job
                 // that specified the same healthReportCallbackUri. Note that sendToHealthReportCallback method won't be called

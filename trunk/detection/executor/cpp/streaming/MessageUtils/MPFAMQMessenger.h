@@ -39,6 +39,7 @@
 #include "MPFMessenger.h"
 #include "MPFAMQMessage.h"
 
+//TODO: For future use.
 namespace MPF {
 
 class AMQMessagingManager : MPFMessagingManager {

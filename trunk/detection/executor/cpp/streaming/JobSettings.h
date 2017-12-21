@@ -28,8 +28,8 @@
 #ifndef MPF_JOBSETTINGS_H
 #define MPF_JOBSETTINGS_H
 
-#include <string>
 #include <map>
+#include <string>
 
 
 struct JobSettings {

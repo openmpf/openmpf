@@ -64,20 +64,21 @@ find_package(mpfDetectionComponentApi REQUIRED)
 
 include_directories(${MSG_UTILS_DIR})
 
-include_directories(MessageUtils)
-add_subdirectory(MessageUtils)
+#include_directories(MessageUtils)
+#add_subdirectory(MessageUtils)
 
 #include_directories(FrameStore)
-add_subdirectory(FrameReader)
+#add_subdirectory(FrameReader)
 
 set(streaming_component_executor_files main.cpp
 	QuitWatcher.cpp QuitWatcher.h
+    JobSettings.h JobSettings.cpp
 	StreamingComponentHandle.cpp StreamingComponentHandle.h
-    JobSettings.h JobSettings.cpp)
+    BasicAmqMessageSender.cpp BasicAmqMessageSender.h)
 
-add_executable(streaming_component_executor ${streaming_component_executor_files})
-target_link_libraries(streaming_component_executor mpfDetectionComponentApi mpfComponentInterface mpfStreamMsg
-	dl ${LOG4CXX_LIBRARIES} ${OpenCV_LIBS} ${PROTOBUF_LIBRARY} ${MPF_PROTOBUF_LIB})
+add_executable(streaming_component_executor ${streaming_component_executor_files} ${MSG_UTILS_FILE})
+target_link_libraries(streaming_component_executor mpfDetectionComponentApi mpfComponentInterface
+	dl ${LOG4CXX_LIBRARIES} ${OpenCV_LIBS} ${PROTOBUF_LIBRARY} ${MPF_PROTOBUF_LIB} ${ACTIVEMQ-CPP_LIBRARIES})
 
 install(TARGETS streaming_component_executor
 	RUNTIME DESTINATION bin

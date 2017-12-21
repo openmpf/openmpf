@@ -43,9 +43,8 @@
 
 #include "QuitWatcher.h"
 #include "StreamingComponentHandle.h"
-#include "MPFAMQMessenger.h"
 #include "JobSettings.h"
-
+#include "BasicAmqMessageSender.h"
 
 
 using namespace MPF;
@@ -54,7 +53,6 @@ using namespace COMPONENT;
 
 std::string get_app_dir();
 log4cxx::LoggerPtr get_logger(const std::string &app_dir);
-long get_timestamp_millis();
 
 
 int main(int argc, char* argv[]) {
@@ -80,24 +78,12 @@ int main(int argc, char* argv[]) {
         log_prefix = "[" + job_name + "] ";
 
 
-        std::shared_ptr<AMQMessagingManager> messaging_manager = std::make_shared<AMQMessagingManager>(logger);
-        messaging_manager->Connect(settings.message_broker_uri, {});
-
-        ActivityAlertMessenger activity_alert_messenger(messaging_manager, logger);
-        activity_alert_messenger.InitQueue(settings.activity_alert_queue, {});
-        activity_alert_messenger.CreateProducer();
-
-
-        SegmentSummaryMessenger segment_summary_messenger(messaging_manager, logger);
-        segment_summary_messenger.InitQueue(settings.summary_report_queue, {});
-        segment_summary_messenger.CreateProducer();
-
-        messaging_manager->Start();
+        BasicAmqMessageSender sender(settings);
 
 
         LOG4CXX_INFO(logger, log_prefix << "Loading component from: " << settings.component_lib_path);
         StreamingComponentHandle component(settings.component_lib_path, app_dir, job);
-        std::string detection_Type = component.GetDetectionType();
+        std::string detection_type = component.GetDetectionType();
 
         LOG4CXX_INFO(logger, log_prefix << "Connecting to stream at: " << settings.stream_uri)
         cv::VideoCapture video_capture(settings.stream_uri);
@@ -122,21 +108,14 @@ int main(int argc, char* argv[]) {
             component.ProcessFrame(frame, activity_found);
             if (activity_found) {
                 LOG4CXX_DEBUG(logger, log_prefix << "Sending new activity alert for frame: " << frame_id)
-                MPFActivityAlertMessage activity_alert(job_name, settings.job_id, frame_id / settings.segment_size,
-                                                       frame_id, get_timestamp_millis());
-                activity_alert_messenger.SendMessage(activity_alert);
+                sender.SendActivityAlert(frame_id);
             }
 
             if (frame_id != 0 && (frame_id % settings.segment_size == 0)) {
                 std::vector<MPFVideoTrack> tracks;
                 MPFDetectionError rc = component.GetVideoTracks(tracks);
                 LOG4CXX_DEBUG(logger, log_prefix << "Sending segment summary for " << tracks.size() << " tracks.")
-                int segment_number = frame_id / settings.segment_size;
-                int segment_begin = settings.segment_size * segment_number;
-                int segment_end = settings.segment_size * (segment_number + 1) - 1;
-                MPFSegmentSummaryMessage segment_summary(job_name, settings.job_id, segment_number,
-                                                         segment_begin, segment_end, detection_Type, rc, tracks);
-                segment_summary_messenger.SendMessage(segment_summary);
+                sender.SendSummaryReport(frame_id, detection_type, rc, tracks);
             }
         }
 
@@ -144,12 +123,7 @@ int main(int argc, char* argv[]) {
             std::vector<MPFVideoTrack> tracks;
             MPFDetectionError rc = component.GetVideoTracks(tracks);
             LOG4CXX_INFO(logger, log_prefix << "Send segment summary for final segment.")
-            int segment_number = frame_id / settings.segment_size;
-            int segment_begin = settings.segment_size * segment_number;
-            int segment_end = settings.segment_size * (segment_number + 1) - 1;
-            MPFSegmentSummaryMessage segment_summary(job_name, settings.job_id, segment_number,
-                                                     segment_begin, segment_end, detection_Type, rc, tracks);
-            segment_summary_messenger.SendMessage(segment_summary);
+            sender.SendSummaryReport(frame_id, detection_type, rc, tracks);
         }
 
         if (quit_watcher.IsTimeToQuit() && !quit_watcher.HasError()) {
@@ -208,14 +182,6 @@ log4cxx::LoggerPtr get_logger(const std::string &app_dir) {
         LOG4CXX_WARN(logger, "Unable to locate StreamingExecutorLog4cxxConfig.xml. Logging to standard out instead.")
     }
     return logger;
-}
-
-
-
-long get_timestamp_millis() {
-    using namespace std::chrono;
-    auto time_point_millis = time_point_cast<milliseconds>(system_clock::now());
-    return time_point_millis.time_since_epoch().count();
 }
 
 

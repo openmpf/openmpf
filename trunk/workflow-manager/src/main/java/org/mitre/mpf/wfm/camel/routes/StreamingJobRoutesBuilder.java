@@ -52,7 +52,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 	public void configure() {
 		from(StreamingEndpoints.WFM_STREAMING_JOB_STATUS.endpointName())
 				.routeId("Streaming Job Status Route")
-				.log(LoggingLevel.INFO, "Received job status message: ${headers}")
+				.log(LoggingLevel.DEBUG, "Received job status message: ${headers}")
 				.process(exchange -> {
 					Message msg = exchange.getIn();
 					_streamingJobRequestBo.handleJobStatusChange(
@@ -64,12 +64,12 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 
 		from(StreamingEndpoints.WFM_STREAMING_JOB_ACTIVITY.endpointName())
 				.routeId("Streaming Job Activity Route")
-				.log(LoggingLevel.INFO, "Received activity alert message: ${headers}")
+				.log(LoggingLevel.DEBUG, "Received activity alert message: ${headers}")
 				.process(exchange -> {
 					Message msg = exchange.getIn();
 					_streamingJobRequestBo.handleNewActivityAlert(
 							msg.getHeader("JOB_ID", long.class),
-							msg.getHeader("FRAME_INDEX", long.class),
+							msg.getHeader("FRAME_INDEX", int.class),
 							msg.getHeader("ACTIVITY_DETECT_TIME", long.class));
 				});
 
@@ -78,7 +78,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 				.routeId("Streaming Job Summary Report Route")
 				// TODO: unmarshal protobuf body
 //				.unmarshal(new ProtobufDataFormat(DetectionProtobuf.StreamingDetectionResponse.getDefaultInstance()))
-				.log(LoggingLevel.INFO, "Received summary report message: ${headers}")
+				.log(LoggingLevel.DEBUG, "Received summary report message: ${headers}")
 				.process(exchange -> {
 					Message msg = exchange.getIn();
 					_streamingJobRequestBo.handleNewSummaryReport(

@@ -90,11 +90,13 @@ struct MPFActivityAlertMessage : MPFMessage {
 
 struct MPFJobStatusMessage : MPFMessage {
     std::string status_message_;
+    long status_change_time_;
     MPFJobStatusMessage() = default;
     MPFJobStatusMessage(const std::string &job_name,
                         const uint32_t job_number,
-                        const std::string &msg)
-            : MPFMessage(job_name, job_number), status_message_(msg) {}
+                        const std::string &msg,
+                        long status_change_time)
+            : MPFMessage(job_name, job_number), status_message_(msg), status_change_time_(status_change_time) {}
     ~MPFJobStatusMessage() = default;
 };
 

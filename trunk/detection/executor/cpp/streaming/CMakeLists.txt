@@ -27,8 +27,8 @@ cmake_minimum_required(VERSION 3.6)
 set(CMAKE_CXX_STANDARD 11)
 
 ## Find Qt
-include(${QT_USE_FILE})
-add_definitions(${QT_DEFINITIONS})
+#include(${QT_USE_FILE})
+#add_definitions(${QT_DEFINITIONS})
 
 ## Find and install activemq-cpp
 find_package(PkgConfig)
@@ -62,6 +62,7 @@ list(APPEND CMAKE_PREFIX_PATH $ENV{HOME}/mpf-sdk-install/lib/cmake)
 find_package(mpfComponentInterface REQUIRED)
 find_package(mpfDetectionComponentApi REQUIRED)
 
+include_directories(${MSG_UTILS_DIR})
 
 include_directories(MessageUtils)
 add_subdirectory(MessageUtils)
@@ -71,8 +72,17 @@ add_subdirectory(FrameReader)
 
 set(streaming_component_executor_files main.cpp
 	QuitWatcher.cpp QuitWatcher.h
-	StreamingComponentHandle.cpp StreamingComponentHandle.h)
+	StreamingComponentHandle.cpp StreamingComponentHandle.h
+    JobSettings.h JobSettings.cpp)
 
 add_executable(streaming_component_executor ${streaming_component_executor_files})
-target_link_libraries(streaming_component_executor mpfDetectionComponentApi mpfComponentInterface dl
-	${LOG4CXX_LIBRARIES} ${OpenCV_LIBS})
+target_link_libraries(streaming_component_executor mpfDetectionComponentApi mpfComponentInterface mpfStreamMsg
+	dl ${LOG4CXX_LIBRARIES} ${OpenCV_LIBS} ${PROTOBUF_LIBRARY} ${MPF_PROTOBUF_LIB})
+
+install(TARGETS streaming_component_executor
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib)
+
+install(FILES StreamingExecutorLog4cxxConfig.xml DESTINATION config)
+#file(COPY StreamingExecutorLog4cxxConfig.xml DESTINATION ../config)

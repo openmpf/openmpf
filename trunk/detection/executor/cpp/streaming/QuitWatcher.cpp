@@ -25,17 +25,19 @@
  ******************************************************************************/
 
 
-#include <iostream>
 #include <functional>
+#include <iostream>
+#include <stdexcept>
 #include <thread>
 
 #include "QuitWatcher.h"
 
 namespace MPF { namespace COMPONENT {
 
-    QuitWatcher::QuitWatcher() {
-        is_time_to_quit_ = false;
-        has_error_ = false;
+    QuitWatcher::QuitWatcher()
+            : is_time_to_quit_(false)
+            , has_error_(false) {
+
         std::thread watcher_thread(
                 &QuitWatcher::WatchForQuit, std::ref(is_time_to_quit_), std::ref(has_error_));
         watcher_thread.detach();
@@ -43,12 +45,12 @@ namespace MPF { namespace COMPONENT {
 
 
 
-    bool QuitWatcher::IsTimeToQuit() {
+    bool QuitWatcher::IsTimeToQuit() const {
         return is_time_to_quit_;
     }
 
 
-    bool QuitWatcher::HasError() {
+    bool QuitWatcher::HasError() const {
         return has_error_;
     }
 
@@ -67,14 +69,12 @@ namespace MPF { namespace COMPONENT {
                       << "Telling main thread to exit. ";
             has_error = true;
             is_time_to_quit = true;
-            throw;
         }
         catch (...) {
             std::cerr << "An error occurred while trying to read from standard in. Telling main thread to exit."
                       << std::endl;
             has_error = true;
             is_time_to_quit = true;
-            throw;
         }
     }
 
@@ -82,14 +82,11 @@ namespace MPF { namespace COMPONENT {
     void QuitWatcher::WatchStdIn(std::atomic_bool &is_time_to_quit) {
         std::string line;
         while (std::getline(std::cin, line)) {
-            std::cout << "Read line: " << line << std::endl;
             if (line == "quit") {
                 is_time_to_quit = true;
                 return;
             }
-            else {
-                std::cerr << "Ignoring unexpected input from standard in: " << line << std::endl;
-            }
+            std::cerr << "Ignoring unexpected input from standard in: " << line << std::endl;
         }
 
         if (std::cin.eof()) {
@@ -97,7 +94,5 @@ namespace MPF { namespace COMPONENT {
         }
         throw std::runtime_error("An error occurred while trying to read from standard in.");
     }
-
-
 
 }}

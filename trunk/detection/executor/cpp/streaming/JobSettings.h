@@ -25,32 +25,30 @@
  ******************************************************************************/
 
 
-#ifndef MPF_QUITWATCHER_H
-#define MPF_QUITWATCHER_H
+#ifndef MPF_JOBSETTINGS_H
+#define MPF_JOBSETTINGS_H
 
-#include <atomic>
-
-
-namespace MPF { namespace COMPONENT {
-
-    class QuitWatcher {
-    public:
-        QuitWatcher();
-
-        bool IsTimeToQuit() const;
-
-        bool HasError() const;
-
-    private:
-        std::atomic_bool is_time_to_quit_;
-        std::atomic_bool has_error_;
-
-        static void WatchForQuit(std::atomic_bool &is_time_to_quit,  std::atomic_bool &has_error);
-
-        static void WatchStdIn(std::atomic_bool &is_time_to_quit);
-    };
-}}
+#include <string>
+#include <map>
 
 
+struct JobSettings {
+    const int job_id;
+    const std::string stream_uri;
+    const int segment_size;
+    const long stall_timeout;
+    const long stall_alert_threshold;
+    const std::string component_name;
+    const std::string component_lib_path;
+    const std::string message_broker_uri;
+    const std::string job_status_queue;
+    const std::string activity_alert_queue;
+    const std::string summary_report_queue;
 
-#endif //MPF_QUITWATCHER_H
+    const std::map<std::string, std::string> job_properties;
+    const std::map<std::string, std::string> media_properties;
+
+    static JobSettings FromIniFile(const std::string &ini_path);
+};
+
+#endif //MPF_JOBSETTINGS_H

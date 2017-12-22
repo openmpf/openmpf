@@ -29,22 +29,22 @@
 #define MPF_STREAMINGCOMPONENTHANDLE_H
 
 
-#include<string>
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <dlfcn.h>
+
 #include <MPFDetectionComponent.h>
+
 
 namespace MPF { namespace COMPONENT {
 
     class StreamingComponentHandle {
     public:
-        explicit StreamingComponentHandle(const std::string &lib_path);
-        ~StreamingComponentHandle();
-
-
-        void SetRunDirectory(const std::string &run_dir);
-
-        bool Init();
-
-        bool Close();
+        StreamingComponentHandle(const std::string &lib_path, const std::string &app_dir,
+                                 const MPFStreamingVideoJob &job);
 
         MPFComponentType GetComponentType();
 
@@ -52,22 +52,23 @@ namespace MPF { namespace COMPONENT {
 
         std::string GetDetectionType();
 
-        MPFDetectionError SetupJob(const MPFJob &job);
-
         MPFDetectionError ProcessFrame(const cv::Mat &frame, bool &activityFound);
 
         MPFDetectionError GetVideoTracks(std::vector<MPFVideoTrack> &tracks);
 
 
     private:
-        void *lib_handle_ = nullptr;
+        using loaded_component_t
+            = std::unique_ptr<MPFStreamingDetectionComponent, std::function<void(MPFStreamingDetectionComponent*)>>;
 
-        typedef MPFStreamingDetectionComponent* create_t();
-        typedef void destroy_t(MPFStreamingDetectionComponent*);
+        std::unique_ptr<void, decltype(&dlclose)> lib_handle_;
 
-        destroy_t* component_deleter_ = nullptr;
+        loaded_component_t loaded_component_;
 
-        MPFStreamingDetectionComponent* loaded_component_ = nullptr;
+        static loaded_component_t LoadComponent(void* lib_handle);
+
+        template <typename TFunc>
+        static TFunc* LoadFunction(void* lib_handle, const char * symbol_name);
     };
 
 }}

@@ -115,7 +115,7 @@ class AMQSegmentSummaryConverter : public AMQMessageConverter<MPFSegmentSummaryM
         }
 
         return MPFSegmentSummaryMessage(msg.getStringProperty("JOB_NAME"),
-                                        msg.getIntProperty("JOB_NUMBER"),
+                                        msg.getIntProperty("JOB_ID"),
                                         seg_num, start_frame, stop_frame,
                                         detection_type, err,
                                         mpfTracks);
@@ -124,7 +124,7 @@ class AMQSegmentSummaryConverter : public AMQMessageConverter<MPFSegmentSummaryM
     virtual void toCMSMessage(const MPFSegmentSummaryMessage &mpfMsg, cms::Message &msg) override {
 
         msg.setStringProperty("JOB_NAME", mpfMsg.job_name_);
-        msg.setIntProperty("JOB_NUMBER", mpfMsg.job_number_);
+        msg.setIntProperty("JOB_ID", mpfMsg.job_number_);
         // Serialize the vector of tracks in the mpfMsg into a
         // protobuf and add it to the cms message.
         cms::BytesMessage &bytes_msg = dynamic_cast<cms::BytesMessage&>(msg);
@@ -176,7 +176,7 @@ class AMQActivityAlertConverter : public AMQMessageConverter<MPFActivityAlertMes
     MPFActivityAlertMessage fromCMSMessage(const cms::Message &msg) override {
         return MPFActivityAlertMessage(
                 msg.getStringProperty("JOB_NAME"),
-                msg.getIntProperty("JOB_NUMBER"),
+                msg.getIntProperty("JOB_ID"),
                 msg.getIntProperty("SEGMENT_NUMBER"),
                 msg.getIntProperty("FRAME_INDEX"),
                 msg.getLongProperty("ACTIVITY_DETECT_TIME")
@@ -185,7 +185,7 @@ class AMQActivityAlertConverter : public AMQMessageConverter<MPFActivityAlertMes
 
     void toCMSMessage(const MPFActivityAlertMessage &activityAlert, cms::Message &msg) override {
         msg.setStringProperty("JOB_NAME", activityAlert.job_name_);
-        msg.setIntProperty("JOB_NUMBER", activityAlert.job_number_);
+        msg.setIntProperty("JOB_ID", activityAlert.job_number_);
         msg.setIntProperty("SEGMENT_NUMBER", activityAlert.segment_number_);
         msg.setIntProperty("FRAME_INDEX", activityAlert.frame_index_);
         msg.setLongProperty("ACTIVITY_DETECT_TIME", activityAlert.activity_time_);
@@ -198,14 +198,16 @@ class AMQJobStatusConverter : public AMQMessageConverter<MPFJobStatusMessage> {
     MPFJobStatusMessage fromCMSMessage(const cms::Message &msg) override {
         return MPFJobStatusMessage(
                 msg.getStringProperty("JOB_NAME"),
-                msg.getIntProperty("JOB_NUMBER"),
-                msg.getStringProperty("JOB_STATUS"));
+                msg.getIntProperty("JOB_ID"),
+                msg.getStringProperty("JOB_STATUS"),
+                msg.getLongProperty("STATUS_CHANGE_TIMESTAMP"));
     }
 
     void toCMSMessage(const MPFJobStatusMessage &jobStatus, cms::Message &msg) override {
         msg.setStringProperty("JOB_NAME", jobStatus.job_name_);
-        msg.setIntProperty("JOB_NUMBER", jobStatus.job_number_);
+        msg.setIntProperty("JOB_ID", jobStatus.job_number_);
         msg.setStringProperty("JOB_STATUS", jobStatus.status_message_);
+        msg.setLongProperty("STATUS_CHANGE_TIMESTAMP", jobStatus.status_change_time_);
     }
 };
 

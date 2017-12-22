@@ -28,6 +28,7 @@ package org.mitre.mpf.nms.streaming;
 
 import org.ini4j.Ini;
 import org.ini4j.Profile;
+import org.mitre.mpf.nms.EnvironmentVariableExpander;
 import org.mitre.mpf.nms.NodeManagerProperties;
 import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,7 +99,7 @@ public class IniManager {
 		jobConfig.put("stallTimeout", launchMessage.stallTimeout);
 		jobConfig.put("stallAlertThreshold", launchMessage.stallAlertThreshold);
 		jobConfig.put("componentName", launchMessage.componentName);
-		jobConfig.put("componentLibraryPath", launchMessage.componentLibraryPath);
+		jobConfig.put("componentLibraryPath", EnvironmentVariableExpander.expand(launchMessage.componentLibraryPath));
 		jobConfig.put("messageBrokerUri", launchMessage.messageBrokerUri);
 		jobConfig.put("jobStatusQueue", launchMessage.jobStatusQueue);
 		jobConfig.put("activityAlertQueue", launchMessage.activityAlertQueue);

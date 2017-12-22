@@ -85,7 +85,7 @@ public interface StreamingJobRequestBo {
 
 	void handleJobStatusChange(long jobId, JobStatus status, long timestamp);
 
-	void handleNewActivityAlert(long jobId, long frameId, long timestamp);
+	void handleNewActivityAlert(long jobId, int frameId, long timestamp);
 
 	void handleNewSummaryReport(long jobId, Object summaryReport);
 }

@@ -190,7 +190,7 @@ int main(int argc, char* argv[]) {
 
 
     try {
-        MPFJobStatusMessage msg(job_name,job_id, "IN_PROGRESS");
+        MPFJobStatusMessage msg(job_name,job_id, "IN_PROGRESS", 1234);
         std::cout << __LINE__ << ": PutMessage" << std::endl;
         messenger.SendMessage(msg);
     }

@@ -114,8 +114,14 @@ public class NodeManagerProperties {
 //	}
 
 	@Value("${streaming.component.executable}")
-	private Resource streamingComponentExecutor;
-	public Resource getStreamingComponentExecutor() {
+	private String streamingComponentExecutor;
+	public String getStreamingComponentExecutor() {
 		return streamingComponentExecutor;
+	}
+
+	@Value("${plugin.dir}")
+	private String pluginDir;
+	public String getPluginDir() {
+		return pluginDir;
 	}
 }

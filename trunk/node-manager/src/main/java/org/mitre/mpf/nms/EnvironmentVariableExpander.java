@@ -25,32 +25,34 @@
  ******************************************************************************/
 
 
-#ifndef MPF_QUITWATCHER_H
-#define MPF_QUITWATCHER_H
+package org.mitre.mpf.nms;
 
-#include <atomic>
+import org.apache.commons.lang3.text.StrLookup;
+import org.apache.commons.lang3.text.StrSubstitutor;
 
+import java.util.Map;
 
-namespace MPF { namespace COMPONENT {
+import static java.util.stream.Collectors.toMap;
 
-    class QuitWatcher {
-    public:
-        QuitWatcher();
+public class EnvironmentVariableExpander {
 
-        bool IsTimeToQuit() const;
+	private static final StrSubstitutor _substitutor = new StrSubstitutor(new StrLookup<String>() {
+		public String lookup(String key) {
+			return System.getenv().getOrDefault(key, "");
+		}
+	});
 
-        bool HasError() const;
-
-    private:
-        std::atomic_bool is_time_to_quit_;
-        std::atomic_bool has_error_;
-
-        static void WatchForQuit(std::atomic_bool &is_time_to_quit,  std::atomic_bool &has_error);
-
-        static void WatchStdIn(std::atomic_bool &is_time_to_quit);
-    };
-}}
+	private EnvironmentVariableExpander() {
+	}
 
 
+	public static String expand(String str) {
+		return _substitutor.replace(str);
+	}
 
-#endif //MPF_QUITWATCHER_H
+	public static Map<String, String> expandValues(Map<String, String> map) {
+		return map.entrySet().stream()
+				.collect(toMap(Map.Entry::getKey, e -> expand(e.getValue())));
+
+	}
+}

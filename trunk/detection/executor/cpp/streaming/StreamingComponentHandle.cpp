@@ -29,52 +29,55 @@
 
 namespace MPF { namespace COMPONENT {
 
-    StreamingComponentHandle::StreamingComponentHandle(const std::string &lib_path) {
-        lib_handle_ = dlopen(lib_path.c_str(), RTLD_NOW);
-        if (lib_handle_ == nullptr) {
-            std::string dl_error_msg = dlerror();
-            throw std::runtime_error("Failed to open component library: " + dl_error_msg);
-        }
+    StreamingComponentHandle::StreamingComponentHandle(const std::string &lib_path,
+                                                       const std::string &app_dir,
+                                                       const MPFStreamingVideoJob &job)
+            : lib_handle_(dlopen(lib_path.c_str(), RTLD_NOW), dlclose)
+            , loaded_component_(LoadComponent(lib_handle_.get())) {
 
-        auto component_creator = (create_t*) dlsym(lib_handle_, "component_creator");
-        if (component_creator == nullptr) {
-            std::string dl_error_msg = dlerror();
-            dlclose(lib_handle_);
-            throw std::runtime_error("dlsym failed for component_creator: " + dl_error_msg);
+        loaded_component_->SetRunDirectory(app_dir + "/../plugins");
+        bool init_success = loaded_component_->Init();
+        if (!init_success) {
+            throw std::runtime_error("The loaded component's Init method failed.");
         }
-
-        component_deleter_ = (destroy_t*) dlsym(lib_handle_, "component_deleter");
-        if (component_deleter_ == nullptr) {
-            std::string dl_error_msg = dlerror();
-            dlclose(lib_handle_);
-            throw std::runtime_error("dlsym failed for component_deleter: " + dl_error_msg);
-        }
-
-        loaded_component_ = component_creator();
+        loaded_component_->SetupJob(job);
     }
 
 
-    StreamingComponentHandle::~StreamingComponentHandle() {
-        if (loaded_component_ != nullptr) {
-           component_deleter_(loaded_component_);
+    StreamingComponentHandle::loaded_component_t StreamingComponentHandle::LoadComponent(void *lib_handle) {
+        if (lib_handle == nullptr) {
+            throw std::runtime_error(std::string("Failed to open component library: ") + dlerror());
         }
-        if (lib_handle_ != nullptr) {
-            dlclose(lib_handle_);
+
+        auto create_component_fn
+                = LoadFunction<MPFStreamingDetectionComponent* ()>(lib_handle, "component_creator");
+        auto delete_component_fn
+                = LoadFunction<void (MPFStreamingDetectionComponent*)>(lib_handle, "component_deleter");
+
+        loaded_component_t loaded_component(create_component_fn(),
+                                            [delete_component_fn](MPFStreamingDetectionComponent *component)
+                                            {
+                                                component->Close();
+                                                delete_component_fn(component);
+                                            }
+        );
+
+        if (loaded_component == nullptr) {
+            throw std::runtime_error("Failed to load component because the component_creator function returned null.");
         }
+        return loaded_component;
     }
 
-    void StreamingComponentHandle::SetRunDirectory(const std::string &run_dir) {
-        loaded_component_->SetRunDirectory(run_dir);
 
+    template<typename TFunc>
+    TFunc* StreamingComponentHandle::LoadFunction(void *lib_handle, const char * symbol_name) {
+        auto result = reinterpret_cast<TFunc*>(dlsym(lib_handle, symbol_name));
+        if (result == nullptr) {
+            throw std::runtime_error(std::string("dlsym failed for ") + symbol_name + ": " + dlerror());
+        }
+        return result;
     }
 
-    bool StreamingComponentHandle::Init() {
-        return loaded_component_->Init();
-    }
-
-    bool StreamingComponentHandle::Close() {
-        return loaded_component_->Close();
-    }
 
     MPFComponentType StreamingComponentHandle::GetComponentType() {
         return loaded_component_->GetComponentType();
@@ -88,10 +91,6 @@ namespace MPF { namespace COMPONENT {
         return loaded_component_->GetDetectionType();
     }
 
-    MPFDetectionError StreamingComponentHandle::SetupJob(const MPFJob &job) {
-        return loaded_component_->SetupJob(job);
-    }
-
     MPFDetectionError StreamingComponentHandle::ProcessFrame(const cv::Mat &frame, bool &activityFound) {
         return loaded_component_->ProcessFrame(frame, activityFound);
     }
@@ -99,4 +98,6 @@ namespace MPF { namespace COMPONENT {
     MPFDetectionError StreamingComponentHandle::GetVideoTracks(std::vector<MPFVideoTrack> &tracks) {
         return loaded_component_->GetVideoTracks(tracks);
     }
+
+
 }}

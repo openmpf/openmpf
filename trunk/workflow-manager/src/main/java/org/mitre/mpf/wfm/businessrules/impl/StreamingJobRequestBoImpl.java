@@ -348,10 +348,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                     // If this operation fails, any remaining pending items will continue to process, but
                     // the future splitters should not create any new work items. In short, if this fails,
                     // the system should not be affected, but the streaming job may not complete any faster.
-                    // TODO tell the master node manager to cancel the streaming job
-                    log.warn(
-                        "[Streaming Job {}:*:*] Cancellation of streaming job via master node manager not yet implemented.",
-                        jobId);
+
+                    streamingJobMessageSender.stopJob(jobId);
 
                     // set job status as cancelling, and persist that changed state in the database
                     streamingJobRequest.setStatus(JobStatus.CANCELLING);
@@ -641,7 +639,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     @Override
-    public void handleNewActivityAlert(long jobId, long frameId, long timestamp) {
+    public void handleNewActivityAlert(long jobId, int frameId, long timestamp) {
         // TODO: Replace logging with implementation of handleNewActivityAlert
         log.info("handleNewActivityAlert(jobId = {}, frameId = {}, time = {})", jobId, frameId, millisToDateTime(timestamp));
     }
@@ -665,7 +663,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     private void summaryReportCallback(long jobId) throws WfmProcessingException {
         final String jsonSummaryReportCallbackURL = redis.getSummaryReportCallbackURI(jobId);
         final String jsonCallbackMethod = redis.getCallbackMethod(jobId);
-        if (jsonSummaryReportCallbackURL != null && jsonCallbackMethod != null && (jsonCallbackMethod.equals("POST") || jsonCallbackMethod.equals("GET"))) {
+        if (jsonSummaryReportCallbackURL != null && !jsonSummaryReportCallbackURL.isEmpty() && jsonCallbackMethod != null && (jsonCallbackMethod.equals("POST") || jsonCallbackMethod.equals("GET"))) {
             log.info("Starting " + jsonCallbackMethod + " summary report callback to " + jsonSummaryReportCallbackURL);
             try {
                 JsonCallbackBody jsonBody = new JsonCallbackBody(jobId, redis.getExternalId(jobId));

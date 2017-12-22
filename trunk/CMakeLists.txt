@@ -96,9 +96,11 @@ install(FILES ${MATCHING_FILES} DESTINATION "lib")
 
 # Find and install the FFmpeg libs
 find_program(FFMPEG_BINARY_PATH NAMES ffmpeg)
-execute_process(COMMAND ${CMAKE_COMMAND} -D TARGET_BINARY_LOCATION=${FFMPEG_BINARY_PATH}
-   -D DEP_LIBS_INSTALL_LOCATION=${CMAKE_INSTALL_PREFIX}/lib
-   -P ${CopySharedLibDependencies_LOCATION})
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    execute_process(COMMAND ${CMAKE_COMMAND} -D TARGET_BINARY_LOCATION=${FFMPEG_BINARY_PATH}
+       -D DEP_LIBS_INSTALL_LOCATION=${CMAKE_INSTALL_PREFIX}/lib
+       -P ${CopySharedLibDependencies_LOCATION})
+endif()
 
 # The C++ component executables for both streaming and batch jobs use a common
 # set of functions to translate between MPF data types and corresponding protobuf

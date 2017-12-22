@@ -131,8 +131,8 @@ public class RedisImpl implements Redis {
 
 	@SuppressWarnings("unchecked")
 	public synchronized boolean addDetectionProcessingError(DetectionProcessingError detectionProcessingError) {
-		if ( !redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(detectionProcessingError.getJobId())) ) {
-			log.error("Failed to persist the detection processing error {} in the transient data store, not supported for streaming jobs",detectionProcessingError);
+		if ( !isJobTypeBatch(detectionProcessingError.getJobId()) ) {
+			log.error("Failed to persist the detection processing error {} in the transient data store, only supported for batch jobs",detectionProcessingError);
 			return false;
 		} else {
 			if ( detectionProcessingError != null ) {
@@ -158,8 +158,8 @@ public class RedisImpl implements Redis {
 
 	@SuppressWarnings("unchecked")
 	public boolean addTrack(Track track) {
-		if( !redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(track.getJobId())) ) {
-			log.error("Failed to store the track instance '{}', not supported for streaming jobs", track);
+		if( !isJobTypeBatch(track.getJobId()) ) {
+			log.error("Failed to store the track instance '{}', only supported for batch jobs", track);
 			return false;
 		} else {
 			try {
@@ -181,7 +181,7 @@ public class RedisImpl implements Redis {
 	 */
 	@SuppressWarnings("unchecked")
 	public synchronized boolean cancel(long jobId) {
-		if ( redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
+		if ( isJobTypeBatch(Long.valueOf(jobId)) ) {
 			// confirmed that this is a batch job
 			if ( redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).size() > 0 ) {
 				redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(CANCELLED, true);
@@ -190,7 +190,7 @@ public class RedisImpl implements Redis {
 				log.warn("Batch Job #{} is not running and cannot be cancelled.", jobId);
 				return false;
 			}
-		} else if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+		} else if ( isJobTypeStreaming(Long.valueOf(jobId)) ) {
 			// confirmed that this is a streaming job
 			if ( redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).size() > 0 ) {
 				redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(CANCELLED, true);
@@ -224,7 +224,7 @@ public class RedisImpl implements Redis {
 	 */
     @SuppressWarnings("unchecked")
 	public synchronized void clearJob(long jobId) throws WfmProcessingException {
-		if ( redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
+		if ( isJobTypeBatch(Long.valueOf(jobId)) ) {
 			// confirmed that this is a batch job that was requested to be cleared
 			TransientJob transientJob = getJob(jobId);
 			if ( transientJob == null ) {
@@ -258,7 +258,7 @@ public class RedisImpl implements Redis {
 					}
 				}
 			}
-		} else if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+		} else if ( isJobTypeStreaming(Long.valueOf(jobId)) ) {
 			// confirmed that this is a streaming job that was requested to be cleared
 			TransientStreamingJob transientStreamingJob = getStreamingJob(jobId);
 			if ( transientStreamingJob == null ) {
@@ -310,10 +310,10 @@ public class RedisImpl implements Redis {
 	@Override
 	@SuppressWarnings("unchecked")
 	public synchronized boolean containsJob(long jobId) {
-		if ( redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
+		if ( isJobTypeBatch(Long.valueOf(jobId)) ) {
 			// confirmed that the specified job is a batch job
 			return redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId));
-		} else if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+		} else if ( isJobTypeStreaming(Long.valueOf(jobId)) ) {
 			// confirmed that the specified job is a streaming job
 			return redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId));
 		} else {
@@ -329,7 +329,7 @@ public class RedisImpl implements Redis {
 	 */
 	@SuppressWarnings("unchecked")
 	public int getCurrentTaskIndexForJob(long jobId)  {
-		if ( redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
+		if ( isJobTypeBatch(Long.valueOf(jobId)) ) {
 			// confirmed that the specified job is a batch job
 			if ( !redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
 				return 0;
@@ -337,7 +337,7 @@ public class RedisImpl implements Redis {
 				Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
 				return (int)(jobHash.get(TASK));
 			}
-		} else if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+		} else if ( isJobTypeStreaming(Long.valueOf(jobId)) ) {
 			// confirmed that the specified job is a streaming job.  This is an error, WFM does not track stage of streaming jobs
 			log.warn("Job #{} is streaming job, stage tracking is not supported for streaming jobs so we can't return the task number (returning -1).", jobId);
 			return -1;
@@ -354,7 +354,7 @@ public class RedisImpl implements Redis {
 	 */
 	@SuppressWarnings("unchecked")
 	public JobStatus getJobStatus(long jobId)  {
-		if ( redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
+		if ( isJobTypeBatch(Long.valueOf(jobId)) ) {
 			// confirmed that the specified job is a batch job
 			if( !redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
 				return null;
@@ -362,7 +362,7 @@ public class RedisImpl implements Redis {
 				Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
 				return (JobStatus)jobHash.get(JOB_STATUS);
 			}
-		} else if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+		} else if ( isJobTypeStreaming(Long.valueOf(jobId)) ) {
 			// confirmed that the specified job is a streaming job
 			if ( !redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
 				return null;
@@ -404,7 +404,7 @@ public class RedisImpl implements Redis {
 	 */
 	@SuppressWarnings("unchecked")
 	public synchronized SortedSet<DetectionProcessingError> getDetectionProcessingErrors(long jobId, long mediaId, int taskIndex, int actionIndex) {
-		if ( redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
+		if ( isJobTypeBatch(Long.valueOf(jobId)) ) {
 			// confirmed that the specified job is a batch job
 			final String key = key(BATCH_JOB, jobId, MEDIA, mediaId, ERRORS, taskIndex, actionIndex);
 			int length = (Integer) (redisTemplate.execute(new RedisCallback() {
@@ -447,7 +447,7 @@ public class RedisImpl implements Redis {
 	 */
 	@SuppressWarnings("unchecked")
 	public synchronized TransientJob getJob(long jobId, Long... mediaIds) throws WfmProcessingException {
-		if ( !redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
+		if ( !isJobTypeBatch(Long.valueOf(jobId)) ) {
 			// The batch job is not known to the system.
 			return null;
 		} else {
@@ -500,7 +500,7 @@ public class RedisImpl implements Redis {
 	 */
 	@SuppressWarnings("unchecked")
 	public synchronized TransientStreamingJob getStreamingJob(long jobId) throws WfmProcessingException {
-		if ( !redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+		if ( !isJobTypeStreaming(Long.valueOf(jobId)) ) {
 			// The streaming job is not known to the system.
 			return null;
 		} else {
@@ -548,11 +548,11 @@ public class RedisImpl implements Redis {
 	 */
 	@SuppressWarnings("unchecked")
 	public int getTaskCountForJob(long jobId) throws WfmProcessingException {
-		if ( redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
+		if ( isJobTypeBatch(Long.valueOf(jobId)) ) {
 			// confirmed that this is a batch job
 			Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
 			return (int) (jobHash.get(TASK_COUNT));
-		} else if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+		} else if ( isJobTypeStreaming(Long.valueOf(jobId)) ) {
 			// confirmed that this is a streaming job
 			Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
 			return (int) (jobHash.get(TASK_COUNT));
@@ -574,7 +574,7 @@ public class RedisImpl implements Redis {
 	 */
     @SuppressWarnings("unchecked")
 	public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) {
-		if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+		if ( isJobTypeStreaming(Long.valueOf(jobId)) ) {
 			// this jobId is associated with a streaming job, this is an error - return a null
 			return null;
 		} else {
@@ -784,9 +784,9 @@ public class RedisImpl implements Redis {
 	 */
     @SuppressWarnings("unchecked")
 	public synchronized  void setCurrentTaskIndex(long jobId, int taskIndex) {
-		if ( redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
+		if ( isJobTypeBatch(Long.valueOf(jobId)) ) {
 			redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(TASK, taskIndex);
-		} else if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+		} else if ( isJobTypeStreaming(Long.valueOf(jobId)) ) {
 			log.warn("Job #{} is a streaming job which doesn't support stage tracking, so we can't set the current task index", jobId);
 		} else {
 			log.warn("Job #{} was not found as a batch or a streaming job so we can't set the current task index", jobId);
@@ -800,9 +800,9 @@ public class RedisImpl implements Redis {
 	 */
 	@SuppressWarnings("unchecked")
 	public synchronized  void setJobStatus(long jobId, JobStatus jobStatus) {
-		if ( redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
+		if ( isJobTypeBatch(Long.valueOf(jobId)) ) {
 			redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(JOB_STATUS, jobStatus);
-		} else if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+		} else if ( isJobTypeStreaming(Long.valueOf(jobId)) ) {
 			redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(JOB_STATUS, jobStatus);
 		} else {
 			log.warn("Job #{} was not found as a batch or a streaming job so we can't set the job status", jobId);
@@ -818,16 +818,18 @@ public class RedisImpl implements Redis {
      * lastHealthReportTimestamp is null.
      */
     public synchronized void setHealthReportLastActivityFrameId(long jobId, String lastNewActivityAlertFrameId ) throws WfmProcessingException {
-        if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+        if ( isJobTypeStreaming(Long.valueOf(jobId)) ) {
             if ( lastNewActivityAlertFrameId != null ) {
                 redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(LAST_HEALTH_REPORT_ACTIVITY_FRAME_ID, lastNewActivityAlertFrameId );
             } else {
-                log.error("Illegal, can't set health report last New Activity Alert frame id to null for streaming job #{}.", jobId);
-                throw new WfmProcessingException("Illegal: Streaming Job " + jobId + ", can't set the last New Activity Alert frame id to null.");
+            	String errorMsg = "Illegal: can't set health report last activity frame id to null for streaming job #" + jobId + ".";
+                log.error(errorMsg);
+                throw new WfmProcessingException(errorMsg);
             }
         } else {
-            log.error("Job #{} is not a streaming job, so we can't set the health report last New Activity Alert frame id.", jobId);
-            throw new WfmProcessingException("Error: Job " + jobId + " is not a streaming job. Only streaming jobs send health reports.");
+            String errorMsg = "Error: Job #" + jobId + " is not a streaming job, so we can't set the health report last activity frame id.";
+            log.error(errorMsg);
+            throw new WfmProcessingException(errorMsg + " Only streaming jobs send health reports.");
         }
     }
 
@@ -840,15 +842,15 @@ public class RedisImpl implements Redis {
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job
      */
     public synchronized String getHealthReportLastActivityFrameId(long jobId) throws WfmProcessingException {
-        if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+        if ( isJobTypeStreaming(Long.valueOf(jobId)) ) {
             // confirmed that the specified job is a streaming job
             Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
             String frameId = (String) jobHash.get(LAST_HEALTH_REPORT_ACTIVITY_FRAME_ID);
 			return frameId;
         } else {
-            log.error("Job #{} is not a streaming job, so we can't get the health report last New Activity Alert frame id.", jobId);
-            throw new WfmProcessingException("Error: Job " + jobId + " is not a streaming job. Only streaming jobs send health reports.");
-        }
+            String errorMsg = "Error: Job #" + jobId + " is not a streaming job, so we can't set the health report last activity frame id.";
+            log.error(errorMsg);
+            throw new WfmProcessingException(errorMsg + " Only streaming jobs send health reports.");        }
     }
 
     /** This method is the same as {@link #getHealthReportLastActivityFrameId(long)}, it's just adapted for use with Lists.
@@ -872,18 +874,20 @@ public class RedisImpl implements Redis {
      * in REDIS because it could not be formatted as a String.
      */
     public synchronized void setHealthReportLastActivityTimestamp(long jobId, LocalDateTime lastNewActivityAlertTimestamp) throws WfmProcessingException, DateTimeException {
-        if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+        if ( isJobTypeStreaming(Long.valueOf(jobId)) ) {
             if ( lastNewActivityAlertTimestamp != null ) {
                 // Internally, health report timestamps are being stored in REDIS using ISO-8601 format.
                 String timestamp = timestampFormatter.format(lastNewActivityAlertTimestamp);
                 redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(LAST_HEALTH_REPORT_ACTIVITY_TIMESTAMP, timestamp);
             } else {
-                log.error("Illegal, can't set the last health report New Activity Alert timestamp to null for a streaming job #{}.", jobId);
-                throw new WfmProcessingException("Illegal: Streaming Job " + jobId + ", can't set the last health report New Activity Alert timestamp to null.");
+                String errorMsg = "Illegal: can't set the health report last activity timestamp to null for streaming job #" + jobId + ".";
+                log.error(errorMsg);
+                throw new WfmProcessingException(errorMsg);
             }
         } else {
-            log.error("Job #{} is not a streaming job, so we can't set the last health report New Activity Alert timestamp.", jobId);
-            throw new WfmProcessingException("Error: Job " + jobId + " is not a streaming job. Only streaming jobs send health reports.");
+            String errorMsg = "Error: Job #" + jobId + " is not a streaming job, so we can't set the health report last activity timestamp.";
+            log.error(errorMsg);
+            throw new WfmProcessingException(errorMsg + " Only streaming jobs send health reports.");
         }
     }
 
@@ -900,7 +904,7 @@ public class RedisImpl implements Redis {
      * from REDIS because it could not be parsed as a String.
      */
     public synchronized LocalDateTime getHealthReportLastActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException {
-        if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+        if ( isJobTypeStreaming(Long.valueOf(jobId)) ) {
             // Confirmed that the specified job is a streaming job.
             Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
             String timestamp = (String) jobHash.get(LAST_HEALTH_REPORT_ACTIVITY_TIMESTAMP);
@@ -911,8 +915,9 @@ public class RedisImpl implements Redis {
                 return (LocalDateTime) null;
             }
         } else {
-            log.error("Job #{} is not a streaming job, so we can't get the last health report New Activity Alert timestamp.", jobId);
-            throw new WfmProcessingException("Error: Job " + jobId + " is not a streaming job. Only streaming jobs send health reports.");
+            String errorMsg = "Error: Job #" + jobId + " is not a streaming job, so we can't get the health report last activity timestamp.";
+            log.error(errorMsg);
+            throw new WfmProcessingException(errorMsg + " Only streaming jobs send health reports.");
         }
     }
 
@@ -939,7 +944,7 @@ public class RedisImpl implements Redis {
 	 */
     @SuppressWarnings("unchecked")
 	public synchronized void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks) {
-		if ( redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+		if ( isJobTypeStreaming(Long.valueOf(jobId)) ) {
 			log.warn("Job #{} streaming jobs are not supported in setTracks", jobId);
 		} else {
 			// confirmed that this is not a streaming job
@@ -958,7 +963,7 @@ public class RedisImpl implements Redis {
 	@Override
 	/** Note: only batch jobs have CallbackURL defined */
 	public String getCallbackURL(long jobId) throws WfmProcessingException {
-		if ( !redisTemplate.boundSetOps("BATCH_JOB").members().contains(Long.toString(jobId)) ) {
+		if ( !isJobTypeBatch(Long.valueOf(jobId)) ) {
 			return null;
 		} else {
 			Map jobHash = redisTemplate.boundHashOps(key("BATCH_JOB", jobId)).entries();
@@ -969,7 +974,7 @@ public class RedisImpl implements Redis {
 	@Override
 	/** Note: only streaming jobs have SummaryReportCallbackURI defined */
 	public String getSummaryReportCallbackURI(long jobId) throws WfmProcessingException {
-		if(!redisTemplate.boundSetOps("STREAMING_JOB").members().contains(Long.toString(jobId))) {
+		if( !isJobTypeStreaming(Long.valueOf(jobId)) ) {
 			return null;
 		} else {
 			Map jobHash = redisTemplate.boundHashOps(key("STREAMING_JOB", jobId)).entries();
@@ -980,7 +985,7 @@ public class RedisImpl implements Redis {
 	@Override
 	/** Note: only streaming jobs have HealthReportCallbackURI defined */
 	public String getHealthReportCallbackURI(long jobId) throws WfmProcessingException {
-		if(!redisTemplate.boundSetOps("STREAMING_JOB").members().contains(Long.toString(jobId))) {
+		if( !isJobTypeStreaming(Long.valueOf(jobId)) ) {
 			return null;
 		} else {
 			Map jobHash = redisTemplate.boundHashOps(key("STREAMING_JOB", jobId)).entries();
@@ -989,12 +994,12 @@ public class RedisImpl implements Redis {
 	}
 
 	@Override
-	/** Note: only batch jobs have callbackMethod defined. Streaming jobs will only use HTTP POST method. */
+	/** Note: only batch jobs have callbackMethod defined. Streaming jobs only use HTTP POST method. */
 	public String getCallbackMethod(long jobId) throws WfmProcessingException {
-		if(redisTemplate.boundSetOps("BATCH_JOB").members().contains(Long.toString(jobId))) {
+		if( isJobTypeBatch(Long.valueOf(jobId)) ) {
 			Map jobHash = redisTemplate.boundHashOps(key("BATCH_JOB", jobId)).entries();
 			return (String) jobHash.get(CALLBACK_METHOD);
-		} else if(redisTemplate.boundSetOps("STREAMING_JOB").members().contains(Long.toString(jobId))) {
+		} else if( isJobTypeStreaming(Long.valueOf(jobId)) ) {
 			// Streaming jobs only support the HTTP POST method. Streaming jobs do not store callbackMethod in REDIS.
             throw new WfmProcessingException("Error, streaming jobs only support the HTTP POST method. Streaming jobs do not store callbackMethod in REDIS");
 		} else {
@@ -1015,10 +1020,10 @@ public class RedisImpl implements Redis {
      */
     @Override
 	public String getExternalId(long jobId) throws WfmProcessingException {
-		if(redisTemplate.boundSetOps("BATCH_JOB").members().contains(Long.toString(jobId))) {
+		if( isJobTypeBatch(Long.valueOf(jobId)) ) {
 			Map jobHash = redisTemplate.boundHashOps(key("BATCH_JOB", jobId)).entries();
 			return (String)(jobHash.get(EXTERNAL_ID));
-		} else if(redisTemplate.boundSetOps("STREAMING_JOB").members().contains(Long.toString(jobId))) {
+		} else if( isJobTypeStreaming(Long.valueOf(jobId)) ) {
 			Map jobHash = redisTemplate.boundHashOps(key("STREAMING_JOB", jobId)).entries();
 			return (String) (jobHash.get(EXTERNAL_ID));
 		} else {
@@ -1079,7 +1084,5 @@ public class RedisImpl implements Redis {
         }
         return currentStreamingJobIds;
     }
-
-
 
 }

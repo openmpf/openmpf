@@ -48,14 +48,11 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import org.mitre.mpf.interop.JsonAction;
 import org.mitre.mpf.interop.JsonCallbackBody;
-import org.mitre.mpf.interop.JsonHealthReportData;
-import org.mitre.mpf.interop.JsonHealthReportDataCallbackBody;
 import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.interop.JsonStage;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;

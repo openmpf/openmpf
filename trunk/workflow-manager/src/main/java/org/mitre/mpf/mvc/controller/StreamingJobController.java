@@ -165,9 +165,8 @@ public class StreamingJobController {
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<StreamingJobCancelResponse> cancelStreamingJobRest(@ApiParam(required = true, value = "Streaming Job id") @PathVariable("id") long jobId,
-                                                                             @ApiParam(name = "doCleanup", value = "doCleanup", required = false,
-                                                                                       defaultValue = "false") @RequestParam(value = "doCleanup", required = false) boolean doCleanup) {
-        log.info("cancelStreamingJobRest: received cancellation request for jobId=" + jobId + ", doCleanup=" + doCleanup);
+                                                                             @ApiParam(name = "doCleanup", value = "doCleanup", required = false, defaultValue = "false")
+                                                                             @RequestParam(value = "doCleanup", required = false) boolean doCleanup) {
         StreamingJobCancelResponse cancelResponse = cancelStreamingJobInternal(jobId, doCleanup);
         if (cancelResponse.getMpfResponse().getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
             return new ResponseEntity<>(cancelResponse, HttpStatus.OK);
@@ -219,7 +218,7 @@ public class StreamingJobController {
                 if ( streamingJobCreationRequest.getPriority() != null ) {
                     priority = streamingJobCreationRequest.getPriority();
                 }
-              
+
                 JsonStreamingInputObject json_stream = new JsonStreamingInputObject(
                         streamingJobCreationRequest.getStreamUri(),
                         streamingJobCreationRequest.getSegmentSize(),
@@ -299,7 +298,7 @@ public class StreamingJobController {
 
     private StreamingJobCancelResponse cancelStreamingJobInternal(long jobId, boolean doCleanup) {
         StreamingJobCancelResponse cancelResponse = null;
-        log.debug("Attempting to cancel streaming job with id {}.", jobId);
+        log.debug("Attempting to cancel streaming job with id {}, doCleanup {}.", jobId, doCleanup);
 
         StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
         if ( streamingJobRequest == null ) {

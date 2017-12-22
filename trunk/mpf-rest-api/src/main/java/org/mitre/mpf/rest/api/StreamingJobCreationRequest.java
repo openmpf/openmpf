@@ -123,6 +123,8 @@ public class StreamingJobCreationRequest {
      */
 	public void setSummaryReportCallbackUri(String callbackUri) { this.summaryReportCallbackUri = callbackUri; }
 
+	public StreamingJobCreationRequest() {}
+
 	/** this method will check the current settings within this streaming job creation request,
 	 * and will return true if the current settings are set within the constraints defined for a
 	 * streaming job, false otherwise

@@ -150,7 +150,7 @@ public interface MpfService {
 	 * filtered out. Otherwise, all current streaming jobs will be processed.
      * @throws WfmProcessingException thrown if an error occurs
      */
-    public void sendHealthReports(boolean isActive) throws WfmProcessingException;
+    public void sendStreamingJobHealthReports(boolean isActive) throws WfmProcessingException;
 
 	/** Gets the marked-up media with the specified (batch job) id. */
 	public MarkupResult getMarkupResult(long id);

@@ -26,37 +26,27 @@
 
 package org.mitre.mpf.wfm.scheduled;
 
-import java.util.List;
-
-import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
-import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import org.mitre.mpf.wfm.service.MpfService;
 
 @Component
-public class HealthReportScheduledTask {
+public class StreamingHealthReportScheduler {
 
-    private static final Logger log = LoggerFactory.getLogger(HealthReportScheduledTask.class);
+    private static final Logger log = LoggerFactory.getLogger(StreamingHealthReportScheduler.class);
 
     @Autowired //will grab the impl
     private MpfService mpfService;
 
-    @Autowired
-    @Qualifier(StreamingJobRequestBoImpl.REF)
-    private StreamingJobRequestBo streamingJobRequestBo;
-
-    // TODO how can this be tied to PropertiesUtil.getHealthReportCallbackRate?
-    @Scheduled(fixedDelayString = "${streaming.healthReport.callbackRate:30000}" )
+    // TODO streaming.healthReport.callbackRate is defined in PropertiesUtil. Need to test varying this parameter in the mpf.property file.
+    @Scheduled(fixedDelayString = "${streaming.healthReport.callbackRate}" )
     public void sendHealthReports() {
-        boolean isActive = true; // only send periodic health reports for current, active streaming jobs.
-        mpfService.sendHealthReports(isActive);
+        boolean isActive = true; // only send periodic health reports for streaming jobs that are current and active.
+        mpfService.sendStreamingJobHealthReports(isActive);
     }
 
 }

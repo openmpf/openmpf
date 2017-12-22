@@ -265,13 +265,13 @@ public interface Redis {
 	 * @param jobId The OpenMPF-assigned ID of the job
 	 * @return true if the specified jobId is a batch job stored in the transient data store, false otherwise
 	 */
-	boolean isJobTypeBatch(final Long jobId);
+	boolean isJobTypeBatch(final long jobId);
 
 	/** Will return true if the specified jobId is a streaming job stored in the transient data store
 	 * @param jobId The OpenMPF-assigned ID of the job
 	 * @return true if the specified jobId is a streaming job stored in the transient data store, false otherwise
 	 */
-    boolean isJobTypeStreaming(final Long jobId);
+    boolean isJobTypeStreaming(final long jobId);
 
     void setHealthReportLastActivityFrameId(long jobId, String lastNewActivityAlertFrameId) throws WfmProcessingException;
     String getHealthReportLastActivityFrameId(long jobId) throws WfmProcessingException;

@@ -54,7 +54,7 @@ import java.util.Arrays;
 import java.util.List;
 
 
-// Test streaming health report callbacks. Test both the GET and POST methods.
+// Test streaming health report callbacks. Test only the POST method, since GET is not being supported in OpenMPF for streaming jobs.
 // NOTE: Needed to add confirmation of jobId in the health callbacks, because scheduled callbacks from a job created
 // earlier were causing the callback to capture a health report sent before a later job.
 
@@ -75,11 +75,8 @@ public class ITWebStreamingHealthReports {
 	private static ObjectMapper objectMapper = new ObjectMapper();
 	private static boolean registeredComponent = false;
 
-	private long healthReportGetJobId = -1L;
 	private long healthReportPostJobId = -1L;
-	private boolean gotHealthReportGetResponse = false;
 	private boolean gotHealthReportPostResponse = false;
-	private JsonHealthReportDataCallbackBody healthReportGetCallbackBody = null;
 	private JsonHealthReportDataCallbackBody healthReportPostCallbackBody = null;
 
 
@@ -139,7 +136,8 @@ public class ITWebStreamingHealthReports {
 			log.info("Streaming jobId " + healthReportPostJobId + " created with POST method, jobCreationResponse=" + jobCreationResponseJson);
 
 			// Wait for a health report callback that includes the jobId of this test job.
-			// Health reports should periodically be sent every 30 seconds. Listen for at least one health report POST that includes our jobId.
+			// Health reports should periodically be sent every 30 seconds, unless reset in the mpf.properties file.
+			// Listen for at least one health report POST that includes our jobId.
 			while (!gotHealthReportPostResponse) {
 				Thread.sleep(1000); // test will eventually timeout
 			}
@@ -148,8 +146,8 @@ public class ITWebStreamingHealthReports {
 
 			// Test to make sure the received health report is from the streaming job.
 			Assert.assertTrue(
-					healthReportPostCallbackBody.getJobId().contains(Long.valueOf(healthReportPostJobId))
-							&& healthReportPostCallbackBody.getExternalId().contains(externalId));
+					healthReportPostCallbackBody.getJobIds().contains(Long.valueOf(healthReportPostJobId))
+							&& healthReportPostCallbackBody.getExternalIds().contains(externalId));
 
 			// Wait until ready to attempt a streaming job cancellation.
 			String statusUrl = WebRESTUtils.REST_URL + "streaming/jobs/" + healthReportPostJobId;
@@ -179,67 +177,6 @@ public class ITWebStreamingHealthReports {
 		}
 	}
 
-	@Test(timeout = 5 * MINUTES)
-	public void testGetHealthReportCallback() throws Exception {
-		String externalId = Integer.toString(702);
-
-		try {
-			log.info("Beginning testGetHealthReportCallback()");
-
-			setupSparkGet();
-
-			// Submit streaming job request with a GET callback
-			log.info("Creating a new Streaming Job for the GET test.");
-			String createJobUrl = WebRESTUtils.REST_URL + "streaming/jobs";
-
-			// jobCreationResponseJson should be something like {"jobId":6, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
-			String jobCreationResponseJson = createStreamingJob(createJobUrl, PIPELINE_NAME, externalId, "GET");
-
-			JSONObject obj = new JSONObject(jobCreationResponseJson);
-			healthReportGetJobId =  Long.valueOf(obj.getInt("jobId"));
-			log.info("Streaming jobId " + healthReportGetJobId + " created with GET method, jobCreationResponse=" + jobCreationResponseJson);
-
-			// Wait for a health report callback that includes the jobId of this test job.
-			// Health reports should periodically be sent every 30 seconds. Listen for at least one health report GET that includes our jobId.
-			while (!gotHealthReportGetResponse) {
-				Thread.sleep(1000); // test will eventually timeout
-			}
-
-			log.info("Received a Spark GET response");
-
-			// Test to make sure the received health report is from the streaming job.
-			Assert.assertTrue(
-					healthReportGetCallbackBody.getJobId().contains(Long.valueOf(healthReportGetJobId))
-							&& healthReportGetCallbackBody.getExternalId().contains(externalId));
-
-			// Wait until ready to attempt a streaming job cancellation
-			String statusUrl = WebRESTUtils.REST_URL + "streaming/jobs/" + healthReportGetJobId;
-			StreamingJobInfo streamingJobInfo = null;
-			do {
-				String streamingJobInfoJson = WebRESTUtils.getJSON(new URL(statusUrl), WebRESTUtils.MPF_AUTHORIZATION);
-				streamingJobInfo = objectMapper.readValue(streamingJobInfoJson, StreamingJobInfo.class);
-
-				// Check every three seconds
-				Thread.sleep(3000);
-			} while (streamingJobInfo == null); // test will eventually timeout
-
-			// After running the GET test, clear the streaming job from REDIS with doCleanup enabled.
-			List<NameValuePair> cancelParams = new ArrayList<NameValuePair>();
-			cancelParams.add(new BasicNameValuePair("doCleanup", "true"));
-			String cancelUrl = WebRESTUtils.REST_URL + "streaming/jobs/" + Long.toString(healthReportGetJobId) + "/cancel";
-
-			String jobCancelResponseJson = WebRESTUtils.postParams(new URL(cancelUrl), cancelParams, WebRESTUtils.MPF_AUTHORIZATION, 200);
-			StreamingJobCancelResponse jobCancelResponse = objectMapper.readValue(jobCancelResponseJson, StreamingJobCancelResponse.class);
-
-			log.info("Finished GET test, cancelled streaming job:\n     " + jobCancelResponseJson);
-
-			Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCancelResponse.getMpfResponse().getResponseCode());
-			Assert.assertTrue(jobCancelResponse.getDoCleanup());
-		} finally {
-			Spark.stop();
-		}
-	}
-
 	private void setupSparkPost() {
 		Spark.port(HEALTH_REPORT_CALLBACK_PORT);
 
@@ -261,52 +198,11 @@ public class ITWebStreamingHealthReports {
 					// If this health report includes the jobId for our POST test, then set indicator
 					// that a health report sent using POST method has been received. Need to add this check
 					// to ensure a periodic health report sent prior to creation of our test job doesn't prematurely stop the test.
-					if (healthReportPostCallbackBody.getJobId().contains(healthReportPostJobId)) {
+					if (healthReportPostCallbackBody.getJobIds().contains(healthReportPostJobId)) {
 						gotHealthReportPostResponse = true;
 					}
 				} catch (Exception e) {
 					log.error("Exception caught while processing health report POST callback.", e);
-					Assert.fail();
-				}
-				return "";
-			}
-		});
-
-		Spark.awaitInitialization();
-	}
-
-	private void setupSparkGet() {
-		Spark.port(HEALTH_REPORT_CALLBACK_PORT);
-
-		Spark.get("/callback", new Route() {
-			@Override
-			public Object handle(Request request, Response resp) throws Exception {
-				log.info("Spark servicing " + request.requestMethod() + " health report callback at "
-						+ DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now()) + ":\n     " + request.queryString());
-				try {
-					// Convert from requests JSON parameters to String or List as needed to construct the health report.
-					ObjectMapper objectMapper = new ObjectMapper();
-					List<Long> jobIds = Arrays.asList(objectMapper.readValue(request.queryParams("jobId"), Long[].class));
-					List<String> externalIds = Arrays.asList(objectMapper.readValue(request.queryParams("externalId"), String[].class));
-					List<String> jobStatuses = Arrays.asList(objectMapper.readValue(request.queryParams("jobStatus"), String[].class));
-					List<BigInteger> lastNewActivityAlertFrameIds =
-							Arrays.asList(objectMapper.readValue(request.queryParams("lastNewActivityAlertFrameId"), BigInteger[].class));
-					List<String> lastNewActivityAlertTimestamps =
-							Arrays.asList(objectMapper.readValue(request.queryParams("lastNewActivityAlertTimestamp"), String[].class));
-
-					healthReportGetCallbackBody = new JsonHealthReportDataCallbackBody(request.queryParams("reportDate"),
-							jobIds, externalIds, jobStatuses, lastNewActivityAlertFrameIds, lastNewActivityAlertTimestamps);
-
-					log.info("Converted to JsonHealthReportDataCallbackBody:\n     " + healthReportGetCallbackBody);
-
-					// If this health report includes the jobId for our GET test, then set indicator
-					// that a health report sent using GET method has been received. Need to add this check
-					// to ensure a periodic health report sent prior to creation of our test job doesn't prematurely stop the test.
-					if (healthReportGetCallbackBody.getJobId().contains(healthReportGetJobId)) {
-						gotHealthReportGetResponse = true;
-					}
-				} catch (Exception e) {
-					log.error("Exception caught while processing health report GET callback.", e);
 					Assert.fail();
 				}
 				return "";
@@ -333,7 +229,6 @@ public class ITWebStreamingHealthReports {
 		params.put("enableOutputToDisk", true);
 		params.put("priority", 0);
 		params.put("healthReportCallbackUri", "http://0.0.0.0:" + HEALTH_REPORT_CALLBACK_PORT + "/callback");
-		params.put("callbackMethod", callbackMethod);
 		String param_string = params.toString();
 
 		log.info("Create streaming job request sent to: " + url + ", Params: " + param_string);

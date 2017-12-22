@@ -232,22 +232,6 @@ public class MpfServiceImpl implements MpfService {
 		streamingJobRequestBo.cancel(jobId, doCleanup);
 	}
 
-	/**
-	 * Send health report for all streaming jobs to the health report callback associated with each streaming job.
-     * This method will just return if there are no streaming jobs.
-     * TODO: should this method exclude streaming jobs where are marked as terminated?
-	 * @param isActive If true, then streaming jobs which have JobStatus of TERMINATED will be
-	 * filtered out. Otherwise, all current streaming jobs will be processed.
-	 * @throws WfmProcessingException thrown if an error occurs
-	 */
-	@Override
-	public void sendHealthReports(boolean isActive) throws WfmProcessingException {
-		List<Long> jobIds = getAllStreamingJobIds();
-		if ( jobIds != null && !jobIds.isEmpty() ) {
-            streamingJobRequestBo.sendHealthReports(jobIds, isActive);
-        }
-	}
-
 	@Override
 	public MarkupResult getMarkupResult(long id) {
 		return markupResultDao.findById(id);
@@ -299,6 +283,22 @@ public class MpfServiceImpl implements MpfService {
 	public List<Long> getAllStreamingJobIds() {
 	    // use a Java8 stream to map the streaming job ids and collect them into a list,
         return getAllStreamingJobRequests().stream().map(StreamingJobRequest::getId).collect(Collectors.toList());
+	}
+
+	/**
+	 * Send health report for all streaming jobs to the health report callback associated with each streaming job.
+	 * This method will just return if there are no streaming jobs.
+	 * TODO: should this method exclude streaming jobs where are marked as terminated?
+	 * @param isActive If true, then streaming jobs which have JobStatus of TERMINATED will be
+	 * filtered out. Otherwise, all current streaming jobs will be processed.
+	 * @throws WfmProcessingException thrown if an error occurs
+	 */
+	@Override
+	public void sendStreamingJobHealthReports(boolean isActive) throws WfmProcessingException {
+		List<Long> jobIds = getAllStreamingJobIds();
+		if ( jobIds != null && !jobIds.isEmpty() ) {
+			streamingJobRequestBo.sendHealthReports(jobIds, isActive);
+		}
 	}
 
 	/* ***** System Messages ***** */

@@ -27,19 +27,14 @@
 
 package org.mitre.mpf.mst;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.JobStatus;
-import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.ValueType;
-import org.mitre.mpf.wfm.service.*;
-import org.mitre.mpf.wfm.service.component.ComponentLanguage;
+import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -49,12 +44,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.Collections;
+import java.net.URL;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
+import static org.mockito.AdditionalMatchers.gt;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.notNull;
 import static org.mockito.Mockito.*;
 
 
@@ -66,11 +59,6 @@ public class TestStreamingJobStartStop {
 
 	private static final StreamingJobRequestBo _mockStreamingJobRequestBo = mock(StreamingJobRequestBo.class);
 
-	private static final StreamingServiceManager _mockServiceManager = mock(StreamingServiceManager.class);
-
-	private static PipelineService _pipelineServiceSpy;
-
-	// TODO: Remove mocks when real streaming component executor is available.
 	@Configuration
 	public static class TestConfig {
 
@@ -79,79 +67,48 @@ public class TestStreamingJobStartStop {
 		public StreamingJobRequestBo streamingJobRequestBo() {
 			return _mockStreamingJobRequestBo;
 		}
-
-		@Bean
-		@Primary
-		public StreamingServiceManager streamingServiceManager() {
-			return _mockServiceManager;
-		}
-
-		@Bean
-		@Primary
-		public PipelineService pipelineService(PipelineServiceImpl realPipelineService) {
-			if (_pipelineServiceSpy == null) {
-				_pipelineServiceSpy = spy(realPipelineService);
-			}
-			return _pipelineServiceSpy;
-		}
 	}
 
 	@Autowired
 	private StreamingJobMessageSender _jobSender;
 
 
-	@Before
-	public void init() {
-		StreamingServiceModel testService = new StreamingServiceModel(
-				"STREAMING_ALGO", "STREAMING_ALGO", ComponentLanguage.CPP, "path/to/libmyLib.so",
-				Collections.singletonList(new EnvironmentVariableModel("env_var1", "env_val1", null))
-		);
-
-		when(_mockServiceManager.getServices())
-				.thenReturn(Collections.singletonList(testService));
-
-		AlgorithmDefinition algorithmDef = new AlgorithmDefinition(
-				ActionType.DETECTION, testService.getAlgorithmName(), "description", true, true);
-		algorithmDef.getProvidesCollection().getAlgorithmProperties().add(
-				new PropertyDefinition("Prop1", ValueType.STRING, "description",
-				                       "propval1"));
-
-		doReturn(algorithmDef)
-				.when(_pipelineServiceSpy)
-				.getAlgorithm(algorithmDef.getName());
-	}
-
 
 	@Test
 	public void testJobStartStop() throws InterruptedException {
+		long jobId = 43231;
 
 		TransientStage stage1 = new TransientStage("stage1", "description", ActionType.DETECTION);
-		stage1.getActions().add(new TransientAction("Action1", "descrption", "STREAMING_ALGO"));
+		stage1.getActions().add(new TransientAction("Action1", "description", "CPLUSPLUSHELLOWORLD"));
 
-		TransientPipeline pipeline = new TransientPipeline("PipelineName", "desc");
+		TransientPipeline pipeline = new TransientPipeline("HELLOWORLD TEST PIPELINE", "desc");
 		pipeline.getStages().add(stage1);
 
 
-		TransientStream stream = new TransientStream(124, "stream://thestream");
+		URL videoUrl = getClass().getResource("/samples/face/new_face_video.avi");
+		TransientStream stream = new TransientStream(124, videoUrl.toString());
+		stream.setSegmentSize(10);
 		TransientStreamingJob streamingJob = new TransientStreamingJob(
-				123, "ext id", pipeline, 1, 1, false, "mydir",
+				jobId, "ext id", pipeline, 1, 1, false, "mydir",
 				false);
 		streamingJob.setStream(stream);
 
 		_jobSender.launchJob(streamingJob);
 
-		Thread.sleep(2000);
+		Thread.sleep(5_000);
 
-		_jobSender.stopJob(123);
+		_jobSender.stopJob(jobId);
 
-		// The python test process is used for this test. The test process sleeps for 3 seconds before exiting.
-		verify(_mockStreamingJobRequestBo, never())
-				.jobCompleted(anyLong(), any(JobStatus.class));
 
 		Thread.sleep(3200);
 
 		verify(_mockStreamingJobRequestBo, timeout(30_000))
-				.jobCompleted(eq(123L), notNull(JobStatus.class));
+				.jobCompleted(eq(jobId), eq(JobStatus.COMPLETE));
 
+		verify(_mockStreamingJobRequestBo, atLeastOnce())
+				.handleNewActivityAlert(eq(jobId), gt(0), gt(0L));
+
+		verify(_mockStreamingJobRequestBo, atLeastOnce())
+				.handleNewSummaryReport(eq(jobId), isA(DetectionProtobuf.StreamingDetectionResponse.class));
 	}
 }

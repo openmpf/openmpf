@@ -30,6 +30,8 @@ package org.mitre.mpf.wfm.camel.routes;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.dataformat.protobuf.ProtobufDataFormat;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
@@ -74,13 +76,29 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 				});
 
 
+//		from(StreamingEndpoints.WFM_STREAMING_JOB_SUMMARY_REPORTS.endpointName())
+//				.routeId("Streaming Job Summary Report Route")
+//				// TODO: unmarshal protobuf body
+////				.unmarshal(new ProtobufDataFormat(DetectionProtobuf.StreamingDetectionResponse.getDefaultInstance()))
+//				.log(LoggingLevel.DEBUG, "Received summary report message: ${headers}")
+//				.process(exchange -> {
+//					Message msg = exchange.getIn();
+//					_streamingJobRequestBo.handleNewSummaryReport(
+//							msg.getHeader("JOB_ID", long.class),
+//							msg.getBody(Object.class)
+//					);
+//				});
+
 		from(StreamingEndpoints.WFM_STREAMING_JOB_SUMMARY_REPORTS.endpointName())
 				.routeId("Streaming Job Summary Report Route")
 				// TODO: unmarshal protobuf body
-//				.unmarshal(new ProtobufDataFormat(DetectionProtobuf.StreamingDetectionResponse.getDefaultInstance()))
+				.unmarshal(new ProtobufDataFormat(DetectionProtobuf.StreamingDetectionResponse.getDefaultInstance()))
 				.log(LoggingLevel.DEBUG, "Received summary report message: ${headers}")
 				.process(exchange -> {
 					Message msg = exchange.getIn();
+					DetectionProtobuf.StreamingDetectionResponse protobuf = msg.getBody(DetectionProtobuf.StreamingDetectionResponse.class);
+					System.out.println("Received summary report with " + protobuf.getVideoTracksCount() + " tracks");
+
 					_streamingJobRequestBo.handleNewSummaryReport(
 							msg.getHeader("JOB_ID", long.class),
 							msg.getBody(Object.class)

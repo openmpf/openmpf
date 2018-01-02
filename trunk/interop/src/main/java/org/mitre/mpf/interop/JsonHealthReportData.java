@@ -79,16 +79,22 @@ public class JsonHealthReportData {
     private Long jobId;
     @JsonSetter
     public void setJobId(Long jobId) { this.jobId = jobId; }
-    @JsonGetter
+    @JsonIgnore
     public Long getJobId() { return jobId; }
 
-    /** The external ID that was specified for this job when it was requested. Note that
-     * internally, an externalId may be null if not specified for this streaming job.
+    /** The external ID that was specified for this job when it was requested.
+     * An externalId may be null if not specified for a streaming job. If so, this method will internally store the null as an empty String.
      **/
     private String externalId = null;
     @JsonSetter("externalId")
-    public void setExternalId(String externalId) { this.externalId = externalId; }
-    @JsonGetter("externalId")
+    public void setExternalId(String externalId) {
+        if (externalId == null) {
+            this.externalId = "";
+        } else {
+            this.externalId = externalId;
+        }
+    }
+    @JsonIgnore
     /**
      * @return Get the external ID that was specified for this job when it was requested. Value
      * will be an empty String if the externalId was not specified for this streaming job.
@@ -104,12 +110,19 @@ public class JsonHealthReportData {
     private String jobStatus = null;
     @JsonSetter("jobStatus")
     public void setJobStatus(String externalId) { this.jobStatus = jobStatus; }
-    @JsonGetter("jobStatus")
+    @JsonIgnore
     public String getJobStatus() { return jobStatus; }
 
     private String lastActivityFrameId = null;
     @JsonSetter("lastActivityFrameId")
-    public void setLastActivityFrameId(String lastActivityFrameId) { this.lastActivityFrameId = lastActivityFrameId; }
+    public void setLastActivityFrameId(String lastActivityFrameId) {
+        if ( lastActivityFrameId == null ) {
+            this.lastActivityFrameId = "";
+        } else {
+            this.lastActivityFrameId = lastActivityFrameId;
+        }
+    }
+
     /**
      * The frame id from the last new Activity Alerts received for this streaming job.
      * Value is stored internally as a String to accommodate for this value to be sized in the Components as an unsigned long.
@@ -117,7 +130,7 @@ public class JsonHealthReportData {
      * @return the last New Activity Alert frame id associated with this streaming job. Value will be null if
      * a New Activity Alert has not been issued for this streaming job.
      */
-    @JsonGetter("lastActivityFrameId")
+    @JsonIgnore
     public String getLastActivityFrameId() { return lastActivityFrameId; }
 
     private LocalDateTime lastActivityTimestamp = null;
@@ -127,7 +140,7 @@ public class JsonHealthReportData {
      * a New Activity Alert has not been issued for this streaming job. Otherwise, the timestamp will be returned as a String
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value #TIMESTAMP_PATTERN}
      */
-    @JsonGetter("lastActivityTimestamp")
+    @JsonIgnore
     public String getLastActivityTimeStampAsString() {
         if ( lastActivityTimestamp == null ) {
             return "";
@@ -135,6 +148,7 @@ public class JsonHealthReportData {
             return getLocalDateTimeAsString(lastActivityTimestamp);
         }
     }
+
     /**
      * Set the timestamp from the last new Activity Alert received for this streaming job.
      * Value may be null if a New Activity Alert has not been issued for this streaming job.
@@ -168,10 +182,33 @@ public class JsonHealthReportData {
         @JsonProperty("lastActivityTimestamp") LocalDateTime lastActivityTimestamp) {
 
         this.jobId = jobId;
-        this.externalId = externalId;
         this.jobStatus = jobStatus;
+        this.externalId = externalId;
         this.lastActivityFrameId = lastActivityFrameId;
         this.lastActivityTimestamp = lastActivityTimestamp;
+    }
+
+    /**
+     * Constructor used to create a health report for a single job
+     * @param jobId job id for this streaming job.
+     * @param externalId external id for this streaming job. May be null if an external id was not defined.
+     * @param jobStatus status of this streaming job.
+     * @param lastActivityFrameId frame id from the last new activity alert that was issued for this streaming job. May be null if
+     * a New Activity Alert has not yet been issued for this streaming job.
+     * @param lastActivityTimestamp timestamp from the last new activity alert that was issued for this streaming job. May be null if
+     * a New Activity Alert has not yet been issued for this streaming job.
+     */
+    @JsonCreator
+    public JsonHealthReportData(@JsonProperty("jobId") long jobId, @JsonProperty("externalId") String externalId,
+        @JsonProperty("jobStatus") String /*JobStatus*/ jobStatus,
+        @JsonProperty("lastActivityFrameId") String lastActivityFrameId,
+        @JsonProperty("lastActivityTimestamp") String lastActivityTimestamp) throws MpfInteropUsageException {
+
+        this.jobId = jobId;
+        this.jobStatus = jobStatus;
+        this.externalId = externalId;
+        this.lastActivityFrameId = lastActivityFrameId;
+        setLastActivityTimestamp(lastActivityTimestamp);
     }
 
     @JsonIgnore

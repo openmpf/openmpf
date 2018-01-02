@@ -296,7 +296,7 @@ public class MpfServiceImpl implements MpfService {
 	@Override
 	public void sendStreamingJobHealthReports(boolean isActive) throws WfmProcessingException {
 		List<Long> jobIds = getAllStreamingJobIds();
-		if ( jobIds != null && !jobIds.isEmpty() ) {
+        if ( jobIds != null && !jobIds.isEmpty() ) {
 			streamingJobRequestBo.sendHealthReports(jobIds, isActive);
 		}
 	}

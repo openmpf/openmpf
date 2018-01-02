@@ -47,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import org.apache.http.HttpResponse;
@@ -75,19 +76,22 @@ public class HealthReportCallbackThread implements Runnable {
     private String callbackUri = null;
     private List<Long> jobIds = null;
 
-    @Autowired
-    @Qualifier(RedisImpl.REF)
+    // Note: can't Autowire redis because this thread is outside of the application context. Redis access provided via the Constructor.
     private Redis redis;
 
-    @Autowired
+    // Note: can't Autowire jsonUtils because this thread is outside of the application context. JsonUtils access provided via the Constructor.
     private JsonUtils jsonUtils;
 
     /**
      * Constructor used for sending a health report for a single streaming job.
+     * @param redis short term storage for transient objects.
+     * @param jsonUtils JSON utility class.
      * @param jobId unique id for the streaming job.
      * @param callbackUri health report callback URI for that single streaming job.
      */
-    public HealthReportCallbackThread(long jobId, String callbackUri) {
+    public HealthReportCallbackThread(Redis redis, JsonUtils jsonUtils, long jobId, String callbackUri) {
+        this.redis = redis;
+        this.jsonUtils = jsonUtils;
         this.callbackUri = callbackUri;
         jobIds = new ArrayList<Long>();
         jobIds.add(jobId);
@@ -96,10 +100,14 @@ public class HealthReportCallbackThread implements Runnable {
     /**
      * Constructor used for sending a health report for a set of streaming jobs which have
      * specified the same health report callback URI.
+     * @param redis short term storage for transient objects.
+     * @param jsonUtils JSON utility class.
      * @param jobIds list of unique ids for the streaming jobs which defined the same healthReportCallbackUri
      * @param callbackUri single health report callback URI defined for all these streaming jobs.
      */
-    public HealthReportCallbackThread(List<Long> jobIds, String callbackUri) {
+    public HealthReportCallbackThread(Redis redis, JsonUtils jsonUtils, List<Long> jobIds, String callbackUri) {
+        this.redis = redis;
+        this.jsonUtils = jsonUtils;
         this.callbackUri = callbackUri;
         this.jobIds = jobIds;
     }
@@ -110,17 +118,21 @@ public class HealthReportCallbackThread implements Runnable {
         HttpUriRequest req = null;
 
         // Get other information from REDIS about these streaming jobs.
+        log.info("HealthReportCallbackThread.sendHealthReportToCallback: redis=" + redis);
+        log.info("HealthReportCallbackThread.sendHealthReportToCallback: jsonUtils=" + jsonUtils);
+        log.info("HealthReportCallbackThread.sendHealthReportToCallback: posting health report containing jobIds=" + jobIds);
         List<String> externalIds = redis.getExternalIds(jobIds);
         List<String> jobStatuses = redis.getJobStatusesAsString(jobIds);
         List<String> lastActivityFrameIds = redis.getHealthReportLastActivityFrameIds(jobIds);
-        List<LocalDateTime> lastActivityTimestamps = redis.getHealthReportLastActivityTimestamps(jobIds);
+        List<String> lastActivityTimestamps = redis.getHealthReportLastActivityTimestampAsStrings(jobIds);
 
         // Send the health report to the callback using POST.
         HttpPost post = new HttpPost(callbackUri);
         post.addHeader("Content-Type", "application/json");
         try {
             JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(
-                currentDateTime, jobIds, externalIds, jobStatuses,
+                JsonHealthReportData.getLocalDateTimeAsString(currentDateTime),
+                jobIds, externalIds, jobStatuses,
                 lastActivityFrameIds, lastActivityTimestamps);
             log.info("HealthReportCallback, sending POST of healthReport, jsonBody= " + jsonBody);
             post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));

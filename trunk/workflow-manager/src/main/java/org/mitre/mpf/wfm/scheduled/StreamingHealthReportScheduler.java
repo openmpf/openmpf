@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.scheduled;
 
+import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -43,9 +44,15 @@ public class StreamingHealthReportScheduler {
     private MpfService mpfService;
 
     // TODO streaming.healthReport.callbackRate is defined in PropertiesUtil. Need to test varying this parameter in the mpf.property file.
-    @Scheduled(fixedDelayString = "${streaming.healthReport.callbackRate}" )
+    @Scheduled(fixedDelayString = "${streaming.healthReport.callbackRate:30000}" )
+    // testing usage of SpEL (Spring Expression Language) to get the streaming health report callback rate from the annotated Value set in PropertiesUtil
+    // TODO, usage of SpEL didn't work, got the error shown below during Tomcat startup
+//    @Scheduled(fixedDelayString = "#{streaming.healthReport.callbackRate}" )
+//    org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'streamingHealthReportScheduler' defined in file [/usr/share/apache-tomcat/webapps/workflow-manager/WEB-INF/classes/org/mitre/mpf/wfm/scheduled/StreamingHealthReportScheduler.class]: Initialization of bean failed; nested exception is java.lang.IllegalStateException: Encountered invalid @Scheduled method 'sendHealthReports': Invalid fixedDelayString value "#{streaming.healthReport.callbackRate}" - cannot parse into integer
+//    at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:553) ~[spring-beans-4.2.5.RELEASE.jar:4.2.5.RELEASE]RELEASE
     public void sendHealthReports() {
         boolean isActive = true; // only send periodic health reports for streaming jobs that are current and active.
+        log.info("StreamingHealthReportScheduler.sendHealthReports: sending health report for active jobs at "+ LocalDateTime.now());
         mpfService.sendStreamingJobHealthReports(isActive);
     }
 

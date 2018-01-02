@@ -77,24 +77,32 @@ public class JsonHealthReportDataCallbackBody {
      * The unique job ids assigned by OpenMPF to each streaming job in this health report.
      * @return unique job ids assigned by OpenMPF to each streaming job in this health report.
      */
-    @JsonGetter
+    @JsonIgnore
     public List<Long> getJobIds() { return reports.stream().map(report -> report.getJobId()).collect(Collectors.toList());  }
 
     /** The job status of each streaming job in this health report.
      * @return job status of each streaming job in this health report.
      **/
-    @JsonGetter("jobStatuses")
+    @JsonIgnore
     public List<String> getJobStatuses() {
         return reports.stream().map(report -> report.getJobStatus()).collect(Collectors.toList()); }
 
 
     /** The external IDs that were specified for each of these jobs when they were requested.
      * Note that an externalId may be returned as an empty String if it was not specified for a streaming job.
-     * @return external IDs that were specified for each of these jobs when they were requested.
+     * @return external IDs that were specified for each of these jobs when they were requested. Values within the List will be emtpy String if
+     * an externalId has not been specified for a streaming job.
      **/
-    @JsonGetter("externalIds")
+    @JsonIgnore
     public List<String> getExternalIds() {
-        return reports.stream().map(report -> report.getExternalId()).collect(Collectors.toList()); }
+        return reports.stream().map(report -> {
+            String externalId = report.getExternalId();
+            if ( externalId == null ) {
+                return "";
+            } else {
+                return externalId;
+            }
+        }).collect(Collectors.toList()); }
 
     /**
      * The frame ids from the last new Activity Alerts received for each streaming job in this health report.
@@ -103,7 +111,7 @@ public class JsonHealthReportDataCallbackBody {
      * @return the last New Activity Alert frame ids associated with each streaming job. Values within the List will be emtpy String if
      * a New Activity Alert has not been issued for a streaming job.
      */
-    @JsonGetter("lastActivityFrameIds")
+    @JsonIgnore
     public List<String> getLastActivityFrameIds() { return reports.stream().map(report -> {
         String frameId = report.getLastActivityFrameId();
         if ( frameId == null ) {
@@ -118,7 +126,7 @@ public class JsonHealthReportDataCallbackBody {
      * a New Activity Alert has not been issued for a streaming job. Otherwise, the timestamp will be returned as a String
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value JsonHealthReportData#TIMESTAMP_PATTERN}
      */
-    @JsonGetter("lastActivityTimestamps")
+    @JsonIgnore
     public List<String> getLastActivityTimeStamps() {
         return reports.stream().map(report -> report.getLastActivityTimeStampAsString()).collect(
             Collectors.toList());
@@ -164,24 +172,24 @@ public class JsonHealthReportDataCallbackBody {
 
         // Do some error checking against the specified job parameters. First, make sure that none of the job parameter Lists are null.
         // Second, make sure that the job parameter Lists are all the same size.
-        if ( jobParameterMap.values().stream().filter(Objects::nonNull).count() > 0 ) {
+        if ( jobParameterMap.values().stream().filter( v -> v == null ).count() > 0 ) {
             // Found that at least one of the job parameter Lists passed to this method were null. Throw an exception which identifies the Lists that are null for the caller.
             throw new MpfInteropUsageException("Error: the following Lists can't be null: " +
-                jobParameterMap.entrySet().stream().filter( m -> m.getValue()!=null).map( m -> m.getKey()).collect(Collectors.joining(",")));
+                jobParameterMap.entrySet().stream().filter( m -> m.getValue()==null).map( m -> m.getKey()).collect(Collectors.joining(",")));
         } else {
             // all job parameters Lists should be the same size as the number of jobIds.
-            int numJobs = jobIds.size();
-            if ( jobParameterMap.values().stream().filter( list -> list.size() != numJobs).count() > 0 ) {
+            int numJobIds = jobIds.size();
+            if ( jobParameterMap.values().stream().filter( v -> v.size() != numJobIds ).count() > 0 ) {
                 // Throw an exception identifying for the caller the job parameter Lists whose size does not match the number of jobIds.
-                throw new MpfInteropUsageException("Error: the following Lists should be of size " + numJobs +" but are not: " +
-                    jobParameterMap.entrySet().stream().filter( m ->  m.getValue().size()==numJobs ).map( m -> m.getKey() ).collect(Collectors.joining(",")));
+                throw new MpfInteropUsageException("Error: the following Lists should be of size " + numJobIds +" but are not: " +
+                    jobParameterMap.entrySet().stream().filter( m ->  m.getValue().size() != numJobIds ).map( m -> m.getKey() ).collect(Collectors.joining(",")));
             } else {
 
                 // If we get to here, then all job parameter Lists passed the error check. Construct this health report.
                 this.reportDate = reportDate;
 
                 // Add each job as a separate health report.
-                for ( int i=0; i<numJobs; i++ ) {
+                for ( int i=0; i<numJobIds; i++ ) {
                     reports.add(new JsonHealthReportData (jobIds.get(i), externalIds.get(i), jobStatuses.get(i), lastActivityFrameIds.get(i), lastActivityTimestamps.get(i)));
                 }
             }
@@ -271,9 +279,7 @@ public class JsonHealthReportDataCallbackBody {
 
     @JsonIgnore
     public String toString() {
-        return "reportDate = " + reportDate + ", jobId = " + getJobIds() + ", externalId = " + getExternalIds() +
-            ", jobStatus = " + getJobStatuses() + ", lastActivityFrameId = " + getLastActivityFrameIds() +
-            ", lastActivityTimestamp = " + getLastActivityTimeStamps();
+        return "reportDate = " + reportDate + ", reports = " + reports;
     }
 
 }

@@ -897,6 +897,28 @@ public class RedisImpl implements Redis {
      * Note that internally, health report timestamps are stored in REDIS by converting the object to a string
      * formatted using the REDIS_TIMESTAMP_PATTERN, which is currently defined as {@value #REDIS_TIMESTAMP_PATTERN}.
      * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+     * @return The last health report New Activity Alert timestamp for this streaming job as a String.
+     * Returned value may be null if a health report or a New Activity Alert for this streaming job has not yet been sent.
+     * @exception WfmProcessingException will be thrown if the specified job is not a streaming job.
+     */
+    public synchronized String getHealthReportLastActivityTimestampAsString(long jobId) throws WfmProcessingException {
+        if ( isJobTypeStreaming(jobId) ) {
+            // Confirmed that the specified job is a streaming job.
+            Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
+            return (String) jobHash.get(LAST_HEALTH_REPORT_ACTIVITY_TIMESTAMP);
+        } else {
+            String errorMsg = "Error: Job #" + jobId + " is not a streaming job, so we can't get the health report last activity timestamp.";
+            log.error(errorMsg);
+            throw new WfmProcessingException(errorMsg + " Only streaming jobs send health reports.");
+        }
+    }
+
+    /**
+     * Return the last New Activity Alert timestamp that was sent in a health report for the specified streaming job.
+     * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
+     * Note that internally, health report timestamps are stored in REDIS by converting the object to a string
+     * formatted using the REDIS_TIMESTAMP_PATTERN, which is currently defined as {@value #REDIS_TIMESTAMP_PATTERN}.
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
      * @return The last health report New Activity Alert timestamp for this streaming job.
      * Returned value may be null if a health report or a New Activity Alert for this streaming job has not yet been sent.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job.
@@ -904,20 +926,12 @@ public class RedisImpl implements Redis {
      * from REDIS because it could not be parsed as a String.
      */
     public synchronized LocalDateTime getHealthReportLastActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException {
-        if ( isJobTypeStreaming(jobId) ) {
-            // Confirmed that the specified job is a streaming job.
-            Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
-            String timestamp = (String) jobHash.get(LAST_HEALTH_REPORT_ACTIVITY_TIMESTAMP);
-            if ( timestamp != null ) {
-                return (LocalDateTime) timestampFormatter.parse(timestamp);
-            } else {
-                // Return null to indicate that a health report for this streaming job has not yet been sent.
-                return null;
-            }
+        String timestamp = getHealthReportLastActivityTimestampAsString(jobId);
+        if ( timestamp != null ) {
+            return (LocalDateTime) timestampFormatter.parse(timestamp);
         } else {
-            String errorMsg = "Error: Job #" + jobId + " is not a streaming job, so we can't get the health report last activity timestamp.";
-            log.error(errorMsg);
-            throw new WfmProcessingException(errorMsg + " Only streaming jobs send health reports.");
+            // Return null to indicate that a health report for this streaming job has not yet been sent.
+            return null;
         }
     }
 
@@ -929,6 +943,15 @@ public class RedisImpl implements Redis {
      */
     public synchronized List<LocalDateTime> getHealthReportLastActivityTimestamps(List<Long> jobIds) throws WfmProcessingException, DateTimeException {
         return jobIds.stream().map(jobId->getHealthReportLastActivityTimestamp(jobId.longValue())).collect(Collectors.toList());
+    }
+
+    /** This method is the same as {@link #getHealthReportLastActivityTimestamp(long)}, it's just adapted for use with Lists.
+     * @param jobIds List of jobIds for streaming jobs.
+     * @return List of last new activity alert timestamps as Strings. The list may contain null if a health report or a New Activity Alert for a streaming job has not yet been sent.
+     * @throws WfmProcessingException
+     */
+    public synchronized List<String> getHealthReportLastActivityTimestampAsStrings(List<Long> jobIds) throws WfmProcessingException {
+        return jobIds.stream().map(jobId->getHealthReportLastActivityTimestampAsString(jobId.longValue())).collect(Collectors.toList());
     }
 
     /**

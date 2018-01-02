@@ -278,6 +278,8 @@ public interface Redis {
     List<String> getHealthReportLastActivityFrameIds(List<Long> jobIds) throws WfmProcessingException;
 
 	void setHealthReportLastActivityTimestamp(long jobId, LocalDateTime lastNewActivityAlertTimestamp) throws WfmProcessingException;
+	String getHealthReportLastActivityTimestampAsString(long jobId) throws WfmProcessingException;
+	List<String> getHealthReportLastActivityTimestampAsStrings(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
 	LocalDateTime getHealthReportLastActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
     List<LocalDateTime> getHealthReportLastActivityTimestamps(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
 

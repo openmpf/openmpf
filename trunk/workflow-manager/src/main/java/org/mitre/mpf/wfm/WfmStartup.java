@@ -26,6 +26,8 @@
 
 package org.mitre.mpf.wfm;
 
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.apache.activemq.broker.jmx.BrokerViewMBean;
 import org.apache.activemq.broker.jmx.QueueViewMBean;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
@@ -92,6 +94,8 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 
 	private ExecutorService executorService = null;
 
+	private ExecutorService healthReportExecutorService = null;
+
 	@Override
 	public void onApplicationEvent(ApplicationEvent event) {
 
@@ -123,10 +127,12 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 				purgeServerStartupSystemMessages();
 				startFileIndexing(appContext);
 				startupRegistrationService.registerUnregisteredComponents();
+                startHealthReportService();
 				applicationRefreshed = true;
 			}
 		} else if (event instanceof ContextClosedEvent) {
 			stopFileIndexing();
+			stopHealthReportService();
 		}
 	}
 
@@ -145,6 +151,44 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 			executorService.shutdownNow();
 		}
 	}
+
+	// TODO, implement startHealthReportService using periodic executor. Using Scheduled annotation not working out because can't use PropertyUtils.
+	private void startHealthReportService() {
+/*
+        healthReportExecutorService = Executors.newScheduledThreadPool(10);
+        Runnable task = () -> {
+            try {
+                TimeUnit.SECONDS.sleep(2);
+                System.out.println("Scheduling: " + System.nanoTime());
+            }
+            catch (InterruptedException e) {
+                System.err.println("task interrupted");
+            }
+        };
+
+        healthReportExecutorService.scheduleWithFixedDelay(task, propertiesUtil.getHealthReportCallbackRate(),
+            propertiesUtil.getHealthReportCallbackRate(), TimeUnit.MILLISECONDS);
+*/
+
+    }
+
+    private void stopHealthReportService() {
+	    if ( healthReportExecutorService != null ) {
+            try {
+                System.out.println("stopHealthReportService: attempt to shutdown healthReportExecutorService");
+                healthReportExecutorService.shutdown();
+                healthReportExecutorService.awaitTermination(5, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                System.err.println("stopHealthReportService: healthReportExecutorService task interrupted");
+            } finally {
+                if (!healthReportExecutorService.isTerminated()) {
+                    System.err.println("stopHealthReportService: cancel non-finished healthReportExecutorService tasks");
+                }
+                healthReportExecutorService.shutdownNow();
+                System.out.println("stopHealthReportService: healthReportExecutorService shutdown finished");
+            }
+        }
+    }
 
 	/** purge system messages that are set to be removed on server startup */
 	private void purgeServerStartupSystemMessages() {

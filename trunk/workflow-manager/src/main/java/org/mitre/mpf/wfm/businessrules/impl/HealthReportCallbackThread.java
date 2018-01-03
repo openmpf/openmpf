@@ -28,37 +28,22 @@ package org.mitre.mpf.wfm.businessrules.impl;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.math.BigInteger;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.mitre.mpf.interop.JsonHealthReportData;
 import org.mitre.mpf.interop.JsonHealthReportDataCallbackBody;
 import org.mitre.mpf.wfm.WfmProcessingException;
 
@@ -131,7 +116,7 @@ public class HealthReportCallbackThread implements Runnable {
         post.addHeader("Content-Type", "application/json");
         try {
             JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(
-                JsonHealthReportData.getLocalDateTimeAsString(currentDateTime),
+                JsonHealthReportDataCallbackBody.getLocalDateTimeAsString(currentDateTime),
                 jobIds, externalIds, jobStatuses,
                 lastActivityFrameIds, lastActivityTimestamps);
             log.info("HealthReportCallback, sending POST of healthReport, jsonBody= " + jsonBody);

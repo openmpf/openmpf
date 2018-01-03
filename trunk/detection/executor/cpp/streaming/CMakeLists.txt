@@ -74,7 +74,8 @@ set(streaming_component_executor_files main.cpp
 	QuitWatcher.cpp QuitWatcher.h
     JobSettings.h JobSettings.cpp
 	StreamingComponentHandle.cpp StreamingComponentHandle.h
-    BasicAmqMessageSender.cpp BasicAmqMessageSender.h)
+    BasicAmqMessageSender.cpp BasicAmqMessageSender.h
+	ExitCodes.h)
 
 add_executable(streaming_component_executor ${streaming_component_executor_files} ${MSG_UTILS_FILE})
 target_link_libraries(streaming_component_executor mpfDetectionComponentApi mpfComponentInterface

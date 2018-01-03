@@ -52,7 +52,7 @@
     <param name="file" value="${MPF_LOG_PATH}/${THIS_MPF_NODE}/log/streaming-detection.log" />
     <param name="DatePattern" value="'.'yyyy-MM-dd" />
     <layout class="org.apache.log4j.PatternLayout">
-      <param name="ConversionPattern" value="%d %p [%t] %c{36}:%L - %m%n" />
+      <param name="ConversionPattern" value="%d %p %c{36}:%L - %m%n" />
     </layout>
   </appender>
 

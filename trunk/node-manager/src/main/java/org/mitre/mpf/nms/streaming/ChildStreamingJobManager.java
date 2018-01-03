@@ -38,6 +38,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 
 @Component
 public class ChildStreamingJobManager {
@@ -109,7 +110,7 @@ public class ChildStreamingJobManager {
 			if (error == null) {
 				reason = StreamingJobExitedMessage.Reason.CANCELLED;
 			}
-			else if (error instanceof StreamStalledException) {
+			else if (error instanceof CompletionException && error.getCause() instanceof StreamStalledException) {
 				LOG.warn("Stream stalled during execution of job: " + jobId, error);
 				reason = StreamingJobExitedMessage.Reason.STREAM_STALLED;
 			}

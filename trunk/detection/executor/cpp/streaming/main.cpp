@@ -45,6 +45,7 @@
 #include "StreamingComponentHandle.h"
 #include "JobSettings.h"
 #include "BasicAmqMessageSender.h"
+#include "ExitCodes.h"
 
 
 using namespace MPF;
@@ -58,7 +59,7 @@ log4cxx::LoggerPtr get_logger(const std::string &app_dir);
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <ini_path>" << std::endl;
-        return 1;
+        return ExitCodes::InvalidCommandLineArgs;
     }
 
     log4cxx::LoggerPtr logger;
@@ -89,7 +90,7 @@ int main(int argc, char* argv[]) {
         cv::VideoCapture video_capture(settings.stream_uri);
         if (!video_capture.isOpened()) {
             LOG4CXX_ERROR(logger, log_prefix << "Unable to connect to stream: " << settings.segment_size);
-            return 2;
+            return ExitCodes::UnableToOpenStream;
         }
 
         QuitWatcher quit_watcher;
@@ -133,11 +134,12 @@ int main(int argc, char* argv[]) {
 
         if (quit_watcher.HasError()) {
             LOG4CXX_ERROR(logger, log_prefix << "Exiting due to an error while trying to read from standard in.")
-            return 2;
+            return ExitCodes::UnexpectedError;
         }
 
         if (read_failed) {
             LOG4CXX_INFO(logger, log_prefix << "Exiting because it is no longer possible to read frames.")
+            return ExitCodes::StreamNoLongerReadable;
         }
         return 0;
     }
@@ -146,14 +148,14 @@ int main(int argc, char* argv[]) {
         if (logger != nullptr) {
             LOG4CXX_ERROR(logger, log_prefix << "Exiting due to error: " << ex.what());
         }
-        return 2;
+        return ExitCodes::UnexpectedError;
     }
     catch (...) {
         std::cerr << log_prefix << "Exiting due to error." << std::endl;
         if (logger != nullptr) {
             LOG4CXX_ERROR(logger, log_prefix << "Exiting due to error.");
         }
-        return 2;
+        return ExitCodes::UnexpectedError;
     }
 }
 

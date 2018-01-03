@@ -47,6 +47,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.net.URL;
 
 import static org.mockito.AdditionalMatchers.gt;
+import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -103,7 +104,7 @@ public class TestStreamingJobStartStop {
 		Thread.sleep(3200);
 
 		verify(_mockStreamingJobRequestBo, timeout(30_000))
-				.jobCompleted(eq(jobId), eq(JobStatus.COMPLETE));
+				.jobCompleted(eq(jobId), or(eq(JobStatus.COMPLETE), eq(JobStatus.STALLED)));
 
 		verify(_mockStreamingJobRequestBo, atLeastOnce())
 				.handleNewActivityAlert(eq(jobId), gt(0), gt(0L));

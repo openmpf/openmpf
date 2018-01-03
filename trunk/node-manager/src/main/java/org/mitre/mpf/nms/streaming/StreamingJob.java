@@ -77,7 +77,6 @@ public class StreamingJob {
 
 		if (error != null) {
 			LOG.error("Streaming Process error: ", error);
-			throw new IllegalStateException(error);
 		}
 	}
 

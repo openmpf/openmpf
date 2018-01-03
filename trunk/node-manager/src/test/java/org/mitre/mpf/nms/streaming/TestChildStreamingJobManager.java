@@ -40,6 +40,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -219,7 +220,7 @@ public class TestChildStreamingJobManager {
 			}
 
 			public void causeException(Exception e) {
-				future.completeExceptionally(e);
+				future.completeExceptionally(new CompletionException(e));
 			}
 		};
 	}

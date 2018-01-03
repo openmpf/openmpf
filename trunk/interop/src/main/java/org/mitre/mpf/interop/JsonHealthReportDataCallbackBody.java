@@ -29,6 +29,7 @@ package org.mitre.mpf.interop;
 import static org.mitre.mpf.interop.JsonHealthReportData.TIMESTAMP_PATTERN;
 import static org.mitre.mpf.interop.JsonHealthReportData.parseStringAsLocalDateTime;
 
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -50,6 +51,65 @@ import java.util.stream.Collectors;
 
 public class JsonHealthReportDataCallbackBody {
 
+    // All timestamps in OpenMPF should adhere to this date/time pattern.
+    public static final String TIMESTAMP_PATTERN = "yyyy-MM-dd kk:mm:ss.S";
+    public static final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN);
+
+    /**
+     * Parse the timestamp String into a LocalDateTime using the date/time pattern adhered to by OpenMPF.
+     * @param s timestamp String, may not be null
+     * @return timestamp as a LocalDateTime
+     * @throws MpfInteropUsageException is thrown if the timestamp String is null. Throws DateTimeParseException if the timestamp String isn't parsable
+     * using the date/time pattern adhered to by OpenMPF.
+     */
+    public static LocalDateTime parseStringAsLocalDateTime(String s) throws MpfInteropUsageException, DateTimeParseException {
+        if ( s == null ) {
+            throw new MpfInteropUsageException("Error, timestamp String may not be null");
+        } else {
+            return timestampFormatter.parse(s, LocalDateTime::from);
+        }
+    }
+
+    /**
+     * Format the LocalDateTime as a timestamp String using the date/time pattern adhered to by OpenMPF.
+     * @param timestamp timestamp as a LocalDateTime. May be null.
+     * @return timestamp as a String, will be empty String if timestamp is null.
+     */
+    public static String getLocalDateTimeAsString(LocalDateTime timestamp) {
+        if ( timestamp == null ) {
+            return (String) "";
+        } else {
+            return timestampFormatter.format(timestamp);
+        }
+    }
+
+    static class Report {
+        private Long jobId = null;
+        private String externalId = null;
+        private String jobStatus = null;
+        private String lastActivityFrameId = null;
+        private String lastActivityTimestamp = null;
+
+        public Long getJobId() { return jobId; }
+        public String getExternalId() { return externalId; }
+        public String getJobStatus() { return jobStatus; }
+        public String getLastActivityFrameId() { return lastActivityFrameId; }
+        public String getLastActivityTimestamp() { return lastActivityTimestamp; }
+
+        @JsonCreator
+        public Report(@JsonProperty("jobId") Long jobId, @JsonProperty("externalId") String externalId,
+            @JsonProperty("jobStatus") String jobStatus,
+            @JsonProperty("lastActivityFrameId") String lastActivityFrameId,
+            @JsonProperty("lastActivityTimestamp") String lastActivityTimestamp) throws MpfInteropUsageException {
+
+            this.jobId = jobId;
+            this.jobStatus = jobStatus;
+            this.externalId = externalId;
+            this.lastActivityFrameId = lastActivityFrameId;
+            this.lastActivityTimestamp = lastActivityTimestamp;
+        }
+    }
+
     private LocalDateTime reportDate = null;
     /**
      * The date/time that this Health Report is being issued.
@@ -66,12 +126,23 @@ public class JsonHealthReportDataCallbackBody {
         this.reportDate = parseStringAsLocalDateTime(s);
     }
 
-    /** The Health Reports for the active streaming jobs in OpenMPF. May be 0 to many. */
+/*
+    */
+/** The Health Reports for the active streaming jobs in OpenMPF. May be 0 to many. *//*
+
     private List<JsonHealthReportData> reports = new ArrayList<>();
     @JsonSetter
     public void setReports(List<JsonHealthReportData> reports) { this.reports = reports; }
     @JsonGetter("reports")
     public List<JsonHealthReportData> getReports() { return reports; }
+*/
+
+    /** The Health Reports for the active streaming jobs in OpenMPF. May be 0 to many. */
+    private List<Report> reports = new ArrayList<>();
+    @JsonSetter
+    public void setReports(List<Report> reports) { this.reports = reports; }
+    @JsonGetter("reports")
+    public List<Report> getReports() { return reports; }
 
     /**
      * The unique job ids assigned by OpenMPF to each streaming job in this health report.
@@ -127,40 +198,26 @@ public class JsonHealthReportDataCallbackBody {
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value JsonHealthReportData#TIMESTAMP_PATTERN}
      */
     @JsonIgnore
-    public List<String> getLastActivityTimeStamps() {
-        return reports.stream().map(report -> report.getLastActivityTimeStampAsString()).collect(
-            Collectors.toList());
+    public List<String> getLastActivityTimestamps() {
+        return reports.stream().map(report -> {
+            String timestamp = report.getLastActivityTimestamp();
+            if ( timestamp == null ) {
+                return "";
+            } else {
+                return timestamp;
+            }
+        }).collect(Collectors.toList());
     }
-
-    /**
-     * Constructor used to create a health report for a single streaming job
-     * @param reportDate timestamp for this Health Report.
-     * @param jobId job id for this streaming job.
-     * @param externalId external id for this streaming job. May be null if an external id was not defined.
-     * @param jobStatus status of this streaming job.
-     * @param lastActivityFrameId frame id from the last new activity alert that was issued for this streaming job. May be null if
-     * a New Activity Alert has not yet been issued for this streaming job.
-     * @param lastActivityTimestamp timestamp from the last new activity alert that was issued for this streaming job. May be null if
-     * a New Activity Alert has not yet been issued for this streaming job.
-     */
-     @JsonIgnore
-    public JsonHealthReportDataCallbackBody(@JsonProperty("reportDate") LocalDateTime reportDate,
-        @JsonProperty("jobId") long jobId, @JsonProperty("externalId") String externalId,
-        @JsonProperty("jobStatus") String /*JobStatus*/ jobStatus,
-        @JsonProperty("lastActivityFrameId") String lastActivityFrameId,
-        @JsonProperty("lastActivityTimestamp") LocalDateTime lastActivityTimestamp) {
-
-        this.reportDate = reportDate;
-        reports.add(new JsonHealthReportData (jobId, externalId, jobStatus, lastActivityFrameId, lastActivityTimestamp));
-    }
+/*
 
     // common method for building health report data callable from all Constructors that build from Lists.
-    @JsonIgnore
-    private void createJobHealthReports(@JsonProperty("reportDate") LocalDateTime reportDate,
+    private void createJobHealthReports(@JsonProperty("reportDate") String reportDate,
         @JsonProperty("jobIds") List<Long> jobIds, @JsonProperty("externalIds") List<String> externalIds,
-        @JsonProperty("jobStatuses") List<String> /*JobStatus*/ jobStatuses,
+        @JsonProperty("jobStatuses") List<String> */
+/*JobStatus*//*
+ jobStatuses,
         @JsonProperty("lastActivityFrameIds") List<String> lastActivityFrameIds,
-        @JsonProperty("lastActivityTimestamps") List<LocalDateTime> lastActivityTimestamps) throws MpfInteropUsageException {
+        @JsonProperty("lastActivityTimestamps") List<String> lastActivityTimestamps) throws MpfInteropUsageException {
 
         // Prep to do some usage error checking and construct the health reports using validated job parameters Lists.
         Map<String,List> jobParameterMap = new HashMap<String,List>();
@@ -186,18 +243,47 @@ public class JsonHealthReportDataCallbackBody {
             } else {
 
                 // If we get to here, then all job parameter Lists passed the error check. Construct this health report.
-                this.reportDate = reportDate;
+                this.reportDate = parseStringAsLocalDateTime(reportDate);
 
                 // Add each job as a separate health report.
                 for ( int i=0; i<numJobIds; i++ ) {
-                    reports.add(new JsonHealthReportData (jobIds.get(i), externalIds.get(i), jobStatuses.get(i), lastActivityFrameIds.get(i), lastActivityTimestamps.get(i)));
+                    reports.add(new JsonHealthReportData (jobIds.get(i), externalIds.get(i), jobStatuses.get(i),
+                                lastActivityFrameIds.get(i), lastActivityTimestamps.get(i)));
                 }
             }
         }
 
     }
+*/
 
     /**
+     * Constructor used to create a health report for a single streaming job
+     * @param reportDate timestamp for this Health Report.
+     * @param jobId job id for this streaming job.
+     * @param externalId external id for this streaming job. May be null if an external id was not defined.
+     * @param jobStatus status of this streaming job.
+     * @param lastActivityFrameId frame id from the last new activity alert that was issued for this streaming job. May be null if
+     * a New Activity Alert has not yet been issued for this streaming job.
+     * @param lastActivityTimestamp timestamp from the last new activity alert that was issued for this streaming job. May be null if
+     * a New Activity Alert has not yet been issued for this streaming job.
+     */
+    @JsonIgnore
+    public JsonHealthReportDataCallbackBody(@JsonProperty("reportDate") LocalDateTime reportDate,
+        @JsonProperty("jobId") long jobId, @JsonProperty("externalId") String externalId,
+        @JsonProperty("jobStatus") String /*JobStatus*/ jobStatus,
+        @JsonProperty("lastActivityFrameId") String lastActivityFrameId,
+        @JsonProperty("lastActivityTimestamp") LocalDateTime lastActivityTimestamp) throws MpfInteropUsageException {
+
+        this.reportDate = reportDate;
+/*
+        reports.add(new JsonHealthReportData (jobId, externalId, jobStatus, lastActivityFrameId, lastActivityTimestamp));
+*/
+        reports.add(new Report(jobId, externalId, jobStatus, lastActivityFrameId, getLocalDateTimeAsString(lastActivityTimestamp)));
+    }
+
+/*
+    */
+/**
      * Constructor used to create a health report containing multiple streaming jobs.
      * @param reportDate timestamp for this Health Report.
      * @param jobIds job ids being reported on.
@@ -208,11 +294,14 @@ public class JsonHealthReportDataCallbackBody {
      * @param lastActivityTimestamps timestamps from the last new activity alert that was issued for each streaming job. List may contain null if
      * a New Activity Alert has not yet been issued for the streaming job.
      * @exception MpfInteropUsageException is thrown if any List is null or if List sizes are not the same length.
-     */
+     *//*
+
     @JsonIgnore
     public JsonHealthReportDataCallbackBody(@JsonProperty("reportDate") LocalDateTime reportDate,
         @JsonProperty("jobIds") List<Long> jobIds, @JsonProperty("externalIds") List<String> externalIds,
-        @JsonProperty("jobStatuses") List<String> /*JobStatus*/ jobStatuses,
+        @JsonProperty("jobStatuses") List<String> */
+/*JobStatus*//*
+ jobStatuses,
         @JsonProperty("lastActivityFrameIds") List<String> lastActivityFrameIds,
         @JsonProperty("lastActivityTimestamps") List<LocalDateTime> lastActivityTimestamps) throws MpfInteropUsageException {
 
@@ -220,41 +309,121 @@ public class JsonHealthReportDataCallbackBody {
         createJobHealthReports(reportDate, jobIds, externalIds, jobStatuses, lastActivityFrameIds, lastActivityTimestamps);
 
     }
+*/
+
+/*
+    */
+/**
+     * Constructor used to create a health report containing multiple streaming jobs.
+     * @param reportDate timestamp formatted String for this Health Report.
+     * @param reports array of streaming job reports.
+     * @exception MpfInteropUsageException is thrown if any List is null or if List sizes are not the same length.
+     * DateTimeParseException may be thrown if the reportDate doesn't parse to a valid timestamp. A MpfInteropUsageException may be thrown if
+     * any of the lastActivityTimestamps don't parse to a valid timestamp.
+     *//*
+
+    @JsonIgnore
+    public JsonHealthReportDataCallbackBody(@JsonProperty("reportDate") String reportDate,
+                                            @JsonProperty("reports") List<JsonHealthReportData> reports) throws MpfInteropUsageException {
+        this.reportDate = parseStringAsLocalDateTime(reportDate);
+        this.reports = reports;
+    }
+*/
 
     /**
      * Constructor used to create a health report containing multiple streaming jobs.
      * @param reportDate timestamp formatted String for this Health Report.
-     * @param jobIds job ids being reported on.
-     * @param externalIds external ids for each streaming job. List may contain a null if an external id was not defined for the job.
-     * @param jobStatuses status of each streaming job.
-     * @param lastActivityFrameIds frame ids from the last new activity alert that was issued for each streaming job. List may contain a null if
-     * a New Activity Alert has not yet been issued for the streaming job.
-     * @param lastActivityTimestamps timestamp formatted Strings from the last new activity alert
-     * that was issued for each streaming job. List may contain a null if
-     * a New Activity Alert has not yet been issued for the streaming job.
+     * @param reports array of streaming job reports.
      * @exception MpfInteropUsageException is thrown if any List is null or if List sizes are not the same length.
      * DateTimeParseException may be thrown if the reportDate doesn't parse to a valid timestamp. A MpfInteropUsageException may be thrown if
      * any of the lastActivityTimestamps don't parse to a valid timestamp.
      */
     @JsonCreator
     public JsonHealthReportDataCallbackBody(@JsonProperty("reportDate") String reportDate,
+                                            @JsonProperty("reports") List<Report> reports) throws MpfInteropUsageException {
+        this.reportDate = parseStringAsLocalDateTime(reportDate);
+        this.reports = reports;
+    }
+
+    /**
+     * Constructor used to create a health report containing multiple streaming jobs.
+     *
+     * @param reportDate timestamp formatted String for this Health Report.
+     * @param jobIds job ids being reported on.
+     * @param externalIds external ids for each streaming job. List may contain a null if an
+     * external id was not defined for the job.
+     * @param jobStatuses status of each streaming job.
+     * @param lastActivityFrameIds frame ids from the last new activity alert that was issued for
+     * each streaming job. List may contain a null if a New Activity Alert has not yet been issued
+     * for the streaming job.
+     * @param lastActivityTimestamps timestamp formatted Strings from the last new activity alert
+     * that was issued for each streaming job. List may contain a null if a New Activity Alert has
+     * not yet been issued for the streaming job.
+     * @throws MpfInteropUsageException is thrown if any List is null or if List sizes are not the
+     * same length. DateTimeParseException may be thrown if the reportDate doesn't parse to a valid
+     * timestamp. A MpfInteropUsageException may be thrown if any of the lastActivityTimestamps
+     * don't parse to a valid timestamp.
+     */
+    @JsonIgnore
+    public JsonHealthReportDataCallbackBody(@JsonProperty("reportDate") String reportDate,
         @JsonProperty("jobIds") List<Long> jobIds, @JsonProperty("externalIds") List<String> externalIds,
         @JsonProperty("jobStatuses") List<String> /*JobStatus*/ jobStatuses,
         @JsonProperty("lastActivityFrameId") List<String> lastActivityFrameIds,
         @JsonProperty("lastActivityTimestamp") List<String> lastActivityTimestamps) throws MpfInteropUsageException, DateTimeParseException {
 
-        // Error check, lastActivityTimestamp may not be a null
+        // Prep to do some usage error checking and construct the health reports using validated job parameters Lists.
+        Map<String,List> jobParameterMap = new HashMap<String,List>();
+        jobParameterMap.put("jobIds",jobIds);
+        jobParameterMap.put("externalIds",externalIds);
+        jobParameterMap.put("jobStatuses",jobStatuses);
+        jobParameterMap.put("lastActivityFrameIds",lastActivityFrameIds);
+        jobParameterMap.put("lastActivityTimestamps",lastActivityTimestamps);
+
+        // Do some error checking against the specified job parameters. First, make sure that none of the job parameter Lists are null.
+        // Second, make sure that the job parameter Lists are all the same size.
+        if ( jobParameterMap.values().stream().filter( v -> v == null ).count() > 0 ) {
+            // Found that at least one of the job parameter Lists passed to this method were null. Throw an exception which identifies the Lists that are null for the caller.
+            throw new MpfInteropUsageException("Error: the following Lists can't be null: " +
+                jobParameterMap.entrySet().stream().filter( m -> m.getValue()==null).map( m -> m.getKey()).collect(Collectors.joining(",")));
+        } else {
+            // all job parameters Lists should be the same size as the number of jobIds.
+            int numJobIds = jobIds.size();
+            if ( jobParameterMap.values().stream().filter( v -> v.size() != numJobIds ).count() > 0 ) {
+                // Throw an exception identifying for the caller the job parameter Lists whose size does not match the number of jobIds.
+                throw new MpfInteropUsageException("Error: the following Lists should be of size " + numJobIds +" but are not: " +
+                    jobParameterMap.entrySet().stream().filter( m ->  m.getValue().size() != numJobIds ).map( m -> m.getKey() ).collect(Collectors.joining(",")));
+            } else {
+
+                // If we get to here, then all job parameter Lists passed the error check. Construct this health report.
+                this.reportDate = parseStringAsLocalDateTime(reportDate);
+
+                // Add each job as a separate health report.
+                for ( int i=0; i<numJobIds; i++ ) {
+/*
+                    reports.add(new JsonHealthReportData (jobIds.get(i), externalIds.get(i), jobStatuses.get(i),
+                        lastActivityFrameIds.get(i), lastActivityTimestamps.get(i)));
+*/
+                    reports.add(new Report(jobIds.get(i), externalIds.get(i), jobStatuses.get(i),
+                        lastActivityFrameIds.get(i), lastActivityTimestamps.get(i)));
+
+                }
+            }
+        }
+
+ /*       // Error check, lastActivityTimestamp may not be a null
         if ( lastActivityTimestamps == null ) {
             throw new MpfInteropUsageException("Error, lastActivityTimestamp may not be null.");
         } else {
-            // Parse the datetime Strings as LocalDateTime, then use the other Constructor.
-            LocalDateTime healthReportDate = parseStringAsLocalDateTime(reportDate);
             // Note: need to handle possible checked exceptions MpfInteropUsageException or DateTimeParseException thrown in Lambda expression.
             try {
                 List<LocalDateTime> lastActivityTimestampList = lastActivityTimestamps.stream()
                     .map(timestamp -> {
                         try {
-                            return parseStringAsLocalDateTime(timestamp);
+                            if ( timestamp != null ) {
+                                return parseStringAsLocalDateTime(timestamp);
+                            } else {
+                                return null;
+                            }
                         } catch (MpfInteropUsageException | DateTimeParseException e) {
                             // Issue: in Java8, can only throw a checked Exception out of a lambda expression.
                             // Handle that here by throwing an unchecked Exception instead. The checked Exception will
@@ -264,7 +433,7 @@ public class JsonHealthReportDataCallbackBody {
                     }).collect(Collectors.toList());
 
                 // Call common method to create health reports for all specified jobs.
-                createJobHealthReports(healthReportDate, jobIds, externalIds, jobStatuses,
+                createJobHealthReports(reportDate, jobIds, externalIds, jobStatuses,
                     lastActivityFrameIds, lastActivityTimestampList);
 
             } catch (IllegalArgumentException e) {
@@ -275,6 +444,7 @@ public class JsonHealthReportDataCallbackBody {
                 throw new MpfInteropUsageException(e.getMessage(), e.getCause());
             }
         }
+*/
     }
 
     @JsonIgnore

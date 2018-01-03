@@ -79,7 +79,7 @@ public class JsonHealthReportData {
     private Long jobId;
     @JsonSetter
     public void setJobId(Long jobId) { this.jobId = jobId; }
-    @JsonIgnore
+    @JsonGetter
     public Long getJobId() { return jobId; }
 
     /** The external ID that was specified for this job when it was requested.
@@ -94,7 +94,7 @@ public class JsonHealthReportData {
             this.externalId = externalId;
         }
     }
-    @JsonIgnore
+    @JsonGetter("externalId")
     /**
      * @return Get the external ID that was specified for this job when it was requested. Value
      * will be an empty String if the externalId was not specified for this streaming job.
@@ -107,11 +107,11 @@ public class JsonHealthReportData {
         }
     }
 
-    private String jobStatus = null;
+    private String /*JobStatus*/ jobStatus = null;
     @JsonSetter("jobStatus")
     public void setJobStatus(String externalId) { this.jobStatus = jobStatus; }
-    @JsonIgnore
-    public String getJobStatus() { return jobStatus; }
+    @JsonGetter("jobStatus")
+    public String /*JobStatus*/ getJobStatus() { return jobStatus; }
 
     private String lastActivityFrameId = null;
     @JsonSetter("lastActivityFrameId")
@@ -130,22 +130,30 @@ public class JsonHealthReportData {
      * @return the last New Activity Alert frame id associated with this streaming job. Value will be null if
      * a New Activity Alert has not been issued for this streaming job.
      */
-    @JsonIgnore
+    @JsonGetter("lastActivityFrameId")
     public String getLastActivityFrameId() { return lastActivityFrameId; }
 
-    private LocalDateTime lastActivityTimestamp = null;
+    private String lastActivityTimestamp = null;
     /**
      * Get the timestamp from the last new Activity Alert received for this streaming job.
      * @return The last New Activity Alert timestamps for this streaming job. Value may be empty String if
      * a New Activity Alert has not been issued for this streaming job. Otherwise, the timestamp will be returned as a String
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value #TIMESTAMP_PATTERN}
      */
-    @JsonIgnore
-    public String getLastActivityTimeStampAsString() {
+    @JsonGetter("lastActivityTimestamp")
+    public String getLastActivityTimeStamp() {
         if ( lastActivityTimestamp == null ) {
             return "";
         } else {
-            return getLocalDateTimeAsString(lastActivityTimestamp);
+            return lastActivityTimestamp;
+        }
+    }
+    @JsonIgnore
+    public LocalDateTime getLastActivityTimeStampAsLocalDateTime() throws MpfInteropUsageException, DateTimeParseException {
+        if ( lastActivityTimestamp == null ) {
+            return null;
+        } else {
+            return parseStringAsLocalDateTime(lastActivityTimestamp);
         }
     }
 
@@ -157,12 +165,8 @@ public class JsonHealthReportData {
      * using the date/time pattern adhered to by OpenMPF.
      */
     @JsonSetter("lastActivityTimestamp")
-    public void setLastActivityTimestamp(String timestamp) throws MpfInteropUsageException, DateTimeParseException {
-        if (timestamp == null) {
-            lastActivityTimestamp = null;
-        } else {
-            lastActivityTimestamp = parseStringAsLocalDateTime(timestamp);
-        }
+    public void setLastActivityTimestamp(String timestamp) {
+        lastActivityTimestamp = timestamp;
     }
 
     /**
@@ -185,7 +189,11 @@ public class JsonHealthReportData {
         this.jobStatus = jobStatus;
         this.externalId = externalId;
         this.lastActivityFrameId = lastActivityFrameId;
-        this.lastActivityTimestamp = lastActivityTimestamp;
+        if ( lastActivityTimestamp != null ) {
+            this.lastActivityTimestamp = getLocalDateTimeAsString(lastActivityTimestamp);
+        } else {
+            this.lastActivityTimestamp = null;
+        }
     }
 
     /**
@@ -199,7 +207,7 @@ public class JsonHealthReportData {
      * a New Activity Alert has not yet been issued for this streaming job.
      */
     @JsonCreator
-    public JsonHealthReportData(@JsonProperty("jobId") long jobId, @JsonProperty("externalId") String externalId,
+    public JsonHealthReportData(@JsonProperty("jobId") Long jobId, @JsonProperty("externalId") String externalId,
         @JsonProperty("jobStatus") String /*JobStatus*/ jobStatus,
         @JsonProperty("lastActivityFrameId") String lastActivityFrameId,
         @JsonProperty("lastActivityTimestamp") String lastActivityTimestamp) throws MpfInteropUsageException {
@@ -208,14 +216,14 @@ public class JsonHealthReportData {
         this.jobStatus = jobStatus;
         this.externalId = externalId;
         this.lastActivityFrameId = lastActivityFrameId;
-        setLastActivityTimestamp(lastActivityTimestamp);
+        this.lastActivityTimestamp = lastActivityTimestamp;
     }
 
     @JsonIgnore
     public String toString() {
         return "jobId = " + getJobId() + ", externalId = " + getExternalId() +
             ", jobStatus = " + getJobStatus() + ", lastActivityFrameId = " + getLastActivityFrameId() +
-            ", lastActivityTimestamp = " + getLocalDateTimeAsString(lastActivityTimestamp);
+            ", lastActivityTimestamp = " + lastActivityTimestamp;
     }
 
 }

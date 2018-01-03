@@ -44,7 +44,7 @@ file(GLOB PROTO_FILES "${CMAKE_SOURCE_DIR}/protobuf/src/main/proto/*.proto")
 # this puts the generated files under build/protobufs
 PROTOBUF_GENERATE_CPP(MPF_PROTO_SRCS MPF_PROTO_HEADERS ${PROTO_FILES})
 
-add_library(mpfProtobufs SHARED ${MPF_PROTO_SRCS})
+add_library(mpfProtobufs STATIC ${MPF_PROTO_SRCS})
 target_link_libraries(mpfProtobufs ${Protobuf_LIBRARY})
 
 # include ourselves for building

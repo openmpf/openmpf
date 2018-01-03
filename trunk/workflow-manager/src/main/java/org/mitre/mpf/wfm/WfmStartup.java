@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm;
 
+import java.time.LocalDateTime;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.activemq.broker.jmx.BrokerViewMBean;
@@ -94,7 +95,7 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 
 	private ExecutorService executorService = null;
 
-	private ExecutorService healthReportExecutorService = null;
+	private ScheduledExecutorService healthReportExecutorService = null;
 
 	@Override
 	public void onApplicationEvent(ApplicationEvent event) {
@@ -127,12 +128,12 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 				purgeServerStartupSystemMessages();
 				startFileIndexing(appContext);
 				startupRegistrationService.registerUnregisteredComponents();
-                startHealthReportService();
+                startupHealthReportingService();
 				applicationRefreshed = true;
 			}
 		} else if (event instanceof ContextClosedEvent) {
 			stopFileIndexing();
-			stopHealthReportService();
+			stopHealthReportingService();
 		}
 	}
 
@@ -153,39 +154,37 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	}
 
 	// TODO, implement startHealthReportService using periodic executor. Using Scheduled annotation not working out because can't use PropertyUtils.
-	private void startHealthReportService() {
-/*
+	private void startupHealthReportingService() {
         healthReportExecutorService = Executors.newScheduledThreadPool(10);
         Runnable task = () -> {
             try {
-                TimeUnit.SECONDS.sleep(2);
-                System.out.println("Scheduling: " + System.nanoTime());
-            }
-            catch (InterruptedException e) {
-                System.err.println("task interrupted");
+                boolean isActive = true; // only send periodic health reports for streaming jobs that are current and active.
+                log.info("startupHealthReportingService: sending health report for active jobs at "+ LocalDateTime.now());
+                mpfService.sendStreamingJobHealthReports(isActive);
+            } catch (Exception e) {
+                log.error("startupHealthReportingService: Exception occurred while sending periodic health reports",e);
             }
         };
 
         healthReportExecutorService.scheduleWithFixedDelay(task, propertiesUtil.getHealthReportCallbackRate(),
             propertiesUtil.getHealthReportCallbackRate(), TimeUnit.MILLISECONDS);
-*/
 
     }
 
-    private void stopHealthReportService() {
+    private void stopHealthReportingService() {
 	    if ( healthReportExecutorService != null ) {
             try {
-                System.out.println("stopHealthReportService: attempt to shutdown healthReportExecutorService");
+                System.out.println("stopHealthReportingService: attempt to shutdown healthReportExecutorService");
                 healthReportExecutorService.shutdown();
                 healthReportExecutorService.awaitTermination(5, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                System.err.println("stopHealthReportService: healthReportExecutorService task interrupted");
+                System.err.println("stopHealthReportingService: healthReportExecutorService task interrupted");
             } finally {
                 if (!healthReportExecutorService.isTerminated()) {
-                    System.err.println("stopHealthReportService: cancel non-finished healthReportExecutorService tasks");
+                    System.err.println("stopHealthReportingService: cancel non-finished healthReportExecutorService tasks");
                 }
                 healthReportExecutorService.shutdownNow();
-                System.out.println("stopHealthReportService: healthReportExecutorService shutdown finished");
+                System.out.println("stopHealthReportingService: healthReportExecutorService shutdown finished");
             }
         }
     }

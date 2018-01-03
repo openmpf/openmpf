@@ -75,10 +75,11 @@ public class ITWebStreamingHealthReports {
 	private static ObjectMapper objectMapper = new ObjectMapper();
 	private static boolean registeredComponent = false;
 
-	private long healthReportPostJobId = -1L;
-	private boolean gotHealthReportPostResponse = false;
-	private JsonHealthReportDataCallbackBody healthReportPostCallbackBody = null;
-
+	private long healthReportPostJobId1 = -1L;
+    private long healthReportPostJobId2 = -1L;
+    private boolean gotHealthReportPostResponseForJob1 = false;
+    private boolean gotHealthReportPostResponseForJob2 = false;
+    private JsonHealthReportDataCallbackBody healthReportPostCallbackBody = null;
 
 	// run once
 	@BeforeClass
@@ -117,61 +118,94 @@ public class ITWebStreamingHealthReports {
 
 	@Test(timeout = 5 * MINUTES)
 	public void testPostHealthReportCallback() throws Exception {
-		String externalId = Integer.toString(701);
-
+		String externalId1 = Integer.toString(701);
+        String externalId2 = Integer.toString(702);
 		try {
 			log.info("Beginning testPostHealthReportCallback()");
 
 			setupSparkPost();
 
 			// Submit streaming job request with a POST callback
-			log.info("Creating a new Streaming Job for the POST test");
 			String createJobUrl = WebRESTUtils.REST_URL + "streaming/jobs";
 
-			// jobCreationResponseJson should be something like {"jobId":5, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
-			String jobCreationResponseJson = createStreamingJob(createJobUrl, PIPELINE_NAME, externalId, "POST");
+            log.info("Creating new Streaming Job #1 for the POST test");
+			// jobCreationResponseJson2 should be something like {"jobId":5, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
+			String jobCreationResponseJson1 = createStreamingJob(createJobUrl, PIPELINE_NAME, externalId1, "POST");
 
-			JSONObject obj = new JSONObject(jobCreationResponseJson);
-			healthReportPostJobId = Long.valueOf(obj.getInt("jobId"));
-			log.info("Streaming jobId " + healthReportPostJobId + " created with POST method, jobCreationResponse=" + jobCreationResponseJson);
+			JSONObject obj1 = new JSONObject(jobCreationResponseJson1);
+			healthReportPostJobId1 = Long.valueOf(obj1.getInt("jobId"));
+			log.info("Streaming job #1 with jobId " + healthReportPostJobId1 + " created with POST method, jobCreationResponse=" + jobCreationResponseJson1);
+
+            log.info("Creating new Streaming Job #2 for the POST test");
+            // jobCreationResponseJson2 should be something like {"jobId":6, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
+            String jobCreationResponseJson2 = createStreamingJob(createJobUrl, PIPELINE_NAME, externalId2, "POST");
+
+            JSONObject obj2 = new JSONObject(jobCreationResponseJson2);
+            healthReportPostJobId2 = Long.valueOf(obj2.getInt("jobId"));
+            log.info("Streaming job #2 with jobId " + healthReportPostJobId2 + " created with POST method, jobCreationResponse=" + jobCreationResponseJson2);
 
 			// Wait for a health report callback that includes the jobId of this test job.
 			// Health reports should periodically be sent every 30 seconds, unless reset in the mpf.properties file.
 			// Listen for at least one health report POST that includes our jobId.
-			while (!gotHealthReportPostResponse) {
+			while (!gotHealthReportPostResponseForJob1 && !gotHealthReportPostResponseForJob2) {
 				Thread.sleep(1000); // test will eventually timeout
 			}
 
-			log.info("Received a Spark POST response");
+			log.info("Received Spark POST responses for Jobs #1 and #2");
 
-			// Test to make sure the received health report is from the streaming job.
-			Assert.assertTrue(
-					healthReportPostCallbackBody.getJobIds().contains(Long.valueOf(healthReportPostJobId))
-							&& healthReportPostCallbackBody.getExternalIds().contains(externalId));
+			// Test to make sure the received health report is from the two streaming jobs.
+            Assert.assertTrue(
+                healthReportPostCallbackBody.getJobIds().contains(Long.valueOf(healthReportPostJobId1))
+                    && healthReportPostCallbackBody.getExternalIds().contains(externalId1));
+            Assert.assertTrue(
+                healthReportPostCallbackBody.getJobIds().contains(Long.valueOf(healthReportPostJobId2))
+                    && healthReportPostCallbackBody.getExternalIds().contains(externalId2));
 
-			// Wait until ready to attempt a streaming job cancellation.
-			String statusUrl = WebRESTUtils.REST_URL + "streaming/jobs/" + healthReportPostJobId;
-			StreamingJobInfo streamingJobInfo;
+			// Wait until ready to attempt streaming job cancellations.
+			String statusUrl1 = WebRESTUtils.REST_URL + "streaming/jobs/" + healthReportPostJobId1;
+			StreamingJobInfo streamingJobInfo1;
 			do {
-				String streamingJobInfoJson = WebRESTUtils.getJSON(new URL(statusUrl), WebRESTUtils.MPF_AUTHORIZATION);
-				streamingJobInfo = objectMapper.readValue(streamingJobInfoJson, StreamingJobInfo.class);
+				String streamingJobInfoJson1 = WebRESTUtils.getJSON(new URL(statusUrl1), WebRESTUtils.MPF_AUTHORIZATION);
+				streamingJobInfo1 = objectMapper.readValue(streamingJobInfoJson1, StreamingJobInfo.class);
 
 				// Check every three seconds
 				Thread.sleep(3000);
-			} while(streamingJobInfo == null); // test will eventually timeout
+			} while(streamingJobInfo1 == null); // test will eventually timeout
 
-			// After running the POST test, clear the streaming job from REDIS with doCleanup enabled.
+            String statusUrl2 = WebRESTUtils.REST_URL + "streaming/jobs/" + healthReportPostJobId2;
+            StreamingJobInfo streamingJobInfo2;
+            do {
+                String streamingJobInfoJson2 = WebRESTUtils.getJSON(new URL(statusUrl2), WebRESTUtils.MPF_AUTHORIZATION);
+                streamingJobInfo2 = objectMapper.readValue(streamingJobInfoJson2, StreamingJobInfo.class);
+
+                // Check every three seconds
+                Thread.sleep(3000);
+            } while(streamingJobInfo2 == null); // test will eventually timeout
+            
+            // After running the POST test, clear the streaming jobs from REDIS with doCleanup enabled.
 			List<NameValuePair> cancelParams = new ArrayList<NameValuePair>();
 			cancelParams.add(new BasicNameValuePair("doCleanup", "true"));
-			String cancelUrl = WebRESTUtils.REST_URL + "streaming/jobs/" + Long.toString(healthReportPostJobId) + "/cancel";
 
-			String jobCancelResponseJson = WebRESTUtils.postParams(new URL(cancelUrl), cancelParams, WebRESTUtils.MPF_AUTHORIZATION, 200);
-			StreamingJobCancelResponse jobCancelResponse = objectMapper.readValue(jobCancelResponseJson, StreamingJobCancelResponse.class);
+			String cancelUrl1 = WebRESTUtils.REST_URL + "streaming/jobs/" + Long.toString(healthReportPostJobId1) + "/cancel";
 
-			log.info("Finished POST test, cancelled streaming job:\n     " + jobCancelResponseJson);
+			String jobCancelResponseJson1 = WebRESTUtils.postParams(new URL(cancelUrl1), cancelParams, WebRESTUtils.MPF_AUTHORIZATION, 200);
+			StreamingJobCancelResponse jobCancelResponse1 = objectMapper.readValue(jobCancelResponseJson1, StreamingJobCancelResponse.class);
 
-			Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCancelResponse.getMpfResponse().getResponseCode());
-			Assert.assertTrue(jobCancelResponse.getDoCleanup());
+			log.info("Finished POST test, cancelled streaming job #1:\n     " + jobCancelResponseJson1);
+
+			Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCancelResponse1.getMpfResponse().getResponseCode());
+			Assert.assertTrue(jobCancelResponse1.getDoCleanup());
+
+            String cancelUrl2 = WebRESTUtils.REST_URL + "streaming/jobs/" + Long.toString(healthReportPostJobId2) + "/cancel";
+
+            String jobCancelResponseJson2 = WebRESTUtils.postParams(new URL(cancelUrl2), cancelParams, WebRESTUtils.MPF_AUTHORIZATION, 200);
+            StreamingJobCancelResponse jobCancelResponse2 = objectMapper.readValue(jobCancelResponseJson2, StreamingJobCancelResponse.class);
+
+            log.info("Finished POST test, cancelled streaming job #2:\n     " + jobCancelResponseJson2);
+
+            Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, jobCancelResponse2.getMpfResponse().getResponseCode());
+            Assert.assertTrue(jobCancelResponse2.getDoCleanup());
+
 		} finally {
 			Spark.stop();
 		}
@@ -191,16 +225,21 @@ public class ITWebStreamingHealthReports {
 					// The health report uses Java8 time, so we need to include the external JavaTimeModule which provides support for Java 8 Time.
 					jsonObjectMapper.registerModule(new JavaTimeModule());
 
-					healthReportPostCallbackBody = jsonObjectMapper.readValue(request.bodyAsBytes(), JsonHealthReportDataCallbackBody.class);
+                    healthReportPostCallbackBody = jsonObjectMapper.readValue(request.bodyAsBytes(), JsonHealthReportDataCallbackBody.class);
 
 					log.info("Converted to JsonHealthReportDataCallbackBody:\n     " + healthReportPostCallbackBody);
 
-					// If this health report includes the jobId for our POST test, then set indicator
+					// If this health report includes the jobIds for our POST test, then set the appropriate indicator
 					// that a health report sent using POST method has been received. Need to add this check
 					// to ensure a periodic health report sent prior to creation of our test job doesn't prematurely stop the test.
-					if (healthReportPostCallbackBody.getJobIds().contains(healthReportPostJobId)) {
-						gotHealthReportPostResponse = true;
+                    // Note that the health report might contain jobId of both streaming jobs, so we can't do an else test here.
+					if (healthReportPostCallbackBody.getJobIds().contains(healthReportPostJobId1)) {
+						gotHealthReportPostResponseForJob1 = true;
 					}
+                    if (healthReportPostCallbackBody.getJobIds().contains(healthReportPostJobId2)) {
+                        gotHealthReportPostResponseForJob2 = true;
+                    }
+
 				} catch (Exception e) {
 					log.error("Exception caught while processing health report POST callback.", e);
 					Assert.fail();

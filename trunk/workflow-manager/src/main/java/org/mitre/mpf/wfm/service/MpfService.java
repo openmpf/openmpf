@@ -186,6 +186,11 @@ public interface MpfService {
 	 * Gets the job ids of all of the StreamingJobRequest (streaming job) instances in the persistent data store.
 	 */
 	public List<Long> getAllStreamingJobIds();
+	/**
+	 * Gets the job ids of all of the StreamingJobRequest (streaming job) instances
+     * optionally restricted to active jobs (i.e. with job status not TERMINATED) in the persistent data store.
+	 */
+    public List<Long> getAllStreamingJobIds(boolean isActive);
 
 	public List<SystemMessage> getSystemMessagesByType(String filterbyType);
 

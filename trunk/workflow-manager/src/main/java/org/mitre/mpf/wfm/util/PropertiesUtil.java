@@ -557,28 +557,24 @@ public class PropertiesUtil {
 
 	// Define system properties specific to Streaming jobs
 
-    // Health report callback rate defaults to 30 seconds if system property is not set.
-    @Value("${streaming.healthReport.callbackRate:30000}")
-    private long healthReportCallbackRate;
-
+   @Value("${streaming.healthReport.callbackRate}")
+    private long streamingJobHealthReportCallbackRate;
     /**
      * Get the health report callback rate, in milliseconds
      * @return health report callback rate, in milliseconds
      */
-    public long getHealthReportCallbackRate() {
-        return healthReportCallbackRate;
+    public long getStreamingJobHealthReportCallbackRate() {
+        return streamingJobHealthReportCallbackRate;
     }
 
-    // Stall alert detection threshold defaults to 30 seconds if system property is not set.
-    @Value("${streaming.stallAlert.detectionThreshold:30000}")
-    private long stallAlertDetectionThreshold;
-
+    @Value("${streaming.stallAlert.detectionThreshold}")
+    private long streamingStallAlertDetectionThreshold;
     /**
      * Get the stall alert detection threshold, in milliseconds
      * @return stall alert detection threshold, in milliseconds
      */
-    public long getStallAlertDetectionThreshold() {
-        return stallAlertDetectionThreshold;
+    public long getStreamingStallAlertDetectionThreshold() {
+        return streamingStallAlertDetectionThreshold;
     }
 
 }

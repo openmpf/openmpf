@@ -841,7 +841,7 @@ public class RedisImpl implements Redis {
      * Returned value may be null if a health report or a New Activity Alert for this streaming job has not yet been sent.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job
      */
-    public synchronized String getHealthReportLastActivityFrameId(long jobId) throws WfmProcessingException {
+    public synchronized String getHealthReportLastActivityFrameIdAsString(long jobId) throws WfmProcessingException {
         if ( isJobTypeStreaming(jobId) ) {
             // confirmed that the specified job is a streaming job
             Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
@@ -853,13 +853,13 @@ public class RedisImpl implements Redis {
             throw new WfmProcessingException(errorMsg + " Only streaming jobs send health reports.");        }
     }
 
-    /** This method is the same as {@link #getHealthReportLastActivityFrameId(long)}, it's just adapted for use with Lists.
+    /** This method is the same as {@link #getHealthReportLastActivityFrameIdAsString(long)}, it's just adapted for use with Lists.
      * @param jobIds List of jobIds for streaming jobs
      * @return List of last new activity alert frame ids
      * @throws WfmProcessingException
      */
-    public synchronized List<String> getHealthReportLastActivityFrameIds(List<Long> jobIds) throws WfmProcessingException {
-        return jobIds.stream().map(jobId->getHealthReportLastActivityFrameId(jobId.longValue())).collect(Collectors.toList());
+    public synchronized List<String> getHealthReportLastActivityFrameIdAsStrings(List<Long> jobIds) throws WfmProcessingException {
+        return jobIds.stream().map(jobId->getHealthReportLastActivityFrameIdAsString(jobId.longValue())).collect(Collectors.toList());
     }
 
     /**

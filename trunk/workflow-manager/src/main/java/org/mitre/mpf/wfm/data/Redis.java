@@ -274,8 +274,8 @@ public interface Redis {
     boolean isJobTypeStreaming(final long jobId);
 
     void setHealthReportLastActivityFrameId(long jobId, String lastNewActivityAlertFrameId) throws WfmProcessingException;
-    String getHealthReportLastActivityFrameId(long jobId) throws WfmProcessingException;
-    List<String> getHealthReportLastActivityFrameIds(List<Long> jobIds) throws WfmProcessingException;
+    String getHealthReportLastActivityFrameIdAsString(long jobId) throws WfmProcessingException;
+    List<String> getHealthReportLastActivityFrameIdAsStrings(List<Long> jobIds) throws WfmProcessingException;
 
 	void setHealthReportLastActivityTimestamp(long jobId, LocalDateTime lastNewActivityAlertTimestamp) throws WfmProcessingException;
 	String getHealthReportLastActivityTimestampAsString(long jobId) throws WfmProcessingException;

@@ -106,7 +106,7 @@ public class HealthReportCallbackThread implements Runnable {
         log.info("HealthReportCallbackThread.sendHealthReportToCallback: posting health report containing jobIds=" + jobIds);
         List<String> externalIds = redis.getExternalIds(jobIds);
         List<String> jobStatuses = redis.getJobStatusesAsString(jobIds);
-        List<String> lastActivityFrameIds = redis.getHealthReportLastActivityFrameIds(jobIds);
+        List<String> lastActivityFrameIds = redis.getHealthReportLastActivityFrameIdAsStrings(jobIds);
         List<String> lastActivityTimestamps = redis.getHealthReportLastActivityTimestampAsStrings(jobIds);
 
         // Send the health report to the callback using POST.

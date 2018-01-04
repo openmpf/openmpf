@@ -731,7 +731,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             // While we are receiving the list of all job ids known to the system, some of these jobs may not be current streaming jobs in REDIS.
             // Reduce the List of jobIds to ony include streaming jobIds that are in REDIS. Optionally reduce that set to only include non-TERMINATED jobs.
             List<Long> currentActiveJobIds = redis.getCurrentStreamingJobs(jobIds, isActive );
-            log.info("StreamingJobRequestBoImpl.sendHealthReports: got list of all streaming currentActiveJobIds=" + currentActiveJobIds);
 
             // If there are no active jobs, no health reports will be sent.
             if ( currentActiveJobIds != null && !currentActiveJobIds.isEmpty() ) {

@@ -50,6 +50,7 @@ import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
 
+import org.mitre.mpf.wfm.enums.JobStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -285,17 +286,28 @@ public class MpfServiceImpl implements MpfService {
         return getAllStreamingJobRequests().stream().map(StreamingJobRequest::getId).collect(Collectors.toList());
 	}
 
+    /**
+     * Get the list of all streaming job ids from the long term database.
+     * @param isActive If true, then streaming jobs which have JobStatus of TERMINATED will be
+     * filtered out. Otherwise, all streaming jobs will be returned.
+     * @return list of all streaming job ids from the long term database.
+     */
+    @Override
+    public List<Long> getAllStreamingJobIds(boolean isActive) {
+        // use a Java8 stream to map the streaming job ids and collect them into a list,
+        return getAllStreamingJobRequests().stream().filter( request -> (request.getStatus() != JobStatus.TERMINATED) ).map(StreamingJobRequest::getId).collect(Collectors.toList());
+    }
+
 	/**
 	 * Send health report for all streaming jobs to the health report callback associated with each streaming job.
 	 * This method will just return if there are no streaming jobs.
-	 * TODO: should this method exclude streaming jobs where are marked as terminated?
 	 * @param isActive If true, then streaming jobs which have JobStatus of TERMINATED will be
 	 * filtered out. Otherwise, all current streaming jobs will be processed.
 	 * @throws WfmProcessingException thrown if an error occurs
 	 */
 	@Override
 	public void sendStreamingJobHealthReports(boolean isActive) throws WfmProcessingException {
-		List<Long> jobIds = getAllStreamingJobIds();
+		List<Long> jobIds = getAllStreamingJobIds(isActive);
         if ( jobIds != null && !jobIds.isEmpty() ) {
 			streamingJobRequestBo.sendHealthReports(jobIds, isActive);
 		}

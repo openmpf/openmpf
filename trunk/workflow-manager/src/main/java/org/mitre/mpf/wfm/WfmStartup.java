@@ -166,8 +166,8 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
             }
         };
 
-        healthReportExecutorService.scheduleWithFixedDelay(task, propertiesUtil.getHealthReportCallbackRate(),
-            propertiesUtil.getHealthReportCallbackRate(), TimeUnit.MILLISECONDS);
+        healthReportExecutorService.scheduleWithFixedDelay(task, propertiesUtil.getStreamingJobHealthReportCallbackRate(),
+            propertiesUtil.getStreamingJobHealthReportCallbackRate(), TimeUnit.MILLISECONDS);
 
     }
 

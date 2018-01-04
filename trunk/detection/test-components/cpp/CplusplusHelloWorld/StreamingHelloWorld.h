@@ -41,24 +41,23 @@
 class StreamingHelloWorld : public MPF::COMPONENT::MPFStreamingDetectionComponent {
 
 public:
+    explicit StreamingHelloWorld(const MPF::COMPONENT::MPFStreamingVideoJob &job);
+
     ~StreamingHelloWorld() override;
-
-    bool Init() override;
-
-    bool Close() override;
-
-    MPF::COMPONENT::MPFDetectionError SetupJob(const MPF::COMPONENT::MPFJob &job) override;
-
-    MPF::COMPONENT::MPFDetectionError ProcessFrame(const cv::Mat &frame, bool &activityFound) override;
-
-    MPF::COMPONENT::MPFDetectionError GetVideoTracks(std::vector< MPF::COMPONENT::MPFVideoTrack> &tracks) override;
 
     std::string GetDetectionType() override;
 
+    void BeginSegment(const MPF::COMPONENT::VideoSegmentInfo &segment_info) override;
+
+    bool ProcessFrame(const cv::Mat &frame, int frame_number) override;
+
+    std::vector<MPF::COMPONENT::MPFVideoTrack> EndSegment() override;
 
 private:
     log4cxx::LoggerPtr hw_logger_;
     std::string job_name_;
+
+    static log4cxx::LoggerPtr GetLogger(const std::string &run_directory);
 };
 
 

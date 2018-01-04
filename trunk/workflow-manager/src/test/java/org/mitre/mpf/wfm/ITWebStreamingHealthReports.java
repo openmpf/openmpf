@@ -151,7 +151,7 @@ public class ITWebStreamingHealthReports {
 				Thread.sleep(1000); // test will eventually timeout
 			}
 
-			log.info("Received Spark POST responses for Jobs #1 and #2");
+			log.info("Received Spark POST responses for Jobs #1 and #2, healthReportPostCallbackBody=" + healthReportPostCallbackBody);
 
 			// Test to make sure the received health report is from the two streaming jobs.
             Assert.assertTrue(

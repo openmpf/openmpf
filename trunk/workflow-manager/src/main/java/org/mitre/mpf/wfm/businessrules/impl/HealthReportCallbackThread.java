@@ -103,8 +103,6 @@ public class HealthReportCallbackThread implements Runnable {
         HttpUriRequest req = null;
 
         // Get other information from REDIS about these streaming jobs.
-        log.info("HealthReportCallbackThread.sendHealthReportToCallback: redis=" + redis);
-        log.info("HealthReportCallbackThread.sendHealthReportToCallback: jsonUtils=" + jsonUtils);
         log.info("HealthReportCallbackThread.sendHealthReportToCallback: posting health report containing jobIds=" + jobIds);
         List<String> externalIds = redis.getExternalIds(jobIds);
         List<String> jobStatuses = redis.getJobStatusesAsString(jobIds);

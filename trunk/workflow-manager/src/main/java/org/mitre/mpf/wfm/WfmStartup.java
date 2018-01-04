@@ -153,16 +153,16 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 		}
 	}
 
-	// TODO, implement startHealthReportService using periodic executor. Using Scheduled annotation not working out because can't use PropertyUtils.
+	// startupHealthReportingService uses a scheduled executor.
+    // Previous implementation which used a Scheduled annotation didn't working out because PropertyUtils could not be used.
 	private void startupHealthReportingService() {
         healthReportExecutorService = Executors.newScheduledThreadPool(10);
         Runnable task = () -> {
             try {
                 boolean isActive = true; // only send periodic health reports for streaming jobs that are current and active.
-                log.info("startupHealthReportingService: sending health report for active jobs at "+ LocalDateTime.now());
                 mpfService.sendStreamingJobHealthReports(isActive);
             } catch (Exception e) {
-                log.error("startupHealthReportingService: Exception occurred while sending periodic health reports",e);
+                log.error("startupHealthReportingService: Exception occurred while sending scheduled health report",e);
             }
         };
 

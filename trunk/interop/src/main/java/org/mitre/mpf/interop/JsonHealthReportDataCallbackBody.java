@@ -86,10 +86,28 @@ public class JsonHealthReportDataCallbackBody {
         private String lastActivityTimestamp = null;
 
         public Long getJobId() { return jobId; }
-        public String getExternalId() { return externalId; }
+        public String getExternalId() {
+            if ( externalId == null ) {
+                return "";
+            } else {
+                return externalId;
+            }
+        }
         public String getJobStatus() { return jobStatus; }
-        public String getLastActivityFrameId() { return lastActivityFrameId; }
-        public String getLastActivityTimestamp() { return lastActivityTimestamp; }
+        public String getLastActivityFrameId() {
+            if ( lastActivityFrameId == null ) {
+                return "";
+            } else {
+                return lastActivityFrameId;
+            }
+        }
+        public String getLastActivityTimestamp() {
+            if ( lastActivityTimestamp == null ) {
+                return "";
+            } else {
+                return lastActivityTimestamp;
+            }
+        }
 
         @JsonCreator
         public Report(@JsonProperty("jobId") Long jobId, @JsonProperty("externalId") String externalId,
@@ -102,6 +120,11 @@ public class JsonHealthReportDataCallbackBody {
             this.externalId = externalId;
             this.lastActivityFrameId = lastActivityFrameId;
             this.lastActivityTimestamp = lastActivityTimestamp;
+        }
+
+        public String toString() {
+            return "jobId=" + getJobId() + ", externalId=" + getExternalId() + ", jobStatus=" + getJobStatus() +
+                   ", lastActivityFrameId=" + getLastActivityFrameId() + ", lastActivityTimestamp=" + getLastActivityTimestamp();
         }
     }
 
@@ -150,14 +173,7 @@ public class JsonHealthReportDataCallbackBody {
      **/
     @JsonIgnore
     public List<String> getExternalIds() {
-        return reports.stream().map(report -> {
-            String externalId = report.getExternalId();
-            if ( externalId == null ) {
-                return "";
-            } else {
-                return externalId;
-            }
-        }).collect(Collectors.toList()); }
+        return reports.stream().map(report -> report.getExternalId()).collect(Collectors.toList()); }
 
     /**
      * The frame ids from the last new Activity Alerts received for each streaming job in this health report.
@@ -167,13 +183,7 @@ public class JsonHealthReportDataCallbackBody {
      * a New Activity Alert has not been issued for a streaming job.
      */
     @JsonIgnore
-    public List<String> getLastActivityFrameIds() { return reports.stream().map(report -> {
-        String frameId = report.getLastActivityFrameId();
-        if ( frameId == null ) {
-            return "";
-        } else {
-            return frameId;
-        }}).collect(Collectors.toList()); }
+    public List<String> getLastActivityFrameIds() { return reports.stream().map(report -> report.getLastActivityFrameId()).collect(Collectors.toList()); }
 
     /**
      * Get the timestamp from the last new Activity Alert received for each streaming job in this health report.
@@ -183,14 +193,7 @@ public class JsonHealthReportDataCallbackBody {
      */
     @JsonIgnore
     public List<String> getLastActivityTimestamps() {
-        return reports.stream().map(report -> {
-            String timestamp = report.getLastActivityTimestamp();
-            if ( timestamp == null ) {
-                return "";
-            } else {
-                return timestamp;
-            }
-        }).collect(Collectors.toList());
+        return reports.stream().map(report -> report.getLastActivityTimestamp()).collect(Collectors.toList());
     }
 
     /**

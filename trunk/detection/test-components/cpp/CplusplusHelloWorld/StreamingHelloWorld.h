@@ -35,7 +35,7 @@
 #include <log4cxx/logger.h>
 
 #include <MPFComponentInterface.h>
-#include <MPFDetectionComponent.h>
+#include <MPFStreamingDetectionComponent.h>
 
 
 class StreamingHelloWorld : public MPF::COMPONENT::MPFStreamingDetectionComponent {

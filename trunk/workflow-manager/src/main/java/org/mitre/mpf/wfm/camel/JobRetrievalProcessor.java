@@ -57,14 +57,14 @@ public class JobRetrievalProcessor extends WfmProcessor {
 		// Retrieve the batch or streaming job from the transient data store. Note that we don't know
 		// just from the jobId, whether or not the job is a batch job or a streaming job.  Check with
 		// REDIS to get this information
-		if ( redis.isJobTypeBatch(Long.valueOf(jobId)) ) {
+		if ( redis.isJobTypeBatch(jobId) ) {
 			TransientJob transientJob = redis.getJob(jobId);
 			assert transientJob != null : String.format("A batch job with id %d could not be found.", jobId);
 
 			// Serialize the transient batch job and assign it to the body of the outgoing message.
 			byte[] binaryJson = jsonUtils.serialize(transientJob);
 			exchange.getOut().setBody(binaryJson);
-		} else if ( redis.isJobTypeStreaming(Long.valueOf(jobId)) ) {
+		} else if ( redis.isJobTypeStreaming(jobId) ) {
 			TransientStreamingJob transientStreamingJob = redis.getStreamingJob(jobId);
 			assert transientStreamingJob != null : String.format("A streaming job with id %d could not be found.", jobId);
 

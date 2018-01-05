@@ -26,9 +26,21 @@
 
 package org.mitre.mpf.wfm;
 
-import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import javax.management.MBeanServerConnection;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.ObjectName;
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.remote.JMXServiceURL;
+import javax.servlet.ServletContext;
 import org.apache.activemq.broker.jmx.BrokerViewMBean;
 import org.apache.activemq.broker.jmx.QueueViewMBean;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
@@ -37,8 +49,8 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.service.component.StartupComponentRegistrationService;
 import org.mitre.mpf.wfm.service.ServerMediaService;
+import org.mitre.mpf.wfm.service.component.StartupComponentRegistrationService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,20 +63,6 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
-
-import javax.management.MBeanServerConnection;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
-import javax.management.remote.JMXConnector;
-import javax.management.remote.JMXConnectorFactory;
-import javax.management.remote.JMXServiceURL;
-import javax.servlet.ServletContext;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Component
 public class WfmStartup implements ApplicationListener<ApplicationEvent> {
@@ -93,7 +91,7 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	// used to prevent the initialization behaviors from being executed more than once
 	private static boolean applicationRefreshed = false;
 
-	private ExecutorService executorService = null;
+	private ExecutorService fileIndexExecutorService = null;
 
 	private ScheduledExecutorService healthReportExecutorService = null;
 
@@ -141,22 +139,21 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 		if (appContext instanceof WebApplicationContext) {
 			WebApplicationContext webContext = (WebApplicationContext) appContext;
 			ServletContext servletContext = webContext.getServletContext();
-			executorService = Executors.newSingleThreadExecutor();
-			executorService.execute(() -> serverMediaService.getFiles(propertiesUtil.getServerMediaTreeRoot(), servletContext, true, true));
-			executorService.shutdown(); // will run all tasks before shutdown
+			fileIndexExecutorService = Executors.newSingleThreadExecutor();
+			fileIndexExecutorService.execute(() -> serverMediaService.getFiles(propertiesUtil.getServerMediaTreeRoot(), servletContext, true, true));
+			fileIndexExecutorService.shutdown(); // will run all tasks before shutdown
 		}
 	}
 
 	private void stopFileIndexing() {
-		if (executorService != null) {
-			executorService.shutdownNow();
+		if (fileIndexExecutorService != null) {
+			fileIndexExecutorService.shutdownNow();
 		}
 	}
 
 	// startupHealthReportingService uses a scheduled executor.
-    // Previous implementation which used a Scheduled annotation didn't working out because PropertyUtils could not be used.
 	private void startupHealthReportingService() {
-        healthReportExecutorService = Executors.newScheduledThreadPool(10);
+        healthReportExecutorService = Executors.newSingleThreadScheduledExecutor();
         Runnable task = () -> {
             try {
                 boolean isActive = true; // only send periodic health reports for streaming jobs that are current and active.
@@ -174,17 +171,17 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
     private void stopHealthReportingService() {
 	    if ( healthReportExecutorService != null ) {
             try {
-                System.out.println("stopHealthReportingService: attempt to shutdown healthReportExecutorService");
+                log.info("stopHealthReportingService: attempt to shutdown healthReportExecutorService");
                 healthReportExecutorService.shutdown();
                 healthReportExecutorService.awaitTermination(5, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                System.err.println("stopHealthReportingService: healthReportExecutorService task interrupted");
+                log.error("stopHealthReportingService: healthReportExecutorService task interrupted",e);
             } finally {
                 if (!healthReportExecutorService.isTerminated()) {
-                    System.err.println("stopHealthReportingService: cancel non-finished healthReportExecutorService tasks");
+                    log.info("stopHealthReportingService: cancel non-finished healthReportExecutorService tasks");
                 }
                 healthReportExecutorService.shutdownNow();
-                System.out.println("stopHealthReportingService: healthReportExecutorService shutdown finished");
+                log.info("stopHealthReportingService: healthReportExecutorService shutdown finished");
             }
         }
     }

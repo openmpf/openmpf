@@ -26,14 +26,28 @@
 
 package org.mitre.mpf.wfm.data;
 
-import java.math.BigInteger;
+import java.io.File;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
@@ -44,10 +58,6 @@ import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-import java.io.File;
-import java.util.*;
 
 @Component(RedisImpl.REF)
 public class RedisImpl implements Redis {
@@ -1086,25 +1096,25 @@ public class RedisImpl implements Redis {
      * streaming jobs,
      *
      * @param jobIds List of job ids to check against REDIS.
-     * @param isActive If true, then streaming jobs which have JobStatus of TERMINATED will be
+     * @param isActive If true, then streaming jobs which have terminal JobStatus will be
      * filtered out. Otherwise, all current streaming jobs will be returned.
      * @return subset of jobIds that are listed as streaming jobs in REDIS, optionally reduced by
-     * TERMINATED JobStatus. List may be empty if there are no streaming jobs in REDIS.
+     * terminal JobStatus. List may be empty if there are no streaming jobs which satisfy conditions in REDIS.
      */
     public List<Long> getCurrentStreamingJobs(List<Long> jobIds, boolean isActive ) {
 
         // While we are receiving the list of all job ids known to OpenMPF, some of these jobs may not be currently active in REDIS.
         // Reduce the List of jobIds to only include jobIds that are in REDIS.
-        // If the isActive flag is true, then additionally reduce to only those streaming jobs that do not have jobStatus TERMINATED.
-        List<Long> currentStreamingJobIds = null;
-        if ( isActive ) {
-            currentStreamingJobIds = jobIds.stream().filter(jobId -> isJobTypeStreaming(jobId))
-                .filter(jobId -> getJobStatus(jobId) != JobStatus.TERMINATED)
-                .collect(Collectors.toList());
-        } else {
-            currentStreamingJobIds = jobIds.stream().filter(jobId -> isJobTypeStreaming(jobId))
-                .collect(Collectors.toList());
-        }
+        // If the isActive flag is true, then additionally reduce to only those streaming jobs that do not have terminal jobStatus.
+        List<Long> currentStreamingJobIds = jobIds.stream().filter(jobId -> isJobTypeStreaming(jobId))
+            .filter(jobId -> {
+                if ( isActive ) {
+                    return !getJobStatus(jobId).isTerminal(); // include only those jobs that do not have terminal jobStatus.
+                } else {
+                    return true; // include all jobs.
+                }
+            }).collect(Collectors.toList());
+
         return currentStreamingJobIds;
     }
 

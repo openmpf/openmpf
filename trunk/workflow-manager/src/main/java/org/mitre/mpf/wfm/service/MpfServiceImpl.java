@@ -26,38 +26,37 @@
 
 package org.mitre.mpf.wfm.service;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
-import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
+import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.AtmosphereChannel;
+import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.businessrules.JobRequestBo;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
+import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
+import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.SystemMessageDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
-import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateSystemMessageDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-import org.mitre.mpf.wfm.businessrules.JobRequestBo;
-import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
-import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
-import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
-import org.mitre.mpf.wfm.WfmProcessingException;
-
-import org.mitre.mpf.wfm.enums.JobStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
 
 @Service
 public class MpfServiceImpl implements MpfService {
@@ -288,14 +287,20 @@ public class MpfServiceImpl implements MpfService {
 
     /**
      * Get the list of all streaming job ids from the long term database.
-     * @param isActive If true, then streaming jobs which have JobStatus of TERMINATED will be
+     * @param isActive If true, then streaming jobs which have terminal JobStatus will be
      * filtered out. Otherwise, all streaming jobs will be returned.
      * @return list of all streaming job ids from the long term database.
      */
     @Override
     public List<Long> getAllStreamingJobIds(boolean isActive) {
-        // use a Java8 stream to map the streaming job ids and collect them into a list,
-        return getAllStreamingJobRequests().stream().filter( request -> (request.getStatus() != JobStatus.TERMINATED) ).map(StreamingJobRequest::getId).collect(Collectors.toList());
+        // use a Java8 stream to map the streaming job ids (filtered by terminal status if isActive is enabled) and collect them into a list,
+        return getAllStreamingJobRequests().stream().filter( request -> {
+            if (isActive) {
+                return !request.getStatus().isTerminal(); // include only jobs which have non-terminal status
+            } else {
+                return true; // include all jobs
+            }
+        }).map(StreamingJobRequest::getId).collect(Collectors.toList());
     }
 
 	/**

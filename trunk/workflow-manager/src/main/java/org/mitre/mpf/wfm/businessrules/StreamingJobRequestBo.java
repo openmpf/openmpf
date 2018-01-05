@@ -28,15 +28,14 @@ package org.mitre.mpf.wfm.businessrules;
 
 
 import java.util.List;
-import org.mitre.mpf.interop.JsonStreamingJobRequest;
+import java.util.Map;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
+import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-
-import java.util.Map;
 
 public interface StreamingJobRequestBo {
 

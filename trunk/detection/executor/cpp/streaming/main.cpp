@@ -46,11 +46,15 @@
 #include "JobSettings.h"
 #include "BasicAmqMessageSender.h"
 #include "ExitCodes.h"
+#include "InternalComponentError.h"
 
 
 using namespace MPF;
 using namespace COMPONENT;
 
+
+int run_job(const std::string &ini_path);
+int run_job(const JobSettings &settings, const std::string &app_dir, log4cxx::LoggerPtr &logger);
 
 std::string get_app_dir();
 log4cxx::LoggerPtr get_logger(const std::string &app_dir);
@@ -61,102 +65,107 @@ int main(int argc, char* argv[]) {
         std::cerr << "Usage: " << argv[0] << " <ini_path>" << std::endl;
         return ExitCodes::InvalidCommandLineArgs;
     }
+    return run_job(argv[1]);
+}
 
-    log4cxx::LoggerPtr logger;
+
+int run_job(const std::string &ini_path) {
+    std::string app_dir = get_app_dir();
+    log4cxx::LoggerPtr logger = get_logger(app_dir);
     std::string log_prefix;
     try {
-        std::string app_dir = get_app_dir();
-
-        logger = get_logger(app_dir);
-
-        LOG4CXX_INFO(logger, "Loading job settings from: " << argv[1]);
-        JobSettings settings = JobSettings::FromIniFile(argv[1]);
-
-        std::string job_name = "Streaming Job #" + std::to_string(settings.job_id);
-        LOG4CXX_INFO(logger, "Initializing " << job_name);
-        MPFStreamingVideoJob job(job_name, settings.stream_uri, settings.job_properties, settings.media_properties);
-
-        log_prefix = "[" + job_name + "] ";
-
-
-        BasicAmqMessageSender sender(settings);
-
-
-        LOG4CXX_INFO(logger, log_prefix << "Loading component from: " << settings.component_lib_path);
-        StreamingComponentHandle component(settings.component_lib_path, app_dir, job);
-        std::string detection_type = component.GetDetectionType();
-
-        LOG4CXX_INFO(logger, log_prefix << "Connecting to stream at: " << settings.stream_uri)
-        cv::VideoCapture video_capture(settings.stream_uri);
-        if (!video_capture.isOpened()) {
-            LOG4CXX_ERROR(logger, log_prefix << "Unable to connect to stream: " << settings.segment_size);
-            return ExitCodes::UnableToOpenStream;
-        }
-
-        QuitWatcher quit_watcher;
-        bool read_failed = false;
-
-        int frame_id = -1;
-        while (!quit_watcher.IsTimeToQuit()) {
-            cv::Mat frame;
-            if (!video_capture.read(frame)) {
-                read_failed = true;
-                break;
-            }
-            frame_id++;
-
-            bool activity_found = false;
-            component.ProcessFrame(frame, activity_found);
-            if (activity_found) {
-                LOG4CXX_DEBUG(logger, log_prefix << "Sending new activity alert for frame: " << frame_id)
-                sender.SendActivityAlert(frame_id);
-            }
-
-            if (frame_id != 0 && (frame_id % settings.segment_size == 0)) {
-                std::vector<MPFVideoTrack> tracks;
-                MPFDetectionError rc = component.GetVideoTracks(tracks);
-                LOG4CXX_DEBUG(logger, log_prefix << "Sending segment summary for " << tracks.size() << " tracks.")
-                sender.SendSummaryReport(frame_id, detection_type, rc, tracks);
-            }
-        }
-
-        if (frame_id % settings.segment_size != 0) {
-            std::vector<MPFVideoTrack> tracks;
-            MPFDetectionError rc = component.GetVideoTracks(tracks);
-            LOG4CXX_INFO(logger, log_prefix << "Send segment summary for final segment.")
-            sender.SendSummaryReport(frame_id, detection_type, rc, tracks);
-        }
-
-        if (quit_watcher.IsTimeToQuit() && !quit_watcher.HasError()) {
-            LOG4CXX_INFO(logger, log_prefix << "Exiting normally because quit was requested.")
-            return 0;
-        }
-
-        if (quit_watcher.HasError()) {
-            LOG4CXX_ERROR(logger, log_prefix << "Exiting due to an error while trying to read from standard in.")
-            return ExitCodes::UnexpectedError;
-        }
-
-        if (read_failed) {
-            LOG4CXX_INFO(logger, log_prefix << "Exiting because it is no longer possible to read frames.")
-            return ExitCodes::StreamNoLongerReadable;
-        }
-        return 0;
+        LOG4CXX_INFO(logger, "Loading job settings from: " << ini_path);
+        JobSettings settings = JobSettings::FromIniFile(ini_path);
+        log_prefix = "[Streaming Job #" + std::to_string(settings.job_id) + "] ";
+        return run_job(settings, app_dir, logger);
+    }
+    catch (const InternalComponentError &ex) {
+        LOG4CXX_ERROR(logger, log_prefix << "Exiting due to internal component error: " << ex.what());
+        return ExitCodes::InternalComponentError;
     }
     catch (const std::exception &ex) {
-        std::cerr << log_prefix << "Exiting due to error: " << ex.what() << std::endl;
-        if (logger != nullptr) {
-            LOG4CXX_ERROR(logger, log_prefix << "Exiting due to error: " << ex.what());
-        }
+        LOG4CXX_ERROR(logger, log_prefix << "Exiting due to error: " << ex.what());
         return ExitCodes::UnexpectedError;
     }
     catch (...) {
-        std::cerr << log_prefix << "Exiting due to error." << std::endl;
-        if (logger != nullptr) {
-            LOG4CXX_ERROR(logger, log_prefix << "Exiting due to error.");
-        }
+        LOG4CXX_ERROR(logger, log_prefix << "Exiting due to error.");
         return ExitCodes::UnexpectedError;
     }
+}
+
+
+int run_job(const JobSettings &settings, const std::string &app_dir, log4cxx::LoggerPtr &logger) {
+    std::string job_name = "Streaming Job #" + std::to_string(settings.job_id);
+    LOG4CXX_INFO(logger, "Initializing " << job_name);
+    MPFStreamingVideoJob job(job_name, app_dir + "/../plugins/", settings.job_properties, settings.media_properties);
+
+    std::string log_prefix = "[" + job_name + "] ";
+
+    BasicAmqMessageSender sender(settings);
+
+
+    LOG4CXX_INFO(logger, log_prefix << "Loading component from: " << settings.component_lib_path);
+    StreamingComponentHandle component(settings.component_lib_path, job);
+    std::string detection_type = component.GetDetectionType();
+
+    LOG4CXX_INFO(logger, log_prefix << "Connecting to stream at: " << settings.stream_uri)
+    cv::VideoCapture video_capture(settings.stream_uri);
+    if (!video_capture.isOpened()) {
+        LOG4CXX_ERROR(logger, log_prefix << "Unable to connect to stream: " << settings.stream_uri);
+        return ExitCodes::UnableToOpenStream;
+    }
+
+    QuitWatcher quit_watcher;
+    bool read_failed = false;
+
+    int frame_id = -1;
+    while (!quit_watcher.IsTimeToQuit()) {
+        cv::Mat frame;
+        if (!video_capture.read(frame)) {
+            read_failed = true;
+            break;
+        }
+        frame_id++;
+
+        if (frame_id % settings.segment_size == 0) {
+            component.BeginSegment({frame_id / settings.segment_size, frame_id, frame_id + settings.segment_size});
+        }
+
+        bool activity_found = component.ProcessFrame(frame, frame_id);
+        if (activity_found) {
+            LOG4CXX_DEBUG(logger, log_prefix << "Sending new activity alert for frame: " << frame_id)
+            sender.SendActivityAlert(frame_id);
+        }
+
+        if (frame_id != 0 && (frame_id % settings.segment_size == 0)) {
+            const std::vector<MPFVideoTrack> &tracks = component.EndSegment();
+            LOG4CXX_DEBUG(logger, log_prefix << "Sending segment summary for " << tracks.size() << " tracks.")
+            sender.SendSummaryReport(frame_id, detection_type, MPF_DETECTION_SUCCESS, tracks);
+        }
+    }
+
+    if (frame_id % settings.segment_size != 0) {
+        const std::vector<MPFVideoTrack> &tracks = component.EndSegment();
+        LOG4CXX_INFO(logger, log_prefix << "Send segment summary for final segment.")
+        sender.SendSummaryReport(frame_id, detection_type, MPF_DETECTION_SUCCESS, tracks);
+    }
+
+    if (quit_watcher.IsTimeToQuit() && !quit_watcher.HasError()) {
+        LOG4CXX_INFO(logger, log_prefix << "Exiting normally because quit was requested.")
+        return 0;
+    }
+
+    if (quit_watcher.HasError()) {
+        LOG4CXX_ERROR(logger, log_prefix << "Exiting due to an error while trying to read from standard in.")
+        return ExitCodes::UnexpectedError;
+    }
+
+    if (read_failed) {
+        LOG4CXX_INFO(logger, log_prefix << "Exiting because it is no longer possible to read frames.")
+        return ExitCodes::StreamNoLongerReadable;
+    }
+    return 0;
+
 }
 
 
@@ -175,6 +184,7 @@ std::string get_app_dir() {
     }
     return exe_path;
 }
+
 
 log4cxx::LoggerPtr get_logger(const std::string &app_dir) {
     log4cxx::xml::DOMConfigurator::configure(app_dir + "/../config/StreamingExecutorLog4cxxConfig.xml");

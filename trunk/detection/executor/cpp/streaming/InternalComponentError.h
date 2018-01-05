@@ -25,21 +25,19 @@
  ******************************************************************************/
 
 
-#ifndef MPF_EXITCODES_H
-#define MPF_EXITCODES_H
+#ifndef MPF_INTERNALCOMPONENTERROR_H
+#define MPF_INTERNALCOMPONENTERROR_H
 
-namespace MPF { namespace COMPONENT {
+#include <stdexcept>
 
-    namespace ExitCodes {
-        const int UnexpectedError = 1;
-        const int InvalidCommandLineArgs = 2;
+class InternalComponentError : public std::runtime_error {
 
-        const int InternalComponentError = 70;
-        const int UnableToOpenStream = 75;
-        const int StreamNoLongerReadable = 76;
-    }
+public:
+    InternalComponentError(const std::string &method_name, const std::string &cause);
 
-}}
+    explicit InternalComponentError(const std::string &method_name);
+
+};
 
 
-#endif //MPF_EXITCODES_H
+#endif //MPF_INTERNALCOMPONENTERROR_H

@@ -25,21 +25,16 @@
  ******************************************************************************/
 
 
-#ifndef MPF_EXITCODES_H
-#define MPF_EXITCODES_H
+#include "InternalComponentError.h"
 
-namespace MPF { namespace COMPONENT {
+InternalComponentError::InternalComponentError(const std::string &method_name, const std::string &cause)
+        : std::runtime_error(
+            "The loaded component threw an exception while executing its \"" + method_name +"\" method: " + cause) {
 
-    namespace ExitCodes {
-        const int UnexpectedError = 1;
-        const int InvalidCommandLineArgs = 2;
+}
 
-        const int InternalComponentError = 70;
-        const int UnableToOpenStream = 75;
-        const int StreamNoLongerReadable = 76;
-    }
-
-}}
-
-
-#endif //MPF_EXITCODES_H
+InternalComponentError::InternalComponentError(const std::string &method_name)
+        : runtime_error(
+            "The loaded component threw an object that does not derive from std::exception while executing its \""
+            + method_name + " method.") {
+}

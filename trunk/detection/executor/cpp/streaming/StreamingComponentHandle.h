@@ -36,39 +36,38 @@
 
 #include <dlfcn.h>
 
-#include <MPFDetectionComponent.h>
+#include <MPFStreamingDetectionComponent.h>
 
 
 namespace MPF { namespace COMPONENT {
 
     class StreamingComponentHandle {
     public:
-        StreamingComponentHandle(const std::string &lib_path, const std::string &app_dir,
-                                 const MPFStreamingVideoJob &job);
-
-        MPFComponentType GetComponentType();
-
-        bool Supports(MPFDetectionDataType data_type);
+        StreamingComponentHandle(const std::string &lib_path, const MPFStreamingVideoJob &job);
 
         std::string GetDetectionType();
 
-        MPFDetectionError ProcessFrame(const cv::Mat &frame, bool &activityFound);
+        void BeginSegment(const VideoSegmentInfo &segment_info);
 
-        MPFDetectionError GetVideoTracks(std::vector<MPFVideoTrack> &tracks);
+        bool ProcessFrame(const cv::Mat &frame, int frame_number);
+
+        std::vector<MPFVideoTrack> EndSegment();
 
 
     private:
         using loaded_component_t
-            = std::unique_ptr<MPFStreamingDetectionComponent, std::function<void(MPFStreamingDetectionComponent*)>>;
+            = std::unique_ptr<MPFStreamingDetectionComponent, void(*)(MPFStreamingDetectionComponent*)>;
 
         std::unique_ptr<void, decltype(&dlclose)> lib_handle_;
 
         loaded_component_t loaded_component_;
 
-        static loaded_component_t LoadComponent(void* lib_handle);
+        static loaded_component_t LoadComponent(void* lib_handle, const MPFStreamingVideoJob &job);
 
         template <typename TFunc>
         static TFunc* LoadFunction(void* lib_handle, const char * symbol_name);
+
+        [[noreturn]] static void WrapComponentException(const std::string &component_method);
     };
 
 }}

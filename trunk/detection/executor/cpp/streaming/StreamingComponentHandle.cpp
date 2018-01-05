@@ -26,41 +26,39 @@
 
 #include <dlfcn.h>
 #include "StreamingComponentHandle.h"
+#include "InternalComponentError.h"
 
 namespace MPF { namespace COMPONENT {
 
     StreamingComponentHandle::StreamingComponentHandle(const std::string &lib_path,
-                                                       const std::string &app_dir,
                                                        const MPFStreamingVideoJob &job)
             : lib_handle_(dlopen(lib_path.c_str(), RTLD_NOW), dlclose)
-            , loaded_component_(LoadComponent(lib_handle_.get())) {
-
-        loaded_component_->SetRunDirectory(app_dir + "/../plugins");
-        bool init_success = loaded_component_->Init();
-        if (!init_success) {
-            throw std::runtime_error("The loaded component's Init method failed.");
-        }
-        loaded_component_->SetupJob(job);
+            , loaded_component_(LoadComponent(lib_handle_.get(), job)) {
     }
 
 
-    StreamingComponentHandle::loaded_component_t StreamingComponentHandle::LoadComponent(void *lib_handle) {
+    StreamingComponentHandle::loaded_component_t StreamingComponentHandle::LoadComponent(
+            void *lib_handle, const MPFStreamingVideoJob &job) {
+
         if (lib_handle == nullptr) {
             throw std::runtime_error(std::string("Failed to open component library: ") + dlerror());
         }
 
         auto create_component_fn
-                = LoadFunction<MPFStreamingDetectionComponent* ()>(lib_handle, "component_creator");
-        auto delete_component_fn
-                = LoadFunction<void (MPFStreamingDetectionComponent*)>(lib_handle, "component_deleter");
+                = LoadFunction<MPFStreamingDetectionComponent* (const MPFStreamingVideoJob*)>(
+                        lib_handle, "streaming_component_creator");
 
-        loaded_component_t loaded_component(create_component_fn(),
-                                            [delete_component_fn](MPFStreamingDetectionComponent *component)
-                                            {
-                                                component->Close();
-                                                delete_component_fn(component);
-                                            }
-        );
+        auto delete_component_fn
+                = LoadFunction<void (MPFStreamingDetectionComponent*)>(lib_handle, "streaming_component_deleter");
+
+
+        loaded_component_t loaded_component(nullptr, delete_component_fn);
+        try {
+            loaded_component = { create_component_fn(&job),  delete_component_fn};
+        }
+        catch (...) {
+            WrapComponentException("constructor");
+        }
 
         if (loaded_component == nullptr) {
             throw std::runtime_error("Failed to load component because the component_creator function returned null.");
@@ -79,24 +77,55 @@ namespace MPF { namespace COMPONENT {
     }
 
 
-    MPFComponentType StreamingComponentHandle::GetComponentType() {
-        return loaded_component_->GetComponentType();
-    }
-
-    bool StreamingComponentHandle::Supports(MPFDetectionDataType data_type) {
-        return loaded_component_->Supports(data_type);
-    }
-
     std::string StreamingComponentHandle::GetDetectionType() {
-        return loaded_component_->GetDetectionType();
+        try {
+            return loaded_component_->GetDetectionType();
+        }
+        catch (...) {
+            WrapComponentException("GetDetectionType");
+        }
     }
 
-    MPFDetectionError StreamingComponentHandle::ProcessFrame(const cv::Mat &frame, bool &activityFound) {
-        return loaded_component_->ProcessFrame(frame, activityFound);
+
+    void StreamingComponentHandle::BeginSegment(const VideoSegmentInfo &segment_info) {
+        try {
+            loaded_component_->BeginSegment(segment_info);
+        }
+        catch (...) {
+            WrapComponentException("BeginSegment");
+        }
     }
 
-    MPFDetectionError StreamingComponentHandle::GetVideoTracks(std::vector<MPFVideoTrack> &tracks) {
-        return loaded_component_->GetVideoTracks(tracks);
+    bool StreamingComponentHandle::ProcessFrame(const cv::Mat &frame, int frame_number) {
+        try {
+            return loaded_component_->ProcessFrame(frame, frame_number);
+        }
+        catch (...) {
+            WrapComponentException("ProcessFrame");
+        }
+    }
+
+    std::vector<MPFVideoTrack> StreamingComponentHandle::EndSegment() {
+        try {
+            return loaded_component_->EndSegment();
+        }
+        catch (...) {
+            WrapComponentException("EndSegment");
+        }
+    }
+
+
+    void StreamingComponentHandle::WrapComponentException(const std::string &component_method) {
+        try {
+            throw;
+        }
+        catch (const std::exception &ex) {
+            throw InternalComponentError(component_method, ex.what());
+        }
+        catch (...) {
+            throw InternalComponentError(component_method);
+        }
+
     }
 
 

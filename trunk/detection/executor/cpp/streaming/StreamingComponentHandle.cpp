@@ -26,7 +26,7 @@
 
 #include <dlfcn.h>
 #include "StreamingComponentHandle.h"
-#include "InternalComponentError.h"
+#include "ExecutorErrors.h"
 
 namespace MPF { namespace COMPONENT {
 
@@ -41,7 +41,8 @@ namespace MPF { namespace COMPONENT {
             void *lib_handle, const MPFStreamingVideoJob &job) {
 
         if (lib_handle == nullptr) {
-            throw std::runtime_error(std::string("Failed to open component library: ") + dlerror());
+            throw FatalError(ExitCode::ComponentLoadError,
+                             std::string("Failed to open component library: ") + dlerror());
         }
 
         auto create_component_fn
@@ -61,7 +62,8 @@ namespace MPF { namespace COMPONENT {
         }
 
         if (loaded_component == nullptr) {
-            throw std::runtime_error("Failed to load component because the component_creator function returned null.");
+            throw FatalError(ExitCode::ComponentLoadError,
+                             "Failed to load component because the component_creator function returned null.");
         }
         return loaded_component;
     }
@@ -71,7 +73,8 @@ namespace MPF { namespace COMPONENT {
     TFunc* StreamingComponentHandle::LoadFunction(void *lib_handle, const char * symbol_name) {
         auto result = reinterpret_cast<TFunc*>(dlsym(lib_handle, symbol_name));
         if (result == nullptr) {
-            throw std::runtime_error(std::string("dlsym failed for ") + symbol_name + ": " + dlerror());
+            throw FatalError(ExitCode::ComponentLoadError,
+                             std::string("dlsym failed for ") + symbol_name + ": " + dlerror());
         }
         return result;
     }
@@ -125,8 +128,5 @@ namespace MPF { namespace COMPONENT {
         catch (...) {
             throw InternalComponentError(component_method);
         }
-
     }
-
-
 }}

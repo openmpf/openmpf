@@ -30,35 +30,45 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 
+#include "ExecutorErrors.h"
 #include "JobSettings.h"
 
 
-std::map<std::string, std::string> convert_to_map(const boost::property_tree::ptree &property_tree) {
-    std::map<std::string, std::string> result;
-    for (const auto &tree_element : property_tree) {
-        result[tree_element.first] = tree_element.second.data();
-    }
-    return result;
-};
+namespace MPF { namespace COMPONENT {
 
 
-JobSettings JobSettings::FromIniFile(const std::string &ini_path) {
-    boost::property_tree::ptree ini_settings;
-    boost::property_tree::ini_parser::read_ini(ini_path, ini_settings);
-    const boost::property_tree::ptree &job_config = ini_settings.get_child("Job Config");
-    return {
-            .job_id = job_config.get<int>("jobId"),
-            .stream_uri = job_config.get<std::string>("streamUri"),
-            .segment_size = job_config.get<int>("segmentSize"),
-            .stall_timeout = job_config.get<long>("stallTimeout"),
-            .stall_alert_threshold = job_config.get<long>("stallAlertThreshold"),
-            .component_name = job_config.get<std::string>("componentName"),
-            .component_lib_path = job_config.get<std::string>("componentLibraryPath"),
-            .message_broker_uri = job_config.get<std::string>("messageBrokerUri"),
-            .job_status_queue = job_config.get<std::string>("jobStatusQueue"),
-            .activity_alert_queue = job_config.get<std::string>("activityAlertQueue"),
-            .summary_report_queue = job_config.get<std::string>("summaryReportQueue"),
-            .job_properties = convert_to_map(ini_settings.get_child("Job Properties", {})),
-            .media_properties = convert_to_map(ini_settings.get_child("Media Properties", {})),
+    std::map<std::string, std::string> convert_to_map(const boost::property_tree::ptree &property_tree) {
+        std::map<std::string, std::string> result;
+        for (const auto &tree_element : property_tree) {
+            result[tree_element.first] = tree_element.second.data();
+        }
+        return result;
     };
-}
+
+
+    JobSettings JobSettings::FromIniFile(const std::string &ini_path) {
+        try {
+            boost::property_tree::ptree ini_settings;
+            boost::property_tree::ini_parser::read_ini(ini_path, ini_settings);
+            const boost::property_tree::ptree &job_config = ini_settings.get_child("Job Config");
+            return {
+                    .job_id = job_config.get<int>("jobId"),
+                    .stream_uri = job_config.get<std::string>("streamUri"),
+                    .segment_size = job_config.get<int>("segmentSize"),
+                    .stall_timeout = job_config.get<long>("stallTimeout"),
+                    .stall_alert_threshold = job_config.get<long>("stallAlertThreshold"),
+                    .component_name = job_config.get<std::string>("componentName"),
+                    .component_lib_path = job_config.get<std::string>("componentLibraryPath"),
+                    .message_broker_uri = job_config.get<std::string>("messageBrokerUri"),
+                    .job_status_queue = job_config.get<std::string>("jobStatusQueue"),
+                    .activity_alert_queue = job_config.get<std::string>("activityAlertQueue"),
+                    .summary_report_queue = job_config.get<std::string>("summaryReportQueue"),
+                    .job_properties = convert_to_map(ini_settings.get_child("Job Properties", {})),
+                    .media_properties = convert_to_map(ini_settings.get_child("Media Properties", {})),
+            };
+        }
+        catch (const boost::property_tree::ptree_error &ex) {
+            throw FatalError(ExitCode::InvalidIniFile, std::string("Unable to load ini file: ") + ex.what());
+        }
+    }
+}}

@@ -45,16 +45,15 @@
 #include "StreamingComponentHandle.h"
 #include "JobSettings.h"
 #include "BasicAmqMessageSender.h"
-#include "ExitCodes.h"
-#include "InternalComponentError.h"
+#include "ExecutorErrors.h"
 
 
 using namespace MPF;
 using namespace COMPONENT;
 
 
-int run_job(const std::string &ini_path);
-int run_job(const JobSettings &settings, const std::string &app_dir, log4cxx::LoggerPtr &logger);
+ExitCode run_job(const std::string &ini_path);
+ExitCode run_job(const JobSettings &settings, const std::string &app_dir, log4cxx::LoggerPtr &logger);
 
 std::string get_app_dir();
 log4cxx::LoggerPtr get_logger(const std::string &app_dir);
@@ -63,13 +62,13 @@ log4cxx::LoggerPtr get_logger(const std::string &app_dir);
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <ini_path>" << std::endl;
-        return ExitCodes::InvalidCommandLineArgs;
+        return static_cast<int>(ExitCode::InvalidCommandLineArgs);
     }
-    return run_job(argv[1]);
+    return static_cast<int>(run_job(argv[1]));
 }
 
 
-int run_job(const std::string &ini_path) {
+ExitCode run_job(const std::string &ini_path) {
     std::string app_dir = get_app_dir();
     log4cxx::LoggerPtr logger = get_logger(app_dir);
     std::string log_prefix;
@@ -79,22 +78,26 @@ int run_job(const std::string &ini_path) {
         log_prefix = "[Streaming Job #" + std::to_string(settings.job_id) + "] ";
         return run_job(settings, app_dir, logger);
     }
-    catch (const InternalComponentError &ex) {
-        LOG4CXX_ERROR(logger, log_prefix << "Exiting due to internal component error: " << ex.what());
-        return ExitCodes::InternalComponentError;
+    catch (const cms::CMSException &ex) {
+        LOG4CXX_ERROR(logger, log_prefix << "Exiting due to message broker error: " << ex.what());
+        return ExitCode::MessageBrokerError;
+    }
+    catch (const FatalError &ex) {
+        LOG4CXX_ERROR(logger, log_prefix << "Exiting due to error: " << ex.what());
+        return ex.GetExitCode();
     }
     catch (const std::exception &ex) {
         LOG4CXX_ERROR(logger, log_prefix << "Exiting due to error: " << ex.what());
-        return ExitCodes::UnexpectedError;
+        return ExitCode::UnexpectedError;
     }
     catch (...) {
         LOG4CXX_ERROR(logger, log_prefix << "Exiting due to error.");
-        return ExitCodes::UnexpectedError;
+        return ExitCode::UnexpectedError;
     }
 }
 
 
-int run_job(const JobSettings &settings, const std::string &app_dir, log4cxx::LoggerPtr &logger) {
+ExitCode run_job(const JobSettings &settings, const std::string &app_dir, log4cxx::LoggerPtr &logger) {
     std::string job_name = "Streaming Job #" + std::to_string(settings.job_id);
     LOG4CXX_INFO(logger, "Initializing " << job_name);
     MPFStreamingVideoJob job(job_name, app_dir + "/../plugins/", settings.job_properties, settings.media_properties);
@@ -112,7 +115,7 @@ int run_job(const JobSettings &settings, const std::string &app_dir, log4cxx::Lo
     cv::VideoCapture video_capture(settings.stream_uri);
     if (!video_capture.isOpened()) {
         LOG4CXX_ERROR(logger, log_prefix << "Unable to connect to stream: " << settings.stream_uri);
-        return ExitCodes::UnableToOpenStream;
+        return ExitCode::UnableToOpenStream;
     }
 
     QuitWatcher quit_watcher;
@@ -152,20 +155,19 @@ int run_job(const JobSettings &settings, const std::string &app_dir, log4cxx::Lo
 
     if (quit_watcher.IsTimeToQuit() && !quit_watcher.HasError()) {
         LOG4CXX_INFO(logger, log_prefix << "Exiting normally because quit was requested.")
-        return 0;
+        return ExitCode::Success;
     }
 
     if (quit_watcher.HasError()) {
         LOG4CXX_ERROR(logger, log_prefix << "Exiting due to an error while trying to read from standard in.")
-        return ExitCodes::UnexpectedError;
+        return ExitCode::UnexpectedError;
     }
 
     if (read_failed) {
         LOG4CXX_INFO(logger, log_prefix << "Exiting because it is no longer possible to read frames.")
-        return ExitCodes::StreamNoLongerReadable;
+        return ExitCode::StreamNoLongerReadable;
     }
-    return 0;
-
+    return ExitCode::Success;
 }
 
 

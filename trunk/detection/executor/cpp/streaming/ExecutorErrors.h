@@ -25,16 +25,50 @@
  ******************************************************************************/
 
 
-#include "InternalComponentError.h"
+#ifndef MPF_EXECUTORERRORS_H
+#define MPF_EXECUTORERRORS_H
 
-InternalComponentError::InternalComponentError(const std::string &method_name, const std::string &cause)
-        : std::runtime_error(
-            "The loaded component threw an exception while executing its \"" + method_name +"\" method: " + cause) {
+#include <stdexcept>
 
-}
+namespace MPF { namespace COMPONENT {
 
-InternalComponentError::InternalComponentError(const std::string &method_name)
-        : runtime_error(
-            "The loaded component threw an object that does not derive from std::exception while executing its \""
-            + method_name + " method.") {
-}
+    enum class ExitCode {
+        Success = 0,
+        UnexpectedError = 1,
+        InvalidCommandLineArgs = 2,
+
+        InvalidIniFile = 65,
+        MessageBrokerError = 69,
+        InternalComponentError = 70,
+        ComponentLoadError = 71,
+
+        UnableToOpenStream = 75,
+        StreamNoLongerReadable = 76,
+    };
+
+
+
+    class FatalError : public std::runtime_error {
+    public:
+        FatalError(ExitCode exit_code, const std::string &cause);
+
+        ExitCode GetExitCode() const;
+
+    private:
+        const ExitCode exit_code_;
+    };
+
+
+
+    class InternalComponentError : public FatalError {
+    public:
+        InternalComponentError(const std::string &method_name, const std::string &cause);
+
+        explicit InternalComponentError(const std::string &method_name);
+    };
+}}
+
+
+
+
+#endif //MPF_EXECUTORERRORS_H

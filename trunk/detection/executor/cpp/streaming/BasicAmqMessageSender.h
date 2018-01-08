@@ -39,40 +39,42 @@
 
 #include "JobSettings.h"
 
+namespace MPF { namespace COMPONENT {
 
-class BasicAmqMessageSender {
+    class BasicAmqMessageSender {
 
-public:
-    explicit BasicAmqMessageSender(const JobSettings &job_settings);
+    public:
+        explicit BasicAmqMessageSender(const JobSettings &job_settings);
 
-    void SendJobStatus(const std::string &job_status);
+        void SendJobStatus(const std::string &job_status);
 
-    void SendActivityAlert(int frame_index);
-
-
-    void SendSummaryReport(
-            int frame_index, const std::string &detection_type, MPF::COMPONENT::MPFDetectionError segment_error,
-            const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks);
-
-private:
-    const long job_id_;
-    const int segment_size_;
-
-    std::unique_ptr<cms::Connection> connection_;
-    std::unique_ptr<cms::Session> session_;
-
-    std::unique_ptr<cms::MessageProducer> job_status_producer_;
-    std::unique_ptr<cms::MessageProducer> activity_alert_producer_;
-    std::unique_ptr<cms::MessageProducer> summary_report_producer_;
+        void SendActivityAlert(int frame_index);
 
 
-    static std::unique_ptr<cms::Connection> Connect(const std::string &broker_uri);
+        void SendSummaryReport(
+                int frame_index, const std::string &detection_type, MPF::COMPONENT::MPFDetectionError segment_error,
+                const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks);
 
-    static std::unique_ptr<cms::MessageProducer> CreateProducer(const std::string &queue_name, cms::Session &session);
+    private:
+        const long job_id_;
+        const int segment_size_;
 
-    static long GetTimestampMillis();
+        std::unique_ptr<cms::Connection> connection_;
+        std::unique_ptr<cms::Session> session_;
 
-};
+        std::unique_ptr<cms::MessageProducer> job_status_producer_;
+        std::unique_ptr<cms::MessageProducer> activity_alert_producer_;
+        std::unique_ptr<cms::MessageProducer> summary_report_producer_;
 
+
+        static std::unique_ptr<cms::Connection> Connect(const std::string &broker_uri);
+
+        static std::unique_ptr<cms::MessageProducer>
+        CreateProducer(const std::string &queue_name, cms::Session &session);
+
+        static long GetTimestampMillis();
+
+    };
+}}
 
 #endif //MPF_MYMESSAGESENDER_H

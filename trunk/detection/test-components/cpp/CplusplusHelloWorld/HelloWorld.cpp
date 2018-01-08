@@ -47,8 +47,7 @@ using log4cxx::xml::DOMConfigurator;
     }
 
     // Configure logger
-    string plugin_dir = run_dir + "/CplusplusHelloWorld";
-    log4cxx::xml::DOMConfigurator::configure(run_dir + "/config/Log4cxxConfig.xml");
+    log4cxx::xml::DOMConfigurator::configure(run_dir + "/CplusplusHelloWorld/config/Log4cxxConfig.xml");
     hw_logger_ = log4cxx::Logger::getLogger("HelloWorldTest");
 
     LOG4CXX_INFO(hw_logger_, "Running from directory " << run_dir);

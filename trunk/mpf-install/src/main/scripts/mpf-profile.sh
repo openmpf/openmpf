@@ -43,7 +43,6 @@ export MPF_LOG_PATH=$MPF_HOME/logs
 export JAVA_HOME=/usr/java/latest
 export THIS_MPF_NODE=$HOSTNAME
 export ALL_MPF_NODES=$THIS_MPF_NODE[7800]
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$MPF_HOME/lib/
 
 export CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.port=7800 -Djava.library.path=$MPF_HOME/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 export ACTIVE_MQ_HOST="failover://(tcp://$HOSTNAME:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"

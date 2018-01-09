@@ -67,17 +67,26 @@ public class StreamingProcess {
 
 
 	private void restartUntilDone(Process originalProcess) {
-		if (awaitExit(originalProcess)) {
+		int exitCode = awaitExit(originalProcess);
+		if (exitCode == 0) {
 			return;
 		}
 
 		for (int i = 0; i < _maxNumRestarts; i++) {
 			LOG.warn("Restarting the {} process. The process has been started {} times.", _executable, i + 1);
-			if (awaitExit(createProcess())) {
+			Process restartedProcess = createProcess();
+			if (restartedProcess == null) {
+				if (_syncOps.isStopRequested()) {
+					return;
+				}
+				throw new StreamingProcessExitException(exitCode);
+			}
+			exitCode = awaitExit(restartedProcess);
+			if (exitCode == 0) {
 				return;
 			}
 		}
-		throw new IllegalStateException("Exceeded restart limit for: " + _executable);
+		throw new StreamingProcessExitException(exitCode);
 	}
 
 
@@ -97,18 +106,13 @@ public class StreamingProcess {
 	}
 
 
-	private boolean awaitExit(Process process) {
-		if (process == null) {
-			return _syncOps.isStopRequested();
-		}
-
+	private int awaitExit(Process process) {
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
 			reader.lines()
 					.forEach(line -> LOG.info("[{}]: {}", _executable, line));
 		}
 		catch (IOException e) {
-			LOG.error(String.format("Exception while running process: %s", _executable), e);
-			return false;
+			throw new UncheckedIOException(String.format("Exception while running process: %s", _executable), e);
 		}
 
 		try {
@@ -123,9 +127,9 @@ public class StreamingProcess {
 
 			LOG.info("Process: {} exited with exit code {}", _executable, exitCode);
 			if (exitCode == STREAM_STALLED_EXIT_CODE) {
-				throw new StreamStalledException();
+				throw new StreamingProcessExitException(STREAM_STALLED_EXIT_CODE);
 			}
-			return exitCode == 0;
+			return exitCode;
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();

@@ -27,5 +27,35 @@
 
 package org.mitre.mpf.nms.streaming;
 
-public class StreamStalledException extends RuntimeException {
+import java.util.stream.Stream;
+
+public enum StreamingProcessExitReason {
+	CANCELLED(0),
+	UNEXPECTED_ERROR(1),
+	INVALID_COMMAND_LINE_ARGUMENTS(2),
+	INVALID_INI_FILE(65),
+	MESSAGE_BROKER_ERROR(69),
+	INTERNAL_COMPONENT_ERROR(70),
+	COMPONENT_LOAD_ERROR(71),
+	UNABLE_TO_OPEN_STREAM(75),
+	STREAM_STALLED(76);
+
+
+	public final int exitCode;
+
+	StreamingProcessExitReason(int exitCode) {
+		this.exitCode = exitCode;
+	}
+
+	public static StreamingProcessExitReason fromExitCode(int exitCode) {
+		return Stream.of(StreamingProcessExitReason.values())
+				.filter(r -> r.exitCode == exitCode)
+				.findAny()
+				.orElse(UNEXPECTED_ERROR);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s(%s)", super.toString(), exitCode);
+	}
 }

@@ -95,7 +95,7 @@ public class TestStreamingJobStartStop {
 
 		_jobSender.launchJob(streamingJob);
 
-		Thread.sleep(5_000);
+		Thread.sleep(5000);
 
 		_jobSender.stopJob(jobId);
 

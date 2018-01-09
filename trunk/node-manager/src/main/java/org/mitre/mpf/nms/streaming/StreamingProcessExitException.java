@@ -24,18 +24,25 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.nms.streaming.messages;
 
-import org.mitre.mpf.nms.streaming.StreamingProcessExitReason;
+package org.mitre.mpf.nms.streaming;
 
-public class StreamingJobExitedMessage implements StreamingJobMessage {
+public class StreamingProcessExitException extends RuntimeException {
 
-	public final long jobId;
+	private final StreamingProcessExitReason _exitReason;
 
-	public final StreamingProcessExitReason reason;
 
-	public StreamingJobExitedMessage(long jobId, StreamingProcessExitReason reason) {
-		this.jobId = jobId;
-		this.reason = reason;
+	public StreamingProcessExitException(StreamingProcessExitReason exitReason) {
+		super("The process exited with non-success exit code: " + exitReason);
+		_exitReason = exitReason;
+	}
+
+	public StreamingProcessExitException(int exitCode) {
+		this(StreamingProcessExitReason.fromExitCode(exitCode));
+	}
+
+
+	public StreamingProcessExitReason getExitReason() {
+		return _exitReason;
 	}
 }

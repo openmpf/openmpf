@@ -29,7 +29,6 @@ package org.mitre.mpf.mst;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
@@ -110,6 +109,6 @@ public class TestStreamingJobStartStop {
 				.handleNewActivityAlert(eq(jobId), gt(0), gt(0L));
 
 		verify(_mockStreamingJobRequestBo, atLeastOnce())
-				.handleNewSummaryReport(eq(jobId), isA(DetectionProtobuf.StreamingDetectionResponse.class));
+				.handleNewSummaryReport(eq(jobId), isA(SegmentSummaryReport.class));
 	}
 }

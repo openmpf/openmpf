@@ -33,10 +33,17 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.protobuf.ProtobufDataFormat;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.data.entities.transients.SegmentSummaryReport;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
+
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 
 @Component
@@ -76,33 +83,67 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 				});
 
 
-//		from(StreamingEndpoints.WFM_STREAMING_JOB_SUMMARY_REPORTS.endpointName())
-//				.routeId("Streaming Job Summary Report Route")
-//				// TODO: unmarshal protobuf body
-////				.unmarshal(new ProtobufDataFormat(DetectionProtobuf.StreamingDetectionResponse.getDefaultInstance()))
-//				.log(LoggingLevel.DEBUG, "Received summary report message: ${headers}")
-//				.process(exchange -> {
-//					Message msg = exchange.getIn();
-//					_streamingJobRequestBo.handleNewSummaryReport(
-//							msg.getHeader("JOB_ID", long.class),
-//							msg.getBody(Object.class)
-//					);
-//				});
-
 		from(StreamingEndpoints.WFM_STREAMING_JOB_SUMMARY_REPORTS.endpointName())
 				.routeId("Streaming Job Summary Report Route")
-				// TODO: unmarshal protobuf body
-				.unmarshal(new ProtobufDataFormat(DetectionProtobuf.StreamingDetectionResponse.getDefaultInstance()))
 				.log(LoggingLevel.DEBUG, "Received summary report message: ${headers}")
+				.unmarshal(new ProtobufDataFormat(DetectionProtobuf.StreamingDetectionResponse.getDefaultInstance()))
 				.process(exchange -> {
 					Message msg = exchange.getIn();
-					DetectionProtobuf.StreamingDetectionResponse protobuf = msg.getBody(DetectionProtobuf.StreamingDetectionResponse.class);
-					System.out.println("Received summary report with " + protobuf.getVideoTracksCount() + " tracks");
+					DetectionProtobuf.StreamingDetectionResponse protobuf
+							= msg.getBody(DetectionProtobuf.StreamingDetectionResponse.class);
+					SegmentSummaryReport summaryReport = convertProtobufResponse(protobuf);
 
 					_streamingJobRequestBo.handleNewSummaryReport(
 							msg.getHeader("JOB_ID", long.class),
-							msg.getBody(Object.class)
+							summaryReport
 					);
 				});
+	}
+
+
+
+
+	private static SegmentSummaryReport convertProtobufResponse(
+			DetectionProtobuf.StreamingDetectionResponse protobuf) {
+		List<SegmentSummaryReport.Track> tracks = protobuf.getVideoTracksList().stream()
+				.map(StreamingJobRoutesBuilder::convertProtobufTrack)
+				.collect(toList());
+
+		return new SegmentSummaryReport(
+				protobuf.getSegmentNumber(),
+				protobuf.getStartFrame(),
+				protobuf.getStopFrame(),
+				protobuf.getDetectionType(),
+				tracks);
+	}
+
+
+	private static SegmentSummaryReport.Track convertProtobufTrack(DetectionProtobuf.VideoTrack protobuf) {
+		Map<Long, SegmentSummaryReport.ImageLocation> frameLocationMap = protobuf.getFrameLocationsList().stream()
+				.collect(toMap(flm -> (long) flm.getFrame(),
+				               flm -> convertImageLocation(flm.getImageLocation())));
+
+		return new SegmentSummaryReport.Track(
+				protobuf.getStartFrame(),
+				protobuf.getStopFrame(),
+				frameLocationMap,
+				convertProperties(protobuf.getDetectionPropertiesList()));
+	}
+
+
+	private static SegmentSummaryReport.ImageLocation convertImageLocation(DetectionProtobuf.ImageLocation protobuf) {
+		return new SegmentSummaryReport.ImageLocation(
+				protobuf.getXLeftUpper(),
+				protobuf.getYLeftUpper(),
+				protobuf.getWidth(),
+				protobuf.getHeight(),
+				protobuf.getConfidence(),
+				convertProperties(protobuf.getDetectionPropertiesList()));
+
+	}
+
+	private static Map<String, String> convertProperties(List<DetectionProtobuf.PropertyMap> properties) {
+		return properties.stream()
+				.collect(toMap(DetectionProtobuf.PropertyMap::getKey, DetectionProtobuf.PropertyMap::getValue));
 	}
 }

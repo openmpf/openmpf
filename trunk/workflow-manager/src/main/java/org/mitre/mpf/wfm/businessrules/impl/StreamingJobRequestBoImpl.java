@@ -645,9 +645,10 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     @Override
-    public void handleNewSummaryReport(long jobId, Object summaryReport) {
+    public void handleNewSummaryReport(long jobId, SegmentSummaryReport summaryReport) {
         // TODO: Replace logging with implementation of handleNewSummaryReport
-        log.info("handleNewSummaryReport(jobId = {}, summaryReport = {})", jobId, summaryReport);
+        log.info("handleNewSummaryReport(jobId = {}, summaryReport = {}) with {} tracks",
+                 jobId, summaryReport, summaryReport.getTracks().size());
     }
 
     private static LocalDateTime millisToDateTime(long millis) {

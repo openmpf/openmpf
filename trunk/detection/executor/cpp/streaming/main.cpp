@@ -28,7 +28,6 @@
 #include <string>
 #include <memory>
 #include <map>
-#include <chrono>
 
 #include <unistd.h>
 
@@ -105,69 +104,75 @@ ExitCode run_job(const JobSettings &settings, const std::string &app_dir, log4cx
     std::string log_prefix = "[" + job_name + "] ";
 
     BasicAmqMessageSender sender(settings);
-
-
-    LOG4CXX_INFO(logger, log_prefix << "Loading component from: " << settings.component_lib_path);
-    StreamingComponentHandle component(settings.component_lib_path, job);
-    std::string detection_type = component.GetDetectionType();
-
-    LOG4CXX_INFO(logger, log_prefix << "Connecting to stream at: " << settings.stream_uri)
-    cv::VideoCapture video_capture(settings.stream_uri);
-    if (!video_capture.isOpened()) {
-        LOG4CXX_ERROR(logger, log_prefix << "Unable to connect to stream: " << settings.stream_uri);
-        return ExitCode::UnableToOpenStream;
-    }
-
-    QuitWatcher quit_watcher;
-    bool read_failed = false;
-
     int frame_id = -1;
-    while (!quit_watcher.IsTimeToQuit()) {
-        cv::Mat frame;
-        if (!video_capture.read(frame)) {
-            read_failed = true;
-            break;
-        }
-        frame_id++;
+    std::string detection_type;
+    try {
+        LOG4CXX_INFO(logger, log_prefix << "Loading component from: " << settings.component_lib_path);
+        StreamingComponentHandle component(settings.component_lib_path, job);
+        detection_type = component.GetDetectionType();
 
-        if (frame_id % settings.segment_size == 0) {
-            component.BeginSegment({frame_id / settings.segment_size, frame_id, frame_id + settings.segment_size});
-        }
-
-        bool activity_found = component.ProcessFrame(frame, frame_id);
-        if (activity_found) {
-            LOG4CXX_DEBUG(logger, log_prefix << "Sending new activity alert for frame: " << frame_id)
-            sender.SendActivityAlert(frame_id);
+        LOG4CXX_INFO(logger, log_prefix << "Connecting to stream at: " << settings.stream_uri)
+        cv::VideoCapture video_capture(settings.stream_uri);
+        if (!video_capture.isOpened()) {
+            LOG4CXX_ERROR(logger, log_prefix << "Unable to connect to stream: " << settings.stream_uri);
+            return ExitCode::UnableToOpenStream;
         }
 
-        if (frame_id != 0 && (frame_id % settings.segment_size == 0)) {
+        QuitWatcher quit_watcher;
+        bool read_failed = false;
+
+        while (!quit_watcher.IsTimeToQuit()) {
+            cv::Mat frame;
+            if (!video_capture.read(frame)) {
+                read_failed = true;
+                break;
+            }
+            frame_id++;
+
+            if (frame_id % settings.segment_size == 0) {
+                component.BeginSegment({ frame_id / settings.segment_size, frame_id,
+                                               frame_id + settings.segment_size });
+            }
+
+            bool activity_found = component.ProcessFrame(frame, frame_id);
+            if (activity_found) {
+                LOG4CXX_DEBUG(logger, log_prefix << "Sending new activity alert for frame: " << frame_id)
+                sender.SendActivityAlert(frame_id);
+            }
+
+            if (frame_id != 0 && (frame_id % settings.segment_size == 0)) {
+                const std::vector<MPFVideoTrack> &tracks = component.EndSegment();
+                LOG4CXX_DEBUG(logger, log_prefix << "Sending segment summary for " << tracks.size() << " tracks.")
+                sender.SendSummaryReport(frame_id, detection_type, tracks);
+            }
+        }
+
+        if (frame_id % settings.segment_size != 0) {
             const std::vector<MPFVideoTrack> &tracks = component.EndSegment();
-            LOG4CXX_DEBUG(logger, log_prefix << "Sending segment summary for " << tracks.size() << " tracks.")
-            sender.SendSummaryReport(frame_id, detection_type, MPF_DETECTION_SUCCESS, tracks);
+            LOG4CXX_INFO(logger, log_prefix << "Send segment summary for final segment.")
+            sender.SendSummaryReport(frame_id, detection_type, tracks);
         }
-    }
 
-    if (frame_id % settings.segment_size != 0) {
-        const std::vector<MPFVideoTrack> &tracks = component.EndSegment();
-        LOG4CXX_INFO(logger, log_prefix << "Send segment summary for final segment.")
-        sender.SendSummaryReport(frame_id, detection_type, MPF_DETECTION_SUCCESS, tracks);
-    }
+        if (quit_watcher.IsTimeToQuit() && !quit_watcher.HasError()) {
+            LOG4CXX_INFO(logger, log_prefix << "Exiting normally because quit was requested.")
+            return ExitCode::Success;
+        }
 
-    if (quit_watcher.IsTimeToQuit() && !quit_watcher.HasError()) {
-        LOG4CXX_INFO(logger, log_prefix << "Exiting normally because quit was requested.")
+        if (quit_watcher.HasError()) {
+            LOG4CXX_ERROR(logger, log_prefix << "Exiting due to an error while trying to read from standard in.")
+            return ExitCode::UnexpectedError;
+        }
+
+        if (read_failed) {
+            LOG4CXX_INFO(logger, log_prefix << "Exiting because it is no longer possible to read frames.")
+            return ExitCode::StreamNoLongerReadable;
+        }
         return ExitCode::Success;
     }
-
-    if (quit_watcher.HasError()) {
-        LOG4CXX_ERROR(logger, log_prefix << "Exiting due to an error while trying to read from standard in.")
-        return ExitCode::UnexpectedError;
+    catch (const FatalError &ex) {
+        sender.SendErrorReport(frame_id, ex.what(), detection_type);
+        throw;
     }
-
-    if (read_failed) {
-        LOG4CXX_INFO(logger, log_prefix << "Exiting because it is no longer possible to read frames.")
-        return ExitCode::StreamNoLongerReadable;
-    }
-    return ExitCode::Success;
 }
 
 

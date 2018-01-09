@@ -240,7 +240,7 @@ message DetectionResponse {
 
 message StreamingDetectionResponse {
 
-    optional DetectionError error = 1;
+    optional string error = 1;
 
     optional int32 segment_number = 2;
 

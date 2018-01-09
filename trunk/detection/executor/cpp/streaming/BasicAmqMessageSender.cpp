@@ -30,11 +30,10 @@
 #include <activemq/core/ActiveMQConnectionFactory.h>
 
 
-#include "detection.pb.h"
-
 #include "BasicAmqMessageSender.h"
 #include "MPFMessageUtils.h"
 #include "ExecutorErrors.h"
+
 
 namespace MPF { namespace COMPONENT {
 
@@ -85,7 +84,6 @@ namespace MPF { namespace COMPONENT {
 
     void BasicAmqMessageSender::SendSummaryReport(int frame_index,
                                                   const std::string &detection_type,
-                                                  MPF::COMPONENT::MPFDetectionError segment_error,
                                                   const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks) {
 
         org::mitre::mpf::wfm::buffers::StreamingDetectionResponse protobuf_response;
@@ -95,7 +93,6 @@ namespace MPF { namespace COMPONENT {
         protobuf_response.set_start_frame(segment_size_ * segment_number);
         protobuf_response.set_stop_frame(segment_size_ * (segment_number + 1) - 1);
         protobuf_response.set_detection_type(detection_type);
-        protobuf_response.set_error(translateMPFDetectionError(segment_error));
 
         for (const auto &track : tracks) {
             auto protobuf_track = protobuf_response.add_video_tracks();
@@ -128,15 +125,7 @@ namespace MPF { namespace COMPONENT {
             }
         }
 
-
-        int protobuf_size = protobuf_response.ByteSize();
-        std::unique_ptr<uchar[]> protobuf_bytes(new uchar[protobuf_size]);
-        protobuf_response.SerializeWithCachedSizesToArray(protobuf_bytes.get());
-
-        std::unique_ptr<cms::BytesMessage> message(session_->createBytesMessage(protobuf_bytes.get(), protobuf_size));
-        message->setLongProperty("JOB_ID", job_id_);
-
-        summary_report_producer_->send(message.get());
+        SendSegmentReport(protobuf_response);
     }
 
 
@@ -144,5 +133,37 @@ namespace MPF { namespace COMPONENT {
         using namespace std::chrono;
         auto time_since_epoch = system_clock::now().time_since_epoch();
         return duration_cast<milliseconds>(time_since_epoch).count();
+    }
+
+    void BasicAmqMessageSender::SendErrorReport(int frame_index,
+                                                const std::string &error_message,
+                                                const std::string &detection_type) {
+
+
+        org::mitre::mpf::wfm::buffers::StreamingDetectionResponse protobuf_response;
+        protobuf_response.set_error(error_message);
+
+        int segment_number = frame_index / segment_size_;
+        protobuf_response.set_segment_number(segment_number);
+        protobuf_response.set_start_frame(segment_size_ * segment_number);
+        protobuf_response.set_stop_frame(frame_index);
+        if (!detection_type.empty()) {
+            protobuf_response.set_detection_type(detection_type);
+        }
+        SendSegmentReport(protobuf_response);
+    }
+
+
+    void BasicAmqMessageSender::SendSegmentReport(
+            const org::mitre::mpf::wfm::buffers::StreamingDetectionResponse &protobuf) {
+
+        int protobuf_size = protobuf.ByteSize();
+        std::unique_ptr<uchar[]> protobuf_bytes(new uchar[protobuf_size]);
+        protobuf.SerializeWithCachedSizesToArray(protobuf_bytes.get());
+
+        std::unique_ptr<cms::BytesMessage> message(session_->createBytesMessage(protobuf_bytes.get(), protobuf_size));
+        message->setLongProperty("JOB_ID", job_id_);
+
+        summary_report_producer_->send(message.get());
     }
 }}

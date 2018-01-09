@@ -37,6 +37,8 @@
 
 #include <MPFDetectionComponent.h>
 
+#include "detection.pb.h"
+
 #include "JobSettings.h"
 
 namespace MPF { namespace COMPONENT {
@@ -52,8 +54,10 @@ namespace MPF { namespace COMPONENT {
 
 
         void SendSummaryReport(
-                int frame_index, const std::string &detection_type, MPF::COMPONENT::MPFDetectionError segment_error,
+                int frame_index, const std::string &detection_type,
                 const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks);
+
+        void SendErrorReport(int frame_index, const std::string &error_message, const std::string &detection_type);
 
     private:
         const long job_id_;
@@ -74,6 +78,7 @@ namespace MPF { namespace COMPONENT {
 
         static long GetTimestampMillis();
 
+        void SendSegmentReport(const  org::mitre::mpf::wfm::buffers::StreamingDetectionResponse &protobuf);
     };
 }}
 

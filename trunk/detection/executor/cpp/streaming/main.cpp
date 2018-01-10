@@ -130,8 +130,10 @@ ExitCode run_job(const JobSettings &settings, const std::string &app_dir, log4cx
             frame_id++;
 
             if (frame_id % settings.segment_size == 0) {
-                component.BeginSegment({ frame_id / settings.segment_size, frame_id,
-                                               frame_id + settings.segment_size });
+                int segment_number = frame_id / settings.segment_size;
+                int segment_end = frame_id + settings.segment_size;
+                cv::Size frame_size = frame.size();
+                component.BeginSegment({ segment_number, frame_id, segment_end, frame_size.width, frame_size.height });
             }
 
             bool activity_found = component.ProcessFrame(frame, frame_id);

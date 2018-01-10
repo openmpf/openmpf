@@ -668,7 +668,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 JsonCallbackBody jsonBody = new JsonCallbackBody(jobId, redis.getExternalId(jobId));
                 new Thread(new CallbackThread(jsonSummaryReportCallbackUri, jsonBody)).start();
             } catch (IOException ioe) {
-                log.warn("Failed to issue POST callback to '{}' due to an I/O exception.",
+                log.error("Failed to issue POST summary report callback to '{}' due to an I/O exception.",
                     jsonSummaryReportCallbackUri, ioe);
             }
         }
@@ -681,7 +681,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * @param healthReportCallbackUri the same health report callback URI that was specified as common to these streaming jobs. Must not be null.
      * @throws WfmProcessingException may be thrown if healthReportCallbackUri is null
      */
-    private void sendHealthReports(List<Long> jobIds, String healthReportCallbackUri) throws WfmProcessingException {
+    private void sendHealthReport(List<Long> jobIds, String healthReportCallbackUri) throws WfmProcessingException {
 
         if ( healthReportCallbackUri == null ) {
             throw new WfmProcessingException("Error, healthReportCallbackUri can't be null.");
@@ -694,14 +694,14 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     /**
-     * Send a health report to the health report callbacks associated with the streaming jobs.
+     * Send health reports to the health report callbacks associated with the streaming jobs.
      * Note that OpenMPF supports sending periodic health reports that contain health for all streaming jobs who have
      * defined the same HealthReportCallbackUri. This method will filter out jobIds for any jobs which are not current streaming jobs,
-     * plus will optionally filter out inactive (i.e. TERMINATED) streaming jobs.
+     * plus will optionally filter out streaming jobs that have been terminated.
      * Note that out-of-cycle health reports that may have been sent due to a change in job status will not
      * delay sending of the periodic (i.e. scheduled) health report.
      * @param jobIds unique ids for the streaming jobs to be reported on. Must not be null or empty.
-     * @param isActive If true, then streaming jobs which have JobStatus of TERMINATED will be
+     * @param isActive If true, then streaming jobs which have terminal JobStatus will be
      * filtered out. Otherwise, all current streaming jobs will be processed.
      * @throws WfmProcessingException thrown if an error occurs
      */
@@ -712,7 +712,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             throw new WfmProcessingException("Error: jobIds must not be empty.");
         } else {
             // While we are receiving the list of all job ids known to the system, some of these jobs may not be current streaming jobs in REDIS.
-            // Reduce the List of jobIds to ony include streaming jobIds that are in REDIS. Optionally reduce that set to only include non-TERMINATED jobs.
+            // Reduce the List of jobIds to ony include streaming jobIds that are in REDIS. Optionally reduce that set to only include non-terminal jobs.
             List<Long> currentActiveJobIds = redis.getCurrentStreamingJobs(jobIds, isActive );
 
             // If there are no active jobs, no health reports will be sent.
@@ -731,7 +731,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 // if healthReportCallbackUriToJobIdListMap is empty. This would be a possibility if no streaming jobs have
                 // requested that a health report be sent.
                 healthReportCallbackUriToActiveJobIdListMap.keySet().stream().forEach(
-                    healthReportCallbackUri -> sendHealthReports(healthReportCallbackUriToActiveJobIdListMap.get(healthReportCallbackUri), healthReportCallbackUri));
+                    healthReportCallbackUri -> sendHealthReport(healthReportCallbackUriToActiveJobIdListMap.get(healthReportCallbackUri), healthReportCallbackUri));
             }
         }
     }

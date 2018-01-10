@@ -84,7 +84,7 @@ public interface StreamingJobRequestBo {
 	/**
 	 * Send a health report for all current streaming jobs to the health report callback associated with each streaming job.
      * @param jobIds all job ids to send health reports for.
-	 * @param isActive If true, then streaming jobs which have JobStatus of TERMINATED will be
+	 * @param isActive If true, then streaming jobs which have terminal JobStatus will be
 	 * filtered out. Otherwise, all current streaming jobs will be processed.
 	 * @throws WfmProcessingException thrown if an error occurs
 	 */

@@ -163,7 +163,7 @@ public class ITWebStreamingHealthReports {
             // Wait for a health report callback that includes the jobId of these two test jobs.
             // Health reports should periodically be sent every 30 seconds, unless reset in the mpf.properties file.
             // Listen for a health report POST that has our two jobIds.
-            while (!gotHealthReportPostResponseForJob1 && !gotHealthReportPostResponseForJob2) {
+            while ( !(gotHealthReportPostResponseForJob1 && gotHealthReportPostResponseForJob2) ) {
                 Thread.sleep(1000); // test will eventually timeout
             }
 
@@ -254,7 +254,7 @@ public class ITWebStreamingHealthReports {
             @Override
             public Object handle(Request request, Response resp) throws Exception {
                 log.info(
-                    "Spark servicing " + request.requestMethod() + " health report callback at "
+                    "InHealthCallback: Spark servicing " + request.requestMethod() + " health report callback at "
                         + DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now())
                         + ":\n     " + request.body());
                 try {
@@ -266,7 +266,7 @@ public class ITWebStreamingHealthReports {
                     healthReportPostCallbackBody = jsonObjectMapper
                         .readValue(request.bodyAsBytes(), JsonHealthReportDataCallbackBody.class);
 
-                    log.info("Converted to JsonHealthReportDataCallbackBody:\n     "
+                    log.info("InHealthCallback: Converted to JsonHealthReportDataCallbackBody:\n     "
                         + healthReportPostCallbackBody);
 
                     // If this health report includes the jobIds for our POST test, then set the appropriate indicator
@@ -279,6 +279,9 @@ public class ITWebStreamingHealthReports {
                     if (healthReportPostCallbackBody.getJobIds().contains(healthReportPostJobId2)) {
                         gotHealthReportPostResponseForJob2 = true;
                     }
+
+                    log.info("InHealthCallback: gotHealthReportPostResponseForJob1 = " + gotHealthReportPostResponseForJob1 + ", gotHealthReportPostResponseForJob2 = " +
+                        gotHealthReportPostResponseForJob2);
 
                 } catch (Exception e) {
                     log.error("Exception caught while processing health report POST callback.", e);

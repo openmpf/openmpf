@@ -514,6 +514,17 @@ public class PropertiesUtil {
 		return amqUri;
 	}
 
+	// Define system properties specific to Streaming jobs
+
+	@Value("${streaming.healthReport.callbackRate}")
+	private long streamingJobHealthReportCallbackRate;
+	/**
+	 * Get the health report callback rate, in milliseconds
+	 * @return health report callback rate, in milliseconds
+	 */
+	public long getStreamingJobHealthReportCallbackRate() {
+		return streamingJobHealthReportCallbackRate;
+	}
 
 	@Value("${streaming.stallAlert.detectionThreshold}")
 	private long streamingJobStallAlertThreshold;
@@ -562,28 +573,6 @@ public class PropertiesUtil {
 			Files.createDirectories(resourceDir);
 		}
 	}
-
-	// Define system properties specific to Streaming jobs
-
-   @Value("${streaming.healthReport.callbackRate}")
-    private long streamingJobHealthReportCallbackRate;
-    /**
-     * Get the health report callback rate, in milliseconds
-     * @return health report callback rate, in milliseconds
-     */
-    public long getStreamingJobHealthReportCallbackRate() {
-        return streamingJobHealthReportCallbackRate;
-    }
-
-    @Value("${streaming.stallAlert.detectionThreshold}")
-    private long streamingStallAlertDetectionThreshold;
-    /**
-     * Get the stall alert detection threshold, in milliseconds
-     * @return stall alert detection threshold, in milliseconds
-     */
-    public long getStreamingStallAlertDetectionThreshold() {
-        return streamingStallAlertDetectionThreshold;
-    }
 
 }
 

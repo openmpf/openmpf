@@ -306,7 +306,7 @@ public class MpfServiceImpl implements MpfService {
 	/**
 	 * Send health report for all streaming jobs to the health report callback associated with each streaming job.
 	 * This method will just return if there are no streaming jobs.
-	 * @param isActive If true, then streaming jobs which have JobStatus of TERMINATED will be
+	 * @param isActive If true, then streaming jobs which have terminal JobStatus will be
 	 * filtered out. Otherwise, all current streaming jobs will be processed.
 	 * @throws WfmProcessingException thrown if an error occurs
 	 */

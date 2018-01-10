@@ -48,6 +48,7 @@ import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidJobIdWfmProcessingExce
 import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidOutputObjectDirectoryWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException;
 import org.mitre.mpf.wfm.service.MpfService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.StreamResource;
 import org.slf4j.Logger;
@@ -85,6 +86,9 @@ public class StreamingJobController {
     // job progress may not be required for streaming jobs
     @Autowired
     private JobProgress jobProgress;
+
+    @Autowired
+    private PipelineService pipelineService;
 
     /*
      *	POST /streaming/jobs
@@ -217,7 +221,11 @@ public class StreamingJobController {
                 // The streaming job failed the check for supported stream protocol check, so OpenMPF can't process the requested stream URI.
                 // Reject the job and send an error response.
                 return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),
-                                                               "malformed or unsupported stream URI: " + streamingJobCreationRequest.getStreamUri());
+                    "malformed or unsupported stream URI: " + streamingJobCreationRequest.getStreamUri());
+            } else if ( !pipelineService.pipelineSupportsStreaming(streamingJobCreationRequest.getPipelineName()) ) {
+                // The streaming job failed the pipeline check. The requested pipeline doesn't support streaming.
+                // Reject the job and send an error response.
+                return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(), "Requested pipeline doesn't support streaming jobs");
             } else {
                 boolean enableOutputToDisk = propertiesUtil.isOutputObjectsEnabled();
                 if ( streamingJobCreationRequest.getEnableOutputToDisk() != null ) {

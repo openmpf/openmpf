@@ -132,8 +132,7 @@ public class StreamingJobCreationRequest {
 	 */
 	public boolean isValidRequest() {
 		// do error checks on the streaming job request.
-		// TODO check the pipeline name specified in the create streaming job request and make sure it's streaming-capable
-		if ( getStream().isValidStreamData() && getStallTimeout() != -1L ) {
+        if ( getStream().isValidStreamData() && getStallTimeout() != -1L ) {
 			return true;
 		} else {
 			return false;

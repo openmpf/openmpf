@@ -126,12 +126,12 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 				purgeServerStartupSystemMessages();
 				startFileIndexing(appContext);
 				startupRegistrationService.registerUnregisteredComponents();
-                startupHealthReportingService();
+                startHealthReporting();
 				applicationRefreshed = true;
 			}
 		} else if (event instanceof ContextClosedEvent) {
 			stopFileIndexing();
-			stopHealthReportingService();
+			stopHealthReporting();
 		}
 	}
 
@@ -151,15 +151,15 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 		}
 	}
 
-	// startupHealthReportingService uses a scheduled executor.
-	private void startupHealthReportingService() {
+	// startHealthReporting uses a scheduled executor.
+	private void startHealthReporting() {
         healthReportExecutorService = Executors.newSingleThreadScheduledExecutor();
         Runnable task = () -> {
             try {
                 boolean isActive = true; // only send periodic health reports for streaming jobs that are current and active.
                 mpfService.sendStreamingJobHealthReports(isActive);
             } catch (Exception e) {
-                log.error("startupHealthReportingService: Exception occurred while sending scheduled health report",e);
+                log.error("startHealthReporting: Exception occurred while sending scheduled health report",e);
             }
         };
 
@@ -168,20 +168,20 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 
     }
 
-    private void stopHealthReportingService() {
+    private void stopHealthReporting() {
 	    if ( healthReportExecutorService != null ) {
             try {
-                log.info("stopHealthReportingService: attempt to shutdown healthReportExecutorService");
+                log.info("stopHealthReporting: attempt to shutdown healthReportExecutorService");
                 healthReportExecutorService.shutdown();
                 healthReportExecutorService.awaitTermination(5, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                log.error("stopHealthReportingService: healthReportExecutorService task interrupted",e);
+                log.error("stopHealthReporting: healthReportExecutorService task interrupted",e);
             } finally {
                 if (!healthReportExecutorService.isTerminated()) {
-                    log.info("stopHealthReportingService: cancel non-finished healthReportExecutorService tasks");
+                    log.info("stopHealthReporting: cancel non-finished healthReportExecutorService tasks");
                 }
                 healthReportExecutorService.shutdownNow();
-                log.info("stopHealthReportingService: healthReportExecutorService shutdown finished");
+                log.info("stopHealthReporting: healthReportExecutorService shutdown finished");
             }
         }
     }

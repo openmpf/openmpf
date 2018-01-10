@@ -46,6 +46,7 @@ public class JsonHealthReportDataCallbackBody {
 
     // All timestamps in OpenMPF should adhere to this date/time pattern.
     public static final String TIMESTAMP_PATTERN = "yyyy-MM-dd kk:mm:ss.S";
+    // The timestampFormatter must remain as a static, or the jackson conversion to JSON will no longer work
     public static final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN);
 
     /**
@@ -55,7 +56,7 @@ public class JsonHealthReportDataCallbackBody {
      * @throws MpfInteropUsageException is thrown if the timestamp String is null. Throws DateTimeParseException if the timestamp String isn't parsable
      * using the date/time pattern adhered to by OpenMPF.
      */
-    public static LocalDateTime parseStringAsLocalDateTime(String timestampStr) throws MpfInteropUsageException, DateTimeParseException {
+    private LocalDateTime parseStringAsLocalDateTime(String timestampStr) throws MpfInteropUsageException, DateTimeParseException {
         if ( timestampStr == null ) {
             throw new MpfInteropUsageException("Error, timestamp String may not be null");
         } else {
@@ -68,7 +69,7 @@ public class JsonHealthReportDataCallbackBody {
      * @param timestamp timestamp as a LocalDateTime. May be null.
      * @return timestamp as a String, will be empty String if timestamp is null.
      */
-    public static String getLocalDateTimeAsString(LocalDateTime timestamp) {
+    private String getLocalDateTimeAsString(LocalDateTime timestamp) {
         if ( timestamp == null ) {
             return "";
         } else {
@@ -129,8 +130,8 @@ public class JsonHealthReportDataCallbackBody {
 
     private LocalDateTime reportDate = null;
     /**
-     * The date/time that this health report is being issued.
-     * @return The date/time that this health report is being issued. This timestamp will be returned as a String
+     * The date/time that this callback is being issued.
+     * @return The date/time that this callback is being issued. This timestamp will be returned as a String
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value #TIMESTAMP_PATTERN}
      */
     @JsonGetter("reportDate")
@@ -176,8 +177,6 @@ public class JsonHealthReportDataCallbackBody {
 
     /**
      * The frame ids from the last new Activity Alerts received for each streaming job in this health report.
-     * Value stored internally as a String to accommodate for this value to be sized in the Components as an unsigned long.
-     * This data type is acceptable since the WFM will not be doing any processing on this parameter.
      * @return the last New Activity Alert frame ids associated with each streaming job. Values within the List will be emtpy String if
      * a New Activity Alert has not been issued for a streaming job.
      */
@@ -196,8 +195,8 @@ public class JsonHealthReportDataCallbackBody {
     }
 
     /**
-     * Constructor used to create a health report for a single streaming job
-     * @param reportDate timestamp for this health report.
+     * Constructor used to a create a callback body containing health report for a single streaming job
+     * @param reportDate timestamp for this health report callback body. Should not be null.
      * @param jobId job id for this streaming job.
      * @param externalId external id for this streaming job. May be null if an external id was not defined.
      * @param jobStatus status of this streaming job.
@@ -214,8 +213,8 @@ public class JsonHealthReportDataCallbackBody {
     }
 
     /**
-     * Constructor used to create a health report containing multiple streaming jobs.
-     * @param reportDate timestamp formatted String for this health report.
+     * Constructor used to a create a callback body containing health reports for multiple streaming jobs.
+     * @param reportDate timestamp formatted String for this health report callback body. Should not be null.
      * @param reports array of streaming job reports.
      * @exception MpfInteropUsageException is thrown if any List is null or if List sizes are not the same length.
      * DateTimeParseException may be thrown if the reportDate doesn't parse to a valid timestamp. A MpfInteropUsageException may be thrown if
@@ -229,9 +228,9 @@ public class JsonHealthReportDataCallbackBody {
     }
 
     /**
-     * Constructor used to create a health report containing multiple streaming jobs.
+     * Constructor used to a create a callback body containing health reports for multiple streaming jobs.
      *
-     * @param reportDate timestamp formatted String for this health report.
+     * @param reportDate timestamp formatted String for this health report callback body. Should not be null.
      * @param jobIds job ids being reported on.
      * @param externalIds external ids for each streaming job. List may contain a null if an
      * external id was not defined for the job.
@@ -248,7 +247,7 @@ public class JsonHealthReportDataCallbackBody {
      * don't parse to a valid timestamp.
      */
     @JsonIgnore
-    public JsonHealthReportDataCallbackBody(String reportDate, List<Long> jobIds, List<String> externalIds, List<String> /*JobStatus*/ jobStatuses,
+    public JsonHealthReportDataCallbackBody(LocalDateTime reportDate, List<Long> jobIds, List<String> externalIds, List<String> /*JobStatus*/ jobStatuses,
         List<String> lastActivityFrameIds, List<String> lastActivityTimestamps) throws MpfInteropUsageException, DateTimeParseException {
 
         // Prep to do some usage error checking and construct the health reports using validated job parameters Lists.
@@ -272,10 +271,14 @@ public class JsonHealthReportDataCallbackBody {
                 // Throw an exception identifying for the caller the job parameter Lists whose size does not match the number of jobIds.
                 throw new MpfInteropUsageException("Error: the following Lists should be of size " + numJobIds +" but are not: " +
                     jobParameterMap.entrySet().stream().filter( m ->  m.getValue().size() != numJobIds ).map( m -> m.getKey() ).collect(Collectors.joining(",")));
+
+            } else if ( reportDate == null ) {
+                throw new MpfInteropUsageException("Error: reportDate should not be null");
+
             } else {
 
                 // If we get to here, then all job parameter Lists passed the error check. Construct this health report.
-                this.reportDate = parseStringAsLocalDateTime(reportDate);
+                this.reportDate = reportDate;
 
                 // Add each job as a separate health report.
                 for ( int i=0; i<numJobIds; i++ ) {

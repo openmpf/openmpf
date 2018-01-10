@@ -26,17 +26,21 @@
 
 package org.mitre.mpf.wfm.data;
 
-import java.math.BigInteger;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
-import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.JobStatus;
-
-import java.util.*;
 
 @Monitored
 public interface Redis {
@@ -54,7 +58,7 @@ public interface Redis {
 	 * @param track The non-null track to add.
 	 * @return {@literal true} iff the track was added to Redis.
 	 */
-	boolean addTrack(Track track);
+	boolean addTrack(Track track) throws WfmProcessingException;
 
 	/**
 	 * Marks a batch job as cancelled/cancelling in the Redis data store.
@@ -219,6 +223,7 @@ public interface Redis {
 	 * @return The URL of the callback.
 	 * @throws WfmProcessingException
 	 */
+	// TODO change this to method name to URI.
 	String getCallbackURL(final long jobId) throws WfmProcessingException;
 
 	/**
@@ -273,13 +278,13 @@ public interface Redis {
 	 */
     boolean isJobTypeStreaming(final long jobId);
 
-    void setHealthReportLastActivityFrameId(long jobId, String lastNewActivityAlertFrameId) throws WfmProcessingException;
+    void setHealthReportLastActivityFrameId(long jobId, String lastActivityFrameId) throws WfmProcessingException;
     String getHealthReportLastActivityFrameIdAsString(long jobId) throws WfmProcessingException;
-    List<String> getHealthReportLastActivityFrameIdAsStrings(List<Long> jobIds) throws WfmProcessingException;
+    List<String> getHealthReportLastActivityFrameIdsAsStrings(List<Long> jobIds) throws WfmProcessingException;
 
-	void setHealthReportLastActivityTimestamp(long jobId, LocalDateTime lastNewActivityAlertTimestamp) throws WfmProcessingException;
+	void setHealthReportLastActivityTimestamp(long jobId, LocalDateTime lastActivityTimestamp) throws WfmProcessingException;
 	String getHealthReportLastActivityTimestampAsString(long jobId) throws WfmProcessingException;
-	List<String> getHealthReportLastActivityTimestampAsStrings(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
+	List<String> getHealthReportLastActivityTimestampsAsStrings(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
 	LocalDateTime getHealthReportLastActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
     List<LocalDateTime> getHealthReportLastActivityTimestamps(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
 

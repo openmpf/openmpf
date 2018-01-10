@@ -27,25 +27,21 @@
 package org.mitre.mpf.wfm.businessrules.impl;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.mitre.mpf.interop.JsonHealthReportDataCallbackBody;
 import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.mitre.mpf.interop.JsonHealthReportDataCallbackBody;
-import org.mitre.mpf.wfm.WfmProcessingException;
 
 /**
  * Thread creation class that supports sending of health reports to the requested health report callback URIs.
@@ -100,46 +96,33 @@ public class HealthReportCallbackThread implements Runnable {
     // Send the health report to the URI identified by healthReportCallbackUri, using the HTTP POST method.
     private void sendHealthReportToCallback(HttpClient httpClient, LocalDateTime currentDateTime) {
 
-        HttpUriRequest req = null;
-
         // Get other information from REDIS about these streaming jobs.
         log.info("HealthReportCallbackThread.sendHealthReportToCallback: posting health report containing jobIds=" + jobIds);
         List<String> externalIds = redis.getExternalIds(jobIds);
         List<String> jobStatuses = redis.getJobStatusesAsString(jobIds);
-        List<String> lastActivityFrameIds = redis.getHealthReportLastActivityFrameIdAsStrings(jobIds);
-        List<String> lastActivityTimestamps = redis.getHealthReportLastActivityTimestampAsStrings(jobIds);
+        List<String> lastActivityFrameIds = redis.getHealthReportLastActivityFrameIdsAsStrings(jobIds);
+        List<String> lastActivityTimestamps = redis.getHealthReportLastActivityTimestampsAsStrings(jobIds);
 
         // Send the health report to the callback using POST.
         HttpPost post = new HttpPost(callbackUri);
         post.addHeader("Content-Type", "application/json");
         try {
-            JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(
-                JsonHealthReportDataCallbackBody.getLocalDateTimeAsString(currentDateTime),
+            JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(currentDateTime,
                 jobIds, externalIds, jobStatuses,
                 lastActivityFrameIds, lastActivityTimestamps);
             log.info("HealthReportCallback, sending POST of healthReport, jsonBody= " + jsonBody);
             post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
-            req = post;
 
             // If the http request was properly constructed, then send it.
-            if (req != null) {
-                HttpResponse response = httpClient.execute(req);
-                log.info("{} HealthReportCallback issued to 'POST' (Response={}).", callbackUri, response);
+            if (post != null) {
+                HttpResponse response = httpClient.execute(post);
+                log.info("Health report(s) sent to " + callbackUri + ". Response: " + response);
             } else {
-                log.error("{} Error sending HealthReportCallback issued to 'POST' req is null, jsonBody=", callbackUri, jsonBody);
+                log.error("Error sending health report(s) to " + callbackUri + ". Failed to create POST object from: " + jsonBody);
             }
 
-        } catch (UnsupportedEncodingException uee) {
-            log.error("Failed to issue 'POST' HealthReportCallback to '{}' due to an UnsupportedEncodingException.",
-                callbackUri, uee);
-
-        } catch (IOException e) {
-            log.error("{} Error sending HealthReportCallback to " + callbackUri
-                + ", issued to 'POST' due to IOException: " + e.getMessage(), e);
-
-        } catch (WfmProcessingException | MpfInteropUsageException e) {
-            log.error("Cannot serialize JsonHealthReportDataCallbackBody, couldn't send 'POST' callback to "
-                    + callbackUri, e);
+        } catch (WfmProcessingException | MpfInteropUsageException | IOException e) {
+            log.error("Error sending health report(s) to " + callbackUri + ".", e);
         }
 
     }
@@ -149,7 +132,7 @@ public class HealthReportCallbackThread implements Runnable {
 
         if ( jobIds == null ) {
 
-            log.warn("Failed to issue HealthReportCallback to '{}' because jobIds is null",callbackUri);
+            log.error("Error sending health report(s) to " + callbackUri + " because jobIds is null.");
 
         } else {
 

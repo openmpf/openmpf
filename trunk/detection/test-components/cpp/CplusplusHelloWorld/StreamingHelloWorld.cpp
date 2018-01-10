@@ -30,60 +30,52 @@
 
 using namespace MPF::COMPONENT;
 
-using namespace std;
-using log4cxx::Logger;
-using log4cxx::xml::DOMConfigurator;
+
+StreamingHelloWorld::StreamingHelloWorld(const MPFStreamingVideoJob &job)
+        : MPFStreamingDetectionComponent(job)
+        , hw_logger_(GetLogger(job.run_directory))
+        , job_name_(job.job_name) {
+
+    LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Initialized StreamingHelloWorld component.")
+}
 
 
+log4cxx::LoggerPtr StreamingHelloWorld::GetLogger(const std::string &run_directory) {
+    std::string plugin_path = run_directory + "/CplusplusHelloWorld";
+    std::string config_path = plugin_path + "/config";
+    log4cxx::xml::DOMConfigurator::configure(config_path + "/Log4cxxConfig.xml");
+    return log4cxx::Logger::getLogger("HelloWorldTest");
+}
 
-bool StreamingHelloWorld::Init() {
-    string run_dir = GetRunDirectory();
-    if (run_dir.empty()) {
-        run_dir = ".";
+
+void StreamingHelloWorld::BeginSegment(const VideoSegmentInfo &segment_info) {
+    LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Preparing to process segment " << segment_info.segment_number)
+}
+
+
+bool StreamingHelloWorld::ProcessFrame(const cv::Mat &frame, int frame_number) {
+    LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Processing frame with size: " << frame.size())
+    if (frame_number % 3 == 0) {
+        LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Found activity in frame " << frame_number);
+        return true;
     }
 
-    std::string plugin_path = run_dir + "/CplusplusHelloWorld";
-    std::string config_path = plugin_path + "/config";
-
-    log4cxx::xml::DOMConfigurator::configure(config_path + "/Log4cxxConfig.xml");
-
-    hw_logger_ = log4cxx::Logger::getLogger("HelloWorldTest");
-
-    LOG4CXX_INFO(hw_logger_, "Running from directory " << run_dir);
-
-    return true;
+    LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Did not find activity in frame " << frame_number);
+    return false;
 }
 
-
-MPFDetectionError StreamingHelloWorld::SetupJob(const MPFJob &job) {
-    LOG4CXX_INFO(hw_logger_, "[" << job.job_name << "] Setting up job.")
-    job_name_ = job.job_name;
-    return MPF_DETECTION_SUCCESS;
-}
-
-
-MPFDetectionError StreamingHelloWorld::ProcessFrame(const cv::Mat &frame, bool &activityFound) {
-    LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Processing frame with size: " << frame.size())
-    activityFound = !frame.empty();
-    return MPF_DETECTION_SUCCESS;
-}
-
-
-MPFDetectionError StreamingHelloWorld::GetVideoTracks(std::vector<MPFVideoTrack> &tracks) {
+std::vector<MPFVideoTrack> StreamingHelloWorld::EndSegment() {
     LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Getting video tracks.")
     MPFVideoTrack track1(10, 15, 0.5);
     track1.frame_locations[10] = MPFImageLocation(10, 15, 78, 63, 0.5,
                                                   { {"propName1", "propVal1"}, {"propName2", "propVal2"} });
     track1.frame_locations[15] = MPFImageLocation(10, 15, 78, 63, 0.9,
                                                   { {"propName3", "propVal3"} });
-    tracks.push_back(std::move(track1));
-
     MPFVideoTrack track2(150, 200, 0.75);
     track2.frame_locations[150] = MPFImageLocation(100, 150, 78, 63, 0.75);
     track2.frame_locations[200] = MPFImageLocation(100, 150, 78, 63, 0.9);
-    tracks.push_back(std::move(track2));
 
-    return MPF_DETECTION_SUCCESS;
+    return { track1, track2 };
 }
 
 
@@ -92,15 +84,9 @@ std::string StreamingHelloWorld::GetDetectionType() {
 }
 
 
-bool StreamingHelloWorld::Close() {
-    LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Closing component");
-    return true;
-}
-
 StreamingHelloWorld::~StreamingHelloWorld() {
     LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Destroying component");
 }
 
+EXPORT_MPF_STREAMING_COMPONENT(StreamingHelloWorld);
 
-MPF_COMPONENT_CREATOR(StreamingHelloWorld);
-MPF_COMPONENT_DELETER();

@@ -29,11 +29,13 @@
 #include <activemq/library/ActiveMQCPP.h>
 #include <activemq/core/ActiveMQConnectionFactory.h>
 
+#include "detection.pb.h"
 
 #include "BasicAmqMessageSender.h"
-#include "MPFMessageUtils.h"
 #include "ExecutorErrors.h"
 
+
+using org::mitre::mpf::wfm::buffers::StreamingDetectionResponse;
 
 namespace MPF { namespace COMPONENT {
 
@@ -74,25 +76,42 @@ namespace MPF { namespace COMPONENT {
     }
 
 
-    void BasicAmqMessageSender::SendActivityAlert(int frame_index) {
+    void BasicAmqMessageSender::SendActivityAlert(int frame_number) {
         std::unique_ptr<cms::Message> message(session_->createMessage());
         message->setLongProperty("JOB_ID", job_id_);
-        message->setIntProperty("FRAME_INDEX", frame_index);
+        message->setIntProperty("FRAME_NUMBER", frame_number);
         message->setLongProperty("ACTIVITY_DETECT_TIME", GetTimestampMillis());
         activity_alert_producer_->send(message.get());
     }
 
-    void BasicAmqMessageSender::SendSummaryReport(int frame_index,
+    void BasicAmqMessageSender::SendSummaryReport(int frame_number,
                                                   const std::string &detection_type,
                                                   const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks) {
+        SendSegmentReport(frame_number, detection_type, tracks, {});
+    }
 
-        org::mitre::mpf::wfm::buffers::StreamingDetectionResponse protobuf_response;
 
-        int segment_number = frame_index / segment_size_;
+    void BasicAmqMessageSender::SendErrorReport(int frame_number,
+                                                const std::string &error_message,
+                                                const std::string &detection_type) {
+        SendSegmentReport(frame_number, detection_type, {}, error_message);
+    }
+
+
+    void BasicAmqMessageSender::SendSegmentReport(int frame_number,
+                                                  const std::string &detection_type,
+                                                  const std::vector<MPFVideoTrack> &tracks,
+                                                  const std::string &error_message) {
+        StreamingDetectionResponse protobuf_response;
+
+        int segment_number = frame_number / segment_size_;
         protobuf_response.set_segment_number(segment_number);
         protobuf_response.set_start_frame(segment_size_ * segment_number);
-        protobuf_response.set_stop_frame(segment_size_ * (segment_number + 1) - 1);
+        protobuf_response.set_stop_frame(frame_number);
         protobuf_response.set_detection_type(detection_type);
+        if (!error_message.empty())  {
+            protobuf_response.set_error(error_message);
+        }
 
         for (const auto &track : tracks) {
             auto protobuf_track = protobuf_response.add_video_tracks();
@@ -125,7 +144,14 @@ namespace MPF { namespace COMPONENT {
             }
         }
 
-        SendSegmentReport(protobuf_response);
+        int proto_bytes_size = protobuf_response.ByteSize();
+        std::unique_ptr<uchar[]> proto_bytes(new uchar[proto_bytes_size]);
+        protobuf_response.SerializeWithCachedSizesToArray(proto_bytes.get());
+
+        std::unique_ptr<cms::BytesMessage> message(session_->createBytesMessage(proto_bytes.get(), proto_bytes_size));
+        message->setLongProperty("JOB_ID", job_id_);
+
+        summary_report_producer_->send(message.get());
     }
 
 
@@ -133,37 +159,5 @@ namespace MPF { namespace COMPONENT {
         using namespace std::chrono;
         auto time_since_epoch = system_clock::now().time_since_epoch();
         return duration_cast<milliseconds>(time_since_epoch).count();
-    }
-
-    void BasicAmqMessageSender::SendErrorReport(int frame_index,
-                                                const std::string &error_message,
-                                                const std::string &detection_type) {
-
-
-        org::mitre::mpf::wfm::buffers::StreamingDetectionResponse protobuf_response;
-        protobuf_response.set_error(error_message);
-
-        int segment_number = frame_index / segment_size_;
-        protobuf_response.set_segment_number(segment_number);
-        protobuf_response.set_start_frame(segment_size_ * segment_number);
-        protobuf_response.set_stop_frame(frame_index);
-        if (!detection_type.empty()) {
-            protobuf_response.set_detection_type(detection_type);
-        }
-        SendSegmentReport(protobuf_response);
-    }
-
-
-    void BasicAmqMessageSender::SendSegmentReport(
-            const org::mitre::mpf::wfm::buffers::StreamingDetectionResponse &protobuf) {
-
-        int protobuf_size = protobuf.ByteSize();
-        std::unique_ptr<uchar[]> protobuf_bytes(new uchar[protobuf_size]);
-        protobuf.SerializeWithCachedSizesToArray(protobuf_bytes.get());
-
-        std::unique_ptr<cms::BytesMessage> message(session_->createBytesMessage(protobuf_bytes.get(), protobuf_size));
-        message->setLongProperty("JOB_ID", job_id_);
-
-        summary_report_producer_->send(message.get());
     }
 }}

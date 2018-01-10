@@ -45,14 +45,17 @@ public class SegmentSummaryReport {
 
 	private final List<Track> _tracks;
 
+	private final String _errorMessage;
+
 
 	public SegmentSummaryReport(long segmentNumber, long segmentStartFrame, long segmentStopFrame,
-	                            String detectionType, List<Track> tracks) {
+	                            String detectionType, List<Track> tracks, String errorMessage) {
 		_segmentNumber = segmentNumber;
 		_segmentStartFrame = segmentStartFrame;
 		_segmentStopFrame = segmentStopFrame;
 		_detectionType = detectionType;
 		_tracks = ImmutableList.copyOf(tracks);
+		_errorMessage = errorMessage;
 	}
 
 
@@ -75,6 +78,10 @@ public class SegmentSummaryReport {
 
 	public List<Track> getTracks() {
 		return _tracks;
+	}
+
+	public String getErrorMessage() {
+		return _errorMessage;
 	}
 
 

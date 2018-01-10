@@ -35,19 +35,24 @@ namespace MPF { namespace COMPONENT {
 
     class QuitWatcher {
     public:
-        QuitWatcher();
-
         bool IsTimeToQuit() const;
 
-        bool HasError() const;
+        // Singleton to prevent more than one thread from reading from standard in.
+        static QuitWatcher* GetInstance();
 
     private:
-        std::atomic_bool is_time_to_quit_;
-        std::atomic_bool has_error_;
+        QuitWatcher();
 
-        static void WatchForQuit(std::atomic_bool &is_time_to_quit,  std::atomic_bool &has_error);
+        static QuitWatcher* instance_;
 
-        static void WatchStdIn(std::atomic_bool &is_time_to_quit);
+        // static because in the event of an error elsewhere, the detached thread will still be running and may access
+        // is_time_to_quit_ and error_message_.
+        static std::atomic_bool is_time_to_quit_;
+        static std::string error_message_;
+
+        static void WatchForQuit();
+        static void SetError(std::string &&error_message);
+
     };
 }}
 

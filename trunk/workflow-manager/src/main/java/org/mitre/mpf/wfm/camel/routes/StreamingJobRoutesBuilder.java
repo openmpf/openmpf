@@ -78,7 +78,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 					Message msg = exchange.getIn();
 					_streamingJobRequestBo.handleNewActivityAlert(
 							msg.getHeader("JOB_ID", long.class),
-							msg.getHeader("FRAME_INDEX", int.class),
+							msg.getHeader("FRAME_NUMBER", int.class),
 							msg.getHeader("ACTIVITY_DETECT_TIME", long.class));
 				});
 
@@ -114,7 +114,8 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 				protobuf.getStartFrame(),
 				protobuf.getStopFrame(),
 				protobuf.getDetectionType(),
-				tracks);
+				tracks,
+				protobuf.getError());
 	}
 
 

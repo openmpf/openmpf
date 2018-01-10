@@ -33,11 +33,13 @@ public enum StreamingProcessExitReason {
 	CANCELLED(0),
 	UNEXPECTED_ERROR(1),
 	INVALID_COMMAND_LINE_ARGUMENTS(2),
+
 	INVALID_INI_FILE(65),
+	UNABLE_TO_READ_FROM_STANDARD_IN(66),
 	MESSAGE_BROKER_ERROR(69),
 	INTERNAL_COMPONENT_ERROR(70),
 	COMPONENT_LOAD_ERROR(71),
-	UNABLE_TO_OPEN_STREAM(75),
+	UNABLE_TO_CONNECT_TO_STREAM(75),
 	STREAM_STALLED(76);
 
 
@@ -52,10 +54,5 @@ public enum StreamingProcessExitReason {
 				.filter(r -> r.exitCode == exitCode)
 				.findAny()
 				.orElse(UNEXPECTED_ERROR);
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s(%s)", super.toString(), exitCode);
 	}
 }

@@ -33,7 +33,7 @@ public class StreamingProcessExitException extends RuntimeException {
 
 
 	public StreamingProcessExitException(StreamingProcessExitReason exitReason) {
-		super("The process exited with non-success exit code: " + exitReason);
+		super(String.format("The process exited with non-success exit code: %s(%s)", exitReason, exitReason.exitCode));
 		_exitReason = exitReason;
 	}
 

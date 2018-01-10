@@ -37,12 +37,12 @@
 
 #include <MPFDetectionComponent.h>
 
-#include "detection.pb.h"
-
 #include "JobSettings.h"
+
 
 namespace MPF { namespace COMPONENT {
 
+    // TODO: Combine with AMQMessenger when adding support for multistage pipelines.
     class BasicAmqMessageSender {
 
     public:
@@ -50,14 +50,13 @@ namespace MPF { namespace COMPONENT {
 
         void SendJobStatus(const std::string &job_status);
 
-        void SendActivityAlert(int frame_index);
-
+        void SendActivityAlert(int frame_number);
 
         void SendSummaryReport(
-                int frame_index, const std::string &detection_type,
-                const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks);
+                int frame_number, const std::string &detection_type,
+                const std::vector<MPFVideoTrack> &tracks);
 
-        void SendErrorReport(int frame_index, const std::string &error_message, const std::string &detection_type);
+        void SendErrorReport(int frame_number, const std::string &error_message, const std::string &detection_type);
 
     private:
         const long job_id_;
@@ -78,8 +77,9 @@ namespace MPF { namespace COMPONENT {
 
         static long GetTimestampMillis();
 
-        void SendSegmentReport(const  org::mitre::mpf::wfm::buffers::StreamingDetectionResponse &protobuf);
+        void SendSegmentReport(int frame_number, const std::string &detection_type,
+                               const std::vector<MPFVideoTrack> &tracks, const std::string &error_message);
     };
 }}
 
-#endif //MPF_MYMESSAGESENDER_H
+#endif //MPF_BASICAMQMESSAGESENDER_H

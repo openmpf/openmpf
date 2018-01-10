@@ -33,16 +33,20 @@
 namespace MPF { namespace COMPONENT {
 
     enum class ExitCode {
+        // Standard exit codes
         Success = 0,
         UnexpectedError = 1,
         InvalidCommandLineArgs = 2,
 
+        // Custom exit codes
+        // http://tldp.org/LDP/abs/html/exitcodes.html recommends using exit codes between range 64 - 113
         InvalidIniFile = 65,
+        UnableToReadFromStandardIn = 66,
         MessageBrokerError = 69,
         InternalComponentError = 70,
         ComponentLoadError = 71,
 
-        UnableToOpenStream = 75,
+        UnableToConnectToStream = 75,
         StreamNoLongerReadable = 76,
     };
 

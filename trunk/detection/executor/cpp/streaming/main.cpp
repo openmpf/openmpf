@@ -103,9 +103,10 @@ ExitCode run_job(const JobSettings &settings, const std::string &app_dir, log4cx
 
     std::string log_prefix = "[" + job_name + "] ";
 
-    BasicAmqMessageSender sender(settings);
-    int frame_id = -1;
+    int frame_number = -1;
     std::string detection_type;
+    BasicAmqMessageSender sender(settings);
+    // Now that ActiveMQ has been setup, it can be used to report errors.
     try {
         LOG4CXX_INFO(logger, log_prefix << "Loading component from: " << settings.component_lib_path);
         StreamingComponentHandle component(settings.component_lib_path, job);
@@ -114,55 +115,47 @@ ExitCode run_job(const JobSettings &settings, const std::string &app_dir, log4cx
         LOG4CXX_INFO(logger, log_prefix << "Connecting to stream at: " << settings.stream_uri)
         cv::VideoCapture video_capture(settings.stream_uri);
         if (!video_capture.isOpened()) {
-            LOG4CXX_ERROR(logger, log_prefix << "Unable to connect to stream: " << settings.stream_uri);
-            return ExitCode::UnableToOpenStream;
+            throw FatalError(ExitCode::UnableToConnectToStream, "Unable to connect to stream: " + settings.stream_uri);
         }
 
-        QuitWatcher quit_watcher;
+        QuitWatcher *quit_watcher = QuitWatcher::GetInstance();
+
         bool read_failed = false;
 
-        while (!quit_watcher.IsTimeToQuit()) {
+        while (!quit_watcher->IsTimeToQuit()) {
             cv::Mat frame;
             if (!video_capture.read(frame)) {
+                // TODO: Detect and report stalls.
                 read_failed = true;
                 break;
             }
-            frame_id++;
+            frame_number++;
 
-            if (frame_id % settings.segment_size == 0) {
-                int segment_number = frame_id / settings.segment_size;
-                int segment_end = frame_id + settings.segment_size;
+            if (frame_number % settings.segment_size == 0) {
+                int segment_number = frame_number / settings.segment_size;
+                int segment_end = frame_number + settings.segment_size;
                 cv::Size frame_size = frame.size();
-                component.BeginSegment({ segment_number, frame_id, segment_end, frame_size.width, frame_size.height });
+                component.BeginSegment({ segment_number, frame_number, segment_end,
+                                               frame_size.width, frame_size.height });
             }
 
-            bool activity_found = component.ProcessFrame(frame, frame_id);
+            bool activity_found = component.ProcessFrame(frame, frame_number);
             if (activity_found) {
-                LOG4CXX_DEBUG(logger, log_prefix << "Sending new activity alert for frame: " << frame_id)
-                sender.SendActivityAlert(frame_id);
+                LOG4CXX_DEBUG(logger, log_prefix << "Sending new activity alert for frame: " << frame_number)
+                sender.SendActivityAlert(frame_number);
             }
 
-            if (frame_id != 0 && (frame_id % settings.segment_size == 0)) {
+            if (frame_number != 0 && (frame_number % settings.segment_size == 0)) {
                 const std::vector<MPFVideoTrack> &tracks = component.EndSegment();
                 LOG4CXX_DEBUG(logger, log_prefix << "Sending segment summary for " << tracks.size() << " tracks.")
-                sender.SendSummaryReport(frame_id, detection_type, tracks);
+                sender.SendSummaryReport(frame_number, detection_type, tracks);
             }
         }
 
-        if (frame_id % settings.segment_size != 0) {
+        if (frame_number % settings.segment_size != 0) {
             const std::vector<MPFVideoTrack> &tracks = component.EndSegment();
             LOG4CXX_INFO(logger, log_prefix << "Send segment summary for final segment.")
-            sender.SendSummaryReport(frame_id, detection_type, tracks);
-        }
-
-        if (quit_watcher.IsTimeToQuit() && !quit_watcher.HasError()) {
-            LOG4CXX_INFO(logger, log_prefix << "Exiting normally because quit was requested.")
-            return ExitCode::Success;
-        }
-
-        if (quit_watcher.HasError()) {
-            LOG4CXX_ERROR(logger, log_prefix << "Exiting due to an error while trying to read from standard in.")
-            return ExitCode::UnexpectedError;
+            sender.SendSummaryReport(frame_number, detection_type, tracks);
         }
 
         if (read_failed) {
@@ -172,7 +165,8 @@ ExitCode run_job(const JobSettings &settings, const std::string &app_dir, log4cx
         return ExitCode::Success;
     }
     catch (const FatalError &ex) {
-        sender.SendErrorReport(frame_id, ex.what(), detection_type);
+        // Send error report before actually handling exception.
+        sender.SendErrorReport(frame_number, ex.what(), detection_type);
         throw;
     }
 }

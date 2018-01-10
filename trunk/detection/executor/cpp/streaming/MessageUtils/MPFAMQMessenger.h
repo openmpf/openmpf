@@ -39,7 +39,8 @@
 #include "MPFMessenger.h"
 #include "MPFAMQMessage.h"
 
-//TODO: For future use.
+// TODO: For future use.
+// TODO: Refactor to use RAII
 namespace MPF {
 
 class AMQMessagingManager : MPFMessagingManager {

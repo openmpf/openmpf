@@ -26,10 +26,6 @@
 cmake_minimum_required(VERSION 3.6)
 set(CMAKE_CXX_STANDARD 11)
 
-## Find Qt
-#include(${QT_USE_FILE})
-#add_definitions(${QT_DEFINITIONS})
-
 ## Find and install activemq-cpp
 find_package(PkgConfig)
 set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:/usr/local/lib/pkgconfig")
@@ -62,8 +58,7 @@ list(APPEND CMAKE_PREFIX_PATH $ENV{HOME}/mpf-sdk-install/lib/cmake)
 find_package(mpfComponentInterface REQUIRED)
 find_package(mpfDetectionComponentApi REQUIRED)
 
-include_directories(${MSG_UTILS_DIR})
-
+#include_directories(${MSG_UTILS_DIR})
 #include_directories(MessageUtils)
 #add_subdirectory(MessageUtils)
 
@@ -87,4 +82,3 @@ install(TARGETS streaming_component_executor
 	ARCHIVE DESTINATION lib)
 
 install(FILES StreamingExecutorLog4cxxConfig.xml DESTINATION config)
-#file(COPY StreamingExecutorLog4cxxConfig.xml DESTINATION ../config)

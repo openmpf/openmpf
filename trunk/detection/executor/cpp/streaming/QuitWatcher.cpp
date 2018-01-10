@@ -27,72 +27,74 @@
 
 #include <functional>
 #include <iostream>
-#include <stdexcept>
 #include <thread>
 
 #include "QuitWatcher.h"
+#include "ExecutorErrors.h"
 
 namespace MPF { namespace COMPONENT {
+    std::atomic_bool QuitWatcher::is_time_to_quit_(false);
+    std::string QuitWatcher::error_message_;
 
-    QuitWatcher::QuitWatcher()
-            : is_time_to_quit_(false)
-            , has_error_(false) {
+    QuitWatcher* QuitWatcher::instance_(nullptr);
 
-        std::thread watcher_thread(
-                &QuitWatcher::WatchForQuit, std::ref(is_time_to_quit_), std::ref(has_error_));
+
+    QuitWatcher::QuitWatcher() {
+        std::thread watcher_thread(&WatchForQuit);
+        // detach so that when there is an error elsewhere, the process can exit without waiting for the quit command.
         watcher_thread.detach();
     }
 
 
-
     bool QuitWatcher::IsTimeToQuit() const {
+        if (is_time_to_quit_) {
+            if (!error_message_.empty()) {
+                throw FatalError(ExitCode::UnableToReadFromStandardIn, error_message_);
+            }
+        }
         return is_time_to_quit_;
     }
 
 
-    bool QuitWatcher::HasError() const {
-        return has_error_;
-    }
-
-
-    void QuitWatcher::WatchForQuit(std::atomic_bool &is_time_to_quit,  std::atomic_bool &has_error) {
+    void QuitWatcher::WatchForQuit() {
         try {
-            WatchStdIn(is_time_to_quit);
-        }
-        catch (const std::runtime_error &ex) {
-            std::cerr << ex.what() << " Telling main thread to exit." << std::endl;
-            has_error = true;
-            is_time_to_quit = true;
+            std::string line;
+            while (std::getline(std::cin, line)) {
+                if (line == "quit") {
+                    is_time_to_quit_ = true;
+                    return;
+                }
+                std::cerr << "Ignoring unexpected input from standard in: " << line << std::endl;
+            }
+
+            if (std::cin.eof()) {
+                SetError("Standard in was closed before quit was received.");
+            }
+            else {
+                SetError("An error occurred while trying to read from standard in.");
+            }
         }
         catch (const std::exception &ex) {
-            std::cerr << "An error occurred while trying to read from standard in. " << ex.what()
-                      << "Telling main thread to exit. ";
-            has_error = true;
-            is_time_to_quit = true;
+            SetError(std::string("An error occurred while trying to read from standard in: ") + ex.what());
         }
         catch (...) {
-            std::cerr << "An error occurred while trying to read from standard in. Telling main thread to exit."
-                      << std::endl;
-            has_error = true;
-            is_time_to_quit = true;
+            SetError("An error occurred while trying to read from standard in.");
         }
     }
 
 
-    void QuitWatcher::WatchStdIn(std::atomic_bool &is_time_to_quit) {
-        std::string line;
-        while (std::getline(std::cin, line)) {
-            if (line == "quit") {
-                is_time_to_quit = true;
-                return;
-            }
-            std::cerr << "Ignoring unexpected input from standard in: " << line << std::endl;
+    QuitWatcher* QuitWatcher::GetInstance() {
+        if (instance_ == nullptr) {
+            instance_ = new QuitWatcher;
         }
-
-        if (std::cin.eof()) {
-            throw std::runtime_error("Standard in was closed before quit was received.");
-        }
-        throw std::runtime_error("An error occurred while trying to read from standard in.");
+        return instance_;
     }
 
+    void QuitWatcher::SetError(std::string &&error_message) {
+        // error_message_ must be set before is_time_to_quit_ to ensure proper synchronization.
+        // error_message_ is not atomic because there is no atomic string.
+        // Since is_time_to_quit_ is atomic, reading or writing to is_time_to_quit_ will cause a synchronization event.
+        error_message_ = std::move(error_message);
+        is_time_to_quit_ = true;
+    }
 }}

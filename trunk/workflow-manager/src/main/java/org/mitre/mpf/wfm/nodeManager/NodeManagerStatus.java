@@ -298,6 +298,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 
 	@Override
 	public void streamingJobExited(StreamingJobExitedMessage message) {
+		// TODO: Replace with JobStatus when StreamingJobStatus enum added.
 		JobStatus status;
 		switch (message.reason) {
 			case CANCELLED:

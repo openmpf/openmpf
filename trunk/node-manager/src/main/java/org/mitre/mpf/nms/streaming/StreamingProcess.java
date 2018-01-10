@@ -40,8 +40,6 @@ public class StreamingProcess {
 
 	private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
 
-	private static final int STREAM_STALLED_EXIT_CODE = 76;
-
 	private final String _executable;
 
 	private final ProcessBuilder _processBuilder;
@@ -126,8 +124,8 @@ public class StreamingProcess {
 			_syncOps.onProcessExit();
 
 			LOG.info("Process: {} exited with exit code {}", _executable, exitCode);
-			if (exitCode == STREAM_STALLED_EXIT_CODE) {
-				throw new StreamingProcessExitException(STREAM_STALLED_EXIT_CODE);
+			if (exitCode == StreamingProcessExitReason.STREAM_STALLED.exitCode) {
+				throw new StreamingProcessExitException(StreamingProcessExitReason.STREAM_STALLED);
 			}
 			return exitCode;
 		}

@@ -163,7 +163,7 @@ public class ITWebStreamingHealthReports {
             // Wait for a health report callback that includes the jobId of these two test jobs.
             // Health reports should periodically be sent every 30 seconds, unless reset in the mpf.properties file.
             // Listen for a health report POST that has our two jobIds.
-            while ( !(gotHealthReportPostResponseForJob1 && gotHealthReportPostResponseForJob2) ) {
+            while ( !gotHealthReportPostResponseForJob1 || !gotHealthReportPostResponseForJob2 ) {
                 Thread.sleep(1000); // test will eventually timeout
             }
 

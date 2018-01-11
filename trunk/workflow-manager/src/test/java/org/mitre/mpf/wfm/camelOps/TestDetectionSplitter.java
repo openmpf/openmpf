@@ -90,7 +90,7 @@ public class TestDetectionSplitter {
         final long testId = 12345;
         final String testExternalId = "externID";
         final TransientPipeline testPipe = new TransientPipeline("testPipe", "testDescr");
-        final int testStage = 1;
+        final int testStage = 0;
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
         TransientJob testJob = new TransientJob(testId, testExternalId, testPipe, testStage, testPriority, testOutputEnabled, false);
@@ -99,6 +99,7 @@ public class TestDetectionSplitter {
         List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
         testJob.setMedia(listMedia);
         TransientStage testTransientStage = new TransientStage("stageName", "stageDescr", ActionType.DETECTION);
+        testPipe.setStages(Collections.singletonList(testTransientStage));
 
         Map<String, String> mergeProp = new HashMap<>();
         mergeProp.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");

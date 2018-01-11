@@ -143,7 +143,7 @@ public class RedisImpl implements Redis {
 	public synchronized boolean addDetectionProcessingError(DetectionProcessingError detectionProcessingError) throws WfmProcessingException {
         if ( detectionProcessingError == null ) {
             // Receiving a null parameter may be a symptom of a much larger issue. This shouldn't happen, but if it does handle it gracefully by logging a error and returning false.
-            log.error("Invalid argument error, detectionProcessingError should not be null when trying to add detection processing error.");
+            log.error("IInvalid argument. detectionProcessingError should not be null.");
             return false;
         } else if ( isJobTypeStreaming(detectionProcessingError.getJobId()) ) {
             // This method should not be called for a streaming job.
@@ -176,7 +176,7 @@ public class RedisImpl implements Redis {
 	public boolean addTrack(Track track) throws WfmProcessingException{
         if ( track == null ) {
             // Receiving a null parameter may be a symptom of a much larger issue. This shouldn't happen, but if it does handle it gracefully by logging a error and returning false.
-            log.error("Invalid argument error, track should not be null when trying to add a track.");
+            log.error("Invalid argument. Track should not be null.");
             return false;
         } else if( isJobTypeStreaming(track.getJobId()) ) {
             // This method should not be called for a streaming job.
@@ -365,8 +365,7 @@ public class RedisImpl implements Redis {
 				return (int)(jobHash.get(TASK));
 			}
 		} else if ( isJobTypeStreaming(jobId) ) {
-			// Confirmed that the specified job is a streaming job. This is an error, WFM does not track stage of streaming jobs.
-            // This method should not be called for a streaming jobs.
+			// WFM does not keep track of the stage for streaming jobs.
             throw new WfmProcessingException("Error: This method should not be called for streaming jobs. Rejected this call for streaming job " + jobId);
 		} else {
             // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and returning -1.

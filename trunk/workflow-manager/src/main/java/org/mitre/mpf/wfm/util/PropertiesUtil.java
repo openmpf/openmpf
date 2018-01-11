@@ -528,6 +528,10 @@ public class PropertiesUtil {
 
 	@Value("${streaming.stallAlert.detectionThreshold}")
 	private long streamingJobStallAlertThreshold;
+	/**
+	 * Get the streaming job stall alert threshold, in milliseconds
+	 * @return streaming job stall alert threshold, in milliseconds
+	 */
 	public long getStreamingJobStallAlertThreshold() {
 		return streamingJobStallAlertThreshold;
 	}

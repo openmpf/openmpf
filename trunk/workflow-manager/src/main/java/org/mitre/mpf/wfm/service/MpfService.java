@@ -92,7 +92,16 @@ public interface MpfService {
     /**
      * Create a new streaming job which will execute the specified pipeline on the URI defined in
      * the stream object.
-     *
+     * @param json_stream JSON representation of the stream data
+     * @param algorithmProperties A map of properties which will override the job properties on this job for a particular algorithm.
+     * @param jobProperties A map of properties which will override the default and pipeline properties on this job.
+     * @param pipelineName The name of the pipeline to execute.
+     * @param externalId A user-defined and optional external identifier for the job.
+     * @param buildOutput {@literal true} to build output objects, {@literal false} to suppress output objects.
+     * @param priority The priority to assign to this job.
+     * @param stallTimeout
+     * @param healthReportCallbackURI The health report callback URI or null to disable health reports
+     * @param summaryReportCallbackURI The summary callback URI or null to disable summary reports
      * @return A {@link org.mitre.mpf.interop.JsonStreamingJobRequest} which summarizes this
      * request.
      */

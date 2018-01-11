@@ -43,8 +43,6 @@ public class StreamingJobCreationRequest {
 
 	private String healthReportCallbackUri = null; // the URL to send a health report to
 	private String summaryReportCallbackUri = null; // the URL to send a summary report to
-	private String newTrackAlertCallbackUri = null; // the URL to send a new track alert report to
-	private String callbackMethod = "POST"; // the method to send the response back after a job completes
 
 	private long stallTimeout = -1L;
 	public void setStallTimeout(long stallTimeout) { this.stallTimeout=stallTimeout; }
@@ -106,26 +104,26 @@ public class StreamingJobCreationRequest {
 	/** return the HealthReportCallbackUri. May be null if not defined.
 	 * @return return the specified callback Uri. May be null if not defined
 	 */
-	public String getHealthReportCallbackUri() { return healthReportCallbackUri;	}
+	public String getHealthReportCallbackUri() { return healthReportCallbackUri; }
+
+    /**
+     * Set the health report callback URI. The HTTP POST method will always be used for sending health reports to this URI.
+     * @param callbackUri the health report callback URI.
+     */
 	public void setHealthReportCallbackUri(String callbackUri) { this.healthReportCallbackUri = callbackUri; }
 
 	/** return the SummaryReportCallbackUri. May be null if not defined.
 	 * @return return the specified callback Uri. May be null if not defined
 	 */
 	public String getSummaryReportCallbackUri() { return summaryReportCallbackUri; }
+
+    /**
+     * Set the summary report callback URI. The HTTP POST method will always be used for sending summary reports to this URI.
+     * @param callbackUri the summary report callback URI.
+     */
 	public void setSummaryReportCallbackUri(String callbackUri) { this.summaryReportCallbackUri = callbackUri; }
 
-	/** return the NewTrackAlertCallbackUri. May be null if not defined.
-	 * @return return the specified callback Uri. May be null if not defined
-	 */
-	public String getNewTrackAlertCallbackUri() { return newTrackAlertCallbackUri;	}
-	public void setNewTrackAlertCallbackUri(String callbackUri) { this.newTrackAlertCallbackUri = callbackUri; }
-
-	/** Method will return the HTTP method to be used for the callbacks.
-	 * @return will return SET or POST or null if the method is not defined
-	 */
-	public String getCallbackMethod() { return callbackMethod; }
-	public void setCallbackMethod(String callbackMethod) { this.callbackMethod = callbackMethod; }
+	public StreamingJobCreationRequest() {}
 
 	/** this method will check the current settings within this streaming job creation request,
 	 * and will return true if the current settings are set within the constraints defined for a
@@ -134,8 +132,7 @@ public class StreamingJobCreationRequest {
 	 */
 	public boolean isValidRequest() {
 		// do error checks on the streaming job request.
-		// TODO check the pipeline name specified in the create streaming job request and make sure it's streaming-capable
-		if ( getStream().isValidStreamData() && getStallTimeout() != -1L ) {
+        if ( getStream().isValidStreamData() && getStallTimeout() != -1L ) {
 			return true;
 		} else {
 			return false;

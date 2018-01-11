@@ -81,14 +81,6 @@ public class JsonStreamingJobRequest {
 	private String summaryReportCallbackUri;
 	public String getSummaryReportCallbackUri() { return summaryReportCallbackUri; }
 
-	@JsonPropertyDescription("The OPTIONAL URI to make a callback for a new track alert within this streaming job.")
-	private String newTrackAlertCallbackUri;
-	public String getNewTrackAlertCallbackUri() { return newTrackAlertCallbackUri; }
-
-	@JsonPropertyDescription("The OPTIONAL method to connect to the callback URIs. GET or POST.")
-	private String callbackMethod;
-	public String getCallbackMethod() { return callbackMethod; }
-
   @JsonCreator
   public JsonStreamingJobRequest(@JsonProperty("externalId") String externalId,
       @JsonProperty("outputObjectEnabled") boolean outputObjectEnabled,
@@ -99,8 +91,6 @@ public class JsonStreamingJobRequest {
       @JsonProperty("stallTimeout") long stallTimeout,
       @JsonProperty("healthReportCallbackUri") String healthReportCallbackUri,
       @JsonProperty("summaryReportCallbackUri") String summaryReportCallbackUri,
-      @JsonProperty("newTrackAlertCallbackUri") String newTrackAlertCallbackUri,
-      @JsonProperty("callbackMethod") String callbackMethod,
       @JsonProperty("algorithmProperties") Map<String, Map<String,String>> algorithmProperties,
       @JsonProperty("jobProperties") Map<String, String> jobProperties) {
 
@@ -112,8 +102,6 @@ public class JsonStreamingJobRequest {
 		this.stallTimeout = stallTimeout;
 		this.healthReportCallbackUri = healthReportCallbackUri;
 		this.summaryReportCallbackUri = summaryReportCallbackUri;
-		this.newTrackAlertCallbackUri = newTrackAlertCallbackUri;
-		this.callbackMethod = callbackMethod;
 		this.stream = jsonStream;
 		this.algorithmProperties = new HashMap<>();
 		this.jobProperties = new HashMap<>();

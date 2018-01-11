@@ -24,51 +24,19 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api;
+package org.mitre.mpf.interop.exceptions;
 
-public class StreamingJobCancelResponse {
-	private Long jobId;
-	private boolean doCleanup = false;
-	private String outputObjectDirectory;
-	private MpfResponse mpfResponse = new MpfResponse();
+/**
+ * Exception thrown if an org.mitre.mpf.interop usage error is found.
+ */
+public class MpfInteropUsageException extends Exception {
 
-	/** Set response parameters.
-	 * @param jobId job id of this streaming job
-	 * @param outputObjectDirectory root directory for output objects created during this streaming job
-	 * @param doCleanup if true, then the caller is requesting that the output object directory is cleaned up prior to cancelling this job
-	 */
-	private void setResponseParameters(Long jobId, String outputObjectDirectory, boolean doCleanup) {
-		this.jobId = jobId;
-		this.outputObjectDirectory = outputObjectDirectory;
-		this.doCleanup = doCleanup;
-	}
+    public MpfInteropUsageException(String msg) {
+        super(msg);
+    }
 
-	public StreamingJobCancelResponse() {}
-
-	/** Constructor typically used for construction of a StreamingJobCancelResponse indicating an error.
-	 * @param jobId job id of this streaming job
-	 * @param outputObjectDirectory root directory for output objects created during this streaming job
-	 * @param doCleanup if true, then the caller is requesting that the output object directory is cleaned up prior to cancelling this job
-	 * @param errorCode error code to be set in the mpf response
-	 * @param errorMessage error message to be set in the mpf response
-	 */
-	public StreamingJobCancelResponse(Long jobId, String outputObjectDirectory, boolean doCleanup, int errorCode, String errorMessage) {
-		setResponseParameters(jobId, outputObjectDirectory, doCleanup);
-		mpfResponse.setMessage(errorCode, errorMessage);
-	}
-
-	public Long getJobId() {
-		return jobId;
-	}
-
-	public boolean getDoCleanup() { return doCleanup; }
-
-	public String getOutputObjectDirectory() {
-		return outputObjectDirectory;
-	}
-
-	public MpfResponse getMpfResponse() {
-		return mpfResponse;
-	}
+    public MpfInteropUsageException(String msg, Throwable e) {
+        super(msg, e);
+    }
 
 }

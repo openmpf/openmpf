@@ -60,7 +60,7 @@ public class ITComponentRegistration {
     public void init() {
         _restClient = new RestTemplate();
         _headers = new HttpHeaders();
-        _headers.set("Authorization", "Basic YWRtaW46bXBmYWRtCg");
+        _headers.set("Authorization", WebRESTUtils.ADMIN_AUTHORIZATION);
         cleanUp();
     }
 

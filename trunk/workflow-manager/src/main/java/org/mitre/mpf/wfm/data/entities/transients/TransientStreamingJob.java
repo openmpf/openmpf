@@ -77,11 +77,6 @@ public class TransientStreamingJob {
 	public String getHealthReportCallbackURI() { return healthReportCallbackURI; }
 	private String summaryReportCallbackURI;
 	public String getSummaryReportCallbackURI() { return summaryReportCallbackURI; }
-	private String newTrackAlertCallbackURI;
-	public String getNewTrackAlertCallbackURI() { return newTrackAlertCallbackURI; }
-
-	private String callbackMethod;
-	public String getCallbackMethod() { return callbackMethod; }
 
 	public TransientStreamingJob(@JsonProperty("id") long id,
                                  @JsonProperty("externalId") String externalId,
@@ -114,13 +109,9 @@ public class TransientStreamingJob {
 								 @JsonProperty("outputObjectDirectory") String outputObjectDirectory,
                                  @JsonProperty("cancelled") boolean cancelled,
 								 @JsonProperty("healthReportCallbackURI") String healthReportCallbackURI,
-								 @JsonProperty("summaryReportCallbackURI") String summaryReportCallbackURI,
-								 @JsonProperty("newTrackAlertCallbackURI") String newTrackAlertCallbackURI,
-                                 @JsonProperty("callbackMethod") String callbackMethod) {
+								 @JsonProperty("summaryReportCallbackURI") String summaryReportCallbackURI) {
 		this(id,externalId,pipeline,priority,stallTimeout,outputEnabled,outputObjectDirectory,cancelled);
 		this.healthReportCallbackURI = healthReportCallbackURI;
 		this.summaryReportCallbackURI = summaryReportCallbackURI;
-		this.newTrackAlertCallbackURI = newTrackAlertCallbackURI;
-		this.callbackMethod = callbackMethod;
 	}
 }

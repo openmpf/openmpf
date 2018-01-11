@@ -75,7 +75,7 @@ public enum JobStatus {
 	/** Indicates the job is in an error state. */
 	ERROR(true),
 
-	/** Indicates the streaming job was terminated due to being stalled for too long. */
+	/** Indicates the streaming job was terminated. */
 	TERMINATED(true),
 
 	/** Indicates the streaming job is paused. */

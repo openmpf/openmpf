@@ -26,28 +26,9 @@
 
 package org.mitre.mpf.wfm.data;
 
-import java.io.File;
-import java.time.DateTimeException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
@@ -58,6 +39,15 @@ import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import java.io.File;
+import java.time.DateTimeException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
+
 
 @Component(RedisImpl.REF)
 public class RedisImpl implements Redis {
@@ -811,29 +801,32 @@ public class RedisImpl implements Redis {
      * empty if the jobIds List is empty.
      * @exception WfmProcessingException is thrown if one of the streaming jobs listed in jobIds isn't in REDIS (i.e. it is not an active job).
      */
-    public Map<String,List<Long>> getHealthReportCallbackURIAsMap(List<Long> jobIds) throws WfmProcessingException{
-        Map<String,List<Long>> healthReportCallbackJobIdListMap = new HashMap<>();
-        for ( final Long jobId : jobIds ) {
+    @Override
+    public Map<String,List<Long>> getHealthReportCallbackURIAsMap(List<Long> jobIds) throws WfmProcessingException {
+        Map<String, List<Long>> healthReportCallbackJobIdListMap = new HashMap<>();
+        for (long jobId : jobIds) {
             TransientStreamingJob transientJob = getStreamingJob(jobId);
-            if ( transientJob == null ) {
+            if (transientJob == null) {
                 // Throw an exception if any job that may be in the long term database, but isn't in REDIS (i.e. it is not an active job), is passed to this method.
-                throw new WfmProcessingException("Error: jobId " + " is not the id of an active Streaming job");
-            } else {
-                // Check the health report callback for this active, streaming job.
-                String healthReportCallbackURI = transientJob.getHealthReportCallbackURI();
-                if (healthReportCallbackJobIdListMap.containsKey(healthReportCallbackURI)) {
-                    // some other streaming job has already registered this health report callback URI, add this job to the list
-                    List<Long> jobList = healthReportCallbackJobIdListMap.get(healthReportCallbackURI);
-                    jobList.add(Long.valueOf(jobId));
-                } else {
-                    // This is the first streaming job to register this health report callback URI
-                    List<Long> jobList = new ArrayList<>();
-                    jobList.add(Long.valueOf(jobId));
-                    healthReportCallbackJobIdListMap.put(healthReportCallbackURI, jobList);
-                }
+                throw new WfmProcessingException("Error: jobId  " + jobId + " is not the id of an active Streaming job");
             }
+	        String healthReportCallbackURI = transientJob.getHealthReportCallbackURI();
+            if (healthReportCallbackURI == null)  {
+            	continue;
+            }
+
+	        if (healthReportCallbackJobIdListMap.containsKey(healthReportCallbackURI)) {
+		        // some other streaming job has already registered this health report callback URI, add this job to the list
+		        List<Long> jobList = healthReportCallbackJobIdListMap.get(healthReportCallbackURI);
+		        jobList.add(jobId);
+	        } else {
+		        // This is the first streaming job to register this health report callback URI
+		        List<Long> jobList = new ArrayList<>();
+		        jobList.add(jobId);
+		        healthReportCallbackJobIdListMap.put(healthReportCallbackURI, jobList);
+	        }
         }
-        return healthReportCallbackJobIdListMap;
+	    return healthReportCallbackJobIdListMap;
     }
 
     /**

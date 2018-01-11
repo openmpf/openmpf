@@ -35,6 +35,8 @@ import java.util.Map;
 
 public class SegmentSummaryReport {
 
+	private final long _jobId;
+
 	private final long _segmentNumber;
 
 	private final long _segmentStartFrame;
@@ -48,8 +50,9 @@ public class SegmentSummaryReport {
 	private final String _errorMessage;
 
 
-	public SegmentSummaryReport(long segmentNumber, long segmentStartFrame, long segmentStopFrame,
+	public SegmentSummaryReport(long jobId, long segmentNumber, long segmentStartFrame, long segmentStopFrame,
 	                            String detectionType, List<Track> tracks, String errorMessage) {
+		_jobId = jobId;
 		_segmentNumber = segmentNumber;
 		_segmentStartFrame = segmentStartFrame;
 		_segmentStopFrame = segmentStopFrame;
@@ -59,6 +62,9 @@ public class SegmentSummaryReport {
 	}
 
 
+	public long getJobId() {
+		return _jobId;
+	}
 
 	public long getSegmentNumber() {
 		return _segmentNumber;

@@ -34,6 +34,7 @@ import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,6 +46,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.net.URL;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.AdditionalMatchers.gt;
 import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.Matchers.eq;
@@ -95,20 +97,24 @@ public class TestStreamingJobStartStop {
 
 		_jobSender.launchJob(streamingJob);
 
-		Thread.sleep(5000);
+		Thread.sleep(3000);
 
 		_jobSender.stopJob(jobId);
 
 
-		Thread.sleep(3200);
+		Thread.sleep(3000);
 
 		verify(_mockStreamingJobRequestBo, timeout(30_000))
-				.jobCompleted(eq(jobId), or(eq(JobStatus.COMPLETE), eq(JobStatus.STALLED)));
+				.jobCompleted(eq(jobId), or(eq(JobStatus.TERMINATED), eq(JobStatus.STALLED)));
 
 		verify(_mockStreamingJobRequestBo, atLeastOnce())
 				.handleNewActivityAlert(eq(jobId), gt(0), gt(0L));
 
+		ArgumentCaptor<SegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(SegmentSummaryReport.class);
 		verify(_mockStreamingJobRequestBo, atLeastOnce())
-				.handleNewSummaryReport(eq(jobId), isA(SegmentSummaryReport.class));
+				.handleNewSummaryReport(reportCaptor.capture());
+
+		SegmentSummaryReport summaryReport = reportCaptor.getValue();
+		assertEquals(jobId, summaryReport.getJobId());
 	}
 }

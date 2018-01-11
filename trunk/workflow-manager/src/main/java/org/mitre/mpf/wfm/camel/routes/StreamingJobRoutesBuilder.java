@@ -91,12 +91,11 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 					Message msg = exchange.getIn();
 					DetectionProtobuf.StreamingDetectionResponse protobuf
 							= msg.getBody(DetectionProtobuf.StreamingDetectionResponse.class);
-					SegmentSummaryReport summaryReport = convertProtobufResponse(protobuf);
 
-					_streamingJobRequestBo.handleNewSummaryReport(
-							msg.getHeader("JOB_ID", long.class),
-							summaryReport
-					);
+					SegmentSummaryReport summaryReport
+							= convertProtobufResponse(msg.getHeader("JOB_ID", long.class), protobuf);
+
+					_streamingJobRequestBo.handleNewSummaryReport(summaryReport);
 				});
 	}
 
@@ -104,12 +103,14 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 
 
 	private static SegmentSummaryReport convertProtobufResponse(
-			DetectionProtobuf.StreamingDetectionResponse protobuf) {
+			long jobId, DetectionProtobuf.StreamingDetectionResponse protobuf) {
+
 		List<SegmentSummaryReport.Track> tracks = protobuf.getVideoTracksList().stream()
 				.map(StreamingJobRoutesBuilder::convertProtobufTrack)
 				.collect(toList());
 
 		return new SegmentSummaryReport(
+				jobId,
 				protobuf.getSegmentNumber(),
 				protobuf.getStartFrame(),
 				protobuf.getStopFrame(),

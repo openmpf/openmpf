@@ -76,7 +76,7 @@
         <org.apache.geronimo.specs.geronimo-servlet_3.0_spec.version>1.0</org.apache.geronimo.specs.geronimo-servlet_3.0_spec.version>
         <com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>2.5.0</com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>
         <org.springframework.integration.spring-integration-jms.version>2.0.5.RELEASE</org.springframework.integration.spring-integration-jms.version>
-        <redis.clients.jedis.version>2.7.3</redis.clients.jedis.version>
+        <redis.clients.jedis.version>2.9.0</redis.clients.jedis.version>
         <xml-apis.xml-apis.version>1.4.01</xml-apis.xml-apis.version>
         <org.seleniumhq.selenium.selenium-java.version>2.53.0</org.seleniumhq.selenium.selenium-java.version>
         <maven.test.failure.ignore>true</maven.test.failure.ignore>

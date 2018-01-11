@@ -302,10 +302,10 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 		JobStatus status;
 		switch (message.reason) {
 			case CANCELLED:
-				status = JobStatus.COMPLETE;
+				status = JobStatus.CANCELLED;
 				break;
 			case STREAM_STALLED:
-				status = JobStatus.STALLED;
+				status = JobStatus.TERMINATED;
 				break;
 			default:
 				status = JobStatus.ERROR;

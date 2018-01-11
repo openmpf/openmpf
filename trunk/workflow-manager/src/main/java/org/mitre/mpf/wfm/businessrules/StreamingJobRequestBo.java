@@ -26,6 +26,9 @@
 
 package org.mitre.mpf.wfm.businessrules;
 
+
+import java.util.List;
+import java.util.Map;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -34,8 +37,6 @@ import org.mitre.mpf.wfm.data.entities.transients.SegmentSummaryReport;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-
-import java.util.Map;
 
 public interface StreamingJobRequestBo {
 
@@ -48,7 +49,7 @@ public interface StreamingJobRequestBo {
 										  Map<String, Map<String,String>> algorithmProperties, Map<String, String> jobProperties,
 										  boolean buildOutput, int priority,
 										  long stallTimeout,
-										  String healthReportCallbackURI, String summaryReportCallbackURI, String newTrackAlertCallbackURI, String method);
+										  String healthReportCallbackURI, String summaryReportCallbackURI);
 
 	/**
 	 * Validates and begins executing the specified streamingJobRequest.
@@ -81,6 +82,14 @@ public interface StreamingJobRequestBo {
 	 */
 	void cancel(long jobId, boolean doCleanup) throws WfmProcessingException;
 
+	/**
+	 * Send a health report for all current streaming jobs to the health report callback associated with each streaming job.
+     * @param jobIds all job ids to send health reports for.
+	 * @param isActive If true, then streaming jobs which have terminal JobStatus will be
+	 * filtered out. Otherwise, all current streaming jobs will be processed.
+	 * @throws WfmProcessingException thrown if an error occurs
+	 */
+	void sendHealthReports(List<Long> jobIds, boolean isActive) throws WfmProcessingException;
 
 	void jobCompleted(long jobId, JobStatus jobStatus);
 
@@ -90,3 +99,4 @@ public interface StreamingJobRequestBo {
 
 	void handleNewSummaryReport(long jobId, SegmentSummaryReport summaryReport);
 }
+

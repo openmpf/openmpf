@@ -26,16 +26,32 @@
 
 package org.mitre.mpf.wfm.businessrules.impl;
 
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.JsonAction;
+import org.mitre.mpf.interop.JsonCallbackBody;
+import org.mitre.mpf.interop.JsonPipeline;
+import org.mitre.mpf.interop.JsonStage;
+import org.mitre.mpf.interop.JsonStreamingInputObject;
+import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -45,7 +61,11 @@ import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
@@ -66,17 +86,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 @Component
 public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
@@ -212,10 +221,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * @param buildOutput                  if true, output objects will be stored and this method will assign the output object directory
      * @param priority
      * @param stallTimeout
-     * @param healthReportCallbackUri      callback for health reports, pass null to disable health reports
-     * @param summaryReportCallbackUri     callback for summary reports, pass null to disable summary reports
-     * @param newTrackAlertCallbackUri     callback for new track alerts, pass null to disable new track alerts
-     * @param callbackMethod               callback method should be GET or POST.  If null, default will be GET
+     * @param healthReportCallbackUri      callback for health reports to be sent using HTTP method POST, pass null to disable health reports
+     * @param summaryReportCallbackUri     callback for summary reports to be sent using HTTP method POST, pass null to disable summary reports
      * @return JSON representation of the streaming job request
      */
     @Override
@@ -223,10 +230,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                                                  Map<String, Map<String, String>> algorithmProperties,
                                                  Map<String, String> jobProperties, boolean buildOutput, int priority,
                                                  long stallTimeout,
-                                                 String healthReportCallbackUri, String summaryReportCallbackUri, String newTrackAlertCallbackUri, String callbackMethod) {
+                                                 String healthReportCallbackUri, String summaryReportCallbackUri) {
         log.debug("[streaming createRequest] externalId:" + externalId + ", pipeline:" + pipelineName + ", buildOutput:" + buildOutput + ", priority:" + priority +
-                ", healthReportCallbackUri:" + healthReportCallbackUri + ", summaryReportCallbackUri:" + summaryReportCallbackUri +
-                ", newTrackAlertCallbackUri:" + newTrackAlertCallbackUri + ", callbackMethod:" + callbackMethod);
+                ", healthReportCallbackUri:" + healthReportCallbackUri + ", summaryReportCallbackUri:" + summaryReportCallbackUri);
         String jsonHealthReportCallbackUri = "";
         String jsonSummaryReportCallbackUri = "";
         String jsonNewTrackAlertCallbackUri = "";
@@ -237,18 +243,12 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         if (summaryReportCallbackUri != null && TextUtils.trim(summaryReportCallbackUri) != null) {
             jsonSummaryReportCallbackUri = TextUtils.trim(summaryReportCallbackUri);
         }
-        if (newTrackAlertCallbackUri != null && TextUtils.trim(newTrackAlertCallbackUri) != null) {
-            jsonNewTrackAlertCallbackUri = TextUtils.trim(newTrackAlertCallbackUri);
-        }
-        if (callbackMethod != null && TextUtils.trim(callbackMethod) != null && !TextUtils.trim(callbackMethod).equals("GET")) { //only GET or POST allowed
-            jsonCallbackMethod = "POST";
-        }
 
         String outputObjectPath = ""; // initialize output output object to empty string, the path will be set after the streaming job is submitted
         JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(TextUtils.trim(externalId), buildOutput, outputObjectPath,
                 pipelineService.createJsonPipeline(pipelineName), priority, stream,
                 stallTimeout,
-                jsonHealthReportCallbackUri, jsonSummaryReportCallbackUri, jsonNewTrackAlertCallbackUri, jsonCallbackMethod,
+                jsonHealthReportCallbackUri, jsonSummaryReportCallbackUri,
                 algorithmProperties, jobProperties);
 
         return jsonStreamingJobRequest;
@@ -471,7 +471,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         streamingJobRequest.setExternalId(jsonStreamingJobRequest.getExternalId());
         streamingJobRequest.setHealthReportCallbackUri(jsonStreamingJobRequest.getHealthReportCallbackUri());
         streamingJobRequest.setSummaryReportCallbackUri(jsonStreamingJobRequest.getSummaryReportCallbackUri());
-        streamingJobRequest.setNewTrackAlertCallbackUri(jsonStreamingJobRequest.getNewTrackAlertCallbackUri());
         streamingJobRequest.setStreamUri(jsonStreamingJobRequest.getStream().getStreamUri());
 
         // store the streaming job request in the long-term database.  Once the streaming job has been
@@ -549,9 +548,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 jsonStreamingJobRequest.getOutputObjectDirectory(),
                 false,
                 jsonStreamingJobRequest.getHealthReportCallbackUri(),
-                jsonStreamingJobRequest.getSummaryReportCallbackUri(),
-                jsonStreamingJobRequest.getNewTrackAlertCallbackUri(),
-                jsonStreamingJobRequest.getCallbackMethod());
+                jsonStreamingJobRequest.getSummaryReportCallbackUri());
 
         transientStreamingJob.getOverriddenJobProperties()
                 .putAll(jsonStreamingJobRequest.getJobProperties());
@@ -657,20 +654,83 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     /**
      * Call the summary report callback.
-     *
+     * Note that streaming jobs only support HTTP POST callback method.
      * @param jobId unique id for this streaming job
      * @throws WfmProcessingException
      */
     private void summaryReportCallback(long jobId) throws WfmProcessingException {
-        final String jsonSummaryReportCallbackURL = redis.getSummaryReportCallbackURI(jobId);
-        final String jsonCallbackMethod = redis.getCallbackMethod(jobId);
-        if (jsonSummaryReportCallbackURL != null && !jsonSummaryReportCallbackURL.isEmpty() && jsonCallbackMethod != null && (jsonCallbackMethod.equals("POST") || jsonCallbackMethod.equals("GET"))) {
-            log.info("Starting " + jsonCallbackMethod + " summary report callback to " + jsonSummaryReportCallbackURL);
+        final String jsonSummaryReportCallbackUri = redis.getSummaryReportCallbackURI(jobId);
+        if (jsonSummaryReportCallbackUri != null) {
+            // The caller requested summary reports.
+            log.info("Starting summary report callback to " + jsonSummaryReportCallbackUri);
             try {
                 JsonCallbackBody jsonBody = new JsonCallbackBody(jobId, redis.getExternalId(jobId));
-                new Thread(new CallbackThread(jsonSummaryReportCallbackURL, jsonCallbackMethod, jsonBody)).start();
+                new Thread(new CallbackThread(jsonSummaryReportCallbackUri, jsonBody)).start();
             } catch (IOException ioe) {
-                log.warn("Failed to issue {} callback to '{}' due to an I/O exception.", jsonCallbackMethod, jsonSummaryReportCallbackURL, ioe);
+                log.error("Failed to issue POST summary report callback to '{}' due to an I/O exception.",
+                    jsonSummaryReportCallbackUri, ioe);
+            }
+        }
+    }
+
+    /**
+     * Immediately send a health report including the specified streaming jobs to the common health report callback.
+     * The health report will be sent in a newly started thread.
+     * @param jobIds Unique ids for the streaming jobs to be reported on. Should not be null or empty.
+     * @param healthReportCallbackUri the same health report callback URI that was specified as common to these streaming jobs. Must not be null.
+     * @throws WfmProcessingException may be thrown if healthReportCallbackUri is null
+     */
+    private void sendHealthReport(List<Long> jobIds, String healthReportCallbackUri) throws WfmProcessingException {
+
+        if ( healthReportCallbackUri == null ) {
+            throw new WfmProcessingException("Error, healthReportCallbackUri can't be null.");
+        } else {
+            // At least one health report needs to be sent to the specified healthReportCallbackUri
+            log.info("Starting health report callback send to single health report callback URI " + healthReportCallbackUri + " for Streaming jobs " + jobIds);
+            // send the health report to the health report callback URI in a newly started thread
+            new Thread(new HealthReportCallbackThread(redis,jsonUtils,jobIds,healthReportCallbackUri)).start();
+        }
+    }
+
+    /**
+     * Send health reports to the health report callbacks associated with the streaming jobs.
+     * Note that OpenMPF supports sending periodic health reports that contain health for all streaming jobs who have
+     * defined the same HealthReportCallbackUri. This method will filter out jobIds for any jobs which are not current streaming jobs,
+     * plus will optionally filter out streaming jobs that have been terminated.
+     * Note that out-of-cycle health reports that may have been sent due to a change in job status will not
+     * delay sending of the periodic (i.e. scheduled) health report.
+     * @param jobIds unique ids for the streaming jobs to be reported on. Must not be null or empty.
+     * @param isActive If true, then streaming jobs which have terminal JobStatus will be
+     * filtered out. Otherwise, all current streaming jobs will be processed.
+     * @throws WfmProcessingException thrown if an error occurs
+     */
+    public void sendHealthReports(List<Long> jobIds, boolean isActive) throws WfmProcessingException {
+        if ( jobIds == null ) {
+            throw new WfmProcessingException("Error: jobIds must not be null.");
+        } else if ( jobIds.isEmpty() ) {
+            throw new WfmProcessingException("Error: jobIds must not be empty.");
+        } else {
+            // While we are receiving the list of all job ids known to the system, some of these jobs may not be current streaming jobs in REDIS.
+            // Reduce the List of jobIds to ony include streaming jobIds that are in REDIS. Optionally reduce that set to only include non-terminal jobs.
+            List<Long> currentActiveJobIds = redis.getCurrentStreamingJobs(jobIds, isActive );
+
+            // If there are no active jobs, no health reports will be sent.
+            if ( currentActiveJobIds != null && !currentActiveJobIds.isEmpty() ) {
+
+                // Get the list of health report callback URIs associated with the specified active jobs. Note that
+                // this usage will return unique healthReportCallbackUris. Doing this so streaming jobs which specify
+                // the same healthReportCallbackUri will only POST the health report once to the single healthReportCallbackUri. Note that
+                // POST method is always used for sending health reports, GET method is not supported. The health report that is sent
+                // will contain health for all streaming jobs with the same healthReportCallbackUri.
+                // healthReportCallbackUriToJobIdListMap: key is the healthReportCallbackUri, value is the List of active jobIds that specified that healthReportCallbackUri.
+                Map<String, List<Long>> healthReportCallbackUriToActiveJobIdListMap = redis.getHealthReportCallbackURIAsMap(currentActiveJobIds);
+
+                // For each healthReportCallbackUri, send a health report containing health information for each streaming job
+                // that specified the same healthReportCallbackUri. Note that sendToHealthReportCallback method won't be called
+                // if healthReportCallbackUriToJobIdListMap is empty. This would be a possibility if no streaming jobs have
+                // requested that a health report be sent.
+                healthReportCallbackUriToActiveJobIdListMap.keySet().stream().forEach(
+                    healthReportCallbackUri -> sendHealthReport(healthReportCallbackUriToActiveJobIdListMap.get(healthReportCallbackUri), healthReportCallbackUri));
             }
         }
     }
@@ -719,39 +779,26 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     /**
-     * Thread to handle the Callback to a URL given a HTTP method.
+     * Thread to handle a general Callback to a URI.
+     * Note that streaming jobs only support HTTP POST callback method.
      */
     public class CallbackThread implements Runnable {
-        private String callbackURL;
-        private String callbackMethod;
+        private String callbackUri;
         private HttpUriRequest req;
 
-        public CallbackThread(String callbackURL, String callbackMethod, JsonCallbackBody body) throws UnsupportedEncodingException {
-            this.callbackURL = callbackURL;
-            this.callbackMethod = callbackMethod;
+       public CallbackThread(String callbackUri, JsonCallbackBody body) throws UnsupportedEncodingException {
+           this.callbackUri = callbackUri;
 
-            if (callbackMethod.equals("GET")) {
-                String jsonCallbackURL2 = callbackURL;
-                if (jsonCallbackURL2.contains("?")) {
-                    jsonCallbackURL2 += "&";
-                } else {
-                    jsonCallbackURL2 += "?";
-                }
-                jsonCallbackURL2 += "jobid=" + body.getJobId();
-                if (body.getExternalId() != null) {
-                    jsonCallbackURL2 += "&externalid=" + body.getExternalId();
-                }
-                req = new HttpGet(jsonCallbackURL2);
-            } else { // this is for a POST
-                HttpPost post = new HttpPost(callbackURL);
-                post.addHeader("Content-Type", "application/json");
-                try {
-                    post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(body)));
-                    req = post;
-                } catch (WfmProcessingException e) {
-                    log.error("Cannot serialize CallbackBody.",e);
-                }
-            }
+           // POST the callback
+           HttpPost post = new HttpPost(callbackUri);
+           post.addHeader("Content-Type", "application/json");
+           try {
+               post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(body)));
+               req = post;
+           } catch (WfmProcessingException e) {
+               log.error("Cannot serialize CallbackBody.", e);
+           }
+
         }
 
         @Override
@@ -759,10 +806,11 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             final HttpClient httpClient = HttpClientBuilder.create().build();
             try {
                 HttpResponse response = httpClient.execute(req);
-                log.info("{} Callback issued to '{}' (Response={}).", callbackMethod, callbackURL, response);
+                log.info("POST Callback issued to '{}' (Response={}).", callbackUri, response);
             } catch (Exception exception) {
-                log.warn("Failed to issue {} callback to '{}' due to an I/O exception.", callbackMethod, callbackURL, exception);
+                log.warn("Failed to issue POST callback to '{}' due to an I/O exception.", callbackUri, exception);
             }
         }
     }
+
 }

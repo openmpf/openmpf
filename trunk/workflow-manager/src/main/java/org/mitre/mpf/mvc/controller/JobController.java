@@ -210,7 +210,7 @@ public class JobController {
         if (jobInfoModels != null && jobInfoModels.size() == 1) {
             return new ResponseEntity<>(jobInfoModels.get(0), HttpStatus.OK);
         } else {
-            log.error("Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
+            log.error("getJobStatusRest: Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
             return new ResponseEntity<>((SingleJobInfo) null, HttpStatus.BAD_REQUEST);
         }
     }
@@ -223,9 +223,12 @@ public class JobController {
         List<SingleJobInfo> jobInfoModels = getJobStatusInternal(jobId, useSession);
         if (jobInfoModels != null && jobInfoModels.size() == 1) {
             return jobInfoModels.get(0);
+        } else {
+            log.error(
+                "getJobStatus: Error retrieving the SingleJobInfo model for the job with id '{}'",
+                jobId);
+            return null;
         }
-        log.error("Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
-        return null;
     }
 
     /*

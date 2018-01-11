@@ -26,6 +26,21 @@
 
 package org.mitre.mpf.wfm;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import javax.management.MBeanServerConnection;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.ObjectName;
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.remote.JMXServiceURL;
+import javax.servlet.ServletContext;
 import org.apache.activemq.broker.jmx.BrokerViewMBean;
 import org.apache.activemq.broker.jmx.QueueViewMBean;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
@@ -34,8 +49,8 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.service.component.StartupComponentRegistrationService;
 import org.mitre.mpf.wfm.service.ServerMediaService;
+import org.mitre.mpf.wfm.service.component.StartupComponentRegistrationService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,20 +63,6 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
-
-import javax.management.MBeanServerConnection;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
-import javax.management.remote.JMXConnector;
-import javax.management.remote.JMXConnectorFactory;
-import javax.management.remote.JMXServiceURL;
-import javax.servlet.ServletContext;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Component
 public class WfmStartup implements ApplicationListener<ApplicationEvent> {
@@ -90,7 +91,9 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	// used to prevent the initialization behaviors from being executed more than once
 	private static boolean applicationRefreshed = false;
 
-	private ExecutorService executorService = null;
+	private ExecutorService fileIndexExecutorService = null;
+
+	private ScheduledExecutorService healthReportExecutorService = null;
 
 	@Override
 	public void onApplicationEvent(ApplicationEvent event) {
@@ -123,10 +126,12 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 				purgeServerStartupSystemMessages();
 				startFileIndexing(appContext);
 				startupRegistrationService.registerUnregisteredComponents();
+                startHealthReporting();
 				applicationRefreshed = true;
 			}
 		} else if (event instanceof ContextClosedEvent) {
 			stopFileIndexing();
+			stopHealthReporting();
 		}
 	}
 
@@ -134,17 +139,52 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 		if (appContext instanceof WebApplicationContext) {
 			WebApplicationContext webContext = (WebApplicationContext) appContext;
 			ServletContext servletContext = webContext.getServletContext();
-			executorService = Executors.newSingleThreadExecutor();
-			executorService.execute(() -> serverMediaService.getFiles(propertiesUtil.getServerMediaTreeRoot(), servletContext, true, true));
-			executorService.shutdown(); // will run all tasks before shutdown
+			fileIndexExecutorService = Executors.newSingleThreadExecutor();
+			fileIndexExecutorService.execute(() -> serverMediaService.getFiles(propertiesUtil.getServerMediaTreeRoot(), servletContext, true, true));
+			fileIndexExecutorService.shutdown(); // will run all tasks before shutdown
 		}
 	}
 
 	private void stopFileIndexing() {
-		if (executorService != null) {
-			executorService.shutdownNow();
+		if (fileIndexExecutorService != null) {
+			fileIndexExecutorService.shutdownNow();
 		}
 	}
+
+	// startHealthReporting uses a scheduled executor.
+	private void startHealthReporting() {
+        healthReportExecutorService = Executors.newSingleThreadScheduledExecutor();
+        Runnable task = () -> {
+            try {
+                boolean isActive = true; // only send periodic health reports for streaming jobs that are current and active.
+                mpfService.sendStreamingJobHealthReports(isActive);
+            } catch (Exception e) {
+                log.error("startHealthReporting: Exception occurred while sending scheduled health report",e);
+            }
+        };
+
+        healthReportExecutorService.scheduleWithFixedDelay(task, propertiesUtil.getStreamingJobHealthReportCallbackRate(),
+            propertiesUtil.getStreamingJobHealthReportCallbackRate(), TimeUnit.MILLISECONDS);
+
+    }
+
+    private void stopHealthReporting() {
+	    if ( healthReportExecutorService != null ) {
+            try {
+                log.info("stopHealthReporting: attempt to shutdown healthReportExecutorService");
+                healthReportExecutorService.shutdown();
+                healthReportExecutorService.awaitTermination(5, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                log.error("stopHealthReporting: healthReportExecutorService task interrupted",e);
+            } finally {
+                if (!healthReportExecutorService.isTerminated()) {
+                    log.info("stopHealthReporting: cancel non-finished healthReportExecutorService tasks");
+                }
+                healthReportExecutorService.shutdownNow();
+                log.info("stopHealthReporting: healthReportExecutorService shutdown finished");
+            }
+        }
+    }
 
 	/** purge system messages that are set to be removed on server startup */
 	private void purgeServerStartupSystemMessages() {

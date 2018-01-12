@@ -34,7 +34,8 @@
     <beans>
         <bean id="jedisConnFactory"
               class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory"
-              p:usePool="true"/>
+              p:usePool="true"
+              p:timeout="60000"/>
 
         <bean id="stringRedisSerializer"
                 class="org.springframework.data.redis.serializer.StringRedisSerializer"/>

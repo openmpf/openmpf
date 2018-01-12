@@ -108,7 +108,7 @@ public class TestStreamingJobStartStop {
 				.jobCompleted(eq(jobId), or(eq(JobStatus.TERMINATED), eq(JobStatus.STALLED)));
 
 		verify(_mockStreamingJobRequestBo, atLeastOnce())
-				.handleNewActivityAlert(eq(jobId), gt(0), gt(0L));
+				.handleNewActivityAlert(eq(jobId), gt(0L), gt(0L));
 
 		ArgumentCaptor<SegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(SegmentSummaryReport.class);
 		verify(_mockStreamingJobRequestBo, atLeastOnce())

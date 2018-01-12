@@ -28,7 +28,7 @@ package org.mitre.mpf.nms.streaming;
 
 import org.ini4j.Ini;
 import org.ini4j.Profile;
-import org.mitre.mpf.nms.EnvironmentVariableExpander;
+import org.mitre.mpf.nms.util.EnvironmentVariableExpander;
 import org.mitre.mpf.nms.NodeManagerProperties;
 import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -149,7 +149,7 @@ public class IniManager {
 
 
 //	private static Path createIniFile(LaunchFrameReaderMessage launchMessage, Path iniDir) {
-//		Ini ini = new Ini();
+//		Ini ini = newIni();
 //		Profile.Section jobConfig = ini.add(DEFAULT_SECTION);
 //		jobConfig.put("jobId", launchMessage.jobId);
 //		jobConfig.put("streamUri", launchMessage.streamUri);
@@ -168,7 +168,7 @@ public class IniManager {
 //
 //
 //	private static Path createIniFile(LaunchVideoWriterMessage launchMessage, Path iniDir) {
-//		Ini ini = new Ini();
+//		Ini ini = newIni();
 //		Profile.Section jobConfig = ini.add(DEFAULT_SECTION);
 //		jobConfig.put("jobId", launchMessage.jobId);
 //		jobConfig.put("videoFileOutputPath", launchMessage.videoFileOutputPath);
@@ -193,7 +193,7 @@ public class IniManager {
 //
 //
 //	private static Path createIniFile(LaunchComponentMessage launchMessage, Path iniDir) {
-//		Ini ini = new Ini();
+//		Ini ini = newIni();
 //		Profile.Section jobConfig = ini.add(DEFAULT_SECTION);
 //		jobConfig.put("jobId", launchMessage.jobId);
 //		jobConfig.put("componentName", launchMessage.componentName);

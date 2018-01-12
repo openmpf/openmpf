@@ -79,7 +79,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 					_streamingJobRequestBo.handleNewActivityAlert(
 							msg.getHeader("JOB_ID", long.class),
 							msg.getHeader("FRAME_NUMBER", int.class),
-							msg.getHeader("ACTIVITY_DETECT_TIME", long.class));
+							msg.getHeader("ACTIVITY_DETECTION_TIMESTAMP", long.class));
 				});
 
 

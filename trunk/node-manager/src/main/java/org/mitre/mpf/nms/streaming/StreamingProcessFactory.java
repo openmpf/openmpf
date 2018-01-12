@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.nms.streaming;
 
-import org.mitre.mpf.nms.EnvironmentVariableExpander;
+import org.mitre.mpf.nms.util.EnvironmentVariableExpander;
 import org.mitre.mpf.nms.NodeManagerProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

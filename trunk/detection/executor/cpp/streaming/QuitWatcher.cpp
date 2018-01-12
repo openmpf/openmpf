@@ -49,7 +49,7 @@ namespace MPF { namespace COMPONENT {
     bool QuitWatcher::IsTimeToQuit() const {
         if (is_time_to_quit_) {
             if (!error_message_.empty()) {
-                throw FatalError(ExitCode::UnableToReadFromStandardIn, error_message_);
+                throw FatalError(ExitCode::UNABLE_TO_READ_FROM_STANDARD_IN, error_message_);
             }
         }
         return is_time_to_quit_;

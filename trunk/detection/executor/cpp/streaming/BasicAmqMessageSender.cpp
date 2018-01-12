@@ -80,7 +80,7 @@ namespace MPF { namespace COMPONENT {
         std::unique_ptr<cms::Message> message(session_->createMessage());
         message->setLongProperty("JOB_ID", job_id_);
         message->setIntProperty("FRAME_NUMBER", frame_number);
-        message->setLongProperty("ACTIVITY_DETECT_TIME", GetTimestampMillis());
+        message->setLongProperty("ACTIVITY_DETECTION_TIMESTAMP", GetTimestampMillis());
         activity_alert_producer_->send(message.get());
     }
 

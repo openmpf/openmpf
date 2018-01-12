@@ -40,7 +40,7 @@
 #include "MPFAMQMessage.h"
 
 // TODO: For future use.
-// TODO: Refactor to use RAII
+// TODO: Refactor to use the Resource Acquisition Is Initialization (RAII) design pattern. See http://en.cppreference.com/w/cpp/language/raii
 namespace MPF {
 
 class AMQMessagingManager : MPFMessagingManager {

@@ -78,14 +78,14 @@ public class NodeManagerProperties {
 	}
 
 
-	@Value("${mpf.streaming.job.ini.dir}")
+	@Value("${streaming.job.ini.dir}")
 	private File iniFilesDir;
 	public Path getIniFilesDir() {
 		return iniFilesDir.toPath();
 	}
 
 
-	@Value("${mpf.streaming.process.max.restarts}")
+	@Value("${streaming.process.max.restarts}")
 	private int streamingProcessMaxRestarts;
 	public int getStreamingProcessMaxRestarts() {
 		return streamingProcessMaxRestarts;

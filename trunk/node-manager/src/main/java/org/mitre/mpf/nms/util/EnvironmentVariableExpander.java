@@ -25,7 +25,7 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.nms;
+package org.mitre.mpf.nms.util;
 
 import org.apache.commons.lang3.text.StrLookup;
 import org.apache.commons.lang3.text.StrSubstitutor;

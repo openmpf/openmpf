@@ -620,7 +620,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     @Override
-    public void handleNewActivityAlert(long jobId, int frameId, long timestamp) {
+    public void handleNewActivityAlert(long jobId, long frameId, long timestamp) {
         // TODO: Replace logging with implementation of handleNewActivityAlert
         log.debug("handleNewActivityAlert(jobId = {}, frameId = {}, time = {})", jobId, frameId, millisToDateTime(timestamp));
     }

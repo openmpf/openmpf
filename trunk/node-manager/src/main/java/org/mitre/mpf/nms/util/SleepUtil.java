@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.nms;
+package org.mitre.mpf.nms.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

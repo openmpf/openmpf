@@ -41,7 +41,7 @@ namespace MPF { namespace COMPONENT {
             void *lib_handle, const MPFStreamingVideoJob &job) {
 
         if (lib_handle == nullptr) {
-            throw FatalError(ExitCode::ComponentLoadError,
+            throw FatalError(ExitCode::COMPONENT_LOAD_ERROR,
                              std::string("Failed to open component library: ") + dlerror());
         }
 
@@ -62,7 +62,7 @@ namespace MPF { namespace COMPONENT {
         }
 
         if (loaded_component == nullptr) {
-            throw FatalError(ExitCode::ComponentLoadError,
+            throw FatalError(ExitCode::COMPONENT_LOAD_ERROR,
                              "Failed to load component because the component_creator function returned null.");
         }
         return loaded_component;
@@ -73,7 +73,7 @@ namespace MPF { namespace COMPONENT {
     TFunc* StreamingComponentHandle::LoadFunction(void *lib_handle, const char * symbol_name) {
         auto result = reinterpret_cast<TFunc*>(dlsym(lib_handle, symbol_name));
         if (result == nullptr) {
-            throw FatalError(ExitCode::ComponentLoadError,
+            throw FatalError(ExitCode::COMPONENT_LOAD_ERROR,
                              std::string("dlsym failed for ") + symbol_name + ": " + dlerror());
         }
         return result;

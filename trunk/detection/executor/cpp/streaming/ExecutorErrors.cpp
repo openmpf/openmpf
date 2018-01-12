@@ -45,13 +45,13 @@ namespace MPF { namespace COMPONENT {
 
     InternalComponentError::InternalComponentError(const std::string &method_name, const std::string &cause)
         : FatalError(
-            ExitCode::InternalComponentError,
+            ExitCode::INTERNAL_COMPONENT_ERROR,
             "The loaded component threw an exception while executing its \"" + method_name +"\" method: " + cause) {
     }
 
     InternalComponentError::InternalComponentError(const std::string &method_name)
         : FatalError(
-            ExitCode::InternalComponentError,
+            ExitCode::INTERNAL_COMPONENT_ERROR,
             "The loaded component threw an object that does not derive from std::exception while executing its \""
                 + method_name + " method.") {
     }

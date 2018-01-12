@@ -66,7 +66,7 @@ public class StreamingProcess {
 
 	private void restartUntilDone(Process originalProcess) {
 		int exitCode = awaitExit(originalProcess);
-		if (exitCode == 0) {
+		if (exitCode == StreamingProcessExitReason.CANCELLED.exitCode) {
 			return;
 		}
 
@@ -80,7 +80,7 @@ public class StreamingProcess {
 				throw new StreamingProcessExitException(exitCode);
 			}
 			exitCode = awaitExit(restartedProcess);
-			if (exitCode == 0) {
+			if (exitCode == StreamingProcessExitReason.CANCELLED.exitCode) {
 				return;
 			}
 		}
@@ -125,6 +125,7 @@ public class StreamingProcess {
 
 			LOG.info("Process: {} exited with exit code {}", _executable, exitCode);
 			if (exitCode == StreamingProcessExitReason.STREAM_STALLED.exitCode) {
+				// Throw exception to prevent the restart process when process exits due to a stall.
 				throw new StreamingProcessExitException(StreamingProcessExitReason.STREAM_STALLED);
 			}
 			return exitCode;

@@ -68,7 +68,7 @@ namespace MPF { namespace COMPONENT {
             };
         }
         catch (const boost::property_tree::ptree_error &ex) {
-            throw FatalError(ExitCode::InvalidIniFile, std::string("Unable to load ini file: ") + ex.what());
+            throw FatalError(ExitCode::INVALID_INI_FILE, std::string("Unable to load ini file: ") + ex.what());
         }
     }
 }}

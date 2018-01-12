@@ -29,6 +29,7 @@
 // process, single pipeline stage, architecture.
 
 
+#include <chrono>
 #include <iostream>
 #include <string>
 #include <sys/types.h>
@@ -190,7 +191,10 @@ int main(int argc, char* argv[]) {
 
 
     try {
-        MPFJobStatusMessage msg(job_name,job_id, "IN_PROGRESS", 1234);
+        long timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()
+        ).count();
+        MPFJobStatusMessage msg(job_name,job_id, "IN_PROGRESS", timestamp);
         std::cout << __LINE__ << ": PutMessage" << std::endl;
         messenger.SendMessage(msg);
     }

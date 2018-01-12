@@ -7,7 +7,7 @@
   "streamLibrary" : "${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfStreamingCplusplusHelloWorld.so",
   "environmentVariables" : [{
       "name":"LD_LIBRARY_PATH",
-      "value":"${MPF_HOME}/plugins/CplusplusHelloWorld/lib:${LD_LIBRARY_PATH}"
+      "value":"${MPF_HOME}/plugins/CplusplusHelloWorld/lib"
   }],
   "algorithm" : {
     "name" : "CplusplusHelloWorld",

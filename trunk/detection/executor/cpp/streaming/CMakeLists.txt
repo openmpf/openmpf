@@ -66,7 +66,7 @@ find_package(mpfDetectionComponentApi REQUIRED)
 #add_subdirectory(FrameReader)
 
 set(streaming_component_executor_files main.cpp
-	QuitWatcher.cpp QuitWatcher.h
+    StandardInWatcher.cpp StandardInWatcher.h
     JobSettings.h JobSettings.cpp
 	StreamingComponentHandle.cpp StreamingComponentHandle.h
     BasicAmqMessageSender.cpp BasicAmqMessageSender.h

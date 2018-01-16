@@ -29,41 +29,40 @@
 #include <iostream>
 #include <thread>
 
-#include "QuitWatcher.h"
+#include "StandardInWatcher.h"
 #include "ExecutorErrors.h"
 
 namespace MPF { namespace COMPONENT {
-    std::atomic_bool QuitWatcher::is_time_to_quit_(false);
-    std::string QuitWatcher::error_message_;
+    std::atomic_bool StandardInWatcher::quit_received_(false);
+    std::string StandardInWatcher::error_message_;
 
-    QuitWatcher* QuitWatcher::instance_(nullptr);
+    StandardInWatcher* StandardInWatcher::instance_(nullptr);
 
 
-    QuitWatcher::QuitWatcher() {
-        std::thread watcher_thread(&WatchForQuit);
+    StandardInWatcher::StandardInWatcher() {
+        std::thread watcher_thread(&WatchForStandardIn);
         // detach so that when there is an error elsewhere, the process can exit without waiting for the quit command.
         watcher_thread.detach();
     }
 
 
-    bool QuitWatcher::IsTimeToQuit() const {
-        if (is_time_to_quit_) {
-            if (!error_message_.empty()) {
-                throw FatalError(ExitCode::UNABLE_TO_READ_FROM_STANDARD_IN, error_message_);
-            }
+    bool StandardInWatcher::QuitReceived() const {
+        if (quit_received_ && !error_message_.empty()) {
+            throw FatalError(ExitCode::UNABLE_TO_READ_FROM_STANDARD_IN, error_message_);
         }
-        return is_time_to_quit_;
+        return quit_received_;
     }
 
 
-    void QuitWatcher::WatchForQuit() {
+    void StandardInWatcher::WatchForStandardIn() {
         try {
             std::string line;
             while (std::getline(std::cin, line)) {
                 if (line == "quit") {
-                    is_time_to_quit_ = true;
+                    quit_received_ = true;
                     return;
                 }
+                // TODO: Check for "pause" and "resume" when adding support for multistage pipelines.
                 std::cerr << "Ignoring unexpected input from standard in: " << line << std::endl;
             }
 
@@ -83,18 +82,18 @@ namespace MPF { namespace COMPONENT {
     }
 
 
-    QuitWatcher* QuitWatcher::GetInstance() {
+    StandardInWatcher* StandardInWatcher::GetInstance() {
         if (instance_ == nullptr) {
-            instance_ = new QuitWatcher;
+            instance_ = new StandardInWatcher;
         }
         return instance_;
     }
 
-    void QuitWatcher::SetError(std::string &&error_message) {
+    void StandardInWatcher::SetError(std::string &&error_message) {
         // error_message_ must be set before is_time_to_quit_ to ensure proper synchronization.
         // error_message_ is not atomic because there is no atomic string.
         // Since is_time_to_quit_ is atomic, reading or writing to is_time_to_quit_ will cause a synchronization event.
         error_message_ = std::move(error_message);
-        is_time_to_quit_ = true;
+        quit_received_ = true;
     }
 }}

@@ -25,32 +25,32 @@
  ******************************************************************************/
 
 
-#ifndef MPF_QUITWATCHER_H
-#define MPF_QUITWATCHER_H
+#ifndef MPF_STANDARDINWATCHER_H
+#define MPF_STANDARDINWATCHER_H
 
 #include <atomic>
 
 
 namespace MPF { namespace COMPONENT {
 
-    class QuitWatcher {
+    class StandardInWatcher {
     public:
-        bool IsTimeToQuit() const;
+        bool QuitReceived() const;
 
         // Singleton to prevent more than one thread from reading from standard in.
-        static QuitWatcher* GetInstance();
+        static StandardInWatcher* GetInstance();
 
     private:
-        QuitWatcher();
+        StandardInWatcher();
 
-        static QuitWatcher* instance_;
+        static StandardInWatcher* instance_;
 
         // static because in the event of an error elsewhere, the detached thread will still be running and may access
         // is_time_to_quit_ and error_message_.
-        static std::atomic_bool is_time_to_quit_;
+        static std::atomic_bool quit_received_;
         static std::string error_message_;
 
-        static void WatchForQuit();
+        static void WatchForStandardIn();
         static void SetError(std::string &&error_message);
 
     };
@@ -58,4 +58,4 @@ namespace MPF { namespace COMPONENT {
 
 
 
-#endif //MPF_QUITWATCHER_H
+#endif //MPF_STANDARDINWATCHER_H

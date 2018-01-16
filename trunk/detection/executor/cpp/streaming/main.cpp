@@ -41,7 +41,7 @@
 
 #include <MPFDetectionComponent.h>
 
-#include "QuitWatcher.h"
+#include "StandardInWatcher.h"
 #include "StreamingComponentHandle.h"
 #include "JobSettings.h"
 #include "BasicAmqMessageSender.h"
@@ -169,11 +169,11 @@ private:
                                  "Unable to connect to stream: " + settings_.stream_uri);
             }
 
-            QuitWatcher *quit_watcher = QuitWatcher::GetInstance();
+            StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
 
             bool segment_activity_alert_sent = false;
 
-            while (!quit_watcher->IsTimeToQuit()) {
+            while (!std_in_watcher->QuitReceived()) {
                 cv::Mat frame;
                 if (!video_capture.read(frame)) {
                     // TODO: Detect and report stalls.

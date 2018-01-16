@@ -148,7 +148,7 @@ public class StreamingJobController {
      */
     //EXTERNAL
     @RequestMapping(value = "/rest/streaming/jobs", method = RequestMethod.GET)
-    @ApiOperation(value = "Gets a list of job ids for all streaming jobs. If isActive is true, don't include streaming jobs that are terminated or cancelled.",
+    @ApiOperation(value = "Gets a list of job ids for streaming jobs. If isActive is true, don't include streaming jobs that are terminated or cancelled. If false, return all streaming jobs.",
         produces = "application/json", response=Long.class, responseContainer="List")
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successful response"),

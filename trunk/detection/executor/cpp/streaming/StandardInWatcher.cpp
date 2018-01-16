@@ -40,7 +40,7 @@ namespace MPF { namespace COMPONENT {
 
 
     StandardInWatcher::StandardInWatcher() {
-        std::thread watcher_thread(&WatchForStandardIn);
+        std::thread watcher_thread(&Watch);
         // detach so that when there is an error elsewhere, the process can exit without waiting for the quit command.
         watcher_thread.detach();
     }
@@ -54,7 +54,7 @@ namespace MPF { namespace COMPONENT {
     }
 
 
-    void StandardInWatcher::WatchForStandardIn() {
+    void StandardInWatcher::Watch() {
         try {
             std::string line;
             while (std::getline(std::cin, line)) {

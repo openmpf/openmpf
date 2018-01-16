@@ -50,7 +50,7 @@ namespace MPF { namespace COMPONENT {
         static std::atomic_bool quit_received_;
         static std::string error_message_;
 
-        static void WatchForStandardIn();
+        static void Watch();
         static void SetError(std::string &&error_message);
 
     };

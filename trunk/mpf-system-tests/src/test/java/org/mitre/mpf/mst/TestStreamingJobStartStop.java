@@ -81,9 +81,9 @@ public class TestStreamingJobStartStop {
 		long jobId = 43231;
 
 		TransientStage stage1 = new TransientStage("stage1", "description", ActionType.DETECTION);
-		stage1.getActions().add(new TransientAction("Action1", "description", "CPLUSPLUSHELLOWORLD"));
+		stage1.getActions().add(new TransientAction("Action1", "description", "HelloWorld"));
 
-		TransientPipeline pipeline = new TransientPipeline("HELLOWORLD TEST PIPELINE", "desc");
+		TransientPipeline pipeline = new TransientPipeline("HELLOWORLD SAMPLE PIPELINE", "desc");
 		pipeline.getStages().add(stage1);
 
 

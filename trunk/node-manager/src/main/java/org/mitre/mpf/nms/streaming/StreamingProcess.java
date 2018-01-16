@@ -125,7 +125,7 @@ public class StreamingProcess {
 
 			LOG.info("Process: {} exited with exit code {}", _executable, exitCode);
 			if (exitCode == StreamingProcessExitReason.STREAM_STALLED.exitCode) {
-				// Throw exception to prevent the restart process when process exits due to a stall.
+				// Throw exception to prevent restarting when process exits due to a stall.
 				throw new StreamingProcessExitException(StreamingProcessExitReason.STREAM_STALLED);
 			}
 			return exitCode;

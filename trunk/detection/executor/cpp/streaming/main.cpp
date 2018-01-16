@@ -171,6 +171,8 @@ private:
 
             QuitWatcher *quit_watcher = QuitWatcher::GetInstance();
 
+            bool segment_activity_alert_sent = false;
+
             while (!quit_watcher->IsTimeToQuit()) {
                 cv::Mat frame;
                 if (!video_capture.read(frame)) {
@@ -185,12 +187,14 @@ private:
                     cv::Size frame_size = frame.size();
                     component_.BeginSegment({ segment_number, frame_number, segment_end,
                                                    frame_size.width, frame_size.height });
+                    segment_activity_alert_sent = false;
                 }
 
                 bool activity_found = component_.ProcessFrame(frame, frame_number);
-                if (activity_found) {
+                if (activity_found && !segment_activity_alert_sent) {
                     LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending new activity alert for frame: " << frame_number)
                     sender_.SendActivityAlert(frame_number);
+                    segment_activity_alert_sent = true;
                 }
 
                 if (frame_number != 0 && (frame_number % settings_.segment_size == 0)) {

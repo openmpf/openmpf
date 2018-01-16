@@ -54,9 +54,7 @@ namespace MPF { namespace COMPONENT {
 
         void SendSummaryReport(
                 int frame_number, const std::string &detection_type,
-                const std::vector<MPFVideoTrack> &tracks);
-
-        void SendErrorReport(int frame_number, const std::string &error_message, const std::string &detection_type);
+                const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks, const std::string &error_message = {});
 
     private:
         const long job_id_;
@@ -76,9 +74,6 @@ namespace MPF { namespace COMPONENT {
         CreateProducer(const std::string &queue_name, cms::Session &session);
 
         static long GetTimestampMillis();
-
-        void SendSegmentReport(int frame_number, const std::string &detection_type,
-                               const std::vector<MPFVideoTrack> &tracks, const std::string &error_message);
     };
 }}
 

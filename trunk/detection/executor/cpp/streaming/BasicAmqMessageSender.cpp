@@ -84,21 +84,8 @@ namespace MPF { namespace COMPONENT {
         activity_alert_producer_->send(message.get());
     }
 
+
     void BasicAmqMessageSender::SendSummaryReport(int frame_number,
-                                                  const std::string &detection_type,
-                                                  const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks) {
-        SendSegmentReport(frame_number, detection_type, tracks, {});
-    }
-
-
-    void BasicAmqMessageSender::SendErrorReport(int frame_number,
-                                                const std::string &error_message,
-                                                const std::string &detection_type) {
-        SendSegmentReport(frame_number, detection_type, {}, error_message);
-    }
-
-
-    void BasicAmqMessageSender::SendSegmentReport(int frame_number,
                                                   const std::string &detection_type,
                                                   const std::vector<MPFVideoTrack> &tracks,
                                                   const std::string &error_message) {

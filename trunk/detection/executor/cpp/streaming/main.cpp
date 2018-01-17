@@ -230,11 +230,15 @@ private:
     static std::string get_app_dir() {
         char* this_exe = canonicalize_file_name("/proc/self/exe");
         if (this_exe == nullptr) {
-            return "";
+            return ".";
         }
 
         std::string app_dir = dirname(this_exe); // The dirname documentation says the returned pointer must not be freed.
         free(this_exe);
+
+        if (app_dir.empty()) {
+            return ".";
+        }
         return app_dir;
     }
 

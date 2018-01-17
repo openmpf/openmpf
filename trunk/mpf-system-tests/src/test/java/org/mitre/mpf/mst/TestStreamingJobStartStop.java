@@ -105,7 +105,7 @@ public class TestStreamingJobStartStop {
 		Thread.sleep(3000);
 
 		verify(_mockStreamingJobRequestBo, timeout(30_000))
-				.jobCompleted(eq(jobId), or(eq(JobStatus.TERMINATED), eq(JobStatus.STALLED)));
+				.jobCompleted(eq(jobId), or(eq(JobStatus.TERMINATED), eq(JobStatus.CANCELLED)));
 
 		verify(_mockStreamingJobRequestBo, atLeastOnce())
 				.handleNewActivityAlert(eq(jobId), gt(0L), gt(0L));

@@ -28,21 +28,10 @@ package org.mitre.mpf.wfm;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonHealthReportDataCallbackBody;
 import org.mitre.mpf.rest.api.MpfResponse;
@@ -56,6 +45,14 @@ import spark.Response;
 import spark.Route;
 import spark.Spark;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+
 // Test streaming health report callbacks. Test only the POST method, since GET is not being supported in OpenMPF for streaming jobs.
 // NOTE: Needed to add confirmation of jobId in the health callbacks, because scheduled callbacks from a job created
 // earlier were causing the callback to capture a health report sent before a later job.
@@ -66,8 +63,7 @@ public class ITWebStreamingHealthReports {
     private static final int MINUTES = 1000 * 60; // 1000 milliseconds/sec, 60 sec/minute
 
     private static final String DESCRIPTOR_NAME = "CplusplusHelloWorldComponent.json";
-    private static final String ALGORITHM_NAME = "CPLUSPLUSHELLOWORLD";
-    private static final String PIPELINE_NAME = ALGORITHM_NAME + " DETECTION PIPELINE";
+    private static final String PIPELINE_NAME = "HELLOWORLD TEST PIPELINE";
 
     private static final int HEALTH_REPORT_CALLBACK_PORT = 20160;
 

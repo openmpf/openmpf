@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.NameValuePair;
@@ -56,8 +57,8 @@ public class WebRESTUtils {
 
 	private static final Logger log = LoggerFactory.getLogger(WebRESTUtils.class);
 
-	// for converting the JSON response to the actual java object
-	private static ObjectMapper objectMapper = new ObjectMapper();
+	private static final ObjectMapper objectMapper = new ObjectMapper()
+			.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 
 	public static JSONArray getNodes() throws JSONException, MalformedURLException {
 		String url = REST_URL + "nodes/info.json";

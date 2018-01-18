@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -119,7 +120,8 @@ public class SystemMessage {
 //    }
 
     public HashMap<String,String> toHashMap()  {
-        ObjectMapper m = new ObjectMapper();
+        ObjectMapper m = new ObjectMapper()
+                .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         HashMap<String,String> props = m.convertValue(this, HashMap.class);
         return props;
     }

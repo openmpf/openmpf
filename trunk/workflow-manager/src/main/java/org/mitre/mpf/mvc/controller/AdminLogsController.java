@@ -26,32 +26,33 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.json.JSONObject;
-import org.mitre.mpf.mvc.util.tailer.FilteredMpfLogTailerListener;
-import org.mitre.mpf.mvc.util.tailer.MpfLogLevel;
-import org.mitre.mpf.mvc.util.tailer.MpfLogTailer;
-import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.nodeManager.NodeManagerStatus;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Profile;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.servlet.ModelAndView;
+ import com.fasterxml.jackson.databind.DeserializationFeature;
+ import com.fasterxml.jackson.databind.ObjectMapper;
+ import org.json.JSONObject;
+ import org.mitre.mpf.mvc.util.tailer.FilteredMpfLogTailerListener;
+ import org.mitre.mpf.mvc.util.tailer.MpfLogLevel;
+ import org.mitre.mpf.mvc.util.tailer.MpfLogTailer;
+ import org.mitre.mpf.wfm.WfmProcessingException;
+ import org.mitre.mpf.wfm.nodeManager.NodeManagerStatus;
+ import org.mitre.mpf.wfm.util.PropertiesUtil;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.beans.factory.annotation.Qualifier;
+ import org.springframework.context.annotation.Profile;
+ import org.springframework.context.annotation.Scope;
+ import org.springframework.stereotype.Controller;
+ import org.springframework.web.bind.annotation.RequestMapping;
+ import org.springframework.web.bind.annotation.RequestMethod;
+ import org.springframework.web.bind.annotation.RequestParam;
+ import org.springframework.web.bind.annotation.ResponseBody;
+ import org.springframework.web.servlet.ModelAndView;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.util.*;
+ import javax.servlet.http.HttpServletRequest;
+ import java.io.File;
+ import java.io.FilenameFilter;
+ import java.io.IOException;
+ import java.util.*;
 
 // NOTE: Don't use @Scope("request") because we don't need to access to the session
 // and the additional overhead associated with creating the log file maps per request.
@@ -96,7 +97,8 @@ public class AdminLogsController
 
         String json;
         try {
-            ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = new ObjectMapper()
+                    .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
             json = mapper.writeValueAsString(nodesAndLogs);
         } catch (IOException e) {
             throw new WfmProcessingException("Unable to generate map of nodes to log files.", e);

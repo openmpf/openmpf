@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.service.component;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.mitre.mpf.wfm.pipeline.xml.ValueType;
@@ -141,6 +142,8 @@ public class TestJsonDescriptor {
 
     private JsonComponentDescriptor loadDescriptor(String fileName) throws IOException {
         URL resource = getClass().getClassLoader().getResource(fileName);
-        return new ObjectMapper().readValue(resource, JsonComponentDescriptor.class);
+        ObjectMapper objectMapper = new ObjectMapper()
+                .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        return objectMapper.readValue(resource, JsonComponentDescriptor.class);
     }
 }

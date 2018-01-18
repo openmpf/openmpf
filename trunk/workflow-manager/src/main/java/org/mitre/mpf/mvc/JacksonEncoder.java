@@ -26,20 +26,18 @@
 
 package org.mitre.mpf.mvc;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.atmosphere.config.managed.Decoder;
 import org.atmosphere.config.managed.Encoder;
 import org.mitre.mpf.mvc.model.AtmosphereMessage;
-//import org.mitre.mpf.mvc.controller.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-
 import java.io.IOException;
+
+//import org.mitre.mpf.mvc.controller.Message;
 
 //can encode and decode atmosphere websocket traffic when configured
 public class JacksonEncoder implements Encoder<AtmosphereMessage, String>/*, Decoder<String, AtmosphereMessage>*/ {
@@ -73,7 +71,8 @@ public class JacksonEncoder implements Encoder<AtmosphereMessage, String>/*, Dec
 	@PostConstruct //solves the current injection issue
 	private void init() {
 		if(mapper == null) {
-			mapper = new ObjectMapper();
+			mapper = new ObjectMapper()
+                    .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 		}
 	}
 }

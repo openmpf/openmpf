@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import http.rest.RequestInterceptor;
@@ -144,7 +145,8 @@ public class ITComponentLifecycle {
             log.error("IOException occurred while getting deployed node manager info");
             e.printStackTrace();
         }
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper()
+                .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         try {
             model = mapper.treeToValue(node, DeployedNodeManagerModel.class);
         } catch (JsonProcessingException e) {

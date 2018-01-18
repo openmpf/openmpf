@@ -26,11 +26,12 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.mitre.mpf.mvc.model.*;
 import org.mitre.mpf.mvc.util.JsonView;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -64,7 +65,8 @@ public class PipelineController {
 
     private static final Logger log = LoggerFactory.getLogger(PipelineController.class);
 
-    public static final String DEFAULT_ERROR_VIEW = "error";
+    private static final ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper()
+            .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 
     @Autowired
     private PipelineService pipelineService;
@@ -348,7 +350,7 @@ public class PipelineController {
     public void createActionJson2(@RequestBody ActionModel actionModel, HttpServletResponse response) throws WfmProcessingException {
         Map<String, String> modifiedProperties;
         try {
-            modifiedProperties = new ObjectMapper().readValue(actionModel.getProperties(), HashMap.class);
+            modifiedProperties = objectMapper.readValue(actionModel.getProperties(), HashMap.class);
         } catch (Exception e) {
             log.error("error getting properties with message: {}", e.getMessage());
             throw new WfmProcessingException("Invalid properties value: " + actionModel.getProperties() + ".", e);
@@ -460,7 +462,7 @@ public class PipelineController {
         //IMPORTANT!! - only passing in the modified properties in this method
         Map<String, String> modifiedProperties = new HashMap<String, String>();
         try {
-        	modifiedProperties = new ObjectMapper().readValue(actionModel.getProperties(), HashMap.class);
+        	modifiedProperties = objectMapper.readValue(actionModel.getProperties(), HashMap.class);
         } catch (IOException e) {
             log.error("error getting properties with message: {}", e.getMessage());
             responseTuple = new Tuple<Boolean, String>(false, e.getMessage());

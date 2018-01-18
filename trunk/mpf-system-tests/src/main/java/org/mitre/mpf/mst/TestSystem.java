@@ -27,6 +27,7 @@
 
 package org.mitre.mpf.mst;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -79,8 +80,11 @@ import java.util.*;
 public abstract class TestSystem {
 
 	protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
+
+	protected static final ObjectMapper objectMapper = new ObjectMapper()
+			.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+
 	protected static int testCtr = 0;
-    protected static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	// is this running on Jenkins and/or is output checking desired?
 	protected static boolean jenkins = false;
@@ -199,7 +203,7 @@ public abstract class TestSystem {
     public void checkOutput(URI actualOutputPath, int numInputMedia) throws IOException {
         log.debug("Deserializing actual output {}", actualOutputPath);
 
-        JsonOutputObject actualOutput = OBJECT_MAPPER.readValue(actualOutputPath.toURL(), JsonOutputObject.class);
+        JsonOutputObject actualOutput = objectMapper.readValue(actualOutputPath.toURL(), JsonOutputObject.class);
 	    Assert.assertTrue(String.format("Actual output size=%d doesn't match number of input media=%d",
 			    actualOutput.getMedia().size(), numInputMedia), actualOutput.getMedia().size() == numInputMedia);
     }
@@ -275,7 +279,7 @@ public abstract class TestSystem {
 			URL expectedOutputPath = getClass().getClassLoader().getResource(expectedOutputJsonPath);
 			log.info("Deserializing expected output {} and actual output for job {}", expectedOutputPath, jobId);
 
-			JsonOutputObject expectedOutputJson = OBJECT_MAPPER.readValue(expectedOutputPath, JsonOutputObject.class);
+			JsonOutputObject expectedOutputJson = objectMapper.readValue(expectedOutputPath, JsonOutputObject.class);
 			JsonOutputObject actualOutputJson = getJobOutputObject(jobId);
 
 			outputChecker.compareJsonOutputObjects(expectedOutputJson, actualOutputJson, pipelineName);
@@ -287,7 +291,7 @@ public abstract class TestSystem {
 	protected JsonOutputObject getJobOutputObject(long jobId) {
     	try {
 		    File outputObjectFile = propertiesUtil.createDetectionOutputObjectFile(jobId);
-		    return OBJECT_MAPPER.readValue(outputObjectFile, JsonOutputObject.class);
+		    return objectMapper.readValue(outputObjectFile, JsonOutputObject.class);
 	    }
 	    catch (IOException e) {
     		throw new UncheckedIOException(e);

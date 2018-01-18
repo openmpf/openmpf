@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
 import org.joda.time.DateTime;
@@ -101,7 +102,8 @@ public class ITWebREST {
 	private static final Logger log = LoggerFactory.getLogger(ITWebREST.class);
 
 	//for converting the JSON response to the actual java object
-	private static ObjectMapper objectMapper = new ObjectMapper();
+	private static ObjectMapper objectMapper = new ObjectMapper()
+			.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 
 	private static long job_created_id = -1L;
 	private static boolean test_ready = true;
@@ -1039,8 +1041,7 @@ public class ITWebREST {
 			@Override
 			public Object handle(Request request, Response resp) throws Exception {
 				log.info("Spark Servicing request..POST..from " + request.requestMethod() + " body:"+request.body());
-				ObjectMapper jsonObjectMapper = new ObjectMapper();
-				JsonCallbackBody callbackBody = jsonObjectMapper.readValue(request.bodyAsBytes(), JsonCallbackBody.class);
+				JsonCallbackBody callbackBody = objectMapper.readValue(request.bodyAsBytes(), JsonCallbackBody.class);
 				sparkIds[0] = callbackBody.getJobId();
 				sparkIds[1] = Long.parseLong(callbackBody.getExternalId());
 				log.info("Spark POST Callback jobid=" + sparkIds[0] + " externalid="+sparkIds[1]);

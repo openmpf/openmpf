@@ -45,10 +45,11 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.net.URL;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.AdditionalMatchers.gt;
-import static org.mockito.AdditionalMatchers.or;
+import static org.mockito.AdditionalMatchers.*;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -79,6 +80,7 @@ public class TestStreamingJobStartStop {
 	@Test
 	public void testJobStartStop() throws InterruptedException {
 		long jobId = 43231;
+		long one_minute_ago = Instant.now().minus(1, ChronoUnit.MINUTES).toEpochMilli();
 
 		TransientStage stage1 = new TransientStage("stage1", "description", ActionType.DETECTION);
 		stage1.getActions().add(new TransientAction("Action1", "description", "HelloWorld"));
@@ -108,7 +110,7 @@ public class TestStreamingJobStartStop {
 				.jobCompleted(eq(jobId), or(eq(JobStatus.TERMINATED), eq(JobStatus.CANCELLED)));
 
 		verify(_mockStreamingJobRequestBo, atLeastOnce())
-				.handleNewActivityAlert(eq(jobId), gt(0L), gt(0L));
+				.handleNewActivityAlert(eq(jobId), geq(0L), gt(one_minute_ago));
 
 		ArgumentCaptor<SegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(SegmentSummaryReport.class);
 		verify(_mockStreamingJobRequestBo, atLeastOnce())

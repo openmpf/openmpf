@@ -148,15 +148,16 @@ public class StreamingJobController {
      */
     //EXTERNAL
     @RequestMapping(value = "/rest/streaming/jobs", method = RequestMethod.GET)
-    @ApiOperation(value = "Gets a list of job ids for all streaming jobs.",
+    @ApiOperation(value = "Gets a list of job ids for streaming jobs. If isActive is true, don't include streaming jobs that are terminated or cancelled. If false, return all streaming jobs.",
         produces = "application/json", response=Long.class, responseContainer="List")
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successful response"),
         @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
-    public List<Long> getStreamingJobsInfoRest() {
+    public List<Long> getStreamingJobsInfoRest(@ApiParam(name = "isActive", value = "isActive", required = false, defaultValue = "true")
+                                               @RequestParam(value = "isActive", required = false) boolean isActive ) {
         //get a list of all of the streaming job ids
-        return mpfService.getAllStreamingJobIds();
+        return mpfService.getAllStreamingJobIds(isActive);
     }
 
 // TODO:

@@ -301,13 +301,13 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 		JobStatus status;
 		switch (message.reason) {
 			case CANCELLED:
-				status = JobStatus.COMPLETE;
+				status = JobStatus.CANCELLED;
 				break;
 			case ERROR:
 				status = JobStatus.ERROR;
 				break;
 			case STREAM_STALLED:
-				status = JobStatus.STALLED;
+				status = JobStatus.TERMINATED;
 				break;
 			default:
 				throw new IllegalStateException(String.format(

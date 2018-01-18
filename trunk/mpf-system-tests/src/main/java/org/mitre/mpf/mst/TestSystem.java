@@ -238,7 +238,7 @@ public abstract class TestSystem {
 				Collections.emptyMap(), jobProperties,
 				buildOutput, priority,
 				stallTimeout,
-				null,null,null,null);
+				null,null);
 		long jobRequestId = mpfService.submitJob(jsonStreamingJobRequest);
 		Assert.assertTrue(waitFor(jobRequestId));
 		return jobRequestId;

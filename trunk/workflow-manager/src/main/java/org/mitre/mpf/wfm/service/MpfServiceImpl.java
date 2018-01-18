@@ -26,37 +26,37 @@
 
 package org.mitre.mpf.wfm.service;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
-import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
+import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.AtmosphereChannel;
+import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.businessrules.JobRequestBo;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
+import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
+import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.SystemMessageDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
-import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateSystemMessageDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-import org.mitre.mpf.wfm.businessrules.JobRequestBo;
-import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
-import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
-import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
-import org.mitre.mpf.wfm.WfmProcessingException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
 
 @Service
 public class MpfServiceImpl implements MpfService {
@@ -176,7 +176,7 @@ public class MpfServiceImpl implements MpfService {
 		return jobRequestBo.resubmit(jobId, newPriority).getId();
 	}
 
-	/** Create a new streaming job which will execute the specified pipeline on the provided list of provided URIs
+	/** Create a new streaming job which will execute the specified pipeline on the stream.
 	 * @param json_stream JSON representation of the stream data
 	 * @param algorithmProperties A map of properties which will override the job properties on this job for a particular algorithm.
 	 * @param jobProperties A map of properties which will override the default and pipeline properties on this job.
@@ -187,8 +187,6 @@ public class MpfServiceImpl implements MpfService {
 	 * @param stallTimeout
 	 * @param healthReportCallbackURI The health report callback URI or null to disable health reports
 	 * @param summaryReportCallbackURI The summary callback URI or null to disable summary reports
-	 * @param newTrackAlertCallbackURI The new track alert callback URI or null to disable new track alerts
-	 * @param method The method to communicate the response body to the callback URL or null if no HTTP method for callbacks is defined
 	 * @return A {@link org.mitre.mpf.interop.JsonStreamingJobRequest} which summarizes this request
 	 */
 	@Override
@@ -198,14 +196,12 @@ public class MpfServiceImpl implements MpfService {
 													  boolean buildOutput, int priority,
 													  long stallTimeout,
 													  String healthReportCallbackURI,
-													  String summaryReportCallbackURI, String newTrackAlertCallbackURI,
-													  String method) {
+													  String summaryReportCallbackURI) {
 
-		log.debug("createStreamingJob: stream: {}, Pipeline: {}, Build Output: {}, Priority: {}, healthReportCallbackUri: {}, summaryReportCallbackUri: {}, newTrackAlertCallbackUri: {}, Method: {}", json_stream,
-				pipelineName, buildOutput, priority, healthReportCallbackURI, summaryReportCallbackURI, newTrackAlertCallbackURI, method);
+		log.debug("createStreamingJob: stream: {}, Pipeline: {}, Build Output: {}, Priority: {}, healthReportCallbackUri: {}, summaryReportCallbackUri: {}", json_stream,
+				pipelineName, buildOutput, priority, healthReportCallbackURI, summaryReportCallbackURI);
 		return streamingJobRequestBo.createRequest(externalId, pipelineName, json_stream, algorithmProperties, jobProperties, buildOutput, priority,
-				stallTimeout,
-				healthReportCallbackURI, summaryReportCallbackURI, newTrackAlertCallbackURI, method);
+				stallTimeout, healthReportCallbackURI, summaryReportCallbackURI);
 	}
 
 	/**
@@ -271,8 +267,8 @@ public class MpfServiceImpl implements MpfService {
 	}
 
 	/**
-	 * Get the list of all streaming job requests
-	 * @return
+	 * Get the list of all streaming job requests from the long term database.
+	 * @return List of all streaming job requests from the long term database.
 	 */
 	@Override
 	public List<StreamingJobRequest> getAllStreamingJobRequests() {
@@ -280,13 +276,46 @@ public class MpfServiceImpl implements MpfService {
 	}
 
 	/**
-	 * Get the list of all streaming job ids
-	 * @return list of all streaming job ids
+	 * Get the list of all streaming job ids from the long term database.
+	 * @return list of all streaming job ids from the long term database.
 	 */
 	@Override
 	public List<Long> getAllStreamingJobIds() {
 	    // use a Java8 stream to map the streaming job ids and collect them into a list,
         return getAllStreamingJobRequests().stream().map(StreamingJobRequest::getId).collect(Collectors.toList());
+	}
+
+    /**
+     * Get the list of all streaming job ids from the long term database.
+     * @param isActive If true, then streaming jobs which have terminal JobStatus will be
+     * filtered out. Otherwise, all streaming jobs will be returned.
+     * @return list of all streaming job ids from the long term database.
+     */
+    @Override
+    public List<Long> getAllStreamingJobIds(boolean isActive) {
+        // use a Java8 stream to map the streaming job ids (filtered by terminal status if isActive is enabled) and collect them into a list,
+        return getAllStreamingJobRequests().stream().filter( request -> {
+            if (isActive) {
+                return !request.getStatus().isTerminal(); // include only jobs which have non-terminal status
+            } else {
+                return true; // include all jobs
+            }
+        }).map(StreamingJobRequest::getId).collect(Collectors.toList());
+    }
+
+	/**
+	 * Send health report for all streaming jobs to the health report callback associated with each streaming job.
+	 * This method will just return if there are no streaming jobs.
+	 * @param isActive If true, then streaming jobs which have terminal JobStatus will be
+	 * filtered out. Otherwise, all current streaming jobs will be processed.
+	 * @throws WfmProcessingException thrown if an error occurs
+	 */
+	@Override
+	public void sendStreamingJobHealthReports(boolean isActive) throws WfmProcessingException {
+		List<Long> jobIds = getAllStreamingJobIds(isActive);
+        if ( jobIds != null && !jobIds.isEmpty() ) {
+			streamingJobRequestBo.sendHealthReports(jobIds, isActive);
+		}
 	}
 
 	/* ***** System Messages ***** */

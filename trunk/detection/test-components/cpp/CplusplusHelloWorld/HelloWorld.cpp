@@ -68,10 +68,9 @@ MPFDetectionError HelloWorld::GetDetections(const MPFVideoJob &job,
 
     // The MPFVideoJob structure contains two Properties entries, one
     // that contains job-specific properties, and one that contains
-    // media-specific properties.  The frame processing interval is one
-    // example of a job-specific property.
-    LOG4CXX_INFO(hw_logger_, "[" << job.job_name << "] Job properties contains FRAME_INTERVAL with a value of "
-                                 << job.job_properties.at("FRAME_INTERVAL") << ".");
+    // media-specific properties.
+    LOG4CXX_INFO(hw_logger_, "[" << job.job_name << "] Job properties contains \"prop3\" with a value of \""
+             << DetectionComponentUtils::GetProperty(job.job_properties, "prop3", std::string()) << "\".");
 
     // Detection logic goes here
 

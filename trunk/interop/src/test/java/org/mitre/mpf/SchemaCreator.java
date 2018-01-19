@@ -26,7 +26,6 @@
 
 package org.mitre.mpf;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
 import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
@@ -39,8 +38,7 @@ import java.io.File;
 
 public class SchemaCreator {
 	public static void main(String[] args) throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper()
-                .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+		ObjectMapper objectMapper = new ObjectMapper();
 		JsonSchemaGenerator jsonSchemaGenerator = new JsonSchemaGenerator(objectMapper);
 		for(Class clazz : new Class[] {
 				// JsonAction.class,

@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import http.rest.RequestInterceptor;
@@ -42,14 +41,14 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
+import org.mitre.mpf.nms.xml.EnvironmentVariable;
+import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.rest.api.node.DeployedNodeManagerModel;
 import org.mitre.mpf.rest.api.node.DeployedServiceModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.rest.client.CustomRestClient;
-import org.mitre.mpf.nms.xml.EnvironmentVariable;
-import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.ui.Utils;
 import org.slf4j.Logger;
@@ -145,8 +144,7 @@ public class ITComponentLifecycle {
             log.error("IOException occurred while getting deployed node manager info");
             e.printStackTrace();
         }
-        ObjectMapper mapper = new ObjectMapper()
-                .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        ObjectMapper mapper = new ObjectMapper();
         try {
             model = mapper.treeToValue(node, DeployedNodeManagerModel.class);
         } catch (JsonProcessingException e) {

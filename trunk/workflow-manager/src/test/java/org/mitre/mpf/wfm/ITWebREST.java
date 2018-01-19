@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.wfm;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
 import org.joda.time.DateTime;
@@ -40,8 +40,6 @@ import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.ui.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import spark.Request;
 import spark.Response;
 import spark.Route;
@@ -51,7 +49,9 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 //mvn -Dtest=ITWebREST test if running tomcat before
 //mvn verify -Dtest=none -DfailIfNoTests=false -Dit.test=ITWebREST
@@ -101,9 +101,7 @@ public class ITWebREST {
 
 	private static final Logger log = LoggerFactory.getLogger(ITWebREST.class);
 
-	//for converting the JSON response to the actual java object
-	private static ObjectMapper objectMapper = new ObjectMapper()
-			.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+	private static ObjectMapper objectMapper = new ObjectMapper();
 
 	private static long job_created_id = -1L;
 	private static boolean test_ready = true;
@@ -959,11 +957,14 @@ public class ITWebREST {
 			JSONObject params = new JSONObject();
 			params.put("pipelineName", "OCV FACE DETECTION (WITH MARKUP) PIPELINE");
 
-			ArrayList media = new ArrayList<JSONObject>();
+			JSONObject properties = new JSONObject();
+			properties.put("testProp", "testVal");
+
+			JSONArray media = new JSONArray();
 			JSONObject medium = new JSONObject();
 			medium.put("mediaUri", Utils.IMG_URL);
-			medium.put("properties", new org.json.simple.JSONObject());
-			media.add(medium);
+			medium.put("properties", properties);
+			media.put(medium);
 
 			params.put("media", media);
 			params.put("externalId", ""+externalId);

@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.http.NameValuePair;
@@ -73,7 +72,6 @@ public class ITWebStreamingHealthReports {
 
     // The health report uses Java8 time, so we need to include the external JavaTimeModule which provides support for Java 8 Time.
     private static ObjectMapper objectMapper = new ObjectMapper()
-            .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)
             .registerModule(new JavaTimeModule());
 
     private static boolean registeredComponent = false;
@@ -297,9 +295,12 @@ public class ITWebStreamingHealthReports {
         JSONObject params = new JSONObject();
         params.put("pipelineName", customPipelineName);
 
+        JSONObject mediaProperties = new JSONObject();
+        mediaProperties.put("testProp", "testVal");
+
         JSONObject stream = new JSONObject();
         stream.put("streamUri", "rtsp://test/test.mp4");
-        stream.put("mediaProperties", new org.json.simple.JSONObject());
+        stream.put("mediaProperties", mediaProperties);
         stream.put("segmentSize", 100);
 
         params.put("stream", stream);

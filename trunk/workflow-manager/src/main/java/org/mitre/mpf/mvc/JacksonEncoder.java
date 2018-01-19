@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.mvc;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.atmosphere.config.managed.Encoder;
 import org.mitre.mpf.mvc.model.AtmosphereMessage;
@@ -71,8 +70,7 @@ public class JacksonEncoder implements Encoder<AtmosphereMessage, String>/*, Dec
 	@PostConstruct //solves the current injection issue
 	private void init() {
 		if(mapper == null) {
-			mapper = new ObjectMapper()
-                    .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+			mapper = new ObjectMapper();
 		}
 	}
 }

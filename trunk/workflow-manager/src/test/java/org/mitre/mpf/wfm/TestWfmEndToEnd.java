@@ -99,8 +99,7 @@ public class TestWfmEndToEnd {
 
 	protected static final Logger log = LoggerFactory.getLogger(TestWfmEndToEnd.class);
 
-	protected static final ObjectMapper objectMapper = new ObjectMapper()
-			.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+	protected static final ObjectMapper objectMapper = new ObjectMapper();
 
 	protected static boolean hasInitialized = false;
 	protected static int testCtr = 0;

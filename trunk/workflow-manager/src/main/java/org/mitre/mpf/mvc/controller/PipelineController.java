@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -37,8 +36,8 @@ import org.mitre.mpf.mvc.util.JsonView;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.DuplicateNameWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.NotFoundWfmProcessingException;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.*;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,8 +64,7 @@ public class PipelineController {
 
     private static final Logger log = LoggerFactory.getLogger(PipelineController.class);
 
-    private static final ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper()
-            .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Autowired
     private PipelineService pipelineService;

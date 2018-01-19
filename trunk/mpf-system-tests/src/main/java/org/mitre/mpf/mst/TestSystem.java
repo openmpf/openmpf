@@ -27,7 +27,6 @@
 
 package org.mitre.mpf.mst;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -81,8 +80,7 @@ public abstract class TestSystem {
 
 	protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
-	protected static final ObjectMapper objectMapper = new ObjectMapper()
-			.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+	protected static final ObjectMapper objectMapper = new ObjectMapper();
 
 	protected static int testCtr = 0;
 

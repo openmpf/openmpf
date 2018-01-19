@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.util;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import org.javasimon.aop.Monitored;
@@ -67,10 +66,8 @@ public class JsonUtils {
 
 	@PostConstruct
 	private void init() {
-		smileObjectMapper = new ObjectMapper(new SmileFactory())
-				.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);;
-		jsonObjectMapper = new ObjectMapper()
-				.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+		smileObjectMapper = new ObjectMapper(new SmileFactory());
+		jsonObjectMapper = new ObjectMapper();
     }
 
 	/** Parses the provided smile binary JSON object as an instance of the specified type or throws an exception if this conversion cannot be performed. */

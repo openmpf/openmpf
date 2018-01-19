@@ -76,7 +76,7 @@ public class TestStreamingJobStartStop {
 
 
 	@Test
-	public void testJobStartStop() throws InterruptedException {
+	public void testJobStartStop() {
 		long jobId = 43231;
 		long test_start_time = System.currentTimeMillis();
 
@@ -97,21 +97,18 @@ public class TestStreamingJobStartStop {
 
 		_jobSender.launchJob(streamingJob);
 
-		Thread.sleep(3000);
+		verify(_mockStreamingJobRequestBo, timeout(30_000).atLeastOnce())
+				.handleNewActivityAlert(eq(jobId), geq(0L), gt(test_start_time));
 
 		_jobSender.stopJob(jobId);
 
 
-		Thread.sleep(3000);
-
 		verify(_mockStreamingJobRequestBo, timeout(30_000))
 				.jobCompleted(eq(jobId), or(eq(JobStatus.TERMINATED), eq(JobStatus.CANCELLED)));
 
-		verify(_mockStreamingJobRequestBo, atLeastOnce())
-				.handleNewActivityAlert(eq(jobId), geq(0L), gt(test_start_time));
-
 		ArgumentCaptor<SegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(SegmentSummaryReport.class);
-		verify(_mockStreamingJobRequestBo, atLeastOnce())
+
+		verify(_mockStreamingJobRequestBo, timeout(30_000).atLeastOnce())
 				.handleNewSummaryReport(reportCaptor.capture());
 
 		SegmentSummaryReport summaryReport = reportCaptor.getValue();

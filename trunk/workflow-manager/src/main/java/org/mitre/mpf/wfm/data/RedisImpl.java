@@ -48,7 +48,10 @@ import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.BatchJobStatus;
+import org.mitre.mpf.wfm.enums.JobStatusI;
+import org.mitre.mpf.wfm.enums.JobStatusI.JobStatus;
+import org.mitre.mpf.wfm.enums.StreamingJobStatus;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,8 +116,9 @@ public class RedisImpl implements Redis {
 			TASK_COUNT = "TASK_COUNT",
 			TRACK = "TRACK",
 			SEQUENCE = "SEQUENCE",
-			STATUS = "STATUS",
-			JOB_STATUS = "JOB_STATUS",
+            BATCH_JOB_STATUS = "BATCH_JOB_STATUS",
+            STREAMING_JOB_STATUS = "STREAMING_JOB_STATUS",
+            STREAMING_JOB_STATUS_DETAIL = "STREAMING_JOB_STATUS_DETAIL",
 			STREAMING_JOB = "STREAMING_JOB",
 			STREAM = "STREAM",
 			STALL_TIMEOUT = "STALL_TIMEOUT",
@@ -374,20 +378,63 @@ public class RedisImpl implements Redis {
 		}
 	}
 
-	/**
+    /**
+     * Set the job status of the specified batch or streaming job. This method may be used to set the
+     * job status of a streaming job in cases where  no job status details need to be stored in REDIS.
+     * @param jobId The OpenMPF-assigned ID of the batch or streaming job, must be unique.
+     * @param jobStatus The new status of the specified batch or streaming job.
+     */
+    @SuppressWarnings("unchecked")
+    public synchronized  void setJobStatus(long jobId, JobStatus jobStatus) throws WfmProcessingException {
+        if ( isJobTypeBatch(jobId) ) {
+            redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(BATCH_JOB_STATUS, jobStatus);
+        } else if ( isJobTypeStreaming(jobId) ) {
+            // just store the jobStatus for the streaming job, there is no detail associated with the streaming job status.
+            redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(STREAMING_JOB_STATUS, jobStatus);
+        } else {
+            // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and ignoring the request.
+            log.warn("Job #{} was not found as a batch or a streaming job so we can't set the job status", jobId);
+        }
+    }
+
+    /**
+     * Set the job status of the specified streaming job. Use this form of the method if job status needs
+     * to include additional details about the streaming job status, that would be available in StreamingJobStatus details.
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+     * @param streamingJobStatus The new status of the specified streaming job.
+     * @throws WfmProcessingException is thrown if this method is attempted to be used for a batcg job.
+     */
+    @SuppressWarnings("unchecked")
+    public synchronized  void setJobStatus(long jobId, StreamingJobStatus streamingJobStatus) throws WfmProcessingException {
+        if ( isJobTypeBatch(jobId) ) {
+            // this method shouldn't be called for batch jobs.
+            throw new WfmProcessingException("Error: this method shouldn't be called for batch jobs. Rejected this call for job " + jobId);
+        } else if ( isJobTypeStreaming(jobId) ) {
+            redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(STREAMING_JOB_STATUS, streamingJobStatus.getStatusAsString());
+            if ( streamingJobStatus.getDetail() != null ) {
+                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(STREAMING_JOB_STATUS_DETAIL, streamingJobStatus.getDetail());
+            }
+        } else {
+            // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and ignoring the request.
+            log.warn("Job #{} was not found as a batch or a streaming job so we can't set the job status", jobId);
+        }
+    }
+
+    /**
 	 * Get the job status for the specified job
 	 * @param jobId The OpenMPF-assigned ID of the batch or streaming job, must be unique.
-	 * @return
+	 * @return Method will return a BatchJobStatus for a batch job, or a StreamingJobStatus for a streaming job.
 	 */
 	@SuppressWarnings("unchecked")
-	public JobStatus getJobStatus(long jobId)  {
+	public JobStatusI getJobStatus(long jobId)  {
 		if ( isJobTypeBatch(jobId) ) {
 			// confirmed that the specified job is a batch job
 			if( !redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
 				return null;
 			} else {
 				Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
-				return (JobStatus)jobHash.get(JOB_STATUS);
+                BatchJobStatus jobStatus = new BatchJobStatus((String)jobHash.get(BATCH_JOB_STATUS));
+				return (jobStatus);
 			}
 		} else if ( isJobTypeStreaming(jobId) ) {
 			// confirmed that the specified job is a streaming job
@@ -395,7 +442,10 @@ public class RedisImpl implements Redis {
 				return null;
 			} else {
 				Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
-				return (JobStatus)jobHash.get(JOB_STATUS);
+				String jobStatusString = (String) jobHash.get(STREAMING_JOB_STATUS);
+				String jobStatusDetail = (String) jobHash.get(STREAMING_JOB_STATUS_DETAIL);
+				StreamingJobStatus jobStatus = new StreamingJobStatus(jobStatusString,jobStatusDetail);
+				return (jobStatus);
 			}
 		} else {
             // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and returning null.
@@ -409,13 +459,14 @@ public class RedisImpl implements Redis {
      * @return List of JobStatus for the specified jobs. The List may contain nulls for invalid jobIds.
      */
     @SuppressWarnings("unchecked")
-    public List<JobStatus> getJobStatuses(List<Long> jobIds) {
+    public List<JobStatusI> getJobStatuses(List<Long> jobIds) {
         return jobIds.stream().map(jobId->getJobStatus(jobId.longValue())).collect(Collectors.toList());
     }
 
-    /** This method is similar to {@link #getJobStatuses(List<Long>)}, it just returns a List of Strings instead of a List of JobStatus.
+    /** This method is similar to {@link #getJobStatuses(List<Long>)}, it just returns a List of Strings instead of a List of JobStatusI.
+     * Note that any detail information that may accompany StreamingJobStatuses will be ommitted when using this method.
      * @param jobIds List of jobIds
-     * @return List of JobStatus as Strings for the specified jobs. The List may contain nulls for invalid jobIds.
+     * @return List of JobStatusI as Strings for the specified jobs. The List may contain nulls for invalid jobIds.
      */
     @SuppressWarnings("unchecked")
     public List<String> getJobStatusesAsString(List<Long> jobIds) {
@@ -854,23 +905,6 @@ public class RedisImpl implements Redis {
 		}
 	}
 
-	/**
-	 * Set the job status of the specified batch or streaming job
-	 * @param jobId The OpenMPF-assigned ID of the batch or streaming job, must be unique.
-	 * @param jobStatus The new status of the specified job.
-	 */
-	@SuppressWarnings("unchecked")
-	public synchronized  void setJobStatus(long jobId, JobStatus jobStatus) {
-		if ( isJobTypeBatch(jobId) ) {
-			redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(JOB_STATUS, jobStatus);
-		} else if ( isJobTypeStreaming(jobId) ) {
-			redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(JOB_STATUS, jobStatus);
-		} else {
-            // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and ignoring the request.
-			log.warn("Job #{} was not found as a batch or a streaming job so we can't set the job status", jobId);
-		}
-	}
-
     /**
      * Store the last activity frame id from the last health report that was sent for the specified streaming job.
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
@@ -1182,9 +1216,10 @@ public class RedisImpl implements Redis {
         List<Long> currentStreamingJobIds = jobIds.stream().filter(jobId -> isJobTypeStreaming(jobId))
             .filter(jobId -> {
                 if ( isActive ) {
-                    return !getJobStatus(jobId).isTerminal(); // include only those jobs that do not have terminal jobStatus.
+                    // include only those streaming jobs that do not have terminal jobStatus.
+                    return !((StreamingJobStatus)getJobStatus(jobId)).isTerminal();
                 } else {
-                    return true; // include all jobs.
+                    return true; // include all streaming jobs.
                 }
             }).collect(Collectors.toList());
 

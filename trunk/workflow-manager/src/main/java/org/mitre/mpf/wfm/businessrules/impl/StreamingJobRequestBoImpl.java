@@ -67,7 +67,7 @@ import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.StreamingJobStatus;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
@@ -336,8 +336,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             assert streamingJobRequest.getStatus()
                 != null : "Streaming jobs must not have a null status.";
 
-            if (streamingJobRequest.getStatus().isTerminal() || streamingJobRequest.getStatus() == JobStatus.CANCELLING) {
-                throw new JobAlreadyCancellingWfmProcessingException("Streaming job " + jobId +" already has state '" + streamingJobRequest.getStatus().name() + "' and cannot be cancelled at this time.");
+            if (streamingJobRequest.getStatus().isTerminal() || streamingJobRequest.getStatus().equals(StreamingJobStatus.CANCELLING) ) {
+                throw new JobAlreadyCancellingWfmProcessingException("Streaming job " + jobId +" already has state '" + streamingJobRequest.getStatus() + "' and cannot be cancelled at this time.");
             } else {
                 log.info("[Job {}:*:*] Cancelling streaming job.", jobId);
 
@@ -354,7 +354,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                         jobId);
 
                     // set job status as cancelling, and persist that changed state in the database
-                    streamingJobRequest.setStatus(JobStatus.CANCELLING);
+                    streamingJobRequest.setStatus(new StreamingJobStatus(StreamingJobStatus.CANCELLING,"user requested cancellation of job"));
                     streamingJobRequestDao.persist(streamingJobRequest);
 
                     // TODO this doCleanup section should be moved to after the Node Manager has notified the WFM that the streaming job has been cancelled (issue #334)
@@ -459,7 +459,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      */
     private StreamingJobRequest initializeInternal(StreamingJobRequest streamingJobRequest, JsonStreamingJobRequest jsonStreamingJobRequest) throws WfmProcessingException {
         streamingJobRequest.setPriority(jsonStreamingJobRequest.getPriority());
-        streamingJobRequest.setStatus(JobStatus.INITIALIZED);
+        streamingJobRequest.setStatus(StreamingJobStatus.INITIALIZED);
         streamingJobRequest.setTimeReceived(new Date());
         streamingJobRequest.setInputObject(jsonUtils.serialize(jsonStreamingJobRequest));
         streamingJobRequest.setPipeline(jsonStreamingJobRequest.getPipeline() == null ? null : TextUtils.trimAndUpper(jsonStreamingJobRequest.getPipeline().getName()));
@@ -507,12 +507,15 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             // mark any exception as a failure by recording the error in the persistent database and throwing an exception
             try {
                 // make an effort to mark the streaming job as failed
+                String warningMessage;
                 if (INVALID_PIPELINE_MESSAGE.equals(e.getMessage())) {
-                    log.warn("Streaming Job #{} did not specify a valid pipeline.", jobId);
+                    warningMessage = "Streaming Job #" + jobId + " did not specify a valid pipeline.";
+                    log.warn(warningMessage);
                 } else {
-                    log.warn("Failed to parse the input object for Streaming Job #{} due to an exception.", streamingJobRequestEntity.getId(), e);
+                    warningMessage = "Failed to parse the input object for Streaming Job #" + jobId + " due to an exception.";
+                    log.warn(warningMessage, e);
                 }
-                streamingJobRequestEntity.setStatus(JobStatus.JOB_CREATION_ERROR);
+                streamingJobRequestEntity.setStatus(new StreamingJobStatus(StreamingJobStatus.JOB_CREATION_ERROR,warningMessage));
                 streamingJobRequestEntity.setTimeCompleted(new Date());
                 streamingJobRequestEntity = streamingJobRequestDao.persist(streamingJobRequestEntity);
             } catch (Exception persistException) {
@@ -566,13 +569,14 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         redis.persistJob(transientStreamingJob);
 
         if (transientPipeline == null) {
-            redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_ERRORS);
+            redis.setJobStatus(jobId, new StreamingJobStatus(StreamingJobStatus.IN_PROGRESS_ERRORS,INVALID_PIPELINE_MESSAGE));
             throw new WfmProcessingException(INVALID_PIPELINE_MESSAGE);
         }
 
-        // Everything has been good so far. Update the job status using running status for a streaming job
-        streamingJobRequestEntity.setStatus(JobStatus.IN_PROGRESS);
-        redis.setJobStatus(jobId, JobStatus.IN_PROGRESS);
+        // Everything has been good so far. Update the job status using running status for a streaming job.
+        // Note that there is no need to include other detail information along with the streaming job status.
+        streamingJobRequestEntity.setStatus(StreamingJobStatus.IN_PROGRESS);
+        redis.setJobStatus(jobId, StreamingJobStatus.IN_PROGRESS);
         streamingJobRequestEntity = streamingJobRequestDao.persist(streamingJobRequestEntity);
 
         return transientStreamingJob;
@@ -595,7 +599,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * @throws WfmProcessingException
      */
     @Override
-    public synchronized void jobCompleted(long jobId, JobStatus jobStatus) throws WfmProcessingException {
+    public synchronized void jobCompleted(long jobId, StreamingJobStatus jobStatus) throws WfmProcessingException {
         // TODO: cleanup the summary reports and other output files
         markJobCompleted(jobId, jobStatus);
 
@@ -632,7 +636,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     @Override
-    public void handleJobStatusChange(long jobId, JobStatus status, long timestamp) {
+    public void handleJobStatusChange(long jobId, StreamingJobStatus status, long timestamp) {
     	// TODO: Replace logging with implementation of handleJobStatusChange
     	log.info("handleJobStatusChange(jobId = {}, status = {}, time = {})", jobId, status, millisToDateTime(timestamp));
     }
@@ -737,7 +741,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     // TODO finalize what needs to be done to mark a streaming job as completed in the WFM, method copied over from StreamingJobCompleteProcessorImpl.java
-    private void markJobCompleted(long jobId, JobStatus jobStatus) {
+    private void markJobCompleted(long jobId, StreamingJobStatus jobStatus) {
         log.debug("Marking Streaming Job {} as completed with status '{}'.", jobId, jobStatus);
 
         StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);

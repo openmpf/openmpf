@@ -26,29 +26,33 @@
 
 package org.mitre.mpf.wfm.nodeManager;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.javasimon.SimonManager;
-import org.javasimon.Split;
-import org.jgroups.Address;
-import org.mitre.mpf.mvc.controller.AtmosphereController;
-import org.mitre.mpf.mvc.model.AtmosphereChannel;
-import org.mitre.mpf.nms.*;
-import org.mitre.mpf.nms.NodeManagerConstants.States;
-import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
-import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
-import org.mitre.mpf.wfm.enums.JobStatus;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.commons.lang3.tuple.Pair;
+import org.javasimon.SimonManager;
+import org.javasimon.Split;
+import org.jgroups.Address;
+import org.mitre.mpf.mvc.controller.AtmosphereController;
+import org.mitre.mpf.mvc.model.AtmosphereChannel;
+import org.mitre.mpf.nms.AddressParser;
+import org.mitre.mpf.nms.BaseServiceLauncher;
+import org.mitre.mpf.nms.ClusterChangeNotifier;
+import org.mitre.mpf.nms.MasterNode;
+import org.mitre.mpf.nms.NodeManagerConstants.States;
+import org.mitre.mpf.nms.NodeTypes;
+import org.mitre.mpf.nms.ServiceDescriptor;
+import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.enums.StreamingJobStatus;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
 public class NodeManagerStatus implements ClusterChangeNotifier {
@@ -298,16 +302,16 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 
 	@Override
 	public void streamingJobExited(StreamingJobExitedMessage message) {
-		JobStatus status;
+		StreamingJobStatus status;
 		switch (message.reason) {
 			case CANCELLED:
-				status = JobStatus.CANCELLED;
+				status = new StreamingJobStatus(StreamingJobStatus.CANCELLED, message.reason.toString());
 				break;
 			case ERROR:
-				status = JobStatus.ERROR;
+				status = new StreamingJobStatus(StreamingJobStatus.ERROR, message.reason.toString());
 				break;
 			case STREAM_STALLED:
-				status = JobStatus.TERMINATED;
+				status = new StreamingJobStatus(StreamingJobStatus.STREAMING_JOB_TERMINATED, message.reason.toString());
 				break;
 			default:
 				throw new IllegalStateException(String.format(

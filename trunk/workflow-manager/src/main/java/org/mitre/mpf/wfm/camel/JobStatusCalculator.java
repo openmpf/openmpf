@@ -32,8 +32,9 @@ import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.enums.BatchJobStatus;
+import org.mitre.mpf.wfm.enums.JobStatusI.JobStatus;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,25 +62,25 @@ public class JobStatusCalculator {
     private JsonUtils jsonUtils;
 
     /**
-     * Calculates the terminal status of a job
+     * Calculates the terminal status of a batch job
      * @param exchange  An incoming job exchange
-     * @return  The terminal JobStatus for the job.
+     * @return  The terminal JobStatus for the batch job.
      * @throws WfmProcessingException
      */
     public JobStatus calculateStatus(Exchange exchange) throws WfmProcessingException {
         TransientJob job = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TransientJob.class);
 
-        JobStatus statusFromRedis = redis.getJobStatus(job.getId());
+        BatchJobStatus statusFromRedis = (BatchJobStatus) redis.getJobStatus(job.getId());
 
-        if (statusFromRedis.equals(JobStatus.IN_PROGRESS_WARNINGS)) {
-            redis.setJobStatus(job.getId(), JobStatus.COMPLETE_WITH_WARNINGS);
-            return JobStatus.COMPLETE_WITH_WARNINGS;
-        } else if (statusFromRedis.equals(JobStatus.IN_PROGRESS_ERRORS)) {
-            redis.setJobStatus(job.getId(), JobStatus.COMPLETE_WITH_ERRORS);
-            return JobStatus.COMPLETE_WITH_ERRORS;
+        if (statusFromRedis.equals(BatchJobStatus.IN_PROGRESS_WARNINGS)) {
+            redis.setJobStatus(job.getId(), BatchJobStatus.COMPLETE_WITH_WARNINGS);
+            return BatchJobStatus.COMPLETE_WITH_WARNINGS;
+        } else if (statusFromRedis.equals(BatchJobStatus.IN_PROGRESS_ERRORS)) {
+            redis.setJobStatus(job.getId(), BatchJobStatus.COMPLETE_WITH_ERRORS);
+            return BatchJobStatus.COMPLETE_WITH_ERRORS;
         } else {
-            redis.setJobStatus(job.getId(), JobStatus.COMPLETE);
-            return JobStatus.COMPLETE;
+            redis.setJobStatus(job.getId(), BatchJobStatus.COMPLETE);
+            return BatchJobStatus.COMPLETE;
         }
     }
 }

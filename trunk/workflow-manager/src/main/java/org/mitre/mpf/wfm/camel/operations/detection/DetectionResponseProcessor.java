@@ -31,7 +31,7 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.ResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.BatchJobStatus;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
@@ -103,7 +103,7 @@ public class DetectionResponseProcessor
 				log.warn("[{}] Failed to persist {} in the transient data store. The results of this job are unreliable.", logLabel, detectionProcessingError);
 			}
 
-			redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_ERRORS);
+			redis.setJobStatus(jobId, BatchJobStatus.IN_PROGRESS_ERRORS);
 		}
 
 		if (detectionResponse.getAudioResponsesCount() == 0

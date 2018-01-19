@@ -24,32 +24,56 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel;
+package org.mitre.mpf.wfm.enums;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
-import org.mitre.mpf.wfm.enums.JobStatusI.JobStatus;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+import java.util.Collection;
+import java.util.Objects;
 
-@Component
-public class DefaultJobErrorHandler implements Processor {
-	private static final Logger log = LoggerFactory.getLogger(DefaultJobErrorHandler.class);
+public class BatchJobStatus implements JobStatusI {
 
-	@Override
-	public void process(Exchange exchange) throws Exception {
-		// May be null.
-		Long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+    // Provide a field for this job status (initialized to DEFAULT)
+    private JobStatus jobStatus = JobStatusI.DEFAULT;
+    public void setJobStatus(JobStatus jobStatus) { this.jobStatus = jobStatus; }
+    public JobStatus getJobStatus() { return jobStatus; }
+    /** Checks to see if this job status represents any terminal condition.
+     * @return true if this job status represents any terminal condition, false otherwise.
+     */
+    public boolean isTerminal() {
+        return jobStatus.isTerminal();
+    }
 
-		// May be null.
-		Throwable throwable = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Throwable.class);
+    public BatchJobStatus(String jobStatusString) {
+        this.jobStatus = JobStatusI.parse(jobStatusString);
+    }
 
-		if(jobId == null) {
-			log.warn("An error was encountered while processing a job, but not enough information has been provided to determine which job produced this error.", throwable);
-		} else {
-			log.warn("An error was encountered while processing Job #{}. The Job will be marked as {}.", jobId, JobStatus.ERROR, throwable);
-		}
-	}
+    // allow for static methods defined in JobStatusI interface to be called using this class.
+    public static JobStatus parse(String input) { return JobStatusI.parse(input); }
+    public static JobStatus parse(String input, JobStatus defaultValue) { return JobStatusI.parse(input, defaultValue); }
+    public static Collection<JobStatus> getNonTerminalStatuses() { return JobStatusI.getNonTerminalStatuses(); }
+
+    @Override
+    /** If the JobStatus enumeration within this object is equivalent to the JobStatus enumeration in the other object, then
+     * consider the BatchJobStatus objects to be equal.
+     */
+    public boolean equals(Object obj) {
+        if ( obj instanceof BatchJobStatus ) {
+            BatchJobStatus other = (BatchJobStatus)obj;
+            return jobStatus == other.jobStatus;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    // Override if equals method requires override of hashCode method.
+    public int hashCode() {
+        return Objects.hash(jobStatus);
+    }
+
+    @Override
+    public String toString() {
+        return jobStatus.toString();
+    }
+
 }
+

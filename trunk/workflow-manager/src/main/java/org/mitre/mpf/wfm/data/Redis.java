@@ -40,7 +40,9 @@ import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.JobStatusI;
+import org.mitre.mpf.wfm.enums.JobStatusI.JobStatus;
+import org.mitre.mpf.wfm.enums.StreamingJobStatus;
 
 @Monitored
 public interface Redis {
@@ -94,8 +96,8 @@ public interface Redis {
 	 * @param jobId The MPF-assigned ID of the job.
 	 * @return The status of the job.
 	 */
-	JobStatus getJobStatus(long jobId);
-    List<JobStatus> getJobStatuses(List<Long> jobIds);
+	JobStatusI getJobStatus(long jobId);
+    List<JobStatusI> getJobStatuses(List<Long> jobIds);
     List<String> getJobStatusesAsString(List<Long> jobIds);
 
 	/**
@@ -211,13 +213,22 @@ public interface Redis {
 	void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks);
 
 	/**
-	 * Updates the status of a job to the specified status.
-	 * @param jobId The MPF-assigned ID of the job.
-	 * @param jobStatus The new status of the specified job.
+	 * Updates the status of a batch job to the specified status.
+	 * @param jobId The MPF-assigned ID of the batch job.
+	 * @param jobStatus The new status of the specified batch job.
+     * @throws WfmProcessingException is thrown if a batch job vs. streaming job conflict is detected.
 	 */
-	void setJobStatus(long jobId, JobStatus jobStatus);
+	void setJobStatus(long jobId, JobStatus jobStatus) throws WfmProcessingException;
 
-	/**
+    /**
+     * Updates the status of a streaming job to the specified status.
+     * @param jobId The MPF-assigned ID of the streaming job.
+     * @param streamingJobStatus The new status of the specified streaming job.
+     * @throws WfmProcessingException is thrown if a batch job vs. streaming job conflict is detected.
+     */
+    void setJobStatus(long jobId, StreamingJobStatus streamingJobStatus) throws WfmProcessingException;
+
+    /**
 	 * The URL of the callback to connect to when the batch job is completed.
 	 * @param jobId The OpenMPF-assigned ID of the batch job to which this callback URL will refer to.
 	 * @return The URL of the callback.

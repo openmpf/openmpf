@@ -25,21 +25,28 @@
  ******************************************************************************/
 package org.mitre.mpf.mvc.model;
 
-import org.mitre.mpf.wfm.enums.JobStatus;
-
 import java.util.Date;
 import java.util.HashMap;
+import org.mitre.mpf.wfm.enums.JobStatusI;
+import org.mitre.mpf.wfm.enums.JobStatusI.JobStatus;
+import org.mitre.mpf.wfm.enums.StreamingJobStatus;
 
 public class JobStatusMessage extends AtmosphereMessage {
-	public JobStatusMessage(long id, double progress, JobStatus jobStatus, Date endDate) {
-		super( AtmosphereChannel.SSPC_JOBSTATUS, "OnStatusChanged" );
-		//If there are job progress updates and the status is null it will be updated to IN_PROGRESS
-		jobStatus = (jobStatus != null) ? jobStatus : JobStatus.IN_PROGRESS;
-		HashMap<String, Object> datamap = new HashMap<String, Object>();
-		datamap.put("id", id);
-		datamap.put("progress", progress);
-		datamap.put("jobStatus", jobStatus);
-		datamap.put("endDate", endDate);
-		this.setContent(datamap);
-	}
+
+    public JobStatusMessage(long id, double progress, JobStatus jobStatus, Date endDate) {
+        super( AtmosphereChannel.SSPC_JOBSTATUS, "OnStatusChanged" );
+        //If there are job progress updates and the status is null it will be updated to IN_PROGRESS
+        JobStatus updatedJobStatus = (jobStatus != null) ? jobStatus : JobStatusI.IN_PROGRESS;
+        HashMap<String, Object> datamap = new HashMap<String, Object>();
+        datamap.put("id", id);
+        datamap.put("progress", progress);
+        datamap.put("jobStatus", updatedJobStatus);
+        datamap.put("endDate", endDate);
+        this.setContent(datamap);
+    }
+
+    public JobStatusMessage(long id, double progress, StreamingJobStatus streamingJobStatus, Date endDate) {
+        this(id, progress, streamingJobStatus.getJobStatus(), endDate);
+    }
+
 }

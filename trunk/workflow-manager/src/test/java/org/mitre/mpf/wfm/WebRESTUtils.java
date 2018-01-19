@@ -36,7 +36,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.*;
 import org.mitre.mpf.rest.api.*;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.JobStatusI.JobStatus;
 import org.mitre.mpf.wfm.ui.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

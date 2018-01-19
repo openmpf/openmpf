@@ -31,7 +31,7 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -57,7 +57,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 					Message msg = exchange.getIn();
 					_streamingJobRequestBo.handleJobStatusChange(
 							msg.getHeader("JOB_ID", long.class),
-							msg.getHeader("JOB_STATUS", JobStatus.class),
+							msg.getHeader("JOB_STATUS", StreamingJobStatus.class),
 							msg.getHeader("STATUS_CHANGE_TIMESTAMP", long.class));
 				 });
 

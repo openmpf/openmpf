@@ -108,6 +108,7 @@ public class ChildStreamingJobManager {
 			_streamingJobs.remove(jobId);
 
 			if (thrownError == null) {
+				LOG.info("Sending StreamingJobExitedMessage for job id {} to master node.", jobId);
 				_channelNode.sendToMaster(
 						new StreamingJobExitedMessage(jobId, StreamingProcessExitReason.CANCELLED));
 				return;
@@ -126,6 +127,7 @@ public class ChildStreamingJobManager {
 			}
 			LOG.warn("An error occurred during the execution of job " + jobId + ": " + reason, thrownError);
 
+			LOG.info("Sending StreamingJobExitedMessage for job id {} to master node.", jobId);
 			_channelNode.sendToMaster(new StreamingJobExitedMessage(jobId, reason));
 		}
 	}

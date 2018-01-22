@@ -36,7 +36,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * Light-weight access class for connecting to a JGroups channel
@@ -137,14 +140,36 @@ public class ChannelNode {
 
 
     private Address getMasterNodeAddress() {
+        log.info("Attempting to locate master node address.");
         List<Address> memberAddresses = getChannel().getView().getMembers();
+
+        String members = memberAddresses.stream()
+                .map(Object::toString)
+                .collect(joining("\n"));
+        log.info("Current members:\n{}", members);
+
+
+        List<Address> masterNodes = new ArrayList<>();
         for (Address address : memberAddresses) {
+            log.info("About to parse address: {}", address);
             Pair<String, NodeTypes> hostType = AddressParser.parse(address);
-            if (hostType != null && hostType.getRight() == NodeTypes.MasterNode) {
-                return address;
+            if (hostType == null) {
+                log.warn("Failed to parse address: {}", address);
+                continue;
+            }
+            log.info("Successfully parsed {}. Host is {}. Type is: {}", address, hostType.getLeft(), hostType.getRight());
+            if (hostType.getRight() == NodeTypes.MasterNode) {
+            	masterNodes.add(address);
             }
         }
-        throw new IllegalStateException("Unable to locate master node.");
+
+        if (masterNodes.isEmpty()) {
+            throw new IllegalStateException("Unable to locate master node.");
+        }
+        if (masterNodes.size() > 1) {
+            log.warn("Multiple master nodes found!");
+        }
+        return masterNodes.get(0);
     }
 
 

@@ -27,10 +27,13 @@
 
 package org.mitre.mpf.mst;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.jgroups.Address;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.mpf.nms.AddressParser;
 import org.mitre.mpf.nms.MasterNode;
+import org.mitre.mpf.nms.NodeTypes;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
@@ -52,6 +55,8 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.AdditionalMatchers.*;
@@ -87,28 +92,13 @@ public class TestStreamingJobStartStop {
 
 
 
-	@Test
-	public void testJobStartStop() {
+
+	@Test(timeout = 5 * 60_000)
+	public void testJobStartStop() throws InterruptedException {
 		long jobId = 43231;
 		long test_start_time = System.currentTimeMillis();
 
-
-		List<Address> currentNodeManagerHosts = _masterNode.getCurrentNodeManagerHosts();
-		Map<String, Boolean> configuredManagerHosts = _masterNode.getConfiguredManagerHosts();
-
-		String currentHostList = currentNodeManagerHosts.stream()
-				.map(Object::toString)
-				.collect(joining("\n"));
-		LOG.info("MasterNode.getCurrentNodeManagerHosts():\n{}", currentHostList);
-
-		String configuredHostList = configuredManagerHosts.entrySet()
-				.stream()
-				.map(Object::toString)
-				.collect(joining("\n"));
-
-		LOG.info("MasterNode.getConfiguredManagerHosts():\n{}", configuredHostList);
-
-
+		waitForCorrectNodes();
 
 		TransientStage stage1 = new TransientStage("stage1", "description", ActionType.DETECTION);
 		stage1.getActions().add(new TransientAction("Action1", "description", "HelloWorld"));
@@ -143,5 +133,42 @@ public class TestStreamingJobStartStop {
 
 		SegmentSummaryReport summaryReport = reportCaptor.getValue();
 		assertEquals(jobId, summaryReport.getJobId());
+	}
+
+
+
+	private void waitForCorrectNodes() throws InterruptedException {
+		while (!hasCorrectNodes()) {
+			Thread.sleep(100);
+		}
+	}
+
+
+	private boolean hasCorrectNodes() {
+		List<Address> currentNodes = _masterNode.getCurrentNodeManagerHosts();
+		Map<NodeTypes, Long> nodeTypeCounts = currentNodes
+				.stream()
+				.map(AddressParser::parse)
+				.collect(groupingBy(Pair::getRight, counting()));
+
+		long masterNodeCount = nodeTypeCounts.getOrDefault(NodeTypes.MasterNode, 0L);
+		long childNodeCount = nodeTypeCounts.getOrDefault(NodeTypes.NodeManager, 0L);
+		if (masterNodeCount == 1 && childNodeCount == 1) {
+			return true;
+		}
+
+		String currentNodeList = currentNodes.stream()
+				.map(Object::toString)
+				.collect(joining("\n"));
+
+		LOG.warn("Current Nodes:\n{}", currentNodeList);
+
+		if (masterNodeCount != 1) {
+			LOG.warn("Incorrect number of master nodes. Expected 1 but there were {}.", masterNodeCount);
+		}
+		if (childNodeCount != 1) {
+			LOG.warn("Incorrect number of child nodes. Expected 1 but there were {}.", childNodeCount);
+		}
+		return false;
 	}
 }

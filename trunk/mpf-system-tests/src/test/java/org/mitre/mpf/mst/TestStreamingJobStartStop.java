@@ -27,14 +27,18 @@
 
 package org.mitre.mpf.mst;
 
+import org.jgroups.Address;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.mpf.nms.MasterNode;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
 import org.mockito.ArgumentCaptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,7 +49,10 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.net.URL;
+import java.util.List;
+import java.util.Map;
 
+import static java.util.stream.Collectors.joining;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.AdditionalMatchers.*;
 import static org.mockito.Matchers.eq;
@@ -57,6 +64,8 @@ import static org.mockito.Mockito.*;
 @ActiveProfiles("jenkins")
 @DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
 public class TestStreamingJobStartStop {
+
+	private static final Logger LOG = LoggerFactory.getLogger(TestStreamingJobStartStop.class);
 
 	private static final StreamingJobRequestBo _mockStreamingJobRequestBo = mock(StreamingJobRequestBo.class);
 
@@ -73,12 +82,33 @@ public class TestStreamingJobStartStop {
 	@Autowired
 	private StreamingJobMessageSender _jobSender;
 
+	@Autowired
+	private MasterNode _masterNode;
+
 
 
 	@Test
 	public void testJobStartStop() {
 		long jobId = 43231;
 		long test_start_time = System.currentTimeMillis();
+
+
+		List<Address> currentNodeManagerHosts = _masterNode.getCurrentNodeManagerHosts();
+		Map<String, Boolean> configuredManagerHosts = _masterNode.getConfiguredManagerHosts();
+
+		String currentHostList = currentNodeManagerHosts.stream()
+				.map(Object::toString)
+				.collect(joining("\n"));
+		LOG.info("MasterNode.getCurrentNodeManagerHosts():\n{}", currentHostList);
+
+		String configuredHostList = configuredManagerHosts.entrySet()
+				.stream()
+				.map(Object::toString)
+				.collect(joining("\n"));
+
+		LOG.info("MasterNode.getConfiguredManagerHosts():\n{}", configuredHostList);
+
+
 
 		TransientStage stage1 = new TransientStage("stage1", "description", ActionType.DETECTION);
 		stage1.getActions().add(new TransientAction("Action1", "description", "HelloWorld"));

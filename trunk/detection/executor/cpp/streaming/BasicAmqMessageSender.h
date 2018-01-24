@@ -24,73 +24,57 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_MESSENGER_H_
-#define MPF_MESSENGER_H_
 
+#ifndef MPF_BASICAMQMESSAGESENDER_H
+#define MPF_BASICAMQMESSAGESENDER_H
+
+#include <memory>
 #include <string>
-#include <stdexcept>
 
-#include "MPFMessage.h"
+#include <cms/Connection.h>
+#include <cms/Session.h>
+#include <cms/MessageProducer.h>
 
-//TODO: For future use.
-namespace MPF {
+#include <MPFDetectionComponent.h>
 
-enum MPFMessageError {
-    MESSENGER_UNRECOGNIZED_ERROR,
-    MESSENGER_UNSPECIFIED_ERROR,
-    MESSENGER_NOT_INITIALIZED,
-    MESSENGER_MISSING_PROPERTY,
-    MESSENGER_INVALID_PROPERTY,
-    MESSENGER_CONNECTION_FAILURE,
-    MESSENGER_START_FAILURE,
-    MESSENGER_STOP_FAILURE,
-    MESSENGER_SHUTDOWN_FAILURE,
-    MESSENGER_NOT_CONNECTED,
-    MESSENGER_QUEUE_NOT_INITIALIZED,
-    MESSENGER_INIT_QUEUE_FAILURE,
-    MESSENGER_CREATE_CONSUMER_FAILURE,
-    MESSENGER_CREATE_PRODUCER_FAILURE,
-    MESSENGER_GET_MESSAGE_FAILURE,
-    MESSENGER_PUT_MESSAGE_FAILURE,
-    MESSENGER_CLOSE_FAILURE
-};
+#include "JobSettings.h"
 
-// This exception is thrown when a system or other library exception
-// is caught, to capture an error type that can be returned the the
-// MPF system in the job status message.
-class MPFMessageException : public std::runtime_error {
-  public:
 
-    virtual ~MPFMessageException() = default;
+namespace MPF { namespace COMPONENT {
 
-    explicit MPFMessageException(const char *msg, MPFMessageError e) 
-            : std::runtime_error(msg), error_type_(e) {}
-    explicit MPFMessageException(const std::string &msg, MPFMessageError e) 
-            : std::runtime_error(msg), error_type_(e) {}
+    // TODO: Combine with AMQMessenger when adding support for multistage pipelines.
+    class BasicAmqMessageSender {
 
-    MPFMessageError getErrorType() {
-        return error_type_;
-    }
+    public:
+        explicit BasicAmqMessageSender(const JobSettings &job_settings);
 
-  protected:
-    MPFMessageError error_type_;
-};
+        void SendJobStatus(const std::string &job_status);
 
-class MPFMessagingManager {
-  public: 
-    virtual ~MPFMessagingManager() = default;
+        void SendActivityAlert(int frame_number);
 
-    // Connect to the message passing system
-    virtual void Connect(const std::string &broker_name,
-                         const MPF::COMPONENT::Properties &properties) = 0;
-    virtual void Start() = 0;
-    virtual void Stop() = 0;
-    virtual void Shutdown() = 0;
+        void SendSummaryReport(
+                int frame_number, const std::string &detection_type,
+                const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks, const std::string &error_message = {});
 
-  protected:
-    MPFMessagingManager() = default;
-};
+    private:
+        const long job_id_;
+        const int segment_size_;
 
-} // namespace MPF
+        std::unique_ptr<cms::Connection> connection_;
+        std::unique_ptr<cms::Session> session_;
 
-#endif // MPF_MESSENGER_H_
+        std::unique_ptr<cms::MessageProducer> job_status_producer_;
+        std::unique_ptr<cms::MessageProducer> activity_alert_producer_;
+        std::unique_ptr<cms::MessageProducer> summary_report_producer_;
+
+
+        static std::unique_ptr<cms::Connection> Connect(const std::string &broker_uri);
+
+        static std::unique_ptr<cms::MessageProducer>
+        CreateProducer(const std::string &queue_name, cms::Session &session);
+
+        static long GetTimestampMillis();
+    };
+}}
+
+#endif //MPF_BASICAMQMESSAGESENDER_H

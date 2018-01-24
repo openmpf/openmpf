@@ -39,7 +39,7 @@ using namespace MPF;
 using namespace COMPONENT;
 
 #undef NDEBUG
-
+//TODO: For future use.
 
 void AMQMessagingManager::Connect(const string &broker_name,
                                   const Properties &properties) {

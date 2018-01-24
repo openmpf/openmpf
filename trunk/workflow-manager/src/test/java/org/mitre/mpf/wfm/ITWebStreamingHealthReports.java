@@ -63,8 +63,7 @@ public class ITWebStreamingHealthReports {
     private static final int MINUTES = 1000 * 60; // 1000 milliseconds/sec, 60 sec/minute
 
     private static final String DESCRIPTOR_NAME = "CplusplusHelloWorldComponent.json";
-    private static final String ALGORITHM_NAME = "CPLUSPLUSHELLOWORLD";
-    private static final String PIPELINE_NAME = ALGORITHM_NAME + " DETECTION PIPELINE";
+    private static final String PIPELINE_NAME = "HELLOWORLD TEST PIPELINE";
 
     private static final int HEALTH_REPORT_CALLBACK_PORT = 20160;
 

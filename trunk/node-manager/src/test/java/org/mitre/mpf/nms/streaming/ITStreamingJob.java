@@ -70,7 +70,7 @@ public class ITStreamingJob {
 //		when(_mockProcessFactory.createVideoWriterProcess(any()))
 //				.then(createProcess("VideoWriter"));
 
-		when(_mockProcessFactory.createComponentProcess(any(), any()))
+		when(_mockProcessFactory.createComponentProcess(any(), any(), any()))
 				.then(createProcess("Component"));
 	}
 
@@ -96,7 +96,7 @@ public class ITStreamingJob {
 
 	private static Answer<StreamingProcess> createProcess(String name) {
 		return invocation -> {
-			Path iniPath = invocation.getArgumentAt(0, Path.class);
+			Path iniPath = invocation.getArgumentAt(1, Path.class);
 			String[] cmdline = {
 					"python", StreamingJobTestUtil.TEST_PROCESS_PATH, name, iniPath.toString() };
 			ProcessBuilder builder = new ProcessBuilder(cmdline)

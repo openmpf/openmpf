@@ -24,73 +24,35 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_MESSENGER_H_
-#define MPF_MESSENGER_H_
 
-#include <string>
-#include <stdexcept>
+package org.mitre.mpf.nms.util;
 
-#include "MPFMessage.h"
+import org.apache.commons.lang3.text.StrLookup;
+import org.apache.commons.lang3.text.StrSubstitutor;
 
-//TODO: For future use.
-namespace MPF {
+import java.util.Map;
 
-enum MPFMessageError {
-    MESSENGER_UNRECOGNIZED_ERROR,
-    MESSENGER_UNSPECIFIED_ERROR,
-    MESSENGER_NOT_INITIALIZED,
-    MESSENGER_MISSING_PROPERTY,
-    MESSENGER_INVALID_PROPERTY,
-    MESSENGER_CONNECTION_FAILURE,
-    MESSENGER_START_FAILURE,
-    MESSENGER_STOP_FAILURE,
-    MESSENGER_SHUTDOWN_FAILURE,
-    MESSENGER_NOT_CONNECTED,
-    MESSENGER_QUEUE_NOT_INITIALIZED,
-    MESSENGER_INIT_QUEUE_FAILURE,
-    MESSENGER_CREATE_CONSUMER_FAILURE,
-    MESSENGER_CREATE_PRODUCER_FAILURE,
-    MESSENGER_GET_MESSAGE_FAILURE,
-    MESSENGER_PUT_MESSAGE_FAILURE,
-    MESSENGER_CLOSE_FAILURE
-};
+import static java.util.stream.Collectors.toMap;
 
-// This exception is thrown when a system or other library exception
-// is caught, to capture an error type that can be returned the the
-// MPF system in the job status message.
-class MPFMessageException : public std::runtime_error {
-  public:
+public class EnvironmentVariableExpander {
 
-    virtual ~MPFMessageException() = default;
+	private static final StrSubstitutor _substitutor = new StrSubstitutor(new StrLookup<String>() {
+		public String lookup(String key) {
+			return System.getenv().getOrDefault(key, "");
+		}
+	});
 
-    explicit MPFMessageException(const char *msg, MPFMessageError e) 
-            : std::runtime_error(msg), error_type_(e) {}
-    explicit MPFMessageException(const std::string &msg, MPFMessageError e) 
-            : std::runtime_error(msg), error_type_(e) {}
+	private EnvironmentVariableExpander() {
+	}
 
-    MPFMessageError getErrorType() {
-        return error_type_;
-    }
 
-  protected:
-    MPFMessageError error_type_;
-};
+	public static String expand(String str) {
+		return _substitutor.replace(str);
+	}
 
-class MPFMessagingManager {
-  public: 
-    virtual ~MPFMessagingManager() = default;
+	public static Map<String, String> expandValues(Map<String, String> map) {
+		return map.entrySet().stream()
+				.collect(toMap(Map.Entry::getKey, e -> expand(e.getValue())));
 
-    // Connect to the message passing system
-    virtual void Connect(const std::string &broker_name,
-                         const MPF::COMPONENT::Properties &properties) = 0;
-    virtual void Start() = 0;
-    virtual void Stop() = 0;
-    virtual void Shutdown() = 0;
-
-  protected:
-    MPFMessagingManager() = default;
-};
-
-} // namespace MPF
-
-#endif // MPF_MESSENGER_H_
+	}
+}

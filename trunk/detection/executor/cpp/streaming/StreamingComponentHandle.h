@@ -24,73 +24,53 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_MESSENGER_H_
-#define MPF_MESSENGER_H_
 
+#ifndef MPF_STREAMINGCOMPONENTHANDLE_H
+#define MPF_STREAMINGCOMPONENTHANDLE_H
+
+
+#include <functional>
+#include <memory>
 #include <string>
-#include <stdexcept>
+#include <vector>
 
-#include "MPFMessage.h"
+#include <dlfcn.h>
 
-//TODO: For future use.
-namespace MPF {
+#include <MPFStreamingDetectionComponent.h>
 
-enum MPFMessageError {
-    MESSENGER_UNRECOGNIZED_ERROR,
-    MESSENGER_UNSPECIFIED_ERROR,
-    MESSENGER_NOT_INITIALIZED,
-    MESSENGER_MISSING_PROPERTY,
-    MESSENGER_INVALID_PROPERTY,
-    MESSENGER_CONNECTION_FAILURE,
-    MESSENGER_START_FAILURE,
-    MESSENGER_STOP_FAILURE,
-    MESSENGER_SHUTDOWN_FAILURE,
-    MESSENGER_NOT_CONNECTED,
-    MESSENGER_QUEUE_NOT_INITIALIZED,
-    MESSENGER_INIT_QUEUE_FAILURE,
-    MESSENGER_CREATE_CONSUMER_FAILURE,
-    MESSENGER_CREATE_PRODUCER_FAILURE,
-    MESSENGER_GET_MESSAGE_FAILURE,
-    MESSENGER_PUT_MESSAGE_FAILURE,
-    MESSENGER_CLOSE_FAILURE
-};
 
-// This exception is thrown when a system or other library exception
-// is caught, to capture an error type that can be returned the the
-// MPF system in the job status message.
-class MPFMessageException : public std::runtime_error {
-  public:
+namespace MPF { namespace COMPONENT {
 
-    virtual ~MPFMessageException() = default;
+    class StreamingComponentHandle {
+    public:
+        StreamingComponentHandle(const std::string &lib_path, const MPFStreamingVideoJob &job);
 
-    explicit MPFMessageException(const char *msg, MPFMessageError e) 
-            : std::runtime_error(msg), error_type_(e) {}
-    explicit MPFMessageException(const std::string &msg, MPFMessageError e) 
-            : std::runtime_error(msg), error_type_(e) {}
+        std::string GetDetectionType();
 
-    MPFMessageError getErrorType() {
-        return error_type_;
-    }
+        void BeginSegment(const VideoSegmentInfo &segment_info);
 
-  protected:
-    MPFMessageError error_type_;
-};
+        bool ProcessFrame(const cv::Mat &frame, int frame_number);
 
-class MPFMessagingManager {
-  public: 
-    virtual ~MPFMessagingManager() = default;
+        std::vector<MPFVideoTrack> EndSegment();
 
-    // Connect to the message passing system
-    virtual void Connect(const std::string &broker_name,
-                         const MPF::COMPONENT::Properties &properties) = 0;
-    virtual void Start() = 0;
-    virtual void Stop() = 0;
-    virtual void Shutdown() = 0;
 
-  protected:
-    MPFMessagingManager() = default;
-};
+    private:
+        using loaded_component_t
+            = std::unique_ptr<MPFStreamingDetectionComponent, void(*)(MPFStreamingDetectionComponent*)>;
 
-} // namespace MPF
+        std::unique_ptr<void, decltype(&dlclose)> lib_handle_;
 
-#endif // MPF_MESSENGER_H_
+        loaded_component_t loaded_component_;
+
+        static loaded_component_t LoadComponent(void* lib_handle, const MPFStreamingVideoJob &job);
+
+        template <typename TFunc>
+        static TFunc* LoadFunction(void* lib_handle, const char * symbol_name);
+
+        [[noreturn]] static void WrapComponentException(const std::string &component_method);
+    };
+
+}}
+
+
+#endif //MPF_STREAMINGCOMPONENTHANDLE_H

@@ -38,6 +38,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 
 @Component
 public class ChildStreamingJobManager {
@@ -101,22 +102,29 @@ public class ChildStreamingJobManager {
 
 
 
-	private void onJobExit(long jobId, Throwable error) {
+
+	private void onJobExit(long jobId, Throwable thrownError) {
 		synchronized (_streamingJobs) {
 			_streamingJobs.remove(jobId);
 
-			StreamingJobExitedMessage.Reason reason;
-			if (error == null) {
-				reason = StreamingJobExitedMessage.Reason.CANCELLED;
+			if (thrownError == null) {
+				_channelNode.sendToMaster(
+						new StreamingJobExitedMessage(jobId, StreamingProcessExitReason.CANCELLED));
+				return;
 			}
-			else if (error instanceof StreamStalledException) {
-				LOG.warn("Stream stalled during execution of job: " + jobId, error);
-				reason = StreamingJobExitedMessage.Reason.STREAM_STALLED;
+
+			Throwable errorToHandle = (thrownError instanceof CompletionException)
+					? thrownError.getCause()
+					: thrownError;
+
+			StreamingProcessExitReason reason;
+			if (errorToHandle instanceof StreamingProcessExitException) {
+				reason = ((StreamingProcessExitException) errorToHandle).getExitReason();
 			}
 			else {
-				LOG.warn("An error occurred during the execution of job: " + jobId, error);
-				reason = StreamingJobExitedMessage.Reason.ERROR;
+				reason = StreamingProcessExitReason.UNEXPECTED_ERROR;
 			}
+			LOG.warn("An error occurred during the execution of job " + jobId + ": " + reason, thrownError);
 
 			_channelNode.sendToMaster(new StreamingJobExitedMessage(jobId, reason));
 		}

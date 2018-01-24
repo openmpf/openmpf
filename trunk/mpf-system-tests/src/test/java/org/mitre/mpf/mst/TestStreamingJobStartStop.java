@@ -27,19 +27,21 @@
 
 package org.mitre.mpf.mst;
 
-import org.junit.Before;
+import org.apache.commons.lang3.tuple.Pair;
+import org.jgroups.Address;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
+import org.mitre.mpf.nms.AddressParser;
+import org.mitre.mpf.nms.MasterNode;
+import org.mitre.mpf.nms.NodeTypes;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.JobStatus;
-import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.ValueType;
-import org.mitre.mpf.wfm.service.*;
-import org.mitre.mpf.wfm.service.component.ComponentLanguage;
+import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
+import org.mockito.ArgumentCaptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -49,12 +51,16 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.Collections;
+import java.net.URL;
+import java.util.List;
+import java.util.Map;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.joining;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.AdditionalMatchers.*;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.notNull;
 import static org.mockito.Mockito.*;
 
 
@@ -64,13 +70,10 @@ import static org.mockito.Mockito.*;
 @DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
 public class TestStreamingJobStartStop {
 
+	private static final Logger LOG = LoggerFactory.getLogger(TestStreamingJobStartStop.class);
+
 	private static final StreamingJobRequestBo _mockStreamingJobRequestBo = mock(StreamingJobRequestBo.class);
 
-	private static final StreamingServiceManager _mockServiceManager = mock(StreamingServiceManager.class);
-
-	private static PipelineService _pipelineServiceSpy;
-
-	// TODO: Remove mocks when real streaming component executor is available.
 	@Configuration
 	public static class TestConfig {
 
@@ -79,79 +82,93 @@ public class TestStreamingJobStartStop {
 		public StreamingJobRequestBo streamingJobRequestBo() {
 			return _mockStreamingJobRequestBo;
 		}
-
-		@Bean
-		@Primary
-		public StreamingServiceManager streamingServiceManager() {
-			return _mockServiceManager;
-		}
-
-		@Bean
-		@Primary
-		public PipelineService pipelineService(PipelineServiceImpl realPipelineService) {
-			if (_pipelineServiceSpy == null) {
-				_pipelineServiceSpy = spy(realPipelineService);
-			}
-			return _pipelineServiceSpy;
-		}
 	}
 
 	@Autowired
 	private StreamingJobMessageSender _jobSender;
 
-
-	@Before
-	public void init() {
-		StreamingServiceModel testService = new StreamingServiceModel(
-				"STREAMING_ALGO", "STREAMING_ALGO", ComponentLanguage.CPP, "path/to/libmyLib.so",
-				Collections.singletonList(new EnvironmentVariableModel("env_var1", "env_val1", null))
-		);
-
-		when(_mockServiceManager.getServices())
-				.thenReturn(Collections.singletonList(testService));
-
-		AlgorithmDefinition algorithmDef = new AlgorithmDefinition(
-				ActionType.DETECTION, testService.getAlgorithmName(), "description", true, true);
-		algorithmDef.getProvidesCollection().getAlgorithmProperties().add(
-				new PropertyDefinition("Prop1", ValueType.STRING, "description",
-				                       "propval1"));
-
-		doReturn(algorithmDef)
-				.when(_pipelineServiceSpy)
-				.getAlgorithm(algorithmDef.getName());
-	}
+	@Autowired
+	private MasterNode _masterNode;
 
 
-	@Test
+	@Test(timeout = 5 * 60_000)
 	public void testJobStartStop() throws InterruptedException {
+		long jobId = 43231;
+		long test_start_time = System.currentTimeMillis();
+
+		waitForCorrectNodes();
 
 		TransientStage stage1 = new TransientStage("stage1", "description", ActionType.DETECTION);
-		stage1.getActions().add(new TransientAction("Action1", "descrption", "STREAMING_ALGO"));
+		stage1.getActions().add(new TransientAction("Action1", "description", "HelloWorld"));
 
-		TransientPipeline pipeline = new TransientPipeline("PipelineName", "desc");
+		TransientPipeline pipeline = new TransientPipeline("HELLOWORLD SAMPLE PIPELINE", "desc");
 		pipeline.getStages().add(stage1);
 
 
-		TransientStream stream = new TransientStream(124, "stream://thestream");
+		URL videoUrl = getClass().getResource("/samples/face/new_face_video.avi");
+		TransientStream stream = new TransientStream(124, videoUrl.toString());
+		stream.setSegmentSize(10);
 		TransientStreamingJob streamingJob = new TransientStreamingJob(
-				123, "ext id", pipeline, 1, 1, false, "mydir",
+				jobId, "ext id", pipeline, 1, 1, false, "mydir",
 				false);
 		streamingJob.setStream(stream);
 
 		_jobSender.launchJob(streamingJob);
 
-		Thread.sleep(2000);
+		verify(_mockStreamingJobRequestBo, timeout(30_000).atLeastOnce())
+				.handleNewActivityAlert(eq(jobId), geq(0L), gt(test_start_time));
 
-		_jobSender.stopJob(123);
+		_jobSender.stopJob(jobId);
 
-		// The python test process is used for this test. The test process sleeps for 3 seconds before exiting.
-		verify(_mockStreamingJobRequestBo, never())
-				.jobCompleted(anyLong(), any(JobStatus.class));
-
-		Thread.sleep(3200);
 
 		verify(_mockStreamingJobRequestBo, timeout(30_000))
-				.jobCompleted(eq(123L), notNull(JobStatus.class));
+				.jobCompleted(eq(jobId), or(eq(JobStatus.TERMINATED), eq(JobStatus.CANCELLED)));
 
+		ArgumentCaptor<SegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(SegmentSummaryReport.class);
+
+		verify(_mockStreamingJobRequestBo, timeout(30_000).atLeastOnce())
+				.handleNewSummaryReport(reportCaptor.capture());
+
+		SegmentSummaryReport summaryReport = reportCaptor.getValue();
+		assertEquals(jobId, summaryReport.getJobId());
+	}
+
+
+
+	private void waitForCorrectNodes() throws InterruptedException {
+		while (!hasCorrectNodes()) {
+			Thread.sleep(1000);
+		}
+	}
+
+
+	// Sometimes when the test starts there are 2 master nodes.
+	// This makes sure there is only one master node and only one child node.
+	private boolean hasCorrectNodes() {
+		List<Address> currentNodes = _masterNode.getCurrentNodeManagerHosts();
+		Map<NodeTypes, Long> nodeTypeCounts = currentNodes
+				.stream()
+				.map(AddressParser::parse)
+				.collect(groupingBy(Pair::getRight, counting()));
+
+		long masterNodeCount = nodeTypeCounts.getOrDefault(NodeTypes.MasterNode, 0L);
+		long childNodeCount = nodeTypeCounts.getOrDefault(NodeTypes.NodeManager, 0L);
+		if (masterNodeCount == 1 && childNodeCount == 1) {
+			return true;
+		}
+
+		String currentNodeList = currentNodes.stream()
+				.map(Object::toString)
+				.collect(joining("\n"));
+
+		LOG.warn("Current Nodes:\n{}", currentNodeList);
+
+		if (masterNodeCount != 1) {
+			LOG.warn("Incorrect number of master nodes. Expected 1 but there were {}.", masterNodeCount);
+		}
+		if (childNodeCount != 1) {
+			LOG.warn("Incorrect number of child nodes. Expected 1 but there were {}.", childNodeCount);
+		}
+		return false;
 	}
 }

@@ -24,73 +24,35 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_MESSENGER_H_
-#define MPF_MESSENGER_H_
 
-#include <string>
-#include <stdexcept>
+package org.mitre.mpf.nms.streaming;
 
-#include "MPFMessage.h"
+import java.util.stream.Stream;
 
-//TODO: For future use.
-namespace MPF {
+public enum StreamingProcessExitReason {
+	CANCELLED(0),
+	UNEXPECTED_ERROR(1),
+	INVALID_COMMAND_LINE_ARGUMENTS(2),
 
-enum MPFMessageError {
-    MESSENGER_UNRECOGNIZED_ERROR,
-    MESSENGER_UNSPECIFIED_ERROR,
-    MESSENGER_NOT_INITIALIZED,
-    MESSENGER_MISSING_PROPERTY,
-    MESSENGER_INVALID_PROPERTY,
-    MESSENGER_CONNECTION_FAILURE,
-    MESSENGER_START_FAILURE,
-    MESSENGER_STOP_FAILURE,
-    MESSENGER_SHUTDOWN_FAILURE,
-    MESSENGER_NOT_CONNECTED,
-    MESSENGER_QUEUE_NOT_INITIALIZED,
-    MESSENGER_INIT_QUEUE_FAILURE,
-    MESSENGER_CREATE_CONSUMER_FAILURE,
-    MESSENGER_CREATE_PRODUCER_FAILURE,
-    MESSENGER_GET_MESSAGE_FAILURE,
-    MESSENGER_PUT_MESSAGE_FAILURE,
-    MESSENGER_CLOSE_FAILURE
-};
+	INVALID_INI_FILE(65),
+	UNABLE_TO_READ_FROM_STANDARD_IN(66),
+	MESSAGE_BROKER_ERROR(69),
+	INTERNAL_COMPONENT_ERROR(70),
+	COMPONENT_LOAD_ERROR(71),
+	UNABLE_TO_CONNECT_TO_STREAM(75),
+	STREAM_STALLED(76);
 
-// This exception is thrown when a system or other library exception
-// is caught, to capture an error type that can be returned the the
-// MPF system in the job status message.
-class MPFMessageException : public std::runtime_error {
-  public:
 
-    virtual ~MPFMessageException() = default;
+	public final int exitCode;
 
-    explicit MPFMessageException(const char *msg, MPFMessageError e) 
-            : std::runtime_error(msg), error_type_(e) {}
-    explicit MPFMessageException(const std::string &msg, MPFMessageError e) 
-            : std::runtime_error(msg), error_type_(e) {}
+	StreamingProcessExitReason(int exitCode) {
+		this.exitCode = exitCode;
+	}
 
-    MPFMessageError getErrorType() {
-        return error_type_;
-    }
-
-  protected:
-    MPFMessageError error_type_;
-};
-
-class MPFMessagingManager {
-  public: 
-    virtual ~MPFMessagingManager() = default;
-
-    // Connect to the message passing system
-    virtual void Connect(const std::string &broker_name,
-                         const MPF::COMPONENT::Properties &properties) = 0;
-    virtual void Start() = 0;
-    virtual void Stop() = 0;
-    virtual void Shutdown() = 0;
-
-  protected:
-    MPFMessagingManager() = default;
-};
-
-} // namespace MPF
-
-#endif // MPF_MESSENGER_H_
+	public static StreamingProcessExitReason fromExitCode(int exitCode) {
+		return Stream.of(StreamingProcessExitReason.values())
+				.filter(r -> r.exitCode == exitCode)
+				.findAny()
+				.orElse(UNEXPECTED_ERROR);
+	}
+}

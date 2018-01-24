@@ -24,73 +24,38 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_MESSENGER_H_
-#define MPF_MESSENGER_H_
 
-#include <string>
-#include <stdexcept>
+#ifndef MPF_STANDARDINWATCHER_H
+#define MPF_STANDARDINWATCHER_H
 
-#include "MPFMessage.h"
+#include <atomic>
 
-//TODO: For future use.
-namespace MPF {
 
-enum MPFMessageError {
-    MESSENGER_UNRECOGNIZED_ERROR,
-    MESSENGER_UNSPECIFIED_ERROR,
-    MESSENGER_NOT_INITIALIZED,
-    MESSENGER_MISSING_PROPERTY,
-    MESSENGER_INVALID_PROPERTY,
-    MESSENGER_CONNECTION_FAILURE,
-    MESSENGER_START_FAILURE,
-    MESSENGER_STOP_FAILURE,
-    MESSENGER_SHUTDOWN_FAILURE,
-    MESSENGER_NOT_CONNECTED,
-    MESSENGER_QUEUE_NOT_INITIALIZED,
-    MESSENGER_INIT_QUEUE_FAILURE,
-    MESSENGER_CREATE_CONSUMER_FAILURE,
-    MESSENGER_CREATE_PRODUCER_FAILURE,
-    MESSENGER_GET_MESSAGE_FAILURE,
-    MESSENGER_PUT_MESSAGE_FAILURE,
-    MESSENGER_CLOSE_FAILURE
-};
+namespace MPF { namespace COMPONENT {
 
-// This exception is thrown when a system or other library exception
-// is caught, to capture an error type that can be returned the the
-// MPF system in the job status message.
-class MPFMessageException : public std::runtime_error {
-  public:
+    class StandardInWatcher {
+    public:
+        bool QuitReceived() const;
 
-    virtual ~MPFMessageException() = default;
+        // Singleton to prevent more than one thread from reading from standard in.
+        static StandardInWatcher* GetInstance();
 
-    explicit MPFMessageException(const char *msg, MPFMessageError e) 
-            : std::runtime_error(msg), error_type_(e) {}
-    explicit MPFMessageException(const std::string &msg, MPFMessageError e) 
-            : std::runtime_error(msg), error_type_(e) {}
+    private:
+        StandardInWatcher();
 
-    MPFMessageError getErrorType() {
-        return error_type_;
-    }
+        static StandardInWatcher* instance_;
 
-  protected:
-    MPFMessageError error_type_;
-};
+        // static because in the event of an error elsewhere, the detached thread will still be running and may access
+        // is_time_to_quit_ and error_message_.
+        static std::atomic_bool quit_received_;
+        static std::string error_message_;
 
-class MPFMessagingManager {
-  public: 
-    virtual ~MPFMessagingManager() = default;
+        static void Watch();
+        static void SetError(std::string &&error_message);
 
-    // Connect to the message passing system
-    virtual void Connect(const std::string &broker_name,
-                         const MPF::COMPONENT::Properties &properties) = 0;
-    virtual void Start() = 0;
-    virtual void Stop() = 0;
-    virtual void Shutdown() = 0;
+    };
+}}
 
-  protected:
-    MPFMessagingManager() = default;
-};
 
-} // namespace MPF
 
-#endif // MPF_MESSENGER_H_
+#endif //MPF_STANDARDINWATCHER_H

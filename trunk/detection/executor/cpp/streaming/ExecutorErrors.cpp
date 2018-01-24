@@ -24,73 +24,35 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_MESSENGER_H_
-#define MPF_MESSENGER_H_
 
-#include <string>
-#include <stdexcept>
+#include "ExecutorErrors.h"
 
-#include "MPFMessage.h"
 
-//TODO: For future use.
-namespace MPF {
+namespace MPF { namespace COMPONENT {
 
-enum MPFMessageError {
-    MESSENGER_UNRECOGNIZED_ERROR,
-    MESSENGER_UNSPECIFIED_ERROR,
-    MESSENGER_NOT_INITIALIZED,
-    MESSENGER_MISSING_PROPERTY,
-    MESSENGER_INVALID_PROPERTY,
-    MESSENGER_CONNECTION_FAILURE,
-    MESSENGER_START_FAILURE,
-    MESSENGER_STOP_FAILURE,
-    MESSENGER_SHUTDOWN_FAILURE,
-    MESSENGER_NOT_CONNECTED,
-    MESSENGER_QUEUE_NOT_INITIALIZED,
-    MESSENGER_INIT_QUEUE_FAILURE,
-    MESSENGER_CREATE_CONSUMER_FAILURE,
-    MESSENGER_CREATE_PRODUCER_FAILURE,
-    MESSENGER_GET_MESSAGE_FAILURE,
-    MESSENGER_PUT_MESSAGE_FAILURE,
-    MESSENGER_CLOSE_FAILURE
-};
+    FatalError::FatalError(ExitCode exit_code, const std::string &cause)
+            : std::runtime_error(cause)
+            , exit_code_(exit_code) {
 
-// This exception is thrown when a system or other library exception
-// is caught, to capture an error type that can be returned the the
-// MPF system in the job status message.
-class MPFMessageException : public std::runtime_error {
-  public:
-
-    virtual ~MPFMessageException() = default;
-
-    explicit MPFMessageException(const char *msg, MPFMessageError e) 
-            : std::runtime_error(msg), error_type_(e) {}
-    explicit MPFMessageException(const std::string &msg, MPFMessageError e) 
-            : std::runtime_error(msg), error_type_(e) {}
-
-    MPFMessageError getErrorType() {
-        return error_type_;
     }
 
-  protected:
-    MPFMessageError error_type_;
-};
+    ExitCode FatalError::GetExitCode() const {
+        return exit_code_;
+    }
 
-class MPFMessagingManager {
-  public: 
-    virtual ~MPFMessagingManager() = default;
 
-    // Connect to the message passing system
-    virtual void Connect(const std::string &broker_name,
-                         const MPF::COMPONENT::Properties &properties) = 0;
-    virtual void Start() = 0;
-    virtual void Stop() = 0;
-    virtual void Shutdown() = 0;
 
-  protected:
-    MPFMessagingManager() = default;
-};
 
-} // namespace MPF
+    InternalComponentError::InternalComponentError(const std::string &method_name, const std::string &cause)
+        : FatalError(
+            ExitCode::INTERNAL_COMPONENT_ERROR,
+            "The loaded component threw an exception while executing its \"" + method_name +"\" method: " + cause) {
+    }
 
-#endif // MPF_MESSENGER_H_
+    InternalComponentError::InternalComponentError(const std::string &method_name)
+        : FatalError(
+            ExitCode::INTERNAL_COMPONENT_ERROR,
+            "The loaded component threw an object that does not derive from std::exception while executing its \""
+                + method_name + " method.") {
+    }
+}}

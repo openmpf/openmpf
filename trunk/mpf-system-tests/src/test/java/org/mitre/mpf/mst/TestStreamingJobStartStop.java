@@ -27,14 +27,21 @@
 
 package org.mitre.mpf.mst;
 
+import org.apache.commons.lang3.tuple.Pair;
+import org.jgroups.Address;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.mpf.nms.AddressParser;
+import org.mitre.mpf.nms.MasterNode;
+import org.mitre.mpf.nms.NodeTypes;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
 import org.mockito.ArgumentCaptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,7 +52,12 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.net.URL;
+import java.util.List;
+import java.util.Map;
 
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.joining;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.AdditionalMatchers.*;
 import static org.mockito.Matchers.eq;
@@ -57,6 +69,8 @@ import static org.mockito.Mockito.*;
 @ActiveProfiles("jenkins")
 @DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
 public class TestStreamingJobStartStop {
+
+	private static final Logger LOG = LoggerFactory.getLogger(TestStreamingJobStartStop.class);
 
 	private static final StreamingJobRequestBo _mockStreamingJobRequestBo = mock(StreamingJobRequestBo.class);
 
@@ -73,12 +87,16 @@ public class TestStreamingJobStartStop {
 	@Autowired
 	private StreamingJobMessageSender _jobSender;
 
+	@Autowired
+	private MasterNode _masterNode;
 
 
-	@Test
-	public void testJobStartStop() {
+	@Test(timeout = 5 * 60_000)
+	public void testJobStartStop() throws InterruptedException {
 		long jobId = 43231;
 		long test_start_time = System.currentTimeMillis();
+
+		waitForCorrectNodes();
 
 		TransientStage stage1 = new TransientStage("stage1", "description", ActionType.DETECTION);
 		stage1.getActions().add(new TransientAction("Action1", "description", "HelloWorld"));
@@ -113,5 +131,44 @@ public class TestStreamingJobStartStop {
 
 		SegmentSummaryReport summaryReport = reportCaptor.getValue();
 		assertEquals(jobId, summaryReport.getJobId());
+	}
+
+
+
+	private void waitForCorrectNodes() throws InterruptedException {
+		while (!hasCorrectNodes()) {
+			Thread.sleep(1000);
+		}
+	}
+
+
+	// Sometimes when the test starts there are 2 master nodes.
+	// This makes sure there is only one master node and only one child node.
+	private boolean hasCorrectNodes() {
+		List<Address> currentNodes = _masterNode.getCurrentNodeManagerHosts();
+		Map<NodeTypes, Long> nodeTypeCounts = currentNodes
+				.stream()
+				.map(AddressParser::parse)
+				.collect(groupingBy(Pair::getRight, counting()));
+
+		long masterNodeCount = nodeTypeCounts.getOrDefault(NodeTypes.MasterNode, 0L);
+		long childNodeCount = nodeTypeCounts.getOrDefault(NodeTypes.NodeManager, 0L);
+		if (masterNodeCount == 1 && childNodeCount == 1) {
+			return true;
+		}
+
+		String currentNodeList = currentNodes.stream()
+				.map(Object::toString)
+				.collect(joining("\n"));
+
+		LOG.warn("Current Nodes:\n{}", currentNodeList);
+
+		if (masterNodeCount != 1) {
+			LOG.warn("Incorrect number of master nodes. Expected 1 but there were {}.", masterNodeCount);
+		}
+		if (childNodeCount != 1) {
+			LOG.warn("Incorrect number of child nodes. Expected 1 but there were {}.", childNodeCount);
+		}
+		return false;
 	}
 }

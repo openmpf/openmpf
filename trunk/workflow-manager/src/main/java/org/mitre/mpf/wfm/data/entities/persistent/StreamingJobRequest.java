@@ -26,21 +26,11 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
-import java.util.Date;
-import javax.persistence.AttributeOverride;
-import javax.persistence.AttributeOverrides;
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Lob;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.persistence.Transient;
-import org.mitre.mpf.wfm.enums.JobStatusI.JobStatus;
+import org.mitre.mpf.wfm.enums.JobStatusI;
 import org.mitre.mpf.wfm.enums.StreamingJobStatus;
+
+import javax.persistence.*;
+import java.util.Date;
 
 /**
  * This class includes the essential information which describes a streaming job. Instances of this class are stored in a
@@ -81,13 +71,28 @@ public class StreamingJobRequest {
 
 	/** The current status of this streaming job. */
 //	@Column
-//	@Enumerated(EnumType.STRING)
+//	@Enumerated(EnumType.STRING
+	@Embedded
     @AttributeOverrides( {
         @AttributeOverride(name="statusString", column = @Column(name="status") ),
         @AttributeOverride(name="detailString", column = @Column(name="status_detail") )
     })
     private StreamingJobStatusData streamingJobStatusData;
 
+    public void setStatus( JobStatusI.JobStatus jobStatus) {
+        streamingJobStatusData = new StreamingJobStatusData();
+        streamingJobStatusData.setStatusString(jobStatus.toString());
+    }
+    public void setStatus( StreamingJobStatus streamingJobStatus) {
+        streamingJobStatusData = new StreamingJobStatusData();
+        streamingJobStatusData.setStatusString(streamingJobStatus.getJobStatus().toString());
+        streamingJobStatusData.setStatusString(streamingJobStatus.getDetail());
+    }
+    public StreamingJobStatus getStatus() {
+        return new StreamingJobStatus(streamingJobStatusData.getStatusString(), streamingJobStatusData.getDetailString());
+    }
+
+	/*
     @Transient
     private StreamingJobStatus status = null;
 	public StreamingJobStatus getStatus() {
@@ -98,6 +103,7 @@ public class StreamingJobRequest {
 	}
     public void setStatus( JobStatus jobStatus) { this.status = new StreamingJobStatus(jobStatus); }
     public void setStatus( StreamingJobStatus streamingJobStatus) { this.status = streamingJobStatus; }
+    */
 
 	@Column
 	@Lob

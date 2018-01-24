@@ -42,8 +42,8 @@ public class BatchJobStatus implements JobStatusI {
         return jobStatus.isTerminal();
     }
 
-    public BatchJobStatus(String jobStatusString) {
-        this.jobStatus = JobStatusI.parse(jobStatusString);
+    public BatchJobStatus(JobStatus jobStatus) {
+        this.jobStatus = jobStatus;
     }
 
     // allow for static methods defined in JobStatusI interface to be called using this class.

@@ -155,7 +155,7 @@
 		<sphinx4.version>5prealpha-SNAPSHOT</sphinx4.version>
 		
 		<!-- added props node manager -->
-        <jgroups.version>3.6.14.Final</jgroups.version>
+        <jgroups.version>3.6.4.Final</jgroups.version>
 
 		<!-- added props mpf-markup -->
 		<junit.version>4.12</junit.version>

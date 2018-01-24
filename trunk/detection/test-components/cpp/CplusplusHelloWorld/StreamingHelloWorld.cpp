@@ -42,7 +42,7 @@ StreamingHelloWorld::StreamingHelloWorld(const MPFStreamingVideoJob &job)
 
 log4cxx::LoggerPtr StreamingHelloWorld::GetLogger(const std::string &run_directory) {
     log4cxx::xml::DOMConfigurator::configure(run_directory + "/CplusplusHelloWorld/config/Log4cxxConfig.xml");
-    return log4cxx::Logger::getLogger("HelloWorldTest");
+    return log4cxx::Logger::getLogger("StreamingHelloWorldTest");
 }
 
 

@@ -69,8 +69,10 @@ public class ITWebStreamingHealthReports {
 
     private static final Logger log = LoggerFactory.getLogger(ITWebStreamingHealthReports.class);
 
-    // for converting the JSON response to the actual java object
-    private static ObjectMapper objectMapper = new ObjectMapper();
+    // The health report uses Java8 time, so we need to include the external JavaTimeModule which provides support for Java 8 Time.
+    private static ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
+
     private static boolean registeredComponent = false;
 
     private long healthReportPostJobId1 = -1L;
@@ -254,12 +256,7 @@ public class ITWebStreamingHealthReports {
                         + DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now())
                         + ":\n     " + request.body());
                 try {
-                    ObjectMapper jsonObjectMapper = new ObjectMapper();
-
-                    // The health report uses Java8 time, so we need to include the external JavaTimeModule which provides support for Java 8 Time.
-                    jsonObjectMapper.registerModule(new JavaTimeModule());
-
-                    healthReportPostCallbackBody = jsonObjectMapper
+                    healthReportPostCallbackBody = objectMapper
                         .readValue(request.bodyAsBytes(), JsonHealthReportDataCallbackBody.class);
 
                     log.info("InHealthCallback: Converted to JsonHealthReportDataCallbackBody:\n     "
@@ -297,9 +294,12 @@ public class ITWebStreamingHealthReports {
         JSONObject params = new JSONObject();
         params.put("pipelineName", customPipelineName);
 
+        JSONObject mediaProperties = new JSONObject();
+        mediaProperties.put("testProp", "testVal");
+
         JSONObject stream = new JSONObject();
         stream.put("streamUri", "rtsp://test/test.mp4");
-        stream.put("mediaProperties", new org.json.simple.JSONObject());
+        stream.put("mediaProperties", mediaProperties);
         stream.put("segmentSize", 100);
 
         params.put("stream", stream);

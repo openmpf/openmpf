@@ -327,6 +327,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
                 // Mark the streaming job as cancelled in Redis
                 if (redis.cancel(jobId)) {
+                    redis.setJobStatus(jobId, JobStatus.CANCELLING);
 
                     // Try to move any pending work items on the queues to the appropriate cancellation queues.
                     // If this operation fails, any remaining pending items will continue to process, but

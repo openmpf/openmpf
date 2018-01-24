@@ -71,8 +71,8 @@
     <!-- initial_hosts should include the names of all possible hosts (machines) in our cluster -->
     <TCPPING initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800]}"
              port_range="10"/>
-    <MERGE2  min_interval="5000"
-             max_interval="15000"/>
+
+    <MERGE3 />
     <FD_SOCK/>
     <FD timeout="7000" max_tries="3" />
     <VERIFY_SUSPECT timeout="1500"  />

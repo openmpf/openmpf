@@ -79,7 +79,8 @@
     <UNICAST3 />
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="4M"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="7000" view_bundling="true"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="7000" view_bundling="true" log_collect_msgs="true"
+                log_view_warnings="true"/>
     <MFC max_credits="2M"
          min_threshold="0.4"/>
     <FRAG2 frag_size="60K"  />

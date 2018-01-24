@@ -28,6 +28,8 @@ package org.mitre.mpf.wfm.nodeManager;
 
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.SmartLifecycle;
@@ -35,6 +37,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class StartUp implements SmartLifecycle {
+
+	private static final Logger log = LoggerFactory.getLogger(StartUp.class);
 
 	@Value("${masterNode.enabled}")
 	private boolean useMasterNode;
@@ -57,9 +61,11 @@ public class StartUp implements SmartLifecycle {
 
 	@Override
 	public void stop() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.stop();
-		split.stop();
+//		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
+//		nodeManagerStatus.stop();
+//		split.stop();
+		log.info("!!! Non-async stop called.");
+		doStop();
 	}
 
 	@Override
@@ -69,8 +75,15 @@ public class StartUp implements SmartLifecycle {
 
 	@Override
 	public void stop(Runnable r) {
-		this.stop();
+		log.info("!!! Async stop called.");
+		doStop();
 		r.run();
+	}
+
+	private void doStop() {
+		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
+		nodeManagerStatus.stop();
+		split.stop();
 	}
 
 	@Override

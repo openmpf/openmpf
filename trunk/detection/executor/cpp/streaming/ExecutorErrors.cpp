@@ -24,71 +24,35 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.nodeManager;
 
-import org.javasimon.SimonManager;
-import org.javasimon.Split;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.SmartLifecycle;
-import org.springframework.stereotype.Service;
+#include "ExecutorErrors.h"
 
-@Service
-public class StartUp implements SmartLifecycle {
 
-	private static final Logger log = LoggerFactory.getLogger(StartUp.class);
+namespace MPF { namespace COMPONENT {
 
-	@Value("${masterNode.enabled}")
-	private boolean useMasterNode;
+    FatalError::FatalError(ExitCode exit_code, const std::string &cause)
+            : std::runtime_error(cause)
+            , exit_code_(exit_code) {
 
-	@Autowired
-	private NodeManagerStatus nodeManagerStatus;
+    }
 
-	@Override
-	public boolean isAutoStartup() {
-		//this property is not being used
-		return useMasterNode;
-	}
+    ExitCode FatalError::GetExitCode() const {
+        return exit_code_;
+    }
 
-	@Override
-	public void start() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.init(false);
-		split.stop();
-	}
 
-	@Override
-	public void stop() {
-//		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-//		nodeManagerStatus.stop();
-//		split.stop();
-		log.info("!!! Non-async stop called.");
-		doStop();
-	}
 
-	@Override
-	public boolean isRunning() {
-		return nodeManagerStatus.isRunning();
-	}
 
-	@Override
-	public void stop(Runnable r) {
-		log.info("!!! Async stop called.");
-		doStop();
-		r.run();
-	}
+    InternalComponentError::InternalComponentError(const std::string &method_name, const std::string &cause)
+        : FatalError(
+            ExitCode::INTERNAL_COMPONENT_ERROR,
+            "The loaded component threw an exception while executing its \"" + method_name +"\" method: " + cause) {
+    }
 
-	private void doStop() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.stop();
-		split.stop();
-	}
-
-	@Override
-	public int getPhase() {
-		return -1;
-	}
-}
-
+    InternalComponentError::InternalComponentError(const std::string &method_name)
+        : FatalError(
+            ExitCode::INTERNAL_COMPONENT_ERROR,
+            "The loaded component threw an object that does not derive from std::exception while executing its \""
+                + method_name + " method.") {
+    }
+}}

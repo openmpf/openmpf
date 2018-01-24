@@ -24,71 +24,35 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.nodeManager;
 
-import org.javasimon.SimonManager;
-import org.javasimon.Split;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.SmartLifecycle;
-import org.springframework.stereotype.Service;
+package org.mitre.mpf.nms.util;
 
-@Service
-public class StartUp implements SmartLifecycle {
+import org.apache.commons.lang3.text.StrLookup;
+import org.apache.commons.lang3.text.StrSubstitutor;
 
-	private static final Logger log = LoggerFactory.getLogger(StartUp.class);
+import java.util.Map;
 
-	@Value("${masterNode.enabled}")
-	private boolean useMasterNode;
+import static java.util.stream.Collectors.toMap;
 
-	@Autowired
-	private NodeManagerStatus nodeManagerStatus;
+public class EnvironmentVariableExpander {
 
-	@Override
-	public boolean isAutoStartup() {
-		//this property is not being used
-		return useMasterNode;
+	private static final StrSubstitutor _substitutor = new StrSubstitutor(new StrLookup<String>() {
+		public String lookup(String key) {
+			return System.getenv().getOrDefault(key, "");
+		}
+	});
+
+	private EnvironmentVariableExpander() {
 	}
 
-	@Override
-	public void start() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.init(false);
-		split.stop();
+
+	public static String expand(String str) {
+		return _substitutor.replace(str);
 	}
 
-	@Override
-	public void stop() {
-//		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-//		nodeManagerStatus.stop();
-//		split.stop();
-		log.info("!!! Non-async stop called.");
-		doStop();
-	}
+	public static Map<String, String> expandValues(Map<String, String> map) {
+		return map.entrySet().stream()
+				.collect(toMap(Map.Entry::getKey, e -> expand(e.getValue())));
 
-	@Override
-	public boolean isRunning() {
-		return nodeManagerStatus.isRunning();
-	}
-
-	@Override
-	public void stop(Runnable r) {
-		log.info("!!! Async stop called.");
-		doStop();
-		r.run();
-	}
-
-	private void doStop() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.stop();
-		split.stop();
-	}
-
-	@Override
-	public int getPhase() {
-		return -1;
 	}
 }
-

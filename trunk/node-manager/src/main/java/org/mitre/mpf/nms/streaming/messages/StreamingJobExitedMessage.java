@@ -26,21 +26,16 @@
 
 package org.mitre.mpf.nms.streaming.messages;
 
+import org.mitre.mpf.nms.streaming.StreamingProcessExitReason;
+
 public class StreamingJobExitedMessage implements StreamingJobMessage {
 
 	public final long jobId;
 
-	public final Reason reason;
+	public final StreamingProcessExitReason reason;
 
-	public StreamingJobExitedMessage(long jobId, Reason reason) {
+	public StreamingJobExitedMessage(long jobId, StreamingProcessExitReason reason) {
 		this.jobId = jobId;
 		this.reason = reason;
-	}
-
-
-	public enum Reason {
-		CANCELLED,
-		ERROR,
-		STREAM_STALLED
 	}
 }

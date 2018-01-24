@@ -7,8 +7,7 @@
   "streamLibrary" : "${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfStreamingCplusplusHelloWorld.so",
   "environmentVariables" : [{
       "name":"LD_LIBRARY_PATH",
-      "value":"${MPF_HOME}/plugins/CplusplusHelloWorld/lib",
-      "sep": ":"
+      "value":"${MPF_HOME}/plugins/CplusplusHelloWorld/lib:${LD_LIBRARY_PATH}"
   }],
   "algorithm" : {
     "name" : "CplusplusHelloWorld",
@@ -43,6 +42,33 @@
         }
       ]
     }
-  }
+  },
+  "actions" : [
+    {
+      "name": "HELLOWORLD TEST ACTION",
+      "description": "HELLOWORLD TEST ACTION",
+      "algorithm": "CplusplusHelloWorld",
+      "properties": []
+    }
+  ],
+  "tasks": [
+    {
+      "name": "HELLOWORLD TEST TASK",
+      "description": "HELLOWORLD TEST TASK",
+      "actions": [
+        "HELLOWORLD TEST ACTION"
+      ]
+    }
+  ],
+  "pipelines":[
+    {
+      "name": "HELLOWORLD TEST PIPELINE",
+      "description": "HELLOWORLD TEST PIPELINE",
+      "tasks": [
+        "HELLOWORLD TEST TASK"
+      ]
+    }
+  ]
+
 }
 

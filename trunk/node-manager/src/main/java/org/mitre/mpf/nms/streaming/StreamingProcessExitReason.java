@@ -24,71 +24,35 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.nodeManager;
 
-import org.javasimon.SimonManager;
-import org.javasimon.Split;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.SmartLifecycle;
-import org.springframework.stereotype.Service;
+package org.mitre.mpf.nms.streaming;
 
-@Service
-public class StartUp implements SmartLifecycle {
+import java.util.stream.Stream;
 
-	private static final Logger log = LoggerFactory.getLogger(StartUp.class);
+public enum StreamingProcessExitReason {
+	CANCELLED(0),
+	UNEXPECTED_ERROR(1),
+	INVALID_COMMAND_LINE_ARGUMENTS(2),
 
-	@Value("${masterNode.enabled}")
-	private boolean useMasterNode;
+	INVALID_INI_FILE(65),
+	UNABLE_TO_READ_FROM_STANDARD_IN(66),
+	MESSAGE_BROKER_ERROR(69),
+	INTERNAL_COMPONENT_ERROR(70),
+	COMPONENT_LOAD_ERROR(71),
+	UNABLE_TO_CONNECT_TO_STREAM(75),
+	STREAM_STALLED(76);
 
-	@Autowired
-	private NodeManagerStatus nodeManagerStatus;
 
-	@Override
-	public boolean isAutoStartup() {
-		//this property is not being used
-		return useMasterNode;
+	public final int exitCode;
+
+	StreamingProcessExitReason(int exitCode) {
+		this.exitCode = exitCode;
 	}
 
-	@Override
-	public void start() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.init(false);
-		split.stop();
-	}
-
-	@Override
-	public void stop() {
-//		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-//		nodeManagerStatus.stop();
-//		split.stop();
-		log.info("!!! Non-async stop called.");
-		doStop();
-	}
-
-	@Override
-	public boolean isRunning() {
-		return nodeManagerStatus.isRunning();
-	}
-
-	@Override
-	public void stop(Runnable r) {
-		log.info("!!! Async stop called.");
-		doStop();
-		r.run();
-	}
-
-	private void doStop() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.stop();
-		split.stop();
-	}
-
-	@Override
-	public int getPhase() {
-		return -1;
+	public static StreamingProcessExitReason fromExitCode(int exitCode) {
+		return Stream.of(StreamingProcessExitReason.values())
+				.filter(r -> r.exitCode == exitCode)
+				.findAny()
+				.orElse(UNEXPECTED_ERROR);
 	}
 }
-

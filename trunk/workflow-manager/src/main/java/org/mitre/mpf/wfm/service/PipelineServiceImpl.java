@@ -403,6 +403,9 @@ public class PipelineServiceImpl implements PipelineService {
 
     private boolean pipelineSupportsProcessingType(String pipelineName, Predicate<AlgorithmDefinition> supportsPred) {
         PipelineDefinition pipeline = getPipeline(pipelineName);
+        if (pipeline == null) {
+	        throw new InvalidPipelineObjectWfmProcessingException("Missing pipeline: \"" + pipelineName + "\".");
+        }
         return pipeline.getTaskRefs().stream()
                 .map(TaskDefinitionRef::getName)
 		        .allMatch(tName -> taskSupportsProcessingType(tName, supportsPred));

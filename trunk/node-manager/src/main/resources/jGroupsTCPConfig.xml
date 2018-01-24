@@ -43,6 +43,9 @@
          use_send_queues="true"
          sock_conn_timeout="300"
          enable_diagnostics="false"
+         logical_addr_cache_max_size="1"
+         logical_addr_cache_expiration="1"
+         logical_addr_cache_reaper_interval="30000"
 
          timer_type="new3"
          timer.min_threads="4"
@@ -68,8 +71,8 @@
     <!-- initial_hosts should include the names of all possible hosts (machines) in our cluster -->
     <TCPPING initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800]}"
              port_range="10"/>
-    <MERGE2  min_interval="10000"
-             max_interval="30000"/>
+
+    <MERGE3 />
     <FD_SOCK/>
     <FD timeout="7000" max_tries="3" />
     <VERIFY_SUSPECT timeout="1500"  />
@@ -79,7 +82,8 @@
     <UNICAST3 />
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="4M"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="7000" view_bundling="true"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="7000" view_bundling="true" log_collect_msgs="true"
+                log_view_warnings="true"/>
     <MFC max_credits="2M"
          min_threshold="0.4"/>
     <FRAG2 frag_size="60K"  />

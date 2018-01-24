@@ -40,6 +40,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -109,14 +110,14 @@ public class TestChildStreamingJobManager {
 		// since there could be situations where one job takes longer than another to exit.
 		jobCtrl2.allowComplete();
 
-		verifyExitMessageSent(2, StreamingJobExitedMessage.Reason.CANCELLED);
+		verifyExitMessageSent(2, StreamingProcessExitReason.CANCELLED);
 		// job1 is still running
 		verifyNoExitMessageSentForJob(1);
 
 
 		jobCtrl.allowComplete();
 
-		verifyExitMessageSent(1, StreamingJobExitedMessage.Reason.CANCELLED);
+		verifyExitMessageSent(1, StreamingProcessExitReason.CANCELLED);
 	}
 
 
@@ -139,9 +140,9 @@ public class TestChildStreamingJobManager {
 
 		verifyNoExitMessageSentForJob(1);
 
-		jobCtrl.causeException(new StreamStalledException());
+		jobCtrl.causeException(new StreamingProcessExitException(76));
 
-		verifyExitMessageSent(1, StreamingJobExitedMessage.Reason.STREAM_STALLED);
+		verifyExitMessageSent(1, StreamingProcessExitReason.STREAM_STALLED);
 	}
 
 
@@ -166,7 +167,7 @@ public class TestChildStreamingJobManager {
 
 		jobCtrl.causeException(new IllegalStateException("Intentional"));
 
-		verifyExitMessageSent(1, StreamingJobExitedMessage.Reason.ERROR);
+		verifyExitMessageSent(1, StreamingProcessExitReason.UNEXPECTED_ERROR);
 	}
 
 
@@ -178,14 +179,14 @@ public class TestChildStreamingJobManager {
 	}
 
 
-	private void verifyExitMessageSent(long jobId, StreamingJobExitedMessage.Reason reason) {
+	private void verifyExitMessageSent(long jobId, StreamingProcessExitReason reason) {
 		verify(_mockChannel)
 				.sendToMaster(jobExitMessage(jobId, reason));
 	}
 
 
 
-	private static StreamingJobExitedMessage jobExitMessage(long jobId, StreamingJobExitedMessage.Reason reason) {
+	private static StreamingJobExitedMessage jobExitMessage(long jobId, StreamingProcessExitReason reason) {
 		return Matchers.argThat(new BaseMatcher<StreamingJobExitedMessage>() {
 			@Override
 			public void describeTo(Description description) {
@@ -219,7 +220,7 @@ public class TestChildStreamingJobManager {
 			}
 
 			public void causeException(Exception e) {
-				future.completeExceptionally(e);
+				future.completeExceptionally(new CompletionException(e));
 			}
 		};
 	}

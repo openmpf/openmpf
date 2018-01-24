@@ -161,7 +161,7 @@ TEST_F(AMQMessengerTest, TestJobStatusMessage) {
     string job_name("streaming_job_" + std::to_string(job_id));
     string message("Job " + job_name + " is up and running");
 
-    MPFJobStatusMessage src_msg(job_name, job_id, message);
+    MPFJobStatusMessage src_msg(job_name, job_id, message, 1234);
     ASSERT_NO_THROW(messenger.SendMessage(src_msg));
 
     MPFJobStatusMessage dst_msg;

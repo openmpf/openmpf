@@ -24,71 +24,57 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.nodeManager;
 
-import org.javasimon.SimonManager;
-import org.javasimon.Split;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.SmartLifecycle;
-import org.springframework.stereotype.Service;
+#ifndef MPF_BASICAMQMESSAGESENDER_H
+#define MPF_BASICAMQMESSAGESENDER_H
 
-@Service
-public class StartUp implements SmartLifecycle {
+#include <memory>
+#include <string>
 
-	private static final Logger log = LoggerFactory.getLogger(StartUp.class);
+#include <cms/Connection.h>
+#include <cms/Session.h>
+#include <cms/MessageProducer.h>
 
-	@Value("${masterNode.enabled}")
-	private boolean useMasterNode;
+#include <MPFDetectionComponent.h>
 
-	@Autowired
-	private NodeManagerStatus nodeManagerStatus;
+#include "JobSettings.h"
 
-	@Override
-	public boolean isAutoStartup() {
-		//this property is not being used
-		return useMasterNode;
-	}
 
-	@Override
-	public void start() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.init(false);
-		split.stop();
-	}
+namespace MPF { namespace COMPONENT {
 
-	@Override
-	public void stop() {
-//		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-//		nodeManagerStatus.stop();
-//		split.stop();
-		log.info("!!! Non-async stop called.");
-		doStop();
-	}
+    // TODO: Combine with AMQMessenger when adding support for multistage pipelines.
+    class BasicAmqMessageSender {
 
-	@Override
-	public boolean isRunning() {
-		return nodeManagerStatus.isRunning();
-	}
+    public:
+        explicit BasicAmqMessageSender(const JobSettings &job_settings);
 
-	@Override
-	public void stop(Runnable r) {
-		log.info("!!! Async stop called.");
-		doStop();
-		r.run();
-	}
+        void SendJobStatus(const std::string &job_status);
 
-	private void doStop() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.stop();
-		split.stop();
-	}
+        void SendActivityAlert(int frame_number);
 
-	@Override
-	public int getPhase() {
-		return -1;
-	}
-}
+        void SendSummaryReport(
+                int frame_number, const std::string &detection_type,
+                const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks, const std::string &error_message = {});
 
+    private:
+        const long job_id_;
+        const int segment_size_;
+
+        std::unique_ptr<cms::Connection> connection_;
+        std::unique_ptr<cms::Session> session_;
+
+        std::unique_ptr<cms::MessageProducer> job_status_producer_;
+        std::unique_ptr<cms::MessageProducer> activity_alert_producer_;
+        std::unique_ptr<cms::MessageProducer> summary_report_producer_;
+
+
+        static std::unique_ptr<cms::Connection> Connect(const std::string &broker_uri);
+
+        static std::unique_ptr<cms::MessageProducer>
+        CreateProducer(const std::string &queue_name, cms::Session &session);
+
+        static long GetTimestampMillis();
+    };
+}}
+
+#endif //MPF_BASICAMQMESSAGESENDER_H

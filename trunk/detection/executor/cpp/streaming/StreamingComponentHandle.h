@@ -24,71 +24,53 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.nodeManager;
 
-import org.javasimon.SimonManager;
-import org.javasimon.Split;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.SmartLifecycle;
-import org.springframework.stereotype.Service;
+#ifndef MPF_STREAMINGCOMPONENTHANDLE_H
+#define MPF_STREAMINGCOMPONENTHANDLE_H
 
-@Service
-public class StartUp implements SmartLifecycle {
 
-	private static final Logger log = LoggerFactory.getLogger(StartUp.class);
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
 
-	@Value("${masterNode.enabled}")
-	private boolean useMasterNode;
+#include <dlfcn.h>
 
-	@Autowired
-	private NodeManagerStatus nodeManagerStatus;
+#include <MPFStreamingDetectionComponent.h>
 
-	@Override
-	public boolean isAutoStartup() {
-		//this property is not being used
-		return useMasterNode;
-	}
 
-	@Override
-	public void start() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.init(false);
-		split.stop();
-	}
+namespace MPF { namespace COMPONENT {
 
-	@Override
-	public void stop() {
-//		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-//		nodeManagerStatus.stop();
-//		split.stop();
-		log.info("!!! Non-async stop called.");
-		doStop();
-	}
+    class StreamingComponentHandle {
+    public:
+        StreamingComponentHandle(const std::string &lib_path, const MPFStreamingVideoJob &job);
 
-	@Override
-	public boolean isRunning() {
-		return nodeManagerStatus.isRunning();
-	}
+        std::string GetDetectionType();
 
-	@Override
-	public void stop(Runnable r) {
-		log.info("!!! Async stop called.");
-		doStop();
-		r.run();
-	}
+        void BeginSegment(const VideoSegmentInfo &segment_info);
 
-	private void doStop() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.stop();
-		split.stop();
-	}
+        bool ProcessFrame(const cv::Mat &frame, int frame_number);
 
-	@Override
-	public int getPhase() {
-		return -1;
-	}
-}
+        std::vector<MPFVideoTrack> EndSegment();
 
+
+    private:
+        using loaded_component_t
+            = std::unique_ptr<MPFStreamingDetectionComponent, void(*)(MPFStreamingDetectionComponent*)>;
+
+        std::unique_ptr<void, decltype(&dlclose)> lib_handle_;
+
+        loaded_component_t loaded_component_;
+
+        static loaded_component_t LoadComponent(void* lib_handle, const MPFStreamingVideoJob &job);
+
+        template <typename TFunc>
+        static TFunc* LoadFunction(void* lib_handle, const char * symbol_name);
+
+        [[noreturn]] static void WrapComponentException(const std::string &component_method);
+    };
+
+}}
+
+
+#endif //MPF_STREAMINGCOMPONENTHANDLE_H

@@ -141,9 +141,9 @@ public class TestMasterStreamingJobManager {
 		assertEquals(n2, startJob(createLaunchMessage(4), Arrays.asList(n1, n2)));
 
 		_streamingJobManager.streamingJobExited(new StreamingJobExitedMessage(
-				1, StreamingJobExitedMessage.Reason.CANCELLED));
+				1, StreamingProcessExitReason.CANCELLED));
 		_streamingJobManager.streamingJobExited(new StreamingJobExitedMessage(
-				2, StreamingJobExitedMessage.Reason.CANCELLED));
+				2, StreamingProcessExitReason.CANCELLED));
 
 		// At this point n1 should have 0 jobs and n2 should have 2 job so n1 should be selected.
 		assertEquals(n1, startJob(createLaunchMessage(5), Arrays.asList(n1, n2)));

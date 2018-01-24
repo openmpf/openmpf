@@ -127,8 +127,11 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         // What is currently out there
         String participants = view.getMembers().stream()
                 .map(Object::toString)
-                .collect(joining(" "));
-        LOG.debug("Current Participants: {}", participants);
+                .collect(joining("\n"));
+        LOG.info("ViewAccepted: Current Participants:\n{}", participants);
+        LOG.info("ViewId: {}", view.getViewId());
+        LOG.info("View Accepted: {}", view);
+
 
         // First step, compare the view of node-manager members to our list of node-manager states built over time
         // The view can contain both NodeManagers AND nodes.  One must iterate through the members is this current view
@@ -208,6 +211,12 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         }
 
         super.viewAccepted(view);
+    }
+
+    @Override
+    public void suspect(Address addr) {
+    	LOG.info("Received suspect: {}", addr);
+
     }
 
 

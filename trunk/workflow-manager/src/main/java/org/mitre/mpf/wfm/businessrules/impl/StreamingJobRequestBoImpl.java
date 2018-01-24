@@ -27,17 +27,6 @@
 package org.mitre.mpf.wfm.businessrules.impl;
 
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
@@ -46,12 +35,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.mitre.mpf.interop.JsonAction;
-import org.mitre.mpf.interop.JsonCallbackBody;
-import org.mitre.mpf.interop.JsonPipeline;
-import org.mitre.mpf.interop.JsonStage;
-import org.mitre.mpf.interop.JsonStreamingInputObject;
-import org.mitre.mpf.interop.JsonStreamingJobRequest;
+import org.mitre.mpf.interop.*;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -61,11 +45,7 @@ import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
@@ -86,6 +66,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 @Component
 public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
@@ -233,16 +225,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                                                  String healthReportCallbackUri, String summaryReportCallbackUri) {
         log.debug("[streaming createRequest] externalId:" + externalId + ", pipeline:" + pipelineName + ", buildOutput:" + buildOutput + ", priority:" + priority +
                 ", healthReportCallbackUri:" + healthReportCallbackUri + ", summaryReportCallbackUri:" + summaryReportCallbackUri);
-        String jsonHealthReportCallbackUri = "";
-        String jsonSummaryReportCallbackUri = "";
-        String jsonNewTrackAlertCallbackUri = "";
-        String jsonCallbackMethod = "GET";
-        if (healthReportCallbackUri != null && TextUtils.trim(healthReportCallbackUri) != null) {
-            jsonHealthReportCallbackUri = TextUtils.trim(healthReportCallbackUri);
-        }
-        if (summaryReportCallbackUri != null && TextUtils.trim(summaryReportCallbackUri) != null) {
-            jsonSummaryReportCallbackUri = TextUtils.trim(summaryReportCallbackUri);
-        }
+        String jsonHealthReportCallbackUri = StringUtils.trimToNull(healthReportCallbackUri);
+        String jsonSummaryReportCallbackUri = StringUtils.trimToNull(summaryReportCallbackUri);
 
         String outputObjectPath = ""; // initialize output output object to empty string, the path will be set after the streaming job is submitted
         JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(TextUtils.trim(externalId), buildOutput, outputObjectPath,
@@ -348,10 +332,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                     // If this operation fails, any remaining pending items will continue to process, but
                     // the future splitters should not create any new work items. In short, if this fails,
                     // the system should not be affected, but the streaming job may not complete any faster.
-                    // TODO tell the master node manager to cancel the streaming job
-                    log.warn(
-                        "[Streaming Job {}:*:*] Cancellation of streaming job via master node manager not yet implemented.",
-                        jobId);
+
+                    streamingJobMessageSender.stopJob(jobId);
 
                     // set job status as cancelling, and persist that changed state in the database
                     streamingJobRequest.setStatus(JobStatus.CANCELLING);
@@ -634,19 +616,20 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     @Override
     public void handleJobStatusChange(long jobId, JobStatus status, long timestamp) {
     	// TODO: Replace logging with implementation of handleJobStatusChange
-    	log.info("handleJobStatusChange(jobId = {}, status = {}, time = {})", jobId, status, millisToDateTime(timestamp));
+    	log.debug("handleJobStatusChange(jobId = {}, status = {}, time = {})", jobId, status, millisToDateTime(timestamp));
     }
 
     @Override
     public void handleNewActivityAlert(long jobId, long frameId, long timestamp) {
         // TODO: Replace logging with implementation of handleNewActivityAlert
-        log.info("handleNewActivityAlert(jobId = {}, frameId = {}, time = {})", jobId, frameId, millisToDateTime(timestamp));
+        log.debug("handleNewActivityAlert(jobId = {}, frameId = {}, time = {})", jobId, frameId, millisToDateTime(timestamp));
     }
 
     @Override
-    public void handleNewSummaryReport(long jobId, Object summaryReport) {
+    public void handleNewSummaryReport(SegmentSummaryReport summaryReport) {
         // TODO: Replace logging with implementation of handleNewSummaryReport
-        log.info("handleNewSummaryReport(jobId = {}, summaryReport = {})", jobId, summaryReport);
+        log.debug("handleNewSummaryReport(jobId = {}, summaryReport = {}) with {} tracks",
+                 summaryReport.getJobId(), summaryReport, summaryReport.getTracks().size());
     }
 
     private static LocalDateTime millisToDateTime(long millis) {

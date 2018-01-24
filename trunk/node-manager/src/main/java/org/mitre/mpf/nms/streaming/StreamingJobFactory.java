@@ -48,7 +48,7 @@ public class StreamingJobFactory {
 		JobIniFiles jobIniFiles = _iniManager.createJobIniFiles(launchMessage);
 		Path componentIniPath = jobIniFiles.getJobIniPath();
 		StreamingProcess componentProcess = _processFactory.createComponentProcess(
-				componentIniPath, launchMessage.componentEnvironmentVariables);
+				launchMessage.componentName, componentIniPath, launchMessage.componentEnvironmentVariables);
 
 		return new StreamingJob(launchMessage.jobId, jobIniFiles, componentProcess);
 	}

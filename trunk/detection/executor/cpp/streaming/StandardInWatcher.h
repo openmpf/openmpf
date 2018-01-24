@@ -24,71 +24,38 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.nodeManager;
 
-import org.javasimon.SimonManager;
-import org.javasimon.Split;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.SmartLifecycle;
-import org.springframework.stereotype.Service;
+#ifndef MPF_STANDARDINWATCHER_H
+#define MPF_STANDARDINWATCHER_H
 
-@Service
-public class StartUp implements SmartLifecycle {
+#include <atomic>
 
-	private static final Logger log = LoggerFactory.getLogger(StartUp.class);
 
-	@Value("${masterNode.enabled}")
-	private boolean useMasterNode;
+namespace MPF { namespace COMPONENT {
 
-	@Autowired
-	private NodeManagerStatus nodeManagerStatus;
+    class StandardInWatcher {
+    public:
+        bool QuitReceived() const;
 
-	@Override
-	public boolean isAutoStartup() {
-		//this property is not being used
-		return useMasterNode;
-	}
+        // Singleton to prevent more than one thread from reading from standard in.
+        static StandardInWatcher* GetInstance();
 
-	@Override
-	public void start() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.init(false);
-		split.stop();
-	}
+    private:
+        StandardInWatcher();
 
-	@Override
-	public void stop() {
-//		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-//		nodeManagerStatus.stop();
-//		split.stop();
-		log.info("!!! Non-async stop called.");
-		doStop();
-	}
+        static StandardInWatcher* instance_;
 
-	@Override
-	public boolean isRunning() {
-		return nodeManagerStatus.isRunning();
-	}
+        // static because in the event of an error elsewhere, the detached thread will still be running and may access
+        // is_time_to_quit_ and error_message_.
+        static std::atomic_bool quit_received_;
+        static std::string error_message_;
 
-	@Override
-	public void stop(Runnable r) {
-		log.info("!!! Async stop called.");
-		doStop();
-		r.run();
-	}
+        static void Watch();
+        static void SetError(std::string &&error_message);
 
-	private void doStop() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.stop();
-		split.stop();
-	}
+    };
+}}
 
-	@Override
-	public int getPhase() {
-		return -1;
-	}
-}
 
+
+#endif //MPF_STANDARDINWATCHER_H

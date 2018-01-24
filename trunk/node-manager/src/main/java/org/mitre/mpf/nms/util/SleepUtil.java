@@ -24,71 +24,25 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.nodeManager;
+package org.mitre.mpf.nms.util;
 
-import org.javasimon.SimonManager;
-import org.javasimon.Split;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.SmartLifecycle;
-import org.springframework.stereotype.Service;
 
-@Service
-public class StartUp implements SmartLifecycle {
+public class SleepUtil {
 
-	private static final Logger log = LoggerFactory.getLogger(StartUp.class);
+    private static final Logger log = LoggerFactory.getLogger(SleepUtil.class);
 
-	@Value("${masterNode.enabled}")
-	private boolean useMasterNode;
+    private SleepUtil() {
+    }
 
-	@Autowired
-	private NodeManagerStatus nodeManagerStatus;
-
-	@Override
-	public boolean isAutoStartup() {
-		//this property is not being used
-		return useMasterNode;
-	}
-
-	@Override
-	public void start() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.init(false);
-		split.stop();
-	}
-
-	@Override
-	public void stop() {
-//		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-//		nodeManagerStatus.stop();
-//		split.stop();
-		log.info("!!! Non-async stop called.");
-		doStop();
-	}
-
-	@Override
-	public boolean isRunning() {
-		return nodeManagerStatus.isRunning();
-	}
-
-	@Override
-	public void stop(Runnable r) {
-		log.info("!!! Async stop called.");
-		doStop();
-		r.run();
-	}
-
-	private void doStop() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.stop();
-		split.stop();
-	}
-
-	@Override
-	public int getPhase() {
-		return -1;
-	}
+    public static void interruptableSleep(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            log.warn("Node Manager received an interrupt");
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
+    }
 }
-

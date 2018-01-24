@@ -138,8 +138,6 @@
                         <exclude>**/TestSystemNightly.java</exclude>
                         <exclude>**/TestSystem.java</exclude>
                         <exclude>**/TestSystemStress.java</exclude>
-                        <exclude>**/TestSystemStress2.java</exclude>
-                        <exclude>**/TestSystemStress3.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>

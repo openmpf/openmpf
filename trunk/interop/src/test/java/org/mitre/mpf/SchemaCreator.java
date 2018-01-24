@@ -29,12 +29,12 @@ package org.mitre.mpf;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
 import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
-import com.fasterxml.jackson.module.jsonSchema.factories.SchemaFactoryWrapper;
-import com.google.common.io.Files;
-import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.JsonCallbackBody;
+import org.mitre.mpf.interop.JsonJobRequest;
+import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.interop.JsonOutputObjectSummary;
 
 import java.io.File;
-import java.nio.charset.Charset;
 
 public class SchemaCreator {
 	public static void main(String[] args) throws Exception {

@@ -141,6 +141,7 @@ public class TestJsonDescriptor {
 
     private JsonComponentDescriptor loadDescriptor(String fileName) throws IOException {
         URL resource = getClass().getClassLoader().getResource(fileName);
-        return new ObjectMapper().readValue(resource, JsonComponentDescriptor.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue(resource, JsonComponentDescriptor.class);
     }
 }

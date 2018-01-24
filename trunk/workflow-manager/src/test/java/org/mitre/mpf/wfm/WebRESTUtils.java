@@ -34,8 +34,8 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.junit.*;
-import org.mitre.mpf.rest.api.*;
+import org.junit.Assert;
+import org.mitre.mpf.rest.api.SingleJobInfo;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.ui.Utils;
 import org.slf4j.Logger;
@@ -56,8 +56,7 @@ public class WebRESTUtils {
 
 	private static final Logger log = LoggerFactory.getLogger(WebRESTUtils.class);
 
-	// for converting the JSON response to the actual java object
-	private static ObjectMapper objectMapper = new ObjectMapper();
+	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	public static JSONArray getNodes() throws JSONException, MalformedURLException {
 		String url = REST_URL + "nodes/info.json";

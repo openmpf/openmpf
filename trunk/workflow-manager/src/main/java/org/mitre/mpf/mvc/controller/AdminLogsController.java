@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import org.codehaus.jackson.map.ObjectMapper;
+ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONObject;
 import org.mitre.mpf.mvc.util.tailer.FilteredMpfLogTailerListener;
 import org.mitre.mpf.mvc.util.tailer.MpfLogLevel;

@@ -28,21 +28,10 @@ package org.mitre.mpf.wfm;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonHealthReportDataCallbackBody;
 import org.mitre.mpf.rest.api.MpfResponse;
@@ -55,6 +44,14 @@ import spark.Request;
 import spark.Response;
 import spark.Route;
 import spark.Spark;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 // Test streaming health report callbacks. Test only the POST method, since GET is not being supported in OpenMPF for streaming jobs.
 // NOTE: Needed to add confirmation of jobId in the health callbacks, because scheduled callbacks from a job created
@@ -73,8 +70,10 @@ public class ITWebStreamingHealthReports {
 
     private static final Logger log = LoggerFactory.getLogger(ITWebStreamingHealthReports.class);
 
-    // for converting the JSON response to the actual java object
-    private static ObjectMapper objectMapper = new ObjectMapper();
+    // The health report uses Java8 time, so we need to include the external JavaTimeModule which provides support for Java 8 Time.
+    private static ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
+
     private static boolean registeredComponent = false;
 
     private long healthReportPostJobId1 = -1L;
@@ -258,12 +257,7 @@ public class ITWebStreamingHealthReports {
                         + DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now())
                         + ":\n     " + request.body());
                 try {
-                    ObjectMapper jsonObjectMapper = new ObjectMapper();
-
-                    // The health report uses Java8 time, so we need to include the external JavaTimeModule which provides support for Java 8 Time.
-                    jsonObjectMapper.registerModule(new JavaTimeModule());
-
-                    healthReportPostCallbackBody = jsonObjectMapper
+                    healthReportPostCallbackBody = objectMapper
                         .readValue(request.bodyAsBytes(), JsonHealthReportDataCallbackBody.class);
 
                     log.info("InHealthCallback: Converted to JsonHealthReportDataCallbackBody:\n     "
@@ -301,9 +295,12 @@ public class ITWebStreamingHealthReports {
         JSONObject params = new JSONObject();
         params.put("pipelineName", customPipelineName);
 
+        JSONObject mediaProperties = new JSONObject();
+        mediaProperties.put("testProp", "testVal");
+
         JSONObject stream = new JSONObject();
         stream.put("streamUri", "rtsp://test/test.mp4");
-        stream.put("mediaProperties", new org.json.simple.JSONObject());
+        stream.put("mediaProperties", mediaProperties);
         stream.put("segmentSize", 100);
 
         params.put("stream", stream);

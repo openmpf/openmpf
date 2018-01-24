@@ -123,17 +123,16 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                             if (job.terminal || job.jobStatus == 'CANCELLING' || job.jobStatus == 'COMPLETE') cancel_disabled = "disabled=disabled";
                             var isterminal = "";
                             if (!job.terminal) isterminal = "disabled=disabled";
-                            var hasMarkup = "";
                             var hasOutput = "disabled=disabled";
                             var output_link = "";
                             if (job.outputFileExists) {
                                 hasOutput = "";
                             }
                             return '<div class="btn-group btn-group-sm" role="group" >' +
-                                '<button type="button" class="btn btn-default cancelBtn" id="cancelBtn' + job.jobId + '"  ' + cancel_disabled + ' ><i class="fa fa-stop"  title="Stop"></i></button>' +
-                                '<button type="button" class="btn btn-default resubmitBtn"  id="resubmitBtn' + job.jobId + '"' + isterminal + '><i class="fa fa-refresh"  title="Resubmit"></i></button>' +
-                                '<button type="button" class="btn btn-default markupBtn" ' + hasMarkup + ' id="markupBtn' + job.jobId + '" title="' + job.markupCount + ' media" ><i class="fa fa-picture-o" title="Media"></i></button>' +
-                                '<a type="button" href="jobs/output-object?id=' + job.jobId + '" class="btn btn-default jsonBtn" target="_blank"  ' + hasOutput + ' title="JSON ouput">{ }</a></div>';
+                                '<button type="button" class="btn btn-default cancelBtn" id="cancelBtn' + job.jobId + '"' + cancel_disabled + ' title="Stop"><i class="fa fa-stop"></i></button>' +
+                                '<button type="button" class="btn btn-default resubmitBtn"  id="resubmitBtn' + job.jobId + '"' + isterminal + ' title="Resubmit"><i class="fa fa-refresh"></i></button>' +
+                                '<button type="button" class="btn btn-default markupBtn" id="markupBtn' + job.jobId + '" title="Media" ><i class="fa fa-picture-o" title="Media"></i></button>' +
+                                '<a type="button" href="jobs/output-object?id=' + job.jobId + '" class="btn btn-default jsonBtn" target="_blank"  ' + hasOutput + ' title="JSON Output">{ }</a></div>';
                         }
                     }
                 ],
@@ -288,16 +287,18 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                                 return '<span class="glyphicon glyphicon-file"></span>';
                             }
                         }
-                        return '<span class="glyphicon glyphicon-ban-circle" title="Not Available"></span>';
+                        return '<p class="text-muted">Source file remotely hosted or not available</p>';
                     }
                 },
                 {data: "sourceUri"},
                 {
                     data: "sourceDownload",
                     render: function (data, type, obj) {
-                        var disabled = "disabled=disabled";
-                        if (obj.sourceDownload) disabled = "";
-                        return '<a href="' + obj.sourceDownload + '" download="' + obj.sourceUri + '" class="btn btn-default" ' + disabled + ' role="button"><i class="fa fa-download" title="Download"></i></a>';
+                        if (obj.sourceDownload) {
+                            return '<a href="' + obj.sourceDownload + '" download="' + obj.sourceUri + '" class="btn btn-default" role="button" title="Download"><i class="fa fa-download"></i></a>';
+                        } else {
+                            return '<p class="text-muted">Source file remotely hosted or not available</p>';
+                        }
                     }
                 },
                 {
@@ -319,16 +320,27 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                                 return '<span class="glyphicon glyphicon-file"></span>';
                             }
                         }
-                        return '<span class="glyphicon glyphicon-ban-circle" title="Not Available"></span>';
+                        return '<p class="text-muted">No markup</p>';
                     }
                 },
-                {data: "markupUri"},
+                {
+                    data: "markupUri",
+                    render: function (data, type, obj) {
+                        if (obj.markupUri) {
+                            return obj.markupUri;
+                        } else {
+                            return '<p class="text-muted">No markup</p>';
+                        }
+                    }
+                },
                 {
                     data: "markupDownload",
                     render: function (data, type, obj) {
-                        var disabled = "disabled=disabled";
-                        if (obj.markupDownload) disabled = "";
-                        return '<a href="' + obj.markupDownload + '" download="' + obj.markupUri + '" class="btn btn-default" ' + disabled + ' role="button"><i class="fa fa-download" title="Download"></i></a>';
+                        if (obj.markupDownload) {
+                            return '<a href="' + obj.markupDownload + '" download="' + obj.markupUri + '" class="btn btn-default" role="button"><i class="fa fa-download" title="Download"></i></a>';
+                        } else {
+                            return '<p class="text-muted">No markup</p>';
+                        }
                     }
                 }
             ],

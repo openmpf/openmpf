@@ -27,17 +27,6 @@
 package org.mitre.mpf.wfm.businessrules.impl;
 
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
@@ -46,12 +35,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.mitre.mpf.interop.JsonAction;
-import org.mitre.mpf.interop.JsonCallbackBody;
-import org.mitre.mpf.interop.JsonPipeline;
-import org.mitre.mpf.interop.JsonStage;
-import org.mitre.mpf.interop.JsonStreamingInputObject;
-import org.mitre.mpf.interop.JsonStreamingJobRequest;
+import org.mitre.mpf.interop.*;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -61,11 +45,7 @@ import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
@@ -86,6 +66,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 @Component
 public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
@@ -343,6 +335,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
                 // Mark the streaming job as cancelled in Redis
                 if (redis.cancel(jobId)) {
+                    redis.setJobStatus(jobId, JobStatus.CANCELLING);
 
                     // Try to move any pending work items on the queues to the appropriate cancellation queues.
                     // If this operation fails, any remaining pending items will continue to process, but

@@ -32,7 +32,7 @@
     {
       "mediaId": 19,
       "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/mpf-system-tests/target/test-classes/samples/speech/10001-90210-01803.wav",
-      "mimeType": "audio/x-wav",
+      "mimeType": "audio/vnd.wave",
       "length": -1,
       "sha256": "dcfea5712c43a43ba7ae8083afb39d36993e5a69c46e88b68aaa72b65cb615bb",
       "message": null,
@@ -185,7 +185,7 @@
     {
       "mediaId": 17,
       "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/mpf-system-tests/target/test-classes/samples/speech/green.wav",
-      "mimeType": "audio/x-wav",
+      "mimeType": "audio/vnd.wave",
       "length": -1,
       "sha256": "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0",
       "message": null,
@@ -252,7 +252,7 @@
     {
       "mediaId": 18,
       "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/mpf-system-tests/target/test-classes/samples/speech/left.wav",
-      "mimeType": "audio/x-wav",
+      "mimeType": "audio/vnd.wave",
       "length": -1,
       "sha256": "382fe5814ccf0253594a31f2ca8c3c320899c543b008374c7f26b85eab7508af",
       "message": null,

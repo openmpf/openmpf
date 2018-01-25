@@ -26,20 +26,11 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
-import java.util.Date;
-import javax.persistence.AttributeOverride;
-import javax.persistence.AttributeOverrides;
-import javax.persistence.Column;
-import javax.persistence.Embedded;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Lob;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import org.mitre.mpf.wfm.enums.JobStatusI.JobStatus;
+import org.mitre.mpf.wfm.enums.JobStatusI;
 import org.mitre.mpf.wfm.enums.StreamingJobStatus;
+
+import javax.persistence.*;
+import java.util.Date;
 
 /**
  * This class includes the essential information which describes a streaming job. Instances of this class are stored in a
@@ -79,22 +70,41 @@ public class StreamingJobRequest {
 	public void setPriority(int priority) { this.priority = priority; }
 
 	/** The current status of this streaming job. */
-	// TODO this isn't working, at mpf startup existing streaming jobs in the streaming_job_request table aren't correctly loading streamingJobStatus
-    @Embedded
+//	@Column
+//	@Enumerated(EnumType.STRING
+	@Embedded
     @AttributeOverrides( {
         @AttributeOverride(name="status", column = @Column(name="status") ),
         @AttributeOverride(name="statusDetail", column = @Column(name="status_detail") )
     })
-    private StreamingJobStatus streamingJobStatus;
-    public void setStreamingJobStatus(StreamingJobStatus status) {
-        this.streamingJobStatus = streamingJobStatus;
+
+    private StreamingJobStatusData streamingJobStatusData;
+
+    public void setStatus( JobStatusI.JobStatus jobStatus) {
+        streamingJobStatusData = new StreamingJobStatusData();
+        streamingJobStatusData.setStatusString(jobStatus.toString());
     }
-    public void setStreamingJobStatus(JobStatus jobStatus) {
-        this.streamingJobStatus = new StreamingJobStatus(jobStatus);
+    public void setStatus( StreamingJobStatus streamingJobStatus) {
+        streamingJobStatusData = new StreamingJobStatusData();
+        streamingJobStatusData.setStatusString(streamingJobStatus.getJobStatus().toString());
+        streamingJobStatusData.setStatusString(streamingJobStatus.getDetail());
     }
-    public StreamingJobStatus getStreamingJobStatus() {
-        return streamingJobStatus;
+    public StreamingJobStatus getStatus() {
+        return new StreamingJobStatus(streamingJobStatusData.getStatusString(), streamingJobStatusData.getDetailString());
     }
+
+	/*
+    @Transient
+    private StreamingJobStatus status = null;
+	public StreamingJobStatus getStatus() {
+	    if ( status == null ) {
+	        status = new StreamingJobStatus(streamingJobStatusData.getStatusString(), streamingJobStatusData.getDetailString());
+        }
+	    return status;
+	}
+    public void setStatus( JobStatus jobStatus) { this.status = new StreamingJobStatus(jobStatus); }
+    public void setStatus( StreamingJobStatus streamingJobStatus) { this.status = streamingJobStatus; }
+    */
 
 	@Column
 	@Lob
@@ -138,4 +148,16 @@ public class StreamingJobRequest {
 	public void setOutputObjectVersion(String outputObjectVersion) { this.outputObjectVersion = outputObjectVersion; }
 
 	public String toString() { return String.format("%s#<id='%d'>", this.getClass().getSimpleName(), getId()); }
+}
+
+@Embeddable
+class StreamingJobStatusData {
+
+    private String statusString;
+    public void setStatusString(String statusString) { this.statusString = statusString; }
+    public String getStatusString() { return statusString; }
+
+    private String detailString;
+    public void setDetailString(String detailString) { this.detailString = detailString; }
+    public String getDetailString() { return detailString; }
 }

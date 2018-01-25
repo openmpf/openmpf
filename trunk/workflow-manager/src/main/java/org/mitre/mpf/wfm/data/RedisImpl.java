@@ -26,28 +26,9 @@
 
 package org.mitre.mpf.wfm.data;
 
-import java.io.File;
-import java.time.DateTimeException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatus;
 import org.mitre.mpf.wfm.enums.JobStatusI;
 import org.mitre.mpf.wfm.enums.JobStatusI.JobStatus;
@@ -61,6 +42,14 @@ import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import java.io.File;
+import java.time.DateTimeException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component(RedisImpl.REF)
 public class RedisImpl implements Redis {
@@ -390,7 +379,7 @@ public class RedisImpl implements Redis {
             redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(BATCH_JOB_STATUS, jobStatus);
         } else if ( isJobTypeStreaming(jobId) ) {
             // just store the jobStatus for the streaming job, there is no detail associated with the streaming job status.
-            redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(STREAMING_JOB_STATUS, jobStatus);
+            redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(STREAMING_JOB_STATUS, jobStatus.toString());
         } else {
             // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and ignoring the request.
             log.warn("Job #{} was not found as a batch or a streaming job so we can't set the job status", jobId);
@@ -433,7 +422,7 @@ public class RedisImpl implements Redis {
 				return null;
 			} else {
 				Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
-                BatchJobStatus jobStatus = new BatchJobStatus((String)jobHash.get(BATCH_JOB_STATUS));
+                BatchJobStatus jobStatus = new BatchJobStatus((JobStatus)jobHash.get(BATCH_JOB_STATUS));
 				return (jobStatus);
 			}
 		} else if ( isJobTypeStreaming(jobId) ) {
@@ -872,6 +861,9 @@ public class RedisImpl implements Redis {
             } else {
                 // Check the health report callback for this active, streaming job.
                 String healthReportCallbackURI = transientJob.getHealthReportCallbackURI();
+				if (healthReportCallbackURI == null) {
+					continue;
+				}
                 if (healthReportCallbackJobIdListMap.containsKey(healthReportCallbackURI)) {
                     // some other streaming job has already registered this health report callback URI, add this job to the list
                     List<Long> jobList = healthReportCallbackJobIdListMap.get(healthReportCallbackURI);

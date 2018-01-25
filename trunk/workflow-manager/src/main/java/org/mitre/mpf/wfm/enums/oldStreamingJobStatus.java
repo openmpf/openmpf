@@ -29,7 +29,13 @@ package org.mitre.mpf.wfm.enums;
 import java.util.Collection;
 import java.util.Objects;
 
-public class BatchJobStatus implements JobStatusI {
+// StreamingJobStatus gets common JobStatus enumerations from JobStatusI, plus includes a mutable detail field.
+public class oldStreamingJobStatus implements JobStatusI {
+
+    // Convenience mappings for JobStatus' that are only applicable to streaming jobs.
+    public static final JobStatus STREAMING_JOB_TERMINATED = JobStatusI.JobStatus.STREAMING_JOB_TERMINATED;
+    public static final JobStatus STREAMING_JOB_PAUSED = JobStatusI.JobStatus.STREAMING_JOB_PAUSED;
+    public static final JobStatus STREAMING_JOB_STALLED = JobStatusI.JobStatus.STREAMING_JOB_STALLED;
 
     // Provide a field for this job status (initialized to DEFAULT)
     private JobStatus jobStatus = JobStatusI.DEFAULT;
@@ -42,8 +48,31 @@ public class BatchJobStatus implements JobStatusI {
         return jobStatus.isTerminal();
     }
 
-    public BatchJobStatus(JobStatus jobStatus) {
+    // Include a mutable field so more detailed information about the status of a streaming job can be attached to the job status.
+    // Detail will remain null if there is no detailed information available.
+	private String detail = null;
+	public String getDetail() { return detail; }
+	public void setDetail(String detail) { this.detail = detail; }
+	private boolean isDetailEqualTo(String otherDetail) {
+        return (detail == null && otherDetail == null ) || detail.equals(otherDetail);
+    }
+
+    public oldStreamingJobStatus(String jobStatusString) {
+        this.jobStatus = JobStatusI.parse(jobStatusString);
+    }
+
+    public oldStreamingJobStatus(String jobStatusString, String detailInfo) {
+        this.jobStatus = JobStatusI.parse(jobStatusString);
+        detail = detailInfo;
+    }
+
+    public oldStreamingJobStatus(JobStatus jobStatus) {
         this.jobStatus = jobStatus;
+    }
+
+    public oldStreamingJobStatus(JobStatus jobStatus, String detailInfo) {
+        this(jobStatus);
+        detail = detailInfo;
     }
 
     // allow for static methods defined in JobStatusI interface to be called using this class.
@@ -51,14 +80,30 @@ public class BatchJobStatus implements JobStatusI {
     public static JobStatus parse(String input, JobStatus defaultValue) { return JobStatusI.parse(input, defaultValue); }
     public static Collection<JobStatus> getNonTerminalStatuses() { return JobStatusI.getNonTerminalStatuses(); }
 
+    /** Get the string equivalent of the job status, without the detail information.
+     * @return job status, without the detail information.
+     */
+    public String getStatusAsString() {
+        return jobStatus.toString();
+    }
+
+    @Override
+    public String toString() {
+        if ( detail == null ) {
+            return "jobStatus = " + getStatusAsString();
+        } else {
+            return "jobStatus = " + getStatusAsString() + ", detail = " + getDetail();
+        }
+    }
+
     @Override
     /** If the JobStatus enumeration within this object is equivalent to the JobStatus enumeration in the other object, then
-     * consider the BatchJobStatus objects to be equal.
+     * consider the StreamingJobStatus objects to be equal only if the detail strings are also equal.
      */
     public boolean equals(Object obj) {
-        if ( obj instanceof BatchJobStatus ) {
-            BatchJobStatus other = (BatchJobStatus)obj;
-            return jobStatus == other.jobStatus;
+        if ( obj instanceof StreamingJobStatus ) {
+            StreamingJobStatus other = (StreamingJobStatus)obj;
+            return jobStatus == other.jobStatus && isDetailEqualTo(other.detail);
         } else {
             return false;
         }
@@ -67,13 +112,13 @@ public class BatchJobStatus implements JobStatusI {
     @Override
     // Override if equals method requires override of hashCode method.
     public int hashCode() {
-        return Objects.hash(jobStatus);
+        if ( detail == null ) {
+            return Objects.hash(jobStatus);
+        } else {
+            return Objects.hash(jobStatus,detail);
+        }
     }
 
-    @Override
-    public String toString() {
-        return jobStatus.toString();
-    }
 
 }
 

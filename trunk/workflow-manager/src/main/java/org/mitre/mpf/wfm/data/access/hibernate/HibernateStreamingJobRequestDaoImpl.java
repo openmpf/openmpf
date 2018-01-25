@@ -49,7 +49,7 @@ public class HibernateStreamingJobRequestDaoImpl extends AbstractHibernateDao<St
 	public void cancelJobsInNonTerminalState() {
 		Query query = getCurrentSession().
 				createQuery("UPDATE StreamingJobRequest set status = :status, status_detail = :statusDetail where status in (:nonTerminalStatuses)");
-		query.setParameter("status", JobStatusI.JobStatus.CANCELLED_BY_SHUTDOWN, JobStatusI.JobStatus.class);
+		query.setParameter("status", JobStatusI.JobStatus.CANCELLED_BY_SHUTDOWN);
 		query.setParameter("statusDetail", "shutdown: cancelling jobs in non-terminal state");
 		query.setParameterList("nonTerminalStatuses", StreamingJobStatus.getNonTerminalStatuses());
 		// TODO this isn't working when using StreamingJobRequests that contain embedded StreamingJobStatus

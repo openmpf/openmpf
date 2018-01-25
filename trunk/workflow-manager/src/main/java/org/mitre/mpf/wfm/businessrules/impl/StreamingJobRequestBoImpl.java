@@ -312,11 +312,11 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             throw new JobCancellationInvalidJobIdWfmProcessingException("A streaming job with the id " + jobId + " is not known to the system.");
         } else {
 
-            assert streamingJobRequest.getStreamingJobStatus()
+            assert streamingJobRequest.getStatus()
                 != null : "Streaming jobs must not have a null status.";
 
-            if (streamingJobRequest.getStreamingJobStatus().isTerminal() || streamingJobRequest.getStreamingJobStatus().equals(StreamingJobStatus.CANCELLING) ) {
-                throw new JobAlreadyCancellingWfmProcessingException("Streaming job " + jobId +" already has state '" + streamingJobRequest.getStreamingJobStatus() + "' and cannot be cancelled at this time.");
+            if (streamingJobRequest.getStatus().isTerminal() || streamingJobRequest.getStatus().equals(StreamingJobStatus.CANCELLING) ) {
+                throw new JobAlreadyCancellingWfmProcessingException("Streaming job " + jobId +" already has state '" + streamingJobRequest.getStatus() + "' and cannot be cancelled at this time.");
             } else {
                 log.info("[Job {}:*:*] Cancelling streaming job.", jobId);
 
@@ -333,7 +333,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                         jobId);
 
                     // set job status as cancelling, and persist that changed state in the database
-                    streamingJobRequest.setStreamingJobStatus(new StreamingJobStatus(StreamingJobStatus.CANCELLING,"user requested cancellation of job"));
+                    streamingJobRequest.setStatus(new StreamingJobStatus(StreamingJobStatus.CANCELLING,"user requested cancellation of job"));
                     streamingJobRequestDao.persist(streamingJobRequest);
 
                     // TODO this doCleanup section should be moved to after the Node Manager has notified the WFM that the streaming job has been cancelled (issue #334)
@@ -438,7 +438,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      */
     private StreamingJobRequest initializeInternal(StreamingJobRequest streamingJobRequest, JsonStreamingJobRequest jsonStreamingJobRequest) throws WfmProcessingException {
         streamingJobRequest.setPriority(jsonStreamingJobRequest.getPriority());
-        streamingJobRequest.setStreamingJobStatus(StreamingJobStatus.INITIALIZED);
+        streamingJobRequest.setStatus(StreamingJobStatus.INITIALIZED);
         streamingJobRequest.setTimeReceived(new Date());
         streamingJobRequest.setInputObject(jsonUtils.serialize(jsonStreamingJobRequest));
         streamingJobRequest.setPipeline(jsonStreamingJobRequest.getPipeline() == null ? null : TextUtils.trimAndUpper(jsonStreamingJobRequest.getPipeline().getName()));
@@ -494,7 +494,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                     warningMessage = "Failed to parse the input object for Streaming Job #" + jobId + " due to an exception.";
                     log.warn(warningMessage, e);
                 }
-                streamingJobRequestEntity.setStreamingJobStatus(new StreamingJobStatus(StreamingJobStatus.JOB_CREATION_ERROR,warningMessage));
+                streamingJobRequestEntity.setStatus(new StreamingJobStatus(StreamingJobStatus.JOB_CREATION_ERROR,warningMessage));
                 streamingJobRequestEntity.setTimeCompleted(new Date());
                 streamingJobRequestEntity = streamingJobRequestDao.persist(streamingJobRequestEntity);
             } catch (Exception persistException) {
@@ -554,7 +554,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
         // Everything has been good so far. Update the job status using running status for a streaming job.
         // Note that there is no need to include other detail information along with the streaming job status.
-        streamingJobRequestEntity.setStreamingJobStatus(StreamingJobStatus.IN_PROGRESS);
+        streamingJobRequestEntity.setStatus(StreamingJobStatus.IN_PROGRESS);
         redis.setJobStatus(jobId, StreamingJobStatus.IN_PROGRESS);
         streamingJobRequestEntity = streamingJobRequestDao.persist(streamingJobRequestEntity);
 
@@ -727,7 +727,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         assert streamingJobRequest != null : String.format("A streaming job request entity must exist with the ID %d", jobId);
 
         streamingJobRequest.setTimeCompleted(new Date());
-        streamingJobRequest.setStreamingJobStatus(jobStatus);
+        streamingJobRequest.setStatus(jobStatus);
         streamingJobRequestDao.persist(streamingJobRequest);
     }
 

@@ -87,7 +87,7 @@ public class StreamingJobRequest {
     public void setStatus( StreamingJobStatus streamingJobStatus) {
         streamingJobStatusData = new StreamingJobStatusData();
         streamingJobStatusData.setStatusString(streamingJobStatus.getJobStatus().toString());
-        streamingJobStatusData.setStatusString(streamingJobStatus.getDetail());
+        streamingJobStatusData.setDetailString(streamingJobStatus.getDetail());
     }
     public StreamingJobStatus getStatus() {
         return new StreamingJobStatus(streamingJobStatusData.getStatusString(), streamingJobStatusData.getDetailString());

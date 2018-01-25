@@ -24,38 +24,23 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.access.hibernate;
+package org.mitre.mpf.wfm.data.entities.persistent;
 
-import org.hibernate.Query;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-import org.mitre.mpf.wfm.enums.StreamingJobStatus;
-import org.mitre.mpf.wfm.enums.JobStatusI;
-import org.mitre.mpf.wfm.enums.JobStatusI.JobStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import javax.persistence.Embeddable;
 
-@Repository(HibernateStreamingJobRequestDaoImpl.REF)
-@Transactional(propagation = Propagation.REQUIRED)
-public class HibernateStreamingJobRequestDaoImpl extends AbstractHibernateDao<StreamingJobRequest> implements HibernateStreamingJobRequestDao {
-	private static final Logger log = LoggerFactory.getLogger(HibernateStreamingJobRequestDaoImpl.class);
+/**
+ * This class includes the essential information which describes streaming job status. Instances of this class are stored in a
+ * persistent data store (as opposed to a transient data store).
+ */
+@Embeddable
+public class StreamingJobStatus {
 
-	public static final String REF = "hibernateStreamingJobRequestDaoImpl";
-	public HibernateStreamingJobRequestDaoImpl() { this.clazz = StreamingJobRequest.class; }
+    private String status;
+    public void setStatus(String status) { this.status = status; }
+    public String getStatus() { return status; }
 
-	@Override
-	public void cancelJobsInNonTerminalState() {
-		Query query = getCurrentSession().
-				createQuery("UPDATE StreamingJobRequest set status = :status, status_detail = :statusDetail where status in (:nonTerminalStatuses)");
-		query.setParameter("status", JobStatusI.JobStatus.CANCELLED_BY_SHUTDOWN, JobStatusI.JobStatus.class);
-		query.setParameter("statusDetail", "shutdown: cancelling jobs in non-terminal state");
-		query.setParameterList("nonTerminalStatuses", StreamingJobStatus.getNonTerminalStatuses());
-		// TODO this isn't working when using StreamingJobRequests that contain embedded StreamingJobStatus
-		int updatedRows = query.executeUpdate();
-		if ( updatedRows >= 0 ) {
-			log.warn("{} streaming jobs were in a non-terminal state and have been marked as {}", updatedRows, StreamingJobStatus.CANCELLED_BY_SHUTDOWN);
-		}
-	}
+    private String statusDetail;
+    public void setStatusDetail(String statusDetail) { this.statusDetail = statusDetail; }
+    public String getStatusDetail() { return statusDetail; }
+
 }

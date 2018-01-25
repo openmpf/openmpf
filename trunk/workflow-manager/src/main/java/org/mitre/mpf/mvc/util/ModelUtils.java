@@ -136,14 +136,14 @@ public class ModelUtils {
 
 	public static StreamingJobInfo convertJobRequest(StreamingJobRequest streamingJobRequest,
 			float jobContainerProgress) {
-		StreamingJobStatus jobStatus = streamingJobRequest.getStatus();
+		StreamingJobStatus jobStatus = streamingJobRequest.getStreamingJobStatus();
 		// some job status' may be terminal
 		boolean isTerminal = (jobStatus != null && jobStatus.isTerminal());
 
 		return new StreamingJobInfo(streamingJobRequest.getId(),
 				streamingJobRequest.getPipeline(),
 				streamingJobRequest.getPriority(),
-				streamingJobRequest.getStatus().toString(), jobContainerProgress, streamingJobRequest.getTimeReceived(),
+				streamingJobRequest.getStreamingJobStatus().toString(), jobContainerProgress, streamingJobRequest.getTimeReceived(),
 				streamingJobRequest.getTimeCompleted(),
 				streamingJobRequest.getOutputObjectDirectory(),
 				streamingJobRequest.getStreamUri(),

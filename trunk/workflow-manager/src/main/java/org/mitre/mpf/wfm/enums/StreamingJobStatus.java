@@ -52,6 +52,7 @@ public class StreamingJobStatus implements JobStatusI {
     // Detail will remain null if there is no detailed information available.
 	private String detail = null;
 	public String getDetail() { return detail; }
+	public void setDetail(String detail) { this.detail = detail; }
 	private boolean isDetailEqualTo(String otherDetail) {
         return (detail == null && otherDetail == null ) || detail.equals(otherDetail);
     }

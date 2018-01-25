@@ -296,7 +296,7 @@ public class MpfServiceImpl implements MpfService {
         // use a Java8 stream to map the streaming job ids (filtered by terminal status if isActive is enabled) and collect them into a list,
         return getAllStreamingJobRequests().stream().filter( request -> {
             if (isActive) {
-                return !request.getStatus().isTerminal(); // include only jobs which have non-terminal status
+                return !request.getStreamingJobStatus().isTerminal(); // include only jobs which have non-terminal status
             } else {
                 return true; // include all jobs
             }

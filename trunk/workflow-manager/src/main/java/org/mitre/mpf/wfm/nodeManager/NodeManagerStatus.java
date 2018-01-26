@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -47,7 +47,8 @@ import org.mitre.mpf.nms.NodeTypes;
 import org.mitre.mpf.nms.ServiceDescriptor;
 import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
-import org.mitre.mpf.wfm.enums.StreamingJobStatus;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -305,13 +306,13 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 		StreamingJobStatus status;
 		switch (message.reason) {
 			case CANCELLED:
-				status = new StreamingJobStatus(StreamingJobStatus.CANCELLED, message.reason.toString());
+				status = new StreamingJobStatus(StreamingJobStatusType.CANCELLED, message.reason.toString());
 				break;
 			case ERROR:
-				status = new StreamingJobStatus(StreamingJobStatus.ERROR, message.reason.toString());
+				status = new StreamingJobStatus(StreamingJobStatusType.ERROR, message.reason.toString());
 				break;
 			case STREAM_STALLED:
-				status = new StreamingJobStatus(StreamingJobStatus.STREAMING_JOB_TERMINATED, message.reason.toString());
+				status = new StreamingJobStatus(StreamingJobStatusType.STREAMING_JOB_TERMINATED, message.reason.toString());
 				break;
 			default:
 				throw new IllegalStateException(String.format(

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -35,18 +35,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.enums.JobStatusI.JobStatus;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import java.util.HashMap;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -75,9 +71,9 @@ public class TestJobStatusCalculator extends TestCase {
         Exchange exchange = new DefaultExchange(camelContext);
         TransientJob job = TestUtil.setupJob(jobId, redis, ioUtils);
         exchange.getIn().setBody(jsonUtils.serialize(job));
-        redis.setJobStatus(jobId, JobStatus.IN_PROGRESS);
-        Assert.assertEquals(JobStatus.IN_PROGRESS,redis.getJobStatus(jobId));
-        Assert.assertEquals(JobStatus.COMPLETE, jobStatusCalculator.calculateStatus(exchange));
+        redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
+        Assert.assertEquals(BatchJobStatusType.IN_PROGRESS,redis.getJobStatus(jobId));
+        Assert.assertEquals(BatchJobStatusType.COMPLETE, jobStatusCalculator.calculateStatus(exchange));
     }
 
     @Test
@@ -86,8 +82,8 @@ public class TestJobStatusCalculator extends TestCase {
         Exchange exchange = new DefaultExchange(camelContext);
         TransientJob job = TestUtil.setupJob(jobId, redis, ioUtils);
         exchange.getIn().setBody(jsonUtils.serialize(job));
-        redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_ERRORS);
-        Assert.assertEquals(JobStatus.COMPLETE_WITH_ERRORS,jobStatusCalculator.calculateStatus(exchange));
+        redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+        Assert.assertEquals(BatchJobStatusType.COMPLETE_WITH_ERRORS,jobStatusCalculator.calculateStatus(exchange));
     }
 
     @Test
@@ -96,8 +92,8 @@ public class TestJobStatusCalculator extends TestCase {
         Exchange exchange = new DefaultExchange(camelContext);
         TransientJob job = TestUtil.setupJob(jobId, redis, ioUtils);
         exchange.getIn().setBody(jsonUtils.serialize(job));
-        redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_WARNINGS);
-        Assert.assertEquals(JobStatus.COMPLETE_WITH_WARNINGS,jobStatusCalculator.calculateStatus(exchange));
+        redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_WARNINGS);
+        Assert.assertEquals(BatchJobStatusType.COMPLETE_WITH_WARNINGS,jobStatusCalculator.calculateStatus(exchange));
     }
 
 

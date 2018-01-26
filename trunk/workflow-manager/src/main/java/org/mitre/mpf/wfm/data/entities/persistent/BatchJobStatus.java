@@ -24,19 +24,57 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel;
+package org.mitre.mpf.wfm.data.entities.persistent;
 
-import org.apache.commons.lang3.mutable.Mutable;
-import org.javasimon.aop.Monitored;
-import org.mitre.mpf.wfm.WfmProcessingException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.event.JobCompleteNotification;
-import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.event.NotificationProducer;
 
-@Monitored
-public interface JobCompleteProcessor extends WfmProcessorInterface, NotificationProducer<JobCompleteNotification> {
-	void createOutputObject(long jobId, Mutable<BatchJobStatusType> jobStatus) throws WfmProcessingException;
-	void subscribe(NotificationConsumer<JobCompleteNotification> consumer);
-	void unsubscribe(NotificationConsumer<JobCompleteNotification> consumer);
+/**
+ * This class includes the essential information which describes batch job status.
+ */
+public class BatchJobStatus extends JobStatus {
+
+    public static final BatchJobStatusType DEFAULT = BatchJobStatusType.COMPLETE;
+
+    /** Finds the BatchJobStatusType which best matches the given input; if no match is found, {@link #DEFAULT} is used. */
+    public static BatchJobStatusType parse(String input) {
+        return parse(input, DEFAULT);
+    }
+
+    public static BatchJobStatusType parse(String input, BatchJobStatusType defaultValue) {
+        String trimmed = StringUtils.trimToNull(input);
+        for ( BatchJobStatusType jobStatus : BatchJobStatusType.values() ) {
+            if ( StringUtils.equalsIgnoreCase(jobStatus.name(), trimmed) ) {
+                return jobStatus;
+            }
+        }
+        return defaultValue;
+    }
+
+    public static Collection<BatchJobStatusType> getNonTerminalStatuses() {
+        List<BatchJobStatusType> jobStatuses = new ArrayList<>();
+        for ( BatchJobStatusType jobStatus : BatchJobStatusType.values() ) {
+            if (!jobStatus.isTerminal() ) {
+                jobStatuses.add(jobStatus);
+            }
+        }
+        return jobStatuses;
+    }
+
+    private BatchJobStatusType jobStatus = DEFAULT;
+    public BatchJobStatusType getJobStatus() { return this.jobStatus; }
+    public void setJobStatus(BatchJobStatusType jobStatus) { this.jobStatus = jobStatus; }
+    public void setJobStatus(String jobStatusString) { this.jobStatus = parse(jobStatusString); }
+
+    public BatchJobStatus(BatchJobStatusType jobStatus) {
+        setJobStatus(jobStatus);
+    }
+
+    public BatchJobStatus(String jobStatusString) {
+        setJobStatus(jobStatusString);
+    }
+
 }

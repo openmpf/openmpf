@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -30,14 +30,17 @@ import java.io.File;
 import java.net.URI;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Paths;
-
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.rest.api.*;
+import org.mitre.mpf.rest.api.InfoModel;
+import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
+import org.mitre.mpf.rest.api.MarkupResultModel;
+import org.mitre.mpf.rest.api.SingleJobInfo;
+import org.mitre.mpf.rest.api.StreamingJobInfo;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.enums.JobStatusI.JobStatus;
-import org.mitre.mpf.wfm.enums.StreamingJobStatus;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,7 +128,7 @@ public class ModelUtils {
 	//this method is created for the same reason as converMarkupResult
 	public static SingleJobInfo convertJobRequest(JobRequest jobRequest,
 			float jobContainerProgress) {
-		JobStatus jobStatus = jobRequest.getStatus();
+		BatchJobStatusType jobStatus = jobRequest.getStatus();
 		// some job status' may be terminal
 		boolean isTerminal = (jobStatus != null && jobStatus.isTerminal());
 		
@@ -136,10 +139,10 @@ public class ModelUtils {
 
 	public static StreamingJobInfo convertJobRequest(StreamingJobRequest streamingJobRequest,
 			float jobContainerProgress) {
-		StreamingJobStatus jobStatus = streamingJobRequest.getStatus();
+		StreamingJobStatusType streamingJobStatus = streamingJobRequest.getStatus();
 		// some job status' may be terminal
-		boolean isTerminal = (jobStatus != null && jobStatus.isTerminal());
-
+		boolean isTerminal = (streamingJobStatus != null && streamingJobStatus.isTerminal());
+        // TODO add status detail to StreamingJobInfo (issue #411) using streamingJobRequest.getStatusDetail()
 		return new StreamingJobInfo(streamingJobRequest.getId(),
 				streamingJobRequest.getPipeline(),
 				streamingJobRequest.getPriority(),

@@ -26,54 +26,88 @@
 
 package org.mitre.mpf.wfm.enums;
 
-import java.util.Collection;
-import java.util.Objects;
+// BatchJobStatusType enumeration describes all possible job status conditions applicable to a batch job.
+public enum BatchJobStatusType {
 
-public class oldBatchJobStatus implements JobStatusI {
+    // This section defines job statuses that may be applicable to either a batch or a streaming job.
 
-    // Provide a field for this job status (initialized to DEFAULT)
-    private JobStatus jobStatus = JobStatusI.DEFAULT;
-    public void setJobStatus(JobStatus jobStatus) { this.jobStatus = jobStatus; }
-    public JobStatus getJobStatus() { return jobStatus; }
-    /** Checks to see if this job status represents any terminal condition.
-     * @return true if this job status represents any terminal condition, false otherwise.
+    /**
+     * Default: The status of the job is unknown.
+     **/
+    UNKNOWN(false),
+
+    /**
+     * The job has been initialized but not started.
      */
+    INITIALIZED(false),
+
+    /**
+     * Indicates that a job was received, but a job could not be created from the contents of
+     * the request.
+     */
+    JOB_CREATION_ERROR(true),
+
+    /**
+     * Indicates the job is in progress.
+     */
+    IN_PROGRESS(false),
+
+    /**
+     * Indicates the job is in progress with errors.
+     */
+    IN_PROGRESS_ERRORS(false),
+
+    /**
+     * Indicates the job is in progress with warnings.
+     */
+    IN_PROGRESS_WARNINGS(false),
+
+    /**
+     * Indicates that the job is having its output object built.
+     */
+    BUILDING_OUTPUT_OBJECT(false),
+
+    /**
+     * Indicates the job has completed.
+     */
+    COMPLETE(true),
+
+    /**
+     * Indicates the job has completed, but with processing errors.
+     */
+    COMPLETE_WITH_ERRORS(true),
+
+    /**
+     * Indicates the job has completed, but with warnings.
+     */
+    COMPLETE_WITH_WARNINGS(true),
+
+    /**
+     * Indicates the job is in the middle of cancellation.
+     */
+    CANCELLING(false),
+
+    /**
+     * Indicates the job was cancelled as a result of a system shutdown.
+     */
+    CANCELLED_BY_SHUTDOWN(true),
+
+    /**
+     * Indicates the job was cancelled by a user-initiated process.
+     */
+    CANCELLED(true),
+
+    /**
+     * Indicates the job is in an error state.
+     */
+    ERROR(true);
+
+    protected boolean terminal;
+
     public boolean isTerminal() {
-        return jobStatus.isTerminal();
+        return terminal;
     }
 
-    public oldBatchJobStatus(JobStatus jobStatus) {
-        this.jobStatus = jobStatus;
-    }
-
-    // allow for static methods defined in JobStatusI interface to be called using this class.
-    public static JobStatus parse(String input) { return JobStatusI.parse(input); }
-    public static JobStatus parse(String input, JobStatus defaultValue) { return JobStatusI.parse(input, defaultValue); }
-    public static Collection<JobStatus> getNonTerminalStatuses() { return JobStatusI.getNonTerminalStatuses(); }
-
-    @Override
-    /** If the JobStatus enumeration within this object is equivalent to the JobStatus enumeration in the other object, then
-     * consider the BatchJobStatus objects to be equal.
-     */
-    public boolean equals(Object obj) {
-        if ( obj instanceof BatchJobStatus ) {
-            BatchJobStatus other = (BatchJobStatus)obj;
-            return jobStatus == other.jobStatus;
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    // Override if equals method requires override of hashCode method.
-    public int hashCode() {
-        return Objects.hash(jobStatus);
-    }
-
-    @Override
-    public String toString() {
-        return jobStatus.toString();
-    }
+    BatchJobStatusType(boolean terminal) { this.terminal = terminal; }
 
 }
-

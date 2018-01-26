@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -66,6 +66,7 @@ import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJobStatus;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
@@ -75,8 +76,7 @@ import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
-import org.mitre.mpf.wfm.enums.BatchJobStatus;
-import org.mitre.mpf.wfm.enums.JobStatusI.JobStatus;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
@@ -134,18 +134,18 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			log.warn("[Job {}:*:*] An error prevents a job from completing successfully. Please review the logs for additional information.", jobId);
 		} else {
 			String statusString = exchange.getIn().getHeader(MpfHeaders.JOB_STATUS, String.class);
-			Mutable<JobStatus> jobStatus = new MutableObject<>(BatchJobStatus.parse(statusString, JobStatus.UNKNOWN));
+			Mutable<BatchJobStatusType> jobStatus = new MutableObject<>(BatchJobStatus.parse(statusString, BatchJobStatusType.UNKNOWN));
 
 			markJobStatus(jobId, jobStatus.getValue());
 
 			try {
-				markJobStatus(jobId, JobStatus.BUILDING_OUTPUT_OBJECT);
+				markJobStatus(jobId, BatchJobStatusType.BUILDING_OUTPUT_OBJECT);
 
 				// NOTE: jobStatus is mutable - it __may__ be modified in createOutputObject!
 				createOutputObject(jobId, jobStatus);
 			} catch (Exception exception) {
 				log.warn("Failed to create the output object for Job {} due to an exception.", jobId, exception);
-				jobStatus.setValue(JobStatus.ERROR);
+				jobStatus.setValue(BatchJobStatusType.ERROR);
 			}
 
 			markJobStatus(jobId, jobStatus.getValue());
@@ -195,7 +195,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		}
 	}
 
-	private void markJobStatus(long jobId, JobStatus jobStatus) {
+	private void markJobStatus(long jobId, BatchJobStatusType jobStatus) {
 		log.debug("Marking Job {} as '{}'.", jobId, jobStatus);
 
 		JobRequest jobRequest = jobRequestDao.findById(jobId);
@@ -206,12 +206,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		jobRequestDao.persist(jobRequest);
 	}
 
-	public void createOutputObject(long jobId, Mutable<JobStatus> jobStatus) throws WfmProcessingException {
+	public void createOutputObject(long jobId, Mutable<BatchJobStatusType> jobStatus) throws WfmProcessingException {
 		TransientJob transientJob = redis.getJob(jobId);
 		JobRequest jobRequest = jobRequestDao.findById(jobId);
 
 		if(transientJob.isCancelled()) {
-			jobStatus.setValue(JobStatus.CANCELLED);
+			jobStatus.setValue(BatchJobStatusType.CANCELLED);
 		}
 
 		JsonOutputObject jsonOutputObject = new JsonOutputObject(jobRequest.getId(),

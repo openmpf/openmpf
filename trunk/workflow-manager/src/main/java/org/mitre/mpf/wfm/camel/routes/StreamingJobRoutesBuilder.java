@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -31,8 +31,8 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
-import org.mitre.mpf.wfm.enums.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -57,7 +57,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 					Message msg = exchange.getIn();
 					_streamingJobRequestBo.handleJobStatusChange(
 							msg.getHeader("JOB_ID", long.class),
-							msg.getHeader("JOB_STATUS", StreamingJobStatus.class),
+							msg.getHeader("JOB_STATUS", StreamingJobStatusType.class),
 							msg.getHeader("STATUS_CHANGE_TIMESTAMP", long.class));
 				 });
 

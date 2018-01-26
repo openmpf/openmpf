@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,8 +26,7 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
-import org.mitre.mpf.wfm.enums.JobStatusI;
-import org.mitre.mpf.wfm.enums.StreamingJobStatus;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -69,42 +68,26 @@ public class StreamingJobRequest {
 	public int getPriority() { return  priority; }
 	public void setPriority(int priority) { this.priority = priority; }
 
-	/** The current status of this streaming job. */
-//	@Column
-//	@Enumerated(EnumType.STRING
-	@Embedded
-    @AttributeOverrides( {
-        @AttributeOverride(name="status", column = @Column(name="status") ),
-        @AttributeOverride(name="statusDetail", column = @Column(name="status_detail") )
-    })
-
-    private StreamingJobStatusData streamingJobStatusData;
-
-    public void setStatus( JobStatusI.JobStatus jobStatus) {
-        streamingJobStatusData = new StreamingJobStatusData();
-        streamingJobStatusData.setStatusString(jobStatus.toString());
-    }
-    public void setStatus( StreamingJobStatus streamingJobStatus) {
-        streamingJobStatusData = new StreamingJobStatusData();
-        streamingJobStatusData.setStatusString(streamingJobStatus.getJobStatus().toString());
-        streamingJobStatusData.setDetailString(streamingJobStatus.getDetail());
-    }
-    public StreamingJobStatus getStatus() {
-        return new StreamingJobStatus(streamingJobStatusData.getStatusString(), streamingJobStatusData.getDetailString());
+    /** The current status of this streaming job.
+     * Streaming job status includes condition status as defined by StreamingJobStatusType.
+     * StatusDetail may also provide more detailed information about the status of the job.
+     * Note that we keep the status enumeration and statusString as separate parameters for persisting in the
+     * database.
+     **/
+    @Column
+    @Enumerated(EnumType.STRING)
+    private StreamingJobStatusType status = null;
+    public StreamingJobStatusType getStatus() { return status; }
+    public void setStatus(StreamingJobStatusType status) { this.status = status; }
+    public void setStatus(StreamingJobStatusType status, String statusDetail) {
+        setStatus(status);
+        setStatusDetail(statusDetail);
     }
 
-	/*
-    @Transient
-    private StreamingJobStatus status = null;
-	public StreamingJobStatus getStatus() {
-	    if ( status == null ) {
-	        status = new StreamingJobStatus(streamingJobStatusData.getStatusString(), streamingJobStatusData.getDetailString());
-        }
-	    return status;
-	}
-    public void setStatus( JobStatus jobStatus) { this.status = new StreamingJobStatus(jobStatus); }
-    public void setStatus( StreamingJobStatus streamingJobStatus) { this.status = streamingJobStatus; }
-    */
+    @Column
+    private String statusDetail = null;
+    public String getStatusDetail() { return statusDetail; }
+    public void setStatusDetail(String statusDetail) { this.statusDetail = statusDetail; }
 
 	@Column
 	@Lob
@@ -148,16 +131,4 @@ public class StreamingJobRequest {
 	public void setOutputObjectVersion(String outputObjectVersion) { this.outputObjectVersion = outputObjectVersion; }
 
 	public String toString() { return String.format("%s#<id='%d'>", this.getClass().getSimpleName(), getId()); }
-}
-
-@Embeddable
-class StreamingJobStatusData {
-
-    private String statusString;
-    public void setStatusString(String statusString) { this.statusString = statusString; }
-    public String getStatusString() { return statusString; }
-
-    private String detailString;
-    public void setDetailString(String detailString) { this.detailString = detailString; }
-    public String getDetailString() { return detailString; }
 }

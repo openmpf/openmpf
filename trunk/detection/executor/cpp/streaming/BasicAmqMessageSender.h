@@ -30,6 +30,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 #include <cms/Connection.h>
 #include <cms/Session.h>
@@ -48,13 +49,15 @@ namespace MPF { namespace COMPONENT {
     public:
         explicit BasicAmqMessageSender(const JobSettings &job_settings);
 
-        void SendJobStatus(const std::string &job_status);
+        void SendJobStatus(const std::string &job_status, long timestamp);
 
-        void SendActivityAlert(int frame_number);
+        void SendActivityAlert(int frame_number, long timestamp);
 
         void SendSummaryReport(
                 int frame_number, const std::string &detection_type,
-                const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks, const std::string &error_message = {});
+                const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks,
+                const std::unordered_map<int, long> &frame_timestamps,
+                const std::string &error_message = {});
 
     private:
         const long job_id_;
@@ -72,8 +75,6 @@ namespace MPF { namespace COMPONENT {
 
         static std::unique_ptr<cms::MessageProducer>
         CreateProducer(const std::string &queue_name, cms::Session &session);
-
-        static long GetTimestampMillis();
     };
 }}
 

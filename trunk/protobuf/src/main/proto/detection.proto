@@ -238,21 +238,51 @@ message DetectionResponse {
 
 //// Used for streaming video job segment summary message
 
+message StreamingVideoDetection {
+    optional int32 frame_number = 1;
+    optional int64 time = 2;
+
+    optional int32 x_left_upper = 3;
+    optional int32 y_left_upper = 4;
+    optional int32 width = 5;
+    optional int32 height = 6;
+
+    optional float confidence = 7 [default = -1];
+
+    repeated PropertyMap detection_properties = 8;
+}
+
+
+message StreamingVideoTrack {
+    optional int32 start_frame = 1;
+    optional int64 start_time = 2;
+
+    optional int32 stop_frame = 3;
+    optional int64 stop_time = 4;
+
+    optional float confidence = 5 [default = -1];
+
+    repeated StreamingVideoDetection detections = 6;
+
+    repeated PropertyMap detection_properties = 7;
+}
+
+
 message StreamingDetectionResponse {
 
     optional string error = 1;
 
     optional int32 segment_number = 2;
 
-    optional int32 start_frame = 3; // Start frame relative to the
-                                    // beginning of stream processing:
-                                    // segment 0 will start with frame 0
+    optional int32 segment_start_frame = 3; // Start frame relative to the
+                                            // beginning of stream processing:
+                                            // segment 0 will start with frame 0
 
-    optional int32 stop_frame = 4;
+    optional int32 segment_stop_frame = 4;
 
     // If a message contains a VideoTrack, specify a detection type for it.
     optional string detection_type = 5;
-    repeated VideoTrack video_tracks = 6;
+    repeated StreamingVideoTrack video_tracks = 6;
 
     // Profiling metrics.
     optional MetricsMessage metrics = 400;

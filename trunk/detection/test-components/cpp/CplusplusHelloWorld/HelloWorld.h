@@ -40,9 +40,9 @@ class HelloWorld : public MPF::COMPONENT::MPFDetectionComponent {
 
 public:
 
-    bool Init();
+    bool Init() override;
 
-    bool Close();
+    bool Close() override;
 
     MPF::COMPONENT::MPFDetectionError GetDetections(
             const MPF::COMPONENT::MPFVideoJob &job,
@@ -60,14 +60,12 @@ public:
             const MPF::COMPONENT::MPFGenericJob &job,
             std::vector<MPF::COMPONENT::MPFGenericTrack> &tracks) override;
 
-    bool Supports(MPF::COMPONENT::MPFDetectionDataType data_type);
+    bool Supports(MPF::COMPONENT::MPFDetectionDataType data_type) override;
 
-    std::string GetDetectionType();
+    std::string GetDetectionType() override;
 
 private:
-
     log4cxx::LoggerPtr hw_logger_;
-
 };
 
 

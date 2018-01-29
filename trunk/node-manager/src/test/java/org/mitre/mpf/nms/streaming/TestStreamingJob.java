@@ -29,6 +29,7 @@ package org.mitre.mpf.nms.streaming;
 import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -253,7 +254,7 @@ public class TestStreamingJob {
 			}
 
 			public void causeException() {
-				future.completeExceptionally(new IllegalStateException("Intentional Error"));
+				future.completeExceptionally(new CompletionException(new IllegalStateException("Intentional Error")));
 			}
 		};
 	}

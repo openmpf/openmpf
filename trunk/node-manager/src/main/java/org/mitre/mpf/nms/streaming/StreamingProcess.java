@@ -40,8 +40,6 @@ public class StreamingProcess {
 
 	private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
 
-	private static final int STREAM_STALLED_EXIT_CODE = 76;
-
 	private final String _executable;
 
 	private final ProcessBuilder _processBuilder;
@@ -67,17 +65,26 @@ public class StreamingProcess {
 
 
 	private void restartUntilDone(Process originalProcess) {
-		if (awaitExit(originalProcess)) {
+		int exitCode = awaitExit(originalProcess);
+		if (exitCode == StreamingProcessExitReason.CANCELLED.exitCode) {
 			return;
 		}
 
 		for (int i = 0; i < _maxNumRestarts; i++) {
 			LOG.warn("Restarting the {} process. The process has been started {} times.", _executable, i + 1);
-			if (awaitExit(createProcess())) {
+			Process restartedProcess = createProcess();
+			if (restartedProcess == null) {
+				if (_syncOps.isStopRequested()) {
+					return;
+				}
+				throw new StreamingProcessExitException(exitCode);
+			}
+			exitCode = awaitExit(restartedProcess);
+			if (exitCode == StreamingProcessExitReason.CANCELLED.exitCode) {
 				return;
 			}
 		}
-		throw new IllegalStateException("Exceeded restart limit for: " + _executable);
+		throw new StreamingProcessExitException(exitCode);
 	}
 
 
@@ -97,18 +104,13 @@ public class StreamingProcess {
 	}
 
 
-	private boolean awaitExit(Process process) {
-		if (process == null) {
-			return _syncOps.isStopRequested();
-		}
-
+	private int awaitExit(Process process) {
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
 			reader.lines()
 					.forEach(line -> LOG.info("[{}]: {}", _executable, line));
 		}
 		catch (IOException e) {
-			LOG.error(String.format("Exception while running process: %s", _executable), e);
-			return false;
+			throw new UncheckedIOException(String.format("Exception while running process: %s", _executable), e);
 		}
 
 		try {
@@ -122,10 +124,11 @@ public class StreamingProcess {
 			_syncOps.onProcessExit();
 
 			LOG.info("Process: {} exited with exit code {}", _executable, exitCode);
-			if (exitCode == STREAM_STALLED_EXIT_CODE) {
-				throw new StreamStalledException();
+			if (exitCode == StreamingProcessExitReason.STREAM_STALLED.exitCode) {
+				// Throw exception to prevent restarting when process exits due to a stall.
+				throw new StreamingProcessExitException(StreamingProcessExitReason.STREAM_STALLED);
 			}
-			return exitCode == 0;
+			return exitCode;
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();

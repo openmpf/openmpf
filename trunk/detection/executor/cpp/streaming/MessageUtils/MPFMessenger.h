@@ -32,6 +32,7 @@
 
 #include "MPFMessage.h"
 
+//TODO: For future use.
 namespace MPF {
 
 enum MPFMessageError {

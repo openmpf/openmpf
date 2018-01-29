@@ -25,7 +25,33 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.nms.streaming;
+#ifndef MPF_JOBSETTINGS_H
+#define MPF_JOBSETTINGS_H
 
-public class StreamStalledException extends RuntimeException {
-}
+#include <map>
+#include <string>
+
+namespace MPF { namespace COMPONENT {
+
+    struct JobSettings {
+        const int job_id;
+        const std::string stream_uri;
+        const int segment_size;
+        const long stall_timeout;
+        const long stall_alert_threshold;
+        const std::string component_name;
+        const std::string component_lib_path;
+        const std::string message_broker_uri;
+        const std::string job_status_queue;
+        const std::string activity_alert_queue;
+        const std::string summary_report_queue;
+
+        const std::map<std::string, std::string> job_properties;
+        const std::map<std::string, std::string> media_properties;
+
+        static JobSettings FromIniFile(const std::string &ini_path);
+    };
+    
+}}
+
+#endif //MPF_JOBSETTINGS_H

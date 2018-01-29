@@ -74,11 +74,6 @@ public class StreamingJob {
 	private void onAllProcessesExit(Throwable error) {
 		LOG.info("Job {}: All processes have exited.", _jobId);
 		_jobIniFiles.deleteIniFiles();
-
-		if (error != null) {
-			LOG.error("Streaming Process error: ", error);
-			throw new IllegalStateException(error);
-		}
 	}
 
 

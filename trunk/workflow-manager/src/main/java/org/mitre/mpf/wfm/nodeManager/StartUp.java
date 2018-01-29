@@ -57,7 +57,7 @@ public class StartUp implements SmartLifecycle {
 
 	@Override
 	public void stop() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
+		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.stop").start();
 		nodeManagerStatus.stop();
 		split.stop();
 	}

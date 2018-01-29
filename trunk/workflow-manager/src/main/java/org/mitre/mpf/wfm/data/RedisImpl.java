@@ -26,19 +26,6 @@
 
 package org.mitre.mpf.wfm.data;
 
-import java.io.File;
-import java.time.DateTimeException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJobStatus;
@@ -62,6 +49,15 @@ import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import java.io.File;
+import java.time.DateTimeException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
+
 
 @Component(RedisImpl.REF)
 public class RedisImpl implements Redis {
@@ -135,6 +131,7 @@ public class RedisImpl implements Redis {
 	 * @param components The optional collection of additional components in the key.
 	 * @return A single string built from the concatenation of all of the specified parameters and joined by a delimiter.
 	 */
+	@Override
 	public String key(Object component, Object... components) {
         // Return a key of the format FOO, FOO:BAR, FOO:BAR:BUZZ, etc...
         return component + ( (components == null || components.length == 0) ? "" : ":" + StringUtils.join(components, ":") );
@@ -144,6 +141,7 @@ public class RedisImpl implements Redis {
 	// INTERFACE IMPLEMENTATION (See interface for documentation)
 	//
 
+	@Override
 	@SuppressWarnings("unchecked")
 	public synchronized boolean addDetectionProcessingError(DetectionProcessingError detectionProcessingError) throws WfmProcessingException {
         if ( detectionProcessingError == null ) {
@@ -177,6 +175,8 @@ public class RedisImpl implements Redis {
         }
 	}
 
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public boolean addTrack(Track track) throws WfmProcessingException{
         if ( track == null ) {
@@ -208,6 +208,7 @@ public class RedisImpl implements Redis {
 	 * @param jobId The OpenMPF-assigned ID of the batch or streaming job (must be unique)
 	 * @return
 	 */
+	@Override
 	@SuppressWarnings("unchecked")
 	public synchronized boolean cancel(long jobId) {
 		if ( isJobTypeBatch(jobId) ) {
@@ -237,6 +238,7 @@ public class RedisImpl implements Redis {
 	}
 
 	/** Removes everything in the Redis datastore. */
+	@Override
 	public void clear() {
 		redisTemplate.execute(new RedisCallback() {
 			@Override
@@ -252,6 +254,7 @@ public class RedisImpl implements Redis {
 	 * @param jobId The OpenMPF-assigned ID of the batch or streaming job to purge (must be unique)
 	 * @throws WfmProcessingException
 	 */
+    @Override
     @SuppressWarnings("unchecked")
 	public synchronized void clearJob(long jobId) throws WfmProcessingException {
 		if ( isJobTypeBatch(jobId) ) {
@@ -359,6 +362,7 @@ public class RedisImpl implements Redis {
 	 * @param jobId The OpenMPF-assigned ID of the batch job to look up, must be unique.
 	 * @return
 	 */
+	@Override
 	@SuppressWarnings("unchecked")
 	public int getCurrentTaskIndexForJob(long jobId)  {
 		if ( isJobTypeBatch(jobId) ) {
@@ -442,6 +446,7 @@ public class RedisImpl implements Redis {
 	 * @param jobId The OpenMPF-assigned ID of the batch or streaming job, must be unique.
 	 * @return Method will return a BatchJobStatus for a batch job, or a StreamingJobStatus for a streaming job.
 	 */
+	@Override
 	@SuppressWarnings("unchecked")
 	public JobStatus getJobStatus(long jobId)  {
 		if ( isJobTypeBatch(jobId) ) {
@@ -488,6 +493,7 @@ public class RedisImpl implements Redis {
      * @param jobIds List of jobIds
      * @return List of JobStatus for the specified jobs. The List may contain nulls for invalid jobIds.
      */
+    @Override
     @SuppressWarnings("unchecked")
     public List<JobStatus> getJobStatuses(List<Long> jobIds) {
         return jobIds.stream().map(jobId->getJobStatus(jobId.longValue())).collect(Collectors.toList());
@@ -498,6 +504,7 @@ public class RedisImpl implements Redis {
      * @param jobIds List of jobIds
      * @return List of JobStatusI as Strings for the specified jobs. The List may contain nulls for invalid jobIds.
      */
+    @Override
     @SuppressWarnings("unchecked")
     public List<String> getJobStatusesAsString(List<Long> jobIds) {
         return getJobStatuses(jobIds).stream().map(jobStatus-> {
@@ -517,6 +524,7 @@ public class RedisImpl implements Redis {
 	 * @param actionIndex The index of the action in the job's pipeline's task which generated these errors.
 	 * @return
 	 */
+	@Override
 	@SuppressWarnings("unchecked")
 	public synchronized SortedSet<DetectionProcessingError> getDetectionProcessingErrors(long jobId, long mediaId, int taskIndex, int actionIndex) {
 		if ( isJobTypeBatch(jobId) ) {
@@ -565,6 +573,7 @@ public class RedisImpl implements Redis {
 	 * @return
 	 * @throws WfmProcessingException
 	 */
+	@Override
 	@SuppressWarnings("unchecked")
 	public synchronized TransientJob getJob(long jobId, Long... mediaIds) throws WfmProcessingException {
 		if ( isJobTypeStreaming(jobId) ) {
@@ -624,6 +633,7 @@ public class RedisImpl implements Redis {
 	 * @return
 	 * @throws WfmProcessingException
 	 */
+	@Override
 	@SuppressWarnings("unchecked")
 	public synchronized TransientStreamingJob getStreamingJob(long jobId) throws WfmProcessingException {
 
@@ -669,6 +679,7 @@ public class RedisImpl implements Redis {
         }
     }
 
+    @Override
     @SuppressWarnings("unchecked")
 	public synchronized long getNextSequenceValue() {
 		Long id = (Long)(redisTemplate.boundValueOps(SEQUENCE).get());
@@ -685,6 +696,7 @@ public class RedisImpl implements Redis {
 	 * @return
 	 * @throws WfmProcessingException
 	 */
+	@Override
 	@SuppressWarnings("unchecked")
 	public int getTaskCountForJob(long jobId) throws WfmProcessingException {
 		if ( isJobTypeBatch(jobId) ) {
@@ -712,6 +724,7 @@ public class RedisImpl implements Redis {
 	 * @param actionIndex The index of the action in the job's pipeline's task which generated the tracks.
 	 * @return
 	 */
+    @Override
     @SuppressWarnings("unchecked")
 	public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) throws WfmProcessingException {
 		if ( isJobTypeStreaming(jobId) ) {
@@ -755,6 +768,7 @@ public class RedisImpl implements Redis {
 	 * @param transientJob The non-null instance to store.
 	 * @throws WfmProcessingException
 	 */
+	@Override
 	@SuppressWarnings("unchecked")
 	public synchronized void persistJob(TransientJob transientJob) throws WfmProcessingException {
 		// Redis cannot store complex objects, so it is necessary to store complex objects using
@@ -811,6 +825,7 @@ public class RedisImpl implements Redis {
 	 * @param transientMedia The non-null media instance to persist.
 	 * @throws WfmProcessingException
 	 */
+	@Override
 	@SuppressWarnings("unchecked")
 	public synchronized void persistMedia(long job, TransientMedia transientMedia) throws WfmProcessingException {
 		if ( transientMedia == null ) {
@@ -829,6 +844,7 @@ public class RedisImpl implements Redis {
 	 * @param transientStream The non-null stream instance to persist.
 	 * @throws WfmProcessingException
 	 */
+	@Override
 	@SuppressWarnings("unchecked")
 	public synchronized void persistStream(long job, TransientStream transientStream) throws WfmProcessingException {
 		if ( transientStream == null ) {
@@ -847,6 +863,7 @@ public class RedisImpl implements Redis {
 	 * @param transientStreamingJob The non-null instance to store.
 	 * @throws WfmProcessingException
 	 */
+	@Override
 	@SuppressWarnings("unchecked")
 	public synchronized void persistJob(TransientStreamingJob transientStreamingJob) throws WfmProcessingException {
 		// Redis cannot store complex objects, so it is necessary to store complex objects using
@@ -898,11 +915,12 @@ public class RedisImpl implements Redis {
      * empty if the jobIds List is empty.
      * @exception WfmProcessingException is thrown if one of the streaming jobs listed in jobIds isn't in REDIS (i.e. it is not an active job).
      */
-    public Map<String,List<Long>> getHealthReportCallbackURIAsMap(List<Long> jobIds) throws WfmProcessingException{
-        Map<String,List<Long>> healthReportCallbackJobIdListMap = new HashMap<>();
-        for ( final Long jobId : jobIds ) {
+    @Override
+    public Map<String,List<Long>> getHealthReportCallbackURIAsMap(List<Long> jobIds) throws WfmProcessingException {
+        Map<String, List<Long>> healthReportCallbackJobIdListMap = new HashMap<>();
+        for (long jobId : jobIds) {
             TransientStreamingJob transientJob = getStreamingJob(jobId);
-            if ( transientJob == null ) {
+            if (transientJob == null) {
                 // Throw an exception if any job that may be in the long term database, but isn't in REDIS (i.e. it is not an active job), is passed to this method.
                 throw new WfmProcessingException("Error: jobId " + " is not the id of an active Streaming job");
             } else {
@@ -921,9 +939,25 @@ public class RedisImpl implements Redis {
                     jobList.add(Long.valueOf(jobId));
                     healthReportCallbackJobIdListMap.put(healthReportCallbackURI, jobList);
                 }
+
             }
+	        String healthReportCallbackURI = transientJob.getHealthReportCallbackURI();
+            if (healthReportCallbackURI == null)  {
+            	continue;
+            }
+
+	        if (healthReportCallbackJobIdListMap.containsKey(healthReportCallbackURI)) {
+		        // some other streaming job has already registered this health report callback URI, add this job to the list
+		        List<Long> jobList = healthReportCallbackJobIdListMap.get(healthReportCallbackURI);
+		        jobList.add(jobId);
+	        } else {
+		        // This is the first streaming job to register this health report callback URI
+		        List<Long> jobList = new ArrayList<>();
+		        jobList.add(jobId);
+		        healthReportCallbackJobIdListMap.put(healthReportCallbackURI, jobList);
+	        }
         }
-        return healthReportCallbackJobIdListMap;
+	    return healthReportCallbackJobIdListMap;
     }
 
     /**
@@ -931,8 +965,9 @@ public class RedisImpl implements Redis {
 	 * @param jobId The OpenMPF-assigned ID of the batch job, must be unique.
 	 * @param taskIndex The index of the task which should be used as the "current" task.
 	 */
+    @Override
     @SuppressWarnings("unchecked")
-	public synchronized  void setCurrentTaskIndex(long jobId, int taskIndex) throws WfmProcessingException {
+	public synchronized void setCurrentTaskIndex(long jobId, int taskIndex) throws WfmProcessingException {
 		if ( isJobTypeBatch(jobId) ) {
 			redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(TASK, taskIndex);
 		} else if ( isJobTypeStreaming(jobId) ) {
@@ -952,6 +987,7 @@ public class RedisImpl implements Redis {
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job, or if the passed
      * lastActivityFrameId is null.
      */
+    @Override
     public synchronized void setHealthReportLastActivityFrameId(long jobId, String lastActivityFrameId ) throws WfmProcessingException {
         if ( isJobTypeStreaming(jobId) ) {
             if ( lastActivityFrameId != null ) {
@@ -976,6 +1012,7 @@ public class RedisImpl implements Redis {
      * Returned value may be null if a health report for this streaming job has not yet been sent or no activity has been detected yet for this streaming job.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job
      */
+    @Override
     public synchronized String getHealthReportLastActivityFrameIdAsString(long jobId) throws WfmProcessingException {
         if ( isJobTypeStreaming(jobId) ) {
             // confirmed that the specified job is a streaming job
@@ -993,6 +1030,7 @@ public class RedisImpl implements Redis {
      * @return List of last activity frame ids
      * @throws WfmProcessingException
      */
+    @Override
     public synchronized List<String> getHealthReportLastActivityFrameIdsAsStrings(List<Long> jobIds) throws WfmProcessingException {
         return jobIds.stream().map(jobId->getHealthReportLastActivityFrameIdAsString(jobId.longValue())).collect(Collectors.toList());
     }
@@ -1008,6 +1046,7 @@ public class RedisImpl implements Redis {
      * lastActivityTimestamp is null. DateTimeException will be thrown if the lastActivityTimestamp could not be stored
      * in REDIS because it could not be formatted as a String.
      */
+    @Override
     public synchronized void setHealthReportLastActivityTimestamp(long jobId, LocalDateTime lastActivityTimestamp) throws WfmProcessingException, DateTimeException {
         if ( isJobTypeStreaming(jobId) ) {
             if ( lastActivityTimestamp != null ) {
@@ -1036,6 +1075,7 @@ public class RedisImpl implements Redis {
      * Returned value may be null if no activity has been detected for this job yet.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job.
      */
+    @Override
     public synchronized String getHealthReportLastActivityTimestampAsString(long jobId) throws WfmProcessingException {
         if ( isJobTypeStreaming(jobId) ) {
             // Confirmed that the specified job is a streaming job.
@@ -1060,6 +1100,7 @@ public class RedisImpl implements Redis {
      * DateTimeException will be thrown if the last activity timestamp could not be pulled
      * from REDIS because it could not be parsed as a String.
      */
+    @Override
     public synchronized LocalDateTime getHealthReportLastActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException {
         String timestamp = getHealthReportLastActivityTimestampAsString(jobId);
         if ( timestamp != null ) {
@@ -1076,6 +1117,7 @@ public class RedisImpl implements Redis {
      * @throws WfmProcessingException
      * @throws DateTimeException
      */
+    @Override
     public synchronized List<LocalDateTime> getHealthReportLastActivityTimestamps(List<Long> jobIds) throws WfmProcessingException, DateTimeException {
         return jobIds.stream().map(jobId->getHealthReportLastActivityTimestamp(jobId.longValue())).collect(Collectors.toList());
     }
@@ -1085,6 +1127,7 @@ public class RedisImpl implements Redis {
      * @return List of last activity timestamps as Strings. The list may contain null if no activity has been detected for a job yet.
      * @throws WfmProcessingException
      */
+    @Override
     public synchronized List<String> getHealthReportLastActivityTimestampsAsStrings(List<Long> jobIds) throws WfmProcessingException {
         return jobIds.stream().map(jobId->getHealthReportLastActivityTimestampAsString(jobId.longValue())).collect(Collectors.toList());
     }
@@ -1100,6 +1143,7 @@ public class RedisImpl implements Redis {
 	 * @param actionIndex The index of the action in the job's pipeline's task which generated the tracks.
 	 * @param tracks The collection of tracks to associate with the (job, media, task, action) 4-ple.
 	 */
+    @Override
     @SuppressWarnings("unchecked")
 	public synchronized void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks) throws WfmProcessingException {
 		if ( isJobTypeStreaming(jobId) ) {
@@ -1225,6 +1269,7 @@ public class RedisImpl implements Redis {
 	 * @param jobId The OpenMPF-assigned ID of the job
 	 * @return true if the specified jobId is a batch job stored in the transient data store, false otherwise
 	 */
+	@Override
 	public boolean isJobTypeBatch(final long jobId) {
 		return(redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)));
 	}
@@ -1233,6 +1278,7 @@ public class RedisImpl implements Redis {
 	 * @param jobId The OpenMPF-assigned ID of the job
 	 * @return true if the specified jobId is a streaming job stored in the transient data store, false otherwise
 	 */
+	@Override
 	public boolean isJobTypeStreaming(final long jobId) {
 		return(redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)));
 	}
@@ -1247,6 +1293,7 @@ public class RedisImpl implements Redis {
      * @return subset of jobIds that are listed as streaming jobs in REDIS, optionally reduced by
      *  JobStatus. List may be empty if there are no streaming jobs in REDIS.
      */
+    @Override
     public List<Long> getCurrentStreamingJobs(List<Long> jobIds, boolean isActive ) {
 
         // While we are receiving the list of all job ids known to OpenMPF, some of these jobs may not be currently active in REDIS.

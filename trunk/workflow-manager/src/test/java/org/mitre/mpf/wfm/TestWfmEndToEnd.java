@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.net.URI;
@@ -73,10 +74,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
 public class TestWfmEndToEnd {
-	protected static final Logger log = LoggerFactory.getLogger(TestWfmEndToEnd.class);
-	protected static int testCtr = 0;
-	protected static Set<Long> completedJobs = new HashSet<>();
-	protected static Object lock = new Object();
 
 	@Autowired
 	private CamelContext camelContext;
@@ -103,14 +100,21 @@ public class TestWfmEndToEnd {
 	@Qualifier(JobCompleteProcessorImpl.REF)
 	private JobCompleteProcessor jobCompleteProcessor;
 
-	protected static boolean HAS_INITIALIZED = false;
-	protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 	protected static final int MINUTES = 1000 * 60; // 1000 milliseconds/second & 60 seconds/minute.
+
+	protected static final Logger log = LoggerFactory.getLogger(TestWfmEndToEnd.class);
+
+	protected static final ObjectMapper objectMapper = new ObjectMapper();
+
+	protected static boolean hasInitialized = false;
+	protected static int testCtr = 0;
+	protected static Set<Long> completedJobs = new HashSet<>();
+	protected static Object lock = new Object();
 
 	@PostConstruct
 	private void init() throws Exception {
 		synchronized (lock) {
-			if (!HAS_INITIALIZED) {
+			if (!hasInitialized) {
 				completedJobs = new HashSet<Long>();
 				jobCompleteProcessor.subscribe(new NotificationConsumer<JobCompleteNotification>() {
 					@Override
@@ -125,7 +129,7 @@ public class TestWfmEndToEnd {
 				});
 
 				log.info("Starting the tests from _setupContext");
-				HAS_INITIALIZED = true;
+				hasInitialized = true;
 			}
 		}
 	}
@@ -207,7 +211,7 @@ public class TestWfmEndToEnd {
 		Assert.assertTrue(jobRequest.getOutputObjectPath() != null);
 		Assert.assertTrue(new File(jobRequest.getOutputObjectPath()).exists());
 
-		JsonOutputObject jsonOutputObject = OBJECT_MAPPER.readValue(new File(jobRequest.getOutputObjectPath()), JsonOutputObject.class);
+		JsonOutputObject jsonOutputObject = objectMapper.readValue(new File(jobRequest.getOutputObjectPath()), JsonOutputObject.class);
 		Assert.assertEquals(jsonOutputObject.getJobId(), jobId);
 		String start = jsonOutputObject.getTimeStart(),
 				stop = jsonOutputObject.getTimeStop();
@@ -226,7 +230,7 @@ public class TestWfmEndToEnd {
 		Assert.assertTrue(jobRequest.getOutputObjectPath() != null);
 		Assert.assertTrue(new File(jobRequest.getOutputObjectPath()).exists());
 
-		jsonOutputObject = OBJECT_MAPPER.readValue(new File(jobRequest.getOutputObjectPath()), JsonOutputObject.class);
+		jsonOutputObject = objectMapper.readValue(new File(jobRequest.getOutputObjectPath()), JsonOutputObject.class);
 		Assert.assertEquals(jsonOutputObject.getJobId(), jobId);
 		Assert.assertNotEquals(jsonOutputObject.getTimeStart(), start);
 		Assert.assertNotEquals(jsonOutputObject.getTimeStop(), stop);

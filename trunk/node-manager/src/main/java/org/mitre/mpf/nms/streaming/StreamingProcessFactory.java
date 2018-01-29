@@ -26,20 +26,14 @@
 
 package org.mitre.mpf.nms.streaming;
 
+import org.mitre.mpf.nms.util.EnvironmentVariableExpander;
 import org.mitre.mpf.nms.NodeManagerProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
+import java.io.File;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-
-import static java.util.stream.Collectors.joining;
 
 @Component
 public class StreamingProcessFactory {
@@ -87,31 +81,16 @@ public class StreamingProcessFactory {
 //}
 
 
-	public StreamingProcess createComponentProcess(Path iniPath, Map<String, String> environmentVariables) {
-		String script = scriptToString();
-		// TODO: Remove python as first command line argument
-		List<String> cmdlineArgs = Arrays.asList("python", "-c", script, "Component", iniPath.toString());
-//			List<String> cmdlineArgs = Arrays.asList(executable, name, iniPath.toString());
+	public StreamingProcess createComponentProcess(String componentName, Path iniPath, Map<String, String> environmentVariables) {
+		String[] command = { _properties.getStreamingComponentExecutor(), iniPath.toAbsolutePath().toString()} ;
+		File workingDirectory = new File(_properties.getPluginDir(), componentName);
 
-
-		ProcessBuilder processBuilder = new ProcessBuilder(cmdlineArgs)
+		ProcessBuilder processBuilder = new ProcessBuilder(command)
+				.directory(workingDirectory)
 				.redirectErrorStream(true);
-		processBuilder.environment().putAll(environmentVariables);
+		processBuilder.environment().putAll(EnvironmentVariableExpander.expandValues(environmentVariables));
 
-		return new StreamingProcess("Component", processBuilder, _properties.getStreamingProcessMaxRestarts());
-	}
-
-	// Script is stored in NodeManager jar so the path to the script cannot be used by python.
-	private String scriptToString() {
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-					_properties.getStreamingComponentExecutor().getInputStream()))) {
-			return reader
-					.lines()
-					.collect(joining("\n"));
-		}
-		catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-
+		return new StreamingProcess("Component", processBuilder,
+		                            _properties.getStreamingProcessMaxRestarts());
 	}
 }

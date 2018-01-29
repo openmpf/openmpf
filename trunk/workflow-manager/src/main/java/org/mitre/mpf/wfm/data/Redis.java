@@ -26,14 +26,14 @@
 
 package org.mitre.mpf.wfm.data;
 
+import org.javasimon.aop.Monitored;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
-import org.javasimon.aop.Monitored;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
@@ -269,7 +269,7 @@ public interface Redis {
      * @param jobIds unique job ids of streaming jobs
      * @return Map of healthReportCallbackUri (keys), with each key mapping to the List of jobIds that specified that healthReportCallbackUri
      */
-    Map<String,List<Long>> getHealthReportCallbackURIAsMap(List<Long> jobIds);
+    Map<String, List<Long>> getHealthReportCallbackURIAsMap(List<Long> jobIds);
 
     /**
      * The method of the callback to connect to when the job is completed. POST or GET.

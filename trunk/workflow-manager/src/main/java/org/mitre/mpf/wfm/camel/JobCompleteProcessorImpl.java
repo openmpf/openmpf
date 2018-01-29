@@ -163,15 +163,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 				log.warn("Failed to clean up Job {} due to an exception. Data for this job will remain in the transient data store, but the status of the job has not been affected by this failure.", jobId, exception);
 			}
 
-			JobCompleteNotification jobCompleteNotification = new JobCompleteNotification(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class));
-
+			log.info("Notifying {} completion consumer(s).", consumers.size());
 			for (NotificationConsumer<JobCompleteNotification> consumer : consumers) {
-				if (!jobCompleteNotification.isConsumed()) {
-					try {
-						consumer.onNotification(this, new JobCompleteNotification(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class)));
-					} catch (Exception exception) {
-						log.warn("Completion consumer '{}' threw an exception.", consumer, exception);
-					}
+				try {
+					log.info("Notifying completion consumer {}.", consumer.getId());
+					consumer.onNotification(this, new JobCompleteNotification(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class)));
+				} catch (Exception exception) {
+					log.warn("Completion consumer {} threw an exception.", consumer.getId(), exception);
 				}
 			}
 
@@ -369,11 +367,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 	@Override
 	public void subscribe(NotificationConsumer<JobCompleteNotification> consumer) {
+		log.info("Subscribing completion consumer {}.", consumer.getId());
 		consumers.add(consumer);
 	}
 
 	@Override
 	public void unsubscribe(NotificationConsumer<JobCompleteNotification> consumer) {
+		log.info("Unsubscribing completion consumer {}.", consumer.getId());
 		consumers.remove(consumer);
 	}
 

@@ -24,25 +24,55 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.nms;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+#ifndef MPF_EXECUTORERRORS_H
+#define MPF_EXECUTORERRORS_H
 
-public class SleepUtil {
+#include <stdexcept>
 
-    private static final Logger log = LoggerFactory.getLogger(SleepUtil.class);
+namespace MPF { namespace COMPONENT {
 
-    private SleepUtil() {
-    }
+    enum class ExitCode {
+        // Standard exit codes
+        SUCCESS = 0,
+        UNEXPECTED_ERROR = 1,
+        INVALID_COMMAND_LINE_ARGUMENTS = 2,
 
-    public static void interruptableSleep(int millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            log.warn("Node Manager received an interrupt");
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException(e);
-        }
-    }
-}
+        // Custom exit codes
+        // http://tldp.org/LDP/abs/html/exitcodes.html recommends using exit codes between range 64 - 113
+        INVALID_INI_FILE = 65,
+        UNABLE_TO_READ_FROM_STANDARD_IN = 66,
+        MESSAGE_BROKER_ERROR = 69,
+        INTERNAL_COMPONENT_ERROR = 70,
+        COMPONENT_LOAD_ERROR = 71,
+
+        UNABLE_TO_CONNECT_TO_STREAM = 75,
+        STREAM_STALLED = 76,
+    };
+
+
+
+    class FatalError : public std::runtime_error {
+    public:
+        FatalError(ExitCode exit_code, const std::string &cause);
+
+        ExitCode GetExitCode() const;
+
+    private:
+        const ExitCode exit_code_;
+    };
+
+
+
+    class InternalComponentError : public FatalError {
+    public:
+        InternalComponentError(const std::string &method_name, const std::string &cause);
+
+        explicit InternalComponentError(const std::string &method_name);
+    };
+}}
+
+
+
+
+#endif //MPF_EXECUTORERRORS_H

@@ -94,7 +94,7 @@ public class TestStreamingProcess {
 
 
 	@Test
-	public void throwsStallException() throws InterruptedException, TimeoutException {
+	public void throwsExitException() throws Throwable {
 		// 76 is exit code for terminated due to stall.
 		ProcessBuilder builder = new ProcessBuilder("python", "-c", "import sys; sys.exit(76)");
 		StreamingProcess process = new StreamingProcess("StallTest", builder, 3);
@@ -105,7 +105,9 @@ public class TestStreamingProcess {
 			fail("Expected ExecutionException");
 		}
 		catch (ExecutionException e) {
-			assertTrue(e.getCause() instanceof StreamStalledException);
+			assertTrue(e.getCause() instanceof StreamingProcessExitException);
+			StreamingProcessExitException exitException = (StreamingProcessExitException) e.getCause();
+			assertEquals(StreamingProcessExitReason.STREAM_STALLED, exitException.getExitReason());
 		}
 	}
 

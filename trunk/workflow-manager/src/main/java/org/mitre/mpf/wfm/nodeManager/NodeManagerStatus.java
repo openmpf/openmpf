@@ -304,19 +304,16 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 	@Override
 	public void streamingJobExited(StreamingJobExitedMessage message) {
 		StreamingJobStatus status;
+		log.info("Streaming job {} exited due to {}.", message.jobId, message.reason);
 		switch (message.reason) {
 			case CANCELLED:
 				status = new StreamingJobStatus(StreamingJobStatusType.CANCELLED, message.reason.toString());
-				break;
-			case ERROR:
-				status = new StreamingJobStatus(StreamingJobStatusType.ERROR, message.reason.toString());
 				break;
 			case STREAM_STALLED:
 				status = new StreamingJobStatus(StreamingJobStatusType.STREAMING_JOB_TERMINATED, message.reason.toString());
 				break;
 			default:
-				throw new IllegalStateException(String.format(
-						"Job %s exited with unexpected exit reason: %s.", message.jobId, message.reason));
+				status = new StreamingJobStatus(StreamingJobStatusType.ERROR, message.reason.toString());
 		}
 		streamingJobRequestBo.jobCompleted(message.jobId, status);
 	}

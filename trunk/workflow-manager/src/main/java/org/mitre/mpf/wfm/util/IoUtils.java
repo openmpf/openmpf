@@ -55,10 +55,6 @@ public class IoUtils {
     // See: {@link http://grokbase.com/t/tika/user/114qab9908/is-the-method-detect-of-instance-org-apache-tika-tika-thread-safe}
     private final Tika tikaInstance = new Tika();
 
-    private Tika getTikaInstance() {
-        return tikaInstance;
-    }
-
     /**
      * Gets the MIME type associated with the file located at {@code url}. This method never returns null.
      * @param url The location of the file to analyze. Must not be null.

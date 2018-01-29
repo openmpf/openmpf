@@ -27,16 +27,18 @@
 package org.mitre.mpf.wfm.businessrules;
 
 
-import java.util.List;
-import java.util.Map;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
+import org.mitre.mpf.wfm.data.entities.transients.SegmentSummaryReport;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
+
+import java.util.List;
+import java.util.Map;
 
 public interface StreamingJobRequestBo {
 
@@ -97,6 +99,6 @@ public interface StreamingJobRequestBo {
 
 	void handleNewActivityAlert(long jobId, long frameId, long timestamp);
 
-	void handleNewSummaryReport(long jobId, Object summaryReport);
+	void handleNewSummaryReport(SegmentSummaryReport summaryReport);
 }
 

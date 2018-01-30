@@ -100,8 +100,8 @@ public class HealthReportCallbackThread implements Runnable {
         log.info("HealthReportCallbackThread.sendHealthReportToCallback: posting health report containing jobIds=" + jobIds);
         List<String> externalIds = redis.getExternalIds(jobIds);
         List<String> jobStatuses = redis.getJobStatusesAsString(jobIds);
-        List<String> lastActivityFrameIds = redis.getHealthReportLastActivityFrameIdsAsStrings(jobIds);
-        List<String> lastActivityTimestamps = redis.getHealthReportLastActivityTimestampsAsStrings(jobIds);
+        List<String> activityFrameIds = redis.getHealthReportActivityFrameIdsAsStrings(jobIds);
+        List<String> activityTimestamps = redis.getHealthReportActivityTimestampsAsStrings(jobIds);
 
         // Send the health report to the callback using POST.
         HttpPost post = new HttpPost(callbackUri);
@@ -109,7 +109,7 @@ public class HealthReportCallbackThread implements Runnable {
         try {
             JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(currentDateTime,
                 jobIds, externalIds, jobStatuses,
-                lastActivityFrameIds, lastActivityTimestamps);
+                activityFrameIds, activityTimestamps);
             log.info("HealthReportCallback, sending POST of healthReport, jsonBody= " + jsonBody);
             post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
 

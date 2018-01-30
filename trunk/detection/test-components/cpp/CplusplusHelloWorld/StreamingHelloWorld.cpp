@@ -61,18 +61,18 @@ bool StreamingHelloWorld::ProcessFrame(const cv::Mat &frame, int frame_number) {
     LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Found activity in frame " << frame_number);
     MPFImageLocation detection(0, 0, frame.cols, frame.rows, 0.75, { {{"propName1", "propVal1"}} });
 
-    bool add_to_exiting_track = frame_number % 6 == 0 && !segment_detections_.empty();
-    if (add_to_exiting_track) {
+    bool add_to_existing_track = frame_number % 6 == 0 && !segment_detections_.empty();
+    if (add_to_existing_track) {
         MPFVideoTrack &track = segment_detections_.back();
         track.frame_locations.emplace(frame_number, std::move(detection));
         track.stop_frame = frame_number;
+        return false;
     }
-    else {
-        MPFVideoTrack track(frame_number, frame_number, detection.confidence);
-        track.frame_locations.emplace(frame_number, std::move(detection));
-        segment_detections_.push_back(std::move(track));
-    }
-    return true;
+
+    MPFVideoTrack track(frame_number, frame_number, detection.confidence);
+    track.frame_locations.emplace(frame_number, std::move(detection));
+    segment_detections_.push_back(std::move(track));
+    return segment_detections_.size() == 1;
 }
 
 

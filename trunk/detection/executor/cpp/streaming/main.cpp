@@ -152,7 +152,7 @@ private:
                     detection_type);
         }
         catch (const FatalError &ex) {
-            sender.SendSummaryReport(0, detection_type, {}, { {0, GetTimestampMillis()} }, ex.what());
+            sender.SendSummaryReport(0, detection_type, {}, {}, ex.what());
             throw;
         }
     }
@@ -161,7 +161,8 @@ private:
 
     void Run() {
         int frame_number = -1;
-        std::unordered_map<int, long> frame_timestamps { {frame_number, GetTimestampMillis()} };
+        std::unordered_map<int, long> frame_timestamps;
+        VideoSegmentInfo segment_info(0, 0, settings_.segment_size - 1, 0, 0);
 
         try {
             LOG4CXX_INFO(logger_, log_prefix_ << "Connecting to stream at: " << settings_.stream_uri)
@@ -187,9 +188,8 @@ private:
                 if (IsBeginningOfSegment(frame_number)) {
                     int segment_number = frame_number / settings_.segment_size;
                     int segment_end = frame_number + settings_.segment_size - 1;
-                    cv::Size frame_size = frame.size();
-                    component_.BeginSegment({ segment_number, frame_number, segment_end,
-                                                   frame_size.width, frame_size.height });
+                    segment_info = VideoSegmentInfo(segment_number, frame_number, segment_end, frame.cols, frame.rows);
+                    component_.BeginSegment(segment_info);
                     segment_activity_alert_sent = false;
                 }
 
@@ -200,19 +200,19 @@ private:
                     segment_activity_alert_sent = true;
                 }
 
-                if (IsEndOfSegment(frame_number)) {
+                if (frame_number == segment_info.end_frame) {
                     std::vector<MPFVideoTrack> tracks = component_.EndSegment();
-                    FixTracks(frame_number, tracks);
+                    FixTracks(segment_info, tracks);
                     LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending segment summary for " << tracks.size() << " tracks.")
                     sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps);
                     frame_timestamps.clear();
                 }
             }
-            if (!IsEndOfSegment(frame_number)) {
+            if (frame_number != segment_info.end_frame) {
                 // send the summary report if we've started, but have not completed, the next segment
                 std::vector<MPFVideoTrack> tracks = component_.EndSegment();
                 LOG4CXX_INFO(logger_, log_prefix_ << "Send segment summary for final segment.")
-                FixTracks(frame_number, tracks);
+                FixTracks(segment_info, tracks);
                 sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps);
             }
         }
@@ -220,7 +220,7 @@ private:
             // Send error report before actually handling exception.
             frame_timestamps.emplace(frame_number, GetTimestampMillis()); // Only inserts if key not already present.
             std::vector<MPFVideoTrack> tracks = TryGetRemainingTracks();
-            FixTracks(frame_number, tracks);
+            FixTracks(segment_info, tracks);
             sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps, ex.what());
             throw;
         }
@@ -228,10 +228,6 @@ private:
 
     bool IsBeginningOfSegment(int frame_number) {
         return frame_number % settings_.segment_size == 0;
-    }
-
-    bool IsEndOfSegment(int frame_number) {
-        return IsBeginningOfSegment(frame_number + 1);
     }
 
 
@@ -246,11 +242,7 @@ private:
 
 
 
-    void FixTracks(int frame_number, std::vector<MPFVideoTrack> &tracks) {
-        int segment_number = frame_number / settings_.segment_size;
-        int segment_begin = segment_number * settings_.segment_size;
-        int segment_end = segment_begin + settings_.segment_size - 1;
-
+    void FixTracks(const VideoSegmentInfo &segment, std::vector<MPFVideoTrack> &tracks) {
         for (auto &track : tracks) {
             auto &frame_locations = track.frame_locations;
             if (frame_locations.empty()) {
@@ -259,7 +251,7 @@ private:
 
             int first_detection = frame_locations.begin()->first;
             int last_detection = frame_locations.rbegin()->first;
-            if (first_detection >= segment_begin && last_detection <= segment_end) {
+            if (first_detection >= segment.start_frame && last_detection <= segment.end_frame) {
                 if (track.start_frame != first_detection || track.stop_frame != last_detection) {
                     LOG4CXX_WARN(logger_, log_prefix_
                             << "Found video track that starts at " << track.start_frame << " and ends at "
@@ -275,13 +267,13 @@ private:
 
             LOG4CXX_WARN(logger_, log_prefix_
                     << "Found track containing detections outside of current segment while processing segment "
-                    << segment_number << ". All detections before frame "
-                    << segment_begin << " and after " << segment_end << " will be dropped.");
+                    << segment.segment_number << ". All detections before frame "
+                    << segment.start_frame << " and after " << segment.end_frame << " will be dropped.");
 
-            auto lower = frame_locations.lower_bound(segment_begin);
+            auto lower = frame_locations.lower_bound(segment.start_frame);
             frame_locations.erase(frame_locations.begin(), lower);
 
-            auto upper = frame_locations.upper_bound(segment_end);
+            auto upper = frame_locations.upper_bound(segment.end_frame);
             frame_locations.erase(upper, frame_locations.end());
 
             if (!frame_locations.empty()) {
@@ -298,7 +290,7 @@ private:
         if (num_removed > 0) {
             LOG4CXX_WARN(logger_, log_prefix_
                     << "Found " << num_removed << " tracks with no detections while processing segment "
-                    << segment_number << ". Dropping " << num_removed << " empty tracks.");
+                    << segment.segment_number << ". Dropping " << num_removed << " empty tracks.");
             tracks.erase(new_end, tracks.end());
         }
     }

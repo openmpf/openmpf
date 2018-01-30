@@ -127,6 +127,7 @@ def truncate_tables(sql_host, sql_user, sql_password):
     with mpf_util.sql_connection(sql_host, sql_user, sql_password) as conn:
         conn.execute('DELETE FROM job_request')
         conn.execute('DELETE FROM markup_result')
+        conn.execute('DELETE FROM streaming_job_request')
 
 
 ALWAYS_DELETE_FOLDERS = ('artifacts', 'markup', 'output-objects')

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -172,6 +172,7 @@ private:
             StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
 
             bool segment_activity_alert_sent = false;
+            int segment_end = -1;
 
             while (!std_in_watcher->QuitReceived()) {
                 cv::Mat frame;
@@ -181,9 +182,9 @@ private:
                 }
                 frame_number++;
 
-                if (frame_number % settings_.segment_size == 0) {
+                if (segment_end == -1) {
                     int segment_number = frame_number / settings_.segment_size;
-                    int segment_end = frame_number + settings_.segment_size;
+                    segment_end = frame_number + settings_.segment_size - 1;
                     cv::Size frame_size = frame.size();
                     component_.BeginSegment({ segment_number, frame_number, segment_end,
                                                    frame_size.width, frame_size.height });
@@ -197,13 +198,15 @@ private:
                     segment_activity_alert_sent = true;
                 }
 
-                if (frame_number != 0 && (frame_number % settings_.segment_size == 0)) {
+                if (frame_number == segment_end) {
                     const std::vector<MPFVideoTrack> &tracks = component_.EndSegment();
                     LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending segment summary for " << tracks.size() << " tracks.")
                     sender_.SendSummaryReport(frame_number, detection_type_, tracks);
+                    segment_end = -1;
                 }
             }
-            if (frame_number % settings_.segment_size != 0) {
+            if ( (segment_end != -1) && (frame_number != segment_end) ) {
+                // send the summary report if we've started, but have not completed, the next segment
                 const std::vector<MPFVideoTrack> &tracks = component_.EndSegment();
                 LOG4CXX_INFO(logger_, log_prefix_ << "Send segment summary for final segment.")
                 sender_.SendSummaryReport(frame_number, detection_type_, tracks);

@@ -127,12 +127,7 @@ public class MpfServiceImpl implements MpfService {
 	 */
 	@Override
 	public long submitJob(JsonJobRequest jobRequest) {
-		try {
-			return jobRequestBo.run(jobRequest).getId();
-		} catch ( WfmProcessingException wpe ) {
-			log.error("Failed to submit job with external id '{}' due to an exception.", jobRequest.getExternalId(), wpe);
-			return -1;
-		}
+		return jobRequestBo.run(jobRequest).getId();
 	}
 
 	/**
@@ -144,12 +139,7 @@ public class MpfServiceImpl implements MpfService {
 	 */
 	@Override
 	public long submitJob(JsonStreamingJobRequest streamingJobRequest) {
-		try {
-			return streamingJobRequestBo.run(streamingJobRequest).getId();
-		} catch ( WfmProcessingException wpe ) {
-			log.error("Failed to submit streaming job with external id '{}' due to an exception.", streamingJobRequest.getExternalId(), wpe);
-			return -1;
-		}
+		return streamingJobRequestBo.run(streamingJobRequest).getId();
 	}
 
 	/**

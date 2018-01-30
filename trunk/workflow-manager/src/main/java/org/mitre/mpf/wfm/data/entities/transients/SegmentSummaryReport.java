@@ -27,11 +27,7 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SegmentSummaryReport {
 
@@ -57,7 +53,7 @@ public class SegmentSummaryReport {
 		_segmentStartFrame = segmentStartFrame;
 		_segmentStopFrame = segmentStopFrame;
 		_detectionType = detectionType;
-		_tracks = ImmutableList.copyOf(tracks);
+		_tracks = new ArrayList<>(tracks);
 		_errorMessage = errorMessage;
 	}
 
@@ -83,7 +79,7 @@ public class SegmentSummaryReport {
 	}
 
 	public List<Track> getTracks() {
-		return _tracks;
+		return Collections.unmodifiableList(_tracks);
 	}
 
 	public String getErrorMessage() {
@@ -95,23 +91,64 @@ public class SegmentSummaryReport {
 
 		private final long _startFrame;
 
+		private final long _startTime;
+
 		private final long _stopFrame;
 
-		private final Map<Long, ImageLocation> _frameLocations;
+		private final long _stopTime;
+
+		private final double _confidence;
+
+		private final List<VideoDetection> _detections;
 
 		private final Map<String, String> _detectionProperties;
 
-		public Track(long startFrame, long stopFrame, Map<Long, ImageLocation> frameLocations,
-		             Map<String, String> detectionProperties) {
+		public Track(long startFrame, long startTime, long stopFrame, long stopTime, double confidence,
+		             List<VideoDetection> detections, Map<String, String> detectionProperties) {
 			_startFrame = startFrame;
+			_startTime = startTime;
 			_stopFrame = stopFrame;
-			_frameLocations = ImmutableMap.copyOf(frameLocations);
-			_detectionProperties = ImmutableMap.copyOf(detectionProperties);
+			_stopTime = stopTime;
+			_confidence = confidence;
+			_detections = new ArrayList<>(detections);
+			_detectionProperties = new HashMap<>(detectionProperties);
+		}
+
+		public long getStartFrame() {
+			return _startFrame;
+		}
+
+		public long getStartTime() {
+			return _startTime;
+		}
+
+		public long getStopFrame() {
+			return _stopFrame;
+		}
+
+		public long getStopTime() {
+			return _stopTime;
+		}
+
+		public double getConfidence() {
+			return _confidence;
+		}
+
+		public List<VideoDetection> getDetections() {
+			return Collections.unmodifiableList(_detections);
+		}
+
+		public Map<String, String> getDetectionProperties() {
+			return Collections.unmodifiableMap(_detectionProperties);
 		}
 	}
 
 
-	public static class ImageLocation {
+	public static class VideoDetection {
+
+		private final long _frameNumber;
+
+		private final long _time;
 
 		private final int _xLeftUpper;
 
@@ -125,14 +162,25 @@ public class SegmentSummaryReport {
 
 		private final Map<String, String> _detectionProperties;
 
-		public ImageLocation(int xLeftUpper, int yLeftUpper, int width, int height, double confidence,
-		                     Map<String, String> detectionProperties) {
+
+		public VideoDetection(long frameNumber, long time, int xLeftUpper, int yLeftUpper, int width, int height,
+		                      double confidence, Map<String, String> detectionProperties) {
+			_frameNumber = frameNumber;
+			_time = time;
 			_xLeftUpper = xLeftUpper;
 			_yLeftUpper = yLeftUpper;
 			_width = width;
 			_height = height;
 			_confidence = confidence;
-			_detectionProperties = ImmutableMap.copyOf(detectionProperties);
+			_detectionProperties = new HashMap<>(detectionProperties);
+		}
+
+		public long getFrameNumber() {
+			return _frameNumber;
+		}
+
+		public long getTime() {
+			return _time;
 		}
 
 		public int getxLeftUpper() {
@@ -156,7 +204,7 @@ public class SegmentSummaryReport {
 		}
 
 		public Map<String, String> getDetectionProperties() {
-			return _detectionProperties;
+			return Collections.unmodifiableMap(_detectionProperties);
 		}
 	}
 }

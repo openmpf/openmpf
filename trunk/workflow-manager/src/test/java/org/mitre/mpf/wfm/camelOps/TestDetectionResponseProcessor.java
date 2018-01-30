@@ -26,21 +26,28 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
+import java.util.HashMap;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.camel.ResponseProcessor;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJobStatus;
+import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -53,10 +60,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -161,7 +164,7 @@ public class TestDetectionResponseProcessor {
         redis.persistJob(detectionJob);
 
         detectionResponseProcessor.wfmProcess(exchange);
-        Assert.assertEquals(BatchJobStatusType.IN_PROGRESS_ERRORS,redis.getJobStatus(jobId));
+        Assert.assertEquals(BatchJobStatusType.IN_PROGRESS_ERRORS,((BatchJobStatus)redis.getJobStatus(jobId)).getJobStatus());
 
     }
 }

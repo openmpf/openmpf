@@ -574,6 +574,18 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     /**
      * Complete a streaming job by updating the job in the persistent database(s), make any final callbacks for the job.
+     * Use this version of the method when detail info is not required to accompany streaming job status.
+     *
+     * @param jobId unique id for a streaming job
+     * @throws WfmProcessingException
+     */
+    @Override
+    public synchronized void jobCompleted(long jobId, StreamingJobStatusType jobStatusType) throws WfmProcessingException {
+        jobCompleted(jobId, new StreamingJobStatus(jobStatusType));
+    }
+
+    /**
+     * Complete a streaming job by updating the job in the persistent database(s), make any final callbacks for the job.
      *
      * @param jobId unique id for a streaming job
      * @throws WfmProcessingException

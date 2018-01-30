@@ -94,6 +94,7 @@ public interface StreamingJobRequestBo {
 	void sendHealthReports(List<Long> jobIds, boolean isActive) throws WfmProcessingException;
 
 	void jobCompleted(long jobId, StreamingJobStatus jobStatus);
+	void jobCompleted(long jobId, StreamingJobStatusType jobStatusType);
 
 	void handleJobStatusChange(long jobId, StreamingJobStatusType status, long timestamp);
 

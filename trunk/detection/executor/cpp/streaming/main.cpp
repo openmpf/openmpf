@@ -46,6 +46,7 @@
 #include "JobSettings.h"
 #include "BasicAmqMessageSender.h"
 #include "ExecutorErrors.h"
+#include "ExecutorUtils.h"
 
 
 using namespace MPF;
@@ -202,7 +203,7 @@ private:
 
                 if (frame_number == segment_info.end_frame) {
                     std::vector<MPFVideoTrack> tracks = component_.EndSegment();
-                    FixTracks(segment_info, tracks);
+                    ExecutorUtils::FixTracks(logger_, segment_info, tracks);
                     LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending segment summary for " << tracks.size() << " tracks.")
                     sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps);
                     frame_timestamps.clear();
@@ -212,7 +213,7 @@ private:
                 // send the summary report if we've started, but have not completed, the next segment
                 std::vector<MPFVideoTrack> tracks = component_.EndSegment();
                 LOG4CXX_INFO(logger_, log_prefix_ << "Send segment summary for final segment.")
-                FixTracks(segment_info, tracks);
+                ExecutorUtils::FixTracks(logger_, segment_info, tracks);
                 sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps);
             }
         }
@@ -220,7 +221,7 @@ private:
             // Send error report before actually handling exception.
             frame_timestamps.emplace(frame_number, GetTimestampMillis()); // Only inserts if key not already present.
             std::vector<MPFVideoTrack> tracks = TryGetRemainingTracks();
-            FixTracks(segment_info, tracks);
+            ExecutorUtils::FixTracks(logger_, segment_info, tracks);
             sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps, ex.what());
             throw;
         }
@@ -241,67 +242,11 @@ private:
     }
 
 
-
-    void FixTracks(const VideoSegmentInfo &segment, std::vector<MPFVideoTrack> &tracks) {
-        for (auto &track : tracks) {
-            auto &frame_locations = track.frame_locations;
-            if (frame_locations.empty()) {
-                continue;
-            }
-
-            int first_detection = frame_locations.begin()->first;
-            int last_detection = frame_locations.rbegin()->first;
-            if (first_detection >= segment.start_frame && last_detection <= segment.end_frame) {
-                if (track.start_frame != first_detection || track.stop_frame != last_detection) {
-                    LOG4CXX_WARN(logger_, log_prefix_
-                            << "Found video track that starts at " << track.start_frame << " and ends at "
-                            << track.stop_frame << ", but its first detection is at frame " << first_detection
-                            << " and its last detection is at frame " << last_detection
-                            << ". Setting track start frame to " << first_detection << " and stop frame to "
-                            << last_detection << ".");
-                    track.start_frame = first_detection;
-                    track.stop_frame = last_detection;
-                }
-                continue;
-            }
-
-            LOG4CXX_WARN(logger_, log_prefix_
-                    << "Found track containing detections outside of current segment while processing segment "
-                    << segment.segment_number << ". All detections before frame "
-                    << segment.start_frame << " and after " << segment.end_frame << " will be dropped.");
-
-            auto lower = frame_locations.lower_bound(segment.start_frame);
-            frame_locations.erase(frame_locations.begin(), lower);
-
-            auto upper = frame_locations.upper_bound(segment.end_frame);
-            frame_locations.erase(upper, frame_locations.end());
-
-            if (!frame_locations.empty()) {
-                track.start_frame = frame_locations.begin()->first;
-                track.stop_frame = frame_locations.rbegin()->first;
-            }
-        }
-
-        // Shifts items toward front of container, but doesn't resize
-        auto new_end = std::remove_if(tracks.begin(), tracks.end(), [](const MPFVideoTrack &track) {
-            return track.frame_locations.empty();
-        });
-        long num_removed = tracks.end() - new_end;
-        if (num_removed > 0) {
-            LOG4CXX_WARN(logger_, log_prefix_
-                    << "Found " << num_removed << " tracks with no detections while processing segment "
-                    << segment.segment_number << ". Dropping " << num_removed << " empty tracks.");
-            tracks.erase(new_end, tracks.end());
-        }
-    }
-
-
     static long GetTimestampMillis() {
         using namespace std::chrono;
         auto time_since_epoch = system_clock::now().time_since_epoch();
         return duration_cast<milliseconds>(time_since_epoch).count();
     }
-
 
 
     static std::string GetAppDir() {

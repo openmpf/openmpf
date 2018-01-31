@@ -100,4 +100,21 @@ public class StreamingJobStatus extends JobStatus {
         setStatusDetail(statusDetail);
     }
 
+    // Overriding equals method so Mocking in TestStreamingJobStartStop will work. Note that value of status
+    // detail is intentionally not a factor when determining equality.
+    @Override
+    public boolean equals(Object otherStreamingJobStatus) {
+        if ( otherStreamingJobStatus instanceof StreamingJobStatus ) {
+            return this.jobStatus == ((StreamingJobStatus) otherStreamingJobStatus).jobStatus;
+        } else {
+            return false;
+        }
+    }
+
+    // Overriding hashCode due to override of equals method. Note that value of status
+    // detail is intentionally not a factor when determining hashCode.
+    @Override
+    public int hashCode() {
+        return System.identityHashCode(this.jobStatus);
+    }
 }

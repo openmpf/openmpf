@@ -51,7 +51,6 @@ public class HibernateStreamingJobRequestDaoImpl extends AbstractHibernateDao<St
 		query.setParameter("status", StreamingJobStatusType.CANCELLED_BY_SHUTDOWN);
 		query.setParameter("statusDetail", "shutdown: cancelling jobs in non-terminal state");
 		query.setParameterList("nonTerminalStatuses", StreamingJobStatus.getNonTerminalStatuses());
-		// TODO this isn't working when using StreamingJobRequests that contain embedded StreamingJobStatus
 		int updatedRows = query.executeUpdate();
 		if ( updatedRows >= 0 ) {
 			log.warn("{} streaming jobs were in a non-terminal state and have been marked as {}", updatedRows, StreamingJobStatusType.CANCELLED_BY_SHUTDOWN);

@@ -96,7 +96,7 @@ public interface StreamingJobRequestBo {
 	void jobCompleted(long jobId, StreamingJobStatus jobStatus);
 	void jobCompleted(long jobId, StreamingJobStatusType jobStatusType);
 
-	void handleJobStatusChange(long jobId, StreamingJobStatusType status, long timestamp);
+	void handleJobStatusChange(long jobId, StreamingJobStatus status, long timestamp);
 
 	void handleNewActivityAlert(long jobId, long frameId, long timestamp);
 

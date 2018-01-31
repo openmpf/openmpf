@@ -36,7 +36,6 @@ import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJobStatus;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.IoUtils;
@@ -73,7 +72,7 @@ public class TestJobStatusCalculator extends TestCase {
         TransientJob job = TestUtil.setupJob(jobId, redis, ioUtils);
         exchange.getIn().setBody(jsonUtils.serialize(job));
         redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
-        Assert.assertEquals(BatchJobStatusType.IN_PROGRESS,((BatchJobStatus)redis.getJobStatus(jobId)).getJobStatus());
+        Assert.assertEquals(BatchJobStatusType.IN_PROGRESS,redis.getBatchJobStatus(jobId));
         Assert.assertEquals(BatchJobStatusType.COMPLETE, jobStatusCalculator.calculateStatus(exchange));
     }
 

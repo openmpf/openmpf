@@ -66,7 +66,6 @@ import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJobStatus;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
@@ -134,7 +133,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			log.warn("[Job {}:*:*] An error prevents a job from completing successfully. Please review the logs for additional information.", jobId);
 		} else {
 			String statusString = exchange.getIn().getHeader(MpfHeaders.JOB_STATUS, String.class);
-			Mutable<BatchJobStatusType> jobStatus = new MutableObject<>(BatchJobStatus.parse(statusString, BatchJobStatusType.UNKNOWN));
+			Mutable<BatchJobStatusType> jobStatus = new MutableObject<>(BatchJobStatusType.parse(statusString, BatchJobStatusType.UNKNOWN));
 
 			markJobStatus(jobId, jobStatus.getValue());
 

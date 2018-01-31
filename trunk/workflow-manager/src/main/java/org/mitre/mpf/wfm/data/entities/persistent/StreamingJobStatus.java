@@ -35,13 +35,13 @@ import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 /**
  * This class includes the essential information which describes streaming job status.
  */
-public class StreamingJobStatus extends JobStatus {
+public class StreamingJobStatus {
 
-    public static final StreamingJobStatusType DEFAULT = StreamingJobStatusType.COMPLETE;
+    public static final StreamingJobStatusType UNKNOWN = StreamingJobStatusType.UNKNOWN;
 
-    /** Finds the StreamingJobStatusType which best matches the given input; if no match is found, {@link #DEFAULT} is used. */
+    /** Finds the StreamingJobStatusType which best matches the given input; if no match is found, {@link #UNKNOWN} is used. */
     public static StreamingJobStatusType parse(String input) {
-        return parse(input, DEFAULT);
+        return parse(input, UNKNOWN);
     }
 
     public static StreamingJobStatusType parse(String input, StreamingJobStatusType defaultValue) {
@@ -64,40 +64,24 @@ public class StreamingJobStatus extends JobStatus {
         return jobStatuses;
     }
 
-    private String status = null;
-    public void setStatus(String status) {
-        this.status = status;
-        this.jobStatus = parse(status);
-    }
-    public void setStatus(StreamingJobStatusType jobStatus) {
-        this.status = jobStatus.name();
-        this.jobStatus = jobStatus;
-    }
-    public String getStatus() { return status; }
+    private String detail = null;
+    public void setDetail(String detail) { this.detail = detail; }
+    public String getDetail() { return detail; }
 
-    private String statusDetail = null;
-    public void setStatusDetail(String statusDetail) { this.statusDetail = statusDetail; }
-    public String getStatusDetail() { return statusDetail; }
-
-    private StreamingJobStatusType jobStatus = DEFAULT;
-    public StreamingJobStatusType getJobStatus() { return this.jobStatus; }
-
-    public StreamingJobStatus(StreamingJobStatusType jobStatus) {
-        this(jobStatus,null);
+    private StreamingJobStatusType type = UNKNOWN;
+    public void setType(StreamingJobStatusType type) { this.type = type; }
+    public StreamingJobStatusType getType() { return this.type; }
+    public boolean isTerminal() {
+        return type.isTerminal();
     }
 
-    public StreamingJobStatus(String jobStatusString) {
-        this(jobStatusString,null);
+    public StreamingJobStatus(StreamingJobStatusType statusType) {
+        this(statusType,null);
     }
 
-    public StreamingJobStatus(StreamingJobStatusType jobStatus, String statusDetail) {
-        setStatus(jobStatus);
-        setStatusDetail(statusDetail);
-    }
-
-    public StreamingJobStatus(String jobStatusString, String statusDetail) {
-        setStatus(jobStatusString);
-        setStatusDetail(statusDetail);
+    public StreamingJobStatus(StreamingJobStatusType statusType, String statusDetail) {
+        setType(statusType);
+        setDetail(statusDetail);
     }
 
     // Overriding equals method so Mocking in TestStreamingJobStartStop will work. Note that value of status
@@ -105,7 +89,7 @@ public class StreamingJobStatus extends JobStatus {
     @Override
     public boolean equals(Object otherStreamingJobStatus) {
         if ( otherStreamingJobStatus instanceof StreamingJobStatus ) {
-            return this.jobStatus == ((StreamingJobStatus) otherStreamingJobStatus).jobStatus;
+            return this.type == ((StreamingJobStatus) otherStreamingJobStatus).type;
         } else {
             return false;
         }
@@ -115,6 +99,6 @@ public class StreamingJobStatus extends JobStatus {
     // detail is intentionally not a factor when determining hashCode.
     @Override
     public int hashCode() {
-        return System.identityHashCode(this.jobStatus);
+        return System.identityHashCode(this.type);
     }
 }

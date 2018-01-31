@@ -26,10 +26,13 @@
 
 package org.mitre.mpf.wfm.enums;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.apache.commons.lang3.StringUtils;
+
 // BatchJobStatusType enumeration describes all possible job status conditions applicable to a batch job.
 public enum BatchJobStatusType {
-
-    // This section defines job statuses that may be applicable to either a batch or a streaming job.
 
     /**
      * Default: The status of the job is unknown.
@@ -102,6 +105,8 @@ public enum BatchJobStatusType {
      */
     ERROR(true);
 
+    public static BatchJobStatusType DEFAULT = COMPLETE;
+
     protected boolean terminal;
 
     public boolean isTerminal() {
@@ -109,5 +114,32 @@ public enum BatchJobStatusType {
     }
 
     BatchJobStatusType(boolean terminal) { this.terminal = terminal; }
+
+
+    /** Finds the BatchJobStatusType which best matches the given input; if no match is found, {@link #DEFAULT} is used. */
+    public static BatchJobStatusType parse(String input) {
+        return parse(input, DEFAULT);
+    }
+
+    public static BatchJobStatusType parse(String input, BatchJobStatusType defaultValue) {
+        String trimmed = StringUtils.trimToNull(input);
+        for ( BatchJobStatusType jobStatus : BatchJobStatusType.values() ) {
+            if ( StringUtils.equalsIgnoreCase(jobStatus.name(), trimmed) ) {
+                return jobStatus;
+            }
+        }
+        return defaultValue;
+    }
+
+    public static Collection<BatchJobStatusType> getNonTerminalStatuses() {
+        List<BatchJobStatusType> jobStatuses = new ArrayList<>();
+        for ( BatchJobStatusType jobStatus : BatchJobStatusType.values() ) {
+            if (!jobStatus.isTerminal() ) {
+                jobStatuses.add(jobStatus);
+            }
+        }
+        return jobStatuses;
+    }
+
 
 }

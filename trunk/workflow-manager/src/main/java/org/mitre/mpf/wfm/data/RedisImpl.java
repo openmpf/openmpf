@@ -28,8 +28,6 @@ package org.mitre.mpf.wfm.data;
 
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJobStatus;
-import org.mitre.mpf.wfm.data.entities.persistent.JobStatus;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
@@ -384,15 +382,15 @@ public class RedisImpl implements Redis {
 	}
 
     /**
-     * Set the job status of the specified batch job.
+     * Set the job status type of the specified batch job.
      * @param jobId The OpenMPF-assigned ID of the batch job, must be unique.
-     * @param batchJobStatus The new status of the specified batch job.
-	 * @throws WfmProcessingException is thrown if this method is attempted to be used for a streaming job.
+     * @param batchJobStatusType The new status type of the specified batch job.
+     * @throws WfmProcessingException is thrown if this method is attempted to be used for a streaming job.
      */
     @SuppressWarnings("unchecked")
-    public synchronized void setJobStatus(long jobId, BatchJobStatusType batchJobStatus) throws WfmProcessingException {
+    public synchronized void setJobStatus(long jobId, BatchJobStatusType batchJobStatusType) throws WfmProcessingException {
         if ( isJobTypeBatch(jobId) ) {
-            redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(BATCH_JOB_STATUS, batchJobStatus.name());
+            redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(BATCH_JOB_STATUS, batchJobStatusType);
         } else if ( isJobTypeStreaming(jobId) ) {
 			// this method shouldn't be called for streaming jobs.
 			throw new WfmProcessingException("Error: this method shouldn't be called for streaming jobs. Rejected this call for job " + jobId);
@@ -403,31 +401,32 @@ public class RedisImpl implements Redis {
     }
 
     /**
-     * Set the job status of the specified streaming job.
+     * Set the job status type of the specified streaming job. Use this version of the method when
+     * streaming job status doesn't include additional detail information.
      * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
-     * @param streamingJobStatus The new status of the specified streaming job.
+     * @param streamingJobStatusType The new status type of the specified streaming job.
      * @throws WfmProcessingException is thrown if this method is attempted to be used for a batch job.
      */
     @SuppressWarnings("unchecked")
-    public synchronized void setJobStatus(long jobId, StreamingJobStatusType streamingJobStatus) throws WfmProcessingException {
-        setJobStatus(jobId, streamingJobStatus, null);
+    public synchronized void setJobStatus(long jobId, StreamingJobStatusType streamingJobStatusType) throws WfmProcessingException {
+        setJobStatus(jobId, streamingJobStatusType, null);
     }
 
     /**
      * Set the job status of the specified streaming job. Use this form of the method if job status needs
      * to include additional details about the streaming job status.
      * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
-     * @param streamingJobStatus The new status of the specified streaming job.
+     * @param streamingJobStatusType The new status type of the specified streaming job.
      * @param streamingJobStatusDetail Detail information associated with the streaming job status.
      * @throws WfmProcessingException is thrown if this method is attempted to be used for a batch job.
      */
     @SuppressWarnings("unchecked")
-    public synchronized void setJobStatus(long jobId, StreamingJobStatusType streamingJobStatus, String streamingJobStatusDetail) throws WfmProcessingException {
+    public synchronized void setJobStatus(long jobId, StreamingJobStatusType streamingJobStatusType, String streamingJobStatusDetail) throws WfmProcessingException {
         if ( isJobTypeBatch(jobId) ) {
             // this method shouldn't be called for batch jobs.
             throw new WfmProcessingException("Error: this method shouldn't be called for batch jobs. Rejected this call for job " + jobId);
         } else if ( isJobTypeStreaming(jobId) ) {
-            redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(STREAMING_JOB_STATUS, streamingJobStatus.name());
+            redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(STREAMING_JOB_STATUS, streamingJobStatusType);
             if ( streamingJobStatusDetail != null ) {
                 redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(STREAMING_JOB_STATUS_DETAIL, streamingJobStatusDetail);
             } else {
@@ -441,13 +440,14 @@ public class RedisImpl implements Redis {
     }
 
     /**
-	 * Get the job status for the specified job
-	 * @param jobId The OpenMPF-assigned ID of the batch or streaming job, must be unique.
-	 * @return Method will return BatchJobStatus instance for a batch job, or StreamingJobStatus instance for a streaming job.
+	 * Get the job status for the specified batch job
+	 * @param jobId The OpenMPF-assigned ID of the batch job, must be unique.
+	 * @return Method will return job status for the batch job.
+     * @exception WfmProcessingException is thrown if this method is called for a streaming job.
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public JobStatus getJobStatus(long jobId)  {
+	public BatchJobStatusType getBatchJobStatus(long jobId) throws WfmProcessingException {
 		if ( isJobTypeBatch(jobId) ) {
 			// confirmed that the specified job is a batch job
 			if( !redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
@@ -455,34 +455,12 @@ public class RedisImpl implements Redis {
 				return null;
 			} else {
 				Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
-				String jobStatusString = (String) jobHash.get(BATCH_JOB_STATUS);
-				if ( jobStatusString != null ) {
-                    // Return batch job status that was stored for this job in REDIS.
-                    BatchJobStatus jobStatus = new BatchJobStatus(jobStatusString);
-                    return jobStatus;
-                } else {
-				    // Job status hasn't been stored for this job, return null;
-                    return null;
-                }
+				BatchJobStatusType batchJobStatusType = (BatchJobStatusType) jobHash.get(BATCH_JOB_STATUS);
+				return batchJobStatusType;
 			}
 		} else if ( isJobTypeStreaming(jobId) ) {
-			// confirmed that the specified job is a streaming job
-			if ( !redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
-                // There is no streaming job with that job id in REDIS, return null
-				return null;
-			} else {
-				Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
-				String jobStatusString = (String) jobHash.get(STREAMING_JOB_STATUS);
-				String jobStatusDetail = (String) jobHash.get(STREAMING_JOB_STATUS_DETAIL);
-                if ( jobStatusString != null ) {
-                    // Return streaming job status that was stored for this job in REDIS. Note the constructor handles possible null for jobStatusDetail
-                    StreamingJobStatus jobStatus = new StreamingJobStatus(jobStatusString, jobStatusDetail);
-                    return jobStatus;
-                } else {
-                    // Job status hasn't been stored for this job, return null;
-                    return null;
-                }
-			}
+            // this method shouldn't be called for streaming jobs.
+            throw new WfmProcessingException("Error: this method shouldn't be called for streaming jobs. Rejected this call for job " + jobId);
 		} else {
             // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and returning null.
 			log.warn("Job #{} was not found as a batch or a streaming job so we can't return the job status (returning null).", jobId);
@@ -490,32 +468,82 @@ public class RedisImpl implements Redis {
 		}
 	}
 
-    /** This method is the same as {@link #getJobStatus(long)}, it's just adapted for use with Lists.
-     * @param jobIds List of jobIds
-     * @return List of JobStatus for the specified jobs. List may contain BatchJobStatus instances for batch jobs,
-     * or StreamingJobStatus instances for streaming jobs. The List may contain nulls for invalid jobIds.
+    /**
+     * Get the job status for the specified streaming job
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+     * @return Method will return job status of the streaming job.
+     * @exception WfmProcessingException is thrown if this method is called for a batch job.
      */
     @Override
     @SuppressWarnings("unchecked")
-    public List<JobStatus> getJobStatuses(List<Long> jobIds) {
-        return jobIds.stream().map(jobId->getJobStatus(jobId.longValue())).collect(Collectors.toList());
+    public StreamingJobStatus getStreamingJobStatus(long jobId) throws WfmProcessingException {
+        if ( isJobTypeBatch(jobId) ) {
+            // this method shouldn't be called for batch jobs.
+            throw new WfmProcessingException("Error: this method shouldn't be called for batch jobs. Rejected this call for job " + jobId);
+        } else if ( isJobTypeStreaming(jobId) ) {
+            // confirmed that the specified job is a streaming job
+            if ( !redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+                // There is no streaming job with that job id in REDIS, return null
+                return null;
+            } else {
+                Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
+                StreamingJobStatusType jobStatusType = (StreamingJobStatusType) jobHash.get(STREAMING_JOB_STATUS);
+                String jobStatusDetail = (String) jobHash.get(STREAMING_JOB_STATUS_DETAIL);
+                if ( jobStatusType != null ) {
+                    // Return streaming job status that was stored for this job in REDIS. Note the constructor handles possible null for jobStatusDetail
+                    StreamingJobStatus jobStatus = new StreamingJobStatus(jobStatusType, jobStatusDetail);
+                    return jobStatus;
+                } else {
+                    // Job status hasn't been stored for this job, return null;
+                    return null;
+                }
+            }
+        } else {
+            // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and returning null.
+            log.warn("Job #{} was not found as a batch or a streaming job so we can't return the job status (returning null).", jobId);
+            return null;
+        }
     }
 
-    /** This method is similar to {@link #getJobStatuses(List<Long>)}, it just returns a List of Strings instead of a List of job statuses.
-     * Note that any detail information that may accompany StreamingJobStatus will not be returned when using this method.
-     * @param jobIds List of jobIds
-     * @return List of job statuses as Strings for the specified jobs. The List may contain nulls for invalid jobIds.
+    /** This method is the same as {@link #getBatchJobStatus(long)}, it's just adapted for use with Lists.
+     * @param jobIds List of batch jobIds
+     * @return List of BatchJobStatusType for the specified batch jobs. The List may contain nulls for invalid jobIds.
      */
     @Override
     @SuppressWarnings("unchecked")
-    public List<String> getJobStatusesAsString(List<Long> jobIds) {
-        return getJobStatuses(jobIds).stream().map(jobStatus-> {
-        	if ( jobStatus instanceof BatchJobStatus ) {
-        		return ((BatchJobStatus) jobStatus).getJobStatus().name();
-			} else {
-				return ((StreamingJobStatus) jobStatus).getJobStatus().name();
-			}
-		}).collect(Collectors.toList());
+    public List<BatchJobStatusType> getBatchJobStatuses(List<Long> jobIds) throws WfmProcessingException {
+        return jobIds.stream().map(jobId->getBatchJobStatus(jobId.longValue())).collect(Collectors.toList());
+    }
+
+    /** This method is the same as {@link #getStreamingJobStatus(long)}, it's just adapted for use with Lists.
+     * @param jobIds List of streaming jobIds
+     * @return List of StreamingJobStatus for the specified jobs. The List may contain nulls for invalid jobIds.
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<StreamingJobStatus> getStreamingJobStatuses(List<Long> jobIds) throws WfmProcessingException {
+        return jobIds.stream().map(jobId->getStreamingJobStatus(jobId.longValue())).collect(Collectors.toList());
+    }
+
+    /** This method is similar to {@link #getBatchJobStatuses(List<Long>)}, it just returns a List of Strings describing the batch job status types instead of a List of BatchJobStatuses.
+     * @param jobIds List of batch jobIds
+     * @return List of batch job status types as Strings for the specified jobs. The List may contain nulls for invalid jobIds.
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<String> getBatchJobStatusesAsStrings(List<Long> jobIds) {
+        return getBatchJobStatuses(jobIds).stream().map(batchJobStatus-> { return batchJobStatus.name(); }).collect(Collectors.toList());
+    }
+
+    /** This method is similar to {@link #getStreamingJobStatuses(List<Long>)}, it just returns a List of Strings describing the streaming job status types instead of a List of StreamingJobStatuses.
+     * Note that any detail information that may accompany StreamingJobStatus will not be returned when using this method.
+     * @param jobIds List of streaming jobIds
+     * @return List of streaming job status types as Strings for the specified jobs. The List may contain nulls for invalid jobIds.
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<String> getStreamingJobStatusesAsStrings(List<Long> jobIds) {
+        return getStreamingJobStatuses(jobIds).stream().map(streamingJobStatus-> { return streamingJobStatus.getType().name(); }).collect(Collectors.toList());
     }
 
     /**
@@ -1306,7 +1334,7 @@ public class RedisImpl implements Redis {
             .filter(jobId -> {
                 if ( isActive ) {
                     // include only those streaming jobs that do not have terminal jobStatus.
-                    return !((StreamingJobStatus)getJobStatus(jobId)).getJobStatus().isTerminal();
+                    return !getStreamingJobStatus(jobId).isTerminal();
                 } else {
                     return true; // include all streaming jobs.
                 }

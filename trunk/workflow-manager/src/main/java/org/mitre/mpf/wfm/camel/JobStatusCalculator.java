@@ -33,7 +33,6 @@ import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJobStatus;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
@@ -70,7 +69,7 @@ public class JobStatusCalculator {
     public BatchJobStatusType calculateStatus(Exchange exchange) throws WfmProcessingException {
         TransientJob job = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TransientJob.class);
 
-        BatchJobStatusType statusFromRedis = ((BatchJobStatus) redis.getJobStatus(job.getId())).getJobStatus();
+        BatchJobStatusType statusFromRedis = redis.getBatchJobStatus(job.getId());
 
         if (statusFromRedis.equals(BatchJobStatusType.IN_PROGRESS_WARNINGS)) {
             redis.setJobStatus(job.getId(), BatchJobStatusType.COMPLETE_WITH_WARNINGS);

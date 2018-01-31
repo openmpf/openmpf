@@ -29,8 +29,6 @@ package org.mitre.mpf.wfm.enums;
 // StreamingJobStatusType enumeration describes all possible job status conditions applicable to a streaming job.
 public enum StreamingJobStatusType {
 
-    // This section defines job statuses that may be applicable to either a batch or a streaming job.
-
     /**
      * Default: The status of the job is unknown.
      **/
@@ -51,36 +49,6 @@ public enum StreamingJobStatusType {
      * Indicates the job is in progress.
      */
     IN_PROGRESS(false),
-
-    /**
-     * Indicates the job is in progress with errors.
-     */
-    IN_PROGRESS_ERRORS(false),
-
-    /**
-     * Indicates the job is in progress with warnings.
-     */
-    IN_PROGRESS_WARNINGS(false),
-
-    /**
-     * Indicates that the job is having its output object built.
-     */
-    BUILDING_OUTPUT_OBJECT(false),
-
-    /**
-     * Indicates the job has completed.
-     */
-    COMPLETE(true),
-
-    /**
-     * Indicates the job has completed, but with processing errors.
-     */
-    COMPLETE_WITH_ERRORS(true),
-
-    /**
-     * Indicates the job has completed, but with warnings.
-     */
-    COMPLETE_WITH_WARNINGS(true),
 
     /**
      * Indicates the job is in the middle of cancellation.

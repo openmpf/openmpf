@@ -26,23 +26,23 @@
 
 package org.mitre.mpf.wfm.data;
 
-import org.javasimon.aop.Monitored;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
+import org.javasimon.aop.Monitored;
+import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
-import org.mitre.mpf.wfm.data.entities.persistent.JobStatus;
-import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
 @Monitored
 public interface Redis {
@@ -92,13 +92,22 @@ public interface Redis {
 	int getCurrentTaskIndexForJob(long jobId);
 
     /**
-     * Get the job status for the specified job
-     * @param jobId The OpenMPF-assigned ID of the batch or streaming job, must be unique.
-     * @return Method will return instances of BatchJobStatus for a batch job, or instances of StreamingJobStatus for a streaming job.
+     * Get the job status type for the specified batch job
+     * @param jobId The OpenMPF-assigned ID of the batch job, must be unique.
+     * @return Method will return job status type for a batch job.
      */
-    JobStatus getJobStatus(long jobId);
-    List<JobStatus> getJobStatuses(List<Long> jobIds);
-    List<String> getJobStatusesAsString(List<Long> jobIds);
+    BatchJobStatusType getBatchJobStatus(long jobId);
+    List<BatchJobStatusType> getBatchJobStatuses(List<Long> jobIds);
+    List<String> getBatchJobStatusesAsStrings(List<Long> jobIds);
+
+	/**
+	 * Get the job status for the specified streaming job
+	 * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+	 * @return Method will return job status for a streaming job.
+	 */
+	StreamingJobStatus getStreamingJobStatus(long jobId);
+	List<StreamingJobStatus> getStreamingJobStatuses(List<Long> jobIds);
+	List<String> getStreamingJobStatusesAsStrings(List<Long> jobIds);
 
 	/**
 	 * Gets the collection of detection processing errors associated with a (job, media, task, action) 4-ple.
@@ -213,12 +222,12 @@ public interface Redis {
 	void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks);
 
 	/**
-	 * Set the job status of the specified batch job.
+	 * Set the job status type of the specified batch job.
 	 * @param jobId The OpenMPF-assigned ID of the batch job, must be unique.
-	 * @param batchJobStatus The new status of the specified batch job.
+	 * @param batchJobStatusType The new status type of the specified batch job.
 	 * @throws WfmProcessingException is thrown if this method is attempted to be used for a streaming job.
 	 */
-	void setJobStatus(long jobId, BatchJobStatusType batchJobStatus)throws WfmProcessingException;
+	void setJobStatus(long jobId, BatchJobStatusType batchJobStatusType)throws WfmProcessingException;
 
 	/**
 	 * Set the job status of the specified streaming job.

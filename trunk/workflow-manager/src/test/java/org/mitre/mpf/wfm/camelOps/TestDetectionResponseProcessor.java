@@ -42,7 +42,6 @@ import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJobStatus;
 import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
@@ -164,7 +163,7 @@ public class TestDetectionResponseProcessor {
         redis.persistJob(detectionJob);
 
         detectionResponseProcessor.wfmProcess(exchange);
-        Assert.assertEquals(BatchJobStatusType.IN_PROGRESS_ERRORS,((BatchJobStatus)redis.getJobStatus(jobId)).getJobStatus());
+        Assert.assertEquals(BatchJobStatusType.IN_PROGRESS_ERRORS,redis.getBatchJobStatus(jobId));
 
     }
 }

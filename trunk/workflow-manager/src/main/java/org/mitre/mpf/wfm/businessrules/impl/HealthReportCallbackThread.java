@@ -99,7 +99,7 @@ public class HealthReportCallbackThread implements Runnable {
         // Get other information from REDIS about these streaming jobs.
         log.info("HealthReportCallbackThread.sendHealthReportToCallback: posting health report containing jobIds=" + jobIds);
         List<String> externalIds = redis.getExternalIds(jobIds);
-        List<String> jobStatuses = redis.getJobStatusesAsString(jobIds);
+        List<String> jobStatuses = redis.getStreamingJobStatusesAsStrings(jobIds);
         List<String> activityFrameIds = redis.getHealthReportActivityFrameIdsAsStrings(jobIds);
         List<String> activityTimestamps = redis.getHealthReportActivityTimestampsAsStrings(jobIds);
 

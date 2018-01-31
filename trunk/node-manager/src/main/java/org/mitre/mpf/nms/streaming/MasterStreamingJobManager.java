@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 
 @Component
@@ -93,8 +94,17 @@ public class MasterStreamingJobManager {
 	}
 
 
+    public void stopAllJobs() {
+        synchronized (_jobToNodeMapper) {
+            LOG.info("Stopping all streaming jobs.");
+            _jobToNodeMapper.foreachJob((jobId, host) -> _channelNode.sendToChild(
+                    host, new StopStreamingJobMessage(jobId)));
+        }
+    }
 
-	private static class JobToNodeMapper {
+
+
+    private static class JobToNodeMapper {
 		private final Map<Long, String> _jobToNodeMap = new HashMap<>();
 		private final Multiset<String> _nodeJobCounts = HashMultiset.create();
 
@@ -126,6 +136,10 @@ public class MasterStreamingJobManager {
 			if (removedNode != null) {
 				_nodeJobCounts.remove(removedNode);
 			}
+		}
+
+		public void foreachJob(BiConsumer<Long, String> action) {
+			_jobToNodeMap.forEach(action);
 		}
 	}
 }

@@ -57,7 +57,7 @@ import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidOutputObjectDirectoryW
 import org.mitre.mpf.wfm.exceptions.JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
-import org.mitre.mpf.wfm.util.JmsUtils;
+import org.mitre.mpf.wfm.util.CallbackUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.TextUtils;
@@ -73,10 +73,7 @@ import java.io.UnsupportedEncodingException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 @Component
@@ -123,9 +120,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     private JsonUtils jsonUtils;
 
     @Autowired
-    private JmsUtils jmsUtils;
-
-    @Autowired
     @Qualifier(RedisImpl.REF)
     private Redis redis;
 
@@ -136,9 +130,11 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     @Autowired
     private JobProgress jobProgressStore;
 
-
     @Autowired
     private StreamingJobMessageSender streamingJobMessageSender;
+
+    @Autowired
+    private CallbackUtils callbackUtils;
 
     /**
      * Converts a pipeline represented in JSON to a {@link TransientPipeline} instance.
@@ -580,14 +576,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     @Override
     public synchronized void jobCompleted(long jobId, JobStatus jobStatus) throws WfmProcessingException {
         // TODO: cleanup the summary reports and other output files
-        markJobCompleted(jobId, jobStatus);
 
-        try {
-            // call streaming job summary report callback one final time
-            summaryReportCallback(jobId);
-        } catch (Exception exception) {
-            log.warn("Failed to make callback (if appropriate) for Streaming Job #{}.", jobId);
-        }
+        markJobCompleted(jobId, jobStatus);
+        handleJobStatusChange(jobId, jobStatus);
 
         // Tear down the streaming job.
         try {
@@ -611,70 +602,44 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         AtmosphereController.broadcast(new JobStatusMessage(jobId, 100, jobStatus, new Date()));
         jobProgressStore.setJobProgress(jobId, 100.0f);
         log.info("[Streaming Job {}:*:*] Streaming Job complete!", jobId);
-
     }
 
     @Override
-    public void handleJobStatusChange(long jobId, JobStatus status, long timestamp) {
-    	// TODO: Replace logging with implementation of handleJobStatusChange
-    	log.debug("handleJobStatusChange(jobId = {}, status = {}, time = {})", jobId, status, millisToDateTime(timestamp));
+    public void handleJobStatusChange(long jobId, JobStatus status) {
+        StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
+        streamingJobRequest.setStatus(status);
+        streamingJobRequestDao.persist(streamingJobRequest);
+
+        redis.setJobStatus(jobId, status);
+
+        String healthReportCallbackUri = redis.getHealthReportCallbackURI(jobId);
+        if (healthReportCallbackUri != null) {
+            callbackUtils.doHealthReportCallback(Collections.singletonList(jobId), healthReportCallbackUri);
+        }
     }
 
     @Override
     public void handleNewActivityAlert(long jobId, long frameId, long timestamp) {
-        // TODO: Replace logging with implementation of handleNewActivityAlert
-        log.debug("handleNewActivityAlert(jobId = {}, frameId = {}, time = {})", jobId, frameId, millisToDateTime(timestamp));
+        redis.setStreamingActivity(jobId, frameId, millisToDateTime(timestamp));
+
+        String healthReportCallbackUri = redis.getHealthReportCallbackURI(jobId);
+        if (healthReportCallbackUri != null) {
+            callbackUtils.doHealthReportCallback(Collections.singletonList(jobId), healthReportCallbackUri);
+        }
     }
 
     @Override
-    public void handleNewSummaryReport(SegmentSummaryReport summaryReport) {
-        // TODO: Replace logging with implementation of handleNewSummaryReport
-        log.debug("handleNewSummaryReport(jobId = {}, summaryReport = {}) with {} tracks",
-                 summaryReport.getJobId(), summaryReport, summaryReport.getTracks().size());
+    public void handleNewSummaryReport(JsonSegmentSummaryReport summaryReport) {
+        // TODO: write to disk (and clean up later); write system test
+
+        String summaryReportCallbackUri = redis.getSummaryReportCallbackURI(summaryReport.getJobId());
+        if (summaryReportCallbackUri != null) {
+            callbackUtils.doSummaryReportCallback(summaryReport, summaryReportCallbackUri);
+        }
     }
 
     private static LocalDateTime millisToDateTime(long millis) {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneId.systemDefault());
-    }
-
-    /**
-     * Call the summary report callback.
-     * Note that streaming jobs only support HTTP POST callback method.
-     * @param jobId unique id for this streaming job
-     * @throws WfmProcessingException
-     */
-    private void summaryReportCallback(long jobId) throws WfmProcessingException {
-        final String jsonSummaryReportCallbackUri = redis.getSummaryReportCallbackURI(jobId);
-        if (jsonSummaryReportCallbackUri != null) {
-            // The caller requested summary reports.
-            log.info("Starting summary report callback to " + jsonSummaryReportCallbackUri);
-            try {
-                JsonCallbackBody jsonBody = new JsonCallbackBody(jobId, redis.getExternalId(jobId));
-                new Thread(new CallbackThread(jsonSummaryReportCallbackUri, jsonBody)).start();
-            } catch (IOException ioe) {
-                log.error("Failed to issue POST summary report callback to '{}' due to an I/O exception.",
-                    jsonSummaryReportCallbackUri, ioe);
-            }
-        }
-    }
-
-    /**
-     * Immediately send a health report including the specified streaming jobs to the common health report callback.
-     * The health report will be sent in a newly started thread.
-     * @param jobIds Unique ids for the streaming jobs to be reported on. Should not be null or empty.
-     * @param healthReportCallbackUri the same health report callback URI that was specified as common to these streaming jobs. Must not be null.
-     * @throws WfmProcessingException may be thrown if healthReportCallbackUri is null
-     */
-    private void sendHealthReport(List<Long> jobIds, String healthReportCallbackUri) throws WfmProcessingException {
-
-        if ( healthReportCallbackUri == null ) {
-            throw new WfmProcessingException("Error, healthReportCallbackUri can't be null.");
-        } else {
-            // At least one health report needs to be sent to the specified healthReportCallbackUri
-            log.info("Starting health report callback send to single health report callback URI " + healthReportCallbackUri + " for Streaming jobs " + jobIds);
-            // send the health report to the health report callback URI in a newly started thread
-            new Thread(new HealthReportCallbackThread(redis,jsonUtils,jobIds,healthReportCallbackUri)).start();
-        }
     }
 
     /**
@@ -715,7 +680,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 // if healthReportCallbackUriToJobIdListMap is empty. This would be a possibility if no streaming jobs have
                 // requested that a health report be sent.
                 healthReportCallbackUriToActiveJobIdListMap.keySet().stream().forEach(
-                    healthReportCallbackUri -> sendHealthReport(healthReportCallbackUriToActiveJobIdListMap.get(healthReportCallbackUri), healthReportCallbackUri));
+                    healthReportCallbackUri -> callbackUtils.doHealthReportCallback(
+                            healthReportCallbackUriToActiveJobIdListMap.get(healthReportCallbackUri), healthReportCallbackUri));
             }
         }
     }

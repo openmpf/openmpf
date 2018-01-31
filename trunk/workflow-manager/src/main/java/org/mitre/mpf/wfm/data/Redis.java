@@ -274,17 +274,16 @@ public interface Redis {
 	 */
     boolean isJobTypeStreaming(final long jobId);
 
-    void setHealthReportLastActivityFrameId(long jobId, String lastActivityFrameId) throws WfmProcessingException;
+    void setStreamingActivity(long jobId, long activityFrameId, LocalDateTime activityTimestamp) throws WfmProcessingException;
+
     String getHealthReportLastActivityFrameIdAsString(long jobId) throws WfmProcessingException;
     List<String> getHealthReportLastActivityFrameIdsAsStrings(List<Long> jobIds) throws WfmProcessingException;
 
-	void setHealthReportLastActivityTimestamp(long jobId, LocalDateTime lastActivityTimestamp) throws WfmProcessingException;
-	String getHealthReportLastActivityTimestampAsString(long jobId) throws WfmProcessingException;
-	List<String> getHealthReportLastActivityTimestampsAsStrings(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
-	LocalDateTime getHealthReportLastActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
+    LocalDateTime getHealthReportLastActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
+    String getHealthReportLastActivityTimestampAsString(long jobId) throws WfmProcessingException;
+
     List<LocalDateTime> getHealthReportLastActivityTimestamps(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
+	List<String> getHealthReportLastActivityTimestampsAsStrings(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
 
-	public List<Long> getCurrentStreamingJobs(List<Long> jobIds, boolean isActive );
-
-	}
-
+	List<Long> getCurrentStreamingJobs(List<Long> jobIds, boolean isActive );
+}

@@ -27,11 +27,11 @@
 package org.mitre.mpf.wfm.businessrules;
 
 
+import org.mitre.mpf.interop.JsonSegmentSummaryReport;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.SegmentSummaryReport;
 import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
@@ -94,10 +94,10 @@ public interface StreamingJobRequestBo {
 
 	void jobCompleted(long jobId, JobStatus jobStatus);
 
-	void handleJobStatusChange(long jobId, JobStatus status, long timestamp);
+	void handleJobStatusChange(long jobId, JobStatus status);
 
 	void handleNewActivityAlert(long jobId, long frameId, long timestamp);
 
-	void handleNewSummaryReport(SegmentSummaryReport summaryReport);
+	void handleNewSummaryReport(JsonSegmentSummaryReport summaryReport);
 }
 

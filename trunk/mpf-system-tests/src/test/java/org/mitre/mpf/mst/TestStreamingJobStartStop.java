@@ -31,6 +31,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.jgroups.Address;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.mpf.interop.JsonSegmentSummaryReport;
 import org.mitre.mpf.nms.AddressParser;
 import org.mitre.mpf.nms.MasterNode;
 import org.mitre.mpf.nms.NodeTypes;
@@ -55,9 +56,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
-import static java.util.stream.Collectors.counting;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.*;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.AdditionalMatchers.*;
 import static org.mockito.Matchers.eq;
@@ -124,12 +123,12 @@ public class TestStreamingJobStartStop {
 		verify(_mockStreamingJobRequestBo, timeout(30_000))
 				.jobCompleted(eq(jobId), or(eq(JobStatus.TERMINATED), eq(JobStatus.CANCELLED)));
 
-		ArgumentCaptor<SegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(SegmentSummaryReport.class);
+		ArgumentCaptor<JsonSegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(JsonSegmentSummaryReport.class);
 
 		verify(_mockStreamingJobRequestBo, timeout(30_000).atLeastOnce())
 				.handleNewSummaryReport(reportCaptor.capture());
 
-		SegmentSummaryReport summaryReport = reportCaptor.getValue();
+		JsonSegmentSummaryReport summaryReport = reportCaptor.getValue();
 		assertEquals(jobId, summaryReport.getJobId());
 	}
 

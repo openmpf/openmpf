@@ -25,68 +25,102 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.data.entities.transients;
+package org.mitre.mpf.interop;
 
-import java.util.*;
+import com.fasterxml.jackson.annotation.*;
+import org.mitre.mpf.interop.util.TimeUtils;
 
-public class SegmentSummaryReport {
+import java.time.LocalDateTime;
+import java.util.List;
 
-	private final long _jobId;
+@JsonTypeName("SegmentSummaryReport")
+@JsonPropertyOrder({ "reportDate", "jobId", "segmentId", "segmentStartFrame", "segmentStopFrame",
+        "errorMessage", "detectionType", "tracks" })
+public class JsonSegmentSummaryReport {
 
-	private final long _segmentNumber;
+    private LocalDateTime reportDate = null;
+    /**
+     * The date/time that this callback is being issued.
+     * @return The date/time that this callback is being issued. This timestamp will be returned as a String
+     * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
+     */
+    @JsonGetter("reportDate")
+    public String getReportDate() { return TimeUtils.getLocalDateTimeAsString(reportDate); }
+    @JsonSetter("reportDate")
+    public void setReportDate(LocalDateTime reportDate) { this.reportDate = reportDate; }
 
-	private final long _segmentStartFrame;
+    @JsonProperty("jobId")
+    @JsonPropertyDescription("The unique identifier assigned to this job by the system.")
+    private long jobId;
+    public long getJobId() { return jobId; }
 
-	private final long _segmentStopFrame;
+    @JsonProperty("segmentId")
+    @JsonPropertyDescription("The unique identifier assigned to this segment.")
+    private long segmentId;
+    public long getSegmentId() { return segmentId; }
 
-	private final String _detectionType;
+    @JsonProperty("segmentStartFrame")
+    @JsonPropertyDescription("The unique identifier for the frame at the start of this segment.")
+    private long segmentStartFrame;
+    public long getSegmentStartFrame() { return segmentStartFrame; }
 
-	private final List<Track> _tracks;
+    @JsonProperty("segmentStopFrame")
+    @JsonPropertyDescription("The unique identifier for the frame at the end of this segment.")
+    private long segmentStopFrame;
+    public long getSegmentStopFrame() { return segmentStopFrame; }
 
-	private final String _errorMessage;
+    @JsonProperty("errorMessage")
+    @JsonPropertyDescription("An error generated while detecting tracks. May be empty.")
+    private String errorMessage;
+    public String getErrorMessage() { return errorMessage; }
 
+    /*
+    @JsonProperty("output")
+    @JsonPropertyDescription("The mapping of action type keys to a set of actions performed on the given medium.")
+    private SortedMap<String, SortedSet<JsonActionOutputObject>> types;
+    public SortedMap<String, SortedSet<JsonActionOutputObject>> getTypes() { return types; }
+    */
 
-	public SegmentSummaryReport(long jobId, long segmentNumber, long segmentStartFrame, long segmentStopFrame,
-	                            String detectionType, List<Track> tracks, String errorMessage) {
-		_jobId = jobId;
-		_segmentNumber = segmentNumber;
-		_segmentStartFrame = segmentStartFrame;
-		_segmentStopFrame = segmentStopFrame;
-		_detectionType = detectionType;
-		_tracks = new ArrayList<>(tracks);
-		_errorMessage = errorMessage;
+    @JsonProperty("detectionType")
+    @JsonPropertyDescription("The type of detections produced by the last pipeline stage.")
+    private String detectionType;
+    public String getDetectionType() { return detectionType; }
+
+    @JsonProperty("tracks")
+    @JsonPropertyDescription("The set of detection tracks produced by the last pipeline stage.")
+    private List<JsonTrackOutputObject> tracks;
+    public List<JsonTrackOutputObject> getTracks() { return tracks; }
+
+	public JsonSegmentSummaryReport(long jobId, long segmentId, long segmentStartFrame, long segmentStopFrame,
+                                    String detectionType, List<JsonTrackOutputObject> tracks, String errorMessage) {
+		this.jobId = jobId;
+        this.segmentId = segmentId;
+        this.segmentStartFrame = segmentStartFrame;
+		this.segmentStopFrame = segmentStopFrame;
+		this.detectionType = detectionType;
+		this.tracks = tracks;
+		this.errorMessage = errorMessage;
 	}
 
+    @JsonCreator
+    public static JsonSegmentSummaryReport factory(@JsonProperty("jobId") long jobId,
+                                                   @JsonProperty("segmentId") long segmentId,
+                                                   @JsonProperty("segmentStartFrame") long segmentStartFrame,
+                                                   @JsonProperty("segmentStopFrame") long segmentStopFrame,
+                                                   @JsonProperty("detectionType") String detectionType,
+                                                   @JsonProperty("tracks") List<JsonTrackOutputObject> tracks,
+                                                   @JsonProperty("errorMessage") String errorMessage) {
+        JsonSegmentSummaryReport summaryReport =
+                new JsonSegmentSummaryReport(jobId, segmentId, segmentStartFrame, segmentStopFrame, detectionType, tracks, errorMessage);
+        /*
+        if (tracks != null) {
+            summaryReport.tracks.addAll(tracks);
+        }
+        */
+        return summaryReport;
+    }
 
-	public long getJobId() {
-		return _jobId;
-	}
-
-	public long getSegmentNumber() {
-		return _segmentNumber;
-	}
-
-	public long getSegmentStartFrame() {
-		return _segmentStartFrame;
-	}
-
-	public long getSegmentStopFrame() {
-		return _segmentStopFrame;
-	}
-
-	public String getDetectionType() {
-		return _detectionType;
-	}
-
-	public List<Track> getTracks() {
-		return Collections.unmodifiableList(_tracks);
-	}
-
-	public String getErrorMessage() {
-		return _errorMessage;
-	}
-
-
+    /*
 	public static class Track {
 
 		private final long _startFrame;
@@ -207,4 +241,5 @@ public class SegmentSummaryReport {
 			return Collections.unmodifiableMap(_detectionProperties);
 		}
 	}
+	*/
 }

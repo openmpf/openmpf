@@ -33,7 +33,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
-import org.mitre.mpf.interop.JsonHealthReportDataCallbackBody;
+import org.mitre.mpf.interop.JsonHealthReportCollection;
 import org.mitre.mpf.rest.api.MpfResponse;
 import org.mitre.mpf.rest.api.StreamingJobCancelResponse;
 import org.mitre.mpf.rest.api.StreamingJobInfo;
@@ -79,7 +79,7 @@ public class ITWebStreamingHealthReports {
     private long healthReportPostJobId2 = -1L;
     private boolean gotHealthReportPostResponseForJob1 = false;
     private boolean gotHealthReportPostResponseForJob2 = false;
-    private JsonHealthReportDataCallbackBody healthReportPostCallbackBody = null;
+    private JsonHealthReportCollection healthReportPostCallbackBody = null;
 
     // run once
     @BeforeClass
@@ -257,9 +257,9 @@ public class ITWebStreamingHealthReports {
                         + ":\n     " + request.body());
                 try {
                     healthReportPostCallbackBody = objectMapper
-                        .readValue(request.bodyAsBytes(), JsonHealthReportDataCallbackBody.class);
+                        .readValue(request.bodyAsBytes(), JsonHealthReportCollection.class);
 
-                    log.info("InHealthCallback: Converted to JsonHealthReportDataCallbackBody:\n     "
+                    log.info("InHealthCallback: Converted to JsonHealthReportCollection:\n     "
                         + healthReportPostCallbackBody);
 
                     // If this health report includes the jobIds for our POST test, then set the appropriate indicator

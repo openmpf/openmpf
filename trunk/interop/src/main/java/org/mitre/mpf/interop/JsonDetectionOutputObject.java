@@ -26,10 +26,7 @@
 
 package org.mitre.mpf.interop;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.*;
 import org.apache.commons.lang3.ObjectUtils;
 
 import java.util.Objects;
@@ -37,6 +34,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 @JsonTypeName("DetectionOutputObject")
+@JsonPropertyOrder({ "offsetFrame", "offsetTime", "x", "y", "width", "height",
+        "confidence", "detectionProperties", "artifactExtractionStatus", "artifactPath", "offset" })
 public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutputObject> {
 
 	@JsonProperty("x")
@@ -71,6 +70,7 @@ public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutput
 
 	// MPF R0.6.0 backwards compatibility with MPF R0.5.0 (upgrade path)
 	@JsonProperty("offset")
+    @JsonPropertyDescription("Deprecated. Use offsetFrame instead. Left for backwards compatibility.")
 	public void setOffset(int offset) { offsetFrame = offset; }
 	public int getOffset() { return offsetFrame; }
 

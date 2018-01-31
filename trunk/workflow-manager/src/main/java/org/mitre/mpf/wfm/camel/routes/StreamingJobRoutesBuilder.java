@@ -34,6 +34,7 @@ import org.apache.camel.dataformat.protobuf.ProtobufDataFormat;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.interop.JsonSegmentSummaryReport;
 import org.mitre.mpf.interop.JsonTrackOutputObject;
+import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
@@ -56,9 +57,13 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 
 	private final StreamingJobRequestBo _streamingJobRequestBo;
 
+	// Used to determine of messages should be ignored if AMQ has not been purged yet
+	private final WfmStartup _wfmStartup;
+
 	@Autowired
-	public StreamingJobRoutesBuilder(StreamingJobRequestBo streamingJobRequestBo) {
+	public StreamingJobRoutesBuilder(StreamingJobRequestBo streamingJobRequestBo, WfmStartup wfmStartup) {
 		_streamingJobRequestBo = streamingJobRequestBo;
+		_wfmStartup = wfmStartup;
 	}
 
 	@Override
@@ -67,11 +72,13 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 				.routeId("Streaming Job Status Route")
 				.log(LoggingLevel.DEBUG, "Received job status message: ${headers}")
 				.process(exchange -> {
-					Message msg = exchange.getIn();
-					_streamingJobRequestBo.handleJobStatusChange(
-							msg.getHeader("JOB_ID", long.class),
-							msg.getHeader("JOB_STATUS", JobStatus.class));
-							// msg.getHeader("STATUS_CHANGE_TIMESTAMP", long.class)); // TODO: Remove this property?
+				    if (_wfmStartup.isApplicationRefreshed()) {
+                        Message msg = exchange.getIn();
+                        _streamingJobRequestBo.handleJobStatusChange(
+                                msg.getHeader("JOB_ID", long.class),
+                                msg.getHeader("JOB_STATUS", JobStatus.class));
+                        // msg.getHeader("STATUS_CHANGE_TIMESTAMP", long.class)); // TODO: Remove this property?
+                    }
 				 });
 
 
@@ -79,11 +86,13 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 				.routeId("Streaming Job Activity Route")
 				.log(LoggingLevel.DEBUG, "Received activity alert message: ${headers}")
 				.process(exchange -> {
-					Message msg = exchange.getIn();
-					_streamingJobRequestBo.handleNewActivityAlert(
-							msg.getHeader("JOB_ID", long.class),
-							msg.getHeader("FRAME_NUMBER", int.class),
-							msg.getHeader("ACTIVITY_DETECTION_TIMESTAMP", long.class));
+                    if (_wfmStartup.isApplicationRefreshed()) {
+                        Message msg = exchange.getIn();
+                        _streamingJobRequestBo.handleNewActivityAlert(
+                                msg.getHeader("JOB_ID", long.class),
+                                msg.getHeader("FRAME_NUMBER", int.class),
+                                msg.getHeader("ACTIVITY_DETECTION_TIMESTAMP", long.class));
+                    }
 				});
 
 
@@ -92,14 +101,16 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 				.log(LoggingLevel.DEBUG, "Received summary report message: ${headers}")
 				.unmarshal(new ProtobufDataFormat(DetectionProtobuf.StreamingDetectionResponse.getDefaultInstance()))
 				.process(exchange -> {
-					Message msg = exchange.getIn();
-					DetectionProtobuf.StreamingDetectionResponse protobuf
-							= msg.getBody(DetectionProtobuf.StreamingDetectionResponse.class);
+                    if (_wfmStartup.isApplicationRefreshed()) {
+                        Message msg = exchange.getIn();
+                        DetectionProtobuf.StreamingDetectionResponse protobuf
+                                = msg.getBody(DetectionProtobuf.StreamingDetectionResponse.class);
 
-					JsonSegmentSummaryReport summaryReport
-							= convertProtobufResponse(msg.getHeader("JOB_ID", long.class), protobuf);
+                        JsonSegmentSummaryReport summaryReport
+                                = convertProtobufResponse(msg.getHeader("JOB_ID", long.class), protobuf);
 
-					_streamingJobRequestBo.handleNewSummaryReport(summaryReport);
+                        _streamingJobRequestBo.handleNewSummaryReport(summaryReport);
+                    }
 				});
 	}
 

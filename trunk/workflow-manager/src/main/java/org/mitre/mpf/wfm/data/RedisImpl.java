@@ -45,7 +45,6 @@ import javax.annotation.PostConstruct;
 import java.io.File;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -885,8 +884,6 @@ public class RedisImpl implements Redis {
     /**
      * Store the activity frame id and timestamp from the last activity alert that was sent for the specified streaming job.
      * Note that activity alerts are not sent for batch jobs, so calling this method for a batch job would be an error.
-     * Note that internally, health report timestamps are stored in REDIS by converting the object to a string
-     * formatted using the REDIS_TIMESTAMP_PATTERN, which is currently defined as {@value #REDIS_TIMESTAMP_PATTERN}.
      * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
      * @param activityFrameId  The last activity frame id to be stored for this streaming job
      * @param activityTimestamp The last health report activity timestamp for this streaming job.

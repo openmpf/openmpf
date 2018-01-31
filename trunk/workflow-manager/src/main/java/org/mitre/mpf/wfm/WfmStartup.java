@@ -26,21 +26,6 @@
 
 package org.mitre.mpf.wfm;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import javax.management.MBeanServerConnection;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
-import javax.management.remote.JMXConnector;
-import javax.management.remote.JMXConnectorFactory;
-import javax.management.remote.JMXServiceURL;
-import javax.servlet.ServletContext;
 import org.apache.activemq.broker.jmx.BrokerViewMBean;
 import org.apache.activemq.broker.jmx.QueueViewMBean;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
@@ -63,6 +48,22 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
+
+import javax.management.MBeanServerConnection;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.ObjectName;
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.remote.JMXServiceURL;
+import javax.servlet.ServletContext;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class WfmStartup implements ApplicationListener<ApplicationEvent> {
@@ -88,8 +89,12 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	@Autowired
 	private ServerMediaService serverMediaService;
 
+	//@Autowired
+    //private MasterStreamingJobManager streamingJobManager;
+
 	// used to prevent the initialization behaviors from being executed more than once
 	private static boolean applicationRefreshed = false;
+	public boolean isApplicationRefreshed() { return  applicationRefreshed; }
 
 	private ExecutorService fileIndexExecutorService = null;
 
@@ -108,11 +113,13 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 			if (!applicationRefreshed) {
 				log.info("onApplicationEvent: " + appContext.getDisplayName() + " " + appContext.getId()); // DEBUG
 
-				log.info("Marking any remaining running batch jobs as CANCELLED.");
+				log.info("Marking any remaining running batch jobs as CANCELLED_BY_SHUTDOWN.");
 				jobRequestDao.cancelJobsInNonTerminalState();
 
-        log.info("Marking any remaining running streaming jobs as CANCELLED.");
-        streamingJobRequestDao.cancelJobsInNonTerminalState();
+        		log.info("Marking any remaining running streaming jobs as CANCELLED_BY_SHUTDOWN.");
+        		streamingJobRequestDao.cancelJobsInNonTerminalState();
+
+                // streamingJobManager.stopAllJobs();
 
 				if (propertiesUtil.isAmqBrokerEnabled()) {
 					try {

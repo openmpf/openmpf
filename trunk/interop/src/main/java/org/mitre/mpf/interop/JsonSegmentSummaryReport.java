@@ -31,7 +31,7 @@ import com.fasterxml.jackson.annotation.*;
 import org.mitre.mpf.interop.util.TimeUtils;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
 
 @JsonTypeName("SegmentSummaryReport")
 @JsonPropertyOrder({ "reportDate", "jobId", "segmentId", "segmentStartFrame", "segmentStopFrame",
@@ -74,13 +74,12 @@ public class JsonSegmentSummaryReport {
     private String errorMessage;
     public String getErrorMessage() { return errorMessage; }
 
-    /*
     @JsonProperty("output")
-    @JsonPropertyDescription("The mapping of action type keys to a set of actions performed on the given medium.")
-    private SortedMap<String, SortedSet<JsonActionOutputObject>> types;
-    public SortedMap<String, SortedSet<JsonActionOutputObject>> getTypes() { return types; }
-    */
+    @JsonPropertyDescription("Mapping of detection types to tracks.")
+    private SortedMap<String, SortedSet<JsonTrackOutputObject>> types = new TreeMap<>();
+    public SortedMap<String, SortedSet<JsonTrackOutputObject>> getTypes() { return types; }
 
+    /*
     @JsonProperty("detectionType")
     @JsonPropertyDescription("The type of detections produced by the last pipeline stage.")
     private String detectionType;
@@ -90,6 +89,7 @@ public class JsonSegmentSummaryReport {
     @JsonPropertyDescription("The set of detection tracks produced by the last pipeline stage.")
     private List<JsonTrackOutputObject> tracks;
     public List<JsonTrackOutputObject> getTracks() { return tracks; }
+    */
 
 	public JsonSegmentSummaryReport(long jobId, long segmentId, long segmentStartFrame, long segmentStopFrame,
                                     String detectionType, List<JsonTrackOutputObject> tracks, String errorMessage) {
@@ -97,9 +97,13 @@ public class JsonSegmentSummaryReport {
         this.segmentId = segmentId;
         this.segmentStartFrame = segmentStartFrame;
 		this.segmentStopFrame = segmentStopFrame;
-		this.detectionType = detectionType;
-		this.tracks = tracks;
 		this.errorMessage = errorMessage;
+
+		if (tracks.isEmpty()) {
+            types.put(JsonActionOutputObject.NO_TRACKS_TYPE, new TreeSet<>());
+        } else {
+		    types.put(detectionType, new TreeSet<>(tracks));
+        }
 	}
 
     @JsonCreator

@@ -29,12 +29,6 @@ package org.mitre.mpf.wfm.businessrules.impl;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.JobStatusMessage;
@@ -69,7 +63,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -270,8 +263,12 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             long jobId = streamingJobRequestEntity.getId();
             try {
                 // create the output file system to be used for this streaming job
-                File outputObjectsDirName = propertiesUtil.createOutputObjectsDirectory(jobId);
-                streamingJobRequestEntity.setOutputObjectDirectory(outputObjectsDirName.getAbsolutePath());
+                File outputObjectDir = propertiesUtil.createOutputObjectsDirectory(jobId);
+                String outputObjectPath = outputObjectDir.getAbsolutePath();
+
+                jsonStreamingJobRequest.setOutputObjectDirectory(outputObjectPath);
+
+                streamingJobRequestEntity.setOutputObjectDirectory(outputObjectPath);
                 streamingJobRequestEntity.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
 
                 // update the streaming job request in the long-term database so that it includes the
@@ -565,8 +562,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         return transientStream;
     }
 
-    // TODO finish implementation of completed method, need to add a call to this method when a streaming job terminates
-
     /**
      * Complete a streaming job by updating the job in the persistent database(s), make any final callbacks for the job.
      *
@@ -631,6 +626,22 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     @Override
     public void handleNewSummaryReport(JsonSegmentSummaryReport summaryReport) {
         // TODO: write to disk (and clean up later); write system test
+
+        summaryReport.setReportDate(LocalDateTime.now());
+
+        // TODO: check if output enabled and just get directory, not whole transient job
+        TransientStreamingJob transientStreamingJob = redis.getStreamingJob(summaryReport.getJobId());
+        if (transientStreamingJob != null) {
+            if (transientStreamingJob.isOutputEnabled()) {
+                try {
+                    String outputPath = transientStreamingJob.getOutputObjectDirectory();
+                    File outputFile = propertiesUtil.createStreamingOutputObjectsFile(summaryReport.getJobId(), new File(outputPath));
+                    jsonUtils.serialize(summaryReport, outputFile);
+                } catch(Exception e) {
+                    log.error("Failed to write the JSON summary report for job '{}' due to an exception.", summaryReport.getJobId(), e);
+                }
+            }
+        }
 
         String summaryReportCallbackUri = redis.getSummaryReportCallbackURI(summaryReport.getJobId());
         if (summaryReportCallbackUri != null) {
@@ -728,40 +739,4 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     public void unsubscribe(NotificationConsumer<JobCompleteNotification> consumer) {
         consumers.remove(consumer);
     }
-
-    /**
-     * Thread to handle a general Callback to a URI.
-     * Note that streaming jobs only support HTTP POST callback method.
-     */
-    public class CallbackThread implements Runnable {
-        private String callbackUri;
-        private HttpUriRequest req;
-
-       public CallbackThread(String callbackUri, JsonCallbackBody body) throws UnsupportedEncodingException {
-           this.callbackUri = callbackUri;
-
-           // POST the callback
-           HttpPost post = new HttpPost(callbackUri);
-           post.addHeader("Content-Type", "application/json");
-           try {
-               post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(body)));
-               req = post;
-           } catch (WfmProcessingException e) {
-               log.error("Cannot serialize CallbackBody.", e);
-           }
-
-        }
-
-        @Override
-        public void run() {
-            final HttpClient httpClient = HttpClientBuilder.create().build();
-            try {
-                HttpResponse response = httpClient.execute(req);
-                log.info("POST Callback issued to '{}' (Response={}).", callbackUri, response);
-            } catch (Exception exception) {
-                log.warn("Failed to issue POST callback to '{}' due to an I/O exception.", callbackUri, exception);
-            }
-        }
-    }
-
 }

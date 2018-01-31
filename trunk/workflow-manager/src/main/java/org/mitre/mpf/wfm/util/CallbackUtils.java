@@ -75,7 +75,7 @@ public class CallbackUtils {
 
         // Get other information from REDIS about these streaming jobs.
         // Do this before spawning a thread to avoid a race condition where the job may be cleared from REDIS.
-        log.info("Sending POST of health report containing jobIds: " + jobIds);
+        log.info("Starting POST of health report(s) with jobIds: " + jobIds);
         List<String> externalIds = redis.getExternalIds(jobIds);
         List<String> jobStatuses = redis.getJobStatusesAsString(jobIds);
         List<String> lastActivityFrameIds = redis.getHealthReportLastActivityFrameIdsAsStrings(jobIds);
@@ -86,9 +86,7 @@ public class CallbackUtils {
                     LocalDateTime.now(), jobIds, externalIds, jobStatuses,
                     lastActivityFrameIds, lastActivityTimestamps);
 
-            log.info("Sending POST of healthReport: " + jsonBody);
             doPostCallback(jsonBody, callbackUri);
-            log.info("Finished POST of healthReport: " + jsonBody);
         } catch (WfmProcessingException | MpfInteropUsageException e) {
             log.error("Error sending health report(s) to " + callbackUri + ".", e);
         }
@@ -96,16 +94,12 @@ public class CallbackUtils {
 
     // Send the summary report to the URI identified by callbackUri, using the HTTP POST method.
     public void doSummaryReportCallback(JsonSegmentSummaryReport summaryReport, String callbackUri) {
-        summaryReport.setReportDate(LocalDateTime.now());
-
-        log.info("Sending POST of summaryReport: " + summaryReport);
+        log.info("Starting POST of summaryReport with jobId " + summaryReport.getJobId());
         doPostCallback(summaryReport, callbackUri);
     }
 
     private void doPostCallback(Object json, String callbackUri) {
         PostCallbackThread thread = context.getBean(PostCallbackThread.class, json, callbackUri);
-        // thread.setJson(json);
-        // thread.setCallbackUri(callbackUri);
         taskExecutor.execute(thread);
     }
 
@@ -120,10 +114,7 @@ public class CallbackUtils {
         private JsonUtils jsonUtils;
 
         private Object json;
-        // public void setJson(Object json) { this.json = json; }
-
         private String callbackUri;
-        // public void setCallbackUri(String callbackUri) { this.callbackUri = callbackUri; }
 
         public PostCallbackThread(Object json, String callbackUri) {
             this.json = json;

@@ -26,16 +26,15 @@
 
 package org.mitre.mpf.interop;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.*;
 import org.apache.commons.lang3.ObjectUtils;
 
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 @JsonTypeName("TrackOutputObject")
+@JsonPropertyOrder({ "id", "startOffsetFrame", "stopOffsetFrame", "startOffsetTime", "stopOffsetTime",
+		"type", "source", "exemplar", "detections", "startOffset", "stopOffset" })
 public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> {
 
 	@JsonProperty("id")
@@ -45,6 +44,7 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 
 	// MPF R0.6.0 backwards compatibility with MPF R0.5.0 (upgrade path)
 	@JsonProperty("startOffset")
+    @JsonPropertyDescription("Deprecated. Use startOffsetFrame instead. Left for backwards compatibility.")
 	public void setStartOffset(int startOffset) { startOffsetFrame = startOffset; }
 	public int getStartOffset() { return startOffsetFrame; }
 
@@ -55,6 +55,7 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 
 	// MPF R0.6.0 backwards compatibility with MPF R0.5.0 (upgrade path)
 	@JsonProperty("stopOffset")
+    @JsonPropertyDescription("Deprecated. Use stopOffsetFrame instead. Left for backwards compatibility.")
 	public void setStopOffset(int stopOffset) { stopOffsetFrame = stopOffset; }
 	public int getStopOffset() { return stopOffsetFrame; }
 

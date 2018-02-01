@@ -311,6 +311,6 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 			default:
 				status = JobStatus.ERROR;
 		}
-		streamingJobRequestBo.jobCompleted(message.jobId, status);
+		streamingJobRequestBo.handleJobStatusChange(message.jobId, status, System.currentTimeMillis());
 	}
 }

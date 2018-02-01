@@ -26,21 +26,11 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import java.util.ArrayList;
-import java.util.List;
+import io.swagger.annotations.*;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.mvc.util.ModelUtils;
-import org.mitre.mpf.rest.api.MpfResponse;
-import org.mitre.mpf.rest.api.StreamingJobCancelResponse;
-import org.mitre.mpf.rest.api.StreamingJobCreationRequest;
-import org.mitre.mpf.rest.api.StreamingJobCreationResponse;
-import org.mitre.mpf.rest.api.StreamingJobInfo;
+import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.exceptions.JobAlreadyCancellingWfmProcessingException;
@@ -59,13 +49,10 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 // swagger includes
 
@@ -326,7 +313,6 @@ public class StreamingJobController {
                 MpfResponse.RESPONSE_CODE_ERROR, "Streaming job with id " + jobId + " doesn't exist.");
         } else {
             try {
-
                 mpfService.cancelStreamingJob(jobId, doCleanup);
 
                 log.info("Successfully marked for cancellation streaming job with id {}", jobId);

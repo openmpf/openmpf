@@ -28,7 +28,9 @@ package org.mitre.mpf.interop.util;
 
 import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
@@ -66,5 +68,9 @@ public class TimeUtils {
         } else {
             return timestampFormatter.format(timestamp);
         }
+    }
+
+    public static LocalDateTime millisToDateTime(long millis) {
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneId.systemDefault());
     }
 }

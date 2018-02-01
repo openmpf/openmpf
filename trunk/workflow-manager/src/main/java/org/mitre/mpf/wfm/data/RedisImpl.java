@@ -105,7 +105,8 @@ public class RedisImpl implements Redis {
 			HEALTH_REPORT_CALLBACK_URI = "HEALTH_REPORT_CALLBACK_URI",
 			HEALTH_REPORT_LAST_ACTIVITY_FRAME_ID = "HEALTH_REPORT_LAST_ACTIVITY_FRAME_ID",
 			HEALTH_REPORT_LAST_ACTIVITY_TIMESTAMP = "HEALTH_REPORT_LAST_ACTIVITY_TIMESTAMP",
-			SUMMARY_REPORT_CALLBACK_URI = "SUMMARY_REPORT_CALLBACK_URI";
+			SUMMARY_REPORT_CALLBACK_URI = "SUMMARY_REPORT_CALLBACK_URI",
+            DO_CLEANUP = "DO_CLEANUP";
 
 	/**
 	 * Creates a "key" from one or more components. This is a convenience method for creating
@@ -293,30 +294,10 @@ public class RedisImpl implements Redis {
 					}
 				}
 			}
-
-			// TODO delete this commented block after streaming job cleanup is implemented
-			// leave this commented block here for reference until streaming video processing is finalized
-//			if (transientStream.getUriScheme().isRemote()) {
-//				if (transientStream.getLocalPath() != null) {
-//					try {
-//						File file = new File(transientStream.getLocalPath());
-//						if (file.exists()) {
-//							if (!file.delete()) {
-//								log.warn("Failed to delete the file '{}'. It has been leaked and must be removed manually.", file);
-//							}
-//						}
-//					} catch (Exception exception) {
-//						log.warn("Failed to delete the local file '{}' which was created retrieved from a remote location - it must be manually deleted.", transientMedia.getLocalPath(), exception);
-//					}
-//				}
-//			}
-			// end of leave this commented block here for reference until streaming video processing is finalized
-
 		} else {
             // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning.
 			log.warn("Job #{} was not found as a batch or a streaming job so it cannot be cleared from REDIS.", jobId);
 		}
-
 	}
 
 	/**
@@ -714,7 +695,7 @@ public class RedisImpl implements Redis {
 		// If this is the first time the job has been persisted, add the job's ID to the
 		// collection of batch jobs known to the system so that we can assume that the key BATCH_JOB:N
 		// exists in Redis provided that N exists in this set.
-		// Note that in prior releases of OpenMPF, "BATCH_JOB" was represented as "JOB"
+		// Note that in prior releases of OpenMPF, BATCH_JOB was represented as "JOB"
 		redisTemplate
 				.boundSetOps(BATCH_JOB) // e.g., BATCH_JOB
 				.add(Long.toString(transientJob.getId()));
@@ -1038,7 +1019,7 @@ public class RedisImpl implements Redis {
             // This method should not be called for a streaming job.
             throw new WfmProcessingException("Error: This method should not be called for streaming jobs. Rejected this call for streaming job " + jobId);
 		} else if ( isJobTypeBatch(jobId) ) {
-			Map jobHash = redisTemplate.boundHashOps(key("BATCH_JOB", jobId)).entries();
+			Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
 			return (String)jobHash.get(CALLBACK_URL);
         } else {
             // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and returning null.
@@ -1054,7 +1035,7 @@ public class RedisImpl implements Redis {
             // This method should not be called for a batch job.
             throw new WfmProcessingException("Error: This method should not be called for batch jobs. Rejected this call for batch job " + jobId);
 		} else if( isJobTypeStreaming(jobId) ) {
-			Map jobHash = redisTemplate.boundHashOps(key("STREAMING_JOB", jobId)).entries();
+			Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
 			return (String)jobHash.get(SUMMARY_REPORT_CALLBACK_URI);
         } else {
             // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and returning null.
@@ -1070,7 +1051,7 @@ public class RedisImpl implements Redis {
             // This method should not be called for a batch job.
             throw new WfmProcessingException("Error: This method should not be called for batch jobs. Rejected this call for batch job " + jobId);
         } else if( isJobTypeStreaming(jobId) ) {
-			Map jobHash = redisTemplate.boundHashOps(key("STREAMING_JOB", jobId)).entries();
+			Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
 			return (String)jobHash.get(HEALTH_REPORT_CALLBACK_URI);
         } else {
             // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and returning null.
@@ -1083,7 +1064,7 @@ public class RedisImpl implements Redis {
 	/** Note: only batch jobs have callbackMethod defined. Streaming jobs only use HTTP POST method. */
 	public String getCallbackMethod(long jobId) throws WfmProcessingException {
 		if( isJobTypeBatch(jobId) ) {
-			Map jobHash = redisTemplate.boundHashOps(key("BATCH_JOB", jobId)).entries();
+			Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
 			return (String) jobHash.get(CALLBACK_METHOD);
 		} else if( isJobTypeStreaming(jobId) ) {
 			// Streaming jobs only support the HTTP POST method. Streaming jobs do not store callbackMethod in REDIS.
@@ -1108,10 +1089,10 @@ public class RedisImpl implements Redis {
     @Override
 	public String getExternalId(long jobId) throws WfmProcessingException {
 		if( isJobTypeBatch(jobId) ) {
-			Map jobHash = redisTemplate.boundHashOps(key("BATCH_JOB", jobId)).entries();
+			Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
 			return (String)(jobHash.get(EXTERNAL_ID));
 		} else if( isJobTypeStreaming(jobId) ) {
-			Map jobHash = redisTemplate.boundHashOps(key("STREAMING_JOB", jobId)).entries();
+			Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
 			return (String) (jobHash.get(EXTERNAL_ID));
 		} else {
             // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and returning null.
@@ -1176,4 +1157,44 @@ public class RedisImpl implements Redis {
         return currentStreamingJobIds;
     }
 
+    /**
+     * Set the doCleanup flag of the specified streaming job
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+     * @param doCleanup If true, delete the streaming job files from disk as part of cancelling the streaming job.
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public synchronized void setDoCleanup(long jobId, boolean doCleanup) {
+        if ( isJobTypeBatch(jobId) ) {
+            // This method should not be called for a batch job.
+            throw new WfmProcessingException("Error: This method should not be called for batch jobs. Rejected this call for batch job " + jobId);
+        } else if ( isJobTypeStreaming(jobId) ) {
+            redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(DO_CLEANUP, doCleanup);
+        } else {
+            // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and ignoring the request.
+            log.warn("Job #{} was not found as a batch or a streaming job so we can't set the doCleanup flag", jobId);
+        }
+    }
+
+    /**
+     * Get the doCleanup flag for the specified streaming job
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+     * @return true if cleanup should be performed; false otherwise
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public boolean getDoCleanup(long jobId)  {
+        if ( isJobTypeBatch(jobId) ) {
+            // This method should not be called for a batch job.
+            throw new WfmProcessingException("Error: This method should not be called for batch jobs. Rejected this call for batch job " + jobId);
+        } else if ( isJobTypeStreaming(jobId) ) {
+            // confirmed that the specified job is a streaming job
+            Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
+            return jobHash.containsKey(DO_CLEANUP) ? (Boolean)jobHash.get(DO_CLEANUP) : false;
+        } else {
+            // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and returning null.
+            log.warn("Job #{} was not found as a batch or a streaming job so we can't return the doCleanup flag (returning false).", jobId);
+            return false;
+        }
+    }
 }

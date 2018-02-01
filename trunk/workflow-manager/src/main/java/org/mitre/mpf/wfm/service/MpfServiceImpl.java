@@ -211,7 +211,6 @@ public class MpfServiceImpl implements MpfService {
      * @param jobId     The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
      * @param doCleanup if true, delete the streaming job files from disk as part of cancelling the streaming job.
      * @exception WfmProcessingException may be thrown if a warning or error occurs.
-     * The exception message will provide a summary of the warning or error that occurred.
      */
 	@Override
 	public void cancelStreamingJob(long jobId, boolean doCleanup) throws WfmProcessingException {

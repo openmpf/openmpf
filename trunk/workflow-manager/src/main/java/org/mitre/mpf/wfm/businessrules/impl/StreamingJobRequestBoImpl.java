@@ -30,6 +30,7 @@ package org.mitre.mpf.wfm.businessrules.impl;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -63,9 +64,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -288,18 +287,12 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     /**
      * Marks a streaming job as CANCELLING in both REDIS and in the long-term database.
-     * // TODO The streaming job cancel request must also be sent to the components via the Master Node Manager
-     * // TODO Once the cancel request is more fully handled by the Master Node Manager, throw of JobCancellationInvalidOutputObjectDirectoryWfmProcessingException and JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException will be moved to some other method
      * @param jobId     The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
      * @param doCleanup if true, delete the streaming job files from disk as part of cancelling the streaming job.
      * @exception JobAlreadyCancellingWfmProcessingException may be thrown if the streaming job has already been cancelled or
-     * if the streaming jobs status is already terminal. JobCancellationInvalidJobIdWfmProcessingException may be thrown if the
+     * if the streaming jobs status is already terminal.
+     * @exception JobCancellationInvalidJobIdWfmProcessingException may be thrown if the
      * streaming job can't be cancelled due to an error with identification of the streaming job using the specified jobId.
-     * JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException may be thrown
-     * if the streaming job has been cancelled, but the jobs output object directory couldn't be deleted when doCleanup is enabled.
-     * JobCancellationInvalidOutputObjectDirectoryWfmProcessingException may be thrown if the streaming job has been cancelled, but an error
-     * was detected in specification of the jobs output object directory.
-     * The exception message will provide a summary of the warning or error that occurred.
      */
     @Override
     public synchronized void cancel(long jobId, boolean doCleanup) throws WfmProcessingException {
@@ -314,13 +307,19 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 != null : "Streaming jobs must not have a null status.";
 
             if (streamingJobRequest.getStatus().isTerminal() || streamingJobRequest.getStatus() == JobStatus.CANCELLING) {
-                throw new JobAlreadyCancellingWfmProcessingException("Streaming job " + jobId +" already has state '" + streamingJobRequest.getStatus().name() + "' and cannot be cancelled at this time.");
+                String errorMessage = "Streaming job " + jobId +" already has state '" + streamingJobRequest.getStatus().name() + "' and cannot be cancelled at this time.";
+                if (doCleanup) {
+                    cleanup(jobId, streamingJobRequest.getOutputObjectDirectory());
+                    errorMessage += " Attempted cleanup anyway.";
+                }
+                throw new JobAlreadyCancellingWfmProcessingException(errorMessage);
             } else {
-                log.info("[Job {}:*:*] Cancelling streaming job.", jobId);
+                log.info("[Streaming Job {}:*:*] Cancelling streaming job.", jobId);
 
                 // Mark the streaming job as cancelled in Redis
                 if (redis.cancel(jobId)) {
                     redis.setJobStatus(jobId, JobStatus.CANCELLING);
+                    redis.setDoCleanup(jobId, doCleanup);
 
                     // Try to move any pending work items on the queues to the appropriate cancellation queues.
                     // If this operation fails, any remaining pending items will continue to process, but
@@ -332,87 +331,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                     // set job status as cancelling, and persist that changed state in the database
                     streamingJobRequest.setStatus(JobStatus.CANCELLING);
                     streamingJobRequestDao.persist(streamingJobRequest);
-
-                    // TODO this doCleanup section should be moved to after the Node Manager has notified the WFM that the streaming job has been cancelled (issue #334)
-                    // If doCleanup is true, then the caller has requested that the output object directory be deleted as part
-                    // of the job cancellation. Note that the node manager may not yet have cancelled this streaming job, so these files may still be in use
-                    // when they are deleted in the code below. If this occurs, then the output object directory may not be deleted as requested and a
-                    // WfmProcessingException will be thrown so that the caller will be aware of this condition.
-                    if (doCleanup) {
-                        // delete the output object directory as part of the job cancellation.
-                        String outputObjectDirectory = streamingJobRequest.getOutputObjectDirectory();
-                        // the output object directory is determined when the streaming job is created. It should not be null or empty.
-                        // The check for the output object directory being null or empty was added just to handle an unknown or unexpected case.
-                        if (outputObjectDirectory == null) {
-                            // it is an error if the streaming job has been marked for cancellation, doCleanup is enabled, but the output object directory is unknown. Log the error and throw an exception.
-                            String errorMessage = "Streaming job " + jobId
-                                + " is cancelling, but the path to the output object directory is null. Can't cleanup the output object directory for this job.";
-                            throw new JobCancellationInvalidOutputObjectDirectoryWfmProcessingException(errorMessage);
-                        } else if (outputObjectDirectory.isEmpty()) {
-                            // it is an error if the streaming job has been marked for cancellation, doCleanup is enabled, but the path to the output object directory is empty. Log the error and throw an exception.
-                            String errorMessage = "Streaming job " + jobId
-                                + " is cancelling, but the path to the output object directory is empty. Can't cleanup the output object directory for this job.";
-                            throw new JobCancellationInvalidOutputObjectDirectoryWfmProcessingException(errorMessage);
-                        } else {
-                            // delete the streaming job's output object directory.
-                            File outputObjectDirectoryFile = new File(outputObjectDirectory);
-                            if (!outputObjectDirectoryFile.exists()) {
-                                // it is not an error if the streaming job has been marked for cancellation, doCleanup is enabled, but the output object directory doesn't exist. Just log that fact and continue.
-                                log.info(
-                                    "[Streaming Job {}:*:*] streaming job is cancelling. Output object directory '{}' not deleted because it doesn't exist.",
-                                    jobId, outputObjectDirectory);
-                            } else if ( outputObjectDirectoryFile.isDirectory() ) {
-                                // as requested, delete the output object directory for this streaming job.
-                                log.info("[Streaming Job {}:*:*] streaming job is cancelling. Output object directory '{}' is being deleted as requested within the cancel request.",
-                                    jobId, outputObjectDirectory);
-                                try {
-
-                                    // First, make sure that the output object directory specified doesn't end with a symbolic link.
-                                    // FileUtils.deleteDirectory doesn't follow symbolic links at the end of a path, so if the output object directory for this
-                                    // streaming job is a symbolic link it won't be successfully deleted. Note that symbolic links in the middle of the path are ok.
-                                    if ( !FileUtils.isSymlink(outputObjectDirectoryFile) ) {
-
-                                        // use FileUtils to recursively delete the output object file directory
-                                        FileUtils.deleteDirectory(outputObjectDirectoryFile);
-
-                                        // Found instances where the output object directory for a streaming job marked for cancellation wasn't successfully deleted, but no exception was thrown.
-                                        // Adding an extra check for that here.
-                                        if ( (new File(outputObjectDirectory)).getAbsoluteFile().exists() ) {
-                                            // the output object directory was not successfully deleted, throw a warning exception
-                                            String warningMessage = "Streaming job " + jobId
-                                                + " is cancelling, but failed to fully cleanup the output object directory. '"
-                                                + outputObjectDirectory + "' still exists.";
-                                            throw new JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException(warningMessage);
-                                        } else {
-                                            // the output object directory was successfully deleted, log this fact
-                                            log.info(
-                                                "[Streaming Job {}:*:*] Streaming job is cancelling. Output object directory '{}' was successfully deleted as requested within the cancel request.",
-                                                jobId, outputObjectDirectory);
-                                        }
-                                    } else {
-                                        // Marking this as a WFM error. If the output object directory was properly created by OpenMPF, it would not be a symbolic link.
-                                        String errorMessage = "Streaming job " + jobId + " is cancelling, but the output object directory '"
-                                            + outputObjectDirectory + "' is a symbolic link, not a directory. The output object directory was not deleted.";
-                                        throw new JobCancellationInvalidOutputObjectDirectoryWfmProcessingException(errorMessage);
-                                    }
-
-                                } catch (IOException | IllegalArgumentException e) {
-                                    // Marking this as a warning. The warning include the path to the output object directory, so the client can delete it if necessary.
-                                    String warningMessage = "Streaming job " + jobId + " is cancelling, but failed to fully cleanup the output object directory '"
-                                        + outputObjectDirectory + "' due to exception: " + e.getMessage();
-                                    throw new JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException(warningMessage, e);
-                                }
-                            } else {
-                                // it is an error if the streaming job has been cancelled, doCleanup is enabled, but the output object directory specified is not really a directory.
-                                String errorMessage = "Streaming Job " + jobId
-                                    + " requested to be cancelled with doCleanup enabled, but output object directory '"
-                                    + outputObjectDirectory
-                                    + "' isn't a viable directory. Can't delete output object directory.";
-                                throw new JobCancellationInvalidOutputObjectDirectoryWfmProcessingException(errorMessage);
-                            }
-                        }
-                    }
-
                 } else {
                     // Couldn't find the requested job as a batch or as a streaming job in REDIS.
                     // Generate an error for the race condition where Redis and the persistent database reflect different states.
@@ -422,6 +340,80 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             }
         }
 
+    }
+
+    /**
+     * Deletes files generated by a streaming job.
+     * @param jobId The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
+     * @param outputObjectDirPath location where the job's generated files are stored
+     * @exception JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException may be thrown
+     * if the streaming job has been cancelled, but the jobs output object directory couldn't be deleted when doCleanup is enabled.
+     * @exception JobCancellationInvalidOutputObjectDirectoryWfmProcessingException may be thrown if the streaming job has been cancelled, but an error
+     * was detected in specification of the jobs output object directory.
+     */
+    public synchronized void cleanup(long jobId, String outputObjectDirPath) throws WfmProcessingException {
+
+        if (outputObjectDirPath == null || outputObjectDirPath.isEmpty()) {
+            String errorMessage = "Streaming job " + jobId
+                    + " output object directory is invalid: '" + outputObjectDirPath
+                    + "'. Can't delete output object directory.";
+            throw new JobCancellationInvalidOutputObjectDirectoryWfmProcessingException(errorMessage);
+        }
+
+        File outputObjectDir = new File(outputObjectDirPath);
+        if (!outputObjectDir.exists()) {
+            // It is not an error if the output object directory doesn't exist. Just log that fact and return.
+            log.info("[Streaming Job {}:*:*] Output object directory '{}' not deleted because it doesn't exist.",
+                    jobId, outputObjectDirPath);
+            return;
+        }
+
+        if (!outputObjectDir.isDirectory()) {
+            String errorMessage = "Streaming job " + jobId
+                    + " output object directory '" + outputObjectDirPath + "' isn't a directory."
+                    + " Can't delete output object directory.";
+            throw new JobCancellationInvalidOutputObjectDirectoryWfmProcessingException(errorMessage);
+
+        }
+
+        try {
+            // As requested, delete the output object directory for this streaming job.
+            log.debug("[Streaming Job {}:*:*] Output object directory '{}' is being deleted as specified by the cancel request.",
+                    jobId, outputObjectDirPath);
+
+            // First, make sure that the output object directory specified doesn't end with a symbolic link.
+            // FileUtils.deleteDirectory doesn't follow symbolic links at the end of a path, so if the output object directory for this
+            // streaming job is a symbolic link it won't be successfully deleted. Note that symbolic links in the middle of the path are ok.
+            if (FileUtils.isSymlink(outputObjectDir)) {
+                // If the output object directory was properly created by OpenMPF, it would not be a symbolic link.
+                String errorMessage = "Streaming job " + jobId
+                        + " output object directory '" + outputObjectDirPath + "' is a symbolic link, not a directory."
+                        + " Did not delete output object directory.";
+                throw new JobCancellationInvalidOutputObjectDirectoryWfmProcessingException(errorMessage);
+            }
+
+            // Use FileUtils to recursively delete the output object file directory.
+            FileUtils.deleteDirectory(outputObjectDir);
+
+            // It's possible that the output object directory wasn't successfully deleted, but no exception is thrown. Check for that.
+            if (outputObjectDir.getAbsoluteFile().exists()) {
+                String warningMessage = "Streaming job " + jobId
+                        + " failed to fully cleanup the output object directory. '"
+                        + outputObjectDirPath + "' still exists.";
+                throw new JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException(warningMessage);
+            }
+
+            // the output object directory was successfully deleted, log this fact
+            log.info("[Streaming Job {}:*:*] Output object directory '{}' was successfully deleted as specified by the cancel request.",
+                    jobId, outputObjectDirPath);
+
+        } catch (IOException | IllegalArgumentException e) {
+            // Marking this as a warning. The warning include the path to the output object directory, so the client can delete it if necessary.
+            String warningMessage = "Streaming job " + jobId
+                    + " failed to cleanup the output object directory '"
+                    + outputObjectDirPath + "' due to exception: " + e.getMessage();
+            throw new JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException(warningMessage, e);
+        }
     }
 
     /**
@@ -562,46 +554,14 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         return transientStream;
     }
 
-    /**
-     * Complete a streaming job by updating the job in the persistent database(s), make any final callbacks for the job.
-     *
-     * @param jobId unique id for a streaming job
-     * @throws WfmProcessingException
-     */
     @Override
-    public synchronized void jobCompleted(long jobId, JobStatus jobStatus) throws WfmProcessingException {
-        // TODO: cleanup the summary reports and other output files
+    public void handleJobStatusChange(long jobId, JobStatus status, long timestamp) {
+        Date date = new Date(timestamp);
 
-        markJobCompleted(jobId, jobStatus);
-        handleJobStatusChange(jobId, jobStatus);
-
-        // Tear down the streaming job.
-        try {
-            destroy(jobId);
-        } catch (Exception exception) {
-            log.warn("Failed to clean up Streaming Job {} due to an exception. Data for this streaming job will remain in the transient data store, but the status of the streaming job has not been affected by this failure.", jobId, exception);
-        }
-
-        JobCompleteNotification jobCompleteNotification = new JobCompleteNotification(jobId);
-
-        for (NotificationConsumer<JobCompleteNotification> consumer : consumers) {
-            if (!jobCompleteNotification.isConsumed()) {
-                try {
-                    consumer.onNotification(this, new JobCompleteNotification(jobId));
-                } catch (Exception exception) {
-                    log.warn("Completion Streaming Job {} consumer '{}' threw an exception.", jobId, consumer, exception);
-                }
-            }
-        }
-
-        AtmosphereController.broadcast(new JobStatusMessage(jobId, 100, jobStatus, new Date()));
-        jobProgressStore.setJobProgress(jobId, 100.0f);
-        log.info("[Streaming Job {}:*:*] Streaming Job complete!", jobId);
-    }
-
-    @Override
-    public void handleJobStatusChange(long jobId, JobStatus status) {
         StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
+        if (status.isTerminal()) {
+            streamingJobRequest.setTimeCompleted(date);
+        }
         streamingJobRequest.setStatus(status);
         streamingJobRequestDao.persist(streamingJobRequest);
 
@@ -611,11 +571,36 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         if (healthReportCallbackUri != null) {
             callbackUtils.doHealthReportCallback(Collections.singletonList(jobId), healthReportCallbackUri);
         }
+
+        if (status.isTerminal()) {
+            if (redis.getDoCleanup(jobId)) {
+                cleanup(jobId, streamingJobRequest.getOutputObjectDirectory());
+            }
+
+            redis.clearJob(jobId);
+
+            JobCompleteNotification jobCompleteNotification = new JobCompleteNotification(jobId);
+
+            for (NotificationConsumer<JobCompleteNotification> consumer : consumers) {
+                if (!jobCompleteNotification.isConsumed()) {
+                    try {
+                        consumer.onNotification(this, new JobCompleteNotification(jobId));
+                    } catch (Exception exception) {
+                        log.warn("Completion Streaming Job {} consumer '{}' threw an exception.", jobId, consumer, exception);
+                    }
+                }
+            }
+
+            AtmosphereController.broadcast(new JobStatusMessage(jobId, 100, status, date));
+            jobProgressStore.setJobProgress(jobId, 100.0f);
+
+            log.info("[Streaming Job {}:*:*] Streaming Job complete!", jobId);
+        }
     }
 
     @Override
     public void handleNewActivityAlert(long jobId, long frameId, long timestamp) {
-        redis.setStreamingActivity(jobId, frameId, millisToDateTime(timestamp));
+        redis.setStreamingActivity(jobId, frameId, TimeUtils.millisToDateTime(timestamp));
 
         String healthReportCallbackUri = redis.getHealthReportCallbackURI(jobId);
         if (healthReportCallbackUri != null) {
@@ -625,9 +610,10 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     @Override
     public void handleNewSummaryReport(JsonSegmentSummaryReport summaryReport) {
-        // TODO: write to disk (and clean up later); write system test
+        // TODO: write system test
 
-        summaryReport.setReportDate(LocalDateTime.now());
+        LocalDateTime time = LocalDateTime.now();
+        summaryReport.setReportDate(time);
 
         // TODO: check if output enabled and just get directory, not whole transient job
         TransientStreamingJob transientStreamingJob = redis.getStreamingJob(summaryReport.getJobId());
@@ -635,7 +621,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             if (transientStreamingJob.isOutputEnabled()) {
                 try {
                     String outputPath = transientStreamingJob.getOutputObjectDirectory();
-                    File outputFile = propertiesUtil.createStreamingOutputObjectsFile(summaryReport.getJobId(), new File(outputPath));
+                    File outputFile = propertiesUtil.createStreamingOutputObjectsFile(time, new File(outputPath));
                     jsonUtils.serialize(summaryReport, outputFile);
                 } catch(Exception e) {
                     log.error("Failed to write the JSON summary report for job '{}' due to an exception.", summaryReport.getJobId(), e);
@@ -647,10 +633,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         if (summaryReportCallbackUri != null) {
             callbackUtils.doSummaryReportCallback(summaryReport, summaryReportCallbackUri);
         }
-    }
-
-    private static LocalDateTime millisToDateTime(long millis) {
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneId.systemDefault());
     }
 
     /**
@@ -695,39 +677,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                             healthReportCallbackUriToActiveJobIdListMap.get(healthReportCallbackUri), healthReportCallbackUri));
             }
         }
-    }
-
-    // TODO finalize what needs to be done to mark a streaming job as completed in the WFM, method copied over from StreamingJobCompleteProcessorImpl.java
-    private void markJobCompleted(long jobId, JobStatus jobStatus) {
-        log.debug("Marking Streaming Job {} as completed with status '{}'.", jobId, jobStatus);
-
-        StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
-        assert streamingJobRequest != null : String.format("A streaming job request entity must exist with the ID %d", jobId);
-
-        streamingJobRequest.setTimeCompleted(new Date());
-        streamingJobRequest.setStatus(jobStatus);
-        streamingJobRequestDao.persist(streamingJobRequest);
-    }
-
-    // TODO finalize what needs to be done to destroy a streaming job in the WFM, method copied over from StreamingJobCompleteProcessorImpl.java
-    private void destroy(long jobId) throws WfmProcessingException {
-        TransientStreamingJob transientStreamingJob = redis.getStreamingJob(jobId);
-
-        log.debug("StreamingJobRequest.destroy: destruction of stream data NYI for Streaming Job {}.", jobId);
-
-// keep this commented section here for reference until streaming job processing is finalized
-//		for(TransientMedia transientMedia : transientStreamingJob.getMedia()) {
-//			if(transientMedia.getUriScheme().isRemote() && transientMedia.getLocalPath() != null) {
-//				try {
-//					Files.deleteIfExists(Paths.get(transientMedia.getLocalPath()));
-//				} catch(Exception exception) {
-//					log.warn("[{}|*|*] Failed to delete locally cached file '{}' due to an exception. This file must be manually deleted.", transientJob.getId(), transientMedia.getLocalPath());
-//				}
-//			}
-//		}
-        // end of keep this commented section here for reference until streaming job processing is finalized
-
-        redis.clearJob(jobId);
     }
 
     @Override

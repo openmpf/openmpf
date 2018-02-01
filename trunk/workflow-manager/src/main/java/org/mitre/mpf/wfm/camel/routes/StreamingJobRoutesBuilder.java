@@ -76,8 +76,8 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                         Message msg = exchange.getIn();
                         _streamingJobRequestBo.handleJobStatusChange(
                                 msg.getHeader("JOB_ID", long.class),
-                                msg.getHeader("JOB_STATUS", JobStatus.class));
-                        // msg.getHeader("STATUS_CHANGE_TIMESTAMP", long.class)); // TODO: Remove this property?
+                                msg.getHeader("JOB_STATUS", JobStatus.class),
+                                msg.getHeader("STATUS_CHANGE_TIMESTAMP", long.class));
                     }
 				 });
 

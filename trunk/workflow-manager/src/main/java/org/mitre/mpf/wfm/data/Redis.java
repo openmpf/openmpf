@@ -286,4 +286,18 @@ public interface Redis {
 	List<String> getHealthReportLastActivityTimestampsAsStrings(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
 
 	List<Long> getCurrentStreamingJobs(List<Long> jobIds, boolean isActive );
+
+	/**
+	 * Set the doCleanup flag of the specified streaming job
+	 * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+	 * @param doCleanup If true, delete the streaming job files from disk as part of cancelling the streaming job.
+	 */
+	void setDoCleanup(long jobId, boolean doCleanup);
+
+    /**
+     * Get the doCleanup flag for the specified streaming job
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+     * @return true if the flag is set and cleanup should be performed; false otherwise
+     */
+    boolean getDoCleanup(long jobId);
 }

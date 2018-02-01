@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.util;
 
 import org.apache.commons.io.IOUtils;
 import org.javasimon.aop.Monitored;
+import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.slf4j.Logger;
@@ -46,6 +47,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Component(PropertiesUtil.REF)
@@ -204,13 +206,16 @@ public class PropertiesUtil {
 	}
 
 	/** Create the output object file in the specified streaming job output objects directory
-	 * @param jobId unique id that has been assigned to the streaming job
+     * @param time time associated with job output
 	 * @param parentDir this streaming jobs output objects directory
 	 * @return output object File that was created under the specified output objects directory
 	 * @throws IOException
 	 */
-	public File createStreamingOutputObjectsFile(long jobId, File parentDir) throws IOException {
-		return createOutputObjectsFile(jobId, parentDir, "detection");
+	public File createStreamingOutputObjectsFile(LocalDateTime time, File parentDir) throws IOException {
+        String fileName = String.format("summary-report %s.json", TimeUtils.getLocalDateTimeAsString(time));
+        Path path = Paths.get(parentDir.toURI()).resolve(fileName).normalize().toAbsolutePath();
+        Files.createDirectories(path.getParent());
+        return path.toFile();
 	}
 
 	/** Create the File to be used for storing output objects from a job, plus create the directory path to that File

@@ -159,10 +159,8 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 
         track.getDetections().addAll(detections);
 
-        // TODO: Find and set exemplar
         JsonDetectionOutputObject exemplar = detections.stream()
                 .max((d1, d2) -> Float.compare(d1.getConfidence(), d2.getConfidence())).get();
-
         track.setExemplar(exemplar);
 
         return track;

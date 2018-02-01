@@ -84,8 +84,6 @@ public class ITWebStreamingHealthReports {
     // run once
     @BeforeClass
     public static void initialize() throws ComponentRegistrationException, IOException {
-        // TODO: When streaming components are implemented, consider using a real streaming component pipeline.
-
         String pipelinesUrl = WebRESTUtils.REST_URL + "pipelines";
         String pipelinesResponse = WebRESTUtils
             .getJSON(new URL(pipelinesUrl), WebRESTUtils.MPF_AUTHORIZATION);

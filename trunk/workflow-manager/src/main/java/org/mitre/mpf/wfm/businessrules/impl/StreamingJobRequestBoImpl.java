@@ -309,8 +309,12 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             if (streamingJobRequest.getStatus().isTerminal() || streamingJobRequest.getStatus() == JobStatus.CANCELLING) {
                 String errorMessage = "Streaming job " + jobId +" already has state '" + streamingJobRequest.getStatus().name() + "' and cannot be cancelled at this time.";
                 if (doCleanup) {
-                    cleanup(jobId, streamingJobRequest.getOutputObjectDirectory());
                     errorMessage += " Attempted cleanup anyway.";
+                    try {
+                        cleanup(jobId, streamingJobRequest.getOutputObjectDirectory());
+                    } catch (WfmProcessingException e) {
+                        log.warn(e.getMessage());
+                    }
                 }
                 throw new JobAlreadyCancellingWfmProcessingException(errorMessage);
             } else {
@@ -352,31 +356,30 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * was detected in specification of the jobs output object directory.
      */
     public synchronized void cleanup(long jobId, String outputObjectDirPath) throws WfmProcessingException {
-
-        if (outputObjectDirPath == null || outputObjectDirPath.isEmpty()) {
-            String errorMessage = "Streaming job " + jobId
-                    + " output object directory is invalid: '" + outputObjectDirPath
-                    + "'. Can't delete output object directory.";
-            throw new JobCancellationInvalidOutputObjectDirectoryWfmProcessingException(errorMessage);
-        }
-
-        File outputObjectDir = new File(outputObjectDirPath);
-        if (!outputObjectDir.exists()) {
-            // It is not an error if the output object directory doesn't exist. Just log that fact and return.
-            log.info("[Streaming Job {}:*:*] Output object directory '{}' not deleted because it doesn't exist.",
-                    jobId, outputObjectDirPath);
-            return;
-        }
-
-        if (!outputObjectDir.isDirectory()) {
-            String errorMessage = "Streaming job " + jobId
-                    + " output object directory '" + outputObjectDirPath + "' isn't a directory."
-                    + " Can't delete output object directory.";
-            throw new JobCancellationInvalidOutputObjectDirectoryWfmProcessingException(errorMessage);
-
-        }
-
         try {
+
+            if (outputObjectDirPath == null || outputObjectDirPath.isEmpty()) {
+                String warningMessage = "Streaming job " + jobId
+                        + " has no output object directory to cleanup."
+                        + " Output to disk was not enabled when the job was created.";
+                throw new JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException(warningMessage);
+            }
+
+            File outputObjectDir = new File(outputObjectDirPath);
+            if (!outputObjectDir.exists()) {
+                // It is not an error if the output object directory doesn't exist. Just log that fact and return.
+                log.info("[Streaming Job {}:*:*] Output object directory '{}' not deleted because it doesn't exist.",
+                        jobId, outputObjectDirPath);
+                return;
+            }
+
+            if (!outputObjectDir.isDirectory()) {
+                String errorMessage = "Streaming job " + jobId
+                        + " output object directory '" + outputObjectDirPath + "' isn't a directory."
+                        + " Can't delete output object directory.";
+                throw new JobCancellationInvalidOutputObjectDirectoryWfmProcessingException(errorMessage);
+            }
+
             // As requested, delete the output object directory for this streaming job.
             log.debug("[Streaming Job {}:*:*] Output object directory '{}' is being deleted as specified by the cancel request.",
                     jobId, outputObjectDirPath);
@@ -408,12 +411,30 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                     jobId, outputObjectDirPath);
 
         } catch (IOException | IllegalArgumentException e) {
-            // Marking this as a warning. The warning include the path to the output object directory, so the client can delete it if necessary.
+            // Marking this as a warning. The warning includes the path to the output object directory, so the client can delete it if necessary.
             String warningMessage = "Streaming job " + jobId
                     + " failed to cleanup the output object directory '"
                     + outputObjectDirPath + "' due to exception: " + e.getMessage();
             throw new JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException(warningMessage, e);
         }
+
+        /*
+        // TODO: Forward the warning/error along in the mpfResponse if and when we implement a separate REST endpoint for cleanup.
+        } catch (JobAlreadyCancellingWfmProcessingException | JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException we) {
+            // If one of these warning exceptions were caught, log the warning.
+            log.warn(we.getMessage());
+            cleanupResponse = new StreamingJobCancelResponse(jobId,
+                    streamingJobRequest.getOutputObjectDirectory(), doCleanup,
+                    MpfResponse.RESPONSE_CODE_WARNING, we.getMessage());
+
+        } catch (JobCancellationInvalidOutputObjectDirectoryWfmProcessingException idee) {
+            // If the output object directory couldn't be deleted due to an error, log the error. and forward the error along in the mpfResponse.
+            log.error(idee.getMessage());
+            cleanupResponse = new StreamingJobCancelResponse(jobId,
+                    streamingJobRequest.getOutputObjectDirectory(), doCleanup,
+                    MpfResponse.RESPONSE_CODE_ERROR, idee.getMessage());
+        }
+        */
     }
 
     /**
@@ -465,7 +486,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         log.info("[Streaming Job {}|*|*] is running at priority {}.", streamingJobRequestEntity.getId(), priority);
 
         try {
-
             // persist the pipeline and streaming job in REDIS
             TransientPipeline transientPipeline = buildPipeline(jsonStreamingJobRequest.getPipeline());
             TransientStreamingJob transientStreamingJob = buildStreamingJob(jobId, streamingJobRequestEntity, transientPipeline, jsonStreamingJobRequest);
@@ -490,9 +510,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             // throw an exception, failure to create the transient objects
             throw new WfmProcessingException(CREATE_TRANSIENT_JOB_FAILED_MESSAGE);
         } // end of Exception catch
-
-        // TODO send the streaming job to the master node manager
-        log.info(this.getClass().getName() + ".runInternal: TODO notification of new streaming job " + streamingJobRequestEntity.getId() + " to Components via Master Node Manager.");
 
         return streamingJobRequestEntity;
     }
@@ -574,7 +591,11 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
         if (status.isTerminal()) {
             if (redis.getDoCleanup(jobId)) {
-                cleanup(jobId, streamingJobRequest.getOutputObjectDirectory());
+                try {
+                    cleanup(jobId, streamingJobRequest.getOutputObjectDirectory());
+                } catch (WfmProcessingException e) {
+                    log.warn(e.getMessage());
+                }
             }
 
             redis.clearJob(jobId);
@@ -610,12 +631,12 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     @Override
     public void handleNewSummaryReport(JsonSegmentSummaryReport summaryReport) {
-        // TODO: write system test
+        // TODO: Write system test for summary report callbacks.
 
         LocalDateTime time = LocalDateTime.now();
         summaryReport.setReportDate(time);
 
-        // TODO: check if output enabled and just get directory, not whole transient job
+        // TODO: Add methods to redis so that we don't need to get the whole transient job.
         TransientStreamingJob transientStreamingJob = redis.getStreamingJob(summaryReport.getJobId());
         if (transientStreamingJob != null) {
             if (transientStreamingJob.isOutputEnabled()) {

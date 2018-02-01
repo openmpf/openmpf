@@ -89,9 +89,6 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	@Autowired
 	private ServerMediaService serverMediaService;
 
-	//@Autowired
-    //private MasterStreamingJobManager streamingJobManager;
-
 	// used to prevent the initialization behaviors from being executed more than once
 	private static boolean applicationRefreshed = false;
 	public boolean isApplicationRefreshed() { return  applicationRefreshed; }
@@ -118,8 +115,6 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 
         		log.info("Marking any remaining running streaming jobs as CANCELLED_BY_SHUTDOWN.");
         		streamingJobRequestDao.cancelJobsInNonTerminalState();
-
-                // streamingJobManager.stopAllJobs();
 
 				if (propertiesUtil.isAmqBrokerEnabled()) {
 					try {

@@ -206,8 +206,8 @@ public class PropertiesUtil {
 	}
 
 	/** Create the output object file in the specified streaming job output objects directory
-     * @param time time associated with job output
-	 * @param parentDir this streaming jobs output objects directory
+     * @param time the time associated with the job output
+	 * @param parentDir this streaming job's output objects directory
 	 * @return output object File that was created under the specified output objects directory
 	 * @throws IOException
 	 */

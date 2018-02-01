@@ -73,8 +73,8 @@ public class CallbackUtils {
     // Send the health report to the URI identified by callbackUri, using the HTTP POST method.
     public void doHealthReportCallback(List<Long> jobIds, String callbackUri) {
 
-        // Get other information from REDIS about these streaming jobs.
-        // Do this before spawning a thread to avoid a race condition where the job may be cleared from REDIS.
+        // Get information from REDIS about these streaming jobs. Do this before spawning a thread to avoid
+        // a race condition where the job may be cleared from REDIS before this information can be retrieved.
         log.info("Starting POST of health report(s) with jobIds: " + jobIds);
         List<String> externalIds = redis.getExternalIds(jobIds);
         List<String> jobStatuses = redis.getJobStatusesAsString(jobIds);

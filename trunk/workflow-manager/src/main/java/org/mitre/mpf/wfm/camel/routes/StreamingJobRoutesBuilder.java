@@ -119,12 +119,6 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 	private static JsonSegmentSummaryReport convertProtobufResponse(
 			long jobId, DetectionProtobuf.StreamingDetectionResponse protobuf) {
 
-	    /*
-		List<JsonTrackOutputObject> tracks = protobuf.getVideoTracksList().stream()
-				.map(StreamingJobRoutesBuilder::convertProtobufTrack)
-				.collect(toList());
-		*/
-
         List<JsonTrackOutputObject> tracks =
                 IntStream.range(0, protobuf.getVideoTracksList().size())
                 .mapToObj(i -> StreamingJobRoutesBuilder.convertProtobufTrack(i,
@@ -164,17 +158,6 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
         track.setExemplar(exemplar);
 
         return track;
-
-		/*
-		return new JsonTrackOutputObject(
-				protobuf.getStartFrame(),
-				protobuf.getStartTime(),
-				protobuf.getStopFrame(),
-				protobuf.getStopTime(),
-				protobuf.getConfidence(),
-				detections,
-				convertProperties(protobuf.getDetectionPropertiesList()));
-		*/
 	}
 
 

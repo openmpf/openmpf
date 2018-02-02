@@ -650,7 +650,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     @Override
     public void handleNewActivityAlert(long jobId, long frameId, long timestamp) {
-        // TODO: Replace logging with implementation of handleNewActivityAlert
+        // TODO: Replace logging with implementation of handleNewActivityAlert (should update activityFrameId and activityTimestamp in REDIS)
         log.debug("handleNewActivityAlert(jobId = {}, frameId = {}, time = {})", jobId, frameId, millisToDateTime(timestamp));
     }
 

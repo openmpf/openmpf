@@ -26,47 +26,17 @@
 
 package org.mitre.mpf.wfm.camel;
 
-import org.apache.camel.Exchange;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.javasimon.aop.Monitored;
-import org.mitre.mpf.interop.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.event.NotificationProducer;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
-import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
-import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.enums.JobStatus;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Date;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 @Monitored
 public interface JobCompleteProcessor extends WfmProcessorInterface, NotificationProducer<JobCompleteNotification> {
-	void createOutputObject(long jobId, Mutable<JobStatus> jobStatus) throws WfmProcessingException;
+	void createOutputObject(long jobId, Mutable<BatchJobStatusType> jobStatus) throws WfmProcessingException;
 	void subscribe(NotificationConsumer<JobCompleteNotification> consumer);
 	void unsubscribe(NotificationConsumer<JobCompleteNotification> consumer);
 }

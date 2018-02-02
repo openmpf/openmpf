@@ -28,8 +28,16 @@ package org.mitre.mpf.wfm.data;
 
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
+import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,14 +111,15 @@ public class RedisImpl implements Redis {
 			TASK_COUNT = "TASK_COUNT",
 			TRACK = "TRACK",
 			SEQUENCE = "SEQUENCE",
-			STATUS = "STATUS",
-			JOB_STATUS = "JOB_STATUS",
+            BATCH_JOB_STATUS = "BATCH_JOB_STATUS",
+            STREAMING_JOB_STATUS = "STREAMING_JOB_STATUS",
+            STREAMING_JOB_STATUS_DETAIL = "STREAMING_JOB_STATUS_DETAIL",
 			STREAMING_JOB = "STREAMING_JOB",
 			STREAM = "STREAM",
 			STALL_TIMEOUT = "STALL_TIMEOUT",
 			HEALTH_REPORT_CALLBACK_URI = "HEALTH_REPORT_CALLBACK_URI",
-			HEALTH_REPORT_LAST_ACTIVITY_FRAME_ID = "HEALTH_REPORT_LAST_ACTIVITY_FRAME_ID",
-			HEALTH_REPORT_LAST_ACTIVITY_TIMESTAMP = "HEALTH_REPORT_LAST_ACTIVITY_TIMESTAMP",
+			HEALTH_REPORT_ACTIVITY_FRAME_ID = "HEALTH_REPORT_ACTIVITY_FRAME_ID",
+			HEALTH_REPORT_ACTIVITY_TIMESTAMP = "HEALTH_REPORT_ACTIVITY_TIMESTAMP",
 			SUMMARY_REPORT_CALLBACK_URI = "SUMMARY_REPORT_CALLBACK_URI";
 
 	/**
@@ -372,30 +381,86 @@ public class RedisImpl implements Redis {
 		}
 	}
 
-	/**
-	 * Get the job status for the specified job
-	 * @param jobId The OpenMPF-assigned ID of the batch or streaming job, must be unique.
-	 * @return
+    /**
+     * Set the job status type of the specified batch job.
+     * @param jobId The OpenMPF-assigned ID of the batch job, must be unique.
+     * @param batchJobStatusType The new status type of the specified batch job.
+     * @throws WfmProcessingException is thrown if this method is attempted to be used for a streaming job.
+     */
+    @SuppressWarnings("unchecked")
+    public synchronized void setJobStatus(long jobId, BatchJobStatusType batchJobStatusType) throws WfmProcessingException {
+        if ( isJobTypeBatch(jobId) ) {
+            redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(BATCH_JOB_STATUS, batchJobStatusType);
+        } else if ( isJobTypeStreaming(jobId) ) {
+			// this method shouldn't be called for streaming jobs.
+			throw new WfmProcessingException("Error: this method shouldn't be called for streaming jobs. Rejected this call for job " + jobId);
+        } else {
+            // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and ignoring the request.
+            log.warn("Job #{} was not found as a batch or a streaming job so we can't set the job status", jobId);
+        }
+    }
+
+    /**
+     * Set the job status type of the specified streaming job. Use this version of the method when
+     * streaming job status doesn't include additional detail information.
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+     * @param streamingJobStatusType The new status type of the specified streaming job.
+     * @throws WfmProcessingException is thrown if this method is attempted to be used for a batch job.
+     */
+    @SuppressWarnings("unchecked")
+    public synchronized void setJobStatus(long jobId, StreamingJobStatusType streamingJobStatusType) throws WfmProcessingException {
+        setJobStatus(jobId, streamingJobStatusType, null);
+    }
+
+    /**
+     * Set the job status of the specified streaming job. Use this form of the method if job status needs
+     * to include additional details about the streaming job status.
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+     * @param streamingJobStatusType The new status type of the specified streaming job.
+     * @param streamingJobStatusDetail Detail information associated with the streaming job status.
+     * @throws WfmProcessingException is thrown if this method is attempted to be used for a batch job.
+     */
+    @SuppressWarnings("unchecked")
+    public synchronized void setJobStatus(long jobId, StreamingJobStatusType streamingJobStatusType, String streamingJobStatusDetail) throws WfmProcessingException {
+        if ( isJobTypeBatch(jobId) ) {
+            // this method shouldn't be called for batch jobs.
+            throw new WfmProcessingException("Error: this method shouldn't be called for batch jobs. Rejected this call for job " + jobId);
+        } else if ( isJobTypeStreaming(jobId) ) {
+            redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(STREAMING_JOB_STATUS, streamingJobStatusType);
+            if ( streamingJobStatusDetail != null ) {
+                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(STREAMING_JOB_STATUS_DETAIL, streamingJobStatusDetail);
+            } else {
+                // Clear the streaming job status detail if the job status detail was passed as null
+                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).delete(STREAMING_JOB_STATUS_DETAIL);
+            }
+        } else {
+            // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and ignoring the request.
+            log.warn("Job #{} was not found as a batch or a streaming job so we can't set the job status", jobId);
+        }
+    }
+
+    /**
+	 * Get the job status for the specified batch job
+	 * @param jobId The OpenMPF-assigned ID of the batch job, must be unique.
+	 * @return Method will return job status for the batch job.
+     * @exception WfmProcessingException is thrown if this method is called for a streaming job.
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public JobStatus getJobStatus(long jobId)  {
+	public BatchJobStatusType getBatchJobStatus(long jobId) throws WfmProcessingException {
 		if ( isJobTypeBatch(jobId) ) {
 			// confirmed that the specified job is a batch job
 			if( !redisTemplate.boundSetOps(BATCH_JOB).members().contains(Long.toString(jobId)) ) {
+			    // There is no batch job with that job id in REDIS, return null
 				return null;
 			} else {
 				Map jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
-				return (JobStatus)jobHash.get(JOB_STATUS);
+				BatchJobStatusType batchJobStatusType = (BatchJobStatusType) jobHash.get(BATCH_JOB_STATUS);
+				return batchJobStatusType;
 			}
 		} else if ( isJobTypeStreaming(jobId) ) {
-			// confirmed that the specified job is a streaming job
-			if ( !redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
-				return null;
-			} else {
-				Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
-				return (JobStatus)jobHash.get(JOB_STATUS);
-			}
+            // this method shouldn't be called for streaming jobs.
+            throw new WfmProcessingException("Error: this method shouldn't be called for streaming jobs. Rejected this call for job " + jobId);
 		} else {
             // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and returning null.
 			log.warn("Job #{} was not found as a batch or a streaming job so we can't return the job status (returning null).", jobId);
@@ -403,24 +468,82 @@ public class RedisImpl implements Redis {
 		}
 	}
 
-    /** This method is the same as {@link #getJobStatus(long)}, it's just adapted for use with Lists.
-     * @param jobIds List of jobIds
-     * @return List of JobStatus for the specified jobs. The List may contain nulls for invalid jobIds.
+    /**
+     * Get the job status for the specified streaming job
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+     * @return Method will return job status of the streaming job.
+     * @exception WfmProcessingException is thrown if this method is called for a batch job.
      */
     @Override
     @SuppressWarnings("unchecked")
-    public List<JobStatus> getJobStatuses(List<Long> jobIds) {
-        return jobIds.stream().map(jobId->getJobStatus(jobId.longValue())).collect(Collectors.toList());
+    public StreamingJobStatus getStreamingJobStatus(long jobId) throws WfmProcessingException {
+        if ( isJobTypeBatch(jobId) ) {
+            // this method shouldn't be called for batch jobs.
+            throw new WfmProcessingException("Error: this method shouldn't be called for batch jobs. Rejected this call for job " + jobId);
+        } else if ( isJobTypeStreaming(jobId) ) {
+            // confirmed that the specified job is a streaming job
+            if ( !redisTemplate.boundSetOps(STREAMING_JOB).members().contains(Long.toString(jobId)) ) {
+                // There is no streaming job with that job id in REDIS, return null
+                return null;
+            } else {
+                Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
+                StreamingJobStatusType jobStatusType = (StreamingJobStatusType) jobHash.get(STREAMING_JOB_STATUS);
+                if ( jobStatusType != null ) {
+                    // Return streaming job status that was stored for this job in REDIS. Note the constructor handles possible null for jobStatusDetail
+                    String jobStatusDetail = (String) jobHash.get(STREAMING_JOB_STATUS_DETAIL);
+                    StreamingJobStatus jobStatus = new StreamingJobStatus(jobStatusType, jobStatusDetail);
+                    return jobStatus;
+                } else {
+                    // Job status hasn't been stored for this job, return null;
+                    return null;
+                }
+            }
+        } else {
+            // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and returning null.
+            log.warn("Job #{} was not found as a batch or a streaming job so we can't return the job status (returning null).", jobId);
+            return null;
+        }
     }
 
-    /** This method is similar to {@link #getJobStatuses(List<Long>)}, it just returns a List of Strings instead of a List of JobStatus.
-     * @param jobIds List of jobIds
-     * @return List of JobStatus as Strings for the specified jobs. The List may contain nulls for invalid jobIds.
+    /** This method is the same as {@link #getBatchJobStatus(long)}, it's just adapted for use with Lists.
+     * @param jobIds List of batch jobIds
+     * @return List of BatchJobStatusType for the specified batch jobs. The List may contain nulls for invalid jobIds.
      */
     @Override
     @SuppressWarnings("unchecked")
-    public List<String> getJobStatusesAsString(List<Long> jobIds) {
-        return getJobStatuses(jobIds).stream().map(jobStatus->jobStatus.toString()).collect(Collectors.toList());
+    public List<BatchJobStatusType> getBatchJobStatuses(List<Long> jobIds) throws WfmProcessingException {
+        return jobIds.stream().map(jobId->getBatchJobStatus(jobId.longValue())).collect(Collectors.toList());
+    }
+
+    /** This method is the same as {@link #getStreamingJobStatus(long)}, it's just adapted for use with Lists.
+     * @param jobIds List of streaming jobIds
+     * @return List of StreamingJobStatus for the specified jobs. The List may contain nulls for invalid jobIds.
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<StreamingJobStatus> getStreamingJobStatuses(List<Long> jobIds) throws WfmProcessingException {
+        return jobIds.stream().map(jobId->getStreamingJobStatus(jobId.longValue())).collect(Collectors.toList());
+    }
+
+    /** This method is similar to {@link #getBatchJobStatuses(List<Long>)}, it just returns a List of Strings describing the batch job status types instead of a List of BatchJobStatuses.
+     * @param jobIds List of batch jobIds
+     * @return List of batch job status types as Strings for the specified jobs. The List may contain nulls for invalid jobIds.
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<String> getBatchJobStatusesAsStrings(List<Long> jobIds) {
+        return getBatchJobStatuses(jobIds).stream().map(batchJobStatus-> { return batchJobStatus.name(); }).collect(Collectors.toList());
+    }
+
+    /** This method is similar to {@link #getStreamingJobStatuses(List<Long>)}, it just returns a List of Strings describing the streaming job status types instead of a List of StreamingJobStatuses.
+     * Note that any detail information that may accompany StreamingJobStatus will not be returned when using this method.
+     * @param jobIds List of streaming jobIds
+     * @return List of streaming job status types as Strings for the specified jobs. The List may contain nulls for invalid jobIds.
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<String> getStreamingJobStatusesAsStrings(List<Long> jobIds) {
+        return getStreamingJobStatuses(jobIds).stream().map(streamingJobStatus-> { return streamingJobStatus.getType().name(); }).collect(Collectors.toList());
     }
 
     /**
@@ -829,7 +952,24 @@ public class RedisImpl implements Redis {
             TransientStreamingJob transientJob = getStreamingJob(jobId);
             if (transientJob == null) {
                 // Throw an exception if any job that may be in the long term database, but isn't in REDIS (i.e. it is not an active job), is passed to this method.
-                throw new WfmProcessingException("Error: jobId  " + jobId + " is not the id of an active Streaming job");
+                throw new WfmProcessingException("Error: jobId " + " is not the id of an active Streaming job");
+            } else {
+                // Check the health report callback for this active, streaming job.
+                String healthReportCallbackURI = transientJob.getHealthReportCallbackURI();
+				if (healthReportCallbackURI == null) {
+					continue;
+				}
+                if (healthReportCallbackJobIdListMap.containsKey(healthReportCallbackURI)) {
+                    // some other streaming job has already registered this health report callback URI, add this job to the list
+                    List<Long> jobList = healthReportCallbackJobIdListMap.get(healthReportCallbackURI);
+                    jobList.add(Long.valueOf(jobId));
+                } else {
+                    // This is the first streaming job to register this health report callback URI
+                    List<Long> jobList = new ArrayList<>();
+                    jobList.add(Long.valueOf(jobId));
+                    healthReportCallbackJobIdListMap.put(healthReportCallbackURI, jobList);
+                }
+
             }
 	        String healthReportCallbackURI = transientJob.getHealthReportCallbackURI();
             if (healthReportCallbackURI == null)  {
@@ -869,148 +1009,131 @@ public class RedisImpl implements Redis {
 		}
 	}
 
-	/**
-	 * Set the job status of the specified batch or streaming job
-	 * @param jobId The OpenMPF-assigned ID of the batch or streaming job, must be unique.
-	 * @param jobStatus The new status of the specified job.
-	 */
-	@Override
-	@SuppressWarnings("unchecked")
-	public synchronized void setJobStatus(long jobId, JobStatus jobStatus) {
-		if ( isJobTypeBatch(jobId) ) {
-			redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(JOB_STATUS, jobStatus);
-		} else if ( isJobTypeStreaming(jobId) ) {
-			redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(JOB_STATUS, jobStatus);
-		} else {
-            // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and ignoring the request.
-			log.warn("Job #{} was not found as a batch or a streaming job so we can't set the job status", jobId);
-		}
-	}
-
     /**
-     * Store the last activity frame id from the last health report that was sent for the specified streaming job.
+     * Store the activity frame id from the last health report that was sent for the specified streaming job.
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
      * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
-     * @param lastActivityFrameId  The last activity frame id to be stored for this streaming job
+     * @param activityFrameId  The activity frame id to be stored for this streaming job
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job, or if the passed
-     * lastActivityFrameId is null.
+     * activityFrameId is null.
      */
     @Override
-    public synchronized void setHealthReportLastActivityFrameId(long jobId, String lastActivityFrameId ) throws WfmProcessingException {
+    public synchronized void setHealthReportActivityFrameId(long jobId, String activityFrameId ) throws WfmProcessingException {
         if ( isJobTypeStreaming(jobId) ) {
-            if ( lastActivityFrameId != null ) {
-                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(HEALTH_REPORT_LAST_ACTIVITY_FRAME_ID, lastActivityFrameId );
+            if ( activityFrameId != null ) {
+                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(HEALTH_REPORT_ACTIVITY_FRAME_ID, activityFrameId );
             } else {
-            	String errorMsg = "Illegal: can't set health report last activity frame id to null for streaming job #" + jobId + ".";
+            	String errorMsg = "Illegal: can't set health report activity frame id to null for streaming job #" + jobId + ".";
                 log.error(errorMsg);
                 throw new WfmProcessingException(errorMsg);
             }
         } else {
-            String errorMsg = "Error: Job #" + jobId + " is not a streaming job, so we can't set the health report last activity frame id.";
+            String errorMsg = "Error: Job #" + jobId + " is not a streaming job, so we can't set the health report activity frame id.";
             log.error(errorMsg);
             throw new WfmProcessingException(errorMsg + " Only streaming jobs send health reports.");
         }
     }
 
     /**
-     * Return the last activity frame id that was stored in the health report for the specified streaming job.
+     * Return the activity frame id that was stored with the last health report for the specified streaming job.
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
      * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
-     * @return The last activity frame id that was stored for this streaming job.
+     * @return The activity frame id that was stored for this streaming job.
      * Returned value may be null if a health report for this streaming job has not yet been sent or no activity has been detected yet for this streaming job.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job
      */
     @Override
-    public synchronized String getHealthReportLastActivityFrameIdAsString(long jobId) throws WfmProcessingException {
+    public synchronized String getHealthReportActivityFrameIdAsString(long jobId) throws WfmProcessingException {
         if ( isJobTypeStreaming(jobId) ) {
             // confirmed that the specified job is a streaming job
             Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
-            String frameId = (String) jobHash.get(HEALTH_REPORT_LAST_ACTIVITY_FRAME_ID);
+            String frameId = (String) jobHash.get(HEALTH_REPORT_ACTIVITY_FRAME_ID);
 			return frameId;
         } else {
-            String errorMsg = "Error: Job #" + jobId + " is not a streaming job, so we can't set the health report last activity frame id.";
+            String errorMsg = "Error: Job #" + jobId + " is not a streaming job, so we can't set the health report activity frame id.";
             log.error(errorMsg);
-            throw new WfmProcessingException(errorMsg + " Only streaming jobs send health reports.");        }
+            throw new WfmProcessingException(errorMsg + " Only streaming jobs send health reports.");
+        }
     }
 
-    /** This method is the same as {@link #getHealthReportLastActivityFrameIdAsString(long)}, it's just adapted for use with Lists.
+    /** This method is the same as {@link #getHealthReportActivityFrameIdAsString(long)}, it's just adapted for use with Lists.
      * @param jobIds List of jobIds for streaming jobs
-     * @return List of last activity frame ids
+     * @return List of activity frame ids from the last health report that contained the specified job ids.
      * @throws WfmProcessingException
      */
     @Override
-    public synchronized List<String> getHealthReportLastActivityFrameIdsAsStrings(List<Long> jobIds) throws WfmProcessingException {
-        return jobIds.stream().map(jobId->getHealthReportLastActivityFrameIdAsString(jobId.longValue())).collect(Collectors.toList());
+    public synchronized List<String> getHealthReportActivityFrameIdsAsStrings(List<Long> jobIds) throws WfmProcessingException {
+        return jobIds.stream().map(jobId->getHealthReportActivityFrameIdAsString(jobId.longValue())).collect(Collectors.toList());
     }
 
     /**
-     * Store the last activity timestamp that was sent in a health report for the specified streaming job.
+     * Store the activity timestamp that was sent in the last health report that contained the specified streaming job.
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
      * Note that internally, health report timestamps are stored in REDIS by converting the object to a string
      * formatted using the REDIS_TIMESTAMP_PATTERN, which is currently defined as {@value #REDIS_TIMESTAMP_PATTERN}.
      * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
-     * @param lastActivityTimestamp The last health report activity timestamp for this streaming job.
+     * @param activityTimestamp The health report activity timestamp for this streaming job.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job, or if the passed
-     * lastActivityTimestamp is null. DateTimeException will be thrown if the lastActivityTimestamp could not be stored
+     * activityTimestamp is null. DateTimeException will be thrown if the activityTimestamp could not be stored
      * in REDIS because it could not be formatted as a String.
      */
     @Override
-    public synchronized void setHealthReportLastActivityTimestamp(long jobId, LocalDateTime lastActivityTimestamp) throws WfmProcessingException, DateTimeException {
+    public synchronized void setHealthReportActivityTimestamp(long jobId, LocalDateTime activityTimestamp) throws WfmProcessingException, DateTimeException {
         if ( isJobTypeStreaming(jobId) ) {
-            if ( lastActivityTimestamp != null ) {
+            if ( activityTimestamp != null ) {
                 // Internally, health report timestamps are being stored in REDIS using ISO-8601 format.
-                String timestamp = timestampFormatter.format(lastActivityTimestamp);
-                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(HEALTH_REPORT_LAST_ACTIVITY_TIMESTAMP, timestamp);
+                String timestamp = timestampFormatter.format(activityTimestamp);
+                redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(HEALTH_REPORT_ACTIVITY_TIMESTAMP, timestamp);
             } else {
-                String errorMsg = "Illegal: can't set the health report last activity timestamp to null for streaming job #" + jobId + ".";
+                String errorMsg = "Illegal: can't set the health report activity timestamp to null for streaming job #" + jobId + ".";
                 log.error(errorMsg);
                 throw new WfmProcessingException(errorMsg);
             }
         } else {
-            String errorMsg = "Error: Job #" + jobId + " is not a streaming job, so we can't set the health report last activity timestamp.";
+            String errorMsg = "Error: Job #" + jobId + " is not a streaming job, so we can't set the health report activity timestamp.";
             log.error(errorMsg);
             throw new WfmProcessingException(errorMsg + " Only streaming jobs send health reports.");
         }
     }
 
     /**
-     * Return the last activity timestamp that was sent in a health report for the specified streaming job.
+     * Return the activity timestamp that was sent in a health report for the specified streaming job.
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
      * Note that internally, health report timestamps are stored in REDIS by converting the object to a string
      * formatted using the REDIS_TIMESTAMP_PATTERN, which is currently defined as {@value #REDIS_TIMESTAMP_PATTERN}.
      * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
-     * @return The last health report activity timestamp for this streaming job as a String.
+     * @return The health report activity timestamp for this streaming job as a String.
      * Returned value may be null if no activity has been detected for this job yet.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job.
      */
     @Override
-    public synchronized String getHealthReportLastActivityTimestampAsString(long jobId) throws WfmProcessingException {
+    public synchronized String getHealthReportActivityTimestampAsString(long jobId) throws WfmProcessingException {
         if ( isJobTypeStreaming(jobId) ) {
             // Confirmed that the specified job is a streaming job.
             Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
-            return (String) jobHash.get(HEALTH_REPORT_LAST_ACTIVITY_TIMESTAMP);
+            return (String) jobHash.get(HEALTH_REPORT_ACTIVITY_TIMESTAMP);
         } else {
-            String errorMsg = "Error: Job #" + jobId + " is not a streaming job, so we can't get the health report last activity timestamp.";
+            String errorMsg = "Error: Job #" + jobId + " is not a streaming job, so we can't get the health report activity timestamp.";
             log.error(errorMsg);
             throw new WfmProcessingException(errorMsg + " Only streaming jobs send health reports.");
         }
     }
 
     /**
-     * Return the last activity timestamp that was sent in a health report for the specified streaming job.
+     * Return the activity timestamp that was sent in a health report for the specified streaming job.
      * Note that health reports are not sent for batch jobs, so calling this method for a batch job would be an error.
      * Note that internally, health report timestamps are stored in REDIS by converting the object to a string
      * formatted using the REDIS_TIMESTAMP_PATTERN, which is currently defined as {@value #REDIS_TIMESTAMP_PATTERN}.
      * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
-     * @return The last health report activity timestamp for this streaming job.
+     * @return The health report activity timestamp for this streaming job.
      * Returned value may be null if no activity has been detected for this job yet.
      * @exception WfmProcessingException will be thrown if the specified job is not a streaming job.
      * DateTimeException will be thrown if the last activity timestamp could not be pulled
      * from REDIS because it could not be parsed as a String.
      */
     @Override
-    public synchronized LocalDateTime getHealthReportLastActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException {
-        String timestamp = getHealthReportLastActivityTimestampAsString(jobId);
+    public synchronized LocalDateTime getHealthReportActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException {
+        String timestamp = getHealthReportActivityTimestampAsString(jobId);
         if ( timestamp != null ) {
             return (LocalDateTime) timestampFormatter.parse(timestamp);
         } else {
@@ -1019,25 +1142,25 @@ public class RedisImpl implements Redis {
         }
     }
 
-    /** This method is the same as {@link #getHealthReportLastActivityTimestamp(long)}, it's just adapted for use with Lists.
+    /** This method is the same as {@link #getHealthReportActivityTimestamp(long)}, it's just adapted for use with Lists.
      * @param jobIds List of jobIds for streaming jobs.
-     * @return List of last activity timestamps. The list may contain null if no activity has been detected for a job yet.
+     * @return List of activity timestamps. The list may contain null if no activity has been detected for a job yet.
      * @throws WfmProcessingException
      * @throws DateTimeException
      */
     @Override
-    public synchronized List<LocalDateTime> getHealthReportLastActivityTimestamps(List<Long> jobIds) throws WfmProcessingException, DateTimeException {
-        return jobIds.stream().map(jobId->getHealthReportLastActivityTimestamp(jobId.longValue())).collect(Collectors.toList());
+    public synchronized List<LocalDateTime> getHealthReportActivityTimestamps(List<Long> jobIds) throws WfmProcessingException, DateTimeException {
+        return jobIds.stream().map(jobId->getHealthReportActivityTimestamp(jobId.longValue())).collect(Collectors.toList());
     }
 
-    /** This method is the same as {@link #getHealthReportLastActivityTimestamp(long)}, it's just adapted for use with Lists.
+    /** This method is the same as {@link #getHealthReportActivityTimestamp(long)}, it's just adapted for use with Lists.
      * @param jobIds List of jobIds for streaming jobs.
-     * @return List of last activity timestamps as Strings. The list may contain null if no activity has been detected for a job yet.
+     * @return List of activity timestamps as Strings. The list may contain null if no activity has been detected for a job yet.
      * @throws WfmProcessingException
      */
     @Override
-    public synchronized List<String> getHealthReportLastActivityTimestampsAsStrings(List<Long> jobIds) throws WfmProcessingException {
-        return jobIds.stream().map(jobId->getHealthReportLastActivityTimestampAsString(jobId.longValue())).collect(Collectors.toList());
+    public synchronized List<String> getHealthReportActivityTimestampsAsStrings(List<Long> jobIds) throws WfmProcessingException {
+        return jobIds.stream().map(jobId->getHealthReportActivityTimestampAsString(jobId.longValue())).collect(Collectors.toList());
     }
 
     /**
@@ -1210,9 +1333,10 @@ public class RedisImpl implements Redis {
         List<Long> currentStreamingJobIds = jobIds.stream().filter(jobId -> isJobTypeStreaming(jobId))
             .filter(jobId -> {
                 if ( isActive ) {
-                    return !getJobStatus(jobId).isTerminal(); // include only those jobs that do not have terminal jobStatus.
+                    // include only those streaming jobs that do not have terminal jobStatus.
+                    return !getStreamingJobStatus(jobId).isTerminal();
                 } else {
-                    return true; // include all jobs.
+                    return true; // include all streaming jobs.
                 }
             }).collect(Collectors.toList());
 

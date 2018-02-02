@@ -28,6 +28,16 @@ package org.mitre.mpf.wfm;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.File;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import javax.annotation.PostConstruct;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
@@ -44,7 +54,7 @@ import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
@@ -59,11 +69,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import javax.annotation.PostConstruct;
-import java.io.File;
-import java.net.URI;
-import java.util.*;
 
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
@@ -202,7 +207,7 @@ public class TestWfmEndToEnd {
 
 		JobRequest jobRequest = mpfService.getJobRequest(jobId);
 
-		Assert.assertTrue(jobRequest.getStatus() == JobStatus.COMPLETE);
+		Assert.assertTrue(jobRequest.getStatus() == BatchJobStatusType.COMPLETE);
 		Assert.assertTrue(jobRequest.getOutputObjectPath() != null);
 		Assert.assertTrue(new File(jobRequest.getOutputObjectPath()).exists());
 
@@ -221,7 +226,7 @@ public class TestWfmEndToEnd {
 
 		jobRequest = mpfService.getJobRequest(jobId);
 
-		Assert.assertTrue(jobRequest.getStatus() == JobStatus.COMPLETE);
+		Assert.assertTrue(jobRequest.getStatus() == BatchJobStatusType.COMPLETE);
 		Assert.assertTrue(jobRequest.getOutputObjectPath() != null);
 		Assert.assertTrue(new File(jobRequest.getOutputObjectPath()).exists());
 

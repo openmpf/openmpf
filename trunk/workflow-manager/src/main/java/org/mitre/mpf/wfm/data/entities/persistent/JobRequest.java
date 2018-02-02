@@ -26,10 +26,18 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
-import org.mitre.mpf.wfm.enums.JobStatus;
-
-import javax.persistence.*;
 import java.util.Date;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Lob;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
 /**
  * This class includes the essential information which describes a batch job. Instances of this class are stored in a
@@ -68,12 +76,12 @@ public class JobRequest {
 	public int getPriority() { return  priority; }
 	public void setPriority(int priority) { this.priority = priority; }
 
-	/** The current status of this job. */
+	/** The current status of this batch job. */
 	@Column
 	@Enumerated(EnumType.STRING)
-	private JobStatus status;
-	public JobStatus getStatus() { return status; }
-	public void setStatus(JobStatus status) { this.status = status; }
+	private BatchJobStatusType status;
+	public BatchJobStatusType getStatus() { return status; }
+	public void setStatus(BatchJobStatusType status) { this.status = status; }
 
 	@Column
 	@Lob

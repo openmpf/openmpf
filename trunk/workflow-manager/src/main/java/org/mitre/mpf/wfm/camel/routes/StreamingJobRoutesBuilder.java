@@ -27,23 +27,23 @@
 
 package org.mitre.mpf.wfm.camel.routes;
 
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+
+import java.util.List;
+import java.util.Map;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.protobuf.ProtobufDataFormat;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.data.entities.transients.SegmentSummaryReport;
-import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
-
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 
 
 @Component
@@ -59,6 +59,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 
 	@Override
 	public void configure() {
+		// TODO add JOB_STATUS_DETAIL to the streaming job status message
 		from(StreamingEndpoints.WFM_STREAMING_JOB_STATUS.endpointName())
 				.routeId("Streaming Job Status Route")
 				.log(LoggingLevel.DEBUG, "Received job status message: ${headers}")
@@ -66,7 +67,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 					Message msg = exchange.getIn();
 					_streamingJobRequestBo.handleJobStatusChange(
 							msg.getHeader("JOB_ID", long.class),
-							msg.getHeader("JOB_STATUS", JobStatus.class),
+							new StreamingJobStatus(msg.getHeader("JOB_STATUS", StreamingJobStatusType.class)),
 							msg.getHeader("STATUS_CHANGE_TIMESTAMP", long.class));
 				 });
 

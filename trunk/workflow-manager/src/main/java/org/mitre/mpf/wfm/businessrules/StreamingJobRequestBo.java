@@ -31,8 +31,9 @@ import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.data.entities.transients.SegmentSummaryReport;
-import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
 
@@ -92,9 +93,10 @@ public interface StreamingJobRequestBo {
 	 */
 	void sendHealthReports(List<Long> jobIds, boolean isActive) throws WfmProcessingException;
 
-	void jobCompleted(long jobId, JobStatus jobStatus);
+	void jobCompleted(long jobId, StreamingJobStatus jobStatus);
+	void jobCompleted(long jobId, StreamingJobStatusType jobStatusType);
 
-	void handleJobStatusChange(long jobId, JobStatus status, long timestamp);
+	void handleJobStatusChange(long jobId, StreamingJobStatus status, long timestamp);
 
 	void handleNewActivityAlert(long jobId, long frameId, long timestamp);
 

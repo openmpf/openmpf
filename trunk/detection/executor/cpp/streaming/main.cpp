@@ -24,10 +24,10 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include <chrono>
 #include <iostream>
 #include <string>
-#include <memory>
-#include <map>
+#include <unordered_map>
 
 #include <cstdlib>
 #include <libgen.h>
@@ -46,6 +46,7 @@
 #include "JobSettings.h"
 #include "BasicAmqMessageSender.h"
 #include "ExecutorErrors.h"
+#include "ExecutorUtils.h"
 
 
 using namespace MPF;
@@ -57,8 +58,8 @@ class StreamingComponentExecutor {
 public:
 
     static ExitCode RunJob(const std::string &ini_path) {
-        std::string app_dir = get_app_dir();
-        log4cxx::LoggerPtr logger = get_logger(app_dir);
+        std::string app_dir = GetAppDir();
+        log4cxx::LoggerPtr logger = GetLogger(app_dir);
         std::string log_prefix;
         try {
             LOG4CXX_INFO(logger, "Loading job settings from: " << ini_path);
@@ -132,7 +133,7 @@ private:
 
     static StreamingComponentExecutor Create(
             const log4cxx::LoggerPtr &logger, const std::string &log_prefix,
-            JobSettings &&settings,  MPFStreamingVideoJob &&job) {
+            JobSettings &&settings, MPFStreamingVideoJob &&job) {
 
         BasicAmqMessageSender sender(settings);
         std::string detection_type;
@@ -152,7 +153,7 @@ private:
                     detection_type);
         }
         catch (const FatalError &ex) {
-            sender.SendSummaryReport(0, detection_type, {}, ex.what());
+            sender.SendSummaryReport(0, detection_type, {}, {}, ex.what());
             throw;
         }
     }
@@ -161,6 +162,9 @@ private:
 
     void Run() {
         int frame_number = -1;
+        std::unordered_map<int, long> frame_timestamps;
+        VideoSegmentInfo segment_info(0, 0, settings_.segment_size - 1, 0, 0);
+
         try {
             LOG4CXX_INFO(logger_, log_prefix_ << "Connecting to stream at: " << settings_.stream_uri)
             cv::VideoCapture video_capture(settings_.stream_uri);
@@ -172,7 +176,6 @@ private:
             StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
 
             bool segment_activity_alert_sent = false;
-            int segment_end = -1;
 
             while (!std_in_watcher->QuitReceived()) {
                 cv::Mat frame;
@@ -181,42 +184,51 @@ private:
                     throw FatalError(ExitCode::STREAM_STALLED, "It is no longer possible to read frames.");
                 }
                 frame_number++;
+                frame_timestamps[frame_number] = GetTimestampMillis();
 
-                if (segment_end == -1) {
+                if (IsBeginningOfSegment(frame_number)) {
                     int segment_number = frame_number / settings_.segment_size;
-                    segment_end = frame_number + settings_.segment_size - 1;
-                    cv::Size frame_size = frame.size();
-                    component_.BeginSegment({ segment_number, frame_number, segment_end,
-                                                   frame_size.width, frame_size.height });
+                    int segment_end = frame_number + settings_.segment_size - 1;
+                    segment_info = VideoSegmentInfo(segment_number, frame_number, segment_end, frame.cols, frame.rows);
+                    component_.BeginSegment(segment_info);
                     segment_activity_alert_sent = false;
                 }
 
                 bool activity_found = component_.ProcessFrame(frame, frame_number);
                 if (activity_found && !segment_activity_alert_sent) {
                     LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending new activity alert for frame: " << frame_number)
-                    sender_.SendActivityAlert(frame_number);
+                    sender_.SendActivityAlert(frame_number, frame_timestamps.at(frame_number));
                     segment_activity_alert_sent = true;
                 }
 
-                if (frame_number == segment_end) {
-                    const std::vector<MPFVideoTrack> &tracks = component_.EndSegment();
+                if (frame_number == segment_info.end_frame) {
+                    std::vector<MPFVideoTrack> tracks = component_.EndSegment();
+                    ExecutorUtils::FixTracks(logger_, segment_info, tracks);
                     LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending segment summary for " << tracks.size() << " tracks.")
-                    sender_.SendSummaryReport(frame_number, detection_type_, tracks);
-                    segment_end = -1;
+                    sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps);
+                    frame_timestamps.clear();
                 }
             }
-            if ( (segment_end != -1) && (frame_number != segment_end) ) {
+            if (frame_number != segment_info.end_frame) {
                 // send the summary report if we've started, but have not completed, the next segment
-                const std::vector<MPFVideoTrack> &tracks = component_.EndSegment();
+                std::vector<MPFVideoTrack> tracks = component_.EndSegment();
                 LOG4CXX_INFO(logger_, log_prefix_ << "Send segment summary for final segment.")
-                sender_.SendSummaryReport(frame_number, detection_type_, tracks);
+                ExecutorUtils::FixTracks(logger_, segment_info, tracks);
+                sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps);
             }
         }
         catch (const FatalError &ex) {
             // Send error report before actually handling exception.
-            sender_.SendSummaryReport(frame_number, detection_type_, TryGetRemainingTracks(), ex.what());
+            frame_timestamps.emplace(frame_number, GetTimestampMillis()); // Only inserts if key not already present.
+            std::vector<MPFVideoTrack> tracks = TryGetRemainingTracks();
+            ExecutorUtils::FixTracks(logger_, segment_info, tracks);
+            sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps, ex.what());
             throw;
         }
+    }
+
+    bool IsBeginningOfSegment(int frame_number) {
+        return frame_number % settings_.segment_size == 0;
     }
 
 
@@ -230,7 +242,14 @@ private:
     }
 
 
-    static std::string get_app_dir() {
+    static long GetTimestampMillis() {
+        using namespace std::chrono;
+        auto time_since_epoch = system_clock::now().time_since_epoch();
+        return duration_cast<milliseconds>(time_since_epoch).count();
+    }
+
+
+    static std::string GetAppDir() {
         char* this_exe = canonicalize_file_name("/proc/self/exe");
         if (this_exe == nullptr) {
             return ".";
@@ -246,7 +265,7 @@ private:
     }
 
 
-    static log4cxx::LoggerPtr get_logger(const std::string &app_dir) {
+    static log4cxx::LoggerPtr GetLogger(const std::string &app_dir) {
         std::string log_config_file = app_dir + "/../config/StreamingExecutorLog4cxxConfig.xml";
         log4cxx::xml::DOMConfigurator::configure(log_config_file);
         log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("org.mitre.mpf.detection.streaming");

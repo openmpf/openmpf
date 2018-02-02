@@ -102,7 +102,6 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 
 
 
-
 	private static SegmentSummaryReport convertProtobufResponse(
 			long jobId, DetectionProtobuf.StreamingDetectionResponse protobuf) {
 
@@ -113,37 +112,43 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 		return new SegmentSummaryReport(
 				jobId,
 				protobuf.getSegmentNumber(),
-				protobuf.getStartFrame(),
-				protobuf.getStopFrame(),
+				protobuf.getSegmentStartFrame(),
+				protobuf.getSegmentStopFrame(),
 				protobuf.getDetectionType(),
 				tracks,
 				protobuf.getError());
 	}
 
 
-	private static SegmentSummaryReport.Track convertProtobufTrack(DetectionProtobuf.VideoTrack protobuf) {
-		Map<Long, SegmentSummaryReport.ImageLocation> frameLocationMap = protobuf.getFrameLocationsList().stream()
-				.collect(toMap(flm -> (long) flm.getFrame(),
-				               flm -> convertImageLocation(flm.getImageLocation())));
+	private static SegmentSummaryReport.Track convertProtobufTrack(DetectionProtobuf.StreamingVideoTrack protobuf) {
+		List<SegmentSummaryReport.VideoDetection> detections = protobuf.getDetectionsList().stream()
+				.map(StreamingJobRoutesBuilder::convertDetection)
+				.collect(toList());
 
 		return new SegmentSummaryReport.Track(
 				protobuf.getStartFrame(),
+				protobuf.getStartTime(),
 				protobuf.getStopFrame(),
-				frameLocationMap,
+				protobuf.getStopTime(),
+				protobuf.getConfidence(),
+				detections,
 				convertProperties(protobuf.getDetectionPropertiesList()));
 	}
 
 
-	private static SegmentSummaryReport.ImageLocation convertImageLocation(DetectionProtobuf.ImageLocation protobuf) {
-		return new SegmentSummaryReport.ImageLocation(
+	private static SegmentSummaryReport.VideoDetection convertDetection(
+			DetectionProtobuf.StreamingVideoDetection protobuf) {
+		return new SegmentSummaryReport.VideoDetection(
+				protobuf.getFrameNumber(),
+				protobuf.getTime(),
 				protobuf.getXLeftUpper(),
 				protobuf.getYLeftUpper(),
 				protobuf.getWidth(),
 				protobuf.getHeight(),
 				protobuf.getConfidence(),
 				convertProperties(protobuf.getDetectionPropertiesList()));
-
 	}
+
 
 	private static Map<String, String> convertProperties(List<DetectionProtobuf.PropertyMap> properties) {
 		return properties.stream()

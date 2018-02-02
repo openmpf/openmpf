@@ -67,20 +67,20 @@ namespace MPF { namespace COMPONENT {
     }
 
 
-    void BasicAmqMessageSender::SendJobStatus(const std::string &job_status) {
+    void BasicAmqMessageSender::SendJobStatus(const std::string &job_status, long timestamp) {
         std::unique_ptr<cms::Message> message(session_->createMessage());
         message->setLongProperty("JOB_ID", job_id_);
         message->setStringProperty("JOB_STATUS", job_status);
-        message->setLongProperty("STATUS_CHANGE_TIMESTAMP", GetTimestampMillis());
+        message->setLongProperty("STATUS_CHANGE_TIMESTAMP", timestamp);
         job_status_producer_->send(message.get());
     }
 
 
-    void BasicAmqMessageSender::SendActivityAlert(int frame_number) {
+    void BasicAmqMessageSender::SendActivityAlert(int frame_number, long timestamp) {
         std::unique_ptr<cms::Message> message(session_->createMessage());
         message->setLongProperty("JOB_ID", job_id_);
         message->setIntProperty("FRAME_NUMBER", frame_number);
-        message->setLongProperty("ACTIVITY_DETECTION_TIMESTAMP", GetTimestampMillis());
+        message->setLongProperty("ACTIVITY_DETECTION_TIMESTAMP", timestamp);
         activity_alert_producer_->send(message.get());
     }
 
@@ -88,13 +88,14 @@ namespace MPF { namespace COMPONENT {
     void BasicAmqMessageSender::SendSummaryReport(int frame_number,
                                                   const std::string &detection_type,
                                                   const std::vector<MPFVideoTrack> &tracks,
+                                                  const std::unordered_map<int, long> &frame_timestamps,
                                                   const std::string &error_message) {
         StreamingDetectionResponse protobuf_response;
 
         int segment_number = frame_number / segment_size_;
         protobuf_response.set_segment_number(segment_number);
-        protobuf_response.set_start_frame(segment_size_ * segment_number);
-        protobuf_response.set_stop_frame(frame_number);
+        protobuf_response.set_segment_start_frame(segment_size_ * segment_number);
+        protobuf_response.set_segment_stop_frame(frame_number);
         protobuf_response.set_detection_type(detection_type);
         if (!error_message.empty())  {
             protobuf_response.set_error(error_message);
@@ -103,7 +104,11 @@ namespace MPF { namespace COMPONENT {
         for (const auto &track : tracks) {
             auto protobuf_track = protobuf_response.add_video_tracks();
             protobuf_track->set_start_frame(track.start_frame);
+            protobuf_track->set_start_time(frame_timestamps.at(track.start_frame));
+
             protobuf_track->set_stop_frame(track.stop_frame);
+            protobuf_track->set_stop_time(frame_timestamps.at(track.stop_frame));
+
             protobuf_track->set_confidence(track.confidence);
 
             for (const auto &property : track.detection_properties) {
@@ -113,18 +118,18 @@ namespace MPF { namespace COMPONENT {
             }
 
             for (const auto &frame_location_pair : track.frame_locations) {
-                auto protobuf_frame_loc_map = protobuf_track->add_frame_locations();
-                protobuf_frame_loc_map->set_frame(frame_location_pair.first);
+                auto protobuf_detection = protobuf_track->add_detections();
+                protobuf_detection->set_frame_number(frame_location_pair.first);
+                protobuf_detection->set_time(frame_timestamps.at(frame_location_pair.first));
 
-                auto protobuf_img_loc = protobuf_frame_loc_map->mutable_image_location();
                 const auto &frame_location = frame_location_pair.second;
-                protobuf_img_loc->set_x_left_upper(frame_location.x_left_upper);
-                protobuf_img_loc->set_y_left_upper(frame_location.y_left_upper);
-                protobuf_img_loc->set_width(frame_location.width);
-                protobuf_img_loc->set_confidence(frame_location.confidence);
-
+                protobuf_detection->set_x_left_upper(frame_location.x_left_upper);
+                protobuf_detection->set_y_left_upper(frame_location.y_left_upper);
+                protobuf_detection->set_width(frame_location.width);
+                protobuf_detection->set_height(frame_location.height);
+                protobuf_detection->set_confidence(frame_location.confidence);
                 for (const auto &property : frame_location.detection_properties) {
-                    auto protobuf_property = protobuf_img_loc->add_detection_properties();
+                    auto protobuf_property = protobuf_detection->add_detection_properties();
                     protobuf_property->set_key(property.first);
                     protobuf_property->set_value(property.second);
                 }
@@ -139,12 +144,5 @@ namespace MPF { namespace COMPONENT {
         message->setLongProperty("JOB_ID", job_id_);
 
         summary_report_producer_->send(message.get());
-    }
-
-
-    long BasicAmqMessageSender::GetTimestampMillis() {
-        using namespace std::chrono;
-        auto time_since_epoch = system_clock::now().time_since_epoch();
-        return duration_cast<milliseconds>(time_since_epoch).count();
     }
 }}

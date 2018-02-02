@@ -53,27 +53,35 @@ void StreamingHelloWorld::BeginSegment(const VideoSegmentInfo &segment_info) {
 
 bool StreamingHelloWorld::ProcessFrame(const cv::Mat &frame, int frame_number) {
     LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Processing frame with size: " << frame.size())
-    if (frame_number % 3 == 0) {
-        LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Found activity in frame " << frame_number);
-        return true;
+    if (frame_number % 3 != 0) {
+        LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Did not find activity in frame " << frame_number);
+        return false;
     }
 
-    LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Did not find activity in frame " << frame_number);
-    return false;
+    LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Found activity in frame " << frame_number);
+    MPFImageLocation detection(0, 0, frame.cols, frame.rows, 0.75, { {{"propName1", "propVal1"}} });
+
+    bool add_to_existing_track = frame_number % 6 == 0 && !segment_detections_.empty();
+    if (add_to_existing_track) {
+        MPFVideoTrack &track = segment_detections_.back();
+        track.frame_locations.emplace(frame_number, std::move(detection));
+        track.stop_frame = frame_number;
+        return false;
+    }
+
+    MPFVideoTrack track(frame_number, frame_number, detection.confidence);
+    track.frame_locations.emplace(frame_number, std::move(detection));
+    segment_detections_.push_back(std::move(track));
+    return segment_detections_.size() == 1;
 }
+
 
 std::vector<MPFVideoTrack> StreamingHelloWorld::EndSegment() {
     LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Getting video tracks.")
-    MPFVideoTrack track1(10, 15, 0.5);
-    track1.frame_locations[10] = MPFImageLocation(10, 15, 78, 63, 0.5,
-                                                  { {"propName1", "propVal1"}, {"propName2", "propVal2"} });
-    track1.frame_locations[15] = MPFImageLocation(10, 15, 78, 63, 0.9,
-                                                  { {"propName3", "propVal3"} });
-    MPFVideoTrack track2(150, 200, 0.75);
-    track2.frame_locations[150] = MPFImageLocation(100, 150, 78, 63, 0.75);
-    track2.frame_locations[200] = MPFImageLocation(100, 150, 78, 63, 0.9);
-
-    return { track1, track2 };
+    std::vector<MPFVideoTrack> results;
+    // swap with stack variable so that result vector is moved instead of copied.
+    results.swap(segment_detections_);
+    return results;
 }
 
 

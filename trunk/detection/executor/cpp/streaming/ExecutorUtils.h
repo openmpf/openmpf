@@ -25,57 +25,20 @@
  ******************************************************************************/
 
 
-#ifndef MPF_BASICAMQMESSAGESENDER_H
-#define MPF_BASICAMQMESSAGESENDER_H
+#ifndef MPF_EXECUTORUTILS_H
+#define MPF_EXECUTORUTILS_H
 
-#include <memory>
 #include <string>
-#include <unordered_map>
-
-#include <cms/Connection.h>
-#include <cms/Session.h>
-#include <cms/MessageProducer.h>
 
 #include <MPFDetectionComponent.h>
-
-#include "JobSettings.h"
-
-
-namespace MPF { namespace COMPONENT {
-
-    // TODO: Combine with AMQMessenger when adding support for multistage pipelines.
-    class BasicAmqMessageSender {
-
-    public:
-        explicit BasicAmqMessageSender(const JobSettings &job_settings);
-
-        void SendJobStatus(const std::string &job_status, long timestamp);
-
-        void SendActivityAlert(int frame_number, long timestamp);
-
-        void SendSummaryReport(
-                int frame_number, const std::string &detection_type,
-                const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks,
-                const std::unordered_map<int, long> &frame_timestamps,
-                const std::string &error_message = {});
-
-    private:
-        const long job_id_;
-        const int segment_size_;
-
-        std::unique_ptr<cms::Connection> connection_;
-        std::unique_ptr<cms::Session> session_;
-
-        std::unique_ptr<cms::MessageProducer> job_status_producer_;
-        std::unique_ptr<cms::MessageProducer> activity_alert_producer_;
-        std::unique_ptr<cms::MessageProducer> summary_report_producer_;
+#include <MPFStreamingDetectionComponent.h>
+#include <log4cxx/logger.h>
 
 
-        static std::unique_ptr<cms::Connection> Connect(const std::string &broker_uri);
+namespace MPF { namespace COMPONENT { namespace ExecutorUtils {
 
-        static std::unique_ptr<cms::MessageProducer>
-        CreateProducer(const std::string &queue_name, cms::Session &session);
-    };
-}}
+    void FixTracks(log4cxx::LoggerPtr &logger, const VideoSegmentInfo &segment, std::vector<MPFVideoTrack> &tracks);
+}}}
 
-#endif //MPF_BASICAMQMESSAGESENDER_H
+
+#endif //MPF_EXECUTORUTILS_H

@@ -27,11 +27,15 @@
 package org.mitre.mpf.wfm.util;
 
 import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.concurrent.FutureCallback;
+import org.apache.http.entity.EntityTemplate;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.impl.nio.client.HttpAsyncClients;
+import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
+import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
+import org.apache.http.nio.reactor.ConnectingIOReactor;
 import org.mitre.mpf.interop.JsonHealthReportCollection;
 import org.mitre.mpf.interop.JsonSegmentSummaryReport;
 import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
@@ -42,33 +46,62 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Scope;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
 public class CallbackUtils {
 
-    private static final int CONNECTION_TIMEOUT_MILLISEC = 5000;
-    private static final int INACTIVITY_TIMEOUT_MILLISEC = 2000;
+    private static final int MAX_CONNECTIONS_PER_ROUTE = 10;
+    private static final int MAX_CONNECTIONS_TOTAL = 100;
+
+    private static final int SOCKET_TIMEOUT_MILLISEC = 5000;
 
     private static final Logger log = LoggerFactory.getLogger(CallbackUtils.class);
 
-
     @Autowired
-    private ApplicationContext context;
-
-    @Autowired
-    private TaskExecutor taskExecutor;
+    private JsonUtils jsonUtils;
 
     @Autowired
     @Qualifier(RedisImpl.REF)
     private Redis redis;
+
+    private static CloseableHttpAsyncClient httpAsyncClient;
+
+    @PostConstruct
+    public void initialize() throws IOException {
+        IOReactorConfig ioConfig = IOReactorConfig.custom()
+                // the default connect timeout value for non-blocking connection requests.
+                .setConnectTimeout(SOCKET_TIMEOUT_MILLISEC)
+                // the default socket timeout value for non-blocking I/O operations
+                .setSoTimeout(SOCKET_TIMEOUT_MILLISEC).build();
+
+        ConnectingIOReactor ioReactor = new DefaultConnectingIOReactor(ioConfig);
+
+        PoolingNHttpClientConnectionManager cm = new PoolingNHttpClientConnectionManager(ioReactor);
+        cm.setDefaultMaxPerRoute(MAX_CONNECTIONS_PER_ROUTE); // default is 2
+        cm.setMaxTotal(MAX_CONNECTIONS_TOTAL); // default is 20
+
+        httpAsyncClient = HttpAsyncClients.custom().setConnectionManager(cm).build();
+        httpAsyncClient.start();
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        try {
+            if (httpAsyncClient != null) {
+                httpAsyncClient.close();
+            }
+        } catch (IOException e) {
+            log.warn("Unable to close httpAsyncClient.", e);
+        }
+    }
 
     // Send the health report to the URI identified by callbackUri, using the HTTP POST method.
     public void doHealthReportCallback(List<Long> jobIds, String callbackUri) {
@@ -98,63 +131,52 @@ public class CallbackUtils {
         doPostCallback(summaryReport, callbackUri);
     }
 
+    // TODO: Implement doGetCallback
+
     private void doPostCallback(Object json, String callbackUri) {
-        PostCallbackThread thread = context.getBean(PostCallbackThread.class, json, callbackUri);
-        taskExecutor.execute(thread);
-    }
+        HttpPost post = new HttpPost(callbackUri);
+        post.addHeader("Content-Type", "application/json");
 
+        try {
+            log.info("Sending POST callback to " + callbackUri);
 
-    // TODO: Implement GetCallbackThread
+            /*
+             * Don't do this:
+             * post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(json)));
+             *
+             * That results in pre-buffering the content, which is unnecessary and may take a non-trivial amount of
+             * time and memory depending on the amount of data. The Jackson JSON parser is fast, but JSON serialization
+             * can still be an expensive operation.
+             *
+             * Instead, the line in use below utilizes a ContentProducer to produce the content on demand,
+             * which allows the JSON serialization to be performed when the HttpPost is executed by the HttpAsyncClient
+             * in a separate thread.
+             *
+             * See https://wiki.apache.org/HttpComponents/HttpEntity#EntityTemplate
+             */
+            post.setEntity(new EntityTemplate((outputStream) -> jsonUtils.serialize(json, outputStream)));
 
-    @Component
-    @Scope("prototype") // each request returns a new instance
-    public static class PostCallbackThread extends Thread { // must be static for Spring
-
-        @Autowired
-        private JsonUtils jsonUtils;
-
-        private Object json;
-        private String callbackUri;
-
-        public PostCallbackThread(Object json, String callbackUri) {
-            this.json = json;
-            this.callbackUri = callbackUri;
-        }
-
-        // Send the JSON to the URI identified by callbackUri, using the HTTP POST method.
-        @Override
-        public void run() {
-            RequestConfig config = RequestConfig.custom()
-                    // time to establish the connection with the remote host
-                    .setConnectTimeout(CONNECTION_TIMEOUT_MILLISEC)
-                    // the time waiting for data – after the connection was established; maximum time of inactivity between two data packets
-                    .setConnectionRequestTimeout(INACTIVITY_TIMEOUT_MILLISEC)
-                    // the time to wait for a connection from the connection manager/pool
-                    .setSocketTimeout(CONNECTION_TIMEOUT_MILLISEC).build();
-
-            HttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
-
-            HttpPost post = new HttpPost(callbackUri);
-            post.addHeader("Content-Type", "application/json");
-
-            try {
-                log.info("Sending POST callback to " + callbackUri);
-                post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(json)));
-
-                // If the http request was properly constructed, then send it.
-                if (post != null) {
-                    HttpResponse response = httpClient.execute(post);
+            httpAsyncClient.execute(post, new FutureCallback<HttpResponse>() {
+                public void completed(final HttpResponse response) {
                     log.info("Callback sent to " + callbackUri + ". Response: " + response);
-                } else {
-                    log.error("Error sending callback to " + callbackUri + ". Failed to create POST object from: " + json);
                 }
-            } catch (IOException e) {
-                // An HTTP connection or response failure is not critical.
-                // Don't bother logging the stack trace. The message is sufficient.
-                log.warn("Error sending callback to " + callbackUri + ": " + e.getMessage());
-            } catch (WfmProcessingException e) {
-                log.error("Error sending callback to " + callbackUri + ".", e);
-            }
+                public void failed(final Exception e) {
+                    // We make a best effort attempt to send the callback, but an HTTP connection failure,
+                    // or failure to get an HTTP response is not critical, so just log a warning.
+                    // Also, don't bother logging the stack trace. That adds clutter.
+                    if (e instanceof SocketTimeoutException) {
+                        // The message for a SocketTimeoutException is "null", so let's be more descriptive.
+                        log.warn("Callback sent to " + callbackUri + ". Receiver did not respond.");
+                    } else {
+                        log.warn("Error sending callback to " + callbackUri + ": " + e.getMessage());
+                    }
+                }
+                public void cancelled() {
+                    log.warn("Cancelled sending callback to " + callbackUri + ".");
+                }
+            });
+        } catch (WfmProcessingException | IllegalArgumentException e) {
+            log.error("Error sending callback to " + callbackUri + ".", e);
         }
     }
 }

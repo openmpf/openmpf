@@ -121,7 +121,7 @@ public class TestStreamingJobStartStop {
 
 
 		verify(_mockStreamingJobRequestBo, timeout(30_000))
-				.handleJobStatusChange(eq(jobId), or(eq(JobStatus.TERMINATED), eq(JobStatus.CANCELLED)), any());
+				.handleJobStatusChange(eq(jobId), or(eq(JobStatus.TERMINATED), eq(JobStatus.CANCELLED)), gt(test_start_time));
 
 		ArgumentCaptor<JsonSegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(JsonSegmentSummaryReport.class);
 

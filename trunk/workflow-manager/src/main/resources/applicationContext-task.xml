@@ -35,8 +35,6 @@
 
     <task:annotation-driven scheduler="taskScheduler" executor="taskExecutor"/>
     <task:scheduler id="taskScheduler" pool-size="1"/>
-
-    <!-- Used for POST callbacks -->
-    <task:executor id="taskExecutor" pool-size="100"/>
+    <task:executor id="taskExecutor" pool-size="1"/>
 
 </beans>

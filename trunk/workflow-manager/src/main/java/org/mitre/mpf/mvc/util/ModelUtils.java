@@ -39,8 +39,8 @@ import org.mitre.mpf.rest.api.StreamingJobInfo;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,14 +139,16 @@ public class ModelUtils {
 
 	public static StreamingJobInfo convertJobRequest(StreamingJobRequest streamingJobRequest,
 			float jobContainerProgress) {
-		StreamingJobStatusType streamingJobStatus = streamingJobRequest.getStatus();
+		StreamingJobStatus streamingJobStatus = new StreamingJobStatus(streamingJobRequest.getStatus());
 		// some job status' may be terminal
 		boolean isTerminal = (streamingJobStatus != null && streamingJobStatus.isTerminal());
         // TODO add status detail to StreamingJobInfo (issue #411) using streamingJobRequest.getStatusDetail()
 		return new StreamingJobInfo(streamingJobRequest.getId(),
 				streamingJobRequest.getPipeline(),
 				streamingJobRequest.getPriority(),
-				streamingJobRequest.getStatus().toString(), jobContainerProgress, streamingJobRequest.getTimeReceived(),
+				streamingJobStatus.getType().name(),
+				streamingJobStatus.getDetail(),
+				jobContainerProgress, streamingJobRequest.getTimeReceived(),
 				streamingJobRequest.getTimeCompleted(),
 				streamingJobRequest.getOutputObjectDirectory(),
 				streamingJobRequest.getStreamUri(),

@@ -306,6 +306,9 @@ public class StreamingJobController {
                 float jobProgressVal = jobProgress.getJobProgress(id) != null ? jobProgress.getJobProgress(id) : 0.0f;
                 streamingJobInfo = ModelUtils.convertJobRequest(job, jobProgressVal);
 
+                // Update StreamingJobInfo so it contains the most up to date streaming job status information
+                streamingJobInfo = mpfService.updateStreamingJobInfo(id,streamingJobInfo);
+
                 jobInfoList.add(streamingJobInfo);
             }
         } catch (Exception ex) {

@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.businessrules;
 
 import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
+import org.mitre.mpf.rest.api.StreamingJobInfo;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
@@ -85,8 +86,16 @@ public interface StreamingJobRequestBo {
 	void cancel(long jobId, boolean doCleanup) throws WfmProcessingException;
 
 	/**
+	 * Update StreamingJobInfo so it contains the latest job status information.
+	 * @param jobId Unique id of the streaming job.
+	 * @param streamingJobInfo Job information that needs to be updated.
+	 * @return Updated streaming job status information.
+	 */
+	StreamingJobInfo updateStreamingJobInfo(long jobId, StreamingJobInfo streamingJobInfo) ;
+
+	/**
 	 * Send a health report for all current streaming jobs to the health report callback associated with each streaming job.
-     * @param jobIds all job ids to send health reports for.
+	 * @param jobIds all job ids to send health reports for.
 	 * @param isActive If true, then streaming jobs which have terminal JobStatus will be
 	 * filtered out. Otherwise, all current streaming jobs will be processed.
 	 * @throws WfmProcessingException thrown if an error occurs

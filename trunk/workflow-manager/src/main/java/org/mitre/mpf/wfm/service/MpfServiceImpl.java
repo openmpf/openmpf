@@ -26,12 +26,17 @@
 
 package org.mitre.mpf.wfm.service;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.AtmosphereChannel;
+import org.mitre.mpf.rest.api.StreamingJobInfo;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
@@ -39,7 +44,11 @@ import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.SystemMessageDao;
-import org.mitre.mpf.wfm.data.access.hibernate.*;
+import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
+import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
+import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
+import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
+import org.mitre.mpf.wfm.data.access.hibernate.HibernateSystemMessageDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
@@ -49,11 +58,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class MpfServiceImpl implements MpfService {
@@ -302,6 +306,16 @@ public class MpfServiceImpl implements MpfService {
         if ( jobIds != null && !jobIds.isEmpty() ) {
 			streamingJobRequestBo.sendHealthReports(jobIds, isActive);
 		}
+	}
+
+	/**
+	 * Update StreamingJobInfo so it contains the latest job status information.
+     * @param jobId Unique id of the streaming job.
+	 * @param streamingJobInfo Job information that needs to be updated.
+	 * @return Updated streaming job status information.
+ 	 */
+	public StreamingJobInfo updateStreamingJobInfo(long jobId, StreamingJobInfo streamingJobInfo) {
+		return streamingJobRequestBo.updateStreamingJobInfo(jobId, streamingJobInfo);
 	}
 
 	/* ***** System Messages ***** */

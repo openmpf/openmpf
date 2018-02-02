@@ -44,6 +44,12 @@ public class StreamingJobInfo {
 	public String /*JobStatus*/ getJobStatus() {
 		return jobStatus;
 	}
+	public void setJobStatus(String /*JobStatus*/ jobStatus) { this.jobStatus = jobStatus; }
+
+	private String jobStatusDetail;
+	public String getJobStatusDetail() { return jobStatusDetail; }
+    public void setJobStatusDetail(String jobStatusDetail) { this.jobStatusDetail = jobStatusDetail; }
+
 	// TODO jobProgress (alternative name jobRunTime) may be included in a later release
 // 	private float jobProgress;
 //	public float getJobProgress() { return jobProgress; }
@@ -62,6 +68,14 @@ public class StreamingJobInfo {
 	private String streamUri = null;
 	public String getStreamUri() { return streamUri; }
 
+	private String activityFrameId = null;
+	public void setActivityFrameId(String activityFrameId) { this.activityFrameId = activityFrameId; }
+	public String getActivityFrameId() { return activityFrameId; }
+
+    private String activityFrameTimestamp = null;
+    public void setActivityFrameTimestamp(String activityFrameTimestamp) { this.activityFrameTimestamp = activityFrameTimestamp; }
+    public String getActivityFrameTimestamp() { return activityFrameTimestamp; }
+
 	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
 	//to maintain the use of only standard Java in the model.api classes
 	private boolean terminal;
@@ -71,11 +85,12 @@ public class StreamingJobInfo {
 
 	public StreamingJobInfo() {}
 
-	/** Constructor
+	/** Constructor.
 	 * @param jobId job id of this streaming job
 	 * @param pipelineName name of the pipeline defined for this job
 	 * @param jobPriority priority associated with this job
 	 * @param jobStatus status of this job
+     * @param jobStatusDetail additional details about the status of this job. May be null.
 	 * @param jobProgress progress of this job
 	 * @param startDate date when this job was started
 	 * @param endDate endDate may be null if the streaming job is still active
@@ -83,12 +98,14 @@ public class StreamingJobInfo {
 	 * @param streamUri URI of the streaming data
 	 * @param terminal if true, marks a terminal error
 	 */
-	public StreamingJobInfo(Long jobId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus, float jobProgress,
-									Date startDate, Date endDate, String outputObjectDirectory,
-									String streamUri, boolean terminal) {
+	public StreamingJobInfo(Long jobId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus,
+                            String jobStatusDetail, float jobProgress,
+                            Date startDate, Date endDate, String outputObjectDirectory,
+                            String streamUri, boolean terminal) {
 		this.jobId = jobId;
 		this.pipelineName = pipelineName;
 		this.jobStatus = jobStatus;
+		this.jobStatusDetail = jobStatusDetail;
 		// TODO jobPriority and jobProgress (alternate name jobRunTime) may be included in a later release
 //		this.jobPriority = jobPriority;
 //		this.jobProgress = jobProgress;

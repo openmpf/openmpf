@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -39,6 +40,7 @@ import org.mitre.mpf.interop.JsonHealthReportDataCallbackBody;
 import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,17 +101,17 @@ public class HealthReportCallbackThread implements Runnable {
         // Get other information from REDIS about these streaming jobs.
         log.info("HealthReportCallbackThread.sendHealthReportToCallback: posting health report containing jobIds=" + jobIds);
         List<String> externalIds = redis.getExternalIds(jobIds);
-        List<String> jobStatuses = redis.getStreamingJobStatusesAsStrings(jobIds);
+        List<StreamingJobStatus> streamingJobStatuses = redis.getStreamingJobStatuses(jobIds);
+        List<String> jobStatuses = streamingJobStatuses.stream().map( jobStatus -> jobStatus.getType().name()).collect(Collectors.toList());
+        List<String> jobStatusDetails = streamingJobStatuses.stream().map( jobStatus -> jobStatus.getDetail()).collect(Collectors.toList());
         List<String> activityFrameIds = redis.getHealthReportActivityFrameIdsAsStrings(jobIds);
         List<String> activityTimestamps = redis.getHealthReportActivityTimestampsAsStrings(jobIds);
 
-        // Send the health report to the callback using POST.
-        HttpPost post = new HttpPost(callbackUri);
+;        HttpPost post = new HttpPost(callbackUri);
         post.addHeader("Content-Type", "application/json");
         try {
             JsonHealthReportDataCallbackBody jsonBody = new JsonHealthReportDataCallbackBody(currentDateTime,
-                jobIds, externalIds, jobStatuses,
-                activityFrameIds, activityTimestamps);
+                jobIds, externalIds, jobStatuses, jobStatusDetails, activityFrameIds, activityTimestamps);
             log.info("HealthReportCallback, sending POST of healthReport, jsonBody= " + jsonBody);
             post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
 

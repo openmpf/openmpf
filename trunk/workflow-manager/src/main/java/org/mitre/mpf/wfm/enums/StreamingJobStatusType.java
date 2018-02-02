@@ -73,17 +73,17 @@ public enum StreamingJobStatusType {
     /**
      * Indicates the streaming job was terminated.
      */
-    JOB_TERMINATED(true),
+    TERMINATED(true),
 
     /**
      * Indicates the streaming job is paused.
      */
-    JOB_PAUSED(false),
+    PAUSED(false),
 
     /**
      * Indicates the streaming job is stalled
      */
-    JOB_STALLED(false);
+    STALLED(false);
 
     protected boolean terminal;
 

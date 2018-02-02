@@ -310,7 +310,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 				status = new StreamingJobStatus(StreamingJobStatusType.CANCELLED, message.reason.toString());
 				break;
 			case STREAM_STALLED:
-				status = new StreamingJobStatus(StreamingJobStatusType.JOB_TERMINATED, message.reason.toString());
+				status = new StreamingJobStatus(StreamingJobStatusType.TERMINATED, message.reason.toString());
 				break;
 			default:
 				status = new StreamingJobStatus(StreamingJobStatusType.ERROR, message.reason.toString());

@@ -483,6 +483,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         long jobId = streamingJobRequestEntity.getId();
         log.info("[Streaming Job {}|*|*] is running at priority {}.", streamingJobRequestEntity.getId(), priority);
 
+        String errorMessage = null;
+        Exception errorException = null; // If an exception error is caught, save it so it can be provided as root cause for the WfmProcessingException
         try {
 
             // persist the pipeline and streaming job in REDIS
@@ -490,16 +492,20 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             TransientStreamingJob transientStreamingJob = buildStreamingJob(jobId, streamingJobRequestEntity, transientPipeline, jsonStreamingJobRequest);
             streamingJobMessageSender.launchJob(transientStreamingJob);
 
+        } catch (InvalidPipelineObjectWfmProcessingException ipe) {
+            errorMessage = "Streaming Job #" + jobId + " did not specify a valid pipeline.";
+            log.error(errorMessage, ipe);
+            errorException = ipe; // Save as root cause of error
         } catch (Exception e) {
-            // Mark any exception from building the transient objects as a failure by recording the error in the persistent database and throwing an exception.
-            // Note that it doesn't matter what exception occurred, the streaming job has to be marked as failed in the long-term database.
-            String errorMessage;
-            if ( e instanceof InvalidPipelineObjectWfmProcessingException ) {
-                errorMessage = "Streaming Job #" + jobId + " did not specify a valid pipeline.";
-            } else {
-                errorMessage = "Failed to parse the input object for Streaming Job #" + jobId + " due to an exception.";
-            }
+            errorMessage = "Failed to parse the input object for Streaming Job #" + jobId
+                + " due to an exception.";
             log.error(errorMessage, e);
+            errorException = e; // Save as root cause of error
+        }
+
+        // Mark any exception from building the transient objects as a failure by recording the error in the persistent database and throwing an exception.
+        // Note that it doesn't matter which exception occurred, the streaming job has to be marked as failed in the long-term database.
+        if ( errorMessage != null ) {
             try {
                 // make an effort to mark the streaming job as failed in the long-term database
                 streamingJobRequestEntity.setStatus(StreamingJobStatusType.JOB_CREATION_ERROR, errorMessage);
@@ -509,8 +515,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 log.warn("Failed to mark Streaming Job #{} as failed due to an exception. It will remain it its current state until manually changed.", streamingJobRequestEntity, persistException);
             } // end of persist Exception catch
 
-            // throw an exception, failure to create the transient objects
-            throw new WfmProcessingException("Failed to create transient job: " + errorMessage, e);
+            // Throw an exception providing with it the root cause, indicating a failure to create the transient objects
+            throw new WfmProcessingException("Failed to create transient job: " + errorMessage, errorException);
         } // end of Exception catch
 
         // TODO send the streaming job to the master node manager

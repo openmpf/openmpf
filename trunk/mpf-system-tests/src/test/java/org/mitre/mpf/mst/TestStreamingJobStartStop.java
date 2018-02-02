@@ -131,7 +131,7 @@ public class TestStreamingJobStartStop {
 
 
 		verify(_mockStreamingJobRequestBo, timeout(30_000))
-				.jobCompleted(eq(jobId), or(eq(new StreamingJobStatus(StreamingJobStatusType.STREAMING_JOB_TERMINATED)), eq(new StreamingJobStatus(StreamingJobStatusType.CANCELLED))));
+				.jobCompleted(eq(jobId), or(eq(new StreamingJobStatus(StreamingJobStatusType.JOB_TERMINATED)), eq(new StreamingJobStatus(StreamingJobStatusType.CANCELLED))));
 
 		ArgumentCaptor<SegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(SegmentSummaryReport.class);
 

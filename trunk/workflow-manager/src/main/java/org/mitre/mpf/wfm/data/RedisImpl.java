@@ -488,9 +488,9 @@ public class RedisImpl implements Redis {
             } else {
                 Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
                 StreamingJobStatusType jobStatusType = (StreamingJobStatusType) jobHash.get(STREAMING_JOB_STATUS);
-                String jobStatusDetail = (String) jobHash.get(STREAMING_JOB_STATUS_DETAIL);
                 if ( jobStatusType != null ) {
                     // Return streaming job status that was stored for this job in REDIS. Note the constructor handles possible null for jobStatusDetail
+                    String jobStatusDetail = (String) jobHash.get(STREAMING_JOB_STATUS_DETAIL);
                     StreamingJobStatus jobStatus = new StreamingJobStatus(jobStatusType, jobStatusDetail);
                     return jobStatus;
                 } else {

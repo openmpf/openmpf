@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -70,22 +70,20 @@ public enum StreamingJobStatusType {
      */
     ERROR(true),
 
-    // This section defines job statuses that may be applicable only to a streaming job.
-
     /**
      * Indicates the streaming job was terminated.
      */
-    STREAMING_JOB_TERMINATED(true),
+    JOB_TERMINATED(true),
 
     /**
      * Indicates the streaming job is paused.
      */
-    STREAMING_JOB_PAUSED(false),
+    JOB_PAUSED(false),
 
     /**
      * Indicates the streaming job is stalled
      */
-    STREAMING_JOB_STALLED(false);
+    JOB_STALLED(false);
 
     protected boolean terminal;
 

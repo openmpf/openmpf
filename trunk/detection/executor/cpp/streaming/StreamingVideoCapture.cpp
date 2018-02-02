@@ -25,59 +25,63 @@
  ******************************************************************************/
 
 
-#ifndef MPF_STANDARDINWATCHER_H
-#define MPF_STANDARDINWATCHER_H
-
-#include <atomic>
-#include <condition_variable>
-
 #include "ExecutorErrors.h"
+#include "ExecutorUtils.h"
+#include "StandardInWatcher.h"
 
+#include "StreamingVideoCapture.h"
 
 namespace MPF { namespace COMPONENT {
 
-    class StandardInWatcher {
-    public:
-        // Singleton to prevent more than one thread from reading from standard in.
-        static StandardInWatcher* GetInstance();
+    StreamingVideoCapture::StreamingVideoCapture(log4cxx::LoggerPtr &logger, const std::string &video_uri)
+            : logger_(logger)
+            , video_uri_(video_uri)
+            , cvVideoCapture_(video_uri) {
 
-        bool QuitReceived() const;
+        if (!cvVideoCapture_.isOpened()) {
+            throw FatalError(ExitCode::UNABLE_TO_CONNECT_TO_STREAM,
+                             "Unable to connect to stream: " + video_uri);
+        }
+    }
 
-
-        template <typename TDurRep, typename TDurPeriod>
-        void InterruptibleSleep(const std::chrono::duration<TDurRep, TDurPeriod> &timeout) const {
-            if (quit_received_) {
-                throw InterruptedException("Quit Received");
-            }
-
-            static std::mutex mutex;
-            std::unique_lock<std::mutex> lock(mutex);
-
-            bool finished_early = quit_cv_.wait_for(lock, timeout, [] { return quit_received_.load(); });
-            if (finished_early) {
-                throw InterruptedException("Quit Received");
-            }
-        };
+    bool StreamingVideoCapture::Read(cv::Mat frame) {
+        return cvVideoCapture_.read(frame);
+    }
 
 
-    private:
-        StandardInWatcher();
+    void StreamingVideoCapture::ReadWithRetry(cv::Mat &frame) {
+        if (Read(frame)) {
+            return;
+        }
 
-        static StandardInWatcher* instance_;
+        LOG4CXX_WARN(logger_, "Failed to read frame. Will retry forever.")
+        ExecutorUtils::RetryWithBackOff(
+                [this, &frame] {
+                    return DoReadRetry(frame);
+                },
+                [this] (const ExecutorUtils::sleep_duration_t &duration) {
+                    BetweenRetrySleep(duration);
+                }
+        );
+    }
 
-        // static because in the event of an error elsewhere, the detached thread will still be running and may access
-        // is_time_to_quit_ and error_message_.
-        static std::atomic_bool quit_received_;
-        static std::string error_message_;
 
-        static std::condition_variable quit_cv_;
+    bool StreamingVideoCapture::DoReadRetry(cv::Mat &frame) {
+        bool reopened = cvVideoCapture_.open(video_uri_);
+        if (!reopened) {
+            LOG4CXX_WARN(logger_, "Failed to re-connect to video stream.");
+            return false;
+        }
 
-        static void Watch();
-        static void SetError(std::string &&error_message);
+        LOG4CXX_WARN(logger_, "Successfully re-connected to video stream.");
 
-    };
+        bool was_read = cvVideoCapture_.read(frame);
+        if (was_read) {
+            LOG4CXX_WARN(logger_, "Successfully read frame after re-connecting to video stream.");
+            return true;
+        }
+
+        LOG4CXX_WARN(logger_, "Failed to read frame after successfully re-connecting to video stream.");
+        return false;
+    }
 }}
-
-
-
-#endif //MPF_STANDARDINWATCHER_H

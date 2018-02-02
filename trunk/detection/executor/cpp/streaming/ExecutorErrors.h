@@ -70,6 +70,15 @@ namespace MPF { namespace COMPONENT {
 
         explicit InternalComponentError(const std::string &method_name);
     };
+
+
+    class InterruptedException : public std::runtime_error {
+    public:
+        explicit InterruptedException(const std::string &cause)
+                : runtime_error(cause) {
+
+        }
+    };
 }}
 
 

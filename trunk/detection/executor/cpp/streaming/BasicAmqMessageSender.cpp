@@ -76,6 +76,15 @@ namespace MPF { namespace COMPONENT {
     }
 
 
+    void BasicAmqMessageSender::SendStallAlert(long timestamp) {
+        SendJobStatus("STALLED", timestamp);
+    }
+
+    void BasicAmqMessageSender::SendResumedNotification(long timestamp) {
+        SendJobStatus("IN_PROGRESS", timestamp);
+    }
+
+
     void BasicAmqMessageSender::SendActivityAlert(int frame_number, long timestamp) {
         std::unique_ptr<cms::Message> message(session_->createMessage());
         message->setLongProperty("JOB_ID", job_id_);

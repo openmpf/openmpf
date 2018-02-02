@@ -70,6 +70,7 @@ set(streaming_component_executor_files main.cpp
     JobSettings.h JobSettings.cpp
 	StreamingComponentHandle.cpp StreamingComponentHandle.h
     BasicAmqMessageSender.cpp BasicAmqMessageSender.h
+	StreamingVideoCapture.cpp StreamingVideoCapture.h
 	ExecutorErrors.cpp ExecutorErrors.h
 	ExecutorUtils.cpp ExecutorUtils.h)
 

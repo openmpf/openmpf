@@ -174,3 +174,61 @@ TEST(StreamingExecutorUtilsTest, FixTracksDropsEmptyTracks) {
             createTrack({5, 10, 15, 23}) });
 
 }
+
+
+
+TEST(StreamingExecutorUtilsTest, RetryRetriesUntilTimeout) {
+    using namespace std::chrono;
+
+    int count = 0;
+    auto test_func = [&] {
+        count++;
+        return false;
+    };
+
+    auto start_time = steady_clock::now();
+    bool retry_result = ExecutorUtils::RetryWithBackOff(std::chrono::milliseconds(500), test_func);
+    nanoseconds runtime = steady_clock::now() - start_time;
+    ASSERT_FALSE(retry_result);
+
+    ASSERT_EQ(count, 9);
+    ASSERT_TRUE(runtime >= milliseconds(495));
+    ASSERT_TRUE(runtime <= milliseconds(510));
+}
+
+
+
+
+TEST(StreamingExecutorUtilsTest, RetryStopsWhenFuncReturnsTrue) {
+    using namespace std::chrono;
+
+    int count = 0;
+    auto test_func = [&] {
+        count++;
+        return count >= 2;
+    };
+
+    bool retry_result = ExecutorUtils::RetryWithBackOff(std::chrono::milliseconds(100), test_func);
+    ASSERT_TRUE(retry_result);
+
+    ASSERT_EQ(count, 2);
+}
+
+
+
+
+TEST(StreamingExecutorUtilsTest, RetryWorksWhenFuncTakesTime) {
+    using namespace std::chrono;
+
+    int count = 0;
+    auto test_func = [&] {
+        count++;
+        std::this_thread::sleep_for(milliseconds(155));
+        return false;
+    };
+
+    bool retry_result = ExecutorUtils::RetryWithBackOff(std::chrono::milliseconds(300), test_func);
+    ASSERT_FALSE(retry_result);
+    ASSERT_EQ(count, 2);
+}
+

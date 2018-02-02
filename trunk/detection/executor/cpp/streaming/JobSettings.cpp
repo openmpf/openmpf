@@ -51,12 +51,16 @@ namespace MPF { namespace COMPONENT {
             boost::property_tree::ptree ini_settings;
             boost::property_tree::ini_parser::read_ini(ini_path, ini_settings);
             const boost::property_tree::ptree &job_config = ini_settings.get_child("Job Config");
+
+            std::chrono::milliseconds stall_timeout(job_config.get<long>("stallTimeout"));
+            std::chrono::milliseconds stall_alert_threshold(job_config.get<long>("stallAlertThreshold"));
+
             return {
                     .job_id = job_config.get<int>("jobId"),
                     .stream_uri = job_config.get<std::string>("streamUri"),
                     .segment_size = job_config.get<int>("segmentSize"),
-                    .stall_timeout = job_config.get<long>("stallTimeout"),
-                    .stall_alert_threshold = job_config.get<long>("stallAlertThreshold"),
+                    .stall_timeout = stall_timeout,
+                    .stall_alert_threshold = stall_alert_threshold,
                     .component_name = job_config.get<std::string>("componentName"),
                     .component_lib_path = job_config.get<std::string>("componentLibraryPath"),
                     .message_broker_uri = job_config.get<std::string>("messageBrokerUri"),

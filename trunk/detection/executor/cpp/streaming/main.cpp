@@ -43,6 +43,7 @@
 
 #include "StandardInWatcher.h"
 #include "StreamingComponentHandle.h"
+#include "StreamingVideoCapture.h"
 #include "JobSettings.h"
 #include "BasicAmqMessageSender.h"
 #include "ExecutorErrors.h"
@@ -167,11 +168,7 @@ private:
 
         try {
             LOG4CXX_INFO(logger_, log_prefix_ << "Connecting to stream at: " << settings_.stream_uri)
-            cv::VideoCapture video_capture(settings_.stream_uri);
-            if (!video_capture.isOpened()) {
-                throw FatalError(ExitCode::UNABLE_TO_CONNECT_TO_STREAM,
-                                 "Unable to connect to stream: " + settings_.stream_uri);
-            }
+            StreamingVideoCapture video_capture(logger_, settings_.stream_uri);
 
             StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
 
@@ -179,9 +176,8 @@ private:
 
             while (!std_in_watcher->QuitReceived()) {
                 cv::Mat frame;
-                if (!video_capture.read(frame)) {
-                    // TODO: Detect and report stalls.
-                    throw FatalError(ExitCode::STREAM_STALLED, "It is no longer possible to read frames.");
+                if (!ReadFrame(video_capture, frame)) {
+                    break;
                 }
                 frame_number++;
                 frame_timestamps[frame_number] = GetTimestampMillis();
@@ -229,6 +225,35 @@ private:
 
     bool IsBeginningOfSegment(int frame_number) {
         return frame_number % settings_.segment_size == 0;
+    }
+
+
+
+    bool ReadFrame(StreamingVideoCapture &video_capture, cv::Mat &frame) {
+        try {
+            if (video_capture.ReadWithRetry(frame, settings_.stall_alert_threshold)) {
+                return true;
+            }
+            sender_.SendStallAlert(GetTimestampMillis());
+
+            bool was_read;
+            if (settings_.stall_timeout < std::chrono::milliseconds::zero()) {
+                video_capture.ReadWithRetry(frame);
+                was_read = true;
+            }
+            else {
+                was_read = video_capture.ReadWithRetry(frame, settings_.stall_timeout);
+            }
+
+            if (was_read) {
+                sender_.SendResumedNotification(GetTimestampMillis());
+                return true;
+            }
+            throw FatalError(ExitCode::STREAM_STALLED, "It is no longer possible to read frames.");
+        }
+        catch (const InterruptedException& ex) {
+            return false;
+        }
     }
 
 

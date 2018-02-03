@@ -24,36 +24,73 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.access.hibernate;
+package org.mitre.mpf.wfm.enums;
 
-import org.hibernate.Query;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+// StreamingJobStatusType enumeration describes all possible job status conditions applicable to a streaming job.
+public enum StreamingJobStatusType {
 
-@Repository(HibernateStreamingJobRequestDaoImpl.REF)
-@Transactional(propagation = Propagation.REQUIRED)
-public class HibernateStreamingJobRequestDaoImpl extends AbstractHibernateDao<StreamingJobRequest> implements HibernateStreamingJobRequestDao {
-	private static final Logger log = LoggerFactory.getLogger(HibernateStreamingJobRequestDaoImpl.class);
+    /**
+     * Default: The status of the job is unknown.
+     **/
+    UNKNOWN(false),
 
-	public static final String REF = "hibernateStreamingJobRequestDaoImpl";
-	public HibernateStreamingJobRequestDaoImpl() { this.clazz = StreamingJobRequest.class; }
+    /**
+     * The job has been initialized but not started.
+     */
+    INITIALIZED(false),
 
-	@Override
-	public void cancelJobsInNonTerminalState() {
-		Query query = getCurrentSession().
-				createQuery("UPDATE StreamingJobRequest set status = :status, status_detail = :statusDetail where status in (:nonTerminalStatuses)");
-		query.setParameter("status", StreamingJobStatusType.CANCELLED_BY_SHUTDOWN);
-		query.setParameter("statusDetail", "shutdown: cancelling jobs in non-terminal state");
-		query.setParameterList("nonTerminalStatuses", StreamingJobStatus.getNonTerminalStatuses());
-		int updatedRows = query.executeUpdate();
-		if ( updatedRows >= 0 ) {
-			log.warn("{} streaming jobs were in a non-terminal state and have been marked as {}", updatedRows, StreamingJobStatusType.CANCELLED_BY_SHUTDOWN);
-		}
-	}
+    /**
+     * Indicates that a job was received, but a job could not be created from the contents of
+     * the request.
+     */
+    JOB_CREATION_ERROR(true),
+
+    /**
+     * Indicates the job is in progress.
+     */
+    IN_PROGRESS(false),
+
+    /**
+     * Indicates the job is in the middle of cancellation.
+     */
+    CANCELLING(false),
+
+    /**
+     * Indicates the job was cancelled as a result of a system shutdown.
+     */
+    CANCELLED_BY_SHUTDOWN(true),
+
+    /**
+     * Indicates the job was cancelled by a user-initiated process.
+     */
+    CANCELLED(true),
+
+    /**
+     * Indicates the job is in an error state.
+     */
+    ERROR(true),
+
+    /**
+     * Indicates the streaming job was terminated.
+     */
+    TERMINATED(true),
+
+    /**
+     * Indicates the streaming job is paused.
+     */
+    PAUSED(false),
+
+    /**
+     * Indicates the streaming job is stalled
+     */
+    STALLED(false);
+
+    protected boolean terminal;
+
+    public boolean isTerminal() {
+        return terminal;
+    }
+
+    StreamingJobStatusType(boolean terminal) { this.terminal = terminal; }
+
 }

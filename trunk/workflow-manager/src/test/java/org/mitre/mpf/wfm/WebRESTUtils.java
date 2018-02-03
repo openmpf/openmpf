@@ -29,6 +29,16 @@ package org.mitre.mpf.wfm;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.json.JSONArray;
@@ -36,17 +46,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.mitre.mpf.rest.api.SingleJobInfo;
-import org.mitre.mpf.wfm.enums.JobStatus;
+
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.ui.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 public class WebRESTUtils {
 
@@ -220,16 +224,16 @@ public class WebRESTUtils {
 		return objectMapper.readValue(jsonJobResponse, SingleJobInfo.class);
 	}
 
-	public static JobStatus getJobsStatus(long jobid)throws JsonParseException, JsonMappingException, IOException  {
+	public static BatchJobStatusType getJobsStatus(long jobid)throws JsonParseException, JsonMappingException, IOException  {
 		SingleJobInfo singleJobInfo = getSingleJobInfo(jobid);
 		//convert to the enum and return
-		return JobStatus.valueOf(singleJobInfo.getJobStatus());
+		return BatchJobStatusType.valueOf(singleJobInfo.getJobStatus());
 	}
 
 	public static boolean waitForJobToTerminate(long jobid, long delay) throws InterruptedException, JsonParseException, JsonMappingException, IOException {
 		log.info("[waitForJobToTerminate] job {}, delay:{} ", jobid, delay);
 		int count=20;
-		JobStatus status;
+		BatchJobStatusType status;
 		do{
 			status = getJobsStatus(jobid);
 			log.info("[waitForJobToTerminate] job {}, status:{} delay:{} count{}" ,jobid,status,delay,count);

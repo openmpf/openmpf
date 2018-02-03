@@ -108,11 +108,15 @@ public class CallbackUtils {
 
         // Get information from REDIS about these streaming jobs. Do this before spawning a thread to avoid
         // a race condition where the job may be cleared from REDIS before this information can be retrieved.
+
+        // TODO: Consider refactoring this so that Redis only needs to be queried once per job,
+        // instead of multiple times per job to get each of the following pieces of data.
+
         log.info("Starting POST of health report(s) with jobIds: " + jobIds);
         List<String> externalIds = redis.getExternalIds(jobIds);
-        List<String> jobStatuses = redis.getJobStatusesAsString(jobIds);
-        List<String> lastActivityFrameIds = redis.getHealthReportLastActivityFrameIdsAsStrings(jobIds);
-        List<String> lastActivityTimestamps = redis.getHealthReportLastActivityTimestampsAsStrings(jobIds);
+        List<String> jobStatuses = redis.getStreamingJobStatusesAsStrings(jobIds);
+        List<String> lastActivityFrameIds = redis.getActivityFrameIdsAsStrings(jobIds);
+        List<String> lastActivityTimestamps = redis.getActivityTimestampsAsStrings(jobIds);
 
         try {
             JsonHealthReportCollection jsonBody = new JsonHealthReportCollection(

@@ -27,6 +27,11 @@
 package org.mitre.mpf.wfm.camel.operations.mediainspection;
 
 import com.google.common.base.Preconditions;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import org.apache.camel.Exchange;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.tika.exception.TikaException;
@@ -42,7 +47,7 @@ import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.slf4j.Logger;
@@ -52,12 +57,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 
 /** This processor extracts metadata about the input medium. */
 @Component(MediaInspectionProcessor.REF)
@@ -142,7 +141,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
 		exchange.getOut().setBody(jsonUtils.serialize(transientMedia));
 		if (transientMedia.isFailed()) {
-			redis.setJobStatus(exchange.getIn().getHeader(MpfHeaders.JOB_ID,Long.class), JobStatus.IN_PROGRESS_ERRORS);
+			redis.setJobStatus(exchange.getIn().getHeader(MpfHeaders.JOB_ID,Long.class), BatchJobStatusType.IN_PROGRESS_ERRORS);
 		}
 		redis.persistMedia(exchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class), transientMedia);
 	}

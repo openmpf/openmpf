@@ -36,9 +36,10 @@ import org.mitre.mpf.nms.AddressParser;
 import org.mitre.mpf.nms.MasterNode;
 import org.mitre.mpf.nms.NodeTypes;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
@@ -121,7 +122,7 @@ public class TestStreamingJobStartStop {
 
 
 		verify(_mockStreamingJobRequestBo, timeout(30_000))
-				.handleJobStatusChange(eq(jobId), or(eq(JobStatus.TERMINATED), eq(JobStatus.CANCELLED)), gt(test_start_time));
+				.handleJobStatusChange(eq(jobId), or(eq(new StreamingJobStatus(StreamingJobStatusType.TERMINATED)), eq(new StreamingJobStatus(StreamingJobStatusType.CANCELLED))), gt(test_start_time));
 
 		ArgumentCaptor<JsonSegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(JsonSegmentSummaryReport.class);
 

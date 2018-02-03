@@ -26,6 +26,18 @@
 
 package org.mitre.mpf.wfm.camel;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.camel.Exchange;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -37,7 +49,14 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.JsonActionOutputObject;
+import org.mitre.mpf.interop.JsonCallbackBody;
+import org.mitre.mpf.interop.JsonDetectionOutputObject;
+import org.mitre.mpf.interop.JsonDetectionProcessingError;
+import org.mitre.mpf.interop.JsonMarkupOutputObject;
+import org.mitre.mpf.interop.JsonMediaOutputObject;
+import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -49,26 +68,28 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.util.*;
+import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.JmsUtils;
+import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 @Component(JobCompleteProcessorImpl.REF)
 public class JobCompleteProcessorImpl extends WfmProcessor implements JobCompleteProcessor {
@@ -112,18 +133,18 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			log.warn("[Job {}:*:*] An error prevents a job from completing successfully. Please review the logs for additional information.", jobId);
 		} else {
 			String statusString = exchange.getIn().getHeader(MpfHeaders.JOB_STATUS, String.class);
-			Mutable<JobStatus> jobStatus = new MutableObject<>(JobStatus.parse(statusString, JobStatus.UNKNOWN));
+			Mutable<BatchJobStatusType> jobStatus = new MutableObject<>(BatchJobStatusType.parse(statusString, BatchJobStatusType.UNKNOWN));
 
 			markJobStatus(jobId, jobStatus.getValue());
 
 			try {
-				markJobStatus(jobId, JobStatus.BUILDING_OUTPUT_OBJECT);
+				markJobStatus(jobId, BatchJobStatusType.BUILDING_OUTPUT_OBJECT);
 
 				// NOTE: jobStatus is mutable - it __may__ be modified in createOutputObject!
 				createOutputObject(jobId, jobStatus);
 			} catch (Exception exception) {
 				log.warn("Failed to create the output object for Job {} due to an exception.", jobId, exception);
-				jobStatus.setValue(JobStatus.ERROR);
+				jobStatus.setValue(BatchJobStatusType.ERROR);
 			}
 
 			markJobStatus(jobId, jobStatus.getValue());
@@ -171,7 +192,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		}
 	}
 
-	private void markJobStatus(long jobId, JobStatus jobStatus) {
+	private void markJobStatus(long jobId, BatchJobStatusType jobStatus) {
 		log.debug("Marking Job {} as '{}'.", jobId, jobStatus);
 
 		JobRequest jobRequest = jobRequestDao.findById(jobId);
@@ -182,12 +203,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		jobRequestDao.persist(jobRequest);
 	}
 
-	public void createOutputObject(long jobId, Mutable<JobStatus> jobStatus) throws WfmProcessingException {
+	public void createOutputObject(long jobId, Mutable<BatchJobStatusType> jobStatus) throws WfmProcessingException {
 		TransientJob transientJob = redis.getJob(jobId);
 		JobRequest jobRequest = jobRequestDao.findById(jobId);
 
 		if(transientJob.isCancelled()) {
-			jobStatus.setValue(JobStatus.CANCELLED);
+			jobStatus.setValue(BatchJobStatusType.CANCELLED);
 		}
 
 		JsonOutputObject jsonOutputObject = new JsonOutputObject(jobRequest.getId(),

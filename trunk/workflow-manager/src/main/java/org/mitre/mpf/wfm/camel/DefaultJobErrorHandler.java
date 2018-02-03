@@ -28,7 +28,7 @@ package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,7 @@ public class DefaultJobErrorHandler implements Processor {
 		if(jobId == null) {
 			log.warn("An error was encountered while processing a job, but not enough information has been provided to determine which job produced this error.", throwable);
 		} else {
-			log.warn("An error was encountered while processing Job #{}. The Job will be marked as {}.", jobId, JobStatus.ERROR, throwable);
+			log.warn("An error was encountered while processing Job #{}. The Job will be marked as {}.", jobId, BatchJobStatusType.ERROR, throwable);
 		}
 	}
 }

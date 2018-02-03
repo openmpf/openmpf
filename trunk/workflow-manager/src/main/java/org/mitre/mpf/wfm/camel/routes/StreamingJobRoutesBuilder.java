@@ -37,9 +37,10 @@ import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
-import org.mitre.mpf.wfm.enums.JobStatus;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -68,6 +69,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 
 	@Override
 	public void configure() {
+		// TODO add JOB_STATUS_DETAIL to the streaming job status message
 		from(StreamingEndpoints.WFM_STREAMING_JOB_STATUS.endpointName())
 				.routeId("Streaming Job Status Route")
 				.log(LoggingLevel.DEBUG, "Received job status message: ${headers}")
@@ -76,7 +78,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                         Message msg = exchange.getIn();
                         _streamingJobRequestBo.handleJobStatusChange(
                                 msg.getHeader("JOB_ID", long.class),
-                                msg.getHeader("JOB_STATUS", JobStatus.class),
+                                new StreamingJobStatus(msg.getHeader("JOB_STATUS", StreamingJobStatusType.class)),
                                 msg.getHeader("STATUS_CHANGE_TIMESTAMP", long.class));
                     }
 				 });

@@ -26,19 +26,44 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import io.swagger.annotations.*;
+import static java.util.stream.Collectors.joining;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.ModelUtils;
-import org.mitre.mpf.rest.api.*;
+import org.mitre.mpf.rest.api.JobCreationMediaData;
+import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.JobCreationResponse;
+import org.mitre.mpf.rest.api.JobPageListModel;
+import org.mitre.mpf.rest.api.JobPageModel;
+import org.mitre.mpf.rest.api.MpfResponse;
+import org.mitre.mpf.rest.api.SingleJobInfo;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.exceptions.InvalidPipelineObjectWfmProcessingException;
 import org.mitre.mpf.wfm.service.MpfService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,19 +73,14 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.joining;
 
 // swagger includes
 
@@ -83,6 +103,9 @@ public class JobController {
 
     @Autowired
     private JobProgress jobProgress;
+
+    @Autowired
+    private PipelineService pipelineService;
 
     /*
      *	POST /jobs
@@ -334,62 +357,84 @@ public class JobController {
         return cancelJobInternal(jobId);
     }
 
+    private JobCreationResponse createJobCreationErrorResponse(String externalId,
+        String errorReason) {
+        StringBuilder errBuilder = new StringBuilder("Failure creating batch job");
+        if ( externalId != null ) {
+            errBuilder.append(String.format(" with external id '%s'", externalId));
+        }
+        errBuilder.append(" due to " + errorReason + ". Please check the request parameters against the constraints defined in the REST API.");
+        String err = errBuilder.toString();
+        log.error(err);
+        return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
+    }
+
     private JobCreationResponse createJobInternal(JobCreationRequest jobCreationRequest, boolean useSession) {
         try {
-            boolean buildOutput = propertiesUtil.isOutputObjectsEnabled();
-            if (jobCreationRequest.getBuildOutput() != null) {
-                buildOutput = jobCreationRequest.getBuildOutput();
-            }
 
-            int priority = propertiesUtil.getJmsPriority();
-            if (jobCreationRequest.getPriority() != null) {
-                priority = jobCreationRequest.getPriority();
-            }
+            if ( !pipelineService.pipelineSupportsBatch(jobCreationRequest.getPipelineName()) ) {
+                // The batch job failed the pipeline check. The requested pipeline doesn't support batch.
+                // Reject the job and send an error response.
+                return createJobCreationErrorResponse(jobCreationRequest.getExternalId(), "Requested pipeline doesn't support batch jobs");
 
-            JsonJobRequest jsonJobRequest;
-            List<JsonMediaInputObject> media = new ArrayList<>();
-            // Iterate over all media in the batch job creation request.  If for any media, the media protocol check fails, then
-            // that media will be ignored from the batch job
-            for (JobCreationMediaData mediaRequest : jobCreationRequest.getMedia()) {
-                JsonMediaInputObject medium = new JsonMediaInputObject(
-                    mediaRequest.getMediaUri());
-                if (mediaRequest.getProperties() != null) {
-                    for (Map.Entry<String, String> property : mediaRequest.getProperties()
-                        .entrySet()) {
-                        medium.getProperties()
-                            .put(property.getKey().toUpperCase(), property.getValue());
-                    }
+            } else {
+
+                boolean buildOutput = propertiesUtil.isOutputObjectsEnabled();
+                if (jobCreationRequest.getBuildOutput() != null) {
+                    buildOutput = jobCreationRequest.getBuildOutput();
                 }
-                media.add(medium);
-            }
-            if (jobCreationRequest.getCallbackURL() != null && jobCreationRequest.getCallbackURL().length() > 0) {
-                jsonJobRequest = mpfService.createJob(media,
+
+                int priority = propertiesUtil.getJmsPriority();
+                if (jobCreationRequest.getPriority() != null) {
+                    priority = jobCreationRequest.getPriority();
+                }
+
+                JsonJobRequest jsonJobRequest;
+                List<JsonMediaInputObject> media = new ArrayList<>();
+                // Iterate over all media in the batch job creation request.  If for any media, the media protocol check fails, then
+                // that media will be ignored from the batch job
+                for (JobCreationMediaData mediaRequest : jobCreationRequest.getMedia()) {
+                    JsonMediaInputObject medium = new JsonMediaInputObject(
+                        mediaRequest.getMediaUri());
+                    if (mediaRequest.getProperties() != null) {
+                        for (Map.Entry<String, String> property : mediaRequest.getProperties()
+                            .entrySet()) {
+                            medium.getProperties()
+                                .put(property.getKey().toUpperCase(), property.getValue());
+                        }
+                    }
+                    media.add(medium);
+                }
+                if (jobCreationRequest.getCallbackURL() != null
+                    && jobCreationRequest.getCallbackURL().length() > 0) {
+                    jsonJobRequest = mpfService.createJob(media,
                         jobCreationRequest.getAlgorithmProperties(),
                         jobCreationRequest.getJobProperties(),
                         jobCreationRequest.getPipelineName(),
                         jobCreationRequest.getExternalId(), //TODO: what do we do with this from the UI?
-                        buildOutput, // Use the buildOutput value if it is provided, otherwise use the default value from the properties file.,
-                        priority,// Use the priority value if it is provided, otherwise use the default value from the properties file.
+                        buildOutput,  // Use the buildOutput value if it is provided, otherwise use the default value from the properties file.,
+                        priority,     // Use the priority value if it is provided, otherwise use the default value from the properties file.
                         jobCreationRequest.getCallbackURL(),
                         jobCreationRequest.getCallbackMethod());
 
-            } else {
-                jsonJobRequest = mpfService.createJob(media,
+                } else {
+                    jsonJobRequest = mpfService.createJob(media,
                         jobCreationRequest.getAlgorithmProperties(),
                         jobCreationRequest.getJobProperties(),
                         jobCreationRequest.getPipelineName(),
-                        jobCreationRequest.getExternalId(), //TODO: what do we do with this from the UI?
-                        buildOutput, // Use the buildOutput value if it is provided, otherwise use the default value from the properties file.,
+                        jobCreationRequest.getExternalId(),  //TODO: what do we do with this from the UI?
+                        buildOutput,  // Use the buildOutput value if it is provided, otherwise use the default value from the properties file.,
                         priority); // Use the priority value if it is provided, otherwise use the default value from the properties file.);
-            }
-            long jobId = mpfService.submitJob(jsonJobRequest);
-            log.debug("Successful creation of JobId: {}", jobId);
+                }
+                long jobId = mpfService.submitJob(jsonJobRequest);
+                log.debug("Successful creation of batch JobId: {}", jobId);
 
-            if (useSession) {
-                sessionModel.getSessionJobs().add(jobId);
+                if (useSession) {
+                    sessionModel.getSessionJobs().add(jobId);
+                }
+                // the job request has been successfully parsed, construct the job creation response
+                return new JobCreationResponse(jobId);
             }
-            // the job request has been successfully parsed, construct the job creation response
-            return new JobCreationResponse(jobId);
         } catch (InvalidPipelineObjectWfmProcessingException ex) {
             String err = createErrorString(jobCreationRequest, ex.getMessage());
             log.error(err, ex);

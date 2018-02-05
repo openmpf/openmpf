@@ -348,11 +348,12 @@ public class JobRequestBoImpl implements JobRequestBo {
 
         // Set output object version to null.
         jobRequest.setOutputObjectVersion(null);
-        jobRequest = jobRequestDao.persist(jobRequest);
+
+        JobRequest persistedRequest = jobRequestDao.persist(jobRequest);
 
         AtmosphereController.broadcast(new JobStatusMessage(jobRequest.getId(), 0, BatchJobStatusType.INITIALIZED, null));
 
-        return jobRequest;
+        return persistedRequest;
 
     }
 

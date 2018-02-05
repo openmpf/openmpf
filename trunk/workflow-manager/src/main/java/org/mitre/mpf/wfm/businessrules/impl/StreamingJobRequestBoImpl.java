@@ -320,16 +320,14 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                     redis.setJobStatus(jobId, StreamingJobStatusType.CANCELLING);
                     redis.setDoCleanup(jobId, doCleanup);
 
-                    // Try to move any pending work items on the queues to the appropriate cancellation queues.
-                    // If this operation fails, any remaining pending items will continue to process, but
-                    // the future splitters should not create any new work items. In short, if this fails,
-                    // the system should not be affected, but the streaming job may not complete any faster.
-
-                    streamingJobMessageSender.stopJob(jobId);
-
                     // set job status as cancelling, and persist that changed state in the database
                     streamingJobRequest.setStatus(StreamingJobStatusType.CANCELLING);
                     streamingJobRequestDao.persist(streamingJobRequest);
+
+                    streamingJobMessageSender.stopJob(jobId);
+
+                    handleJobStatusChange(jobId, new StreamingJobStatus(StreamingJobStatusType.CANCELLING),
+                            System.currentTimeMillis());
                 } else {
                     // Couldn't find the requested job as a batch or as a streaming job in REDIS.
                     // Generate an error for the race condition where Redis and the persistent database reflect different states.
@@ -443,7 +441,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      */
     private StreamingJobRequest initializeInternal(StreamingJobRequest streamingJobRequest, JsonStreamingJobRequest jsonStreamingJobRequest) throws WfmProcessingException {
         streamingJobRequest.setPriority(jsonStreamingJobRequest.getPriority());
-        streamingJobRequest.setStatus(StreamingJobStatusType.INITIALIZED);
+        streamingJobRequest.setStatus(StreamingJobStatusType.INITIALIZING);
         streamingJobRequest.setTimeReceived(new Date());
         streamingJobRequest.setInputObject(jsonUtils.serialize(jsonStreamingJobRequest));
         streamingJobRequest.setPipeline(jsonStreamingJobRequest.getPipeline() == null ? null : TextUtils.trimAndUpper(jsonStreamingJobRequest.getPipeline().getName()));
@@ -561,11 +559,12 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             throw new InvalidPipelineObjectWfmProcessingException(errorMessage);
         }
 
-        // Everything has been good so far. Update the job status using running status for a streaming job.
-        // Note that there is no need to include other detail information along with the streaming job status.
-        streamingJobRequestEntity.setStatus(StreamingJobStatusType.IN_PROGRESS);
-        redis.setJobStatus(jobId, StreamingJobStatusType.IN_PROGRESS);
-        streamingJobRequestEntity = streamingJobRequestDao.persist(streamingJobRequestEntity);
+        // Report the current job status (INITIALIZING). The job will report IN_PROGRESS once the WFM receives a
+        // status message from the component process.
+        redis.setJobStatus(jobId, StreamingJobStatusType.INITIALIZING);
+        handleJobStatusChange(streamingJobRequestEntity.getId(),
+                new StreamingJobStatus(streamingJobRequestEntity.getStatus()),
+                System.currentTimeMillis());
 
         return transientStreamingJob;
     }

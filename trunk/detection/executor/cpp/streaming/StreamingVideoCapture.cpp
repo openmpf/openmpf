@@ -44,7 +44,7 @@ namespace MPF { namespace COMPONENT {
         }
     }
 
-    bool StreamingVideoCapture::Read(cv::Mat frame) {
+    bool StreamingVideoCapture::Read(cv::Mat &frame) {
         return cvVideoCapture_.read(frame);
     }
 
@@ -66,6 +66,29 @@ namespace MPF { namespace COMPONENT {
     }
 
 
+    bool StreamingVideoCapture::ReadWithRetry(cv::Mat &frame, const std::chrono::milliseconds &timeout) {
+        if (Read(frame)) {
+            return true;
+        }
+
+        using namespace std::chrono;
+        if (timeout <= milliseconds::zero()) {
+            return false;
+        }
+
+        LOG4CXX_WARN(logger_, "Failed to read frame. Will retry for up to " << timeout.count() << " ms. ");
+
+        return ExecutorUtils::RetryWithBackOff(
+                timeout,
+                [this, &frame] {
+                    return DoReadRetry(frame);
+                },
+                [this] (const ExecutorUtils::sleep_duration_t &duration) {
+                    BetweenRetrySleep(duration);
+                });
+    }
+
+
     bool StreamingVideoCapture::DoReadRetry(cv::Mat &frame) {
         bool reopened = cvVideoCapture_.open(video_uri_);
         if (!reopened) {
@@ -75,7 +98,7 @@ namespace MPF { namespace COMPONENT {
 
         LOG4CXX_WARN(logger_, "Successfully re-connected to video stream.");
 
-        bool was_read = cvVideoCapture_.read(frame);
+        bool was_read = Read(frame);
         if (was_read) {
             LOG4CXX_WARN(logger_, "Successfully read frame after re-connecting to video stream.");
             return true;
@@ -83,5 +106,15 @@ namespace MPF { namespace COMPONENT {
 
         LOG4CXX_WARN(logger_, "Failed to read frame after successfully re-connecting to video stream.");
         return false;
+    }
+
+
+    void StreamingVideoCapture::BetweenRetrySleep(const ExecutorUtils::sleep_duration_t &duration) const {
+        using namespace std::chrono;
+
+        LOG4CXX_WARN(logger_, "Sleeping for " << duration_cast<milliseconds>(duration).count()
+                                              << " ms before trying to read frame again.");
+
+        StandardInWatcher::GetInstance()->InterruptibleSleep(duration);
     }
 }}

@@ -30,8 +30,9 @@
 
 
 #include <string>
-#include <opencv2/opencv.hpp>
 #include <chrono>
+
+#include <opencv2/opencv.hpp>
 
 #include "ExecutorUtils.h"
 
@@ -42,33 +43,11 @@ namespace MPF { namespace COMPONENT {
     public:
         StreamingVideoCapture(log4cxx::LoggerPtr &logger, const std::string &video_uri);
 
-        bool Read(cv::Mat frame);
+        bool Read(cv::Mat &frame);
 
         void ReadWithRetry(cv::Mat &frame);
 
-        template <typename TDurRep, typename TDurPeriod>
-        bool ReadWithRetry(cv::Mat &frame, const std::chrono::duration<TDurRep, TDurPeriod> &timeout) {
-            if (Read(frame)) {
-                return true;
-            }
-
-            using namespace std::chrono;
-            if (timeout <= duration<TDurRep, TDurPeriod>::zero()) {
-                return false;
-            }
-
-            LOG4CXX_WARN(logger_, "Failed to read frame. Will retry for up to "
-                    << duration_cast<milliseconds>(timeout).count() << " ms. ");
-
-            return ExecutorUtils::RetryWithBackOff(
-                    timeout,
-                    [this, &frame] {
-                        return DoReadRetry(frame);
-                    },
-                    [this] (const ExecutorUtils::sleep_duration_t &duration) {
-                        BetweenRetrySleep(duration);
-                    });
-        };
+        bool ReadWithRetry(cv::Mat &frame, const std::chrono::milliseconds &timeout);
 
 
     private:
@@ -81,15 +60,7 @@ namespace MPF { namespace COMPONENT {
 
         bool DoReadRetry(cv::Mat &frame);
 
-        template <typename TDurRep, typename TDurPeriod>
-        void BetweenRetrySleep(const std::chrono::duration<TDurRep, TDurPeriod> &duration) {
-            using namespace std::chrono;
-
-            LOG4CXX_WARN(logger_, "Sleeping for " << duration_cast<milliseconds>(duration).count()
-                                                  << " ms before trying to read frame again.");
-
-            StandardInWatcher::GetInstance()->InterruptibleSleep(duration);
-        };
+        void BetweenRetrySleep(const ExecutorUtils::sleep_duration_t &duration) const;
     };
 
 }}

@@ -191,9 +191,11 @@ TEST(StreamingExecutorUtilsTest, RetryRetriesUntilTimeout) {
     nanoseconds runtime = steady_clock::now() - start_time;
     ASSERT_FALSE(retry_result);
 
+    // (1 ms + 2 ms + 4 ms + 8 ms + 16 ms + 32 ms + 64 ms + 128 ms) + 245 ms = 500 ms is 9 iterations.
+    // Can't be 10 iterations because 1 ms + 2 ms + 4 ms + 8 ms + 16 ms + 32 ms + 64 ms + 128 ms + 256 ms = 511ms
     ASSERT_EQ(count, 9);
-    ASSERT_TRUE(runtime >= milliseconds(495));
-    ASSERT_TRUE(runtime <= milliseconds(510));
+    ASSERT_TRUE(runtime >= milliseconds(500));
+    ASSERT_TRUE(runtime <= milliseconds(505));
 }
 
 
@@ -227,8 +229,19 @@ TEST(StreamingExecutorUtilsTest, RetryWorksWhenFuncTakesTime) {
         return false;
     };
 
+    auto start_time = steady_clock::now();
     bool retry_result = ExecutorUtils::RetryWithBackOff(std::chrono::milliseconds(300), test_func);
+    nanoseconds runtime = steady_clock::now() - start_time;
+
     ASSERT_FALSE(retry_result);
     ASSERT_EQ(count, 2);
+
+    // test_func ran twice and RetryWithBackOff slept for 1ms between attempts
+    milliseconds expected_min_sleep_time(155 * count + 1);
+    ASSERT_TRUE(runtime >= expected_min_sleep_time);
+
+    // Use expected_min_sleep_time with a little bit of wiggle room
+    milliseconds expected_max_sleep_time = expected_min_sleep_time + milliseconds(5);
+    ASSERT_TRUE(runtime <= milliseconds(155 * 2 + 6));
 }
 

@@ -65,7 +65,8 @@ find_package(mpfDetectionComponentApi REQUIRED)
 #include_directories(FrameStore)
 #add_subdirectory(FrameReader)
 
-set(streaming_component_executor_files main.cpp
+set(streaming_component_executor_files
+	StreamingComponentExecutor.cpp StreamingComponentExecutor.h
     StandardInWatcher.cpp StandardInWatcher.h
     JobSettings.h JobSettings.cpp
 	StreamingComponentHandle.cpp StreamingComponentHandle.h
@@ -74,7 +75,10 @@ set(streaming_component_executor_files main.cpp
 	ExecutorErrors.cpp ExecutorErrors.h
 	ExecutorUtils.cpp ExecutorUtils.h)
 
-add_executable(streaming_component_executor ${streaming_component_executor_files} ${MSG_UTILS_FILE})
+add_library(streaming_executor_lib OBJECT ${streaming_component_executor_files})
+target_include_directories(streaming_executor_lib PUBLIC $<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
+
+add_executable(streaming_component_executor main.cpp $<TARGET_OBJECTS:streaming_executor_lib> ${MSG_UTILS_FILE})
 target_link_libraries(streaming_component_executor mpfDetectionComponentApi mpfComponentInterface
 	dl ${LOG4CXX_LIBRARIES} ${OpenCV_LIBS} ${PROTOBUF_LIBRARY} ${MPF_PROTOBUF_LIB} ${ACTIVEMQ-CPP_LIBRARIES})
 

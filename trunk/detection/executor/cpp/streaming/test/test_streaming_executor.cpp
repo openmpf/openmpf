@@ -34,9 +34,11 @@
 #include <log4cxx/basicconfigurator.h>
 
 #include "../ExecutorUtils.h"
+#include "../JobSettings.h"
 
 
 using namespace MPF::COMPONENT;
+using namespace std::chrono;
 
 
 log4cxx::LoggerPtr getLogger() {
@@ -178,8 +180,6 @@ TEST(StreamingExecutorUtilsTest, FixTracksDropsEmptyTracks) {
 
 
 TEST(StreamingExecutorUtilsTest, RetryRetriesUntilTimeout) {
-    using namespace std::chrono;
-
     int count = 0;
     auto test_func = [&] {
         count++;
@@ -202,8 +202,6 @@ TEST(StreamingExecutorUtilsTest, RetryRetriesUntilTimeout) {
 
 
 TEST(StreamingExecutorUtilsTest, RetryStopsWhenFuncReturnsTrue) {
-    using namespace std::chrono;
-
     int count = 0;
     auto test_func = [&] {
         count++;
@@ -220,8 +218,6 @@ TEST(StreamingExecutorUtilsTest, RetryStopsWhenFuncReturnsTrue) {
 
 
 TEST(StreamingExecutorUtilsTest, RetryWorksWhenFuncTakesTime) {
-    using namespace std::chrono;
-
     int count = 0;
     auto test_func = [&] {
         count++;
@@ -245,3 +241,32 @@ TEST(StreamingExecutorUtilsTest, RetryWorksWhenFuncTakesTime) {
     ASSERT_TRUE(runtime <= milliseconds(155 * 2 + 6));
 }
 
+
+
+void verifyRetryStrategyMapping(long stall_timeout, long alert_threshold,
+                                RetryStrategy expected_strategy, long expected_stall_timeout) {
+
+    milliseconds stall_timeout_ms(stall_timeout);
+    milliseconds alert_threshold_ms(alert_threshold);
+
+    ASSERT_EQ(JobSettings::GetRetryStrategy(stall_timeout_ms, alert_threshold_ms), expected_strategy);
+
+    ASSERT_EQ(stall_timeout_ms, milliseconds(expected_stall_timeout));
+}
+
+
+TEST(JobSettingsTest, TestTimeoutValueToRetryStrategyMapping) {
+    verifyRetryStrategyMapping(0, -1, RetryStrategy::NEVER_RETRY, 0);
+    verifyRetryStrategyMapping(0, 10, RetryStrategy::NEVER_RETRY, 0);
+
+    verifyRetryStrategyMapping(-1, -1, RetryStrategy::NO_ALERT_NO_TIMEOUT, -1);
+    verifyRetryStrategyMapping(-1, -2, RetryStrategy::NO_ALERT_NO_TIMEOUT, -1);
+
+    verifyRetryStrategyMapping(10, -1, RetryStrategy::NO_ALERT_WITH_TIMEOUT, 10);
+    verifyRetryStrategyMapping(5, 10, RetryStrategy::NO_ALERT_WITH_TIMEOUT, 5);
+    verifyRetryStrategyMapping(5, 5, RetryStrategy::NO_ALERT_WITH_TIMEOUT, 5);
+
+    verifyRetryStrategyMapping(-1, 10, RetryStrategy::ALERT_NO_TIMEOUT, -1);
+
+    verifyRetryStrategyMapping(10, 6, RetryStrategy::ALERT_WITH_TIMEOUT, 4);
+}

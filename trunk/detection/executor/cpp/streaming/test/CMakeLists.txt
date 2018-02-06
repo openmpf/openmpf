@@ -34,9 +34,11 @@ set(CMAKE_CXX_STANDARD 11)
 find_package(GTest)
 if (${GTEST_FOUND})
     enable_testing()
-    add_executable(StreamingExecutorTest test_streaming_executor.cpp ../ExecutorUtils.cpp ../ExecutorUtils.h)
+
+    add_executable(StreamingExecutorTest test_streaming_executor.cpp $<TARGET_OBJECTS:streaming_executor_lib>)
+
     target_link_libraries(StreamingExecutorTest GTest::GTest GTest::Main
-        mpfDetectionComponentApi ${LOG4CXX_LIBRARIES})
+        $<TARGET_PROPERTY:streaming_component_executor,LINK_LIBRARIES>)
 
     add_test(NAME StreamingExecutorTest COMMAND StreamingExecutorTest)
 

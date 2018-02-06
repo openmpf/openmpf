@@ -25,47 +25,77 @@
  ******************************************************************************/
 
 
-#ifndef MPF_JOBSETTINGS_H
-#define MPF_JOBSETTINGS_H
+#ifndef MPF_STREAMINGCOMPONENTEXECUTOR_H
+#define MPF_STREAMINGCOMPONENTEXECUTOR_H
 
-#include <map>
 #include <string>
-#include <chrono>
+#include <log4cxx/logger.h>
+
+#include "ExecutorErrors.h"
+#include "StreamingComponentHandle.h"
+#include "BasicAmqMessageSender.h"
+#include "StreamingVideoCapture.h"
+
 
 namespace MPF { namespace COMPONENT {
 
-    enum class RetryStrategy {
-        NEVER_RETRY,
-        NO_ALERT_NO_TIMEOUT,
-        NO_ALERT_WITH_TIMEOUT,
-        ALERT_NO_TIMEOUT,
-        ALERT_WITH_TIMEOUT
+    class StreamingComponentExecutor {
+
+    public:
+        static ExitCode RunJob(const std::string &ini_path);
+
+
+    private:
+        log4cxx::LoggerPtr logger_;
+
+        const std::string log_prefix_;
+
+        JobSettings settings_;
+
+        BasicAmqMessageSender sender_;
+
+        MPFStreamingVideoJob job_;
+
+        StreamingComponentHandle component_;
+
+        const std::string detection_type_;
+
+
+        StreamingComponentExecutor(
+                const log4cxx::LoggerPtr &logger,
+                const std::string &log_prefix,
+                JobSettings &&settings,
+                BasicAmqMessageSender &&sender,
+                MPFStreamingVideoJob &&job,
+                StreamingComponentHandle &&component,
+                const std::string &detection_type);
+
+
+
+        static StreamingComponentExecutor Create(
+                const log4cxx::LoggerPtr &logger, const std::string &log_prefix,
+                JobSettings &&settings, MPFStreamingVideoJob &&job);
+
+
+        template <RetryStrategy RETRY_STRATEGY>
+        void Run();
+
+        template <RetryStrategy RETRY_STRATEGY>
+        void ReadFrame(StreamingVideoCapture &video_capture, cv::Mat &frame);
+
+        bool IsBeginningOfSegment(int frame_number);
+
+        std::vector<MPFVideoTrack> TryGetRemainingTracks();
+
+        static long GetTimestampMillis();
+
+        static std::string GetAppDir();
+
+        static log4cxx::LoggerPtr GetLogger(const std::string &app_dir);
     };
 
-
-    struct JobSettings {
-        const int job_id;
-        const std::string stream_uri;
-        const int segment_size;
-        const RetryStrategy retry_strategy;
-        const std::chrono::milliseconds stall_timeout;
-        const std::chrono::milliseconds stall_alert_threshold;
-        const std::string component_name;
-        const std::string component_lib_path;
-        const std::string message_broker_uri;
-        const std::string job_status_queue;
-        const std::string activity_alert_queue;
-        const std::string summary_report_queue;
-
-        const std::map<std::string, std::string> job_properties;
-        const std::map<std::string, std::string> media_properties;
-
-        static JobSettings FromIniFile(const std::string &ini_path);
-
-        static RetryStrategy GetRetryStrategy(std::chrono::milliseconds &stall_timeout,
-                                              const std::chrono::milliseconds &alert_threshold);
-    };
-    
 }}
 
-#endif //MPF_JOBSETTINGS_H
+
+
+#endif //MPF_STREAMINGCOMPONENTEXECUTOR_H

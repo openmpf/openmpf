@@ -36,7 +36,6 @@ import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.AtmosphereChannel;
-import org.mitre.mpf.rest.api.StreamingJobInfo;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
@@ -306,16 +305,6 @@ public class MpfServiceImpl implements MpfService {
         if ( jobIds != null && !jobIds.isEmpty() ) {
 			streamingJobRequestBo.sendHealthReports(jobIds, isActive);
 		}
-	}
-
-	/**
-	 * Update StreamingJobInfo so it contains the latest job status information.
-     * @param jobId Unique id of the streaming job.
-	 * @param streamingJobInfo Job information that needs to be updated.
-	 * @return Updated streaming job status information.
- 	 */
-	public StreamingJobInfo updateStreamingJobInfo(long jobId, StreamingJobInfo streamingJobInfo) {
-		return streamingJobRequestBo.updateStreamingJobInfo(jobId, streamingJobInfo);
 	}
 
 	/* ***** System Messages ***** */

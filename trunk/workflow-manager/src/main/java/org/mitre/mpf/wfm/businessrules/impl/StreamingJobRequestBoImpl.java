@@ -54,7 +54,6 @@ import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.JobStatusMessage;
-import org.mitre.mpf.rest.api.StreamingJobInfo;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.Redis;
@@ -659,24 +658,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         // TODO: Replace logging with implementation of handleNewSummaryReport
         log.debug("handleNewSummaryReport(jobId = {}, summaryReport = {}) with {} tracks",
                  summaryReport.getJobId(), summaryReport, summaryReport.getTracks().size());
-    }
-
-    /**
-     * Update StreamingJobInfo so it contains the latest job status information from REDIS.
-     * @param jobId Unique id of the streaming job.
-     * @param streamingJobInfo Job information that needs to be updated.
-     * @return Updated streaming job status information.
-     */
-    public StreamingJobInfo updateStreamingJobInfo(long jobId, StreamingJobInfo streamingJobInfo) {
-        StreamingJobStatus jobStatus = redis.getStreamingJobStatus(jobId);
-        // If the streaming job is an active streaming job, then update StreamingJobInfo with the latest from REDIS.
-        if ( jobStatus != null ) {
-            streamingJobInfo.setJobStatus(jobStatus.getType().name());
-            streamingJobInfo.setJobStatusDetail(jobStatus.getDetail());
-            streamingJobInfo.setActivityFrameId(redis.getHealthReportActivityFrameIdAsString(jobId));
-            streamingJobInfo.setActivityTimestamp(redis.getHealthReportActivityTimestampAsString(jobId));
-        }
-        return streamingJobInfo;
     }
 
     private static LocalDateTime millisToDateTime(long millis) {

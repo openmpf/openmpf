@@ -32,7 +32,6 @@ import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
-import org.mitre.mpf.rest.api.StreamingJobInfo;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
@@ -171,14 +170,6 @@ public interface MpfService {
      * message will provide a summary of the warning or error that occurred.
      */
     void cancelStreamingJob(long jobId, boolean doCleanup) throws WfmProcessingException;
-
-    /**
-     * Update StreamingJobInfo so it contains the latest job status information.
-     * @param jobId Unique id of the streaming job.
-     * @param streamingJobInfo Job information that needs to be updated.
-     * @return Updated streaming job status information.
-     */
-    StreamingJobInfo updateStreamingJobInfo(long jobId, StreamingJobInfo streamingJobInfo);
 
     /**
      * Send health reports for all current streaming jobs to the health report callback associated

@@ -290,9 +290,9 @@ public class StreamingJobController {
         try {
             List<StreamingJobRequest> job_requests = new ArrayList<StreamingJobRequest>();
             if (jobId != null) {
-                StreamingJobRequest job = mpfService.getStreamingJobRequest(jobId);
-                if (job != null) {
-                    job_requests.add(job);
+                StreamingJobRequest job_request = mpfService.getStreamingJobRequest(jobId);
+                if (job_request != null) {
+                    job_requests.add(job_request);
                 }
             } else {
                 // Get all of the streaming jobs from the long-term database.
@@ -305,10 +305,7 @@ public class StreamingJobController {
 
                 float jobProgressVal = jobProgress.getJobProgress(id) != null ? jobProgress.getJobProgress(id) : 0.0f;
                 streamingJobInfo = ModelUtils.convertJobRequest(job_request, jobProgressVal);
-
-                // Update StreamingJobInfo from REDIS so it contains the most up to date streaming job status information
-                streamingJobInfo = mpfService.updateStreamingJobInfo(id,streamingJobInfo);
-
+                
                 jobInfoList.add(streamingJobInfo);
             }
         } catch (Exception ex) {

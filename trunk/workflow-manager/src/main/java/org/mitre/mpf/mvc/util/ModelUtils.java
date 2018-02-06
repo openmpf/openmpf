@@ -151,6 +151,8 @@ public class ModelUtils {
 				streamingJobRequest.getTimeCompleted(),
 				streamingJobRequest.getOutputObjectDirectory(),
 				streamingJobRequest.getStreamUri(),
+				streamingJobRequest.getActivityFrameId(),
+				streamingJobRequest.getActivityTimestamp(),
 				isTerminal);
 	}
 

@@ -27,19 +27,17 @@
 package org.mitre.mpf.wfm.businessrules;
 
 
+import java.util.List;
+import java.util.Map;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
-import org.mitre.mpf.rest.api.StreamingJobInfo;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.data.entities.transients.SegmentSummaryReport;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-
-import java.util.List;
-import java.util.Map;
 
 public interface StreamingJobRequestBo {
 
@@ -84,14 +82,6 @@ public interface StreamingJobRequestBo {
 	 * The exception message will provide a summary of the warning or error that occurred.
 	 */
 	void cancel(long jobId, boolean doCleanup) throws WfmProcessingException;
-
-	/**
-	 * Update StreamingJobInfo so it contains the latest job status information.
-	 * @param jobId Unique id of the streaming job.
-	 * @param streamingJobInfo Job information that needs to be updated.
-	 * @return Updated streaming job status information.
-	 */
-	StreamingJobInfo updateStreamingJobInfo(long jobId, StreamingJobInfo streamingJobInfo) ;
 
 	/**
 	 * Send a health report for all current streaming jobs to the health report callback associated with each streaming job.

@@ -72,9 +72,9 @@ public class StreamingJobInfo {
 	public void setActivityFrameId(String activityFrameId) { this.activityFrameId = activityFrameId; }
 	public String getActivityFrameId() { return activityFrameId; }
 
-    private String activityTimestamp = null;
-    public void setActivityTimestamp(String activityTimestamp) { this.activityTimestamp = activityTimestamp; }
-    public String getActivityTimestamp() { return activityTimestamp; }
+    private Date activityTimestamp = null;
+    public void setActivityTimestamp(Date activityTimestamp) { this.activityTimestamp = activityTimestamp; }
+    public Date getActivityTimestamp() { return activityTimestamp; }
 
 	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
 	//to maintain the use of only standard Java in the model.api classes
@@ -96,12 +96,14 @@ public class StreamingJobInfo {
 	 * @param endDate endDate may be null if the streaming job is still active
 	 * @param outputObjectDirectory directory where objects from this streaming job are created
 	 * @param streamUri URI of the streaming data
+	 * @param activityFrameId The frame id corresponding to the start of the first track generated in the current segment.
+     * @param activityTimestamp The detection time associated with the activityFrameId.
 	 * @param terminal if true, marks a terminal error
 	 */
 	public StreamingJobInfo(Long jobId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus,
                             String jobStatusDetail, float jobProgress,
                             Date startDate, Date endDate, String outputObjectDirectory,
-                            String streamUri, boolean terminal) {
+                            String streamUri, String activityFrameId, Date activityTimestamp, boolean terminal) {
 		this.jobId = jobId;
 		this.pipelineName = pipelineName;
 		this.jobStatus = jobStatus;
@@ -114,6 +116,8 @@ public class StreamingJobInfo {
 		this.outputObjectDirectory = outputObjectDirectory;
 		this.terminal = terminal;
 		this.streamUri = streamUri;
+		this.activityFrameId = activityFrameId;
+		this.activityTimestamp = activityTimestamp;
 	}
 	
 }

@@ -27,6 +27,7 @@
 package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.*;
+import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
 import org.mitre.mpf.interop.util.TimeUtils;
 
 import java.time.LocalDateTime;
@@ -38,15 +39,21 @@ import java.util.*;
 public class JsonSegmentSummaryReport {
 
     private LocalDateTime reportDate = null;
+    public LocalDateTime getReportDate() { return reportDate; }
+    public void setReportDate(LocalDateTime reportDate) { this.reportDate = reportDate; }
+
     /**
      * The date/time that this callback is being issued.
      * @return The date/time that this callback is being issued. This timestamp will be returned as a String
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
      */
     @JsonGetter("reportDate")
-    public String getReportDate() { return TimeUtils.getLocalDateTimeAsString(reportDate); }
+    public String getReportDateAsString() { return TimeUtils.getLocalDateTimeAsString(reportDate); }
     @JsonSetter("reportDate")
-    public void setReportDate(LocalDateTime reportDate) { this.reportDate = reportDate; }
+    public void setReportDateFromString(String reportDateStr) throws MpfInteropUsageException {
+        reportDate = TimeUtils.parseStringAsLocalDateTime(reportDateStr);
+    }
+
 
     @JsonProperty("jobId")
     @JsonPropertyDescription("The unique identifier assigned to this job by the system.")
@@ -78,8 +85,10 @@ public class JsonSegmentSummaryReport {
     private SortedMap<String, SortedSet<JsonTrackOutputObject>> types = new TreeMap<>();
     public SortedMap<String, SortedSet<JsonTrackOutputObject>> getTypes() { return types; }
 
-	public JsonSegmentSummaryReport(long jobId, long segmentId, long segmentStartFrame, long segmentStopFrame,
+	public JsonSegmentSummaryReport(LocalDateTime reportDate, long jobId, long segmentId,
+                                    long segmentStartFrame, long segmentStopFrame,
                                     String detectionType, List<JsonTrackOutputObject> tracks, String errorMessage) {
+        this.reportDate = reportDate;
 		this.jobId = jobId;
         this.segmentId = segmentId;
         this.segmentStartFrame = segmentStartFrame;
@@ -94,13 +103,16 @@ public class JsonSegmentSummaryReport {
 	}
 
     @JsonCreator
-    public static JsonSegmentSummaryReport factory(@JsonProperty("jobId") long jobId,
+    public static JsonSegmentSummaryReport factory(@JsonProperty("reportDate") String reportDate,
+                                                   @JsonProperty("jobId") long jobId,
                                                    @JsonProperty("segmentId") long segmentId,
                                                    @JsonProperty("segmentStartFrame") long segmentStartFrame,
                                                    @JsonProperty("segmentStopFrame") long segmentStopFrame,
                                                    @JsonProperty("detectionType") String detectionType,
                                                    @JsonProperty("tracks") List<JsonTrackOutputObject> tracks,
-                                                   @JsonProperty("errorMessage") String errorMessage) {
-        return new JsonSegmentSummaryReport(jobId, segmentId, segmentStartFrame, segmentStopFrame, detectionType, tracks, errorMessage);
+                                                   @JsonProperty("errorMessage") String errorMessage)
+            throws MpfInteropUsageException {
+        return new JsonSegmentSummaryReport(TimeUtils.parseStringAsLocalDateTime(reportDate), jobId, segmentId,
+                segmentStartFrame, segmentStopFrame, detectionType, tracks, errorMessage);
     }
 }

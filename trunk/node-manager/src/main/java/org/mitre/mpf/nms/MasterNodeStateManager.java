@@ -222,8 +222,10 @@ public class MasterNodeStateManager extends ChannelReceiver {
         synchronized (getServiceTable()) {
             LOG.info("Shutting down all the services currently running: {}", getServiceTable().size());
             getServiceTable().values().forEach(this::shutdownService);
-            streamingJobManager.stopAllJobs();
         }
+
+        streamingJobManager.stopAllJobs();
+
         // do we expect replies, like Inactive
         try {
             Thread.sleep(10000); // shutdown takes some time - let the messages get out

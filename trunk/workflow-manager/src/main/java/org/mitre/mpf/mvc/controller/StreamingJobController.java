@@ -318,8 +318,6 @@ public class StreamingJobController {
                     streamingJobRequest.getOutputObjectDirectory(), doCleanup,
                     MpfResponse.RESPONSE_CODE_SUCCESS, "success");
             } catch (WfmProcessingException e) {
-                // If the job could not be marked for cancellation because the streaming job Id was invalid,
-                // log the error and forward the error along in the mpfResponse.
                 log.error("Streaming job with id {} couldn't be cancelled, error is '{}'", jobId, e.getMessage());
                 cancelResponse = new StreamingJobCancelResponse(jobId,
                     streamingJobRequest.getOutputObjectDirectory(), doCleanup,

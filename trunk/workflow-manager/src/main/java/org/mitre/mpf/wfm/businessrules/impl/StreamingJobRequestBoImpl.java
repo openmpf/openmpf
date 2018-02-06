@@ -62,7 +62,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -296,47 +295,45 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
         if (streamingJobRequest == null) {
             throw new JobCancellationInvalidJobIdWfmProcessingException("A streaming job with the id " + jobId + " is not known to the system.");
-        } else {
-
-            assert streamingJobRequest.getStatus()
-                != null : "Streaming jobs must not have a null status.";
-
-            if (streamingJobRequest.getStatus().isTerminal() || streamingJobRequest.getStatus() == StreamingJobStatusType.CANCELLING) {
-                String errorMessage = "Streaming job " + jobId +" already has state '" + streamingJobRequest.getStatus().name() + "' and cannot be cancelled at this time.";
-                if (doCleanup) {
-                    errorMessage += " Attempted cleanup anyway.";
-                    try {
-                        cleanup(jobId, streamingJobRequest.getOutputObjectDirectory());
-                    } catch (WfmProcessingException e) {
-                        log.warn(e.getMessage());
-                    }
-                }
-                throw new JobAlreadyCancellingWfmProcessingException(errorMessage);
-            } else {
-                log.info("[Streaming Job {}:*:*] Cancelling streaming job.", jobId);
-
-                // Mark the streaming job as cancelled in Redis
-                if (redis.cancel(jobId)) {
-                    redis.setJobStatus(jobId, StreamingJobStatusType.CANCELLING);
-                    redis.setDoCleanup(jobId, doCleanup);
-
-                    // set job status as cancelling, and persist that changed state in the database
-                    streamingJobRequest.setStatus(StreamingJobStatusType.CANCELLING);
-                    streamingJobRequestDao.persist(streamingJobRequest);
-
-                    streamingJobMessageSender.stopJob(jobId);
-
-                    handleJobStatusChange(jobId, new StreamingJobStatus(StreamingJobStatusType.CANCELLING),
-                            System.currentTimeMillis());
-                } else {
-                    // Couldn't find the requested job as a batch or as a streaming job in REDIS.
-                    // Generate an error for the race condition where Redis and the persistent database reflect different states.
-                    throw new JobCancellationInvalidJobIdWfmProcessingException("Streaming job with jobId " + jobId + " is not found, it cannot be cancelled at this time.");
-                }
-
-            }
         }
 
+        if (streamingJobRequest.getStatus() == null) {
+            throw new WfmProcessingException("Streaming job " + jobId + " must not have a null status.");
+        }
+
+        if (streamingJobRequest.getStatus().isTerminal() || streamingJobRequest.getStatus() == StreamingJobStatusType.CANCELLING) {
+            String errorMessage = "Streaming job " + jobId + " already has state '" + streamingJobRequest.getStatus().name() + "' and cannot be cancelled at this time.";
+            if (doCleanup) {
+                errorMessage += " Attempted cleanup anyway.";
+                try {
+                    cleanup(jobId, streamingJobRequest.getOutputObjectDirectory());
+                } catch (WfmProcessingException e) {
+                    log.warn(e.getMessage());
+                }
+            }
+            throw new JobAlreadyCancellingWfmProcessingException(errorMessage);
+        }
+
+        log.info("[Streaming Job {}:*:*] Cancelling streaming job.", jobId);
+
+        // Mark the streaming job as cancelled in Redis
+        if (!redis.cancel(jobId)) {
+            // Couldn't find the requested job as a batch or as a streaming job in REDIS.
+            // Generate an error for the race condition where Redis and the persistent database reflect different states.
+            throw new JobCancellationInvalidJobIdWfmProcessingException("Streaming job with jobId " + jobId + " is not found, it cannot be cancelled at this time.");
+        }
+
+        redis.setJobStatus(jobId, StreamingJobStatusType.CANCELLING);
+        redis.setDoCleanup(jobId, doCleanup);
+
+        // set job status as cancelling, and persist that changed state in the database
+        streamingJobRequest.setStatus(StreamingJobStatusType.CANCELLING);
+        streamingJobRequestDao.persist(streamingJobRequest);
+
+        streamingJobMessageSender.stopJob(jobId);
+
+        handleJobStatusChange(jobId, new StreamingJobStatus(StreamingJobStatusType.CANCELLING),
+                System.currentTimeMillis());
     }
 
     /**
@@ -348,6 +345,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * @exception JobCancellationInvalidOutputObjectDirectoryWfmProcessingException may be thrown if the streaming job has been cancelled, but an error
      * was detected in specification of the jobs output object directory.
      */
+    @Override
     public synchronized void cleanup(long jobId, String outputObjectDirPath) throws WfmProcessingException {
         try {
 
@@ -399,7 +397,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 throw new JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException(warningMessage);
             }
 
-            // the output object directory was successfully deleted, log this fact
             log.info("[Streaming Job {}:*:*] Output object directory '{}' was successfully deleted as specified by the cancel request.",
                     jobId, outputObjectDirPath);
 
@@ -604,7 +601,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
         String healthReportCallbackUri = redis.getHealthReportCallbackURI(jobId);
         if (healthReportCallbackUri != null) {
-            callbackUtils.doHealthReportCallback(Collections.singletonList(jobId), healthReportCallbackUri);
+            callbackUtils.sendHealthReportCallback(healthReportCallbackUri, Collections.singletonList(jobId));
         }
 
         if (status.isTerminal()) {
@@ -643,16 +640,13 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
         String healthReportCallbackUri = redis.getHealthReportCallbackURI(jobId);
         if (healthReportCallbackUri != null) {
-            callbackUtils.doHealthReportCallback(Collections.singletonList(jobId), healthReportCallbackUri);
+            callbackUtils.sendHealthReportCallback(healthReportCallbackUri, Collections.singletonList(jobId));
         }
     }
 
+    // TODO: Write system test for summary report callbacks.
     @Override
     public void handleNewSummaryReport(JsonSegmentSummaryReport summaryReport) {
-        // TODO: Write system test for summary report callbacks.
-
-        LocalDateTime time = LocalDateTime.now();
-        summaryReport.setReportDate(time);
 
         // TODO: Add methods to redis so that we don't need to get the whole transient job.
         TransientStreamingJob transientStreamingJob = redis.getStreamingJob(summaryReport.getJobId());
@@ -660,7 +654,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             if (transientStreamingJob.isOutputEnabled()) {
                 try {
                     String outputPath = transientStreamingJob.getOutputObjectDirectory();
-                    File outputFile = propertiesUtil.createStreamingOutputObjectsFile(time, new File(outputPath));
+                    File outputFile = propertiesUtil.createStreamingOutputObjectsFile(summaryReport.getReportDate(), new File(outputPath));
                     jsonUtils.serialize(summaryReport, outputFile);
                 } catch(Exception e) {
                     log.error("Failed to write the JSON summary report for job '{}' due to an exception.", summaryReport.getJobId(), e);
@@ -670,7 +664,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
         String summaryReportCallbackUri = redis.getSummaryReportCallbackURI(summaryReport.getJobId());
         if (summaryReportCallbackUri != null) {
-            callbackUtils.doSummaryReportCallback(summaryReport, summaryReportCallbackUri);
+            callbackUtils.sendSummaryReportCallback(summaryReport, summaryReportCallbackUri);
         }
     }
 
@@ -708,12 +702,10 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 Map<String, List<Long>> healthReportCallbackUriToActiveJobIdListMap = redis.getHealthReportCallbackURIAsMap(currentActiveJobIds);
 
                 // For each healthReportCallbackUri, send a health report containing health information for each streaming job
-                // that specified the same healthReportCallbackUri. Note that sendToHealthReportCallback method won't be called
+                // that specified the same healthReportCallbackUri. Note that sendHealthReportCallback method won't be called
                 // if healthReportCallbackUriToJobIdListMap is empty. This would be a possibility if no streaming jobs have
                 // requested that a health report be sent.
-                healthReportCallbackUriToActiveJobIdListMap.keySet().stream().forEach(
-                    healthReportCallbackUri -> callbackUtils.doHealthReportCallback(
-                            healthReportCallbackUriToActiveJobIdListMap.get(healthReportCallbackUri), healthReportCallbackUri));
+                healthReportCallbackUriToActiveJobIdListMap.forEach(callbackUtils::sendHealthReportCallback);
             }
         }
     }

@@ -44,6 +44,7 @@ import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -56,38 +57,38 @@ import static java.util.stream.Collectors.toMap;
 @Component
 public class StreamingJobRoutesBuilder extends RouteBuilder {
 
-	private final StreamingJobRequestBo _streamingJobRequestBo;
+    private final StreamingJobRequestBo _streamingJobRequestBo;
 
-	// Used to determine of messages should be ignored if AMQ has not been purged yet
-	private final WfmStartup _wfmStartup;
+    // Used to determine of messages should be ignored if AMQ has not been purged yet
+    private final WfmStartup _wfmStartup;
 
-	@Autowired
-	public StreamingJobRoutesBuilder(StreamingJobRequestBo streamingJobRequestBo, WfmStartup wfmStartup) {
-		_streamingJobRequestBo = streamingJobRequestBo;
-		_wfmStartup = wfmStartup;
-	}
+    @Autowired
+    public StreamingJobRoutesBuilder(StreamingJobRequestBo streamingJobRequestBo, WfmStartup wfmStartup) {
+        _streamingJobRequestBo = streamingJobRequestBo;
+        _wfmStartup = wfmStartup;
+    }
 
-	@Override
-	public void configure() {
-		// TODO add JOB_STATUS_DETAIL to the streaming job status message
-		from(StreamingEndpoints.WFM_STREAMING_JOB_STATUS.endpointName())
-				.routeId("Streaming Job Status Route")
-				.log(LoggingLevel.DEBUG, "Received job status message: ${headers}")
-				.process(exchange -> {
-				    if (_wfmStartup.isApplicationRefreshed()) {
+    @Override
+    public void configure() {
+        // TODO add JOB_STATUS_DETAIL to the streaming job status message
+        from(StreamingEndpoints.WFM_STREAMING_JOB_STATUS.endpointName())
+                .routeId("Streaming Job Status Route")
+                .log(LoggingLevel.DEBUG, "Received job status message: ${headers}")
+                .process(exchange -> {
+                    if (_wfmStartup.isApplicationRefreshed()) {
                         Message msg = exchange.getIn();
                         _streamingJobRequestBo.handleJobStatusChange(
                                 msg.getHeader("JOB_ID", long.class),
                                 new StreamingJobStatus(msg.getHeader("JOB_STATUS", StreamingJobStatusType.class)),
                                 msg.getHeader("STATUS_CHANGE_TIMESTAMP", long.class));
                     }
-				 });
+                 });
 
 
-		from(StreamingEndpoints.WFM_STREAMING_JOB_ACTIVITY.endpointName())
-				.routeId("Streaming Job Activity Route")
-				.log(LoggingLevel.DEBUG, "Received activity alert message: ${headers}")
-				.process(exchange -> {
+        from(StreamingEndpoints.WFM_STREAMING_JOB_ACTIVITY.endpointName())
+                .routeId("Streaming Job Activity Route")
+                .log(LoggingLevel.DEBUG, "Received activity alert message: ${headers}")
+                .process(exchange -> {
                     if (_wfmStartup.isApplicationRefreshed()) {
                         Message msg = exchange.getIn();
                         _streamingJobRequestBo.handleNewActivityAlert(
@@ -95,14 +96,14 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                                 msg.getHeader("FRAME_NUMBER", int.class),
                                 msg.getHeader("ACTIVITY_DETECTION_TIMESTAMP", long.class));
                     }
-				});
+                });
 
 
-		from(StreamingEndpoints.WFM_STREAMING_JOB_SUMMARY_REPORTS.endpointName())
-				.routeId("Streaming Job Summary Report Route")
-				.log(LoggingLevel.DEBUG, "Received summary report message: ${headers}")
-				.unmarshal(new ProtobufDataFormat(DetectionProtobuf.StreamingDetectionResponse.getDefaultInstance()))
-				.process(exchange -> {
+        from(StreamingEndpoints.WFM_STREAMING_JOB_SUMMARY_REPORTS.endpointName())
+                .routeId("Streaming Job Summary Report Route")
+                .log(LoggingLevel.DEBUG, "Received summary report message: ${headers}")
+                .unmarshal(new ProtobufDataFormat(DetectionProtobuf.StreamingDetectionResponse.getDefaultInstance()))
+                .process(exchange -> {
                     if (_wfmStartup.isApplicationRefreshed()) {
                         Message msg = exchange.getIn();
                         DetectionProtobuf.StreamingDetectionResponse protobuf
@@ -113,13 +114,13 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 
                         _streamingJobRequestBo.handleNewSummaryReport(summaryReport);
                     }
-				});
-	}
+                });
+    }
 
 
 
-	private static JsonSegmentSummaryReport convertProtobufResponse(
-			long jobId, DetectionProtobuf.StreamingDetectionResponse protobuf) {
+    private static JsonSegmentSummaryReport convertProtobufResponse(
+            long jobId, DetectionProtobuf.StreamingDetectionResponse protobuf) {
 
         List<JsonTrackOutputObject> tracks =
                 IntStream.range(0, protobuf.getVideoTracksList().size())
@@ -127,22 +128,23 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                         protobuf.getDetectionType(), protobuf.getVideoTracksList().get(i)) )
                 .collect(toList());
 
-		return new JsonSegmentSummaryReport(
-				jobId,
-				protobuf.getSegmentNumber(),
-				protobuf.getSegmentStartFrame(),
-				protobuf.getSegmentStopFrame(),
-				protobuf.getDetectionType(),
-				tracks,
-				protobuf.getError());
-	}
+        return new JsonSegmentSummaryReport(
+                LocalDateTime.now(),
+                jobId,
+                protobuf.getSegmentNumber(),
+                protobuf.getSegmentStartFrame(),
+                protobuf.getSegmentStopFrame(),
+                protobuf.getDetectionType(),
+                tracks,
+                protobuf.getError());
+    }
 
 
-	private static JsonTrackOutputObject convertProtobufTrack(int id, String detectionType, DetectionProtobuf.StreamingVideoTrack protobuf) {
+    private static JsonTrackOutputObject convertProtobufTrack(int id, String detectionType, DetectionProtobuf.StreamingVideoTrack protobuf) {
 
-		List<JsonDetectionOutputObject> detections = protobuf.getDetectionsList().stream()
-				.map(StreamingJobRoutesBuilder::convertDetection)
-				.collect(toList());
+        List<JsonDetectionOutputObject> detections = protobuf.getDetectionsList().stream()
+                .map(StreamingJobRoutesBuilder::convertDetection)
+                .collect(toList());
 
         JsonTrackOutputObject track = new JsonTrackOutputObject(
                 Integer.toString(id),
@@ -160,30 +162,30 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
         track.setExemplar(exemplar);
 
         return track;
-	}
+    }
 
 
-	private static JsonDetectionOutputObject convertDetection(
-			DetectionProtobuf.StreamingVideoDetection protobuf) {
-		return new JsonDetectionOutputObject(
-				protobuf.getXLeftUpper(),
-				protobuf.getYLeftUpper(),
-				protobuf.getWidth(),
-				protobuf.getHeight(),
-				protobuf.getConfidence(),
-				convertProperties(protobuf.getDetectionPropertiesList()),
-				protobuf.getFrameNumber(),
-				protobuf.getTime(),
+    private static JsonDetectionOutputObject convertDetection(
+            DetectionProtobuf.StreamingVideoDetection protobuf) {
+        return new JsonDetectionOutputObject(
+                protobuf.getXLeftUpper(),
+                protobuf.getYLeftUpper(),
+                protobuf.getWidth(),
+                protobuf.getHeight(),
+                protobuf.getConfidence(),
+                convertProperties(protobuf.getDetectionPropertiesList()),
+                protobuf.getFrameNumber(),
+                protobuf.getTime(),
                 ArtifactExtractionStatus.NOT_ATTEMPTED.toString(),
-				null);
-	}
+                null);
+    }
 
 
-	private static SortedMap<String, String> convertProperties(List<DetectionProtobuf.PropertyMap> properties) {
-		return properties.stream().collect(toMap(
-				DetectionProtobuf.PropertyMap::getKey,
-				DetectionProtobuf.PropertyMap::getValue,
-				(u,v) -> { throw new IllegalStateException(String.format("Duplicate key %s", u)); },
-				TreeMap::new));
-	}
+    private static SortedMap<String, String> convertProperties(List<DetectionProtobuf.PropertyMap> properties) {
+        return properties.stream().collect(toMap(
+                DetectionProtobuf.PropertyMap::getKey,
+                DetectionProtobuf.PropertyMap::getValue,
+                (u,v) -> { throw new IllegalStateException(String.format("Duplicate key %s", u)); },
+                TreeMap::new));
+    }
 }

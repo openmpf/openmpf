@@ -253,7 +253,9 @@ public class JobRequestBoImpl implements JobRequestBo {
             throw new WfmProcessingException(String.format("A job with the id %d is not known to the system.", jobId));
         }
 
-        assert jobRequest.getStatus() != null : "Jobs must not have a null status.";
+        if (jobRequest.getStatus() == null) {
+            throw new WfmProcessingException(String.format("Job %d must not have a null status.", jobId));
+        }
 
         if (jobRequest.getStatus().isTerminal() || jobRequest.getStatus() == BatchJobStatusType.CANCELLING) {
             log.warn("[Job {}:*:*] This job is in the state of '{}' and cannot be cancelled at this time.", jobId, jobRequest.getStatus().name());

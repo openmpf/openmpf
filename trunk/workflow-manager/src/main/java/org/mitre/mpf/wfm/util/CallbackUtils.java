@@ -104,7 +104,7 @@ public class CallbackUtils {
     }
 
     // Send the health report to the URI identified by callbackUri, using the HTTP POST method.
-    public void doHealthReportCallback(List<Long> jobIds, String callbackUri) {
+    public void sendHealthReportCallback(String callbackUri, List<Long> jobIds) {
 
         // Get information from REDIS about these streaming jobs. Do this before spawning a thread to avoid
         // a race condition where the job may be cleared from REDIS before this information can be retrieved.
@@ -123,21 +123,21 @@ public class CallbackUtils {
                     LocalDateTime.now(), jobIds, externalIds, jobStatuses,
                     lastActivityFrameIds, lastActivityTimestamps);
 
-            doPostCallback(jsonBody, callbackUri);
+            sendPostCallback(jsonBody, callbackUri);
         } catch (WfmProcessingException | MpfInteropUsageException e) {
             log.error("Error sending health report(s) to " + callbackUri + ".", e);
         }
     }
 
     // Send the summary report to the URI identified by callbackUri, using the HTTP POST method.
-    public void doSummaryReportCallback(JsonSegmentSummaryReport summaryReport, String callbackUri) {
+    public void sendSummaryReportCallback(JsonSegmentSummaryReport summaryReport, String callbackUri) {
         log.info("Starting POST of summaryReport with jobId " + summaryReport.getJobId());
-        doPostCallback(summaryReport, callbackUri);
+        sendPostCallback(summaryReport, callbackUri);
     }
 
     // TODO: Implement doGetCallback
 
-    private void doPostCallback(Object json, String callbackUri) {
+    private void sendPostCallback(Object json, String callbackUri) {
         HttpPost post = new HttpPost(callbackUri);
         post.addHeader("Content-Type", "application/json");
 

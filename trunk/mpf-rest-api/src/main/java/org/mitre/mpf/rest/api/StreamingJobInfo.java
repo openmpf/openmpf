@@ -72,9 +72,9 @@ public class StreamingJobInfo {
 	public void setActivityFrameId(String activityFrameId) { this.activityFrameId = activityFrameId; }
 	public String getActivityFrameId() { return activityFrameId; }
 
-    private String activityFrameTimestamp = null;
-    public void setActivityFrameTimestamp(String activityFrameTimestamp) { this.activityFrameTimestamp = activityFrameTimestamp; }
-    public String getActivityFrameTimestamp() { return activityFrameTimestamp; }
+    private String activityTimestamp = null;
+    public void setActivityTimestamp(String activityTimestamp) { this.activityTimestamp = activityTimestamp; }
+    public String getActivityTimestamp() { return activityTimestamp; }
 
 	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
 	//to maintain the use of only standard Java in the model.api classes

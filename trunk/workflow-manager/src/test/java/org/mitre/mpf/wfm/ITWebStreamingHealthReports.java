@@ -298,7 +298,8 @@ public class ITWebStreamingHealthReports {
         mediaProperties.put("testProp", "testVal");
 
         JSONObject stream = new JSONObject();
-        stream.put("streamUri", "rtsp://test/test.mp4");
+//        stream.put("streamUri", "rtsp://test/test.mp4");
+        stream.put("streamUri", "rtsp://184.72.239.149/vod/mp4:BigBuckBunny_115k.mov");
         stream.put("mediaProperties", mediaProperties);
         stream.put("segmentSize", 100);
 

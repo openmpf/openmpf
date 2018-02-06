@@ -288,23 +288,23 @@ public class StreamingJobController {
     private List<StreamingJobInfo> getStreamingJobStatusInternal(Long jobId) {
         List<StreamingJobInfo> jobInfoList = new ArrayList<StreamingJobInfo>();
         try {
-            List<StreamingJobRequest> jobs = new ArrayList<StreamingJobRequest>();
+            List<StreamingJobRequest> job_requests = new ArrayList<StreamingJobRequest>();
             if (jobId != null) {
                 StreamingJobRequest job = mpfService.getStreamingJobRequest(jobId);
                 if (job != null) {
-                  jobs.add(job);
+                    job_requests.add(job);
                 }
             } else {
-              //get all of the streaming jobs
-              jobs = mpfService.getAllStreamingJobRequests();
+                // Get all of the streaming jobs from the long-term database.
+                job_requests = mpfService.getAllStreamingJobRequests();
             }
 
-            for (StreamingJobRequest job : jobs) {
-                long id = job.getId();
+            for (StreamingJobRequest job_request : job_requests) {
+                long id = job_request.getId();
                 StreamingJobInfo streamingJobInfo;
 
                 float jobProgressVal = jobProgress.getJobProgress(id) != null ? jobProgress.getJobProgress(id) : 0.0f;
-                streamingJobInfo = ModelUtils.convertJobRequest(job, jobProgressVal);
+                streamingJobInfo = ModelUtils.convertJobRequest(job_request, jobProgressVal);
 
                 // Update StreamingJobInfo so it contains the most up to date streaming job status information
                 streamingJobInfo = mpfService.updateStreamingJobInfo(id,streamingJobInfo);

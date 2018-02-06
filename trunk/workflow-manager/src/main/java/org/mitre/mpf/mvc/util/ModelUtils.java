@@ -142,7 +142,6 @@ public class ModelUtils {
 		StreamingJobStatus streamingJobStatus = new StreamingJobStatus(streamingJobRequest.getStatus());
 		// some job status' may be terminal
 		boolean isTerminal = (streamingJobStatus != null && streamingJobStatus.isTerminal());
-        // TODO add status detail to StreamingJobInfo (issue #411) using streamingJobRequest.getStatusDetail()
 		return new StreamingJobInfo(streamingJobRequest.getId(),
 				streamingJobRequest.getPipeline(),
 				streamingJobRequest.getPriority(),

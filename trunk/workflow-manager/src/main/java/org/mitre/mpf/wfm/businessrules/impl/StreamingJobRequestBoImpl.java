@@ -662,17 +662,20 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     /**
-     * Update StreamingJobInfo so it contains the latest job status information.
+     * Update StreamingJobInfo so it contains the latest job status information from REDIS.
      * @param jobId Unique id of the streaming job.
      * @param streamingJobInfo Job information that needs to be updated.
      * @return Updated streaming job status information.
      */
     public StreamingJobInfo updateStreamingJobInfo(long jobId, StreamingJobInfo streamingJobInfo) {
         StreamingJobStatus jobStatus = redis.getStreamingJobStatus(jobId);
-        streamingJobInfo.setJobStatus(jobStatus.getType().name());
-        streamingJobInfo.setJobStatusDetail(jobStatus.getDetail());
-        streamingJobInfo.setActivityFrameId(redis.getHealthReportActivityFrameIdAsString(jobId));
-        streamingJobInfo.setActivityFrameTimestamp(redis.getHealthReportActivityTimestampAsString(jobId));
+        // If the streaming job is an active streaming job, then update StreamingJobInfo with the latest from REDIS.
+        if ( jobStatus != null ) {
+            streamingJobInfo.setJobStatus(jobStatus.getType().name());
+            streamingJobInfo.setJobStatusDetail(jobStatus.getDetail());
+            streamingJobInfo.setActivityFrameId(redis.getHealthReportActivityFrameIdAsString(jobId));
+            streamingJobInfo.setActivityTimestamp(redis.getHealthReportActivityTimestampAsString(jobId));
+        }
         return streamingJobInfo;
     }
 

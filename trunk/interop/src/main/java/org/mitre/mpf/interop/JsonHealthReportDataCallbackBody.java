@@ -95,7 +95,13 @@ public class JsonHealthReportDataCallbackBody {
             }
         }
         public String getJobStatus() { return jobStatus; }
-        public String getJobStatusDetail() { return jobStatusDetail; }
+        public String getJobStatusDetail() {
+            if ( jobStatusDetail == null ) {
+                return "";
+            } else {
+                return jobStatusDetail;
+            }
+        }
         public String getActivityFrameId() {
             if ( activityFrameId == null ) {
                 return "";

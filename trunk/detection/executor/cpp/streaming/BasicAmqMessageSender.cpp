@@ -80,7 +80,7 @@ namespace MPF { namespace COMPONENT {
         SendJobStatus("STALLED", timestamp);
     }
 
-    void BasicAmqMessageSender::SendResumedNotification(long timestamp) {
+    void BasicAmqMessageSender::SendInProgressNotification(long timestamp) {
         SendJobStatus("IN_PROGRESS", timestamp);
     }
 

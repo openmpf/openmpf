@@ -53,7 +53,7 @@ namespace MPF { namespace COMPONENT {
 
         void SendStallAlert(long timestamp);
 
-        void SendResumedNotification(long timestamp);
+        void SendInProgressNotification(long timestamp);
 
         void SendActivityAlert(int frame_number, long timestamp);
 

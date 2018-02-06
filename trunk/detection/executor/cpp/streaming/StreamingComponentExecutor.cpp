@@ -149,6 +149,7 @@ namespace MPF { namespace COMPONENT {
         try {
             LOG4CXX_INFO(logger_, log_prefix_ << "Connecting to stream at: " << settings_.stream_uri)
             StreamingVideoCapture video_capture(logger_, settings_.stream_uri);
+            sender_.SendInProgressNotification(GetTimestampMillis());
 
             StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
 
@@ -244,7 +245,7 @@ namespace MPF { namespace COMPONENT {
         sender_.SendStallAlert(GetTimestampMillis());
 
         video_capture.ReadWithRetry(frame);
-        sender_.SendResumedNotification(GetTimestampMillis());
+        sender_.SendInProgressNotification(GetTimestampMillis());
 
     }
 
@@ -258,7 +259,7 @@ namespace MPF { namespace COMPONENT {
         sender_.SendStallAlert(GetTimestampMillis());
 
         if (video_capture.ReadWithRetry(frame, settings_.stall_timeout)) {
-            sender_.SendResumedNotification(GetTimestampMillis());
+            sender_.SendInProgressNotification(GetTimestampMillis());
             return;
         }
         throw FatalError(ExitCode::STREAM_STALLED, "It is no longer possible to read frames.");

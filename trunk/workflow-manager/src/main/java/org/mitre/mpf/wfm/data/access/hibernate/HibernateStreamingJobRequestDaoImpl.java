@@ -49,7 +49,7 @@ public class HibernateStreamingJobRequestDaoImpl extends AbstractHibernateDao<St
 		Query query = getCurrentSession().
 				createQuery("UPDATE StreamingJobRequest set status = :status, status_detail = :statusDetail where status in (:nonTerminalStatuses)");
 		query.setParameter("status", StreamingJobStatusType.CANCELLED_BY_SHUTDOWN);
-		query.setParameter("statusDetail", "shutdown: cancelling jobs in non-terminal state");
+		query.setParameter("statusDetail", "Job cancelled due to Workflow Manager shutdown.");
 		query.setParameterList("nonTerminalStatuses", StreamingJobStatus.getNonTerminalStatuses());
 		int updatedRows = query.executeUpdate();
 		if ( updatedRows >= 0 ) {

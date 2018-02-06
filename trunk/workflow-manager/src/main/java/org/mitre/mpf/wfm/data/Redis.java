@@ -26,23 +26,19 @@
 
 package org.mitre.mpf.wfm.data;
 
+import org.javasimon.aop.Monitored;
+import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
+import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
+
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
-import org.javasimon.aop.Monitored;
-import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
 @Monitored
 public interface Redis {
@@ -229,23 +225,32 @@ public interface Redis {
 	 */
 	void setJobStatus(long jobId, BatchJobStatusType batchJobStatusType)throws WfmProcessingException;
 
-	/**
-	 * Set the job status of the specified streaming job.
-	 * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
-	 * @param streamingJobStatus The new status of the specified streaming job.
-	 * @throws WfmProcessingException is thrown if this method is attempted to be used for a batch job.
-	 */
-	void setJobStatus(long jobId, StreamingJobStatusType streamingJobStatus) throws WfmProcessingException;
+    /**
+     * Set the job status type of the specified streaming job. Use this version of the method when
+     * streaming job status doesn't include additional detail information.
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+     * @param streamingJobStatusType The new status type of the specified streaming job.
+     * @throws WfmProcessingException is thrown if this method is attempted to be used for a batch job.
+     */
+	void setJobStatus(long jobId, StreamingJobStatusType streamingJobStatusType) throws WfmProcessingException;
 
 	/**
-	 * Set the job status of the specified streaming job. Use this form of the method if job status needs
-	 * to include additional details about the streaming job status.
+	 * Set the job status type of the specified streaming job.
 	 * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
 	 * @param streamingJobStatus The new status of the specified streaming job.
-	 * @param streamingJobStatusDetail Detail information associated with the job status.
 	 * @throws WfmProcessingException is thrown if this method is attempted to be used for a batch job.
 	 */
-	void setJobStatus(long jobId, StreamingJobStatusType streamingJobStatus, String streamingJobStatusDetail) throws WfmProcessingException;
+	void setJobStatus(long jobId, StreamingJobStatus streamingJobStatus) throws WfmProcessingException;
+
+    /**
+     * Set the job status of the specified streaming job. Use this form of the method if job status needs
+     * to include additional details about the streaming job status.
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+     * @param streamingJobStatusType The new status type of the specified streaming job.
+     * @param streamingJobStatusDetail Detail information associated with the streaming job status.
+     * @throws WfmProcessingException is thrown if this method is attempted to be used for a batch job.
+     */
+	void setJobStatus(long jobId, StreamingJobStatusType streamingJobStatusType, String streamingJobStatusDetail) throws WfmProcessingException;
 
     /**
 	 * The URL of the callback to connect to when the batch job is completed.
@@ -308,17 +313,30 @@ public interface Redis {
 	 */
     boolean isJobTypeStreaming(final long jobId);
 
-    void setHealthReportActivityFrameId(long jobId, String lastActivityFrameId) throws WfmProcessingException;
-    String getHealthReportActivityFrameIdAsString(long jobId) throws WfmProcessingException;
-    List<String> getHealthReportActivityFrameIdsAsStrings(List<Long> jobIds) throws WfmProcessingException;
+    void setStreamingActivity(long jobId, long activityFrameId, LocalDateTime activityTimestamp) throws WfmProcessingException;
 
-	void setHealthReportActivityTimestamp(long jobId, LocalDateTime lastActivityTimestamp) throws WfmProcessingException;
-	String getHealthReportActivityTimestampAsString(long jobId) throws WfmProcessingException;
-	List<String> getHealthReportActivityTimestampsAsStrings(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
-	LocalDateTime getHealthReportActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
-    List<LocalDateTime> getHealthReportActivityTimestamps(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
+    String getActivityFrameIdAsString(long jobId) throws WfmProcessingException;
+    List<String> getActivityFrameIdsAsStrings(List<Long> jobIds) throws WfmProcessingException;
 
-	public List<Long> getCurrentStreamingJobs(List<Long> jobIds, boolean isActive );
+    LocalDateTime getActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
+    String getActivityTimestampAsString(long jobId) throws WfmProcessingException;
 
-	}
+    List<LocalDateTime> getActivityTimestamps(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
+	List<String> getActivityTimestampsAsStrings(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
 
+	List<Long> getCurrentStreamingJobs(List<Long> jobIds, boolean isActive );
+
+	/**
+	 * Set the doCleanup flag of the specified streaming job
+	 * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+	 * @param doCleanup If true, delete the streaming job files from disk as part of cancelling the streaming job.
+	 */
+	void setDoCleanup(long jobId, boolean doCleanup);
+
+    /**
+     * Get the doCleanup flag for the specified streaming job
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+     * @return true if the flag is set and cleanup should be performed; false otherwise
+     */
+    boolean getDoCleanup(long jobId);
+}

@@ -53,10 +53,6 @@ void StreamingHelloWorld::BeginSegment(const VideoSegmentInfo &segment_info) {
 
 bool StreamingHelloWorld::ProcessFrame(const cv::Mat &frame, int frame_number) {
     LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Processing frame with size: " << frame.size())
-    if (frame.empty()) {
-        throw std::runtime_error("Encountered empty frame.");
-    }
-
     if (frame_number % 3 != 0) {
         LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Did not find activity in frame " << frame_number);
         return false;

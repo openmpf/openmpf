@@ -305,7 +305,7 @@ public class StreamingJobController {
 
                 float jobProgressVal = jobProgress.getJobProgress(id) != null ? jobProgress.getJobProgress(id) : 0.0f;
                 streamingJobInfo = ModelUtils.convertJobRequest(job_request, jobProgressVal);
-                
+
                 jobInfoList.add(streamingJobInfo);
             }
         } catch (Exception ex) {

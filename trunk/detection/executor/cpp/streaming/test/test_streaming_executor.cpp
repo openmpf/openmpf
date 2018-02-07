@@ -187,7 +187,7 @@ TEST(StreamingExecutorUtilsTest, RetryRetriesUntilTimeout) {
     };
 
     auto start_time = steady_clock::now();
-    bool retry_result = ExecutorUtils::RetryWithBackOff(std::chrono::milliseconds(500), test_func);
+    bool retry_result = ExecutorUtils::RetryWithBackOff(milliseconds(500), test_func);
     nanoseconds runtime = steady_clock::now() - start_time;
     ASSERT_FALSE(retry_result);
 
@@ -208,7 +208,7 @@ TEST(StreamingExecutorUtilsTest, RetryStopsWhenFuncReturnsTrue) {
         return count >= 2;
     };
 
-    bool retry_result = ExecutorUtils::RetryWithBackOff(std::chrono::milliseconds(100), test_func);
+    bool retry_result = ExecutorUtils::RetryWithBackOff(milliseconds(100), test_func);
     ASSERT_TRUE(retry_result);
 
     ASSERT_EQ(count, 2);
@@ -226,7 +226,7 @@ TEST(StreamingExecutorUtilsTest, RetryWorksWhenFuncTakesTime) {
     };
 
     auto start_time = steady_clock::now();
-    bool retry_result = ExecutorUtils::RetryWithBackOff(std::chrono::milliseconds(300), test_func);
+    bool retry_result = ExecutorUtils::RetryWithBackOff(milliseconds(300), test_func);
     nanoseconds runtime = steady_clock::now() - start_time;
 
     ASSERT_FALSE(retry_result);
@@ -237,8 +237,8 @@ TEST(StreamingExecutorUtilsTest, RetryWorksWhenFuncTakesTime) {
     ASSERT_TRUE(runtime >= expected_min_sleep_time);
 
     // Use expected_min_sleep_time with a little bit of wiggle room
-    milliseconds expected_max_sleep_time = expected_min_sleep_time + milliseconds(5);
-    ASSERT_TRUE(runtime <= milliseconds(155 * 2 + 6));
+    milliseconds expected_max_sleep_time = expected_min_sleep_time + milliseconds(6);
+    ASSERT_TRUE(runtime <= expected_max_sleep_time);
 }
 
 

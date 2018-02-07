@@ -30,15 +30,26 @@
 
 #include <map>
 #include <string>
+#include <chrono>
 
 namespace MPF { namespace COMPONENT {
+
+    enum class RetryStrategy {
+        NEVER_RETRY,
+        NO_ALERT_NO_TIMEOUT,
+        NO_ALERT_WITH_TIMEOUT,
+        ALERT_NO_TIMEOUT,
+        ALERT_WITH_TIMEOUT
+    };
+
 
     struct JobSettings {
         const int job_id;
         const std::string stream_uri;
         const int segment_size;
-        const long stall_timeout;
-        const long stall_alert_threshold;
+        const RetryStrategy retry_strategy;
+        const std::chrono::milliseconds stall_timeout;
+        const std::chrono::milliseconds stall_alert_threshold;
         const std::string component_name;
         const std::string component_lib_path;
         const std::string message_broker_uri;
@@ -50,6 +61,9 @@ namespace MPF { namespace COMPONENT {
         const std::map<std::string, std::string> media_properties;
 
         static JobSettings FromIniFile(const std::string &ini_path);
+
+        static RetryStrategy GetRetryStrategy(std::chrono::milliseconds &stall_timeout,
+                                              const std::chrono::milliseconds &alert_threshold);
     };
     
 }}

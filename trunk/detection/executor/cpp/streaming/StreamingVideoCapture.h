@@ -25,59 +25,46 @@
  ******************************************************************************/
 
 
-#ifndef MPF_STANDARDINWATCHER_H
-#define MPF_STANDARDINWATCHER_H
+#ifndef MPF_STREAMINGVIDEOCAPTURE_H
+#define MPF_STREAMINGVIDEOCAPTURE_H
 
-#include <atomic>
-#include <condition_variable>
 
-#include "ExecutorErrors.h"
+#include <string>
+#include <chrono>
 
+#include <opencv2/opencv.hpp>
+
+#include "ExecutorUtils.h"
 
 namespace MPF { namespace COMPONENT {
 
-    class StandardInWatcher {
+
+    class StreamingVideoCapture {
     public:
-        // Singleton to prevent more than one thread from reading from standard in.
-        static StandardInWatcher* GetInstance();
+        StreamingVideoCapture(log4cxx::LoggerPtr &logger, const std::string &video_uri);
 
-        bool QuitReceived() const;
+        bool Read(cv::Mat &frame);
 
+        void ReadWithRetry(cv::Mat &frame);
 
-        template <typename TDurRep, typename TDurPeriod>
-        void InterruptibleSleep(const std::chrono::duration<TDurRep, TDurPeriod> &timeout) const {
-            if (quit_received_) {
-                throw InterruptedException("Quit Received");
-            }
-
-            static std::mutex mutex;
-            std::unique_lock<std::mutex> lock(mutex);
-
-            bool finished_early = quit_cv_.wait_for(lock, timeout, [] { return quit_received_.load(); });
-            if (finished_early) {
-                throw InterruptedException("Quit Received");
-            }
-        };
+        bool ReadWithRetry(cv::Mat &frame, const std::chrono::milliseconds &timeout);
 
 
     private:
-        StandardInWatcher();
+        log4cxx::LoggerPtr logger_;
 
-        static StandardInWatcher* instance_;
+        std::string video_uri_;
 
-        // static because in the event of an error elsewhere, the detached thread will still be running and may access
-        // is_time_to_quit_ and error_message_.
-        static std::atomic_bool quit_received_;
-        static std::string error_message_;
+        cv::VideoCapture cvVideoCapture_;
 
-        static std::condition_variable quit_cv_;
 
-        static void Watch();
-        static void SetError(std::string &&error_message);
+        bool DoReadRetry(cv::Mat &frame);
 
+        void BetweenRetrySleep(const ExecutorUtils::sleep_duration_t &duration) const;
     };
+
 }}
 
 
 
-#endif //MPF_STANDARDINWATCHER_H
+#endif //MPF_STREAMINGVIDEOCAPTURE_H

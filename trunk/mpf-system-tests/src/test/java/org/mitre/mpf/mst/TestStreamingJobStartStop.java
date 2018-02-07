@@ -54,11 +54,13 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.net.URL;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalMatchers.*;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
@@ -131,6 +133,14 @@ public class TestStreamingJobStartStop {
 
 		JsonSegmentSummaryReport summaryReport = reportCaptor.getValue();
 		assertEquals(jobId, summaryReport.getJobId());
+
+		boolean hasNonEmptyDetection = summaryReport.getTypes()
+				.values()
+				.stream()
+				.flatMap(Collection::stream)
+				.flatMap(t -> t.getDetections().stream())
+				.anyMatch(d -> d.getHeight() > 0 && d.getWidth() > 0);
+		assertTrue(hasNonEmptyDetection);
 	}
 
 

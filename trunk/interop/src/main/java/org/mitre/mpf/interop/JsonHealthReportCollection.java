@@ -26,10 +26,13 @@
 
 package org.mitre.mpf.interop;
 
-import com.fasterxml.jackson.annotation.*;
-import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
-import org.mitre.mpf.interop.util.TimeUtils;
+import static org.mitre.mpf.interop.util.TimeUtils.parseStringAsLocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -37,8 +40,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static org.mitre.mpf.interop.util.TimeUtils.parseStringAsLocalDateTime;
+import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
+import org.mitre.mpf.interop.util.TimeUtils;
 
 public class JsonHealthReportCollection {
 

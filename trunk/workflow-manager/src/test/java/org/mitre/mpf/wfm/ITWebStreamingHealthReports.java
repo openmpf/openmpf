@@ -77,8 +77,7 @@ public class ITWebStreamingHealthReports {
 
     private long healthReportPostJobId1 = -1L;
     private long healthReportPostJobId2 = -1L;
-    private boolean gotHealthReportPostResponseForJob1 = false;
-    private boolean gotHealthReportPostResponseForJob2 = false;
+    private boolean gotHealthReportPostResponseForBothJobs = false;
     private JsonHealthReportCollection healthReportPostCallbackBody = null;
 
     // run once
@@ -136,30 +135,31 @@ public class ITWebStreamingHealthReports {
             // Submit streaming job request with a POST callback
             String createJobUrl = WebRESTUtils.REST_URL + "streaming/jobs";
 
-            log.info("Creating new Streaming Job #1 for the POST test");
+            log.info("Creating Streaming Jobs #1 and #2 for the POST test");
+
             // jobCreationResponseJson2 should be something like {"jobId":5, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
             String jobCreationResponseJson1 = createStreamingJob(createJobUrl, PIPELINE_NAME,
                 externalId1, "POST");
-
             JSONObject obj1 = new JSONObject(jobCreationResponseJson1);
             healthReportPostJobId1 = Long.valueOf(obj1.getInt("jobId"));
-            log.info("Streaming job #1 with jobId " + healthReportPostJobId1
-                + " created with POST method, jobCreationResponse=" + jobCreationResponseJson1);
 
-            log.info("Creating new Streaming Job #2 for the POST test");
             // jobCreationResponseJson2 should be something like {"jobId":6, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
             String jobCreationResponseJson2 = createStreamingJob(createJobUrl, PIPELINE_NAME,
                 externalId2, "POST");
-
             JSONObject obj2 = new JSONObject(jobCreationResponseJson2);
             healthReportPostJobId2 = Long.valueOf(obj2.getInt("jobId"));
+
+            log.info("Streaming job #1 with jobId " + healthReportPostJobId1
+                + " created with POST method, jobCreationResponse=" + jobCreationResponseJson1);
+
             log.info("Streaming job #2 with jobId " + healthReportPostJobId2
                 + " created with POST method, jobCreationResponse=" + jobCreationResponseJson2);
 
             // Wait for a health report callback that includes the jobId of these two test jobs.
             // Health reports should periodically be sent every 30 seconds, unless reset in the mpf.properties file.
-            // Listen for a health report POST that has our two jobIds.
-            while ( !gotHealthReportPostResponseForJob1 || !gotHealthReportPostResponseForJob2 ) {
+            // Listen for a health report POST that has our two jobIds. Note that a health report that
+            // only has one of our jobIds does not satisfy this test.
+            while ( !gotHealthReportPostResponseForBothJobs ) {
                 Thread.sleep(1000); // test will eventually timeout
             }
 
@@ -202,7 +202,7 @@ public class ITWebStreamingHealthReports {
                 Thread.sleep(3000);
             } while (streamingJobInfo2 == null); // test will eventually timeout
 
-            // After running the POST test, clear the streaming jobs from REDIS with doCleanup enabled.
+            // After running the POST test, clear the 2 streaming jobs from REDIS with doCleanup enabled.
             List<NameValuePair> cancelParams = new ArrayList<NameValuePair>();
             cancelParams.add(new BasicNameValuePair("doCleanup", "true"));
 
@@ -249,34 +249,36 @@ public class ITWebStreamingHealthReports {
         Spark.post("/callback", new Route() {
             @Override
             public Object handle(Request request, Response resp) throws Exception {
-                log.info(
-                    "InHealthCallback: Spark servicing " + request.requestMethod() + " health report callback at "
-                        + DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now())
-                        + ":\n     " + request.body());
-                try {
-                    healthReportPostCallbackBody = objectMapper
-                        .readValue(request.bodyAsBytes(), JsonHealthReportCollection.class);
 
-                    log.info("InHealthCallback: Converted to JsonHealthReportCollection:\n     "
-                        + healthReportPostCallbackBody);
+                // If we already received the health report we're looking for, ignore any other health reports we receive later.
+                if ( !gotHealthReportPostResponseForBothJobs ) {
+                    log.info(
+                        "InHealthCallback: Spark servicing " + request.requestMethod()
+                            + " health report callback at "
+                            + DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now())
+                            + ":\n     " + request.body());
+                    try {
+                        healthReportPostCallbackBody = objectMapper
+                            .readValue(request.bodyAsBytes(), JsonHealthReportCollection.class);
 
-                    // If this health report includes the jobIds for our POST test, then set the appropriate indicator
-                    // that a health report sent using POST method has been received. Need to add this check
-                    // to ensure a periodic health report sent prior to creation of our test job doesn't prematurely stop the test.
-                    // Note that the health report might contain jobId of both streaming jobs, so we can't do an else test here.
-                    if (healthReportPostCallbackBody.getJobIds().contains(healthReportPostJobId1)) {
-                        gotHealthReportPostResponseForJob1 = true;
+                        log.info("InHealthCallback: Converted to JsonHealthReportCollection:\n     "
+                            + healthReportPostCallbackBody);
+
+                        // If this health report includes the jobIds for our POST test, then set the appropriate indicator
+                        gotHealthReportPostResponseForBothJobs =
+                            healthReportPostCallbackBody.getJobIds()
+                                .contains(healthReportPostJobId1) && healthReportPostCallbackBody
+                                .getJobIds().contains(healthReportPostJobId2);
+                        if (gotHealthReportPostResponseForBothJobs) {
+                            log.info(
+                                "InHealthCallback: ********  received a health report containing jobs #1 and #2 ************ ");
+                        }
+
+                    } catch (Exception e) {
+                        log.error("Exception caught while processing health report POST callback.",
+                            e);
+                        Assert.fail();
                     }
-                    if (healthReportPostCallbackBody.getJobIds().contains(healthReportPostJobId2)) {
-                        gotHealthReportPostResponseForJob2 = true;
-                    }
-
-                    log.info("InHealthCallback: gotHealthReportPostResponseForJob1 = " + gotHealthReportPostResponseForJob1 + ", gotHealthReportPostResponseForJob2 = " +
-                        gotHealthReportPostResponseForJob2);
-
-                } catch (Exception e) {
-                    log.error("Exception caught while processing health report POST callback.", e);
-                    Assert.fail();
                 }
                 return "";
             }

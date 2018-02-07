@@ -26,7 +26,13 @@
 
 package org.mitre.mpf.wfm.util;
 
+import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.concurrent.FutureCallback;
@@ -49,13 +55,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import java.io.IOException;
-import java.net.SocketTimeoutException;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Component
 public class CallbackUtils {
@@ -114,7 +113,7 @@ public class CallbackUtils {
         // TODO: Consider refactoring this so that Redis only needs to be queried once per job,
         // instead of multiple times per job to get each of the following pieces of data.
 
-        log.info("Starting POST of health report(s) with jobIds: " + jobIds);
+        log.info("sendHealthReportCallback: Starting POST of health report(s) to callbackUri " + callbackUri + " containing jobIds: " + jobIds);
         List<String> externalIds = redis.getExternalIds(jobIds);
         List<StreamingJobStatus> streamingJobStatuses = redis.getStreamingJobStatuses(jobIds);
         List<String> jobStatuses = streamingJobStatuses.stream().map( jobStatus -> jobStatus.getType().name()).collect(Collectors.toList());
@@ -127,6 +126,7 @@ public class CallbackUtils {
                     LocalDateTime.now(), jobIds, externalIds, jobStatuses, jobStatusDetails,
                     activityFrameIds, activityTimestamps);
 
+            log.info("sendHealthReportCallback: callbackUri = " + callbackUri + ", jsonBody = " + jsonBody);
             sendPostCallback(jsonBody, callbackUri);
         } catch (WfmProcessingException | MpfInteropUsageException e) {
             log.error("Error sending health report(s) to " + callbackUri + ".", e);
@@ -146,7 +146,7 @@ public class CallbackUtils {
         post.addHeader("Content-Type", "application/json");
 
         try {
-            log.info("Sending POST callback to " + callbackUri);
+            log.info("sendPostCallback: Sending POST callback to " + callbackUri);
 
             /*
              * Don't do this:
@@ -184,7 +184,7 @@ public class CallbackUtils {
                 }
             });
         } catch (WfmProcessingException | IllegalArgumentException e) {
-            log.error("Error sending callback to " + callbackUri + ".", e);
+            log.error("Error sending post + " + post + " to callback " + callbackUri + ".", e);
         }
     }
 }

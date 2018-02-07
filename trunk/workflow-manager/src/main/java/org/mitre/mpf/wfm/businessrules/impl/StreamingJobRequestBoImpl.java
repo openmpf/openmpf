@@ -583,6 +583,11 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      */
     @Override
     public void handleJobStatusChange(long jobId, StreamingJobStatus status, long timestamp) {
+
+        // Update REDIS before mySQL. Since the latter takes more time, we want to ensure that the status is
+        // available right away in REDIS so that it can be used to generate health reports.
+        redis.setJobStatus(jobId, status);
+
         Date date = new Date(timestamp);
 
         StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
@@ -596,8 +601,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         }
 
         streamingJobRequestDao.persist(streamingJobRequest);
-
-        redis.setJobStatus(jobId, status);
 
         String healthReportCallbackUri = redis.getHealthReportCallbackURI(jobId);
         if (healthReportCallbackUri != null) {

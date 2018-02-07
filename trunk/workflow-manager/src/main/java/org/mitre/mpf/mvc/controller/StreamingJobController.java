@@ -26,27 +26,14 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import java.util.ArrayList;
-import java.util.List;
+import io.swagger.annotations.*;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.mvc.util.ModelUtils;
-import org.mitre.mpf.rest.api.MpfResponse;
-import org.mitre.mpf.rest.api.StreamingJobCancelResponse;
-import org.mitre.mpf.rest.api.StreamingJobCreationRequest;
-import org.mitre.mpf.rest.api.StreamingJobCreationResponse;
-import org.mitre.mpf.rest.api.StreamingJobInfo;
+import org.mitre.mpf.rest.api.*;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.event.JobProgress;
-import org.mitre.mpf.wfm.exceptions.JobAlreadyCancellingWfmProcessingException;
-import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidJobIdWfmProcessingException;
-import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidOutputObjectDirectoryWfmProcessingException;
-import org.mitre.mpf.wfm.exceptions.JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -59,13 +46,10 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 // swagger includes
 
@@ -326,7 +310,6 @@ public class StreamingJobController {
                 MpfResponse.RESPONSE_CODE_ERROR, "Streaming job with id " + jobId + " doesn't exist.");
         } else {
             try {
-
                 mpfService.cancelStreamingJob(jobId, doCleanup);
 
                 log.info("Successfully marked for cancellation streaming job with id {}", jobId);
@@ -334,36 +317,11 @@ public class StreamingJobController {
                 cancelResponse = new StreamingJobCancelResponse(jobId,
                     streamingJobRequest.getOutputObjectDirectory(), doCleanup,
                     MpfResponse.RESPONSE_CODE_SUCCESS, "success");
-
-            } catch (JobAlreadyCancellingWfmProcessingException | JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException we ) {
-                // If the job was marked for cancellation, but one of these warning exceptions were caught,
-                // log the warning and forward the warning along in the mpfResponse.
-                // TODO once Node Manager supports reporting when executor processes have halted, handling for JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException will be moved someplace else
-                log.warn("Got a warning when cancelling streaming job with id {}, warning is '{}'",
-                    jobId, we.getMessage());
+            } catch (WfmProcessingException e) {
+                log.error("Streaming job with id {} couldn't be cancelled, error is '{}'", jobId, e.getMessage());
                 cancelResponse = new StreamingJobCancelResponse(jobId,
                     streamingJobRequest.getOutputObjectDirectory(), doCleanup,
-                    MpfResponse.RESPONSE_CODE_WARNING, we.getMessage());
-
-            } catch (JobCancellationInvalidOutputObjectDirectoryWfmProcessingException idee ) {
-                // TODO once Node Manager supports reporting when executor processes have halted, handling for JobCancellationInvalidOutputObjectDirectoryWfmProcessingException will be moved someplace else
-                // If the streaming job was marked for cancellation, but the
-                // jobs output object directory couldn't be deleted due to an error,
-                // log the error and forward the error along in the mpfResponse.
-                log.error("Got an output object directory error when cancelling streaming job with id {}, error is '{}'",
-                    jobId, idee.getMessage());
-                cancelResponse = new StreamingJobCancelResponse(jobId,
-                    streamingJobRequest.getOutputObjectDirectory(), doCleanup,
-                    MpfResponse.RESPONSE_CODE_ERROR, idee.getMessage());
-
-            } catch (JobCancellationInvalidJobIdWfmProcessingException cee ) {
-                // If the job could not be marked for cancellation because the streaming job Id was invalid,
-                // log the error and forward the error along in the mpfResponse.
-                log.error("Streaming job with id {} couldn't be cancelled, error is '{}'",
-                    jobId, cee.getMessage());
-                cancelResponse = new StreamingJobCancelResponse(jobId,
-                    streamingJobRequest.getOutputObjectDirectory(), doCleanup,
-                    MpfResponse.RESPONSE_CODE_ERROR, cee.getMessage());
+                    MpfResponse.RESPONSE_CODE_ERROR, e.getMessage());
             }
         }
         return cancelResponse;

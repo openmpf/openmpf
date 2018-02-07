@@ -30,29 +30,31 @@ package org.mitre.mpf.nms.streaming;
 import java.util.stream.Stream;
 
 public enum StreamingProcessExitReason {
-	CANCELLED(0),
-	UNEXPECTED_ERROR(1),
-	INVALID_COMMAND_LINE_ARGUMENTS(2),
+    CANCELLED(0, "Cancelled by user"),
+    UNEXPECTED_ERROR(1, "Unexpected error. See logs for details."),
+    INVALID_COMMAND_LINE_ARGUMENTS(2, "C++ Streaming Component Executor received invalid command line arguments"),
 
-	INVALID_INI_FILE(65),
-	UNABLE_TO_READ_FROM_STANDARD_IN(66),
-	MESSAGE_BROKER_ERROR(69),
-	INTERNAL_COMPONENT_ERROR(70),
-	COMPONENT_LOAD_ERROR(71),
-	UNABLE_TO_CONNECT_TO_STREAM(75),
-	STREAM_STALLED(76);
+    INVALID_INI_FILE(65, "Unable to load ini file"),
+    UNABLE_TO_READ_FROM_STANDARD_IN(66, "C++ Streaming Component Executor is unable to read from standard in"),
+    MESSAGE_BROKER_ERROR(69, "Message broker error"),
+    INTERNAL_COMPONENT_ERROR(70, "Error in component logic"),
+    COMPONENT_LOAD_ERROR(71, "Failed to load component library"),
+    UNABLE_TO_CONNECT_TO_STREAM(75, "Unable to connect to stream"),
+    STREAM_STALLED(76, "Stream stalled for too long. It is no longer possible to read frames.");
 
 
-	public final int exitCode;
+    public final int exitCode;
+    public final String detail;
 
-	StreamingProcessExitReason(int exitCode) {
-		this.exitCode = exitCode;
-	}
+    StreamingProcessExitReason(int exitCode, String detail) {
+        this.exitCode = exitCode;
+        this.detail = detail;
+    }
 
-	public static StreamingProcessExitReason fromExitCode(int exitCode) {
-		return Stream.of(StreamingProcessExitReason.values())
-				.filter(r -> r.exitCode == exitCode)
-				.findAny()
-				.orElse(UNEXPECTED_ERROR);
-	}
+    public static StreamingProcessExitReason fromExitCode(int exitCode) {
+        return Stream.of(StreamingProcessExitReason.values())
+                .filter(r -> r.exitCode == exitCode)
+                .findAny()
+                .orElse(UNEXPECTED_ERROR);
+    }
 }

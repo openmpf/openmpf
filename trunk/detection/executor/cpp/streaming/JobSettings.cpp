@@ -39,7 +39,7 @@ namespace MPF { namespace COMPONENT {
     using namespace std::chrono;
 
     namespace {
-
+        // Not a static method of JobSettings to avoid having to include boost headers in JobSettings.h
         std::map<std::string, std::string> convert_to_map(const boost::property_tree::ptree &property_tree) {
             std::map<std::string, std::string> result;
             for (const auto &tree_element : property_tree) {

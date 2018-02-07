@@ -64,6 +64,7 @@ public class JsonStreamingJobRequest {
 	@JsonPropertyDescription("The root directory for all output objects created by this streaming job. May be empty string if output object storage is disabled.")
 	private String outputObjectDirectory;
 	public String getOutputObjectDirectory() { return outputObjectDirectory; }
+	public void setOutputObjectDirectory(String outputObjectDirectory) { this.outputObjectDirectory = outputObjectDirectory; }
 
 	@JsonPropertyDescription("The pipeline (or workflow) that media and derived information will pass through during the streaming job.")
 	private JsonPipeline pipeline;

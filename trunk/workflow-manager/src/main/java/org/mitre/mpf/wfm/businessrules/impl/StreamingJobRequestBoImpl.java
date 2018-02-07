@@ -583,6 +583,15 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      */
     @Override
     public void handleJobStatusChange(long jobId, StreamingJobStatus status, long timestamp) {
+
+        // Update status in REDIS and send health report as soon as possible.
+        redis.setJobStatus(jobId, status);
+
+        String healthReportCallbackUri = redis.getHealthReportCallbackURI(jobId);
+        if (healthReportCallbackUri != null) {
+            callbackUtils.sendHealthReportCallback(healthReportCallbackUri, Collections.singletonList(jobId));
+        }
+
         Date date = new Date(timestamp);
 
         StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
@@ -596,13 +605,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         }
 
         streamingJobRequestDao.persist(streamingJobRequest);
-
-        redis.setJobStatus(jobId, status);
-
-        String healthReportCallbackUri = redis.getHealthReportCallbackURI(jobId);
-        if (healthReportCallbackUri != null) {
-            callbackUtils.sendHealthReportCallback(healthReportCallbackUri, Collections.singletonList(jobId));
-        }
 
         if (status.isTerminal()) {
             if (redis.getDoCleanup(jobId)) {
@@ -647,6 +649,11 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     // TODO: Write system test for summary report callbacks.
     @Override
     public void handleNewSummaryReport(JsonSegmentSummaryReport summaryReport) {
+        // Send summary report as soon as possible.
+        String summaryReportCallbackUri = redis.getSummaryReportCallbackURI(summaryReport.getJobId());
+        if (summaryReportCallbackUri != null) {
+            callbackUtils.sendSummaryReportCallback(summaryReport, summaryReportCallbackUri);
+        }
 
         // TODO: Add methods to redis so that we don't need to get the whole transient job.
         TransientStreamingJob transientStreamingJob = redis.getStreamingJob(summaryReport.getJobId());
@@ -660,11 +667,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                     log.error("Failed to write the JSON summary report for job '{}' due to an exception.", summaryReport.getJobId(), e);
                 }
             }
-        }
-
-        String summaryReportCallbackUri = redis.getSummaryReportCallbackURI(summaryReport.getJobId());
-        if (summaryReportCallbackUri != null) {
-            callbackUtils.sendSummaryReportCallback(summaryReport, summaryReportCallbackUri);
         }
     }
 

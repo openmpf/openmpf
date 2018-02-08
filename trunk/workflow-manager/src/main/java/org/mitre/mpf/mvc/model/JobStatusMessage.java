@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -25,21 +25,34 @@
  ******************************************************************************/
 package org.mitre.mpf.mvc.model;
 
-import org.mitre.mpf.wfm.enums.JobStatus;
-
 import java.util.Date;
 import java.util.HashMap;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
 public class JobStatusMessage extends AtmosphereMessage {
-	public JobStatusMessage(long id, double progress, JobStatus jobStatus, Date endDate) {
-		super( AtmosphereChannel.SSPC_JOBSTATUS, "OnStatusChanged" );
-		//If there are job progress updates and the status is null it will be updated to IN_PROGRESS
-		jobStatus = (jobStatus != null) ? jobStatus : JobStatus.IN_PROGRESS;
-		HashMap<String, Object> datamap = new HashMap<String, Object>();
-		datamap.put("id", id);
-		datamap.put("progress", progress);
-		datamap.put("jobStatus", jobStatus);
-		datamap.put("endDate", endDate);
-		this.setContent(datamap);
-	}
+
+    private void setContent (long id, double progress, String updatedJobStatus, Date endDate) {
+        HashMap<String, Object> datamap = new HashMap<String, Object>();
+        datamap.put("id", id);
+        datamap.put("progress", progress);
+        datamap.put("jobStatus", updatedJobStatus);
+        datamap.put("endDate", endDate);
+        this.setContent(datamap);
+    }
+
+    public JobStatusMessage(long id, double progress, BatchJobStatusType batchJobStatus, Date endDate) {
+        super( AtmosphereChannel.SSPC_JOBSTATUS, "OnStatusChanged" );
+        // If there are job progress updates and the status is null it will be updated to IN_PROGRESS
+        BatchJobStatusType updatedJobStatus = (batchJobStatus != null) ? batchJobStatus : BatchJobStatusType.IN_PROGRESS;
+        setContent(id, progress, updatedJobStatus.name(), endDate);
+    }
+
+    public JobStatusMessage(long id, double progress, StreamingJobStatusType streamingJobStatus, Date endDate) {
+        super( AtmosphereChannel.SSPC_JOBSTATUS, "OnStatusChanged" );
+        // If there are job progress updates and the status is null it will be updated to IN_PROGRESS
+        StreamingJobStatusType updatedJobStatus = (streamingJobStatus != null) ? streamingJobStatus : StreamingJobStatusType.IN_PROGRESS;
+        setContent(id, progress, updatedJobStatus.name(), endDate);
+    }
+
 }

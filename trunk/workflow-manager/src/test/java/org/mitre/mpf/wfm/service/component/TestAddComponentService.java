@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -35,6 +35,7 @@ import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -61,6 +62,9 @@ public class TestAddComponentService {
 
     @Mock
     private NodeManagerService _mockNodeManager;
+
+    @Mock
+    private StreamingServiceManager _mockStreamingServiceManager;
 
     @Mock
     private ComponentDeploymentService _mockDeploymentService;
@@ -182,7 +186,7 @@ public class TestAddComponentService {
                 .thenReturn(Collections.emptyMap());
 
         when(_mockNodeManager.addService(whereArg(s -> s.getName().equals(COMPONENT_NAME)
-                    && s.getArgs().contains("launch-arg1"))))
+                    && s.getArgs().contains("/path/to/batch/lib.so"))))
                 .thenReturn(true);
 
         // Act
@@ -221,14 +225,20 @@ public class TestAddComponentService {
         verify(_mockNodeManager)
                 .addService(whereArg(s -> s.getName().equals(COMPONENT_NAME)));
 
+        verify(_mockStreamingServiceManager)
+                .addService(whereArg(
+                        s -> s.getServiceName().equals(COMPONENT_NAME)
+                                && s.getAlgorithmName().equals(descriptor.algorithm.name.toUpperCase())
+                                && s.getEnvironmentVariables().size() == descriptor.environmentVariables.size()));
+
         assertNeverUndeployed();
     }
 
     private void verifyDescriptorAlgoSaved(JsonComponentDescriptor descriptor) {
         verify(_mockPipelineService)
                 .saveAlgorithm(whereArg(algo -> algo.getName().equals(descriptor.algorithm.name.toUpperCase())
-                        && algo.getSupportsBatchProcessing() == descriptor.algorithm.supportsBatchProcessing
-                        && algo.getSupportsStreamProcessing() == descriptor.algorithm.supportsStreamProcessing));
+                        && algo.supportsBatchProcessing() == descriptor.supportsBatchProcessing()
+                        && algo.supportsStreamProcessing() == descriptor.supportsStreamProcessing()));
 
     }
 
@@ -328,6 +338,14 @@ public class TestAddComponentService {
 
         verify(_mockNodeManager)
                 .addService(whereArg(s -> s.getName().equals(COMPONENT_NAME)));
+
+        verify(_mockStreamingServiceManager)
+                .addService(whereArg(
+                        s -> s.getServiceName().equals(COMPONENT_NAME)
+                                && s.getAlgorithmName().equals(descriptor.algorithm.name.toUpperCase())
+                                && s.getEnvironmentVariables().size() == descriptor.environmentVariables.size()));
+
+
         assertNeverUndeployed();
     }
 

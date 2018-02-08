@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -32,6 +32,8 @@ import org.apache.camel.ProducerTemplate;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonPipeline;
+import org.mitre.mpf.mvc.controller.AtmosphereController;
+import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.camel.routes.JobCreatorRouteBuilder;
@@ -42,7 +44,7 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.JmsUtils;
@@ -251,9 +253,11 @@ public class JobRequestBoImpl implements JobRequestBo {
             throw new WfmProcessingException(String.format("A job with the id %d is not known to the system.", jobId));
         }
 
-        assert jobRequest.getStatus() != null : "Jobs must not have a null status.";
+        if (jobRequest.getStatus() == null) {
+            throw new WfmProcessingException(String.format("Job %d must not have a null status.", jobId));
+        }
 
-        if (jobRequest.getStatus().isTerminal() || jobRequest.getStatus() == JobStatus.CANCELLING) {
+        if (jobRequest.getStatus().isTerminal() || jobRequest.getStatus() == BatchJobStatusType.CANCELLING) {
             log.warn("[Job {}:*:*] This job is in the state of '{}' and cannot be cancelled at this time.", jobId, jobRequest.getStatus().name());
             return false;
         } else {
@@ -270,7 +274,7 @@ public class JobRequestBoImpl implements JobRequestBo {
                 } catch (Exception exception) {
                     log.warn("[Job {}:*:*] Failed to remove the pending work elements in the message broker for this job. The job must complete the pending work elements before it will cancel the job.", jobId, exception);
                 }
-                jobRequest.setStatus(JobStatus.CANCELLING);
+                jobRequest.setStatus(BatchJobStatusType.CANCELLING);
                 jobRequestDao.persist(jobRequest);
             } else {
                 // Warn of the race condition where Redis and the persistent database reflect different states.
@@ -317,6 +321,10 @@ public class JobRequestBoImpl implements JobRequestBo {
 
             jobRequest = initializeInternal(jobRequest, jsonJobRequest);
             markupResultDao.deleteByJobId(jobId);
+
+            redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
+            AtmosphereController.broadcast(new JobStatusMessage(jobId, 0, BatchJobStatusType.IN_PROGRESS, null));
+
             return runInternal(jobRequest, jsonJobRequest, priority);
         }
     }
@@ -332,7 +340,7 @@ public class JobRequestBoImpl implements JobRequestBo {
      */
     private JobRequest initializeInternal(JobRequest jobRequest, JsonJobRequest jsonJobRequest) throws WfmProcessingException {
         jobRequest.setPriority(jsonJobRequest.getPriority());
-        jobRequest.setStatus(JobStatus.INITIALIZED);
+        jobRequest.setStatus(BatchJobStatusType.INITIALIZED);
         jobRequest.setTimeReceived(new Date());
         jobRequest.setInputObject(jsonUtils.serialize(jsonJobRequest));
         jobRequest.setPipeline(jsonJobRequest.getPipeline() == null ? null : TextUtils.trimAndUpper(jsonJobRequest.getPipeline().getName()));
@@ -342,7 +350,13 @@ public class JobRequestBoImpl implements JobRequestBo {
 
         // Set output object version to null.
         jobRequest.setOutputObjectVersion(null);
-        return jobRequestDao.persist(jobRequest);
+
+        JobRequest persistedRequest = jobRequestDao.persist(jobRequest);
+
+        AtmosphereController.broadcast(new JobStatusMessage(jobRequest.getId(), 0, BatchJobStatusType.INITIALIZED, null));
+
+        return persistedRequest;
+
     }
 
     /**

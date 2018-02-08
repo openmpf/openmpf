@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,6 +26,8 @@
 
 package org.mitre.mpf.wfm.data;
 
+import java.util.HashMap;
+import java.util.Map;
 import junit.framework.Assert;
 import junit.framework.TestCase;
 import org.apache.camel.CamelContext;
@@ -36,15 +38,12 @@ import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * A series of test cases for RedisImpl functionality.  These all assume Redis itself works properly, and verify that
@@ -73,8 +72,8 @@ public class TestRedisImpl extends TestCase {
         Exchange exchange = new DefaultExchange(camelContext);
         TransientJob job = TestUtil.setupJob(jobId, redis, ioUtils);
         exchange.getIn().setBody(jsonUtils.serialize(job));
-        redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_WARNINGS);
-        Assert.assertEquals(JobStatus.IN_PROGRESS_WARNINGS, redis.getJobStatus(jobId));
+        redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_WARNINGS);
+        Assert.assertEquals(BatchJobStatusType.IN_PROGRESS_WARNINGS, redis.getBatchJobStatus(jobId));
     }
 
     @Test

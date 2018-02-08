@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -46,6 +46,8 @@ import java.util.List;
  * would only make it harder to figure out the structure of the descriptor.
  */
 @SuppressWarnings("PublicField")
+@ScriptAssert(lang = "javascript", script = "_this.supportsBatchProcessing() || _this.supportsStreamProcessing()",
+        message = "must contain batchLibrary, streamLibrary, or both")
 public class JsonComponentDescriptor {
 
     @NotBlank
@@ -64,12 +66,17 @@ public class JsonComponentDescriptor {
     @NotNull(message = "must be java or c++")
     public ComponentLanguage sourceLanguage;
 
-    @NotBlank
-    public String pathName;
+    public String batchLibrary;
 
-    @NotNull
-    @Valid
-    public List<@AllNotBlank String> launchArgs;
+    public boolean supportsBatchProcessing() {
+        return batchLibrary != null;
+    }
+
+    public String streamLibrary;
+
+    public boolean supportsStreamProcessing() {
+        return streamLibrary != null;
+    }
 
     @NotNull
     @Valid
@@ -99,8 +106,6 @@ public class JsonComponentDescriptor {
         public String sep;
     }
 
-    @ScriptAssert(lang = "javascript", script = "_this.supportsBatchProcessing || _this.supportsStreamProcessing",
-            message = "must contain supportsBatchProcessing, supportsStreamProcessing, or both.")
     public static class Algorithm {
         @NotBlank
         public String name;
@@ -115,14 +120,9 @@ public class JsonComponentDescriptor {
         @Valid
         public AlgoRequires requiresCollection;
 
-
         @NotNull
         @Valid
         public AlgoProvides providesCollection;
-
-        public boolean supportsBatchProcessing;
-
-        public boolean supportsStreamProcessing;
     }
 
     public static class AlgoRequires {

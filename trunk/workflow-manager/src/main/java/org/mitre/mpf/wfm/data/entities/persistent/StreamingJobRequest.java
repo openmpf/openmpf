@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -68,12 +68,26 @@ public class StreamingJobRequest {
 	public int getPriority() { return  priority; }
 	public void setPriority(int priority) { this.priority = priority; }
 
-	/** The current status of this streaming job. */
-	@Column
-	@Enumerated(EnumType.STRING)
-	private JobStatus status;
-	public JobStatus getStatus() { return status; }
-	public void setStatus(JobStatus status) { this.status = status; }
+    /** The current status of this streaming job.
+     * Streaming job status includes condition status as defined by StreamingJobStatusType.
+     * StatusDetail may also provide more detailed information about the status of the job.
+     * Note that we keep the status enumeration and statusString as separate parameters for persisting in the
+     * database.
+     **/
+    @Column
+    @Enumerated(EnumType.STRING)
+    private StreamingJobStatusType status = null;
+    public StreamingJobStatusType getStatus() { return status; }
+    public void setStatus(StreamingJobStatusType status) { this.status = status; }
+    public void setStatus(StreamingJobStatusType status, String statusDetail) {
+        setStatus(status);
+        setStatusDetail(statusDetail);
+    }
+
+    @Column
+    private String statusDetail = null;
+    public String getStatusDetail() { return statusDetail; }
+    public void setStatusDetail(String statusDetail) { this.statusDetail = statusDetail; }
 
 	@Column
 	@Lob
@@ -110,11 +124,6 @@ public class StreamingJobRequest {
 	private String summaryReportCallbackUri;
 	public String getSummaryReportCallbackUri() { return summaryReportCallbackUri; }
 	public void setSummaryReportCallbackUri(String summaryReportCallbackUri) { this.summaryReportCallbackUri = summaryReportCallbackUri; }
-
-	@Column
-	private String newTrackAlertCallbackUri;
-	public String getNewTrackAlertCallbackUri() { return newTrackAlertCallbackUri; }
-	public void setNewTrackAlertCallbackUri(String newTrackAlertCallbackUri) { this.newTrackAlertCallbackUri = newTrackAlertCallbackUri; }
 
 	/** The version of the output object. */
 	@Column

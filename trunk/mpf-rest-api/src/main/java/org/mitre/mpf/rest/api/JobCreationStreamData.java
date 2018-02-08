@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -34,7 +34,7 @@ public class JobCreationStreamData {
     private String streamUri;
     public JobCreationStreamData() {}
     public JobCreationStreamData(String uri) {
-        this.streamUri=uri;
+        setStreamUri(uri);
     }
     public String getStreamUri() {
         return streamUri;
@@ -52,7 +52,7 @@ public class JobCreationStreamData {
     }
 
     private int segmentSize = 0;
-    public void setSegmentSize(int seg_size) { this.segmentSize=seg_size; }
+    public void setSegmentSize(int segmentSize) { this.segmentSize=segmentSize; }
     public int getSegmentSize() { return segmentSize; }
 
     /** this method will check the current settings within this job creation stream data,

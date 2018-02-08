@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,11 +28,14 @@ package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.*;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 
-import java.util.*;
+import java.util.Objects;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 @JsonTypeName("DetectionOutputObject")
+@JsonPropertyOrder({ "offsetFrame", "offsetTime", "x", "y", "width", "height",
+        "confidence", "detectionProperties", "artifactExtractionStatus", "artifactPath", "offset" })
 public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutputObject> {
 
 	@JsonProperty("x")
@@ -67,6 +70,7 @@ public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutput
 
 	// MPF R0.6.0 backwards compatibility with MPF R0.5.0 (upgrade path)
 	@JsonProperty("offset")
+    @JsonPropertyDescription("Deprecated. Use offsetFrame instead. Left for backwards compatibility.")
 	public void setOffset(int offset) { offsetFrame = offset; }
 	public int getOffset() { return offsetFrame; }
 
@@ -77,8 +81,8 @@ public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutput
 
 	@JsonProperty("offsetTime")
 	@JsonPropertyDescription("The offset time of this detection in the parent medium. For images, this value is not meaningful. For audio and video files, this value refers to a temporal index measured in milliseconds.")
-	private int offsetTime;
-	public int getOffsetTime() { return offsetTime; }
+	private long offsetTime;
+	public long getOffsetTime() { return offsetTime; }
 
 	@JsonProperty("artifactPath")
 	@JsonPropertyDescription("The path to the artifact containing the best representation of this detection.")
@@ -100,7 +104,7 @@ public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutput
 	                                 @JsonProperty("confidence") float confidence,
 	                                 @JsonProperty("detectionProperties") SortedMap<String, String> detectionProperties,
 	                                 @JsonProperty("offsetFrame") int offsetFrame,
-									 @JsonProperty("offsetTime") int offsetTime,
+									 @JsonProperty("offsetTime") long offsetTime,
 	                                 @JsonProperty("artifactExtractionStatus") String artifactExtractionStatus,
 	                                 @JsonProperty("artifactPath") String artifactPath) {
 		this.x = x;
@@ -135,7 +139,7 @@ public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutput
 		if(other == null) {
 			return 1;
 		} else if((result = Integer.compare(offsetFrame, other.offsetFrame)) != 0
-			||( result = Integer.compare(offsetTime, other.offsetTime)) != 0
+			||( result = Long.compare(offsetTime, other.offsetTime)) != 0
 			|| (result = Integer.compare(x, other.x)) != 0
 			|| (result = Integer.compare(y, other.y)) != 0
 			|| (result = Integer.compare(width, other.width)) != 0

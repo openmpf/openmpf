@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.util;
 
 import org.apache.commons.io.IOUtils;
 import org.javasimon.aop.Monitored;
+import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.slf4j.Logger;
@@ -46,6 +47,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Component(PropertiesUtil.REF)
@@ -56,11 +58,6 @@ public class PropertiesUtil {
 
 	@PostConstruct
 	private void init() throws IOException, WfmProcessingException {
-		//java 8 to clean up any empty extensions - if there are no custom extensions present, the list has one empty string element
-		//and that must be removed
-		//I would like to do this in the @Value expression, but I could not find a good solution
-		serverMediaTreeCustomExtensions.removeIf(item -> item == null || item.trim().isEmpty());
-		log.info("Server media tree custom extensions are '{}'.", serverMediaTreeCustomExtensions.toString());
 		createConfigFiles();
 
 		Set<PosixFilePermission> permissions = new HashSet<>();
@@ -126,8 +123,8 @@ public class PropertiesUtil {
 	public boolean isAmqBrokerEnabled() { return amqBrokerEnabled; }
 
 	@Value("${jmx.amq.broker.uri}")
-	private String amqBrokerUri;
-	public String getAmqBrokerUri() { return amqBrokerUri; }
+	private String amqBrokerJmxUri;
+	public String getAmqBrokerJmxUri() { return amqBrokerJmxUri; }
 
 	@Value("${jmx.amq.broker.admin.username}")
 	private String amqBrokerAdminUsername;
@@ -209,13 +206,16 @@ public class PropertiesUtil {
 	}
 
 	/** Create the output object file in the specified streaming job output objects directory
-	 * @param jobId unique id that has been assigned to the streaming job
-	 * @param parentDir this streaming jobs output objects directory
+     * @param time the time associated with the job output
+	 * @param parentDir this streaming job's output objects directory
 	 * @return output object File that was created under the specified output objects directory
 	 * @throws IOException
 	 */
-	public File createStreamingOutputObjectsFile(long jobId, File parentDir) throws IOException {
-		return createOutputObjectsFile(jobId, parentDir, "detection");
+	public File createStreamingOutputObjectsFile(LocalDateTime time, File parentDir) throws IOException {
+        String fileName = String.format("summary-report %s.json", TimeUtils.getLocalDateTimeAsString(time));
+        Path path = Paths.get(parentDir.toURI()).resolve(fileName).normalize().toAbsolutePath();
+        Files.createDirectories(path.getParent());
+        return path.toFile();
 	}
 
 	/** Create the File to be used for storing output objects from a job, plus create the directory path to that File
@@ -368,6 +368,18 @@ public class PropertiesUtil {
 		return getDataResource(nodeManagerConfigData, nodeManagerConfigTemplate);
 	}
 
+
+	@Value("${data.streamingprocesses.file}")
+	private FileSystemResource streamingServicesData;
+
+	@Value("${data.streamingprocesses.template}")
+	private Resource streamingServicesTemplate;
+
+	public WritableResource getStreamingServices() {
+		return getDataResource(streamingServicesData, streamingServicesTemplate);
+	}
+
+
 	//
 	// Component upload and registration properties
 	//
@@ -443,12 +455,6 @@ public class PropertiesUtil {
 	private String serverMediaTreeRoot;
 	public String getServerMediaTreeRoot() { return serverMediaTreeRoot; }
 
-	@Value("#{'${web.server.media.tree.custom.extensions}'.split(',')}")
-	private List<String> serverMediaTreeCustomExtensions; // modifications are made in @PostConstruct
-	public List<String> getServerMediaTreeCustomExtensions() {
-		return serverMediaTreeCustomExtensions;
-	}
-
 	@Value("${web.max.file.upload.cnt}")
 	private int webMaxFileUploadCnt;
 	public int getWebMaxFileUploadCnt() { return webMaxFileUploadCnt; }
@@ -497,6 +503,36 @@ public class PropertiesUtil {
 	public FileSystemResource getCustomPropertiesFile() {
 		return customPropertiesFile;
 	}
+
+
+	@Value("${mpf.output.objects.activemq.hostname}")
+	private String amqUri;
+	public String getAmqUri() {
+		return amqUri;
+	}
+
+	// Define system properties specific to Streaming jobs
+
+	@Value("${streaming.healthReport.callbackRate}")
+	private long streamingJobHealthReportCallbackRate;
+	/**
+	 * Get the health report callback rate, in milliseconds
+	 * @return health report callback rate, in milliseconds
+	 */
+	public long getStreamingJobHealthReportCallbackRate() {
+		return streamingJobHealthReportCallbackRate;
+	}
+
+	@Value("${streaming.stallAlert.detectionThreshold}")
+	private long streamingJobStallAlertThreshold;
+	/**
+	 * Get the streaming job stall alert threshold, in milliseconds
+	 * @return streaming job stall alert threshold, in milliseconds
+	 */
+	public long getStreamingJobStallAlertThreshold() {
+		return streamingJobStallAlertThreshold;
+	}
+
 
 	private void createConfigFiles() throws IOException {
 		if (!mediaTypesFile.exists()) {

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLConnection;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -142,13 +143,17 @@ public class MarkupController {
                 model.setSourceUri(med.getMediaUri());
                 model.setSourceFileAvailable(false);
                 if (med.getMediaUri() != null) {
-                    String nonUrlPath = med.getMediaUri();
-                    File f = new File(URI.create(nonUrlPath));
-                    if (f != null && f.exists()) {
-                        model.setSourceURIContentType(NIOUtils.getPathContentType(Paths.get(URI.create(nonUrlPath))));
-                        model.setSourceImgUrl( "server/node-image?nodeFullPath=" + Paths.get(URI.create(nonUrlPath)));
-                        model.setSourceDownloadUrl( "server/download?fullPath=" + Paths.get(URI.create(nonUrlPath)));
-                        model.setSourceFileAvailable(true);
+                    try {
+                        String nonUrlPath = med.getMediaUri();
+                        File f = new File(URI.create(nonUrlPath));
+                        if (f != null && f.exists()) {
+                            model.setSourceURIContentType(NIOUtils.getPathContentType(Paths.get(URI.create(nonUrlPath))));
+                            model.setSourceImgUrl("server/node-image?nodeFullPath=" + Paths.get(URI.create(nonUrlPath)));
+                            model.setSourceDownloadUrl("server/download?fullPath=" + Paths.get(URI.create(nonUrlPath)));
+                            model.setSourceFileAvailable(true);
+                        }
+                    } catch (IllegalArgumentException e) {
+                        // URI has an authority component or URI scheme is not "file"
                     }
                 }
                 //add to the list

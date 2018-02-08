@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -33,6 +33,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
+import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +55,8 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
     private final NodeManagerService nodeManagerService;
 
+    private final StreamingServiceManager streamingServiceManager;
+
     private final ComponentDeploymentService deployService;
 
     private final ComponentStateService componentStateService;
@@ -65,11 +68,13 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
     @Inject
     RemoveComponentServiceImpl(
             NodeManagerService nodeManagerService,
+            StreamingServiceManager streamingServiceManager,
             ComponentDeploymentService deployService,
             ComponentStateService componentStateService,
             PipelineService pipelineService,
             PropertiesUtil propertiesUtil) {
         this.nodeManagerService = nodeManagerService;
+        this.streamingServiceManager = streamingServiceManager;
         this.deployService = deployService;
         this.componentStateService = componentStateService;
         this.pipelineService = pipelineService;
@@ -190,7 +195,10 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
     @Override
     public void deleteCustomPipelines(RegisterComponentModel registrationModel, boolean recursive) {
         if (registrationModel.getServiceName() != null) {
-            removeService(registrationModel.getServiceName());
+            removeBatchService(registrationModel.getServiceName());
+        }
+        if (registrationModel.getStreamingServiceName() != null) {
+            streamingServiceManager.deleteService(registrationModel.getStreamingServiceName());
         }
         if (registrationModel.getAlgorithmName() != null) {
             removeAlgorithm(registrationModel.getAlgorithmName(), recursive);
@@ -250,7 +258,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
         pipelineService.deleteAlgorithm(algorithmName.toUpperCase());
     }
 
-    private void removeService(String serviceName) {
+    private void removeBatchService(String serviceName) {
         List<NodeManagerModel> nodeModels = nodeManagerService.getNodeManagerModels();
         for (NodeManagerModel nmm : nodeModels) {
             nmm.getServices()

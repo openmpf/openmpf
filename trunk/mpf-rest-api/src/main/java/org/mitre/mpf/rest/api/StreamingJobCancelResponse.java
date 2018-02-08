@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,37 +29,37 @@ package org.mitre.mpf.rest.api;
 public class StreamingJobCancelResponse {
 	private Long jobId;
 	private boolean doCleanup = false;
-	private String externalId = null;
 	private String outputObjectDirectory;
 	private MpfResponse mpfResponse = new MpfResponse();
 
-	public StreamingJobCancelResponse() {}
-
-	public StreamingJobCancelResponse(boolean doCleanup, int errorCode, String errorMessage) {
-		this.mpfResponse.setMessage(errorCode, errorMessage);
-		this.jobId = -1L;
-		this.doCleanup = doCleanup;
-	}
-
-	/** Constructor
+	/** Set response parameters.
 	 * @param jobId job id of this streaming job
-	 * @param externalId external id of this streaming job, may be null
 	 * @param outputObjectDirectory root directory for output objects created during this streaming job
 	 * @param doCleanup if true, then the caller is requesting that the output object directory is cleaned up prior to cancelling this job
 	 */
-	public StreamingJobCancelResponse(Long jobId, String externalId, String outputObjectDirectory, boolean doCleanup) {
+	private void setResponseParameters(Long jobId, String outputObjectDirectory, boolean doCleanup) {
 		this.jobId = jobId;
-		this.externalId = externalId;
 		this.outputObjectDirectory = outputObjectDirectory;
 		this.doCleanup = doCleanup;
-		this.mpfResponse.setMessage(0,"success");
 	}
-	
+
+	public StreamingJobCancelResponse() {}
+
+	/** Constructor typically used for construction of a StreamingJobCancelResponse indicating an error.
+	 * @param jobId job id of this streaming job
+	 * @param outputObjectDirectory root directory for output objects created during this streaming job
+	 * @param doCleanup if true, then the caller is requesting that the output object directory is cleaned up prior to cancelling this job
+	 * @param errorCode error code to be set in the mpf response
+	 * @param errorMessage error message to be set in the mpf response
+	 */
+	public StreamingJobCancelResponse(Long jobId, String outputObjectDirectory, boolean doCleanup, int errorCode, String errorMessage) {
+		setResponseParameters(jobId, outputObjectDirectory, doCleanup);
+		mpfResponse.setMessage(errorCode, errorMessage);
+	}
+
 	public Long getJobId() {
 		return jobId;
 	}
-
-	public String getExternalId() { return externalId; }
 
 	public boolean getDoCleanup() { return doCleanup; }
 

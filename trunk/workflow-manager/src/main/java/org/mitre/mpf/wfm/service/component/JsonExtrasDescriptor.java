@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -47,10 +47,10 @@ public class JsonExtrasDescriptor {
     public ComponentLanguage sourceLanguage;
 
     @Null
-    public String pathName;
+    public String batchLibrary;
 
     @Null
-    public List<String> launchArgs;
+    public String streamLibrary;
 
     @Null
     public List<JsonComponentDescriptor.EnvironmentVariable> environmentVariables;
@@ -72,8 +72,8 @@ public class JsonExtrasDescriptor {
         this.componentVersion     = jsonDescriptor.componentVersion;
         this.middlewareVersion    = jsonDescriptor.middlewareVersion;
         this.sourceLanguage       = jsonDescriptor.sourceLanguage;
-        this.pathName             = jsonDescriptor.pathName;
-        this.launchArgs           = jsonDescriptor.launchArgs;
+        this.batchLibrary         = jsonDescriptor.batchLibrary;
+        this.streamLibrary        = jsonDescriptor.streamLibrary;
         this.environmentVariables = jsonDescriptor.environmentVariables;
         this.algorithm            = jsonDescriptor.algorithm;
         this.actions              = jsonDescriptor.actions;

@@ -5,11 +5,11 @@
   ~ under contract, and is subject to the Rights in Data-General Clause       ~
   ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
   ~                                                                           ~
-  ~ Copyright 2017 The MITRE Corporation. All Rights Reserved.                ~
+  ~ Copyright 2018 The MITRE Corporation. All Rights Reserved.                ~
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright 2017 The MITRE Corporation                                      ~
+  ~ Copyright 2018 The MITRE Corporation                                      ~
   ~                                                                           ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
   ~ you may not use this file except in compliance with the License.          ~
@@ -74,7 +74,8 @@
     <properties>
         <org.springframework.integration.spring-integration-core.version>2.0.5.RELEASE</org.springframework.integration.spring-integration-core.version>
         <org.apache.geronimo.specs.geronimo-servlet_3.0_spec.version>1.0</org.apache.geronimo.specs.geronimo-servlet_3.0_spec.version>
-        <com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>2.5.0</com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>
+      <!--updated com.fasterxml.jackson.dataformat.jackson-dataformat-smile version to 2.9.2 to be consistent with jackson-core version -->
+      <com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>2.9.2</com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>
         <org.springframework.integration.spring-integration-jms.version>2.0.5.RELEASE</org.springframework.integration.spring-integration-jms.version>
         <redis.clients.jedis.version>2.7.3</redis.clients.jedis.version>
         <xml-apis.xml-apis.version>1.4.01</xml-apis.xml-apis.version>
@@ -97,16 +98,17 @@
         <exec.maven.plugin.version>1.4.0</exec.maven.plugin.version>
         <rpm.maven.plugin.version>2.1.4</rpm.maven.plugin.version>
         <jackson.mapper.asl.version>1.9.13</jackson.mapper.asl.version>
-        <jackson.version>2.6.1</jackson.version>
-        
+        <!-- updated jackson version to 2.9.2 to better support JSON serialization of Java8 time -->
+        <jackson.version>2.9.2</jackson.version>
+
         <!-- more added properties for release 0.4 -->
         <!-- sticking with the 3.2.8 release because 
         a jump to 4.x.x will require changing spring-security.xml -->
-        <org.springframework.data.spring-data-redis.version>1.5.2.RELEASE</org.springframework.data.spring-data-redis.version>
+        <org.springframework.data.spring-data-redis.version>1.6.6.RELEASE</org.springframework.data.spring-data-redis.version>
         <spring.security.version>3.2.8.RELEASE</spring.security.version>
 		<commons.codec.version>1.10</commons.codec.version>	
 		<commons.collections4.version>4.0</commons.collections4.version>
-		<javax.inject.version>1</javax.inject.version>		
+		<javax.inject.version>1</javax.inject.version>
 		<commons.dbcp.version>1.4</commons.dbcp.version>
 		<javax.jms.version>1.1</javax.jms.version>		
 		<xbean.spring.version>4.3</xbean.spring.version>
@@ -114,12 +116,13 @@
 		<jaxws.rt.version>2.2.10</jaxws.rt.version>
 		<jaxws.spring.version>1.9</jaxws.spring.version>
 		<cglib.version>3.1</cglib.version>
-		<tika.core.version>1.14</tika.core.version>
-        <apache.httpclient.version>4.5.2</apache.httpclient.version>
+		<tika.core.version>1.17</tika.core.version>
+		<apache.httpclient.version>4.5.2</apache.httpclient.version>
+		<apache.httpasyncclient.version>4.1.3</apache.httpasyncclient.version>
 		<stax2.api.version>4.0.0</stax2.api.version>
 		<servlet.api.version>3.1.0</servlet.api.version>
 		<mockito.core.version>1.10.19</mockito.core.version>
-		<commons.io.version>2.4</commons.io.version>
+		<commons.io.version>2.6</commons.io.version>
 		<xstream.version>1.4.8</xstream.version>
 		<common.beanutils.version>1.9.2</common.beanutils.version>
 		<mysql.connector.java.version>5.1.36</mysql.connector.java.version>
@@ -153,8 +156,8 @@
 		<sphinx4.version>5prealpha-SNAPSHOT</sphinx4.version>
 		
 		<!-- added props node manager -->
-		<jgroups.version>3.6.4.Final</jgroups.version>
-		
+        <jgroups.version>3.6.4.Final</jgroups.version>
+
 		<!-- added props mpf-markup -->
 		<junit.version>4.12</junit.version>
 

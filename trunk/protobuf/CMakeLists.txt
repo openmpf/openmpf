@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2017 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2018 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2017 The MITRE Corporation                                      #
+# Copyright 2018 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -44,7 +44,7 @@ file(GLOB PROTO_FILES "${CMAKE_SOURCE_DIR}/protobuf/src/main/proto/*.proto")
 # this puts the generated files under build/protobufs
 PROTOBUF_GENERATE_CPP(MPF_PROTO_SRCS MPF_PROTO_HEADERS ${PROTO_FILES})
 
-add_library(mpfProtobufs SHARED ${MPF_PROTO_SRCS})
+add_library(mpfProtobufs STATIC ${MPF_PROTO_SRCS})
 target_link_libraries(mpfProtobufs ${Protobuf_LIBRARY})
 
 # include ourselves for building

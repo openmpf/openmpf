@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,9 +29,7 @@ package org.mitre.mpf.wfm.data.entities.transients;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class TransientStreamingJob {
@@ -46,14 +44,6 @@ public class TransientStreamingJob {
 
 	private int priority;
 	public int getPriority() { return  priority; }
-
-	private long stallAlertDetectionThreshold;
-	public void setStallAlertDetectionThreshold(long value) { stallAlertDetectionThreshold = value; }
-	public long getStallAlertDetectionThreshold() { return stallAlertDetectionThreshold; }
-
-	private long stallAlertRate;
-	public void setStallAlertRate(long value) { stallAlertRate = value; }
-	public long getStallAlertRate() { return stallAlertRate; }
 
 	private long stallTimeout;
 	public void setStallTimeout(long value) { stallTimeout = value; }
@@ -72,9 +62,9 @@ public class TransientStreamingJob {
 	public void setStream(TransientStream stream) { this.stream = stream; }
 	public void addStreamMetaData(String key, String value) { getStream().addMetadata(key, value); }
 
-	private Map<String, Map> overriddenAlgorithmProperties;
-	public Map<String, Map> getOverriddenAlgorithmProperties() { return overriddenAlgorithmProperties; }
-	public void setOverriddenAlgorithmProperties(Map<String, Map> overriddenAlgorithmProperties) { this.overriddenAlgorithmProperties = overriddenAlgorithmProperties; }
+	private Map<String, Map<String, String>> overriddenAlgorithmProperties;
+	public Map<String, Map<String, String>> getOverriddenAlgorithmProperties() { return overriddenAlgorithmProperties; }
+	public void setOverriddenAlgorithmProperties(Map<String, Map<String, String>> overriddenAlgorithmProperties) { this.overriddenAlgorithmProperties = overriddenAlgorithmProperties; }
 
 	private Map<String, String> overriddenJobProperties;
 	public Map<String, String> getOverriddenJobProperties() { return overriddenJobProperties; }
@@ -87,18 +77,11 @@ public class TransientStreamingJob {
 	public String getHealthReportCallbackURI() { return healthReportCallbackURI; }
 	private String summaryReportCallbackURI;
 	public String getSummaryReportCallbackURI() { return summaryReportCallbackURI; }
-	private String newTrackAlertCallbackURI;
-	public String getNewTrackAlertCallbackURI() { return newTrackAlertCallbackURI; }
-
-	private String callbackMethod;
-	public String getCallbackMethod() { return callbackMethod; }
 
 	public TransientStreamingJob(@JsonProperty("id") long id,
                                  @JsonProperty("externalId") String externalId,
                                  @JsonProperty("pipeline") TransientPipeline pipeline,
                                  @JsonProperty("priority") int priority,
-								 @JsonProperty("stallAlertDetectionThreshold") long stallAlertDetectionThreshold,
-								 @JsonProperty("stallAlertRate") long stallAlertRate,
 								 @JsonProperty("stallTimeout") long stallTimeout,
 								 @JsonProperty("outputEnabled") boolean outputEnabled,
 								 @JsonProperty("outputObjectDirectory") String outputObjectDirectory,
@@ -107,8 +90,6 @@ public class TransientStreamingJob {
 		this.externalId = externalId;
 		this.pipeline = pipeline;
 		this.priority = priority;
-		this.stallAlertDetectionThreshold = stallAlertDetectionThreshold;
-		this.stallAlertRate = stallAlertRate;
 		this.stallTimeout = stallTimeout;
 		this.outputEnabled = outputEnabled;
 		this.outputObjectDirectory = outputObjectDirectory;
@@ -123,21 +104,14 @@ public class TransientStreamingJob {
                                  @JsonProperty("externalId") String externalId,
                                  @JsonProperty("pipeline") TransientPipeline pipeline,
                                  @JsonProperty("priority") int priority,
-								 @JsonProperty("stallAlertDetectionThreshold") long stallAlertDetectionThreshold,
-								 @JsonProperty("stallAlertRate") long stallAlertRate,
 								 @JsonProperty("stallTimeout") long stallTimeout,
 								 @JsonProperty("outputEnabled") boolean outputEnabled,
 								 @JsonProperty("outputObjectDirectory") String outputObjectDirectory,
                                  @JsonProperty("cancelled") boolean cancelled,
 								 @JsonProperty("healthReportCallbackURI") String healthReportCallbackURI,
-								 @JsonProperty("summaryReportCallbackURI") String summaryReportCallbackURI,
-								 @JsonProperty("newTrackAlertCallbackURI") String newTrackAlertCallbackURI,
-                                 @JsonProperty("callbackMethod") String callbackMethod) {
-		this(id,externalId,pipeline,priority,
-				stallAlertDetectionThreshold,stallAlertRate,stallTimeout,outputEnabled,outputObjectDirectory,cancelled);
+								 @JsonProperty("summaryReportCallbackURI") String summaryReportCallbackURI) {
+		this(id,externalId,pipeline,priority,stallTimeout,outputEnabled,outputObjectDirectory,cancelled);
 		this.healthReportCallbackURI = healthReportCallbackURI;
 		this.summaryReportCallbackURI = summaryReportCallbackURI;
-		this.newTrackAlertCallbackURI = newTrackAlertCallbackURI;
-		this.callbackMethod = callbackMethod;
 	}
 }

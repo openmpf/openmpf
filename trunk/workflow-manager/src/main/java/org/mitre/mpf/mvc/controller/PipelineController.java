@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,18 +26,18 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.mitre.mpf.mvc.model.*;
 import org.mitre.mpf.mvc.util.JsonView;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.DuplicateNameWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.NotFoundWfmProcessingException;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.*;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +64,7 @@ public class PipelineController {
 
     private static final Logger log = LoggerFactory.getLogger(PipelineController.class);
 
-    public static final String DEFAULT_ERROR_VIEW = "error";
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Autowired
     private PipelineService pipelineService;
@@ -348,7 +348,7 @@ public class PipelineController {
     public void createActionJson2(@RequestBody ActionModel actionModel, HttpServletResponse response) throws WfmProcessingException {
         Map<String, String> modifiedProperties;
         try {
-            modifiedProperties = new ObjectMapper().readValue(actionModel.getProperties(), HashMap.class);
+            modifiedProperties = objectMapper.readValue(actionModel.getProperties(), HashMap.class);
         } catch (Exception e) {
             log.error("error getting properties with message: {}", e.getMessage());
             throw new WfmProcessingException("Invalid properties value: " + actionModel.getProperties() + ".", e);
@@ -460,7 +460,7 @@ public class PipelineController {
         //IMPORTANT!! - only passing in the modified properties in this method
         Map<String, String> modifiedProperties = new HashMap<String, String>();
         try {
-        	modifiedProperties = new ObjectMapper().readValue(actionModel.getProperties(), HashMap.class);
+        	modifiedProperties = objectMapper.readValue(actionModel.getProperties(), HashMap.class);
         } catch (IOException e) {
             log.error("error getting properties with message: {}", e.getMessage());
             responseTuple = new Tuple<Boolean, String>(false, e.getMessage());

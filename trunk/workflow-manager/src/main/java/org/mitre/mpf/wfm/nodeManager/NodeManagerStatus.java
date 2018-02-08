@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,19 +26,22 @@
 
 package org.mitre.mpf.wfm.nodeManager;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
 import org.jgroups.Address;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.AtmosphereChannel;
 import org.mitre.mpf.nms.*;
-import org.mitre.mpf.nms.ChannelReceiver.NodeTypes;
 import org.mitre.mpf.nms.NodeManagerConstants.States;
+import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -47,276 +50,267 @@ import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
 
 @Component
 public class NodeManagerStatus implements ClusterChangeNotifier {
 
-	private static final Logger log = LoggerFactory.getLogger(NodeManagerStatus.class);
+    private static final Logger log = LoggerFactory.getLogger(NodeManagerStatus.class);
 
-	@Value("${activemq.hostname}")
-	private String activeMqHostname;
+    @Autowired
+    private PropertiesUtil propertiesUtil;
 
-	@Autowired
-	private PropertiesUtil propertiesUtil;
+    @Autowired
+    private MasterNode masterNode;
 
-	private volatile boolean isRunning = false;
-	private MasterNode masterNode;
-	private Map<String, ServiceDescriptor> serviceDescriptorMap = new ConcurrentHashMap<String, ServiceDescriptor>();
+    @Autowired
+    private StreamingJobRequestBo streamingJobRequestBo;
 
-	public NodeManagerStatus() {
-		String fHostName = System.getenv("THIS_MPF_NODE");
-		log.debug("Hostname is: '{}'.", fHostName);
+    private volatile boolean isRunning = false;
 
-		if(fHostName == null) {
-			log.error("Could not determine the hostname.");
-		}
-	}
+    private Map<String, ServiceDescriptor> serviceDescriptorMap = new ConcurrentHashMap<>();
 
-	public void init(boolean reloadConfig) {
-		InputStream tcpConfig = null, nodeManagerConfig = null;
-		try {
-			if(!reloadConfig) {
-				isRunning = true;
-				tcpConfig = MasterNode.class.getClassLoader().getResourceAsStream("jGroupsTCPConfig.xml");
-				masterNode = new MasterNode(tcpConfig,
-						NodeManagerConstants.DEFAULT_CHANNEL, "MPF-MasterNode");
-			}
 
-			try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
-				if (masterNode.loadConfigFile(inStream, activeMqHostname)) {
-					masterNode.launchAllNodes();
-				}
-			}
+    public void init(boolean reloadConfig) {
+        if(!reloadConfig) {
+            masterNode.run();
+            isRunning = true;
+        }
+        try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
+            if (masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri())) {
+                masterNode.launchAllNodes();
+            }
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
 
-			if(!reloadConfig) {		
-				masterNode.setCallback(this);
-			}
-			
-			updateServiceDescriptors();
-		} catch (IOException ex) {
-			throw new UncheckedIOException(ex);
-		} finally {
-			if (tcpConfig != null) {
-				try {
-					tcpConfig.close();
-				} catch (IOException e) {
-					log.error(e.getMessage(), e);
-				}
-			}
-			if (nodeManagerConfig != null) {
-				try {
-					nodeManagerConfig.close();
-				} catch (IOException e) {
-					log.error(e.getMessage(), e);
-				}
-			}
-		}
-	}
+        if(!reloadConfig) {
+            masterNode.setCallback(this);
+        }
 
-	public void stop() {
-		try {
-			masterNode.shutdown();
-			isRunning = false;
-		} 
-		catch(Exception e) {
-			log.error(e.getMessage(), e);
-		}
-	}
+        updateServiceDescriptors();
+    }
 
-	public boolean isRunning() {
-		return isRunning;
-	}
 
-	private void updateServiceDescriptors() {
-		if(masterNode != null) {
-			serviceDescriptorMap = new ConcurrentHashMap<>();
-			for (ServiceDescriptor sd : masterNode.getServices()) {
-				if(sd.getLastKnownState() != States.Delete && sd.getLastKnownState() != States.DeleteInactive) {
-					updateServiceDescriptorEntry(sd);
-				}
-			}
-		}
-	}
+    public void stop() {
+        try {
+            masterNode.shutdown();
+            isRunning = false;
+        }
+        catch(Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
 
-	//comment - if this throws an exception, JGroups goes bonkers - Unprocessed ServiceStatusUpdate state
-	private void updateServiceDescriptorEntry(ServiceDescriptor desc) {
-		synchronized (serviceDescriptorMap) {
-			this.serviceDescriptorMap.put(desc.getName(), desc);
-			log.debug("updated ServiceDescriptor with name: {}", desc.getName());
-		}
-	}
-	
-	//TODO: It is possible for the master node to keep track of the available node managers, which will
-	//prevent having to generate a list each time
-	//TODO: could also just return the address as soon as a match to the service descriptor is found to reduce
-	//a small amount of processing time
-	private Map<String, Address> getCurrentNodeManagerHostsAddressMap() {
-		Map<String, Address> availableNodeManagerHostsAddressMap = new HashMap<String, Address>();
-		for (Address addr : masterNode.getCurrentNodeManagerHosts()) {
-			String name = addr.toString();
-			//If it's a node manager then track it, it's name contains the machine name upon which it resides
-			Matcher mo = ChannelReceiver.FQN_PATTERN.matcher(name);
-			if (!mo.matches()) {
-				log.debug("\tNot well formed name, skipping {}", name);
-				continue;
-			}
-			//see if we know what type this is
-			NodeTypes ntype = NodeTypes.lookup(mo.group(1));
-			if(ntype != null && ntype == NodeTypes.NodeManager) {
-				String mgrHost = mo.group(2);
-				availableNodeManagerHostsAddressMap.put(mgrHost, addr);
-			}
-		}
-		return availableNodeManagerHostsAddressMap;
-	}
+    public boolean isRunning() {
+        return isRunning;
+    }
 
-	private void sendMessageToNodeManager(ServiceDescriptor desc, States requestedServiceState) {
-		BaseServiceLauncher launcher = BaseServiceLauncher.getLauncher(desc);
-		if(launcher != null) {
-			String descriptorHost = desc.getHost();	
+    private void updateServiceDescriptors() {
+        if(masterNode != null) {
+            serviceDescriptorMap = new ConcurrentHashMap<>();
+            for (ServiceDescriptor sd : masterNode.getServices()) {
+                if(sd.getLastKnownState() != States.Delete && sd.getLastKnownState() != States.DeleteInactive) {
+                    updateServiceDescriptorEntry(sd);
+                }
+            }
+        }
+    }
 
-			Map<String, Address> availableNodeManagerHostsAddressMap = getCurrentNodeManagerHostsAddressMap();	
-			if(!availableNodeManagerHostsAddressMap.isEmpty()) {
-				//get correct node manager address 
-				Address correctNodeManagerAddress = availableNodeManagerHostsAddressMap.get(descriptorHost);
+    //comment - if this throws an exception, JGroups goes bonkers - Unprocessed ServiceStatusUpdate state
+    private void updateServiceDescriptorEntry(ServiceDescriptor desc) {
+        synchronized (serviceDescriptorMap) {
+            this.serviceDescriptorMap.put(desc.getName(), desc);
+            log.debug("updated ServiceDescriptor with name: {}", desc.getName());
+        }
+    }
 
-				if(requestedServiceState == States.Launching) {
-					//send launch message to that address - Launching = asked to start
-					masterNode.send(correctNodeManagerAddress, desc, requestedServiceState);
-				}
-				else if(requestedServiceState == States.ShuttingDownNoRestart) {
-					//send shut down message to that address - ShuttingDown - requesting to go down from NodeManager source
-					masterNode.send(correctNodeManagerAddress, desc, requestedServiceState);
-				} else {
-					log.debug("requestedServiceState of {} is not accepted - no message will be sent", requestedServiceState);
-				}				
-			} else {
-				log.warn("No recovered node managers - cannot request state {} of the service with name: {}",
-						requestedServiceState, desc.getName());
-			}
-		} else {
-			log.warn("Launcher is null - cannot request state {} of the service with name: {}", 
-					requestedServiceState, desc.getName());
-		}
-	}
+    //TODO: It is possible for the master node to keep track of the available node managers, which will
+    //prevent having to generate a list each time
+    //TODO: could also just return the address as soon as a match to the service descriptor is found to reduce
+    //a small amount of processing time
+    private Map<String, Address> getCurrentNodeManagerHostsAddressMap() {
+        Map<String, Address> availableNodeManagerHostsAddressMap = new HashMap<String, Address>();
+        for (Address addr : masterNode.getCurrentNodeManagerHosts()) {
+            String name = addr.toString();
+            //If it's a node manager then track it, it's name contains the machine name upon which it resides
+            Pair<String, NodeTypes> hostNodeTypePair = AddressParser.parse(addr);
+            if (hostNodeTypePair == null) {
+                continue;
+            }
+            //see if we know what type this is
+            if(hostNodeTypePair.getRight() == NodeTypes.NodeManager) {
+                String mgrHost = hostNodeTypePair.getLeft();
+                availableNodeManagerHostsAddressMap.put(mgrHost, addr);
+            }
+        }
+        return availableNodeManagerHostsAddressMap;
+    }
 
-	private void shutdown(ServiceDescriptor desc) {        
-		if (desc.isAlive()) {
-			sendMessageToNodeManager(desc, States.ShuttingDownNoRestart);
-		} else {
-			log.debug("Service with name, {}, is not alive - no need to send a shutdown request", desc.getName());
-		}
-	}	
+    private void sendMessageToNodeManager(ServiceDescriptor desc, States requestedServiceState) {
+        BaseServiceLauncher launcher = BaseServiceLauncher.getLauncher(desc);
+        if(launcher != null) {
+            String descriptorHost = desc.getHost();
 
-	private void launch(ServiceDescriptor desc) {
-		if (!desc.isAlive()) {
-			sendMessageToNodeManager(desc, States.Launching);
-		} else {
-			log.debug("Service with name, {}, is already alive - no need to send a launch request", desc.getName());
-		}
-	}
-	
-	/** broadcasts service events via Atmosphere */
-	private void broadcast( ServiceDescriptor service, String event )
-	{
-		HashMap<String,Object> datamap = new HashMap<String,Object>();
-		datamap.put( "name", service.getName() );
-		datamap.put( "lastKnownState", service.getLastKnownState() );
-		datamap.put( "host", service.getHost() );
-		datamap.put( "event", event );
-		AtmosphereController.broadcast( AtmosphereChannel.SSPC_SERVICE, event, datamap );
-	}
-	
-	/** broadcasts service events via Atmosphere */
-	private void broadcast( String serviceName, String event )
-	{
-		HashMap<String,Object> datamap = new HashMap<String,Object>();
-		datamap.put( "name", serviceName );
-		datamap.put( "event", event );
-		AtmosphereController.broadcast( AtmosphereChannel.SSPC_SERVICE, event, datamap );
-	}
+            Map<String, Address> availableNodeManagerHostsAddressMap = getCurrentNodeManagerHostsAddressMap();
+            if(!availableNodeManagerHostsAddressMap.isEmpty()) {
+                //get correct node manager address
+                Address correctNodeManagerAddress = availableNodeManagerHostsAddressMap.get(descriptorHost);
 
-	@Override
-	public void newManager(String hostname) {
-		log.debug("{} manager has started.", hostname);
-		//go ahead and launch anything that is able to launch (nothing that starts with a state of Delete or InactiveNoStart)
-		masterNode.launchAllNodes();
-	}
+                if(requestedServiceState == States.Launching) {
+                    //send launch message to that address - Launching = asked to start
+                    masterNode.send(correctNodeManagerAddress, desc, requestedServiceState);
+                }
+                else if(requestedServiceState == States.ShuttingDownNoRestart) {
+                    //send shut down message to that address - ShuttingDown - requesting to go down from NodeManager source
+                    masterNode.send(correctNodeManagerAddress, desc, requestedServiceState);
+                } else {
+                    log.debug("requestedServiceState of {} is not accepted - no message will be sent", requestedServiceState);
+                }
+            } else {
+                log.warn("No recovered node managers - cannot request state {} of the service with name: {}",
+                        requestedServiceState, desc.getName());
+            }
+        } else {
+            log.warn("Launcher is null - cannot request state {} of the service with name: {}",
+                    requestedServiceState, desc.getName());
+        }
+    }
 
-	@Override
-	public void managerDown(String hostname) {
-		//log.debug("{} manager down.", hostname);
-	}
+    private void shutdown(ServiceDescriptor desc) {
+        if (desc.isAlive()) {
+            sendMessageToNodeManager(desc, States.ShuttingDownNoRestart);
+        } else {
+            log.debug("Service with name, {}, is not alive - no need to send a shutdown request", desc.getName());
+        }
+    }
 
-	@Override
-	public void newService(ServiceDescriptor service) {
-		updateServiceDescriptorEntry(service);
-		broadcast( service, "OnNewService" );
-		log.info("adding new service: {}", service.getName());
-	}
+    private void launch(ServiceDescriptor desc) {
+        if (!desc.isAlive()) {
+            sendMessageToNodeManager(desc, States.Launching);
+        } else {
+            log.debug("Service with name, {}, is already alive - no need to send a launch request", desc.getName());
+        }
+    }
 
-	@Override
-	public void serviceDown(ServiceDescriptor service) {
-		updateServiceDescriptorEntry(service);
-		broadcast( service, "OnServiceDown" );
-		log.info("{} has shut down.", service.getName());
-	}
+    /** broadcasts service events via Atmosphere */
+    private void broadcast( ServiceDescriptor service, String event )
+    {
+        HashMap<String,Object> datamap = new HashMap<String,Object>();
+        datamap.put( "name", service.getName() );
+        datamap.put( "lastKnownState", service.getLastKnownState() );
+        datamap.put( "host", service.getHost() );
+        datamap.put( "event", event );
+        AtmosphereController.broadcast( AtmosphereChannel.SSPC_SERVICE, event, datamap );
+    }
 
-	@Override
-	public void serviceChange(ServiceDescriptor service) {
-		updateServiceDescriptorEntry(service);
-		broadcast( service, "OnServiceChange" );
-		//log.debug("{} has changed.", service.getName());
-	}
+    /** broadcasts service events via Atmosphere */
+    private void broadcast( String serviceName, String event )
+    {
+        HashMap<String,Object> datamap = new HashMap<String,Object>();
+        datamap.put( "name", serviceName );
+        datamap.put( "event", event );
+        AtmosphereController.broadcast( AtmosphereChannel.SSPC_SERVICE, event, datamap );
+    }
 
-	public Map<String, ServiceDescriptor> getServiceDescriptorMap() {
-		//should not have to update on get because of the update on when changed - but that does not seem to work
-		updateServiceDescriptors(); //TODO: a solution for now - not much added processing
-		return serviceDescriptorMap;
-	}
+    @Override
+    public void newManager(String hostname) {
+        log.debug("{} manager has started.", hostname);
+        //go ahead and launch anything that is able to launch (nothing that starts with a state of Delete or InactiveNoStart)
+        masterNode.launchAllNodes();
+    }
 
-	public boolean shutdownService(String serviceName) {
-		if(serviceDescriptorMap.containsKey(serviceName)) {
-			log.info("{} is shutting down.", serviceName);
-			shutdown(serviceDescriptorMap.get(serviceName));
-			return true;
-		} 
-		//no else needed
-		log.error("Cannot shut down service with name '{}' because it does not exist.", serviceName);
-		return false;        
-	}
+    @Override
+    public void managerDown(String hostname) {
+        //log.debug("{} manager down.", hostname);
+    }
 
-	public boolean startService(String serviceName) {
-		if(serviceDescriptorMap.containsKey(serviceName)) {
-			launch(serviceDescriptorMap.get(serviceName));
-			log.info("{} is starting.", serviceName);
-			return true;
-		}
-		//no else needed
-		log.error("Cannot start service with name '{}' because it does not exist.", serviceName);
-		return false;
-	}
+    @Override
+    public void newService(ServiceDescriptor service) {
+        updateServiceDescriptorEntry(service);
+        broadcast( service, "OnNewService" );
+        log.info("adding new service: {}", service.getName());
+    }
 
-	public Map<String, Boolean> getConfiguredManagerHosts() {
-		return masterNode.getConfiguredManagerHosts();
-	}
+    @Override
+    public void serviceDown(ServiceDescriptor service) {
+        updateServiceDescriptorEntry(service);
+        broadcast( service, "OnServiceDown" );
+        log.info("{} has shut down.", service.getName());
+    }
 
-	public void reloadNodeManagerConfig() {
-		log.info("Reloading the node manager config");
+    @Override
+    public void serviceChange(ServiceDescriptor service) {
+        updateServiceDescriptorEntry(service);
+        broadcast( service, "OnServiceChange" );
+        //log.debug("{} has changed.", service.getName());
+    }
+
+    public Map<String, ServiceDescriptor> getServiceDescriptorMap() {
+        //should not have to update on get because of the update on when changed - but that does not seem to work
+        updateServiceDescriptors(); //TODO: a solution for now - not much added processing
+        return serviceDescriptorMap;
+    }
+
+    public boolean shutdownService(String serviceName) {
+        if(serviceDescriptorMap.containsKey(serviceName)) {
+            log.info("{} is shutting down.", serviceName);
+            shutdown(serviceDescriptorMap.get(serviceName));
+            return true;
+        }
+        //no else needed
+        log.error("Cannot shut down service with name '{}' because it does not exist.", serviceName);
+        return false;
+    }
+
+    public boolean startService(String serviceName) {
+        if(serviceDescriptorMap.containsKey(serviceName)) {
+            launch(serviceDescriptorMap.get(serviceName));
+            log.info("{} is starting.", serviceName);
+            return true;
+        }
+        //no else needed
+        log.error("Cannot start service with name '{}' because it does not exist.", serviceName);
+        return false;
+    }
+
+    public Map<String, Boolean> getConfiguredManagerHosts() {
+        return masterNode.getConfiguredManagerHosts();
+    }
+
+    public void reloadNodeManagerConfig() {
+        log.info("Reloading the node manager config");
         Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.NodeManagerStatus.reloadNodeManagerConfig").start();
         init(true);
-        split.stop();     
-	}
+        split.stop();
+    }
 
-	@Override
-	public void serviceReadyToRemove(ServiceDescriptor serviceDescriptor) {
-		log.info("The service '{}' has been shut down and is ready to be removed.", serviceDescriptor.getName());
-		synchronized (serviceDescriptorMap) {
-			//other nodes may continue to keep the desc in their service table or map, but it is not necessary
-			//once in this state
-			serviceDescriptorMap.remove(serviceDescriptor.getName());
-			broadcast( serviceDescriptor, "OnServiceReadyToRemove" );
-		}
-	}	
+    @Override
+    public void serviceReadyToRemove(ServiceDescriptor serviceDescriptor) {
+        log.info("The service '{}' has been shut down and is ready to be removed.", serviceDescriptor.getName());
+        synchronized (serviceDescriptorMap) {
+            //other nodes may continue to keep the desc in their service table or map, but it is not necessary
+            //once in this state
+            serviceDescriptorMap.remove(serviceDescriptor.getName());
+            broadcast( serviceDescriptor, "OnServiceReadyToRemove" );
+        }
+    }
+
+
+    @Override
+    public void streamingJobExited(StreamingJobExitedMessage message) {
+        StreamingJobStatus status;
+        log.info("Streaming job {} exited due to {}.", message.jobId, message.reason);
+        switch (message.reason) {
+            case CANCELLED:
+                status = new StreamingJobStatus(StreamingJobStatusType.CANCELLED, message.reason.detail);
+                break;
+            case STREAM_STALLED:
+                status = new StreamingJobStatus(StreamingJobStatusType.TERMINATED, message.reason.detail);
+                break;
+            default:
+                status = new StreamingJobStatus(StreamingJobStatusType.ERROR, message.reason.detail);
+        }
+        streamingJobRequestBo.handleJobStatusChange(message.jobId, status, System.currentTimeMillis());
+    }
 }

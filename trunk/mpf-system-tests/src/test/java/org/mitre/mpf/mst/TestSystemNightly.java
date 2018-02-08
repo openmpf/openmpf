@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -163,7 +163,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         long jobId = runPipelineOnMedia("OCV PERSON DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI outputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
-//        JsonOutputObject outputObject = OBJECT_MAPPER.readValue(Files.readAllBytes(Paths.get(outputPath)), JsonOutputObject.class);
+//        JsonOutputObject outputObject = objectMapper.readValue(Files.readAllBytes(Paths.get(outputPath)), JsonOutputObject.class);
         JsonOutputObject outputObject = jsonUtils.deserializeFromText(FileUtils.readFileToByteArray(new File(outputPath)), JsonOutputObject.class);
         for(JsonMediaOutputObject mediaOutputObject : outputObject.getMedia()) {
             // Check that the hashes of the source media are equal to the hashes of the markup media result. That is, check that the file was copied successfully.
@@ -194,7 +194,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         long jobId = runPipelineOnMedia("OCV FACE DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI outputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
-//        JsonOutputObject outputObject = OBJECT_MAPPER.readValue(Files.readAllBytes(Paths.get(outputPath)), JsonOutputObject.class)
+//        JsonOutputObject outputObject = objectMapper.readValue(Files.readAllBytes(Paths.get(outputPath)), JsonOutputObject.class)
         JsonOutputObject outputObject = jsonUtils.deserializeFromText(FileUtils.readFileToByteArray(new File(outputPath)), JsonOutputObject.class);
         for(JsonMediaOutputObject mediaOutputObject : outputObject.getMedia()) {
             // Check that the hashes of the source media are equal to the hashes of the markup media result. That is, check that the file was copied successfully.
@@ -236,7 +236,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         // on this video (requires a video with some small faces)
         URI defaultOutputPath = (getClass().getClassLoader().getResource("output/face/runFaceOcvCustomDetectVideo-defaultCompare.json")).toURI();
 
-        JsonOutputObject defaultOutput = OBJECT_MAPPER.readValue(Files.readAllBytes(Paths.get(defaultOutputPath)), JsonOutputObject.class);
+        JsonOutputObject defaultOutput = objectMapper.readValue(Files.readAllBytes(Paths.get(defaultOutputPath)), JsonOutputObject.class);
         JsonOutputObject customOutput = getJobOutputObject(jobId);
 
         Set<JsonMediaOutputObject> defMedias = defaultOutput.getMedia();
@@ -298,7 +298,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
 
         // an assumption failure causes the test to be ignored;
         // only run this test on a machine where /mpfdata/datasets is mapped
-        // Assume.assumeTrue("Skipping test. It should only run on Jenkins.", jenkins);
+        Assume.assumeTrue("Skipping test. It should only run on Jenkins.", jenkins);
 
         log.info("Beginning testPriorities()");
 

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,7 +27,6 @@
 package org.mitre.mpf.wfm.camel;
 
 import java.util.Date;
-
 import org.apache.camel.Exchange;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.JobStatusMessage;
@@ -35,7 +34,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.slf4j.Logger;
@@ -74,10 +73,10 @@ public class EndOfStageProcessor extends WfmProcessor {
 			long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
 			//notify of completion - use
 			if(!job.isOutputEnabled()) {
-				AtmosphereController.broadcast(new JobStatusMessage(jobId, 100, job.isCancelled() ? JobStatus.CANCELLED : JobStatus.COMPLETE, new Date()));
+				AtmosphereController.broadcast(new JobStatusMessage(jobId, 100, job.isCancelled() ? BatchJobStatusType.CANCELLED : BatchJobStatusType.COMPLETE, new Date()));
 				jobProgressStore.setJobProgress(jobId, 100.0f);
 			} else {
-				AtmosphereController.broadcast(new JobStatusMessage(jobId, 99, JobStatus.BUILDING_OUTPUT_OBJECT, new Date()));
+				AtmosphereController.broadcast(new JobStatusMessage(jobId, 99, BatchJobStatusType.BUILDING_OUTPUT_OBJECT, new Date()));
 				jobProgressStore.setJobProgress(jobId, 99.0f);
 			}			
 			log.debug("[Job {}|*|*] All stages have completed. Setting the {} flag.", exchange.getIn().getHeader(MpfHeaders.JOB_ID), MpfHeaders.JOB_COMPLETE);

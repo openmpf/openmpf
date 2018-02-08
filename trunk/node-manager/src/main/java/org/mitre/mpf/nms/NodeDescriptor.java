@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -25,7 +25,6 @@
  ******************************************************************************/
 
 package org.mitre.mpf.nms;
-import org.jgroups.Address;
 import java.io.Serializable;
 
 
@@ -36,9 +35,9 @@ import java.io.Serializable;
  * discovered.
  */
 public class NodeDescriptor implements Serializable {
-    private String hostname;
-    private Address jAddr = null;
-    private int minServiceTimeupMillis;
+
+    private final String hostname;
+
     private  NodeManagerConstants.States lastKnownState =  NodeManagerConstants.States.Unknown;
 
     public  NodeDescriptor(String hostname) {
@@ -64,12 +63,4 @@ public class NodeDescriptor implements Serializable {
     public boolean doesHostMatch(String host) {
         return (hostname.compareTo(host) == 0);
     }
-
-	public int getMinServiceTimeupMillis() {
-		return minServiceTimeupMillis;
-	}
-
-	public void setMinServiceTimeupMillis(int minServiceTimeupMillis) {
-		this.minServiceTimeupMillis = minServiceTimeupMillis;
-	}
 }

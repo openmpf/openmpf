@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -104,9 +104,9 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                                 type = "label-primary";
                             }
                             var hideProgress = 'style="display:none;"';
-                            if (job.jobProgress > 0 && job.jobProgress < 100) hideProgress = "";
+                            if (job.jobStatus.startsWith('IN_PROGRESS') && job.jobProgress < 100) hideProgress = "";
                             var progress = job.jobProgress.toFixed();
-                            var progressDiv = '<div class="progress" ' + hideProgress + '><div class="progress-bar progress-bar-success" role="progressbar"  id="jobProgress' + job.jobId + '" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="min-width: 4em;width:' + progress + '%">' + progress + '%</div></div>';
+                            var progressDiv = '<div class="progress" ' + hideProgress + '><div class="progress-bar progress-bar-success" role="progressbar"  id="jobProgress' + job.jobId + '" aria-valuenow="0" aria-valuemin="' + progress + '" aria-valuemax="100" style="width:' + progress + '%">' + progress + '%</div></div>';
                             return '<span class="job-status label ' + type + '" id="jobStatusCell' + job.jobId + '">' + job.jobStatus + '</span>' + progressDiv;
                         }
                     },
@@ -123,17 +123,16 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                             if (job.terminal || job.jobStatus == 'CANCELLING' || job.jobStatus == 'COMPLETE') cancel_disabled = "disabled=disabled";
                             var isterminal = "";
                             if (!job.terminal) isterminal = "disabled=disabled";
-                            var hasMarkup = "";
                             var hasOutput = "disabled=disabled";
                             var output_link = "";
                             if (job.outputFileExists) {
                                 hasOutput = "";
                             }
                             return '<div class="btn-group btn-group-sm" role="group" >' +
-                                '<button type="button" class="btn btn-default cancelBtn" id="cancelBtn' + job.jobId + '"  ' + cancel_disabled + ' ><i class="fa fa-stop"  title="Stop"></i></button>' +
-                                '<button type="button" class="btn btn-default resubmitBtn"  id="resubmitBtn' + job.jobId + '"' + isterminal + '><i class="fa fa-refresh"  title="Resubmit"></i></button>' +
-                                '<button type="button" class="btn btn-default markupBtn" ' + hasMarkup + ' id="markupBtn' + job.jobId + '" title="' + job.markupCount + ' media" ><i class="fa fa-picture-o" title="Media"></i></button>' +
-                                '<a type="button" href="jobs/output-object?id=' + job.jobId + '" class="btn btn-default jsonBtn" target="_blank"  ' + hasOutput + ' title="JSON ouput">{ }</a></div>';
+                                '<button type="button" class="btn btn-default cancelBtn" id="cancelBtn' + job.jobId + '"' + cancel_disabled + ' title="Stop"><i class="fa fa-stop"></i></button>' +
+                                '<button type="button" class="btn btn-default resubmitBtn"  id="resubmitBtn' + job.jobId + '"' + isterminal + ' title="Resubmit"><i class="fa fa-refresh"></i></button>' +
+                                '<button type="button" class="btn btn-default markupBtn" id="markupBtn' + job.jobId + '" title="Media" ><i class="fa fa-picture-o" title="Media"></i></button>' +
+                                '<a type="button" href="jobs/output-object?id=' + job.jobId + '" class="btn btn-default jsonBtn" target="_blank"  ' + hasOutput + ' title="JSON Output">{ }</a></div>';
                         }
                     }
                 ],
@@ -288,16 +287,18 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                                 return '<span class="glyphicon glyphicon-file"></span>';
                             }
                         }
-                        return '<span class="glyphicon glyphicon-ban-circle" title="Not Available"></span>';
+                        return '<p class="text-muted">Source file remotely hosted or not available</p>';
                     }
                 },
                 {data: "sourceUri"},
                 {
                     data: "sourceDownload",
                     render: function (data, type, obj) {
-                        var disabled = "disabled=disabled";
-                        if (obj.sourceDownload) disabled = "";
-                        return '<a href="' + obj.sourceDownload + '" download="' + obj.sourceUri + '" class="btn btn-default" ' + disabled + ' role="button"><i class="fa fa-download" title="Download"></i></a>';
+                        if (obj.sourceDownload) {
+                            return '<a href="' + obj.sourceDownload + '" download="' + obj.sourceUri + '" class="btn btn-default" role="button" title="Download"><i class="fa fa-download"></i></a>';
+                        } else {
+                            return '<p class="text-muted">Source file remotely hosted or not available</p>';
+                        }
                     }
                 },
                 {
@@ -319,16 +320,27 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                                 return '<span class="glyphicon glyphicon-file"></span>';
                             }
                         }
-                        return '<span class="glyphicon glyphicon-ban-circle" title="Not Available"></span>';
+                        return '<p class="text-muted">No markup</p>';
                     }
                 },
-                {data: "markupUri"},
+                {
+                    data: "markupUri",
+                    render: function (data, type, obj) {
+                        if (obj.markupUri) {
+                            return obj.markupUri;
+                        } else {
+                            return '<p class="text-muted">No markup</p>';
+                        }
+                    }
+                },
                 {
                     data: "markupDownload",
                     render: function (data, type, obj) {
-                        var disabled = "disabled=disabled";
-                        if (obj.markupDownload) disabled = "";
-                        return '<a href="' + obj.markupDownload + '" download="' + obj.markupUri + '" class="btn btn-default" ' + disabled + ' role="button"><i class="fa fa-download" title="Download"></i></a>';
+                        if (obj.markupDownload) {
+                            return '<a href="' + obj.markupDownload + '" download="' + obj.markupUri + '" class="btn btn-default" role="button"><i class="fa fa-download" title="Download"></i></a>';
+                        } else {
+                            return '<p class="text-muted">No markup</p>';
+                        }
                     }
                 }
             ],

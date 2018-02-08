@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,28 +26,31 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.ResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
 
 /** Processes the responses which have been returned from a detection component. */
 @Component(DetectionResponseProcessor.REF)
@@ -103,7 +106,7 @@ public class DetectionResponseProcessor
 				log.warn("[{}] Failed to persist {} in the transient data store. The results of this job are unreliable.", logLabel, detectionProcessingError);
 			}
 
-			redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_ERRORS);
+			redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
 		}
 
 		if (detectionResponse.getAudioResponsesCount() == 0
@@ -126,7 +129,7 @@ public class DetectionResponseProcessor
 			processVideoResponses(jobId, detectionResponse, fps, confidenceThreshold);
 			processAudioResponses(jobId, detectionResponse, confidenceThreshold);
 			processImageResponses(jobId, detectionResponse, confidenceThreshold);
-
+			processGenericResponses(jobId, detectionResponse, confidenceThreshold);
 		}
 
 		return jsonUtils.serialize(new TrackMergingContext(jobId, detectionResponse.getStageIndex()));
@@ -167,6 +170,7 @@ public class DetectionResponseProcessor
 
 		return null;
 	}
+
 	private void processVideoResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, Float fps, double confidenceThreshold) {
 		// Iterate through the videoResponse
 		for (DetectionProtobuf.DetectionResponse.VideoResponse videoResponse : detectionResponse.getVideoResponsesList()) {
@@ -187,7 +191,6 @@ public class DetectionResponseProcessor
 						startOffsetTime,
 						stopOffsetTime,
 						videoResponse.getDetectionType());
-
 
 				// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
 				for (DetectionProtobuf.VideoTrack.FrameLocationMap locationMap : objectTrack.getFrameLocationsList()) {
@@ -213,7 +216,7 @@ public class DetectionResponseProcessor
 	}
 
 	private void processAudioResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, double confidenceThreshold) {
-		// Iterate through the videoResponse
+		// Iterate through the audioResponse
 		for (DetectionProtobuf.DetectionResponse.AudioResponse audioResponse : detectionResponse.getAudioResponsesList()) {
 			// Begin iterating through the tracks that were found by the detector.
 			for (DetectionProtobuf.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
@@ -228,7 +231,6 @@ public class DetectionResponseProcessor
 						objectTrack.getStartTime(),
 						objectTrack.getStopTime(),
 						audioResponse.getDetectionType());
-
 
 					if (objectTrack.getConfidence() >= confidenceThreshold) {
 						TreeMap<String, String> detectionProperties = new TreeMap<>();
@@ -258,38 +260,78 @@ public class DetectionResponseProcessor
 	}
 
 	private void processImageResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, double confidenceThreshold) {
-		// Iterate through the videoResponse
+		// Iterate through the imageResponse
 		for (DetectionProtobuf.DetectionResponse.ImageResponse imageResponse : detectionResponse.getImageResponsesList()) {
 			// Begin iterating through the tracks that were found by the detector.
 
+			// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
+			for (DetectionProtobuf.ImageLocation location : imageResponse.getImageLocationsList()) {
+				if (location.getConfidence() >= confidenceThreshold) {
+					// Create a new Track object.
+					Track track = new Track(
+							jobId,
+							detectionResponse.getMediaId(),
+							detectionResponse.getStageIndex(),
+							detectionResponse.getActionIndex(),
+							0,
+							1,
+							imageResponse.getDetectionType());
 
-
-				// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
-				for (DetectionProtobuf.ImageLocation location : imageResponse.getImageLocationsList()) {
-					if (location.getConfidence() >= confidenceThreshold) {
-						// Create a new Track object.
-						Track track = new Track(
-								jobId,
-								detectionResponse.getMediaId(),
-								detectionResponse.getStageIndex(),
-								detectionResponse.getActionIndex(),
-								0,
-								1,
-								imageResponse.getDetectionType());
-						track.getDetections().add(
-								generateTrack(location, 0, 0));
-						if (!track.getDetections().isEmpty()) {
-							track.setExemplar(findExemplar(track));
-							if(!redis.addTrack(track)) {
-								log.warn("Failed to add the track '{}'.", track);
-							}
+					track.getDetections().add(
+							generateTrack(location, 0, 0));
+					if (!track.getDetections().isEmpty()) {
+						track.setExemplar(findExemplar(track));
+						if(!redis.addTrack(track)) {
+							log.warn("Failed to add the track '{}'.", track);
 						}
 					}
 				}
-
-
-
 			}
+		}
+	}
+
+	private void processGenericResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, double confidenceThreshold) {
+		// Iterate through the genericResponse
+		for (DetectionProtobuf.DetectionResponse.GenericResponse genericResponse : detectionResponse.getGenericResponsesList()) {
+			// Begin iterating through the tracks that were found by the detector.
+			for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
+				// Create a new Track object.
+				Track track = new Track(
+						jobId,
+						detectionResponse.getMediaId(),
+						detectionResponse.getStageIndex(),
+						detectionResponse.getActionIndex(),
+						0,
+						0,
+						0,
+						0,
+						genericResponse.getDetectionType());
+
+				if (objectTrack.getConfidence() >= confidenceThreshold) {
+					TreeMap<String, String> detectionProperties = new TreeMap<>();
+					for (DetectionProtobuf.PropertyMap item : objectTrack.getDetectionPropertiesList()) {
+						detectionProperties.put(item.getKey(), item.getValue());
+					}
+					track.getDetections().add(
+							new Detection(
+									0,
+									1,
+									0,
+									0,
+									objectTrack.getConfidence(),
+									0,
+									0,
+									detectionProperties));
+				}
+
+				if (!track.getDetections().isEmpty()) {
+					track.setExemplar(findExemplar(track));
+					if(!redis.addTrack(track)) {
+						log.warn("Failed to add the track '{}'.", track);
+					}
+				}
+			}
+		}
 	}
 
 	private Detection findExemplar(Track track) {

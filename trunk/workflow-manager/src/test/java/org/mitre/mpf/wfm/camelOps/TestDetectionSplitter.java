@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -90,7 +90,7 @@ public class TestDetectionSplitter {
         final long testId = 12345;
         final String testExternalId = "externID";
         final TransientPipeline testPipe = new TransientPipeline("testPipe", "testDescr");
-        final int testStage = 1;
+        final int testStage = 0;
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
         TransientJob testJob = new TransientJob(testId, testExternalId, testPipe, testStage, testPriority, testOutputEnabled, false);
@@ -99,6 +99,7 @@ public class TestDetectionSplitter {
         List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
         testJob.setMedia(listMedia);
         TransientStage testTransientStage = new TransientStage("stageName", "stageDescr", ActionType.DETECTION);
+        testPipe.setStages(Collections.singletonList(testTransientStage));
 
         Map<String, String> mergeProp = new HashMap<>();
         mergeProp.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");

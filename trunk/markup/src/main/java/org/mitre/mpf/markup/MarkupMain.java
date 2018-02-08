@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,7 +28,6 @@ package org.mitre.mpf.markup;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.io.BufferedReader;
@@ -47,21 +46,26 @@ public class MarkupMain {
      */
     public static void main(String[] args) throws InterruptedException {
         LOG.info("Beginning markup initialization");
+
         if (args.length > 0) {
             ACTIVEMQHOST = args[0];
         } else if (System.getenv("ACTIVE_MQ_HOST") != null && !System.getenv("ACTIVE_MQ_HOST").isEmpty()) {
             ACTIVEMQHOST = System.getenv("ACTIVE_MQ_HOST");
         }
         LOG.trace("ACTIVE_MQ_HOST=" + ACTIVEMQHOST);
-        AbstractApplicationContext context = new ClassPathXmlApplicationContext("classpath:appConfig.xml");
-        context.registerShutdownHook();
-        System.out.println("Enter 'q' to quit:");
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        try {
-            while (reader.readLine().compareTo("q") != 0) ;
-        } catch (IOException e) {
-            LOG.error(e.getMessage(), e);
+
+        try (ClassPathXmlApplicationContext context
+                     = new ClassPathXmlApplicationContext("classpath:appConfig.xml")) {
+
+            context.registerShutdownHook();
+
+            System.out.println("Enter 'q' to quit:");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+            try {
+                while (reader.readLine().compareTo("q") != 0) ;
+            } catch (IOException e) {
+                LOG.error(e.getMessage(), e);
+            }
         }
-        System.exit(0);
     }
 }

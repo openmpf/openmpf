@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,13 +28,17 @@ package org.mitre.mpf.wfm.data;
 
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
-import org.mitre.mpf.wfm.enums.JobStatus;
-import org.mitre.mpf.wfm.util.Status;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
-import java.util.*;
+import java.time.DateTimeException;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
 
 @Monitored
 public interface Redis {
@@ -52,7 +56,7 @@ public interface Redis {
 	 * @param track The non-null track to add.
 	 * @return {@literal true} iff the track was added to Redis.
 	 */
-	boolean addTrack(Track track);
+	boolean addTrack(Track track) throws WfmProcessingException;
 
 	/**
 	 * Marks a batch job as cancelled/cancelling in the Redis data store.
@@ -83,12 +87,23 @@ public interface Redis {
 	 */
 	int getCurrentTaskIndexForJob(long jobId);
 
+    /**
+     * Get the job status type for the specified batch job
+     * @param jobId The OpenMPF-assigned ID of the batch job, must be unique.
+     * @return Method will return job status type for a batch job.
+     */
+    BatchJobStatusType getBatchJobStatus(long jobId);
+    List<BatchJobStatusType> getBatchJobStatuses(List<Long> jobIds);
+    List<String> getBatchJobStatusesAsStrings(List<Long> jobIds);
+
 	/**
-	 * Gets the status of a job.
-	 * @param jobId The MPF-assigned ID of the job.
-	 * @return The status of the job.
+	 * Get the job status for the specified streaming job
+	 * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+	 * @return Method will return job status for a streaming job.
 	 */
-	JobStatus getJobStatus(long jobId);
+	StreamingJobStatus getStreamingJobStatus(long jobId);
+	List<StreamingJobStatus> getStreamingJobStatuses(List<Long> jobIds);
+	List<String> getStreamingJobStatusesAsStrings(List<Long> jobIds);
 
 	/**
 	 * Gets the collection of detection processing errors associated with a (job, media, task, action) 4-ple.
@@ -203,54 +218,125 @@ public interface Redis {
 	void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks);
 
 	/**
-	 * Updates the status of a job to the specified status.
-	 * @param jobId The MPF-assigned ID of the job.
-	 * @param jobStatus The new status of the specified job.
+	 * Set the job status type of the specified batch job.
+	 * @param jobId The OpenMPF-assigned ID of the batch job, must be unique.
+	 * @param batchJobStatusType The new status type of the specified batch job.
+	 * @throws WfmProcessingException is thrown if this method is attempted to be used for a streaming job.
 	 */
-	void setJobStatus(long jobId, JobStatus jobStatus);
+	void setJobStatus(long jobId, BatchJobStatusType batchJobStatusType)throws WfmProcessingException;
+
+    /**
+     * Set the job status type of the specified streaming job. Use this version of the method when
+     * streaming job status doesn't include additional detail information.
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+     * @param streamingJobStatusType The new status type of the specified streaming job.
+     * @throws WfmProcessingException is thrown if this method is attempted to be used for a batch job.
+     */
+	void setJobStatus(long jobId, StreamingJobStatusType streamingJobStatusType) throws WfmProcessingException;
 
 	/**
-	 * The URL of the Callback to connect to when the batch job is completed.
-	 * @param jobId The MPF-assigned ID of the batch job to which this Callback URL will refer to.
-	 * @return The URL of the Callback.
+	 * Set the job status type of the specified streaming job.
+	 * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+	 * @param streamingJobStatus The new status of the specified streaming job.
+	 * @throws WfmProcessingException is thrown if this method is attempted to be used for a batch job.
+	 */
+	void setJobStatus(long jobId, StreamingJobStatus streamingJobStatus) throws WfmProcessingException;
+
+    /**
+     * Set the job status of the specified streaming job. Use this form of the method if job status needs
+     * to include additional details about the streaming job status.
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+     * @param streamingJobStatusType The new status type of the specified streaming job.
+     * @param streamingJobStatusDetail Detail information associated with the streaming job status.
+     * @throws WfmProcessingException is thrown if this method is attempted to be used for a batch job.
+     */
+	void setJobStatus(long jobId, StreamingJobStatusType streamingJobStatusType, String streamingJobStatusDetail) throws WfmProcessingException;
+
+    /**
+	 * The URL of the callback to connect to when the batch job is completed.
+	 * @param jobId The OpenMPF-assigned ID of the batch job to which this callback URL will refer to.
+	 * @return The URL of the callback.
 	 * @throws WfmProcessingException
 	 */
+	// TODO change this to method name to URI.
 	String getCallbackURL(final long jobId) throws WfmProcessingException;
 
 	/**
-	 * The URL of the SummaryReportCallback to connect to when the streaming job is completed.
-	 * @param jobId The MPF-assigned ID of the streaming job to which this SummaryReportCallback URI will refer to.
+	 * The URI of the SummaryReportCallback to connect to when the streaming job is completed.
+	 * @param jobId The OpenMPF-assigned ID of the streaming job to which this SummaryReportCallback URI will refer to.
 	 * @return The URI of the SummaryReportCallback.
 	 * @throws WfmProcessingException
 	 */
 	String getSummaryReportCallbackURI(final long jobId) throws WfmProcessingException;
 
 	/**
-	 * The METHOD of the Callback to connect to when the job is completed. POST or GET.
-	 * @param jobId The MPF-assigned ID of the job to which this Callback Method will refer to.
-	 * @return The METHOD of the Callback to connect to when the job is completed. POST or GET.
+	 * The URI of the HealthReportCallback to connect to when the health report for a streaming job needs to be sent.
+	 * @param jobId The OpenMPF-assigned ID of the streaming job to which this HealthReportCallback URI will refer to.
+	 * @return The URI of the HealthReportCallback.
 	 * @throws WfmProcessingException
 	 */
+	String getHealthReportCallbackURI(final long jobId) throws WfmProcessingException;
+
+    /**
+     * Get the map of unique health report callback URIs associated with the specified jobs.
+     * @param jobIds unique job ids of streaming jobs
+     * @return Map of healthReportCallbackUri (keys), with each key mapping to the List of jobIds that specified that healthReportCallbackUri
+     */
+    Map<String, List<Long>> getHealthReportCallbackURIAsMap(List<Long> jobIds);
+
+    /**
+     * The method of the callback to connect to when the job is completed. POST or GET.
+     * @param jobId The OpenMPF-assigned ID of the job to which this callback method will refer to.
+     * @return The method of the callback to connect to when the job is completed. POST or GET.
+     * @throws WfmProcessingException
+     */
 	String getCallbackMethod(final long jobId) throws WfmProcessingException;
 
 	/**
 	 * Returns the external id assigned to a job with JobId.
-	 * @param jobId The MPF-assigned ID of the job.
-	 * @return returns a job external_id or null if no job.
+	 * @param jobId The OpenMPF-assigned ID of the job.
+	 * @return returns the external id specified for that job or null if an external id was not specified for the job.
 	 * @throws WfmProcessingException
      */
 	String getExternalId(final long jobId) throws WfmProcessingException;
+    List<String> getExternalIds(List<Long> jobIds) throws WfmProcessingException;
 
 	/** Will return true if the specified jobId is a batch job stored in the transient data store
-	 * @param jobId The MPF-assigned ID of the job
+	 * @param jobId The OpenMPF-assigned ID of the job
 	 * @return true if the specified jobId is a batch job stored in the transient data store, false otherwise
 	 */
 	boolean isJobTypeBatch(final long jobId);
 
 	/** Will return true if the specified jobId is a streaming job stored in the transient data store
-	 * @param jobId The MPF-assigned ID of the job
+	 * @param jobId The OpenMPF-assigned ID of the job
 	 * @return true if the specified jobId is a streaming job stored in the transient data store, false otherwise
 	 */
-	boolean isJobTypeStreaming(final long jobId);
+    boolean isJobTypeStreaming(final long jobId);
 
+    void setStreamingActivity(long jobId, long activityFrameId, LocalDateTime activityTimestamp) throws WfmProcessingException;
+
+    String getActivityFrameIdAsString(long jobId) throws WfmProcessingException;
+    List<String> getActivityFrameIdsAsStrings(List<Long> jobIds) throws WfmProcessingException;
+
+    LocalDateTime getActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
+    String getActivityTimestampAsString(long jobId) throws WfmProcessingException;
+
+    List<LocalDateTime> getActivityTimestamps(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
+	List<String> getActivityTimestampsAsStrings(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
+
+	List<Long> getCurrentStreamingJobs(List<Long> jobIds, boolean isActive );
+
+	/**
+	 * Set the doCleanup flag of the specified streaming job
+	 * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+	 * @param doCleanup If true, delete the streaming job files from disk as part of cancelling the streaming job.
+	 */
+	void setDoCleanup(long jobId, boolean doCleanup);
+
+    /**
+     * Get the doCleanup flag for the specified streaming job
+     * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
+     * @return true if the flag is set and cleanup should be performed; false otherwise
+     */
+    boolean getDoCleanup(long jobId);
 }

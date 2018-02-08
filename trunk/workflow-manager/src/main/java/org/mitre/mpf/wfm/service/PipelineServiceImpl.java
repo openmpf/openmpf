@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -391,18 +391,21 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public boolean pipelineSupportsBatch(String pipelineName) {
-    	return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::getSupportsBatchProcessing);
+    	return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::supportsBatchProcessing);
     }
 
 
     @Override
     public boolean pipelineSupportsStreaming(String pipelineName) {
-        return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::getSupportsStreamProcessing);
+        return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::supportsStreamProcessing);
     }
 
 
     private boolean pipelineSupportsProcessingType(String pipelineName, Predicate<AlgorithmDefinition> supportsPred) {
         PipelineDefinition pipeline = getPipeline(pipelineName);
+        if (pipeline == null) {
+	        throw new InvalidPipelineObjectWfmProcessingException("Missing pipeline: \"" + pipelineName + "\".");
+        }
         return pipeline.getTaskRefs().stream()
                 .map(TaskDefinitionRef::getName)
 		        .allMatch(tName -> taskSupportsProcessingType(tName, supportsPred));
@@ -411,12 +414,12 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public boolean taskSupportsBatch(String taskName) {
-    	return taskSupportsProcessingType(taskName, AlgorithmDefinition::getSupportsBatchProcessing);
+    	return taskSupportsProcessingType(taskName, AlgorithmDefinition::supportsBatchProcessing);
     }
 
     @Override
     public boolean taskSupportsStreaming(String taskName) {
-        return taskSupportsProcessingType(taskName, AlgorithmDefinition::getSupportsStreamProcessing);
+        return taskSupportsProcessingType(taskName, AlgorithmDefinition::supportsStreamProcessing);
 
     }
 
@@ -429,12 +432,12 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public boolean actionSupportsBatch(String actionName) {
-        return actionSupportsProcessingType(actionName, AlgorithmDefinition::getSupportsBatchProcessing);
+        return actionSupportsProcessingType(actionName, AlgorithmDefinition::supportsBatchProcessing);
     }
 
     @Override
     public boolean actionSupportsStreaming(String actionName) {
-        return actionSupportsProcessingType(actionName, AlgorithmDefinition::getSupportsStreamProcessing);
+        return actionSupportsProcessingType(actionName, AlgorithmDefinition::supportsStreamProcessing);
     }
 
 

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,21 +26,36 @@
 
 package org.mitre.mpf.wfm.camel.operations.jobcreation;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import org.apache.camel.Exchange;
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.JsonAction;
+import org.mitre.mpf.interop.JsonJobRequest;
+import org.mitre.mpf.interop.JsonMediaInputObject;
+import org.mitre.mpf.interop.JsonPipeline;
+import org.mitre.mpf.interop.JsonStage;
+import org.mitre.mpf.mvc.controller.AtmosphereController;
+import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
-import org.mitre.mpf.wfm.data.*;
+import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.JobStatus;
-import org.mitre.mpf.wfm.businessrules.JobRequestBo;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
 import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
@@ -48,8 +63,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
 
 /**
  * The first step in the Workflow Manager is to translate a JSON job request into an internal
@@ -162,31 +175,41 @@ public class JobCreationProcessor extends WfmProcessor {
 			transientJob.getMedia().addAll(buildMedia(jobRequest.getMedia()));
 			redis.persistJob(transientJob);
 
-			if(transientPipeline == null) {
-				redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_ERRORS);
+			if (transientPipeline == null) {
+				redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
 				throw new WfmProcessingException(INVALID_PIPELINE_MESSAGE);
 			}
 
-			// Everything has been good so far. Update the job status.
-			jobRequestEntity.setStatus(JobStatus.IN_PROGRESS);
-			redis.setJobStatus(jobId, JobStatus.IN_PROGRESS);
+			BatchJobStatusType jobStatus;
+			if (transientJob.getMedia().stream().anyMatch(m -> m.isFailed())) {
+				jobStatus = BatchJobStatusType.IN_PROGRESS_ERRORS;
+				// allow the job to run since some of the media may be good
+			} else {
+				jobStatus = BatchJobStatusType.IN_PROGRESS;
+			}
+
+			jobRequestEntity.setStatus(jobStatus);
+			redis.setJobStatus(jobId, jobStatus);
+			AtmosphereController.broadcast(new JobStatusMessage(jobId, 0, jobStatus, null));
+
 			jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 
 			exchange.getOut().setBody(jsonUtils.serialize(transientJob));
 			exchange.getOut().getHeaders().put(MpfHeaders.JOB_ID, jobRequestEntity.getId());
+
 		} catch(WfmProcessingException exception) {
 			try {
 				// Make an effort to mark the job as failed.
 				if(INVALID_PIPELINE_MESSAGE.equals(exception.getMessage())) {
-					log.warn("Job #{} did not specify a valid pipeline.", jobId);
+					log.warn("Batch Job #{} did not specify a valid pipeline.", jobId);
 				} else {
-					log.warn("Failed to parse the input object for Job #{} due to an exception.", jobRequestEntity.getId(), exception);
+					log.warn("Failed to parse the input object for Batch Job #{} due to an exception.", jobRequestEntity.getId(), exception);
 				}
-				jobRequestEntity.setStatus(JobStatus.JOB_CREATION_ERROR);
+				jobRequestEntity.setStatus(BatchJobStatusType.JOB_CREATION_ERROR);
 				jobRequestEntity.setTimeCompleted(new Date());
 				jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 			} catch(Exception persistException) {
-				log.warn("Failed to mark Job #{} as failed due to an exception. It will remain it its current state until manually changed.", jobRequestEntity, persistException);
+				log.warn("Failed to mark Batch Job #{} as failed due to an exception. It will remain it its current state until manually changed.", jobRequestEntity, persistException);
 			}
 
 			// Set a flag so that the routing logic knows that the job has completed.
@@ -205,3 +228,6 @@ public class JobCreationProcessor extends WfmProcessor {
 		return transientMedia;
 	}
 }
+
+
+

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -34,8 +34,8 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.service.component.StartupComponentRegistrationService;
 import org.mitre.mpf.wfm.service.ServerMediaService;
+import org.mitre.mpf.wfm.service.component.StartupComponentRegistrationService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +62,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class WfmStartup implements ApplicationListener<ApplicationEvent> {
@@ -89,8 +91,11 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 
 	// used to prevent the initialization behaviors from being executed more than once
 	private static boolean applicationRefreshed = false;
+	public boolean isApplicationRefreshed() { return  applicationRefreshed; }
 
-	private ExecutorService executorService = null;
+	private ExecutorService fileIndexExecutorService = null;
+
+	private ScheduledExecutorService healthReportExecutorService = null;
 
 	@Override
 	public void onApplicationEvent(ApplicationEvent event) {
@@ -105,11 +110,11 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 			if (!applicationRefreshed) {
 				log.info("onApplicationEvent: " + appContext.getDisplayName() + " " + appContext.getId()); // DEBUG
 
-				log.info("Marking any remaining running batch jobs as CANCELLED.");
+				log.info("Marking any remaining running batch jobs as CANCELLED_BY_SHUTDOWN.");
 				jobRequestDao.cancelJobsInNonTerminalState();
 
-        log.info("Marking any remaining running streaming jobs as CANCELLED.");
-        streamingJobRequestDao.cancelJobsInNonTerminalState();
+        		log.info("Marking any remaining running streaming jobs as CANCELLED_BY_SHUTDOWN.");
+        		streamingJobRequestDao.cancelJobsInNonTerminalState();
 
 				if (propertiesUtil.isAmqBrokerEnabled()) {
 					try {
@@ -123,10 +128,12 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 				purgeServerStartupSystemMessages();
 				startFileIndexing(appContext);
 				startupRegistrationService.registerUnregisteredComponents();
+                startHealthReporting();
 				applicationRefreshed = true;
 			}
 		} else if (event instanceof ContextClosedEvent) {
 			stopFileIndexing();
+			stopHealthReporting();
 		}
 	}
 
@@ -134,17 +141,52 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 		if (appContext instanceof WebApplicationContext) {
 			WebApplicationContext webContext = (WebApplicationContext) appContext;
 			ServletContext servletContext = webContext.getServletContext();
-			executorService = Executors.newSingleThreadExecutor();
-			executorService.execute(() -> serverMediaService.getFiles(propertiesUtil.getServerMediaTreeRoot(), servletContext, true, true));
-			executorService.shutdown(); // will run all tasks before shutdown
+			fileIndexExecutorService = Executors.newSingleThreadExecutor();
+			fileIndexExecutorService.execute(() -> serverMediaService.getFiles(propertiesUtil.getServerMediaTreeRoot(), servletContext, true, true));
+			fileIndexExecutorService.shutdown(); // will run all tasks before shutdown
 		}
 	}
 
 	private void stopFileIndexing() {
-		if (executorService != null) {
-			executorService.shutdownNow();
+		if (fileIndexExecutorService != null) {
+			fileIndexExecutorService.shutdownNow();
 		}
 	}
+
+	// startHealthReporting uses a scheduled executor.
+	private void startHealthReporting() {
+        healthReportExecutorService = Executors.newSingleThreadScheduledExecutor();
+        Runnable task = () -> {
+            try {
+                boolean isActive = true; // only send periodic health reports for streaming jobs that are current and active.
+                mpfService.sendStreamingJobHealthReports(isActive);
+            } catch (Exception e) {
+                log.error("startHealthReporting: Exception occurred while sending scheduled health report",e);
+            }
+        };
+
+        healthReportExecutorService.scheduleWithFixedDelay(task, propertiesUtil.getStreamingJobHealthReportCallbackRate(),
+            propertiesUtil.getStreamingJobHealthReportCallbackRate(), TimeUnit.MILLISECONDS);
+
+    }
+
+    private void stopHealthReporting() {
+	    if ( healthReportExecutorService != null ) {
+            try {
+                log.info("stopHealthReporting: attempt to shutdown healthReportExecutorService");
+                healthReportExecutorService.shutdown();
+                healthReportExecutorService.awaitTermination(5, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                log.error("stopHealthReporting: healthReportExecutorService task interrupted",e);
+            } finally {
+                if (!healthReportExecutorService.isTerminated()) {
+                    log.info("stopHealthReporting: cancel non-finished healthReportExecutorService tasks");
+                }
+                healthReportExecutorService.shutdownNow();
+                log.info("stopHealthReporting: healthReportExecutorService shutdown finished");
+            }
+        }
+    }
 
 	/** purge system messages that are set to be removed on server startup */
 	private void purgeServerStartupSystemMessages() {
@@ -160,7 +202,7 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	private void purgeQueues() throws Exception {
 		Map<String, Object> map = new HashMap<>();
 		map.put(JMXConnector.CREDENTIALS, new String[]{propertiesUtil.getAmqBrokerAdminUsername(), propertiesUtil.getAmqBrokerAdminPassword()});
-		JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(propertiesUtil.getAmqBrokerUri()));
+		JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(propertiesUtil.getAmqBrokerJmxUri()));
 		connector.connect();
 		MBeanServerConnection mBeanServerConnection = connector.getMBeanServerConnection();
 		ObjectName activeMQ = new ObjectName("org.apache.activemq:brokerName=localhost,type=Broker");

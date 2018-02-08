@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -32,7 +32,6 @@ import org.mitre.mpf.wfm.pipeline.xml.ValueType;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -44,13 +43,9 @@ public class TestJsonDescriptor {
 
         assertEquals("CplusplusHelloWorld", descriptor.componentName);
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
-        assertEquals("1.0.0", descriptor.componentVersion);
-        assertEquals(Collections.singletonList(
-                "${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so"),
-                descriptor.launchArgs);
-
-        assertTrue(descriptor.algorithm.supportsBatchProcessing);
-        assertFalse(descriptor.algorithm.supportsStreamProcessing);
+        assertEquals("2.0.0", descriptor.componentVersion);
+        assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so", descriptor.batchLibrary);
+        assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfStreamingCplusplusHelloWorld.so", descriptor.streamLibrary);
 
         assertEquals(3, descriptor.algorithm.providesCollection.properties.size());
 
@@ -70,13 +65,9 @@ public class TestJsonDescriptor {
 
         assertEquals("CplusplusHelloCustomPipelinesComponent", descriptor.componentName);
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
-        assertEquals("1.0.0", descriptor.componentVersion);
-        assertEquals(Collections.singletonList(
-                "${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so"),
-                descriptor.launchArgs);
-
-        assertTrue(descriptor.algorithm.supportsBatchProcessing);
-        assertFalse(descriptor.algorithm.supportsStreamProcessing);
+        assertEquals("2.0.0", descriptor.componentVersion);
+        assertEquals("${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so", descriptor.batchLibrary);
+        assertNull(descriptor.streamLibrary);
 
         assertEquals(3, descriptor.algorithm.providesCollection.properties.size());
 
@@ -125,18 +116,15 @@ public class TestJsonDescriptor {
         assertNull(descriptor.pipelines);
         assertEquals("JavaTestDetection", descriptor.componentName);
         assertEquals(ComponentLanguage.JAVA, descriptor.sourceLanguage);
-        assertEquals("1.0.0", descriptor.componentVersion);
-        assertEquals("1.0.0", descriptor.middlewareVersion);
-        assertEquals("mpf-java-test-detection-component-1.0.0.jar", descriptor.pathName);
-        assertTrue(descriptor.launchArgs.isEmpty());
+        assertEquals("2.0.0", descriptor.componentVersion);
+        assertEquals("2.0.0", descriptor.middlewareVersion);
+        assertEquals("mpf-java-test-detection-component-2.0.0.jar", descriptor.batchLibrary);
+        assertNull(descriptor.streamLibrary);
         assertEquals(1, descriptor.environmentVariables.size());
         JsonComponentDescriptor.EnvironmentVariable envVar = descriptor.environmentVariables.get(0);
         assertTrue(envVar.name.equals("DUMMY_VAR")
                 && envVar.value.equals("nothing")
                 && envVar.sep == null);
-
-        assertTrue(descriptor.algorithm.supportsBatchProcessing);
-        assertFalse(descriptor.algorithm.supportsStreamProcessing);
 
         assertEquals(3, descriptor.algorithm.providesCollection.properties.size());
 
@@ -153,6 +141,7 @@ public class TestJsonDescriptor {
 
     private JsonComponentDescriptor loadDescriptor(String fileName) throws IOException {
         URL resource = getClass().getClassLoader().getResource(fileName);
-        return new ObjectMapper().readValue(resource, JsonComponentDescriptor.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue(resource, JsonComponentDescriptor.class);
     }
 }

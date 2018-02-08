@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -36,8 +36,7 @@ import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.*;
 
 public class StatusViewContext {
 
@@ -52,24 +51,32 @@ public class StatusViewContext {
     private final List<ManagerGrouping> _managers;
 
 
-    public StatusViewContext(
-                Address localAddress,
-                Collection<Address> allAddresses,
-                Collection<NodeDescriptor> nodes,
-                Collection<ServiceDescriptor> services) {
 
-        _nodeAddresses = allAddresses.stream()
+    public StatusViewContext(ChildNodeStateManager nodeStateManager, int httpPort) {
+        Address localAddress = nodeStateManager.getMessageChannel().getAddress();
+        _nodeAddresses = nodeStateManager
+                .getMessageChannel()
+                .getChannel()
+                .getView()
+                .getMembers()
+                .stream()
                 .map(addr -> new NodeAddressInfo(addr, localAddress))
                 .collect(toList());
 
-        Map<String, List<ServiceDescriptor>> groupedServices = services.stream()
+        Map<String, List<ServiceDescriptor>> hostServices = nodeStateManager
+                .getServiceTable()
+                .values()
+                .stream()
                 .collect(groupingBy(ServiceDescriptor::getHost));
 
-        _managers = nodes.stream()
-                .map(nd -> new ManagerGrouping(nd, groupedServices.get(nd.getHostname())))
+        _managers = nodeStateManager
+                .getNodeTable()
+                .values()
+                .stream()
+                .map(nd -> new ManagerGrouping(nd, hostServices.get(nd.getHostname()), httpPort))
                 .collect(toList());
-
     }
+
 
 
     public Collection<ManagerGrouping> getManagers() {
@@ -91,18 +98,19 @@ public class StatusViewContext {
         private final List<ServiceDescriptor> _serviceDescriptors;
         private final URI _nodeUri;
 
-        ManagerGrouping(NodeDescriptor manager, Collection<ServiceDescriptor> serviceDescriptors) {
+        ManagerGrouping(NodeDescriptor manager, Collection<ServiceDescriptor> serviceDescriptors, int httpPort) {
             _manager = manager;
             _serviceDescriptors = serviceDescriptors == null
                     ? Collections.emptyList()
                     : new ArrayList<>(serviceDescriptors);
-            _nodeUri = createUri(manager);
+            _nodeUri = createUri(manager, httpPort);
         }
 
 
-        private static URI createUri(NodeDescriptor manager) {
+        private static URI createUri(NodeDescriptor manager, int httpPort) {
             try {
-                return new URI("http", null, manager.getHostname(), NodeManager.getHttpPort(), null, null, null);
+                return new URI("http", null, manager.getHostname(), httpPort,
+                               null, null, null);
             }
             catch (URISyntaxException e) {
                 LOG.warn(String.format("Failed to create URL from the hostname %s", manager.getHostname()), e);
@@ -122,7 +130,6 @@ public class StatusViewContext {
             return _nodeUri;
         }
     }
-
 
 
 

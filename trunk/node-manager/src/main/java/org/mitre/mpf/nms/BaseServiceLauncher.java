@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -25,8 +25,7 @@
  ******************************************************************************/
 package org.mitre.mpf.nms;
 
-import org.apache.commons.lang3.text.StrLookup;
-import org.apache.commons.lang3.text.StrSubstitutor;
+import org.mitre.mpf.nms.util.EnvironmentVariableExpander;
 import org.mitre.mpf.nms.xml.EnvironmentVariable;
 import org.mitre.mpf.nms.xml.Service;
 import org.slf4j.Logger;
@@ -63,8 +62,7 @@ public abstract class BaseServiceLauncher implements Runnable {
     // protected String        nodeName = null;    // arbitrary name of node, informational only
     // protected String        programPath = null; // path to child application to be run
     //private String mCommand = null;        // command line args to pass to child app
-    private StrSubstitutor mStrSub;         // used for command path substitutions
-    
+
     // child process
     protected ProcessBuilder pb;
     protected Process child;
@@ -126,11 +124,6 @@ public abstract class BaseServiceLauncher implements Runnable {
     	restarts = desc.getRestarts();
     	
         this.mServiceDesc = desc;
-        this.mStrSub = new StrSubstitutor(new StrLookup<String>() {
-            public String lookup(String key) {
-                return System.getenv().getOrDefault(key, "");
-            }
-        });
 
         if (LOG.isDebugEnabled()) {
             // redirects to LOG debug
@@ -515,7 +508,7 @@ public abstract class BaseServiceLauncher implements Runnable {
     }
 
     public String substituteVariables(String str) {
-        return mStrSub.replace(str);
+        return EnvironmentVariableExpander.expand(str);
     }
     
     /**
@@ -523,7 +516,7 @@ public abstract class BaseServiceLauncher implements Runnable {
      * @return 
      */
     public String getCommandPath() {
-        return mStrSub.replace(this.mServiceDesc.getService().getCmdPath());
+        return EnvironmentVariableExpander.expand(mServiceDesc.getService().getCmdPath());
     }
     
     /**

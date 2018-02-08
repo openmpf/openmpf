@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -38,18 +38,14 @@ import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.*;
 
 public class TestDescriptorFactory {
 
-
-
-
-    private TestDescriptorFactory() {
-
-    }
+    private TestDescriptorFactory() {}
 
     public static JsonComponentDescriptor get() {
         JsonComponentDescriptor descriptor = new JsonComponentDescriptor();
-        descriptor.launchArgs = Arrays.asList("launch-arg1", "launch-arg2");
         descriptor.sourceLanguage = ComponentLanguage.CPP;
         descriptor.componentName = COMPONENT_NAME;
+        descriptor.batchLibrary = "/path/to/batch/lib.so";
+        descriptor.streamLibrary = "/path/to/stream/lib.so";;
 
         JsonComponentDescriptor.EnvironmentVariable envVar1 = new JsonComponentDescriptor.EnvironmentVariable();
         envVar1.name = "env var1 name";
@@ -66,7 +62,6 @@ public class TestDescriptorFactory {
         descriptor.algorithm.name = "Test Algorithm Name";
         descriptor.algorithm.actionType = ActionType.DETECTION;
         descriptor.algorithm.description = "Test Algorithm Description";
-        descriptor.algorithm.supportsBatchProcessing = true;
 
         descriptor.algorithm.requiresCollection = new JsonComponentDescriptor.AlgoRequires();
         descriptor.algorithm.requiresCollection.states = Arrays.asList("r-state1", "r-state2");

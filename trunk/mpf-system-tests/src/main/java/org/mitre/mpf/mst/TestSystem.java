@@ -6,11 +6,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -60,6 +60,7 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -74,52 +75,14 @@ import java.util.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ActiveProfiles("jenkins")
+@DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
 public abstract class TestSystem {
 
-	protected static final Logger log = LoggerFactory.getLogger(TestSystem.class);
+	protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
+
+	protected static final ObjectMapper objectMapper = new ObjectMapper();
+
 	protected static int testCtr = 0;
-	protected static Set<Long> completedJobs = new HashSet<>();
-	protected static Object lock = new Object();
-
-
-    @Autowired
-    @Qualifier(IoUtils.REF)
-    protected IoUtils ioUtils;
-
-    @Autowired
-    @Qualifier(PropertiesUtil.REF)
-    protected PropertiesUtil propertiesUtil;
-
-
-	@Autowired
-	@Qualifier(JobRequestBoImpl.REF)
-	protected JobRequestBo jobRequestBo;
-
-	@Autowired
-	@Qualifier(StreamingJobRequestBoImpl.REF)
-	protected StreamingJobRequestBo streamingJobRequestBo;
-
-    @Autowired
-    private MpfService mpfService;
-
-    @Autowired
-    protected PipelineService pipelineService;
-
-	@Autowired
-	@Qualifier(JobCompleteProcessorImpl.REF)
-	private JobCompleteProcessor jobCompleteProcessor;
-
-	@Rule
-	public TestName testName = new TestName();
-
-	@Rule
-	public MpfErrorCollector errorCollector = new MpfErrorCollector();
-
-	protected OutputChecker outputChecker = new OutputChecker(errorCollector);
-
-	protected static boolean HAS_INITIALIZED = false;
-	protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
 	// is this running on Jenkins and/or is output checking desired?
 	protected static boolean jenkins = false;
@@ -130,10 +93,53 @@ public abstract class TestSystem {
 		}
 	}
 
+	private static final Logger log = LoggerFactory.getLogger(TestSystem.class);
+    
+
+	@Autowired
+    @Qualifier(IoUtils.REF)
+    protected IoUtils ioUtils;
+
+    @Autowired
+    @Qualifier(PropertiesUtil.REF)
+    protected PropertiesUtil propertiesUtil;
+
+	@Autowired
+	@Qualifier(JobRequestBoImpl.REF)
+	protected JobRequestBo jobRequestBo;
+
+	@Autowired
+	@Qualifier(StreamingJobRequestBoImpl.REF)
+	protected StreamingJobRequestBo streamingJobRequestBo;
+
+    @Autowired
+	protected MpfService mpfService;
+
+    @Autowired
+    protected PipelineService pipelineService;
+
+	@Autowired
+	@Qualifier(JobCompleteProcessorImpl.REF)
+	private JobCompleteProcessor jobCompleteProcessor;
+
+
+	@Rule
+	public TestName testName = new TestName();
+
+	@Rule
+	public MpfErrorCollector errorCollector = new MpfErrorCollector();
+
+
+	private OutputChecker outputChecker = new OutputChecker(errorCollector);
+	private Set<Long> completedJobs = new HashSet<>();
+	private Object lock = new Object();
+	private boolean hasInitialized = false;
+
+
 	@PostConstruct
 	private void init() throws Exception {
 		synchronized (lock) {
-			if (!HAS_INITIALIZED) {
+			if (!hasInitialized) {
 				completedJobs = new HashSet<Long>();
 				jobCompleteProcessor.subscribe(new NotificationConsumer<JobCompleteNotification>() {
 					@Override
@@ -148,7 +154,7 @@ public abstract class TestSystem {
 				});
 
 				log.info("Starting the tests from _setupContext");
-				HAS_INITIALIZED = true;
+				hasInitialized = true;
 			}
 		}
 	}
@@ -195,7 +201,7 @@ public abstract class TestSystem {
     public void checkOutput(URI actualOutputPath, int numInputMedia) throws IOException {
         log.debug("Deserializing actual output {}", actualOutputPath);
 
-        JsonOutputObject actualOutput = OBJECT_MAPPER.readValue(actualOutputPath.toURL(), JsonOutputObject.class);
+        JsonOutputObject actualOutput = objectMapper.readValue(actualOutputPath.toURL(), JsonOutputObject.class);
 	    Assert.assertTrue(String.format("Actual output size=%d doesn't match number of input media=%d",
 			    actualOutput.getMedia().size(), numInputMedia), actualOutput.getMedia().size() == numInputMedia);
     }
@@ -229,12 +235,12 @@ public abstract class TestSystem {
 	}
 
 	protected long runPipelineOnStream(String pipelineName, JsonStreamingInputObject stream, Map<String, String> jobProperties, boolean buildOutput, int priority,
-									   long stallAlertDetectionThreshold, long stallAlertRate, long stallTimeout) {
+									   long stallTimeout) throws Exception {
 		JsonStreamingJobRequest jsonStreamingJobRequest = streamingJobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, stream,
 				Collections.emptyMap(), jobProperties,
 				buildOutput, priority,
-				stallAlertDetectionThreshold, stallAlertRate, stallTimeout,
-				null,null,null,null);
+				stallTimeout,
+				null,null);
 		long jobRequestId = mpfService.submitJob(jsonStreamingJobRequest);
 		Assert.assertTrue(waitFor(jobRequestId));
 		return jobRequestId;
@@ -271,7 +277,7 @@ public abstract class TestSystem {
 			URL expectedOutputPath = getClass().getClassLoader().getResource(expectedOutputJsonPath);
 			log.info("Deserializing expected output {} and actual output for job {}", expectedOutputPath, jobId);
 
-			JsonOutputObject expectedOutputJson = OBJECT_MAPPER.readValue(expectedOutputPath, JsonOutputObject.class);
+			JsonOutputObject expectedOutputJson = objectMapper.readValue(expectedOutputPath, JsonOutputObject.class);
 			JsonOutputObject actualOutputJson = getJobOutputObject(jobId);
 
 			outputChecker.compareJsonOutputObjects(expectedOutputJson, actualOutputJson, pipelineName);
@@ -283,7 +289,7 @@ public abstract class TestSystem {
 	protected JsonOutputObject getJobOutputObject(long jobId) {
     	try {
 		    File outputObjectFile = propertiesUtil.createDetectionOutputObjectFile(jobId);
-		    return OBJECT_MAPPER.readValue(outputObjectFile, JsonOutputObject.class);
+		    return objectMapper.readValue(outputObjectFile, JsonOutputObject.class);
 	    }
 	    catch (IOException e) {
     		throw new UncheckedIOException(e);

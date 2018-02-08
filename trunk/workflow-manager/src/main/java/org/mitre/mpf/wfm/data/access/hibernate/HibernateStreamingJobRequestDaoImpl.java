@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,7 +28,8 @@ package org.mitre.mpf.wfm.data.access.hibernate;
 
 import org.hibernate.Query;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
@@ -46,12 +47,13 @@ public class HibernateStreamingJobRequestDaoImpl extends AbstractHibernateDao<St
 	@Override
 	public void cancelJobsInNonTerminalState() {
 		Query query = getCurrentSession().
-				createQuery("UPDATE StreamingJobRequest set status = :newStatus where status in (:nonTerminalStatuses)");
-		query.setParameter("newStatus", JobStatus.CANCELLED_BY_SHUTDOWN);
-		query.setParameterList("nonTerminalStatuses", JobStatus.getNonTerminalStatuses());
+				createQuery("UPDATE StreamingJobRequest set status = :status, status_detail = :statusDetail where status in (:nonTerminalStatuses)");
+		query.setParameter("status", StreamingJobStatusType.CANCELLED_BY_SHUTDOWN);
+		query.setParameter("statusDetail", "Job cancelled due to Workflow Manager shutdown.");
+		query.setParameterList("nonTerminalStatuses", StreamingJobStatus.getNonTerminalStatuses());
 		int updatedRows = query.executeUpdate();
 		if ( updatedRows >= 0 ) {
-			log.warn("{} streaming jobs were in a non-terminal state and have been marked as {}", updatedRows, JobStatus.CANCELLED_BY_SHUTDOWN);
+			log.warn("{} streaming jobs were in a non-terminal state and have been marked as {}", updatedRows, StreamingJobStatusType.CANCELLED_BY_SHUTDOWN);
 		}
 	}
 }

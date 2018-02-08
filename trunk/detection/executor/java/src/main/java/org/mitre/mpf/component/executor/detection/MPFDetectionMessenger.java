@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -33,16 +33,12 @@ import java.util.ArrayList;
 
 import javax.jms.*;
 
-import org.mitre.mpf.component.api.MPFAudioJob;
-import org.mitre.mpf.component.api.MPFImageJob;
-import org.mitre.mpf.component.api.MPFVideoJob;
+import org.mitre.mpf.component.api.detection.MPFAudioJob;
+import org.mitre.mpf.component.api.detection.MPFGenericJob;
+import org.mitre.mpf.component.api.detection.MPFImageJob;
+import org.mitre.mpf.component.api.detection.MPFVideoJob;
 import org.mitre.mpf.component.api.detection.*;
-import org.mitre.mpf.component.api.exceptions.MPFComponentDetectionError;
-import org.mitre.mpf.component.api.messaging.MPFMessageMetadata;
-import org.mitre.mpf.component.api.messaging.ProtoUtils;
-import org.mitre.mpf.component.api.messaging.detection.MPFDetectionAudioRequest;
-import org.mitre.mpf.component.api.messaging.detection.MPFDetectionImageRequest;
-import org.mitre.mpf.component.api.messaging.detection.MPFDetectionVideoRequest;
+import org.mitre.mpf.component.api.detection.MPFComponentDetectionError;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,7 +135,20 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
                         } catch (MPFComponentDetectionError e) {
                             responseBytes = detectionBuffer.createVideoResponseMessage(msgMetadata, detectionType, tracks, e.getDetectionError());
                         }
-                    }
+                    } else if (MPFDataType.UNKNOWN == msgMetadata.getDataType()) {
+						MPFDetectionGenericRequest genericRequest = detectionBuffer.getGenericRequest();
+						try {
+							List<MPFGenericTrack> tracks = new ArrayList<>();
+							tracks = detector.getDetections(new MPFGenericJob(msgMetadata.getJobName(),
+									msgMetadata.getDataUri(),
+									msgMetadata.getAlgorithmProperties(),
+									msgMetadata.getMediaProperties(),
+									genericRequest.getFeedForwardTrack()));
+							responseBytes = detectionBuffer.createGenericResponseMessage(msgMetadata, detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS);
+						} catch (MPFComponentDetectionError e) {
+							responseBytes = detectionBuffer.createGenericResponseMessage(msgMetadata, detectionType, Collections.<MPFGenericTrack>emptyList(), e.getDetectionError());
+						}
+					}
                     // for debugging purposes
                     LOG.debug("Detection results for file " + msgMetadata.getDataUri() + ":\n" + responseBytes.toString());
 

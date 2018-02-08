@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import org.codehaus.jackson.map.ObjectMapper;
+ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONObject;
 import org.mitre.mpf.mvc.util.tailer.FilteredMpfLogTailerListener;
 import org.mitre.mpf.mvc.util.tailer.MpfLogLevel;

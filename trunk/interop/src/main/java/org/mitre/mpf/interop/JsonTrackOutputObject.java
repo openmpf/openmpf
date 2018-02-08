@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,13 +28,13 @@ package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.*;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 
-import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 @JsonTypeName("TrackOutputObject")
+@JsonPropertyOrder({ "id", "startOffsetFrame", "stopOffsetFrame", "startOffsetTime", "stopOffsetTime",
+		"type", "source", "exemplar", "detections", "startOffset", "stopOffset" })
 public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> {
 
 	@JsonProperty("id")
@@ -44,6 +44,7 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 
 	// MPF R0.6.0 backwards compatibility with MPF R0.5.0 (upgrade path)
 	@JsonProperty("startOffset")
+    @JsonPropertyDescription("Deprecated. Use startOffsetFrame instead. Left for backwards compatibility.")
 	public void setStartOffset(int startOffset) { startOffsetFrame = startOffset; }
 	public int getStartOffset() { return startOffsetFrame; }
 
@@ -54,6 +55,7 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 
 	// MPF R0.6.0 backwards compatibility with MPF R0.5.0 (upgrade path)
 	@JsonProperty("stopOffset")
+    @JsonPropertyDescription("Deprecated. Use stopOffsetFrame instead. Left for backwards compatibility.")
 	public void setStopOffset(int stopOffset) { stopOffsetFrame = stopOffset; }
 	public int getStopOffset() { return stopOffsetFrame; }
 
@@ -64,13 +66,13 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 
 	@JsonProperty("startOffsetTime")
 	@JsonPropertyDescription("The offset in the medium where the track starts, in milliseconds.")
-	private int startOffsetTime;
-	public int getStartOffsetTime() { return startOffsetTime; }
+	private long startOffsetTime;
+	public long getStartOffsetTime() { return startOffsetTime; }
 
 	@JsonProperty("stopOffsetTime")
 	@JsonPropertyDescription("The offset in the medium where the track ends, in milliseconds.")
-	private int stopOffsetTime;
-	public int getStopOffsetTime() { return stopOffsetTime; }
+	private long stopOffsetTime;
+	public long getStopOffsetTime() { return stopOffsetTime; }
 
 	@JsonProperty("type")
 	@JsonPropertyDescription("The type of object associated with this track.")
@@ -93,7 +95,7 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 	private SortedSet<JsonDetectionOutputObject> detections;
 	public SortedSet<JsonDetectionOutputObject> getDetections() { return detections; }
 
-	public JsonTrackOutputObject(String id, int startOffsetFrame, int stopOffsetFrame, int startOffsetTime, int stopOffsetTime, String type, String source) {
+	public JsonTrackOutputObject(String id, int startOffsetFrame, int stopOffsetFrame, long startOffsetTime, long stopOffsetTime, String type, String source) {
 		this.id = id;
 		this.startOffsetFrame = startOffsetFrame;
 		this.stopOffsetFrame = stopOffsetFrame;
@@ -110,8 +112,8 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 	public static JsonTrackOutputObject factory(@JsonProperty("id") String id,
 	                                            @JsonProperty("startOffsetFrame") int startOffsetFrame,
 	                                            @JsonProperty("stopOffsetFrame") int stopOffsetFrame,
-												@JsonProperty("startOffsetTime") int startOffsetTime,
-												@JsonProperty("stopOffsetTime") int stopOffsetTime,
+												@JsonProperty("startOffsetTime") long startOffsetTime,
+												@JsonProperty("stopOffsetTime") long stopOffsetTime,
 	                                            @JsonProperty("type") String type,
 	                                            @JsonProperty("source") String source,
 	                                            @JsonProperty("exemplar") JsonDetectionOutputObject exemplar,
@@ -144,8 +146,8 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 			return 0;
 		} else if((result = Integer.compare(startOffsetFrame, other.startOffsetFrame)) != 0
 				|| (result = Integer.compare(stopOffsetFrame, other.stopOffsetFrame)) != 0
-				|| (result = Integer.compare(startOffsetTime, other.startOffsetTime)) != 0
-				|| (result = Integer.compare(stopOffsetTime, other.stopOffsetTime)) != 0
+				|| (result = Long.compare(startOffsetTime, other.startOffsetTime)) != 0
+				|| (result = Long.compare(stopOffsetTime, other.stopOffsetTime)) != 0
 				|| (result = ObjectUtils.compare(type, other.type, false)) != 0
 			    || (result = ObjectUtils.compare(source, other.source, false)) != 0
 				|| (result = ObjectUtils.compare(exemplar, other.getExemplar(), false)) != 0

@@ -106,6 +106,7 @@ namespace MPF { namespace COMPONENT {
         , job_(std::move(job))
         , sender_(std::move(sender))
         , component_(std::move(component))
+        , video_capture_(logger, settings_.stream_uri, job_)
         , detection_type_(detection_type)
     {
 
@@ -148,7 +149,6 @@ namespace MPF { namespace COMPONENT {
 
         try {
             LOG4CXX_INFO(logger_, log_prefix_ << "Connecting to stream at: " << settings_.stream_uri)
-            StreamingVideoCapture video_capture(logger_, settings_.stream_uri);
             sender_.SendInProgressNotification(GetTimestampMillis());
 
             StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
@@ -158,7 +158,7 @@ namespace MPF { namespace COMPONENT {
             while (!std_in_watcher->QuitReceived()) {
                 cv::Mat frame;
                 try {
-                    ReadFrame<RETRY_STRATEGY>(video_capture, frame);
+                    ReadFrame<RETRY_STRATEGY>(frame);
                 }
                 catch (const InterruptedException &ex) {
                     // Quit was received while trying to read frame.
@@ -184,7 +184,7 @@ namespace MPF { namespace COMPONENT {
 
                 if (frame_number == segment_info.end_frame) {
                     std::vector<MPFVideoTrack> tracks = component_.EndSegment();
-                    ExecutorUtils::FixTracks(logger_, segment_info, tracks);
+                    FixTracks(segment_info, tracks);
                     LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending segment summary for " << tracks.size() << " tracks.")
                     sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps);
                     frame_timestamps.clear();
@@ -194,7 +194,7 @@ namespace MPF { namespace COMPONENT {
                 // send the summary report if we've started, but have not completed, the next segment
                 std::vector<MPFVideoTrack> tracks = component_.EndSegment();
                 LOG4CXX_INFO(logger_, log_prefix_ << "Send segment summary for final segment.")
-                ExecutorUtils::FixTracks(logger_, segment_info, tracks);
+                FixTracks(segment_info, tracks);
                 sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps);
             }
         }
@@ -202,7 +202,7 @@ namespace MPF { namespace COMPONENT {
             // Send error report before actually handling exception.
             frame_timestamps.emplace(frame_number, GetTimestampMillis()); // Only inserts if key not already present.
             std::vector<MPFVideoTrack> tracks = TryGetRemainingTracks();
-            ExecutorUtils::FixTracks(logger_, segment_info, tracks);
+            FixTracks(segment_info, tracks);
             sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps, ex.what());
             throw;
         }
@@ -210,55 +210,46 @@ namespace MPF { namespace COMPONENT {
 
 
     template<>
-    void StreamingComponentExecutor::ReadFrame<RetryStrategy::NEVER_RETRY>(
-            StreamingVideoCapture &video_capture, cv::Mat &frame) {
-
-        if (!video_capture.Read(frame)) {
+    void StreamingComponentExecutor::ReadFrame<RetryStrategy::NEVER_RETRY>(cv::Mat &frame) {
+        if (!video_capture_.Read(frame)) {
             throw FatalError(ExitCode::STREAM_STALLED, "It is no longer possible to read frames.");
         }
     }
 
     template<>
-    void StreamingComponentExecutor::ReadFrame<RetryStrategy::NO_ALERT_NO_TIMEOUT>(
-            StreamingVideoCapture &video_capture, cv::Mat &frame) {
-
-        video_capture.ReadWithRetry(frame);
+    void StreamingComponentExecutor::ReadFrame<RetryStrategy::NO_ALERT_NO_TIMEOUT>(cv::Mat &frame) {
+        video_capture_.ReadWithRetry(frame);
     }
 
 
-
     template<>
-    void StreamingComponentExecutor::ReadFrame<RetryStrategy::NO_ALERT_WITH_TIMEOUT>(
-            StreamingVideoCapture &video_capture, cv::Mat &frame) {
-        if (!video_capture.ReadWithRetry(frame, settings_.stall_timeout)) {
+    void StreamingComponentExecutor::ReadFrame<RetryStrategy::NO_ALERT_WITH_TIMEOUT>(cv::Mat &frame) {
+        if (!video_capture_.ReadWithRetry(frame, settings_.stall_timeout)) {
             throw FatalError(ExitCode::STREAM_STALLED, "It is no longer possible to read frames.");
         }
     }
 
 
     template<>
-    void StreamingComponentExecutor::ReadFrame<RetryStrategy::ALERT_NO_TIMEOUT>(
-            StreamingVideoCapture &video_capture, cv::Mat &frame) {
-        if (video_capture.ReadWithRetry(frame, settings_.stall_alert_threshold)) {
+    void StreamingComponentExecutor::ReadFrame<RetryStrategy::ALERT_NO_TIMEOUT>(cv::Mat &frame) {
+        if (video_capture_.ReadWithRetry(frame, settings_.stall_alert_threshold)) {
             return;
         }
         sender_.SendStallAlert(GetTimestampMillis());
 
-        video_capture.ReadWithRetry(frame);
+        video_capture_.ReadWithRetry(frame);
         sender_.SendInProgressNotification(GetTimestampMillis());
 
     }
 
     template<>
-    void StreamingComponentExecutor::ReadFrame<RetryStrategy::ALERT_WITH_TIMEOUT>(
-            StreamingVideoCapture &video_capture, cv::Mat &frame) {
-
-        if (video_capture.ReadWithRetry(frame, settings_.stall_alert_threshold)) {
+    void StreamingComponentExecutor::ReadFrame<RetryStrategy::ALERT_WITH_TIMEOUT>(cv::Mat &frame) {
+        if (video_capture_.ReadWithRetry(frame, settings_.stall_alert_threshold)) {
             return;
         }
         sender_.SendStallAlert(GetTimestampMillis());
 
-        if (video_capture.ReadWithRetry(frame, settings_.stall_timeout)) {
+        if (video_capture_.ReadWithRetry(frame, settings_.stall_timeout)) {
             sender_.SendInProgressNotification(GetTimestampMillis());
             return;
         }
@@ -266,11 +257,16 @@ namespace MPF { namespace COMPONENT {
     }
 
 
-
-    bool StreamingComponentExecutor::IsBeginningOfSegment(int frame_number) {
-        return frame_number % settings_.segment_size == 0;
+    void StreamingComponentExecutor::FixTracks(const VideoSegmentInfo &segment_info,
+            std::vector<MPFVideoTrack> &tracks) {
+        ExecutorUtils::FixTracks(logger_, segment_info, tracks);
+        video_capture_.ReverseTransform(tracks);
     }
 
+
+    bool StreamingComponentExecutor::IsBeginningOfSegment(int frame_number) const {
+        return frame_number % settings_.segment_size == 0;
+    }
 
 
     std::vector<MPFVideoTrack> StreamingComponentExecutor::TryGetRemainingTracks() {

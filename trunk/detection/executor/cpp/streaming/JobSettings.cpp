@@ -36,14 +36,19 @@
 
 namespace MPF { namespace COMPONENT {
 
+    using namespace std::chrono;
 
-    std::map<std::string, std::string> convert_to_map(const boost::property_tree::ptree &property_tree) {
-        std::map<std::string, std::string> result;
-        for (const auto &tree_element : property_tree) {
-            result[tree_element.first] = tree_element.second.data();
-        }
-        return result;
-    };
+    namespace {
+        // Not a static method of JobSettings to avoid having to include boost headers in JobSettings.h
+        std::map<std::string, std::string> convert_to_map(const boost::property_tree::ptree &property_tree) {
+            std::map<std::string, std::string> result;
+            for (const auto &tree_element : property_tree) {
+                result[tree_element.first] = tree_element.second.data();
+            }
+            return result;
+        };
+    }
+
 
 
     JobSettings JobSettings::FromIniFile(const std::string &ini_path) {
@@ -51,12 +56,18 @@ namespace MPF { namespace COMPONENT {
             boost::property_tree::ptree ini_settings;
             boost::property_tree::ini_parser::read_ini(ini_path, ini_settings);
             const boost::property_tree::ptree &job_config = ini_settings.get_child("Job Config");
+
+            milliseconds stall_timeout(job_config.get<long>("stallTimeout"));
+            milliseconds stall_alert_threshold(job_config.get<long>("stallAlertThreshold"));
+            RetryStrategy retry_strategy = GetRetryStrategy(stall_timeout, stall_alert_threshold);
+
             return {
                     .job_id = job_config.get<int>("jobId"),
                     .stream_uri = job_config.get<std::string>("streamUri"),
                     .segment_size = job_config.get<int>("segmentSize"),
-                    .stall_timeout = job_config.get<long>("stallTimeout"),
-                    .stall_alert_threshold = job_config.get<long>("stallAlertThreshold"),
+                    .retry_strategy = retry_strategy,
+                    .stall_timeout = stall_timeout,
+                    .stall_alert_threshold = stall_alert_threshold,
                     .component_name = job_config.get<std::string>("componentName"),
                     .component_lib_path = job_config.get<std::string>("componentLibraryPath"),
                     .message_broker_uri = job_config.get<std::string>("messageBrokerUri"),
@@ -70,5 +81,28 @@ namespace MPF { namespace COMPONENT {
         catch (const boost::property_tree::ptree_error &ex) {
             throw FatalError(ExitCode::INVALID_INI_FILE, std::string("Unable to load ini file: ") + ex.what());
         }
+    }
+
+
+
+    RetryStrategy JobSettings::GetRetryStrategy(milliseconds &stall_timeout, const milliseconds &alert_threshold) {
+        if (stall_timeout == milliseconds::zero()) {
+            return RetryStrategy::NEVER_RETRY;
+        }
+
+        bool stall_timeout_enabled = stall_timeout > milliseconds::zero();
+        if (stall_timeout_enabled) {
+            bool alert_enabled = alert_threshold > milliseconds::zero() && alert_threshold < stall_timeout;
+            if (alert_enabled) {
+                stall_timeout -= alert_threshold;
+                return RetryStrategy::ALERT_WITH_TIMEOUT;
+            }
+            return RetryStrategy::NO_ALERT_WITH_TIMEOUT;
+        }
+
+        if (alert_threshold > milliseconds::zero()) {
+            return RetryStrategy::ALERT_NO_TIMEOUT;
+        }
+        return RetryStrategy::NO_ALERT_NO_TIMEOUT;
     }
 }}

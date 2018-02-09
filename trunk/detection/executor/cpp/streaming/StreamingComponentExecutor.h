@@ -25,59 +25,77 @@
  ******************************************************************************/
 
 
-#ifndef MPF_STANDARDINWATCHER_H
-#define MPF_STANDARDINWATCHER_H
+#ifndef MPF_STREAMINGCOMPONENTEXECUTOR_H
+#define MPF_STREAMINGCOMPONENTEXECUTOR_H
 
-#include <atomic>
-#include <condition_variable>
+#include <string>
+#include <log4cxx/logger.h>
 
 #include "ExecutorErrors.h"
+#include "StreamingComponentHandle.h"
+#include "BasicAmqMessageSender.h"
+#include "StreamingVideoCapture.h"
 
 
 namespace MPF { namespace COMPONENT {
 
-    class StandardInWatcher {
+    class StreamingComponentExecutor {
+
     public:
-        // Singleton to prevent more than one thread from reading from standard in.
-        static StandardInWatcher* GetInstance();
-
-        bool QuitReceived() const;
-
-
-        template <typename TDurRep, typename TDurPeriod>
-        void InterruptibleSleep(const std::chrono::duration<TDurRep, TDurPeriod> &timeout) const {
-            if (quit_received_) {
-                throw InterruptedException("Quit Received");
-            }
-
-            static std::mutex mutex;
-            std::unique_lock<std::mutex> lock(mutex);
-
-            bool finished_early = quit_cv_.wait_for(lock, timeout, [] { return quit_received_.load(); });
-            if (finished_early) {
-                throw InterruptedException("Quit Received");
-            }
-        };
+        static ExitCode RunJob(const std::string &ini_path);
 
 
     private:
-        StandardInWatcher();
+        log4cxx::LoggerPtr logger_;
 
-        static StandardInWatcher* instance_;
+        const std::string log_prefix_;
 
-        // static because in the event of an error elsewhere, the detached thread will still be running and may access
-        // is_time_to_quit_ and error_message_.
-        static std::atomic_bool quit_received_;
-        static std::string error_message_;
+        JobSettings settings_;
 
-        static std::condition_variable quit_cv_;
+        BasicAmqMessageSender sender_;
 
-        static void Watch();
-        static void SetError(std::string &&error_message);
+        MPFStreamingVideoJob job_;
 
+        StreamingComponentHandle component_;
+
+        const std::string detection_type_;
+
+
+        StreamingComponentExecutor(
+                const log4cxx::LoggerPtr &logger,
+                const std::string &log_prefix,
+                JobSettings &&settings,
+                BasicAmqMessageSender &&sender,
+                MPFStreamingVideoJob &&job,
+                StreamingComponentHandle &&component,
+                const std::string &detection_type);
+
+
+
+        static StreamingComponentExecutor Create(
+                const log4cxx::LoggerPtr &logger, const std::string &log_prefix,
+                JobSettings &&settings, MPFStreamingVideoJob &&job);
+
+
+        template <RetryStrategy RETRY_STRATEGY>
+        void Run();
+
+        template <RetryStrategy RETRY_STRATEGY>
+        void ReadFrame(StreamingVideoCapture &video_capture, cv::Mat &frame);
+
+        bool IsBeginningOfSegment(int frame_number);
+
+        std::vector<MPFVideoTrack> TryGetRemainingTracks();
+
+        static long GetTimestampMillis();
+
+        static std::string GetAppDir();
+
+        static log4cxx::LoggerPtr GetLogger(const std::string &app_dir);
     };
+
 }}
 
 
 
-#endif //MPF_STANDARDINWATCHER_H
+#endif //MPF_STREAMINGCOMPONENTEXECUTOR_H

@@ -51,6 +51,10 @@ namespace MPF { namespace COMPONENT {
 
         void SendJobStatus(const std::string &job_status, long timestamp);
 
+        void SendStallAlert(long timestamp);
+
+        void SendInProgressNotification(long timestamp);
+
         void SendActivityAlert(int frame_number, long timestamp);
 
         void SendSummaryReport(

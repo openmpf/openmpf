@@ -35,6 +35,7 @@
 namespace MPF { namespace COMPONENT {
     std::atomic_bool StandardInWatcher::quit_received_(false);
     std::string StandardInWatcher::error_message_;
+    std::condition_variable StandardInWatcher::quit_cv_;
 
     StandardInWatcher* StandardInWatcher::instance_(nullptr);
 
@@ -60,6 +61,7 @@ namespace MPF { namespace COMPONENT {
             while (std::getline(std::cin, line)) {
                 if (line == "quit") {
                     quit_received_ = true;
+                    quit_cv_.notify_all();
                     return;
                 }
                 // TODO: Check for "pause" and "resume" when adding support for multistage pipelines.
@@ -95,5 +97,6 @@ namespace MPF { namespace COMPONENT {
         // Since is_time_to_quit_ is atomic, reading or writing to is_time_to_quit_ will cause a synchronization event.
         error_message_ = std::move(error_message);
         quit_received_ = true;
+        quit_cv_.notify_all();
     }
 }}

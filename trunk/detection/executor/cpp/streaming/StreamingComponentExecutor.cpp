@@ -29,6 +29,8 @@
 #include <log4cxx/basicconfigurator.h>
 #include <log4cxx/xml/domconfigurator.h>
 
+#include <detectionComponentUtils.h>
+
 #include "StreamingComponentExecutor.h"
 #include "StandardInWatcher.h"
 
@@ -153,6 +155,8 @@ namespace MPF { namespace COMPONENT {
 
             StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
 
+            int frame_interval = std::max(1, DetectionComponentUtils::GetProperty(job_.job_properties,
+                                                                                  "FRAME_INTERVAL", 1));
             bool segment_activity_alert_sent = false;
 
             while (!std_in_watcher->QuitReceived()) {
@@ -175,11 +179,13 @@ namespace MPF { namespace COMPONENT {
                     segment_activity_alert_sent = false;
                 }
 
-                bool activity_found = component_.ProcessFrame(frame, frame_number);
-                if (activity_found && !segment_activity_alert_sent) {
-                    LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending new activity alert for frame: " << frame_number)
-                    sender_.SendActivityAlert(frame_number, frame_timestamps.at(frame_number));
-                    segment_activity_alert_sent = true;
+                if (frame_number % frame_interval == 0) {
+                    bool activity_found = component_.ProcessFrame(frame, frame_number);
+                    if (activity_found && !segment_activity_alert_sent) {
+                        LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending new activity alert for frame: " << frame_number)
+                        sender_.SendActivityAlert(frame_number, frame_timestamps.at(frame_number));
+                        segment_activity_alert_sent = true;
+                    }
                 }
 
                 if (frame_number == segment_info.end_frame) {

@@ -64,7 +64,7 @@ public class StreamingJobInfo {
      * @return The start time of this streaming job. This timestamp will be returned as a String
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
      */
-    @ApiModelProperty(dataType="String", value = "streaming job start time, local time", example = "2018-02-07 10:23:04.6")
+    @ApiModelProperty(dataType="String", value = "streaming job start time, local system time. Example: 2018-01-07 10:23:04.6", example = "2018-02-07 10:23:04.6")
 	public String getStartDate() {
 		return startDate;
 	}
@@ -75,7 +75,7 @@ public class StreamingJobInfo {
      * This timestamp will be returned as a String
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
      */
-    @ApiModelProperty(dataType="String", value = "streaming job end time, local time", example = "2018-02-08 00:00:00.0 or empty String if the job hasn't completed")
+    @ApiModelProperty(dataType="String", value = "streaming job end time, local system time. Example: 2018-01-08 00:00:00.0 or empty String if the job hasn't completed.", example = "2018-02-08 00:00:00.0 or empty String if the job hasn't completed")
     public String getEndDate() {
 		return endDate;
 	}
@@ -96,7 +96,7 @@ public class StreamingJobInfo {
      * May be empty String if no activity has been detected. This timestamp will be returned as a String
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
      */
-    @ApiModelProperty(dataType="String", value = "detection time associated with the activityFrameId, local time", example = "2018-02-07 18:30:00.5 or empty String if there has been no activity found in the job")
+    @ApiModelProperty(dataType="String", value = "detection time associated with the activityFrameId, local system time. Example: 2018-01-07 18:30:00.5 or empty String if there has been no activity found in the job.", example = "2018-02-07 18:30:00.5 or empty String if there has been no activity found in the job")
     public String getActivityTimestamp() { return activityTimestamp; }
 
 	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
@@ -140,7 +140,11 @@ public class StreamingJobInfo {
 		this.terminal = terminal;
 		this.streamUri = streamUri;
 		this.activityFrameId = activityFrameId;
-        this.activityTimestamp = TimeUtils.getDateAsString(activityTimestamp);
+		// Only get activity timestamp as a String if not null. Handling this here because TimeUtils.getDateAsString will return empty
+        // String if activityTimestamp is passed as a null.
+		if ( activityTimestamp != null ) {
+            this.activityTimestamp = TimeUtils.getDateAsString(activityTimestamp);
+        }
 	}
 	
 }

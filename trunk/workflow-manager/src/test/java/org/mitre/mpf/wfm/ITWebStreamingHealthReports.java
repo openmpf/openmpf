@@ -53,12 +53,16 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+
 // Test streaming health report callbacks. Test only the POST method, since GET is not being supported in OpenMPF for streaming jobs.
 // NOTE: Needed to add confirmation of jobId in the health callbacks, because scheduled callbacks from a job created
 // earlier were causing the callback to capture a health report sent before a later job.
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ITWebStreamingHealthReports {
+
+    // Use a public stream from: https://www.wowza.com/demo/rtsp
+    public static final String TEST_STREAM_URI = "rtsp://184.72.239.149/vod/mp4:BigBuckBunny_115k.mov";
 
     private static final int MINUTES = 1000 * 60; // 1000 milliseconds/sec, 60 sec/minute
 
@@ -124,11 +128,11 @@ public class ITWebStreamingHealthReports {
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void testPostHealthReportCallback() throws Exception {
+    public void testPeriodicHealthReportCallback() throws Exception {
         String externalId1 = Integer.toString(701);
         String externalId2 = Integer.toString(702);
         try {
-            log.info("Beginning testPostHealthReportCallback()");
+            log.info("Beginning testPeriodicHealthReportCallback()");
 
             setupSparkPost();
 
@@ -143,14 +147,15 @@ public class ITWebStreamingHealthReports {
             JSONObject obj1 = new JSONObject(jobCreationResponseJson1);
             healthReportPostJobId1 = Long.valueOf(obj1.getInt("jobId"));
 
+            log.info("Streaming job #1 with jobId " + healthReportPostJobId1
+                + " created with POST method, jobCreationResponse=" + jobCreationResponseJson1);
+
             // jobCreationResponseJson2 should be something like {"jobId":6, "outputObjectDirectory", "directoryWithJobIdHere", "mpfResponse":{"responseCode":0,"message":"success"}}
             String jobCreationResponseJson2 = createStreamingJob(createJobUrl, PIPELINE_NAME,
                 externalId2, "POST");
             JSONObject obj2 = new JSONObject(jobCreationResponseJson2);
             healthReportPostJobId2 = Long.valueOf(obj2.getInt("jobId"));
 
-            log.info("Streaming job #1 with jobId " + healthReportPostJobId1
-                + " created with POST method, jobCreationResponse=" + jobCreationResponseJson1);
 
             log.info("Streaming job #2 with jobId " + healthReportPostJobId2
                 + " created with POST method, jobCreationResponse=" + jobCreationResponseJson2);
@@ -271,7 +276,7 @@ public class ITWebStreamingHealthReports {
                                 .getJobIds().contains(healthReportPostJobId2);
                         if (gotHealthReportPostResponseForBothJobs) {
                             log.info(
-                                "InHealthCallback: ********  received a health report containing jobs #1 and #2 ************ ");
+                                "InHealthCallback: received a health report containing jobs #1 and #2.");
                         }
 
                     } catch (Exception e) {
@@ -298,8 +303,7 @@ public class ITWebStreamingHealthReports {
         mediaProperties.put("testProp", "testVal");
 
         JSONObject stream = new JSONObject();
-//        stream.put("streamUri", "rtsp://test/test.mp4");
-        stream.put("streamUri", "rtsp://184.72.239.149/vod/mp4:BigBuckBunny_115k.mov");
+        stream.put("streamUri", TEST_STREAM_URI);
         stream.put("mediaProperties", mediaProperties);
         stream.put("segmentSize", 100);
 

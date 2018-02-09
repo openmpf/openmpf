@@ -32,7 +32,7 @@ public class SingleJobInfo {
 	private Long jobId;
 	private String pipelineName;
 	private int jobPriority = -1;
-	private String /*JobStatus*/ jobStatus;
+	private String jobStatus;
 	private float jobProgress = 0;
 	private Date startDate;
 	private Date endDate;
@@ -43,7 +43,7 @@ public class SingleJobInfo {
 
 	public SingleJobInfo() {}
 	
-	public SingleJobInfo(Long jobId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus, float jobProgress, 
+	public SingleJobInfo(Long jobId, String pipelineName, int jobPriority, String jobStatus, float jobProgress,
 			Date startDate, Date endDate, String outputObjectPath, boolean terminal) {
 		this.jobId = jobId;
 		this.pipelineName = pipelineName;
@@ -68,7 +68,7 @@ public class SingleJobInfo {
 		return jobPriority;
 	}
 	
-	public String /*JobStatus*/ getJobStatus() {
+	public String getJobStatus() {
 		return jobStatus;
 	}
 	

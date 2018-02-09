@@ -26,8 +26,15 @@
 
 package org.mitre.mpf.rest.api;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import java.util.Date;
+import org.mitre.mpf.rest.api.util.TimeUtils;
 
+// swagger includes
+@Api(value = "streaming-jobs")
+@ApiModel(description="StreamingJobInfo model")
 public class StreamingJobInfo {
 	private Long jobId;
 	public Long getJobId() {
@@ -40,25 +47,36 @@ public class StreamingJobInfo {
 	// TODO jobPriority may be included in a later release
 //	private int jobPriority = -1;
 //	public int getJobPriority() { return jobPriority; }
-	private String /*JobStatus*/ jobStatus;
-	public String /*JobStatus*/ getJobStatus() {
+	private String jobStatus;
+	public String getJobStatus() {
 		return jobStatus;
 	}
-	public void setJobStatus(String /*JobStatus*/ jobStatus) { this.jobStatus = jobStatus; }
 
 	private String jobStatusDetail;
 	public String getJobStatusDetail() { return jobStatusDetail; }
-    public void setJobStatusDetail(String jobStatusDetail) { this.jobStatusDetail = jobStatusDetail; }
 
 	// TODO jobProgress (alternative name jobRunTime) may be included in a later release
 // 	private float jobProgress;
 //	public float getJobProgress() { return jobProgress; }
-	private Date startDate;
-	public Date getStartDate() {
+	private String startDate;
+    /**
+     * The start time of this streaming job.
+     * @return The start time of this streaming job. This timestamp will be returned as a String
+     * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
+     */
+    @ApiModelProperty(dataType="String", value = "streaming job start time, local time", example = "2018-02-07 10:23:04.6")
+	public String getStartDate() {
 		return startDate;
 	}
-	private Date endDate;
-	public Date getEndDate() {
+	private String endDate;
+    /**
+     * The end time of this streaming job.
+     * @return The end time of this streaming job. May be empty String if this job has not completed.
+     * This timestamp will be returned as a String
+     * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
+     */
+    @ApiModelProperty(dataType="String", value = "streaming job end time, local time", example = "2018-02-08 00:00:00.0 or empty String if the job hasn't completed")
+    public String getEndDate() {
 		return endDate;
 	}
 	private String outputObjectDirectory;
@@ -69,12 +87,17 @@ public class StreamingJobInfo {
 	public String getStreamUri() { return streamUri; }
 
 	private String activityFrameId = null;
-	public void setActivityFrameId(String activityFrameId) { this.activityFrameId = activityFrameId; }
 	public String getActivityFrameId() { return activityFrameId; }
 
-    private Date activityTimestamp = null;
-    public void setActivityTimestamp(Date activityTimestamp) { this.activityTimestamp = activityTimestamp; }
-    public Date getActivityTimestamp() { return activityTimestamp; }
+    private String activityTimestamp = null;
+    /**
+     * The detection time associated with the activityFrameId
+     * @return The detection time associated with the activityFrameId.
+     * May be empty String if no activity has been detected. This timestamp will be returned as a String
+     * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
+     */
+    @ApiModelProperty(dataType="String", value = "detection time associated with the activityFrameId, local time", example = "2018-02-07 18:30:00.5 or empty String if there has been no activity found in the job")
+    public String getActivityTimestamp() { return activityTimestamp; }
 
 	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
 	//to maintain the use of only standard Java in the model.api classes
@@ -97,10 +120,10 @@ public class StreamingJobInfo {
 	 * @param outputObjectDirectory directory where objects from this streaming job are created
 	 * @param streamUri URI of the streaming data
 	 * @param activityFrameId The frame id corresponding to the start of the first track generated in the current segment.
-     * @param activityTimestamp The detection time associated with the activityFrameId.
+     * @param activityTimestamp The detection time associated with the activityFrameId. May be null if no activity has been detected.
 	 * @param terminal if true, marks a terminal error
 	 */
-	public StreamingJobInfo(Long jobId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus,
+	public StreamingJobInfo(Long jobId, String pipelineName, int jobPriority, String jobStatus,
                             String jobStatusDetail, float jobProgress,
                             Date startDate, Date endDate, String outputObjectDirectory,
                             String streamUri, String activityFrameId, Date activityTimestamp, boolean terminal) {
@@ -111,13 +134,13 @@ public class StreamingJobInfo {
 		// TODO jobPriority and jobProgress (alternate name jobRunTime) may be included in a later release
 //		this.jobPriority = jobPriority;
 //		this.jobProgress = jobProgress;
-		this.startDate = startDate;
-		this.endDate = endDate;
+		this.startDate = TimeUtils.getDateAsString(startDate);
+		this.endDate = TimeUtils.getDateAsString(endDate);
 		this.outputObjectDirectory = outputObjectDirectory;
 		this.terminal = terminal;
 		this.streamUri = streamUri;
 		this.activityFrameId = activityFrameId;
-		this.activityTimestamp = activityTimestamp;
+        this.activityTimestamp = TimeUtils.getDateAsString(activityTimestamp);
 	}
 	
 }

@@ -55,39 +55,17 @@ public class JsonHealthReportCollection {
         private String activityTimestamp = null;
 
         public Long getJobId() { return jobId; }
-        public String getExternalId() {
-            if ( externalId == null ) {
-                return "";
-            } else {
-                return externalId;
-            }
-        }
+        public String getExternalId() { return externalId; }
         public String getJobStatus() { return jobStatus; }
-        public String getJobStatusDetail() {
-            if ( jobStatusDetail == null ) {
-                return "";
-            } else {
-                return jobStatusDetail;
-            }
-        }
-        public String getActivityFrameId() {
-            if ( activityFrameId == null ) {
-                return "";
-            } else {
-                return activityFrameId;
-            }
-        }
-        public String getActivityTimestamp() {
-            if ( activityTimestamp == null ) {
-                return "";
-            } else {
-                return activityTimestamp;
-            }
-        }
+        public String getJobStatusDetail() { return jobStatusDetail; }
+        public String getActivityFrameId() { return activityFrameId; }
+        public String getActivityTimestamp() { return activityTimestamp; }
 
         @JsonCreator
-        public JsonHealthReport(@JsonProperty("jobId") Long jobId, @JsonProperty("externalId") String externalId,
-            @JsonProperty("jobStatus") String jobStatus, @JsonProperty("jobStatusDetail") String jobStatusDetail,
+        public JsonHealthReport(@JsonProperty("jobId") Long jobId,
+            @JsonProperty("externalId") String externalId,
+            @JsonProperty("jobStatus") String jobStatus,
+            @JsonProperty("jobStatusDetail") String jobStatusDetail,
             @JsonProperty("activityFrameId") String activityFrameId,
             @JsonProperty("activityTimestamp") String activityTimestamp) throws MpfInteropUsageException {
 
@@ -96,7 +74,12 @@ public class JsonHealthReportCollection {
             this.jobStatusDetail = jobStatusDetail;
             this.externalId = externalId;
             this.activityFrameId = activityFrameId;
-            this.activityTimestamp = activityTimestamp;
+            // Activity timestamp should remain as null if updated activity timestamp is passed in as an empty String.
+            if ( activityTimestamp != null && activityTimestamp.isEmpty() ) {
+                this.activityTimestamp = null;
+            } else {
+                this.activityTimestamp = activityTimestamp;
+            }
         }
 
         public String toString() {
@@ -117,7 +100,16 @@ public class JsonHealthReportCollection {
         return TimeUtils.getLocalDateTimeAsString(reportDate);
     }
     @JsonSetter("reportDate")
-    public void setReportDate(LocalDateTime reportDate) { this.reportDate = reportDate; }
+    /**
+     * @param reportDate time the report is being sent, should not be null.
+     * @exception MpfInteropUsageException is thrown if the reportDate is null.
+     */
+    public void setReportDate(LocalDateTime reportDate) throws MpfInteropUsageException {
+        if ( reportDate == null ) {
+            throw new MpfInteropUsageException("reportDate should not be null");
+        }
+        this.reportDate = reportDate;
+    }
 
     /** The health reports for the active streaming jobs in OpenMPF. May be 0 to many. */
     private List<JsonHealthReport> reports = new ArrayList<>();
@@ -141,15 +133,16 @@ public class JsonHealthReportCollection {
         return reports.stream().map(report -> report.getJobStatus()).collect(Collectors.toList()); }
 
     /** Additional job status details for each streaming job in this health report.
-     * @return Additional job status details for each streaming job in this health report.
+     * @return Additional job status details for each streaming job in this health report. Values within the List will be null if
+     * jobStatusDetail has not been specified for a streaming job.
      **/
     @JsonIgnore
     public List<String> getJobStatusDetails() {
         return reports.stream().map(report -> report.getJobStatusDetail()).collect(Collectors.toList()); }
 
     /** The external IDs that were specified for each of these jobs when they were requested.
-     * Note that an externalId may be returned as an empty String if it was not specified for a streaming job.
-     * @return external IDs that were specified for each of these jobs when they were requested. Values within the List will be emtpy String if
+     * Note that an externalId may be returned as null if it was not specified for a streaming job.
+     * @return external IDs that were specified for each of these jobs when they were requested. Values within the List will be null if
      * an externalId has not been specified for a streaming job.
      **/
     @JsonIgnore
@@ -158,16 +151,16 @@ public class JsonHealthReportCollection {
 
     /**
      * The activity frame ids for each streaming job in this health report.
-     * @return activity frame ids associated with each streaming job. Values within the List will be emtpy String if
+     * @return activity frame ids associated with each streaming job. Values within the List will be null if
      * there has not been any activity in this streaming job.
      */
     @JsonIgnore
     public List<String> getActivityFrameIds() { return reports.stream().map(report -> report.getActivityFrameId()).collect(Collectors.toList()); }
 
     /**
-     * Get the timestamp from the last new Activity Alert received for each streaming job in this health report.
-     * @return The last New Activity Alert timestamps for each streaming job. Values within the List may be empty String if
-     * a New Activity Alert has not been issued for a streaming job. Otherwise, the timestamp will be returned as a String
+     * Get the activity timestamp for each streaming job in this health report.
+     * @return The activity timestamps for each streaming job. Values within the List may be null if
+     * there has not been any activity in this streaming job. Otherwise, the timestamp will be returned as a String
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@link TimeUtils#TIMESTAMP_PATTERN}
      */
     @JsonIgnore
@@ -189,7 +182,7 @@ public class JsonHealthReportCollection {
      */
     @JsonIgnore
     public JsonHealthReportCollection(LocalDateTime reportDate, long jobId, String externalId,
-                                      String /*JobStatus*/ jobStatus, String jobStatusDetail,
+                                      String jobStatus, String jobStatusDetail,
                                       String activityFrameId, LocalDateTime activityTimestamp) throws MpfInteropUsageException {
         this.reportDate = reportDate;
         reports.add(new JsonHealthReport(jobId, externalId, jobStatus, jobStatusDetail, activityFrameId, TimeUtils.getLocalDateTimeAsString(activityTimestamp)));
@@ -197,7 +190,7 @@ public class JsonHealthReportCollection {
 
     /**
      * Constructor used to a create a callback body containing health reports for multiple streaming jobs.
-     * @param reportDate timestamp formatted String for this health report callback body. Should not be null.
+     * @param reportDate timestamp formatted String for this health report callback body. Should not be null or empty String.
      * @param reports array of streaming job reports.
      * @exception MpfInteropUsageException is thrown if any List is null or if List sizes are not the same length.
      * DateTimeParseException may be thrown if the reportDate doesn't parse to a valid timestamp. A MpfInteropUsageException may be thrown if
@@ -219,12 +212,10 @@ public class JsonHealthReportCollection {
      * external id was not defined for the job.
      * @param jobStatuses status of each streaming job.
      * @param jobStatusDetails additional status details for each streaming job.
-     * @param activityFrameIds frame ids from the last new activity alert that was issued for
-     * each streaming job. List may contain a null if a New Activity Alert has not yet been issued
-     * for the streaming job.
-     * @param activityTimestamps timestamp formatted Strings from the last new activity alert
-     * that was issued for each streaming job. List may contain a null if a New Activity Alert has
-     * not yet been issued for the streaming job.
+     * @param activityFrameIds activity frame ids for each streaming job. List may contain a null
+     * where no activity has been detected for a streaming job.
+     * @param activityTimestamps activity frame timestamps for each streaming job. List may contain a null
+     * where no activity has been detected for a streaming job.
      * @throws MpfInteropUsageException is thrown if any List is null or if List sizes are not the
      * same length. DateTimeParseException may be thrown if the reportDate doesn't parse to a valid
      * timestamp. A MpfInteropUsageException may be thrown if any of the activityTimestamps
@@ -232,7 +223,7 @@ public class JsonHealthReportCollection {
      */
     @JsonIgnore
     public JsonHealthReportCollection(LocalDateTime reportDate, List<Long> jobIds, List<String> externalIds,
-                                      List<String> /*JobStatus*/ jobStatuses, List<String> jobStatusDetails,
+                                      List<String> jobStatuses, List<String> jobStatusDetails,
                                       List<String> activityFrameIds, List<String> activityTimestamps) throws MpfInteropUsageException, DateTimeParseException {
 
         // Prep to do some usage error checking and construct the health reports using validated job parameters Lists.

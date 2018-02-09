@@ -71,7 +71,7 @@ public class StreamingJobRequest {
     /** The current status of this streaming job.
      * Streaming job status includes condition status as defined by StreamingJobStatusType.
      * StatusDetail may also provide more detailed information about the status of the job.
-     * Note that we keep the status enumeration and statusString as separate parameters for persisting in the
+     * Note that we keep the status enumeration and statusDetail as separate parameters for persisting in the
      * database.
      **/
     @Column

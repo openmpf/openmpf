@@ -113,20 +113,20 @@ public class CallbackUtils {
         // TODO: Consider refactoring this so that Redis only needs to be queried once per job,
         // instead of multiple times per job to get each of the following pieces of data.
 
-        log.info("sendHealthReportCallback: Starting POST of health report(s) to callbackUri " + callbackUri + " containing jobIds: " + jobIds);
+        log.info("Starting POST of health report(s) to callbackUri " + callbackUri + " containing jobIds: " + jobIds);
         List<String> externalIds = redis.getExternalIds(jobIds);
         List<StreamingJobStatus> streamingJobStatuses = redis.getStreamingJobStatuses(jobIds);
-        List<String> jobStatuses = streamingJobStatuses.stream().map( jobStatus -> jobStatus.getType().name()).collect(Collectors.toList());
+        List<String> jobStatusTypes = streamingJobStatuses.stream().map( jobStatus -> jobStatus.getType().name()).collect(Collectors.toList());
         List<String> jobStatusDetails = streamingJobStatuses.stream().map( jobStatus -> jobStatus.getDetail()).collect(Collectors.toList());
         List<String> activityFrameIds = redis.getActivityFrameIdsAsStrings(jobIds);
         List<String> activityTimestamps = redis.getActivityTimestampsAsStrings(jobIds);
 
         try {
             JsonHealthReportCollection jsonBody = new JsonHealthReportCollection(
-                    LocalDateTime.now(), jobIds, externalIds, jobStatuses, jobStatusDetails,
+                    LocalDateTime.now(), jobIds, externalIds, jobStatusTypes, jobStatusDetails,
                     activityFrameIds, activityTimestamps);
 
-            log.info("sendHealthReportCallback: callbackUri = " + callbackUri + ", jsonBody = " + jsonBody);
+            log.debug("POSTing to callbackUri = " + callbackUri + ", jsonBody = " + jsonBody);
             sendPostCallback(jsonBody, callbackUri);
         } catch (WfmProcessingException | MpfInteropUsageException e) {
             log.error("Error sending health report(s) to " + callbackUri + ".", e);
@@ -146,7 +146,6 @@ public class CallbackUtils {
         post.addHeader("Content-Type", "application/json");
 
         try {
-            log.info("sendPostCallback: Sending POST callback to " + callbackUri);
 
             /*
              * Don't do this:
@@ -184,7 +183,7 @@ public class CallbackUtils {
                 }
             });
         } catch (WfmProcessingException | IllegalArgumentException e) {
-            log.error("Error sending post + " + post + " to callback " + callbackUri + ".", e);
+            log.error("Error sending post to callback " + callbackUri + ".", e);
         }
     }
 }

@@ -85,22 +85,22 @@ public class JsonSegmentSummaryReport {
     private SortedMap<String, SortedSet<JsonTrackOutputObject>> types = new TreeMap<>();
     public SortedMap<String, SortedSet<JsonTrackOutputObject>> getTypes() { return types; }
 
-	public JsonSegmentSummaryReport(LocalDateTime reportDate, long jobId, long segmentId,
+    public JsonSegmentSummaryReport(LocalDateTime reportDate, long jobId, long segmentId,
                                     long segmentStartFrame, long segmentStopFrame,
                                     String detectionType, List<JsonTrackOutputObject> tracks, String errorMessage) {
         this.reportDate = reportDate;
-		this.jobId = jobId;
+        this.jobId = jobId;
         this.segmentId = segmentId;
         this.segmentStartFrame = segmentStartFrame;
-		this.segmentStopFrame = segmentStopFrame;
-		this.errorMessage = errorMessage;
+        this.segmentStopFrame = segmentStopFrame;
+        this.errorMessage = errorMessage;
 
-		if (tracks.isEmpty()) {
+        if (tracks == null || tracks.isEmpty()) {
             types.put(JsonActionOutputObject.NO_TRACKS_TYPE, new TreeSet<>());
         } else {
-		    types.put(detectionType, new TreeSet<>(tracks));
+            types.put(detectionType, new TreeSet<>(tracks));
         }
-	}
+    }
 
     @JsonCreator
     public static JsonSegmentSummaryReport factory(@JsonProperty("reportDate") String reportDate,

@@ -37,10 +37,12 @@ import org.mitre.mpf.rest.api.util.TimeUtils;
 @ApiModel(description="StreamingJobInfo model")
 public class StreamingJobInfo {
 	private Long jobId;
+	@ApiModelProperty(position=0)
 	public Long getJobId() {
 		return jobId;
 	}
 	private String pipelineName;
+    @ApiModelProperty(position=3)
 	public String getPipelineName() {
 		return pipelineName;
 	}
@@ -48,11 +50,13 @@ public class StreamingJobInfo {
 //	private int jobPriority = -1;
 //	public int getJobPriority() { return jobPriority; }
 	private String jobStatus;
+    @ApiModelProperty(position=5)
 	public String getJobStatus() {
 		return jobStatus;
 	}
 
 	private String jobStatusDetail;
+    @ApiModelProperty(position=6)
 	public String getJobStatusDetail() { return jobStatusDetail; }
 
 	// TODO jobProgress (alternative name jobRunTime) may be included in a later release
@@ -64,7 +68,7 @@ public class StreamingJobInfo {
      * @return The start time of this streaming job. This timestamp will be returned as a String
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
      */
-    @ApiModelProperty(dataType="String", value = "streaming job start time, local system time. Example: 2018-01-07 10:23:04.6", example = "2018-02-07 10:23:04.6")
+    @ApiModelProperty(position=1, dataType="String", value = "streaming job start time, local system time. Example: 2018-01-07 10:23:04.6")
 	public String getStartDate() {
 		return startDate;
 	}
@@ -75,19 +79,22 @@ public class StreamingJobInfo {
      * This timestamp will be returned as a String
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
      */
-    @ApiModelProperty(dataType="String", value = "streaming job end time, local system time. Example: 2018-01-08 00:00:00.0 or empty String if the job hasn't completed.", example = "2018-02-08 00:00:00.0 or empty String if the job hasn't completed")
+    @ApiModelProperty(position=2, dataType="String", value = "streaming job end time, local system time. Example: 2018-01-08 00:00:00.0 or empty String if the job hasn't completed.")
     public String getEndDate() {
 		return endDate;
 	}
 	private String outputObjectDirectory;
-	public String getOutputObjectDirectory() {
+    @ApiModelProperty(position=7)
+    public String getOutputObjectDirectory() {
 		return outputObjectDirectory;
 	}
 	private String streamUri = null;
-	public String getStreamUri() { return streamUri; }
+    @ApiModelProperty(position=4)
+    public String getStreamUri() { return streamUri; }
 
 	private String activityFrameId = null;
-	public String getActivityFrameId() { return activityFrameId; }
+    @ApiModelProperty(position=8)
+    public String getActivityFrameId() { return activityFrameId; }
 
     private String activityTimestamp = null;
     /**
@@ -96,12 +103,13 @@ public class StreamingJobInfo {
      * May be empty String if no activity has been detected. This timestamp will be returned as a String
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
      */
-    @ApiModelProperty(dataType="String", value = "detection time associated with the activityFrameId, local system time. Example: 2018-01-07 18:30:00.5 or empty String if there has been no activity found in the job.", example = "2018-02-07 18:30:00.5 or empty String if there has been no activity found in the job")
+    @ApiModelProperty(position=9, dataType="String", value = "detection time associated with the activityFrameId, local system time. Example: 2018-01-07 18:30:00.5 or empty String if there has been no activity found in the job.")
     public String getActivityTimestamp() { return activityTimestamp; }
 
 	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
 	//to maintain the use of only standard Java in the model.api classes
 	private boolean terminal;
+    @ApiModelProperty(position=10)
 	public boolean isTerminal() {
 		return terminal;
 	}

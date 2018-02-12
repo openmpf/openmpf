@@ -27,6 +27,7 @@
 package org.mitre.mpf.rest.api;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -69,7 +70,11 @@ public class StreamingJobInfo {
 	// TODO jobProgress (alternative name jobRunTime) may be included in a later release
 // 	private float jobProgress;
 //	public float getJobProgress() { return jobProgress; }
+
 	private Date startDate;
+    @JsonSetter("startDate")
+    public void setStartDateFromString(String timestampStr) { this.startDate = TimeUtils.parseStringAsDate(timestampStr); }
+
     /**
      * The start time of this streaming job.
      * @return The start time of this streaming job.
@@ -89,6 +94,8 @@ public class StreamingJobInfo {
     }
 
     private Date endDate;
+    @JsonSetter("endDate")
+    public void setEndDateFromString(String timestampStr) { this.endDate = TimeUtils.parseStringAsDate(timestampStr); }
     /**
      * The end time of this streaming job.
      * @return The end time of this streaming job. May be null if this job has not completed.
@@ -121,6 +128,8 @@ public class StreamingJobInfo {
     public String getActivityFrameId() { return activityFrameId; }
 
     private Date activityTimestamp = null;
+    @JsonSetter("activityTimestamp")
+    public void setActivityTimestampFromString(String timestampStr) { this.activityTimestamp = TimeUtils.parseStringAsDate(timestampStr); }
     /**
      * The detection time associated with the activityFrameId
      * @return The detection time associated with the activityFrameId. May be null if no activity has been detected.

@@ -135,7 +135,7 @@ public class CallbackUtils {
 
     // Send the summary report to the URI identified by callbackUri, using the HTTP POST method.
     public void sendSummaryReportCallback(JsonSegmentSummaryReport summaryReport, String callbackUri) {
-        log.info("Starting POST of summaryReport with jobId " + summaryReport.getJobId());
+        log.info("Starting POST of summaryReport to " + callbackUri + " with jobId " + summaryReport.getJobId());
         sendPostCallback(summaryReport, callbackUri);
     }
 

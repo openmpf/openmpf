@@ -145,7 +145,7 @@ public class ModelUtils {
                 streamingJobRequest.getPipeline(),
                 streamingJobRequest.getPriority(),
                 streamingJobRequest.getStatus().name(),
-				null,
+				streamingJobRequest.getStatusDetail(),
 				jobContainerProgress,
 				streamingJobRequest.getTimeReceived(),
                 streamingJobRequest.getTimeCompleted(),

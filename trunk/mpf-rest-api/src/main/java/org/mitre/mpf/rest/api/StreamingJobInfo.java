@@ -32,6 +32,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.Date;
+import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
 import org.mitre.mpf.interop.util.TimeUtils;
 
 // swagger includes
@@ -73,7 +74,9 @@ public class StreamingJobInfo {
 
 	private Date startDate;
     @JsonSetter("startDate")
-    public void setStartDateFromString(String timestampStr) { this.startDate = TimeUtils.parseStringAsDate(timestampStr); }
+    public void setStartDateFromString(String timestampStr) throws MpfInteropUsageException {
+        this.startDate = TimeUtils.parseStringAsDate(timestampStr);
+    }
 
     /**
      * The start time of this streaming job.
@@ -95,7 +98,9 @@ public class StreamingJobInfo {
 
     private Date endDate;
     @JsonSetter("endDate")
-    public void setEndDateFromString(String timestampStr) { this.endDate = TimeUtils.parseStringAsDate(timestampStr); }
+    public void setEndDateFromString(String timestampStr) throws MpfInteropUsageException {
+        this.endDate = TimeUtils.parseStringAsDate(timestampStr);
+    }
     /**
      * The end time of this streaming job.
      * @return The end time of this streaming job. May be null if this job has not completed.
@@ -129,7 +134,9 @@ public class StreamingJobInfo {
 
     private Date activityTimestamp = null;
     @JsonSetter("activityTimestamp")
-    public void setActivityTimestampFromString(String timestampStr) { this.activityTimestamp = TimeUtils.parseStringAsDate(timestampStr); }
+    public void setActivityTimestampFromString(String timestampStr) throws MpfInteropUsageException {
+        this.activityTimestamp = TimeUtils.parseStringAsDate(timestampStr);
+    }
     /**
      * The detection time associated with the activityFrameId
      * @return The detection time associated with the activityFrameId. May be null if no activity has been detected.

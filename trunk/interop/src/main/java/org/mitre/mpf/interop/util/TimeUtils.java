@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.interop.util;
 
+import java.util.Date;
 import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
 
 import java.time.Instant;
@@ -66,6 +67,20 @@ public class TimeUtils {
         if ( timestamp == null ) {
             return "";
         } else {
+            return timestampFormatter.format(timestamp);
+        }
+    }
+
+    /**
+     * Format the Date as a timestamp String using the date/time pattern adhered to by OpenMPF.
+     * @param date timestamp as a Date. May be null.
+     * @return timestamp as a String, will be empty String if timestamp is null.
+     */
+    public static String getDateAsString(Date date) {
+        if ( date == null ) {
+            return "";
+        } else {
+            LocalDateTime timestamp = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
             return timestampFormatter.format(timestamp);
         }
     }

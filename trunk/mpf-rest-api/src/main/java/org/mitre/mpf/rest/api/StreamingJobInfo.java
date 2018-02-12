@@ -30,14 +30,16 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.Date;
-import org.mitre.mpf.rest.api.util.TimeUtils;
+import org.mitre.mpf.interop.util.TimeUtils;
 
 // swagger includes
 @Api(value = "streaming-jobs")
 @ApiModel(description="StreamingJobInfo model")
 public class StreamingJobInfo {
 
-    // Note: bug report in swagger may be affecting position. See bug report at https://github.com/springfox/springfox/issues/1280.
+    // TODO update springfox.swagger version after the @ApiModelProperty postion bug is fixed
+	// Note: a bug in springfox swagger may be causing the @ApiModelProperty position specification to to not be honored.
+    // See the bug report at https://github.com/springfox/springfox/issues/1280.
     // Leaving @ApiModelProperty position element usage in as this springfox swagger bug may be eventually fixed.
 
 	private Long jobId;
@@ -72,7 +74,7 @@ public class StreamingJobInfo {
      * @return The start time of this streaming job. This timestamp will be returned as a String
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
      */
-    @ApiModelProperty(position=2, required = true, dataType="String", value = "streaming job start time, local system time. Example: 2018-01-07 10:23:04.6")
+    @ApiModelProperty(position=2, required = true, dataType="String", value = "streaming job start time, local system time. Example: 2018-01-07 10:23:04.6.")
 	public String getStartDate() {
 		return startDate;
 	}

@@ -53,6 +53,7 @@ import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 @Component
@@ -123,7 +124,7 @@ public class CallbackUtils {
                     LocalDateTime.now(), jobIds, externalIds, jobStatuses,
                     lastActivityFrameIds, lastActivityTimestamps);
 
-            sendPostCallback(jsonBody, callbackUri);
+            sendPostCallback(jobIds, jsonBody, callbackUri);
         } catch (WfmProcessingException | MpfInteropUsageException e) {
             log.error("Error sending health report(s) to " + callbackUri + ".", e);
         }
@@ -132,18 +133,16 @@ public class CallbackUtils {
     // Send the summary report to the URI identified by callbackUri, using the HTTP POST method.
     public void sendSummaryReportCallback(JsonSegmentSummaryReport summaryReport, String callbackUri) {
         log.info("Starting POST of summaryReport with jobId " + summaryReport.getJobId());
-        sendPostCallback(summaryReport, callbackUri);
+        sendPostCallback(Collections.singletonList(summaryReport.getJobId()), summaryReport, callbackUri);
     }
 
     // TODO: Implement doGetCallback
 
-    private void sendPostCallback(Object json, String callbackUri) {
+    private void sendPostCallback(List<Long> jobIds, Object json, String callbackUri) {
         HttpPost post = new HttpPost(callbackUri);
         post.addHeader("Content-Type", "application/json");
 
         try {
-            log.info("Sending POST callback to " + callbackUri);
-
             /*
              * Don't do this:
              * post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(json)));
@@ -162,7 +161,7 @@ public class CallbackUtils {
 
             httpAsyncClient.execute(post, new FutureCallback<HttpResponse>() {
                 public void completed(final HttpResponse response) {
-                    log.info("Callback sent to " + callbackUri + ". Response: " + response);
+                    log.info("Callback for job ids {} sent to {}. Response: {}", jobIds, callbackUri, response);
                 }
                 public void failed(final Exception e) {
                     // We make a best effort attempt to send the callback, but an HTTP connection failure,
@@ -170,17 +169,17 @@ public class CallbackUtils {
                     // Also, don't bother logging the stack trace. That adds clutter.
                     if (e instanceof SocketTimeoutException) {
                         // The message for a SocketTimeoutException is "null", so let's be more descriptive.
-                        log.warn("Callback sent to " + callbackUri + ". Receiver did not respond.");
+	                    log.warn("Callback for job ids {} sent to {}. Receiver did not respond.", jobIds, callbackUri);
                     } else {
-                        log.warn("Error sending callback to " + callbackUri + ": " + e.getMessage());
+                    	log.warn(String.format("Error sending callback for job ids %s to %s", jobIds, callbackUri), e);
                     }
                 }
                 public void cancelled() {
-                    log.warn("Cancelled sending callback to " + callbackUri + ".");
+                	log.warn("Cancelled sending callback for job ids {} to {}.", jobIds, callbackUri);
                 }
             });
         } catch (WfmProcessingException | IllegalArgumentException e) {
-            log.error("Error sending callback to " + callbackUri + ".", e);
+            log.error(String.format("Error sending for callback for job ids %s to %s.", jobIds, callbackUri), e);
         }
     }
 }

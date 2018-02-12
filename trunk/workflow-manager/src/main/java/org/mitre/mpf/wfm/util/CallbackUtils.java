@@ -124,7 +124,7 @@ public class CallbackUtils {
                     LocalDateTime.now(), jobIds, externalIds, jobStatuses,
                     lastActivityFrameIds, lastActivityTimestamps);
 
-            sendPostCallback(jobIds, jsonBody, callbackUri);
+            sendPostCallback(jsonBody, callbackUri, jobIds);
         } catch (WfmProcessingException | MpfInteropUsageException e) {
             log.error("Error sending health report(s) to " + callbackUri + ".", e);
         }
@@ -133,12 +133,12 @@ public class CallbackUtils {
     // Send the summary report to the URI identified by callbackUri, using the HTTP POST method.
     public void sendSummaryReportCallback(JsonSegmentSummaryReport summaryReport, String callbackUri) {
         log.info("Starting POST of summaryReport with jobId " + summaryReport.getJobId());
-        sendPostCallback(Collections.singletonList(summaryReport.getJobId()), summaryReport, callbackUri);
+        sendPostCallback(summaryReport, callbackUri, Collections.singletonList(summaryReport.getJobId()));
     }
 
     // TODO: Implement doGetCallback
 
-    private void sendPostCallback(List<Long> jobIds, Object json, String callbackUri) {
+    private void sendPostCallback(Object json, String callbackUri, List<Long> jobIds) {
         HttpPost post = new HttpPost(callbackUri);
         post.addHeader("Content-Type", "application/json");
 

@@ -61,7 +61,7 @@ public class JsonSegmentSummaryReport {
     public long getJobId() { return jobId; }
 
     @JsonProperty("externalId")
-    @JsonPropertyDescription("The external identifier defined for this job by the job creator requester.")
+    @JsonPropertyDescription("The external identifier defined in the job creation request.")
     private String externalId;
     public String getExternalId() { return externalId; }
     public void setExternalId(String externalId) { this.externalId = externalId; }

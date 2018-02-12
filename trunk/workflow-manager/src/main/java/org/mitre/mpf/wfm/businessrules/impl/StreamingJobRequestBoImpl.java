@@ -653,7 +653,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         String summaryReportCallbackUri = redis.getSummaryReportCallbackURI(summaryReport.getJobId());
 
         // Include the externalId as obtained from REDIS in the summary report. Note that we should
-        // set the externalId even if the summaryReport isn't sent, because the summaryReport is used after it is
+        // set the externalId even if the summaryReport isn't sent, because the summaryReport may be written to disk after it is
         // optionally sent.
         summaryReport.setExternalId(redis.getExternalId(summaryReport.getJobId()));
 

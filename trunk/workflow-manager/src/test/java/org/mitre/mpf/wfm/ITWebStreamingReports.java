@@ -33,6 +33,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
+import org.mitre.mpf.interop.JsonActionOutputObject;
 import org.mitre.mpf.interop.JsonHealthReportCollection;
 import org.mitre.mpf.interop.JsonSegmentSummaryReport;
 import org.mitre.mpf.rest.api.MpfResponse;
@@ -62,9 +63,8 @@ public class ITWebStreamingReports {
 
     private static final int MINUTES = 1000 * 60; // 1000 milliseconds/sec, 60 sec/minute
 
-    private static final String DESCRIPTOR_NAME = "CplusplusHelloWorldComponent.json";
-    private static final String PIPELINE_NAME = "HELLOWORLD TEST PIPELINE";
-    private static final String DETECTION_TYPE = "HELLO";
+    private static final String PIPELINE_NAME = "SUBSENSE MOTION DETECTION (WITH TRACKING) PIPELINE";
+    private static final String DETECTION_TYPE = "MOTION";
 
     // Use a public stream from: https://www.wowza.com/demo/rtsp
     private static final String STREAM_URI = "rtsp://184.72.239.149/vod/mp4:BigBuckBunny_115k.mov";
@@ -88,8 +88,6 @@ public class ITWebStreamingReports {
     // The health report uses Java8 time, so we need to include the external JavaTimeModule which provides support for Java 8 Time.
     private static ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
-    private static boolean registeredComponent = false;
-
     private static long postJobId1 = -1L;
     private static long postJobId2 = -1L;
 
@@ -107,21 +105,8 @@ public class ITWebStreamingReports {
         String pipelinesResponse = WebRESTUtils
             .getJSON(new URL(pipelinesUrl), WebRESTUtils.MPF_AUTHORIZATION);
 
-        if (!pipelinesResponse.contains(PIPELINE_NAME)) {
-            String descriptorPath = ITWebStreamingReports.class.getClassLoader()
-                .getResource(DESCRIPTOR_NAME).getPath();
-            String registerUrl =
-                WebRESTUtils.REST_URL + "component/registerViaFile?filePath=" + descriptorPath;
-
-            String registerResponseJson = WebRESTUtils
-                .getJSON(new URL(registerUrl), WebRESTUtils.MPF_AUTHORIZATION);
-            MpfResponse registerResponse = objectMapper
-                .readValue(registerResponseJson, MpfResponse.class);
-
-            Assert.assertEquals("Component successfully registered", registerResponse.getMessage());
-
-            registeredComponent = true;
-        }
+        Assert.assertTrue("Please register the component that supports the following pipeline: " + PIPELINE_NAME,
+                pipelinesResponse.contains(PIPELINE_NAME));
 
         setupSparkPost();
 
@@ -208,21 +193,6 @@ public class ITWebStreamingReports {
             Assert.assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS,
                     jobCancelResponse2.getMpfResponse().getResponseCode());
             Assert.assertTrue(jobCancelResponse2.getDoCleanup());
-
-            if (registeredComponent) {
-                String descriptorPath = ITWebStreamingReports.class.getClassLoader()
-                    .getResource(DESCRIPTOR_NAME).getPath();
-                String unregisterUrl =
-                    WebRESTUtils.REST_URL + "component/unregisterViaFile?filePath=" + descriptorPath;
-
-                String unregisterResponseJson = WebRESTUtils
-                    .getJSON(new URL(unregisterUrl), WebRESTUtils.MPF_AUTHORIZATION);
-                MpfResponse unregisterResponse = objectMapper
-                    .readValue(unregisterResponseJson, MpfResponse.class);
-
-                Assert.assertEquals("Component successfully unregistered",
-                    unregisterResponse.getMessage());
-            }
         } finally {
             Spark.stop();
         }
@@ -267,13 +237,13 @@ public class ITWebStreamingReports {
         // Test to make sure the received summary reports are from the two streaming jobs.
         Assert.assertEquals(postJobId1, summaryReportPostResponseForJob1.getJobId());
         Assert.assertEquals("", summaryReportPostResponseForJob1.getErrorMessage());
-        Assert.assertTrue(summaryReportPostResponseForJob1.getTypes().containsKey(DETECTION_TYPE));
-        Assert.assertTrue(summaryReportPostResponseForJob1.getTypes().get(DETECTION_TYPE).size() > 0);
+        Assert.assertTrue(summaryReportPostResponseForJob1.getTypes().containsKey(DETECTION_TYPE) ||
+                summaryReportPostResponseForJob1.getTypes().containsKey(JsonActionOutputObject.NO_TRACKS_TYPE));
 
         Assert.assertEquals(postJobId2, summaryReportPostResponseForJob2.getJobId());
         Assert.assertEquals("", summaryReportPostResponseForJob2.getErrorMessage());
-        Assert.assertTrue(summaryReportPostResponseForJob2.getTypes().containsKey(DETECTION_TYPE));
-        Assert.assertTrue(summaryReportPostResponseForJob2.getTypes().get(DETECTION_TYPE).size() > 0);
+        Assert.assertTrue(summaryReportPostResponseForJob2.getTypes().containsKey(DETECTION_TYPE) ||
+                summaryReportPostResponseForJob2.getTypes().containsKey(JsonActionOutputObject.NO_TRACKS_TYPE));
     }
 
     private static void setupSparkPost() {

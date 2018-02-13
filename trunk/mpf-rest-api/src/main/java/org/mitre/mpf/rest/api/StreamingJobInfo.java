@@ -40,8 +40,8 @@ import org.mitre.mpf.interop.util.TimeUtils;
 @ApiModel(description="StreamingJobInfo model")
 public class StreamingJobInfo {
 
-    // TODO update springfox.swagger version after the @ApiModelProperty postion bug is fixed
-	// Note: a bug in springfox swagger may be causing the @ApiModelProperty position specification to to not be honored.
+    // TODO update springfox.swagger version after the @ApiModelProperty position bug is fixed
+	// Note: a bug in springfox swagger may be causing the @ApiModelProperty position specification to not be honored.
     // See the bug report at https://github.com/springfox/springfox/issues/1280.
     // Leaving @ApiModelProperty position element usage in as this springfox swagger bug may be eventually fixed.
 
@@ -73,6 +73,25 @@ public class StreamingJobInfo {
 //	public float getJobProgress() { return jobProgress; }
 
 	private Date startDate;
+    /**
+     * The start time of this streaming job.
+     * @return The start time of this streaming job.
+     */
+    public Date getStartDate() {
+        return startDate;
+    }
+
+    @ApiModelProperty(position=2, required = true, dataType="String", value = "streaming job start time, local system time. Example: 2018-01-07 10:23:04.6.")
+    @JsonGetter("startDate")
+    /**
+     * The start time of this streaming job.
+     * @return The start time of this streaming job. This timestamp will be returned as a String
+     * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}. May return null if startDate is never set.
+     */
+    public String getStartDateAsString() {
+        return TimeUtils.getDateAsString(startDate);
+    }
+
     @JsonSetter("startDate")
     public void setStartDateFromString(String timestampStr) throws MpfInteropUsageException{
         if ( timestampStr != null ) {
@@ -80,35 +99,7 @@ public class StreamingJobInfo {
         }
     }
 
-    /**
-     * The start time of this streaming job.
-     * @return The start time of this streaming job.
-     */
-	public Date getStartDate() {
-		return startDate;
-	}
-    @ApiModelProperty(position=2, required = true, dataType="String", value = "streaming job start time, local system time. Example: 2018-01-07 10:23:04.6.")
-    @JsonGetter("startDate")
-    /**
-     * The start time of this streaming job.
-     * @return The start time of this streaming job. This timestamp will be returned as a String
-     * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
-     */
-    public String getStartDateAsString() {
-        if ( startDate != null ) {
-            return TimeUtils.getDateAsString(startDate);
-        } else {
-            return null;
-        }
-    }
-
     private Date endDate;
-    @JsonSetter("endDate")
-    public void setEndDateFromString(String timestampStr) throws MpfInteropUsageException {
-        if ( timestampStr != null ) {
-            this.endDate = TimeUtils.parseStringAsDate(timestampStr);
-        }
-    }
     /**
      * The end time of this streaming job.
      * @return The end time of this streaming job. May be null if this job has not completed.
@@ -116,6 +107,7 @@ public class StreamingJobInfo {
     public Date getEndDate() {
         return endDate;
     }
+
     @ApiModelProperty(position=3, required = true, dataType="String", value = "streaming job end time, local system time. Example: 2018-01-08 00:00:00.0 or empty String if the job hasn't completed.")
     @JsonGetter("endDate")
     /**
@@ -124,10 +116,13 @@ public class StreamingJobInfo {
      * This timestamp will be returned as a String matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
      */
     public String getEndDateAsString() {
-        if ( endDate != null ) {
-            return TimeUtils.getDateAsString(endDate);
-        } else {
-            return null;
+        return TimeUtils.getDateAsString(endDate);
+    }
+
+    @JsonSetter("endDate")
+    public void setEndDateFromString(String timestampStr) throws MpfInteropUsageException {
+        if ( timestampStr != null ) {
+            this.endDate = TimeUtils.parseStringAsDate(timestampStr);
         }
     }
 
@@ -136,6 +131,7 @@ public class StreamingJobInfo {
     public String getOutputObjectDirectory() {
 		return outputObjectDirectory;
 	}
+	
 	private String streamUri = null;
     @ApiModelProperty(position=5, required = true)
     public String getStreamUri() { return streamUri; }
@@ -145,17 +141,12 @@ public class StreamingJobInfo {
     public String getActivityFrameId() { return activityFrameId; }
 
     private Date activityTimestamp = null;
-    @JsonSetter("activityTimestamp")
-    public void setActivityTimestampFromString(String timestampStr) throws MpfInteropUsageException {
-        if ( timestampStr != null ) {
-            this.activityTimestamp = TimeUtils.parseStringAsDate(timestampStr);
-        }
-    }
     /**
      * The detection time associated with the activityFrameId
      * @return The detection time associated with the activityFrameId. May be null if no activity has been detected.
      */
     public Date getActivityTimestamp() { return activityTimestamp; }
+
     @ApiModelProperty(position=10, required = true, dataType="String", value = "detection time associated with the activityFrameId, local system time. Example: 2018-01-07 18:30:00.5 or empty String if there has been no activity found in the job.")
     @JsonGetter("activityTimestamp")
     /**
@@ -165,10 +156,13 @@ public class StreamingJobInfo {
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
      */
     public String getActivityTimestampAsString() {
-        if ( activityTimestamp != null ) {
-            return TimeUtils.getDateAsString(activityTimestamp);
-        } else {
-            return null;
+        return TimeUtils.getDateAsString(activityTimestamp);
+    }
+
+    @JsonSetter("activityTimestamp")
+    public void setActivityTimestampFromString(String timestampStr) throws MpfInteropUsageException {
+        if ( timestampStr != null ) {
+            this.activityTimestamp = TimeUtils.parseStringAsDate(timestampStr);
         }
     }
 

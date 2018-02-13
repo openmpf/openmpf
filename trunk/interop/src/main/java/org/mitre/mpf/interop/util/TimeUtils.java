@@ -61,42 +61,42 @@ public class TimeUtils {
     /**
      * Format the LocalDateTime as a timestamp String using the date/time pattern adhered to by OpenMPF.
      * @param timestamp timestamp as a LocalDateTime. May be null.
-     * @return timestamp as a String, will be empty String if timestamp is null.
+     * @return timestamp as a String, will be null if timestamp is null.
      */
     public static String getLocalDateTimeAsString(LocalDateTime timestamp) {
         if ( timestamp == null ) {
-            return "";
+            return null;
         } else {
-            return timestampFormatter.format(timestamp);
-        }
-    }
-
-    /**
-     * Format the Date as a timestamp String using the date/time pattern adhered to by OpenMPF.
-     * @param date timestamp as a Date. May be null.
-     * @return timestamp as a String in the system time zone, or empty String if timestamp is null.
-     */
-    public static String getDateAsString(Date date) {
-        if ( date == null ) {
-            return "";
-        } else {
-            LocalDateTime timestamp = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
             return timestampFormatter.format(timestamp);
         }
     }
 
     /**
      * Parse the timestamp String into a Date using the date/time pattern adhered to by OpenMPF.
-     * @param timestampStr timestamp String, may not be null
+     * @param timestamp timestamp String, may not be null
      * @return timestamp as a Date
      * @throws MpfInteropUsageException is thrown if the timestamp String is null. Throws DateTimeParseException if the timestamp String isn't parsable
      * using the date/time pattern adhered to by OpenMPF.
      */
-    public static Date parseStringAsDate(String timestampStr) throws DateTimeParseException, MpfInteropUsageException {
-        if ( timestampStr == null ) {
-            throw new MpfInteropUsageException("Error, timestampStr may not be null.");
+    public static Date parseStringAsDate(String timestamp) throws DateTimeParseException, MpfInteropUsageException {
+        if ( timestamp == null ) {
+            throw new MpfInteropUsageException("Error, timestamp may not be null.");
         } else {
-            return Date.from(parseStringAsLocalDateTime(timestampStr).atZone(ZoneId.systemDefault()).toInstant());
+            return Date.from(parseStringAsLocalDateTime(timestamp).atZone(ZoneId.systemDefault()).toInstant());
+        }
+    }
+
+    /**
+     * Format the Date as a timestamp String using the date/time pattern adhered to by OpenMPF.
+     * @param date timestamp as a Date. May be null.
+     * @return timestamp as a String in the system time zone, or null if timestamp is null.
+     */
+    public static String getDateAsString(Date date) {
+        if ( date == null ) {
+            return null;
+        } else {
+            LocalDateTime timestamp = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            return timestampFormatter.format(timestamp);
         }
     }
 

@@ -29,10 +29,14 @@
 #define MPF_STREAMINGVIDEOCAPTURE_H
 
 
-#include <string>
 #include <chrono>
+#include <string>
+#include <vector>
 
 #include <opencv2/opencv.hpp>
+
+#include <MPFStreamingDetectionComponent.h>
+#include <frame_transformers/IFrameTransformer.h>
 
 #include "ExecutorUtils.h"
 
@@ -41,7 +45,8 @@ namespace MPF { namespace COMPONENT {
 
     class StreamingVideoCapture {
     public:
-        StreamingVideoCapture(log4cxx::LoggerPtr &logger, const std::string &video_uri);
+        StreamingVideoCapture(const log4cxx::LoggerPtr &logger, const std::string &video_uri,
+                              const MPFStreamingVideoJob &job);
 
         bool Read(cv::Mat &frame);
 
@@ -49,14 +54,26 @@ namespace MPF { namespace COMPONENT {
 
         bool ReadWithRetry(cv::Mat &frame, const std::chrono::milliseconds &timeout);
 
+        void ReverseTransform(std::vector<MPFVideoTrack> &track) const;
+
 
     private:
         log4cxx::LoggerPtr logger_;
 
+        const MPFStreamingVideoJob job_;
+
         std::string video_uri_;
 
-        cv::VideoCapture cvVideoCapture_;
+        cv::VideoCapture cv_video_capture_;
 
+        // Points to ReadAndInitialize until the first frame is read. Then, it will point to DefaultRead
+        bool (StreamingVideoCapture::*current_read_impl_)(cv::Mat &frame) = &StreamingVideoCapture::ReadAndInitialize;
+
+        IFrameTransformer::Ptr frame_transformer_;
+
+        bool ReadAndInitialize(cv::Mat &frame);
+
+        bool DefaultRead(cv::Mat &frame);
 
         bool DoReadRetry(cv::Mat &frame);
 

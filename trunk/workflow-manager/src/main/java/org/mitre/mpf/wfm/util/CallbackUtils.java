@@ -113,7 +113,6 @@ public class CallbackUtils {
         // TODO: Consider refactoring this so that Redis only needs to be queried once per job,
         // instead of multiple times per job to get each of the following pieces of data.
 
-        log.info("Starting POST of health report(s) with jobIds: " + jobIds);
         List<String> externalIds = redis.getExternalIds(jobIds);
         List<String> jobStatuses = redis.getStreamingJobStatusesAsStrings(jobIds);
         List<String> lastActivityFrameIds = redis.getActivityFrameIdsAsStrings(jobIds);
@@ -124,24 +123,25 @@ public class CallbackUtils {
                     LocalDateTime.now(), jobIds, externalIds, jobStatuses,
                     lastActivityFrameIds, lastActivityTimestamps);
 
-            sendPostCallback(jsonBody, callbackUri, jobIds);
+            sendPostCallback(jsonBody, callbackUri, jobIds, "health report(s)");
         } catch (WfmProcessingException | MpfInteropUsageException e) {
-            log.error("Error sending health report(s) to " + callbackUri + ".", e);
+            log.error(String.format("Error sending health report(s) for job ids %s to %s.", jobIds, callbackUri), e);
         }
     }
 
     // Send the summary report to the URI identified by callbackUri, using the HTTP POST method.
     public void sendSummaryReportCallback(JsonSegmentSummaryReport summaryReport, String callbackUri) {
-        log.info("Starting POST of summaryReport with jobId " + summaryReport.getJobId());
-        sendPostCallback(summaryReport, callbackUri, Collections.singletonList(summaryReport.getJobId()));
+        sendPostCallback(summaryReport, callbackUri, Collections.singletonList(summaryReport.getJobId()),
+                         "summary report");
     }
 
     // TODO: Implement doGetCallback
 
-    private void sendPostCallback(Object json, String callbackUri, List<Long> jobIds) {
+    private void sendPostCallback(Object json, String callbackUri, List<Long> jobIds, String callbackType) {
         HttpPost post = new HttpPost(callbackUri);
         post.addHeader("Content-Type", "application/json");
 
+        log.info("Starting HTTP POST of {} to {} for job ids {}", callbackType, callbackUri, jobIds);
         try {
             /*
              * Don't do this:
@@ -161,7 +161,8 @@ public class CallbackUtils {
 
             httpAsyncClient.execute(post, new FutureCallback<HttpResponse>() {
                 public void completed(final HttpResponse response) {
-                    log.info("Callback for job ids {} sent to {}. Response: {}", jobIds, callbackUri, response);
+                    log.info("Sent {} callback for job ids {} to {}. Response: {}",
+                             callbackType, jobIds, callbackUri, response);
                 }
                 public void failed(final Exception e) {
                     // We make a best effort attempt to send the callback, but an HTTP connection failure,
@@ -169,17 +170,20 @@ public class CallbackUtils {
                     // Also, don't bother logging the stack trace. That adds clutter.
                     if (e instanceof SocketTimeoutException) {
                         // The message for a SocketTimeoutException is "null", so let's be more descriptive.
-	                    log.warn("Callback for job ids {} sent to {}. Receiver did not respond.", jobIds, callbackUri);
+	                    log.warn("Sent {} callback for job ids {} to {}. Receiver did not respond.",
+                                 callbackType, jobIds, callbackUri);
                     } else {
-                    	log.warn(String.format("Error sending callback for job ids %s to %s", jobIds, callbackUri), e);
+                    	log.warn("Error sending {} callback for job ids {} to {}: {}",
+                                 callbackType, jobIds, callbackUri, e.getMessage());
                     }
                 }
                 public void cancelled() {
-                	log.warn("Cancelled sending callback for job ids {} to {}.", jobIds, callbackUri);
+                	log.warn("Cancelled sending {} callback for job ids {} to {}.", callbackType, jobIds, callbackUri);
                 }
             });
         } catch (WfmProcessingException | IllegalArgumentException e) {
-            log.error(String.format("Error sending for callback for job ids %s to %s.", jobIds, callbackUri), e);
+            log.error(String.format("Error sending %s callback for job ids %s to %s.",
+                                    callbackType, jobIds, callbackUri), e);
         }
     }
 }

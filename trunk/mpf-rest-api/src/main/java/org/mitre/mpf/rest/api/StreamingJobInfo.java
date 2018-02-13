@@ -74,8 +74,10 @@ public class StreamingJobInfo {
 
 	private Date startDate;
     @JsonSetter("startDate")
-    public void setStartDateFromString(String timestampStr) throws MpfInteropUsageException {
-        this.startDate = TimeUtils.parseStringAsDate(timestampStr);
+    public void setStartDateFromString(String timestampStr) throws MpfInteropUsageException{
+        if ( timestampStr != null ) {
+            this.startDate = TimeUtils.parseStringAsDate(timestampStr);
+        }
     }
 
     /**
@@ -93,13 +95,19 @@ public class StreamingJobInfo {
      * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
      */
     public String getStartDateAsString() {
-        return TimeUtils.getDateAsString(startDate);
+        if ( startDate != null ) {
+            return TimeUtils.getDateAsString(startDate);
+        } else {
+            return null;
+        }
     }
 
     private Date endDate;
     @JsonSetter("endDate")
     public void setEndDateFromString(String timestampStr) throws MpfInteropUsageException {
-        this.endDate = TimeUtils.parseStringAsDate(timestampStr);
+        if ( timestampStr != null ) {
+            this.endDate = TimeUtils.parseStringAsDate(timestampStr);
+        }
     }
     /**
      * The end time of this streaming job.
@@ -116,7 +124,11 @@ public class StreamingJobInfo {
      * This timestamp will be returned as a String matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
      */
     public String getEndDateAsString() {
-        return TimeUtils.getDateAsString(endDate);
+        if ( endDate != null ) {
+            return TimeUtils.getDateAsString(endDate);
+        } else {
+            return null;
+        }
     }
 
 	private String outputObjectDirectory;
@@ -135,7 +147,9 @@ public class StreamingJobInfo {
     private Date activityTimestamp = null;
     @JsonSetter("activityTimestamp")
     public void setActivityTimestampFromString(String timestampStr) throws MpfInteropUsageException {
-        this.activityTimestamp = TimeUtils.parseStringAsDate(timestampStr);
+        if ( timestampStr != null ) {
+            this.activityTimestamp = TimeUtils.parseStringAsDate(timestampStr);
+        }
     }
     /**
      * The detection time associated with the activityFrameId

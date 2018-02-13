@@ -26,18 +26,6 @@
 
 package org.mitre.mpf.wfm.camel;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.camel.Exchange;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -49,14 +37,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.mitre.mpf.interop.JsonActionOutputObject;
-import org.mitre.mpf.interop.JsonCallbackBody;
-import org.mitre.mpf.interop.JsonDetectionOutputObject;
-import org.mitre.mpf.interop.JsonDetectionProcessingError;
-import org.mitre.mpf.interop.JsonMarkupOutputObject;
-import org.mitre.mpf.interop.JsonMediaOutputObject;
-import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.interop.JsonTrackOutputObject;
+import org.mitre.mpf.interop.*;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -68,28 +49,26 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.Detection;
-import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JmsUtils;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.TextUtils;
+import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 @Component(JobCompleteProcessorImpl.REF)
 public class JobCompleteProcessorImpl extends WfmProcessor implements JobCompleteProcessor {
@@ -182,12 +161,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		final String jsonCallbackURL = redis.getCallbackURL(jobId);
 		final String jsonCallbackMethod = redis.getCallbackMethod(jobId);
 		if(jsonCallbackURL != null && jsonCallbackMethod != null && (jsonCallbackMethod.equals("POST") || jsonCallbackMethod.equals("GET"))) {
-			log.info("Starting "+jsonCallbackMethod+" callback to "+jsonCallbackURL);
+			log.info("Starting {} callback to {} for job id {}.", jsonCallbackMethod, jsonCallbackURL, jobId);
 			try {
 				JsonCallbackBody jsonBody =new JsonCallbackBody(jobId, redis.getExternalId(jobId));
 				new Thread(new CallbackThread(jsonCallbackURL, jsonCallbackMethod, jsonBody)).start();
 			} catch (IOException ioe) {
-				log.warn("Failed to issue {} callback to '{}' due to an I/O exception.", jsonCallbackMethod, jsonCallbackURL, ioe);
+				log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
+				                       jsonCallbackMethod, jsonCallbackURL, jobId), ioe);
 			}
 		}
 	}
@@ -380,11 +360,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 	 * Thread to handle the Callback to a URL given a HTTP method
 	 */
 	public class CallbackThread implements Runnable {
+		private long jobId;
 		private String callbackURL;
 		private String callbackMethod;
 		private HttpUriRequest req;
 
 		public CallbackThread(String callbackURL,String callbackMethod,JsonCallbackBody body) throws UnsupportedEncodingException {
+			jobId = body.getJobId();
 			this.callbackURL = callbackURL;
 			this.callbackMethod = callbackMethod;
 
@@ -407,7 +389,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 					post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(body)));
 					req = post;
 				} catch (WfmProcessingException e) {
-					log.error("Cannont serialize CallbackBody");
+					log.error("Cannot serialize CallbackBody for job id " + jobId, e);
 				}
 			}
 		}
@@ -417,9 +399,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			final HttpClient httpClient = HttpClientBuilder.create().build();
 			try {
 				HttpResponse response = httpClient.execute(req);
-				log.info("{} Callback issued to '{}' (Response={}).", callbackMethod, callbackURL,response);
+				log.info("{} callback issued to '{}' for job id {}. (Response={})",
+				         callbackMethod, callbackURL, jobId, response);
 			} catch (Exception exception) {
-				log.warn("Failed to issue {} callback to '{}' due to an I/O exception.", callbackMethod, callbackURL, exception);
+				log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
+				                       callbackMethod, callbackURL, jobId), exception);
 			}
 		}
 	}

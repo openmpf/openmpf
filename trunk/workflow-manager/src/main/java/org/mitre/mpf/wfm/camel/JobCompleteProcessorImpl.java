@@ -166,8 +166,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 				JsonCallbackBody jsonBody =new JsonCallbackBody(jobId, redis.getExternalId(jobId));
 				new Thread(new CallbackThread(jsonCallbackURL, jsonCallbackMethod, jsonBody)).start();
 			} catch (IOException ioe) {
-				log.warn(String.format("Failed to issue %s callback for job id %s to '%s'.",
-				                       jsonCallbackMethod, jobId, jsonCallbackURL), ioe);
+				log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
+				                       jsonCallbackMethod, jsonCallbackURL, jobId), ioe);
 			}
 		}
 	}
@@ -399,11 +399,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			final HttpClient httpClient = HttpClientBuilder.create().build();
 			try {
 				HttpResponse response = httpClient.execute(req);
-				log.info("{} Callback for job id {} issued to '{}' (Response={}).",
-				         callbackMethod, jobId, callbackURL, response);
+				log.info("{} callback issued to '{}' for job id {}. (Response={})",
+				         callbackMethod, callbackURL, jobId, response);
 			} catch (Exception exception) {
-				log.warn(String.format("Failed to issue %s callback for job id %s to '%s'.",
-				                       callbackMethod, jobId, callbackURL), exception);
+				log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
+				                       callbackMethod, callbackURL, jobId), exception);
 			}
 		}
 	}

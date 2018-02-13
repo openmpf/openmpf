@@ -141,7 +141,7 @@ public class CallbackUtils {
         HttpPost post = new HttpPost(callbackUri);
         post.addHeader("Content-Type", "application/json");
 
-        log.info("Starting HTTP POST of {} to {} for job ids {}", callbackType, callbackUri, jobIds);
+        log.info("Starting HTTP POST of {} to {} for job ids {}.", callbackType, callbackUri, jobIds);
         try {
             /*
              * Don't do this:
@@ -161,8 +161,9 @@ public class CallbackUtils {
 
             httpAsyncClient.execute(post, new FutureCallback<HttpResponse>() {
                 public void completed(final HttpResponse response) {
-                    log.info("Sent {} callback for job ids {} to {}. Response: {}",
-                             callbackType, jobIds, callbackUri, response);
+                    log.info("Sent {} callback to {} for job ids {}. Response: {}",
+                             callbackType, callbackUri, jobIds, response);
+
                 }
                 public void failed(final Exception e) {
                     // We make a best effort attempt to send the callback, but an HTTP connection failure,
@@ -170,20 +171,21 @@ public class CallbackUtils {
                     // Also, don't bother logging the stack trace. That adds clutter.
                     if (e instanceof SocketTimeoutException) {
                         // The message for a SocketTimeoutException is "null", so let's be more descriptive.
-	                    log.warn("Sent {} callback for job ids {} to {}. Receiver did not respond.",
-                                 callbackType, jobIds, callbackUri);
+	                    log.warn("Sent {} callback to {} for job ids {}. Receiver did not respond.",
+                                 callbackType, callbackUri, jobIds);
                     } else {
-                    	log.warn("Error sending {} callback for job ids {} to {}: {}",
-                                 callbackType, jobIds, callbackUri, e.getMessage());
+                    	log.warn("Error sending {} callback to {} for job ids {}: {}",
+                                 callbackType, callbackUri, jobIds, e.getMessage());
                     }
                 }
                 public void cancelled() {
-                	log.warn("Cancelled sending {} callback for job ids {} to {}.", callbackType, jobIds, callbackUri);
+                	log.warn("Cancelled sending {} callback to {} for job ids {}.",
+                             callbackType, callbackUri, jobIds);
                 }
             });
         } catch (WfmProcessingException | IllegalArgumentException e) {
-            log.error(String.format("Error sending %s callback for job ids %s to %s.",
-                                    callbackType, jobIds, callbackUri), e);
+            log.error(String.format("Error sending %s callback to %s for job ids %s.",
+                                    callbackType, callbackUri, jobIds), e);
         }
     }
 }

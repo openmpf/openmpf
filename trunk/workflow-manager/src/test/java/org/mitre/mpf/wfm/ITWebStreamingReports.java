@@ -92,9 +92,11 @@ public class ITWebStreamingReports {
     private static long postJobId2 = -1L;
 
     private static Object healthReportLock = new Object();
+    private static boolean healthReportCallbackFailed = false;
     private static JsonHealthReportCollection healthReportPostResponse = null;
 
     private static Object summaryReportLock = new Object();
+    private static boolean summaryReportCallbackFailed = false;
     private static JsonSegmentSummaryReport summaryReportPostResponseForJob1 = null;
     private static JsonSegmentSummaryReport summaryReportPostResponseForJob2 = null;
 
@@ -105,7 +107,7 @@ public class ITWebStreamingReports {
         String pipelinesResponse = WebRESTUtils
             .getJSON(new URL(pipelinesUrl), WebRESTUtils.MPF_AUTHORIZATION);
 
-        Assert.assertTrue("Please register the component that supports the following pipeline: " + PIPELINE_NAME,
+        Assume.assumeTrue("Please register the component that supports the following pipeline: " + PIPELINE_NAME,
                 pipelinesResponse.contains(PIPELINE_NAME));
 
         setupSparkPost();
@@ -206,9 +208,10 @@ public class ITWebStreamingReports {
         // Wait for a health report callback that includes the jobId of these two test jobs.
         // Health reports should periodically be sent every 30 seconds, unless reset in the mpf.properties file.
         // Listen for a health report POST that has our two jobIds.
-        while (healthReportPostResponse == null) {
+        do {
             Thread.sleep(1000); // test will eventually timeout
-        }
+            Assert.assertFalse(healthReportCallbackFailed);
+        } while (healthReportPostResponse == null);
 
         log.info("Received Spark POST health report response for Jobs #1 and #2:\n"
                 + healthReportPostResponse);
@@ -228,9 +231,10 @@ public class ITWebStreamingReports {
         log.info("Beginning testPostSummaryReportCallback()");
 
         // Wait for a summary report callbacks that include the jobIds of these two test jobs.
-        while ((summaryReportPostResponseForJob1 == null) || (summaryReportPostResponseForJob2 == null)) {
+        do {
             Thread.sleep(1000); // test will eventually timeout
-        }
+            Assert.assertFalse(summaryReportCallbackFailed);
+        } while ((summaryReportPostResponseForJob1 == null) || (summaryReportPostResponseForJob2 == null));
 
         log.info("Received Spark POST summary report responses for Jobs #1 and #2");
 
@@ -276,7 +280,7 @@ public class ITWebStreamingReports {
 
                 } catch (Exception e) {
                     log.error("Exception caught while processing health report POST callback.", e);
-                    Assert.fail();
+                    healthReportCallbackFailed = true;
                 }
                 return "";
             }
@@ -319,7 +323,7 @@ public class ITWebStreamingReports {
 
                 } catch (Exception e) {
                     log.error("Exception caught while processing summary report POST callback.", e);
-                    Assert.fail();
+                    summaryReportCallbackFailed = true;
                 }
                 return "";
             }

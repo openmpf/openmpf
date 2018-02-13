@@ -26,22 +26,22 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
+import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
 /**
  * This class includes the essential information which describes streaming job status.
  */
 public class StreamingJobStatus {
 
-    public static final StreamingJobStatusType UNKNOWN = StreamingJobStatusType.UNKNOWN;
-
-    /** Finds the StreamingJobStatusType which best matches the given input; if no match is found, {@link #UNKNOWN} is used. */
+    /** Finds the StreamingJobStatusType which best matches the given input;
+     * if no match is found, {@link StreamingJobStatusType#UNKNOWN} is used. */
     public static StreamingJobStatusType parse(String input) {
-        return parse(input, UNKNOWN);
+        return parse(input, StreamingJobStatusType.UNKNOWN);
     }
 
     public static StreamingJobStatusType parse(String input, StreamingJobStatusType defaultValue) {
@@ -68,20 +68,20 @@ public class StreamingJobStatus {
     public void setDetail(String detail) { this.detail = detail; }
     public String getDetail() { return detail; }
 
-    private StreamingJobStatusType type = UNKNOWN;
-    public void setType(StreamingJobStatusType type) { this.type = type; }
-    public StreamingJobStatusType getType() { return this.type; }
+    private final StreamingJobStatusType type;
+    public StreamingJobStatusType getType() { return type; }
+
     public boolean isTerminal() {
         return type.isTerminal();
     }
 
-    public StreamingJobStatus(StreamingJobStatusType statusType) {
-        this(statusType,null);
+    public StreamingJobStatus(StreamingJobStatusType type) {
+        this.type = type;
     }
 
-    public StreamingJobStatus(StreamingJobStatusType statusType, String statusDetail) {
-        setType(statusType);
-        setDetail(statusDetail);
+    public StreamingJobStatus(StreamingJobStatusType type, String detail) {
+        this.type = type;
+        this.detail = detail;
     }
 
     // Overriding equals method so Mocking in TestStreamingJobStartStop will work. Note that value of status
@@ -89,7 +89,7 @@ public class StreamingJobStatus {
     @Override
     public boolean equals(Object otherStreamingJobStatus) {
         if ( otherStreamingJobStatus instanceof StreamingJobStatus ) {
-            return this.type == ((StreamingJobStatus) otherStreamingJobStatus).type;
+            return type == ((StreamingJobStatus) otherStreamingJobStatus).type;
         } else {
             return false;
         }
@@ -99,6 +99,22 @@ public class StreamingJobStatus {
     // detail is intentionally not a factor when determining hashCode.
     @Override
     public int hashCode() {
-        return System.identityHashCode(this.type);
+        return type.hashCode();
+    }
+
+    public static String toString(StreamingJobStatusType type, String detail) {
+        String retval = "";
+        if (type != null) {
+            retval += type.toString();
+        }
+        if (detail != null) {
+            retval += ": " + detail;
+        }
+        return retval;
+    }
+
+    @Override
+    public String toString() {
+        return toString(type, detail);
     }
 }

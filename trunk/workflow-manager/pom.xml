@@ -33,7 +33,7 @@
     <parent>
         <groupId>org.mitre.mpf</groupId>
         <artifactId>mpf-project</artifactId>
-        <version>1.0.0</version>
+        <version>2.0.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -429,6 +429,11 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>${apache.httpclient.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpasyncclient</artifactId>
+            <version>${apache.httpasyncclient.version}</version>
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>
@@ -1075,36 +1080,38 @@
             </plugin>
 
             <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>${env.MPF_HOME}/data</directory>
+                            <includes>
+                                <include>nodeManagerConfig.xml</include>
+                                <include>nodeServicesPalette.json</include>
+                                <include>Algorithms.xml</include>
+                                <include>Actions.xml</include>
+                                <include>Tasks.xml</include>
+                                <include>Pipelines.xml</include>
+                                <include>components.json</include>
+                            </includes>
+                        </fileset>
+                        <fileset>
+                            <directory>${env.MPF_HOME}/config</directory>
+                            <includes>
+                                <include>mediaType.properties</include>
+                                <include>mpf-custom.properties</include>
+                            </includes>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>1.7</version>
                 <executions>
-                    <execution>
-                        <id>clean-component-config-files</id>
-                        <phase>clean</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target name="clean-component-config-files">
-                                <delete>
-                                    <fileset dir="${env.MPF_HOME}/data" erroronmissingdir="false">
-                                        <include name="nodeManagerConfig.xml"/>
-                                        <include name="nodeServicesPalette.json"/>
-                                        <include name="Algorithms.xml"/>
-                                        <include name="Actions.xml"/>
-                                        <include name="Tasks.xml"/>
-                                        <include name="Pipelines.xml"/>
-                                        <include name="components.json"/>
-                                    </fileset>
-                                    <fileset dir="${env.MPF_HOME}/config" erroronmissingdir="false">
-                                        <include name="mediaType.properties"/>
-                                        <include name="mpf-custom.properties"/>
-                                    </fileset>
-                                </delete>
-                            </target>
-                        </configuration>
-                    </execution>
                     <execution>
                         <id>copy-resources-from-cpp-hello-world</id>
                         <phase>validate</phase>

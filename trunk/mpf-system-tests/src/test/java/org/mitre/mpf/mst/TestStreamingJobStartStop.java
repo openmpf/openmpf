@@ -27,36 +27,17 @@
 
 package org.mitre.mpf.mst;
 
-import static java.util.stream.Collectors.counting;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.joining;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.AdditionalMatchers.geq;
-import static org.mockito.AdditionalMatchers.gt;
-import static org.mockito.AdditionalMatchers.or;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
-
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgroups.Address;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.mpf.interop.JsonSegmentSummaryReport;
 import org.mitre.mpf.nms.AddressParser;
 import org.mitre.mpf.nms.MasterNode;
 import org.mitre.mpf.nms.NodeTypes;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.data.entities.transients.SegmentSummaryReport;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
@@ -71,6 +52,18 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import java.net.URL;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import static java.util.stream.Collectors.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.AdditionalMatchers.*;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -131,15 +124,23 @@ public class TestStreamingJobStartStop {
 
 
 		verify(_mockStreamingJobRequestBo, timeout(30_000))
-				.jobCompleted(eq(jobId), or(eq(new StreamingJobStatus(StreamingJobStatusType.TERMINATED)), eq(new StreamingJobStatus(StreamingJobStatusType.CANCELLED))));
+				.handleJobStatusChange(eq(jobId), or(eq(new StreamingJobStatus(StreamingJobStatusType.TERMINATED)), eq(new StreamingJobStatus(StreamingJobStatusType.CANCELLED))), gt(test_start_time));
 
-		ArgumentCaptor<SegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(SegmentSummaryReport.class);
+		ArgumentCaptor<JsonSegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(JsonSegmentSummaryReport.class);
 
 		verify(_mockStreamingJobRequestBo, timeout(30_000).atLeastOnce())
 				.handleNewSummaryReport(reportCaptor.capture());
 
-		SegmentSummaryReport summaryReport = reportCaptor.getValue();
+		JsonSegmentSummaryReport summaryReport = reportCaptor.getValue();
 		assertEquals(jobId, summaryReport.getJobId());
+
+		boolean hasNonEmptyDetection = summaryReport.getTypes()
+				.values()
+				.stream()
+				.flatMap(Collection::stream)
+				.flatMap(t -> t.getDetections().stream())
+				.anyMatch(d -> d.getHeight() > 0 && d.getWidth() > 0);
+		assertTrue(hasNonEmptyDetection);
 	}
 
 

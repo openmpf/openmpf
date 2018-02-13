@@ -34,9 +34,11 @@
 #include <log4cxx/basicconfigurator.h>
 
 #include "../ExecutorUtils.h"
+#include "../JobSettings.h"
 
 
 using namespace MPF::COMPONENT;
+using namespace std::chrono;
 
 
 log4cxx::LoggerPtr getLogger() {
@@ -173,4 +175,98 @@ TEST(StreamingExecutorUtilsTest, FixTracksDropsEmptyTracks) {
             createTrack({5, 30}),
             createTrack({5, 10, 15, 23}) });
 
+}
+
+
+
+TEST(StreamingExecutorUtilsTest, RetryRetriesUntilTimeout) {
+    int count = 0;
+    auto test_func = [&] {
+        count++;
+        return false;
+    };
+
+    auto start_time = steady_clock::now();
+    bool retry_result = ExecutorUtils::RetryWithBackOff(milliseconds(500), test_func);
+    nanoseconds runtime = steady_clock::now() - start_time;
+    ASSERT_FALSE(retry_result);
+
+    // (1 ms + 2 ms + 4 ms + 8 ms + 16 ms + 32 ms + 64 ms + 128 ms) + 245 ms = 500 ms is 9 iterations.
+    // Can't be 10 iterations because 1 ms + 2 ms + 4 ms + 8 ms + 16 ms + 32 ms + 64 ms + 128 ms + 256 ms = 511ms
+    ASSERT_EQ(count, 9);
+    ASSERT_TRUE(runtime >= milliseconds(500));
+    ASSERT_TRUE(runtime <= milliseconds(505));
+}
+
+
+
+
+TEST(StreamingExecutorUtilsTest, RetryStopsWhenFuncReturnsTrue) {
+    int count = 0;
+    auto test_func = [&] {
+        count++;
+        return count >= 2;
+    };
+
+    bool retry_result = ExecutorUtils::RetryWithBackOff(milliseconds(100), test_func);
+    ASSERT_TRUE(retry_result);
+
+    ASSERT_EQ(count, 2);
+}
+
+
+
+
+TEST(StreamingExecutorUtilsTest, RetryWorksWhenFuncTakesTime) {
+    int count = 0;
+    auto test_func = [&] {
+        count++;
+        std::this_thread::sleep_for(milliseconds(155));
+        return false;
+    };
+
+    auto start_time = steady_clock::now();
+    bool retry_result = ExecutorUtils::RetryWithBackOff(milliseconds(300), test_func);
+    nanoseconds runtime = steady_clock::now() - start_time;
+
+    ASSERT_FALSE(retry_result);
+    ASSERT_EQ(count, 2);
+
+    // test_func ran twice and RetryWithBackOff slept for 1ms between attempts
+    milliseconds expected_min_sleep_time(155 * count + 1);
+    ASSERT_TRUE(runtime >= expected_min_sleep_time);
+
+    // Use expected_min_sleep_time with a little bit of wiggle room
+    milliseconds expected_max_sleep_time = expected_min_sleep_time + milliseconds(6);
+    ASSERT_TRUE(runtime <= expected_max_sleep_time);
+}
+
+
+
+void verifyRetryStrategyMapping(long stall_timeout, long alert_threshold,
+                                RetryStrategy expected_strategy, long expected_stall_timeout) {
+
+    milliseconds stall_timeout_ms(stall_timeout);
+    milliseconds alert_threshold_ms(alert_threshold);
+
+    ASSERT_EQ(JobSettings::GetRetryStrategy(stall_timeout_ms, alert_threshold_ms), expected_strategy);
+
+    ASSERT_EQ(stall_timeout_ms, milliseconds(expected_stall_timeout));
+}
+
+
+TEST(JobSettingsTest, TestTimeoutValueToRetryStrategyMapping) {
+    verifyRetryStrategyMapping(0, -1, RetryStrategy::NEVER_RETRY, 0);
+    verifyRetryStrategyMapping(0, 10, RetryStrategy::NEVER_RETRY, 0);
+
+    verifyRetryStrategyMapping(-1, -1, RetryStrategy::NO_ALERT_NO_TIMEOUT, -1);
+    verifyRetryStrategyMapping(-1, -2, RetryStrategy::NO_ALERT_NO_TIMEOUT, -1);
+
+    verifyRetryStrategyMapping(10, -1, RetryStrategy::NO_ALERT_WITH_TIMEOUT, 10);
+    verifyRetryStrategyMapping(5, 10, RetryStrategy::NO_ALERT_WITH_TIMEOUT, 5);
+    verifyRetryStrategyMapping(5, 5, RetryStrategy::NO_ALERT_WITH_TIMEOUT, 5);
+
+    verifyRetryStrategyMapping(-1, 10, RetryStrategy::ALERT_NO_TIMEOUT, -1);
+
+    verifyRetryStrategyMapping(10, 6, RetryStrategy::ALERT_WITH_TIMEOUT, 4);
 }

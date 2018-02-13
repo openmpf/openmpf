@@ -35,9 +35,9 @@ public enum StreamingJobStatusType {
     UNKNOWN(false),
 
     /**
-     * The job has been initialized but not started.
+     * The job is initializing.
      */
-    INITIALIZED(false),
+    INITIALIZING(false),
 
     /**
      * Indicates that a job was received, but a job could not be created from the contents of

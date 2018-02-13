@@ -26,56 +26,21 @@
 
 package org.mitre.mpf.interop;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.*;
+import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
+import org.mitre.mpf.interop.util.TimeUtils;
+
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
 
-public class JsonHealthReportDataCallbackBody {
+import static org.mitre.mpf.interop.util.TimeUtils.parseStringAsLocalDateTime;
 
-    // All timestamps in OpenMPF should adhere to this date/time pattern.
-    public static final String TIMESTAMP_PATTERN = "yyyy-MM-dd kk:mm:ss.S";
-    // The timestampFormatter must remain as a static, or the jackson conversion to JSON will no longer work
-    public static final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN);
-
-    /**
-     * Parse the timestamp String into a LocalDateTime using the date/time pattern adhered to by OpenMPF.
-     * @param timestampStr timestamp String, may not be null
-     * @return timestamp as a LocalDateTime
-     * @throws MpfInteropUsageException is thrown if the timestamp String is null. Throws DateTimeParseException if the timestamp String isn't parsable
-     * using the date/time pattern adhered to by OpenMPF.
-     */
-    private LocalDateTime parseStringAsLocalDateTime(String timestampStr) throws MpfInteropUsageException, DateTimeParseException {
-        if ( timestampStr == null ) {
-            throw new MpfInteropUsageException("Error, timestamp String may not be null");
-        } else {
-            return timestampFormatter.parse(timestampStr, LocalDateTime::from);
-        }
-    }
-
-    /**
-     * Format the LocalDateTime as a timestamp String using the date/time pattern adhered to by OpenMPF.
-     * @param timestamp timestamp as a LocalDateTime. May be null.
-     * @return timestamp as a String, will be empty String if timestamp is null.
-     */
-    private String getLocalDateTimeAsString(LocalDateTime timestamp) {
-        if ( timestamp == null ) {
-            return "";
-        } else {
-            return timestampFormatter.format(timestamp);
-        }
-    }
+public class JsonHealthReportCollection {
 
     static class JsonHealthReport {
 
@@ -132,17 +97,14 @@ public class JsonHealthReportDataCallbackBody {
     /**
      * The date/time that this callback is being issued.
      * @return The date/time that this callback is being issued. This timestamp will be returned as a String
-     * matching the TIMESTAMP_PATTERN, which is currently defined as {@value #TIMESTAMP_PATTERN}
+     * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
      */
     @JsonGetter("reportDate")
     public String getReportDate() {
-        return timestampFormatter.format(reportDate);
+        return TimeUtils.getLocalDateTimeAsString(reportDate);
     }
     @JsonSetter("reportDate")
-    @JsonFormat(pattern = TIMESTAMP_PATTERN)
-    public void setReportDate(String timestampStr) throws DateTimeParseException, MpfInteropUsageException {
-        this.reportDate = parseStringAsLocalDateTime(timestampStr);
-    }
+    public void setReportDate(LocalDateTime reportDate) { this.reportDate = reportDate; }
 
     /** The health reports for the active streaming jobs in OpenMPF. May be 0 to many. */
     private List<JsonHealthReport> reports = new ArrayList<>();
@@ -187,7 +149,7 @@ public class JsonHealthReportDataCallbackBody {
      * Get the timestamp from the last new Activity Alert received for each streaming job in this health report.
      * @return The last New Activity Alert timestamps for each streaming job. Values within the List may be empty String if
      * a New Activity Alert has not been issued for a streaming job. Otherwise, the timestamp will be returned as a String
-     * matching the TIMESTAMP_PATTERN, which is currently defined as {@value #TIMESTAMP_PATTERN}
+     * matching the TIMESTAMP_PATTERN, which is currently defined as {@link TimeUtils#TIMESTAMP_PATTERN}
      */
     @JsonIgnore
     public List<String> getLastActivityTimestamps() {
@@ -206,10 +168,10 @@ public class JsonHealthReportDataCallbackBody {
      * a New Activity Alert has not yet been issued for this streaming job.
      */
     @JsonIgnore
-    public JsonHealthReportDataCallbackBody(LocalDateTime reportDate, long jobId, String externalId, String /*JobStatus*/ jobStatus,
-        String lastActivityFrameId, LocalDateTime lastActivityTimestamp) throws MpfInteropUsageException {
+    public JsonHealthReportCollection(LocalDateTime reportDate, long jobId, String externalId, String /*JobStatus*/ jobStatus,
+                                      String lastActivityFrameId, LocalDateTime lastActivityTimestamp) throws MpfInteropUsageException {
         this.reportDate = reportDate;
-        reports.add(new JsonHealthReport(jobId, externalId, jobStatus, lastActivityFrameId, getLocalDateTimeAsString(lastActivityTimestamp)));
+        reports.add(new JsonHealthReport(jobId, externalId, jobStatus, lastActivityFrameId, TimeUtils.getLocalDateTimeAsString(lastActivityTimestamp)));
     }
 
     /**
@@ -221,8 +183,8 @@ public class JsonHealthReportDataCallbackBody {
      * any of the lastActivityTimestamps don't parse to a valid timestamp.
      */
     @JsonCreator
-    public JsonHealthReportDataCallbackBody(@JsonProperty("reportDate") String reportDate,
-                                            @JsonProperty("reports") List<JsonHealthReport> reports) throws MpfInteropUsageException {
+    public JsonHealthReportCollection(@JsonProperty("reportDate") String reportDate,
+                                      @JsonProperty("reports") List<JsonHealthReport> reports) throws MpfInteropUsageException {
         this.reportDate = parseStringAsLocalDateTime(reportDate);
         this.reports = reports;
     }
@@ -247,8 +209,8 @@ public class JsonHealthReportDataCallbackBody {
      * don't parse to a valid timestamp.
      */
     @JsonIgnore
-    public JsonHealthReportDataCallbackBody(LocalDateTime reportDate, List<Long> jobIds, List<String> externalIds, List<String> /*JobStatus*/ jobStatuses,
-        List<String> lastActivityFrameIds, List<String> lastActivityTimestamps) throws MpfInteropUsageException, DateTimeParseException {
+    public JsonHealthReportCollection(LocalDateTime reportDate, List<Long> jobIds, List<String> externalIds, List<String> /*JobStatus*/ jobStatuses,
+                                      List<String> lastActivityFrameIds, List<String> lastActivityTimestamps) throws MpfInteropUsageException, DateTimeParseException {
 
         // Prep to do some usage error checking and construct the health reports using validated job parameters Lists.
         Map<String,List> jobParameterMap = new HashMap<String,List>();

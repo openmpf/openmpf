@@ -24,6 +24,9 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include <stdexcept>
+
+#include <frame_transformers/FrameTransformerFactory.h>
 
 #include "ExecutorErrors.h"
 #include "ExecutorUtils.h"
@@ -31,21 +34,48 @@
 
 #include "StreamingVideoCapture.h"
 
+
 namespace MPF { namespace COMPONENT {
 
-    StreamingVideoCapture::StreamingVideoCapture(log4cxx::LoggerPtr &logger, const std::string &video_uri)
+    StreamingVideoCapture::StreamingVideoCapture(const log4cxx::LoggerPtr &logger, const std::string &video_uri,
+                                                 const MPFStreamingVideoJob &job)
             : logger_(logger)
             , video_uri_(video_uri)
-            , cvVideoCapture_(video_uri) {
+            , job_(job)
+            , cv_video_capture_(video_uri_) {
 
-        if (!cvVideoCapture_.isOpened()) {
+        if (!cv_video_capture_.isOpened()) {
             throw FatalError(ExitCode::UNABLE_TO_CONNECT_TO_STREAM,
                              "Unable to connect to stream: " + video_uri);
         }
     }
 
+
     bool StreamingVideoCapture::Read(cv::Mat &frame) {
-        return cvVideoCapture_.read(frame);
+        return (this->*current_read_impl_)(frame);
+    }
+
+
+    bool StreamingVideoCapture::ReadAndInitialize(cv::Mat &frame) {
+        if (cv_video_capture_.read(frame)) {
+            frame_transformer_ = FrameTransformerFactory::GetTransformer(job_, frame.size());
+            frame_transformer_->TransformFrame(frame, 0);
+            // Now that everything is initialized, make Read() call DefaultRead from now on.
+            current_read_impl_ = &StreamingVideoCapture::DefaultRead;
+            return true;
+        }
+        return false;
+    }
+
+
+    bool StreamingVideoCapture::DefaultRead(cv::Mat &frame) {
+        if (cv_video_capture_.read(frame)) {
+            // TODO: Pass in frame number instead of zero.
+            // Passing in zero won't hurt for now since the frame number is only used for feed forward.
+            frame_transformer_->TransformFrame(frame, 0);
+            return true;
+        }
+        return false;
     }
 
 
@@ -90,7 +120,7 @@ namespace MPF { namespace COMPONENT {
 
 
     bool StreamingVideoCapture::DoReadRetry(cv::Mat &frame) {
-        bool reopened = cvVideoCapture_.open(video_uri_);
+        bool reopened = cv_video_capture_.open(video_uri_);
         if (!reopened) {
             LOG4CXX_WARN(logger_, "Failed to re-connect to video stream.");
             return false;
@@ -116,5 +146,18 @@ namespace MPF { namespace COMPONENT {
                                               << " ms before trying to read frame again.");
 
         StandardInWatcher::GetInstance()->InterruptibleSleep(duration);
+    }
+
+
+    void StreamingVideoCapture::ReverseTransform(std::vector<MPFVideoTrack> &tracks) const {
+        if (frame_transformer_ == nullptr && !tracks.empty()) {
+            throw std::logic_error("Cannot apply reverse transform before reading any frames.");
+        }
+
+        for (auto &track : tracks) {
+            for (auto &frame_loc_pair : track.frame_locations) {
+                frame_transformer_->ReverseTransform(frame_loc_pair.second, frame_loc_pair.first);
+            }
+        }
     }
 }}

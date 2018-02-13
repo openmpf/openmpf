@@ -108,7 +108,7 @@ public class StreamingJobInfo {
         return endDate;
     }
 
-    @ApiModelProperty(position=3, required = true, dataType="String", value = "streaming job end time, local system time. Example: 2018-01-08 00:00:00.0 or empty String if the job hasn't completed.")
+    @ApiModelProperty(position=3, required = true, dataType="String", value = "streaming job end time, local system time. Example: 2018-01-08 00:00:00.0 or null if the job hasn't completed.")
     @JsonGetter("endDate")
     /**
      * The end time of this streaming job.
@@ -147,7 +147,7 @@ public class StreamingJobInfo {
      */
     public Date getActivityTimestamp() { return activityTimestamp; }
 
-    @ApiModelProperty(position=10, required = true, dataType="String", value = "detection time associated with the activityFrameId, local system time. Example: 2018-01-07 18:30:00.5 or empty String if there has been no activity found in the job.")
+    @ApiModelProperty(position=10, required = true, dataType="String", value = "detection time associated with the activityFrameId, local system time. Example: 2018-01-07 18:30:00.5 or null if there has been no activity found in the job.")
     @JsonGetter("activityTimestamp")
     /**
      * The detection time associated with the activityFrameId

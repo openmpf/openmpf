@@ -1045,13 +1045,13 @@ public class RedisImpl implements Redis {
 
     /** This method is the same as {@link #getActivityTimestamp(long)}, it's just adapted to return a String.
      * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
-     * @return The last activity timestamp that was stored for this streaming job as a String.
+     * @return The last activity timestamp that was stored for this streaming job as a String. May be null.
      * @throws WfmProcessingException
      */
     @Override
     public synchronized String getActivityTimestampAsString(long jobId) throws WfmProcessingException {
         LocalDateTime timestamp = getActivityTimestamp(jobId);
-        return  timestamp != null ? TimeUtils.getLocalDateTimeAsString(timestamp) : null;
+        return TimeUtils.getLocalDateTimeAsString(timestamp);
     }
 
     /** This method is the same as {@link #getActivityTimestamp(long)}, it's just adapted for use with Lists.

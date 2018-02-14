@@ -62,6 +62,8 @@ namespace MPF { namespace COMPONENT {
 
         const std::string detection_type_;
 
+        const double confidence_threshold_;
+
 
         StreamingComponentExecutor(
                 const log4cxx::LoggerPtr &logger,

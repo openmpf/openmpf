@@ -110,8 +110,9 @@ namespace MPF { namespace COMPONENT {
         , component_(std::move(component))
         , video_capture_(logger, settings_.stream_uri, job_)
         , detection_type_(detection_type)
+        , confidence_threshold_(DetectionComponentUtils::GetProperty(
+                    settings_.job_properties, "CONFIDENCE_THRESHOLD", ExecutorUtils::LOWEST_CONFIDENCE_THRESHOLD))
     {
-
     }
 
 
@@ -270,7 +271,8 @@ namespace MPF { namespace COMPONENT {
 
     void StreamingComponentExecutor::FixTracks(const VideoSegmentInfo &segment_info,
             std::vector<MPFVideoTrack> &tracks) {
-        ExecutorUtils::FixTracks(logger_, segment_info, tracks);
+        ExecutorUtils::DropOutOfSegmentDetections(logger_, segment_info, tracks);
+        ExecutorUtils::DropLowConfidenceDetections(confidence_threshold_, tracks);
         video_capture_.ReverseTransform(tracks);
     }
 

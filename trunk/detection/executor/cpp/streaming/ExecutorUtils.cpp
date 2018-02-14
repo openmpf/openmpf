@@ -30,7 +30,36 @@
 namespace MPF { namespace COMPONENT { namespace ExecutorUtils {
 
 
-    void FixTracks(log4cxx::LoggerPtr &logger, const VideoSegmentInfo &segment, std::vector<MPFVideoTrack> &tracks) {
+    void DropLowConfidenceDetections(double confidence_threshold, std::vector<MPFVideoTrack> &tracks) {
+        if (confidence_threshold <= LOWEST_CONFIDENCE_THRESHOLD) {
+            return;
+        }
+
+        for (auto &track : tracks) {
+            for (auto it = track.frame_locations.begin(); it != track.frame_locations.end(); ) {
+                if (it->second.confidence < confidence_threshold) {
+                    it = track.frame_locations.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
+
+            if (!track.frame_locations.empty()) {
+                track.start_frame = track.frame_locations.begin()->first;
+                track.stop_frame = track.frame_locations.rbegin()->first;
+            }
+        }
+
+        auto new_end = std::remove_if(tracks.begin(), tracks.end(), [](const MPFVideoTrack &track) {
+            return track.frame_locations.empty();
+        });
+        tracks.erase(new_end, tracks.end());
+    }
+
+
+    void DropOutOfSegmentDetections(log4cxx::LoggerPtr &logger, const VideoSegmentInfo &segment,
+                                    std::vector<MPFVideoTrack> &tracks) {
         for (auto &track : tracks) {
             auto &frame_locations = track.frame_locations;
             if (frame_locations.empty()) {

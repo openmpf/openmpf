@@ -26,6 +26,13 @@
 
 package org.mitre.mpf.wfm.util;
 
+import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.concurrent.FutureCallback;
@@ -42,19 +49,16 @@ import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import java.io.IOException;
-import java.net.SocketTimeoutException;
-import java.time.LocalDateTime;
+
 import java.util.Collections;
-import java.util.List;
+
 
 @Component
 public class CallbackUtils {
@@ -114,14 +118,16 @@ public class CallbackUtils {
         // instead of multiple times per job to get each of the following pieces of data.
 
         List<String> externalIds = redis.getExternalIds(jobIds);
-        List<String> jobStatuses = redis.getStreamingJobStatusesAsStrings(jobIds);
-        List<String> lastActivityFrameIds = redis.getActivityFrameIdsAsStrings(jobIds);
-        List<String> lastActivityTimestamps = redis.getActivityTimestampsAsStrings(jobIds);
+        List<StreamingJobStatus> streamingJobStatuses = redis.getStreamingJobStatuses(jobIds);
+        List<String> jobStatusTypes = streamingJobStatuses.stream().map( jobStatus -> jobStatus.getType().name()).collect(Collectors.toList());
+        List<String> jobStatusDetails = streamingJobStatuses.stream().map( jobStatus -> jobStatus.getDetail()).collect(Collectors.toList());
+        List<String> activityFrameIds = redis.getActivityFrameIdsAsStrings(jobIds);
+        List<String> activityTimestamps = redis.getActivityTimestampsAsStrings(jobIds);
 
         try {
             JsonHealthReportCollection jsonBody = new JsonHealthReportCollection(
-                    LocalDateTime.now(), jobIds, externalIds, jobStatuses,
-                    lastActivityFrameIds, lastActivityTimestamps);
+                    LocalDateTime.now(), jobIds, externalIds, jobStatusTypes, jobStatusDetails,
+                    activityFrameIds, activityTimestamps);
 
             sendPostCallback(jsonBody, callbackUri, jobIds, "health report(s)");
         } catch (WfmProcessingException | MpfInteropUsageException e) {
@@ -143,6 +149,7 @@ public class CallbackUtils {
 
         log.debug("Starting POST of {} callback to {} for job ids {}.", callbackType, callbackUri, jobIds);
         try {
+
             /*
              * Don't do this:
              * post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(json)));
@@ -186,6 +193,6 @@ public class CallbackUtils {
         } catch (WfmProcessingException | IllegalArgumentException e) {
             log.error(String.format("Error sending %s callback to %s for job ids %s.",
                                     callbackType, callbackUri, jobIds), e);
-        }
+       }
     }
 }

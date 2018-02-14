@@ -71,7 +71,7 @@ public class StreamingJobRequest {
     /** The current status of this streaming job.
      * Streaming job status includes condition status as defined by StreamingJobStatusType.
      * StatusDetail may also provide more detailed information about the status of the job.
-     * Note that we keep the status enumeration and statusString as separate parameters for persisting in the
+     * Note that we keep the status enumeration and statusDetail as separate parameters for persisting in the
      * database.
      **/
     @Column
@@ -130,5 +130,17 @@ public class StreamingJobRequest {
 	private String outputObjectVersion;
 	public void setOutputObjectVersion(String outputObjectVersion) { this.outputObjectVersion = outputObjectVersion; }
 
-	public String toString() { return String.format("%s#<id='%d'>", this.getClass().getSimpleName(), getId()); }
+    @Column
+    private String activityFrameId;
+    public void setActivityFrameId(String activityFrameId) { this.activityFrameId = activityFrameId; }
+    public String getActivityFrameId() { return activityFrameId; }
+
+    @Column
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date activityTimestamp;
+    public Date getActivityTimestamp() { return activityTimestamp; }
+    public void setActivityTimestamp(Date activityTimestamp) { this.activityTimestamp = activityTimestamp; }
+
+
+    public String toString() { return String.format("%s#<id='%d'>", this.getClass().getSimpleName(), getId()); }
 }

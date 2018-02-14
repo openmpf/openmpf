@@ -26,7 +26,8 @@
 
 package org.mitre.mpf.wfm.businessrules;
 
-
+import java.util.List;
+import java.util.Map;
 import org.mitre.mpf.interop.JsonSegmentSummaryReport;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
@@ -37,9 +38,6 @@ import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidOutputObjectDirectoryWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException;
-
-import java.util.List;
-import java.util.Map;
 
 public interface StreamingJobRequestBo {
 
@@ -97,7 +95,7 @@ public interface StreamingJobRequestBo {
 
 	/**
 	 * Send a health report for all current streaming jobs to the health report callback associated with each streaming job.
-     * @param jobIds all job ids to send health reports for.
+	 * @param jobIds all job ids to send health reports for.
 	 * @param isActive If true, then streaming jobs which have terminal JobStatus will be
 	 * filtered out. Otherwise, all current streaming jobs will be processed.
 	 * @throws WfmProcessingException thrown if an error occurs

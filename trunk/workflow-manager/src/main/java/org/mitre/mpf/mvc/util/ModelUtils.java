@@ -26,14 +26,20 @@
 
 package org.mitre.mpf.mvc.util;
 
+import java.io.File;
+import java.net.URI;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Paths;
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.rest.api.*;
+import org.mitre.mpf.rest.api.InfoModel;
+import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
+import org.mitre.mpf.rest.api.MarkupResultModel;
+import org.mitre.mpf.rest.api.SingleJobInfo;
+import org.mitre.mpf.rest.api.StreamingJobInfo;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,11 +47,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-
-import java.io.File;
-import java.net.URI;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.Paths;
 
 @Component
 @Scope("singleton")
@@ -138,20 +139,20 @@ public class ModelUtils {
     public static StreamingJobInfo convertJobRequest(StreamingJobRequest streamingJobRequest,
             float jobContainerProgress) {
 
-        StreamingJobStatusType streamingJobStatusType = streamingJobRequest.getStatus();
-        String streamingJobStatusDetail = streamingJobRequest.getStatusDetail();
-
-        boolean isTerminal = (streamingJobStatusType != null && streamingJobStatusType.isTerminal());
+        boolean isTerminal = (streamingJobRequest.getStatus() != null && streamingJobRequest.getStatus().isTerminal());
 
         return new StreamingJobInfo(streamingJobRequest.getId(),
                 streamingJobRequest.getPipeline(),
                 streamingJobRequest.getPriority(),
-				StreamingJobStatus.toString(streamingJobStatusType, streamingJobStatusDetail),
+                streamingJobRequest.getStatus().name(),
+				streamingJobRequest.getStatusDetail(),
 				jobContainerProgress,
 				streamingJobRequest.getTimeReceived(),
                 streamingJobRequest.getTimeCompleted(),
                 streamingJobRequest.getOutputObjectDirectory(),
                 streamingJobRequest.getStreamUri(),
+				streamingJobRequest.getActivityFrameId(),
+				streamingJobRequest.getActivityTimestamp(),
                 isTerminal);
     }
 
@@ -178,4 +179,5 @@ public class ModelUtils {
         }
         return s_infoModel;
     }
+
 }

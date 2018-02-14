@@ -73,6 +73,7 @@ namespace MPF { namespace COMPONENT {
                     executor.Run<RetryStrategy::ALERT_WITH_TIMEOUT>();
                     break;
             }
+            LOG4CXX_INFO(logger, log_prefix << "Job has successfully completed because the quit command was received.");
 
             return ExitCode::SUCCESS;
         }

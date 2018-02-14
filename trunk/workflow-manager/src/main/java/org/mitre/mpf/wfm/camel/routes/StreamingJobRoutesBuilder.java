@@ -152,7 +152,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 protobuf.getStartTime(),
                 protobuf.getStopTime(),
                 detectionType,
-                null, // TODO: Populate with component name ("componentName" in .ini file -> JobSettings -> BasicAmqMessageSender::SendSummaryReport)
+                /* source, */ // TODO: Populate with component name ("componentName" in .ini file -> JobSettings -> BasicAmqMessageSender::SendSummaryReport)
                 exemplar,
                 detections);
     }

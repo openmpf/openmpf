@@ -39,7 +39,7 @@ import static org.mitre.mpf.interop.util.CompareUtils.nullsFirst;
 
 @JsonTypeName("StreamingTrackOutputObject")
 @JsonPropertyOrder({ "id", "startOffsetFrame", "stopOffsetFrame", "startTimestamp", "stopTimestamp",
-		"type", "source", "exemplar", "detections" })
+		"type", /*"source",*/ "exemplar", "detections" })
 public class JsonStreamingTrackOutputObject implements Comparable<JsonStreamingTrackOutputObject> {
 
 	@JsonPropertyDescription("The unique identifier for this track.")
@@ -66,9 +66,11 @@ public class JsonStreamingTrackOutputObject implements Comparable<JsonStreamingT
 	private final String type;
 	public String getType() { return type; }
 
+	/* TODO: For future use
 	@JsonPropertyDescription("The set of pipeline actions which produced this track.")
 	private final String source;
 	public String getSource() { return source; }
+	*/
 
 	@JsonProperty("exemplar")
 	@JsonPropertyDescription("The detection which best represents this track.")
@@ -88,12 +90,12 @@ public class JsonStreamingTrackOutputObject implements Comparable<JsonStreamingT
 			long startTimestampMillis,
 			long stopTimestampMillis,
 			String type,
-			String source,
+			/* String source, */
 			JsonStreamingDetectionOutputObject exemplar,
 			SortedSet<JsonStreamingDetectionOutputObject> detections) {
 
 		this(id, startOffsetFrame, stopOffsetFrame, TimeUtils.millisToDateTimeString(startTimestampMillis),
-		     TimeUtils.millisToDateTimeString(stopTimestampMillis), type ,source, exemplar, detections);
+		     TimeUtils.millisToDateTimeString(stopTimestampMillis), type, /* source, */ exemplar, detections);
 	}
 
 
@@ -105,7 +107,7 @@ public class JsonStreamingTrackOutputObject implements Comparable<JsonStreamingT
 			@JsonProperty("startTimestamp") String startTimestamp,
 			@JsonProperty("stopTimestamp") String stopTimestamp,
 			@JsonProperty("type") String type,
-			@JsonProperty("source") String source,
+			/* @JsonProperty("source") String source, */
 			@JsonProperty("exemplar") JsonStreamingDetectionOutputObject exemplar,
 			@JsonProperty("detections") SortedSet<JsonStreamingDetectionOutputObject> detections) {
 		this.id = id;
@@ -114,7 +116,7 @@ public class JsonStreamingTrackOutputObject implements Comparable<JsonStreamingT
 		this.startTimestamp = startTimestamp;
 		this.stopTimestamp = stopTimestamp;
 		this.type = type;
-		this.source = source;
+		/* this.source = source; */
 		this.exemplar = exemplar;
 		if (detections != null) {
 			this.detections.addAll(detections);
@@ -124,7 +126,7 @@ public class JsonStreamingTrackOutputObject implements Comparable<JsonStreamingT
 
 
 	public int hashCode() {
-		return Objects.hash(startOffsetFrame, stopOffsetFrame, startTimestamp, stopTimestamp, type, source,
+		return Objects.hash(startOffsetFrame, stopOffsetFrame, startTimestamp, stopTimestamp, type, /* source, */
 		                    exemplar, id);
 	}
 
@@ -142,7 +144,7 @@ public class JsonStreamingTrackOutputObject implements Comparable<JsonStreamingT
 				.thenComparing(JsonStreamingTrackOutputObject::getStartTimestamp)
 				.thenComparing(JsonStreamingTrackOutputObject::getStopTimestamp)
 				.thenComparing(JsonStreamingTrackOutputObject::getType, nullsFirst())
-				.thenComparing(JsonStreamingTrackOutputObject::getSource, nullsFirst())
+				/* .thenComparing(JsonStreamingTrackOutputObject::getSource, nullsFirst()) */
 				.thenComparing(JsonStreamingTrackOutputObject::getExemplar, nullsFirst())
 				.thenComparing(JsonStreamingTrackOutputObject::getId, nullsFirst())
 			);

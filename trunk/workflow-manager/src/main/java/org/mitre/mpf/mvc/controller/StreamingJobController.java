@@ -306,7 +306,7 @@ public class StreamingJobController {
         StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
         if ( streamingJobRequest == null ) {
             // if the requested streaming job doesn't exist, it can't be marked for cancellation, so this is an error.
-            cancelResponse = new StreamingJobCancelResponse(jobId, "", doCleanup,
+            cancelResponse = new StreamingJobCancelResponse(jobId, null, doCleanup,
                 MpfResponse.RESPONSE_CODE_ERROR, "Streaming job with id " + jobId + " doesn't exist.");
         } else {
             try {

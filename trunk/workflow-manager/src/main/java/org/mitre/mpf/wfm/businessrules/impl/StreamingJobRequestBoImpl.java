@@ -639,7 +639,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     @Override
     public void handleNewActivityAlert(long jobId, long frameId, long timestamp) {
         redis.setStreamingActivity(jobId, frameId, TimeUtils.millisToDateTime(timestamp));
-
         String healthReportCallbackUri = redis.getHealthReportCallbackURI(jobId);
         if (healthReportCallbackUri != null) {
             callbackUtils.sendHealthReportCallback(healthReportCallbackUri, Collections.singletonList(jobId));
@@ -651,6 +650,12 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     public void handleNewSummaryReport(JsonSegmentSummaryReport summaryReport) {
         // Send summary report as soon as possible.
         String summaryReportCallbackUri = redis.getSummaryReportCallbackURI(summaryReport.getJobId());
+
+        // Include the externalId as obtained from REDIS in the summary report. Note that we should
+        // set the externalId even if the summaryReport isn't sent, because the summaryReport may be written to disk after it is
+        // optionally sent.
+        summaryReport.setExternalId(redis.getExternalId(summaryReport.getJobId()));
+
         if (summaryReportCallbackUri != null) {
             callbackUtils.sendSummaryReportCallback(summaryReport, summaryReportCallbackUri);
         }

@@ -34,7 +34,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @JsonTypeName("SegmentSummaryReport")
-@JsonPropertyOrder({ "reportDate", "jobId", "segmentId", "segmentStartFrame", "segmentStopFrame",
+@JsonPropertyOrder({ "reportDate", "jobId", "externalId", "segmentId", "segmentStartFrame", "segmentStopFrame",
         "errorMessage", "detectionType", "tracks" })
 public class JsonSegmentSummaryReport {
 
@@ -59,6 +59,12 @@ public class JsonSegmentSummaryReport {
     @JsonPropertyDescription("The unique identifier assigned to this job by the system.")
     private long jobId;
     public long getJobId() { return jobId; }
+
+    @JsonProperty("externalId")
+    @JsonPropertyDescription("The external identifier defined in the job creation request.")
+    private String externalId;
+    public String getExternalId() { return externalId; }
+    public void setExternalId(String externalId) { this.externalId = externalId; }
 
     @JsonProperty("segmentId")
     @JsonPropertyDescription("The unique identifier assigned to this segment.")

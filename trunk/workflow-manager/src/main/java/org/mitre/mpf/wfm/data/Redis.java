@@ -103,7 +103,6 @@ public interface Redis {
 	 */
 	StreamingJobStatus getStreamingJobStatus(long jobId);
 	List<StreamingJobStatus> getStreamingJobStatuses(List<Long> jobIds);
-	List<String> getStreamingJobStatusesAsStrings(List<Long> jobIds);
 
 	/**
 	 * Gets the collection of detection processing errors associated with a (job, media, task, action) 4-ple.

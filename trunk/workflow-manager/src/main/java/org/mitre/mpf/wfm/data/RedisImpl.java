@@ -511,15 +511,6 @@ public class RedisImpl implements Redis {
         return getBatchJobStatuses(jobIds).stream().map(Enum::name).collect(Collectors.toList());
     }
 
-    /** This method is similar to {@link #getStreamingJobStatuses(List<Long>)}, it just returns a List of Strings describing the streaming job status types instead of a List of StreamingJobStatuses.
-     * @param jobIds List of streaming jobIds
-     * @return List of streaming job status types as Strings for the specified jobs. The List may contain nulls for invalid jobIds.
-     */
-    @Override
-    public List<String> getStreamingJobStatusesAsStrings(List<Long> jobIds) {
-        return getStreamingJobStatuses(jobIds).stream().map(StreamingJobStatus::toString).collect(Collectors.toList());
-    }
-
     /**
      * Get the detection errors for the batch job
      * @param jobId The OpenMPF-assigned ID of the batch job.
@@ -1054,13 +1045,13 @@ public class RedisImpl implements Redis {
 
     /** This method is the same as {@link #getActivityTimestamp(long)}, it's just adapted to return a String.
      * @param jobId The OpenMPF-assigned ID of the streaming job, must be unique.
-     * @return The last activity timestamp that was stored for this streaming job as a String.
+     * @return The last activity timestamp that was stored for this streaming job as a String. May be null.
      * @throws WfmProcessingException
      */
     @Override
     public synchronized String getActivityTimestampAsString(long jobId) throws WfmProcessingException {
         LocalDateTime timestamp = getActivityTimestamp(jobId);
-        return  timestamp != null ? TimeUtils.getLocalDateTimeAsString(timestamp) : null;
+        return TimeUtils.getLocalDateTimeAsString(timestamp);
     }
 
     /** This method is the same as {@link #getActivityTimestamp(long)}, it's just adapted for use with Lists.

@@ -195,7 +195,7 @@ TEST(StreamingExecutorUtilsTest, RetryRetriesUntilTimeout) {
     // Can't be 10 iterations because 1 ms + 2 ms + 4 ms + 8 ms + 16 ms + 32 ms + 64 ms + 128 ms + 256 ms = 511ms
     ASSERT_EQ(count, 9);
     ASSERT_TRUE(runtime >= milliseconds(500));
-    ASSERT_TRUE(runtime <= milliseconds(505));
+    ASSERT_TRUE(runtime <= milliseconds(510));
 }
 
 
@@ -237,7 +237,7 @@ TEST(StreamingExecutorUtilsTest, RetryWorksWhenFuncTakesTime) {
     ASSERT_TRUE(runtime >= expected_min_sleep_time);
 
     // Use expected_min_sleep_time with a little bit of wiggle room
-    milliseconds expected_max_sleep_time = expected_min_sleep_time + milliseconds(6);
+    milliseconds expected_max_sleep_time = expected_min_sleep_time + milliseconds(10);
     ASSERT_TRUE(runtime <= expected_max_sleep_time);
 }
 

@@ -63,7 +63,7 @@ MPFVideoTrack createTrack(const std::vector<int> &test_keys) {
 void assertDetectionsDropped(const std::vector<int> &test_keys, const std::vector<int> &expected_remaining_keys) {
     std::vector<MPFVideoTrack> tracks { createTrack(test_keys) };
 
-    ExecutorUtils::FixTracks(logger, {1, 10, 19, 0, 0}, tracks);
+    ExecutorUtils::DropOutOfSegmentDetections(logger, {1, 10, 19, 0, 0}, tracks);
     if (expected_remaining_keys.empty()) {
         ASSERT_TRUE(tracks.empty());
         return;
@@ -81,7 +81,7 @@ void assertDetectionsDropped(const std::vector<int> &test_keys, const std::vecto
 }
 
 
-TEST(StreamingExecutorUtilsTest, FixTracksDropsOutOfRangeDetections) {
+TEST(DropOutOfSegmentDetectionsTest, DropsOutOfRangeDetections) {
     // All before segment
     assertDetectionsDropped({}, {});
     assertDetectionsDropped({3}, {});
@@ -139,7 +139,7 @@ TEST(StreamingExecutorUtilsTest, FixTracksDropsOutOfRangeDetections) {
 
 
 void assertEmptyTracksDropped(int expected_remaining_track_count, std::vector<MPFVideoTrack> &&tracks) {
-    ExecutorUtils::FixTracks(logger, {1, 10, 19, 0, 0}, tracks);
+    ExecutorUtils::DropOutOfSegmentDetections(logger, {1, 10, 19, 0, 0}, tracks);
 
     ASSERT_EQ(tracks.size(), expected_remaining_track_count);
     for (const auto &track : tracks) {
@@ -150,7 +150,7 @@ void assertEmptyTracksDropped(int expected_remaining_track_count, std::vector<MP
 }
 
 
-TEST(StreamingExecutorUtilsTest, FixTracksDropsEmptyTracks) {
+TEST(DropOutOfSegmentDetectionsTest, DropsEmptyTracks) {
     assertEmptyTracksDropped(0, {});
 
     // All empty
@@ -179,6 +179,59 @@ TEST(StreamingExecutorUtilsTest, FixTracksDropsEmptyTracks) {
 
 
 
+TEST(DropLowConfidenceDetectionsTest, DoesNotDropAnythingWhenConfidenceThresholdNotGiven) {
+
+    MPFVideoTrack track;
+    track.frame_locations = {
+            { 0, {0, 0, 0, 0, -999999} },
+            { 1, {0, 0, 0, 0, 999999} },
+            { 2, {0, 0, 0, 0, -1} }
+    };
+
+    std::vector<MPFVideoTrack> tracks { track };
+
+    ExecutorUtils::DropLowConfidenceDetections(ExecutorUtils::LOWEST_CONFIDENCE_THRESHOLD, tracks);
+
+    ASSERT_EQ(tracks.size(), 1);
+
+    ASSERT_EQ(tracks[0].frame_locations.size(), 3);
+}
+
+
+
+TEST(DropLowConfidenceDetectionsTest, DropsDetectionsWhenBelowThreshold) {
+
+    MPFVideoTrack track1;
+    track1.frame_locations = {
+            { 0, {0, 0, 0, 0, 0.75} },
+            { 1, {0, 0, 0, 0, 1.0} },
+            { 2, {0, 0, 0, 0, -1} },
+            { 3, {0, 0, 0, 0, 0.4} }
+    };
+
+    MPFVideoTrack track2;
+    track2.frame_locations = {
+            { 0, {0, 0, 0, 0, 0.2} },
+            { 1, {0, 0, 0, 0, 0.1} },
+            { 2, {0, 0, 0, 0, -1} },
+            { 3, {0, 0, 0, 0, 0.39} }
+    };
+
+
+    std::vector<MPFVideoTrack> tracks { track1, track2 };
+    ExecutorUtils::DropLowConfidenceDetections(0.4, tracks);
+    ASSERT_EQ(tracks.size(), 1);
+
+    const auto &frame_loc_results = tracks[0].frame_locations;
+    ASSERT_EQ(frame_loc_results.size(), 3);
+    ASSERT_EQ(frame_loc_results.count(0), 1);
+    ASSERT_EQ(frame_loc_results.count(1), 1);
+    ASSERT_EQ(frame_loc_results.count(3), 1);
+}
+
+
+
+
 TEST(StreamingExecutorUtilsTest, RetryRetriesUntilTimeout) {
     int count = 0;
     auto test_func = [&] {
@@ -195,7 +248,7 @@ TEST(StreamingExecutorUtilsTest, RetryRetriesUntilTimeout) {
     // Can't be 10 iterations because 1 ms + 2 ms + 4 ms + 8 ms + 16 ms + 32 ms + 64 ms + 128 ms + 256 ms = 511ms
     ASSERT_EQ(count, 9);
     ASSERT_TRUE(runtime >= milliseconds(500));
-    ASSERT_TRUE(runtime <= milliseconds(505));
+    ASSERT_TRUE(runtime <= milliseconds(510));
 }
 
 
@@ -237,7 +290,7 @@ TEST(StreamingExecutorUtilsTest, RetryWorksWhenFuncTakesTime) {
     ASSERT_TRUE(runtime >= expected_min_sleep_time);
 
     // Use expected_min_sleep_time with a little bit of wiggle room
-    milliseconds expected_max_sleep_time = expected_min_sleep_time + milliseconds(6);
+    milliseconds expected_max_sleep_time = expected_min_sleep_time + milliseconds(10);
     ASSERT_TRUE(runtime <= expected_max_sleep_time);
 }
 

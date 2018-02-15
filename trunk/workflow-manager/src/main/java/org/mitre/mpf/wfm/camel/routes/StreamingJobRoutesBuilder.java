@@ -31,27 +31,21 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.protobuf.ProtobufDataFormat;
-import org.mitre.mpf.interop.JsonDetectionOutputObject;
-import org.mitre.mpf.interop.JsonSegmentSummaryReport;
-import org.mitre.mpf.interop.JsonTrackOutputObject;
+import org.mitre.mpf.interop.*;
 import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.stream.IntStream;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.*;
 
 
 @Component
@@ -122,7 +116,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
     private static JsonSegmentSummaryReport convertProtobufResponse(
             long jobId, DetectionProtobuf.StreamingDetectionResponse protobuf) {
 
-        List<JsonTrackOutputObject> tracks =
+        List<JsonStreamingTrackOutputObject> tracks =
                 IntStream.range(0, protobuf.getVideoTracksList().size())
                 .mapToObj(i -> StreamingJobRoutesBuilder.convertProtobufTrack(i,
                         protobuf.getDetectionType(), protobuf.getVideoTracksList().get(i)) )
@@ -140,34 +134,33 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
     }
 
 
-    private static JsonTrackOutputObject convertProtobufTrack(int id, String detectionType, DetectionProtobuf.StreamingVideoTrack protobuf) {
+    private static JsonStreamingTrackOutputObject convertProtobufTrack(
+            int id, String detectionType, DetectionProtobuf.StreamingVideoTrack protobuf) {
 
-        List<JsonDetectionOutputObject> detections = protobuf.getDetectionsList().stream()
+        SortedSet<JsonStreamingDetectionOutputObject> detections = protobuf.getDetectionsList().stream()
                 .map(StreamingJobRoutesBuilder::convertDetection)
-                .collect(toList());
+                .collect(toCollection(TreeSet::new));
 
-        JsonTrackOutputObject track = new JsonTrackOutputObject(
+        JsonStreamingDetectionOutputObject exemplar = detections.stream()
+		        .max(Comparator.comparingDouble(JsonStreamingDetectionOutputObject::getConfidence))
+		        .orElse(null);
+
+        return new JsonStreamingTrackOutputObject(
                 Integer.toString(id),
                 protobuf.getStartFrame(),
                 protobuf.getStopFrame(),
                 protobuf.getStartTime(),
                 protobuf.getStopTime(),
                 detectionType,
-                null); // TODO: Populate with component name ("componentName" in .ini file -> JobSettings -> BasicAmqMessageSender::SendSummaryReport)
-
-        track.getDetections().addAll(detections);
-
-        JsonDetectionOutputObject exemplar = detections.stream()
-                .max((d1, d2) -> Float.compare(d1.getConfidence(), d2.getConfidence())).get();
-        track.setExemplar(exemplar);
-
-        return track;
+                /* source, */ // TODO: Populate with component name ("componentName" in .ini file -> JobSettings -> BasicAmqMessageSender::SendSummaryReport)
+                exemplar,
+                detections);
     }
 
 
-    private static JsonDetectionOutputObject convertDetection(
+    private static JsonStreamingDetectionOutputObject convertDetection(
             DetectionProtobuf.StreamingVideoDetection protobuf) {
-        return new JsonDetectionOutputObject(
+        return new JsonStreamingDetectionOutputObject(
                 protobuf.getXLeftUpper(),
                 protobuf.getYLeftUpper(),
                 protobuf.getWidth(),
@@ -175,9 +168,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 protobuf.getConfidence(),
                 convertProperties(protobuf.getDetectionPropertiesList()),
                 protobuf.getFrameNumber(),
-                protobuf.getTime(),
-                ArtifactExtractionStatus.NOT_ATTEMPTED.toString(),
-                null);
+                protobuf.getTime());
     }
 
 

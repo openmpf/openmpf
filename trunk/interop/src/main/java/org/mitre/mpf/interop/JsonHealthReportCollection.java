@@ -32,7 +32,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -43,22 +45,40 @@ import java.util.stream.Collectors;
 import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
 import org.mitre.mpf.interop.util.TimeUtils;
 
+@JsonTypeName("HealthReportCollection")
 public class JsonHealthReportCollection {
 
+    @JsonTypeName("HealthReport")
     static class JsonHealthReport {
 
+        @JsonProperty("jobId")
+        @JsonPropertyDescription("The unique identifier assigned to this job by the system.")
         private Long jobId = null;
-        private String externalId = null;
-        private String jobStatus = null;
-        private String jobStatusDetail = null;
-        private String activityFrameId = null;
-        private String activityTimestamp = null;
-
         public Long getJobId() { return jobId; }
+
+        @JsonProperty("externalId")
+        @JsonPropertyDescription("The external identifier defined in the job creation request.")
+        private String externalId = null;
         public String getExternalId() { return externalId; }
+
+        @JsonProperty("jobStatus")
+        @JsonPropertyDescription("A string that will be one of the following values: INITIALIZING|IN_PROGRESS|CANCELLING|CANCELLED|TERMINATED| STALLED|JOB_CREATION_ERROR|ERROR|CANCELLED_BY_SHUTDOWN.")
+        private String jobStatus = null;
         public String getJobStatus() { return jobStatus; }
+
+        @JsonProperty("jobStatusDetail")
+        @JsonPropertyDescription("Section where more detailed information about the job status may be included. May be null if more detailed information is not available.")
+        private String jobStatusDetail = null;
         public String getJobStatusDetail() { return jobStatusDetail; }
+
+        @JsonProperty("activityFrameId")
+        @JsonPropertyDescription("The frame id corresponding to the start of the first track generated in the current segment. A null represents that no tracks have been started for this job yet.")
+        private String activityFrameId = null;
         public String getActivityFrameId() { return activityFrameId; }
+
+        @JsonProperty("activityTimestamp")
+        @JsonPropertyDescription("The detection time associated with the activityFrameId, local system time. Example: 2018-01-07 18:30:00.5 or null if there has been no activity found in the job.")
+        private String activityTimestamp = null;
         public String getActivityTimestamp() { return activityTimestamp; }
 
         @JsonCreator
@@ -89,6 +109,8 @@ public class JsonHealthReportCollection {
         }
     }
 
+    @JsonProperty("reportDate")
+    @JsonPropertyDescription("The timestamp for this report, local system time. Example: 2018-01-07 10:23:04.6.")
     private LocalDateTime reportDate = null;
     /**
      * The date/time that this callback is being issued.

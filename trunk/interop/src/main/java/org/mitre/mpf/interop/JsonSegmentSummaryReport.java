@@ -38,6 +38,8 @@ import java.util.*;
         "errorMessage", "detectionType", "tracks" })
 public class JsonSegmentSummaryReport {
 
+    @JsonProperty("reportDate")
+    @JsonPropertyDescription("The timestamp for this report, local system time. Example: 2018-01-07 10:23:04.6.")
     private LocalDateTime reportDate = null;
     public LocalDateTime getReportDate() { return reportDate; }
     public void setReportDate(LocalDateTime reportDate) { this.reportDate = reportDate; }
@@ -88,12 +90,13 @@ public class JsonSegmentSummaryReport {
 
     @JsonProperty("output")
     @JsonPropertyDescription("Mapping of detection types to tracks.")
-    private SortedMap<String, SortedSet<JsonTrackOutputObject>> types = new TreeMap<>();
-    public SortedMap<String, SortedSet<JsonTrackOutputObject>> getTypes() { return types; }
+    private SortedMap<String, SortedSet<JsonStreamingTrackOutputObject>> types = new TreeMap<>();
+    public SortedMap<String, SortedSet<JsonStreamingTrackOutputObject>> getTypes() { return types; }
 
     public JsonSegmentSummaryReport(LocalDateTime reportDate, long jobId, long segmentId,
                                     long segmentStartFrame, long segmentStopFrame,
-                                    String detectionType, List<JsonTrackOutputObject> tracks, String errorMessage) {
+                                    String detectionType, List<JsonStreamingTrackOutputObject> tracks,
+                                    String errorMessage) {
         this.reportDate = reportDate;
         this.jobId = jobId;
         this.segmentId = segmentId;
@@ -115,7 +118,7 @@ public class JsonSegmentSummaryReport {
                                                    @JsonProperty("segmentStartFrame") long segmentStartFrame,
                                                    @JsonProperty("segmentStopFrame") long segmentStopFrame,
                                                    @JsonProperty("detectionType") String detectionType,
-                                                   @JsonProperty("tracks") List<JsonTrackOutputObject> tracks,
+                                                   @JsonProperty("tracks") List<JsonStreamingTrackOutputObject> tracks,
                                                    @JsonProperty("errorMessage") String errorMessage)
             throws MpfInteropUsageException {
         return new JsonSegmentSummaryReport(TimeUtils.parseStringAsLocalDateTime(reportDate), jobId, segmentId,

@@ -103,4 +103,8 @@ public class TimeUtils {
     public static LocalDateTime millisToDateTime(long millis) {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneId.systemDefault());
     }
+
+    public static String millisToDateTimeString(long milllis) {
+        return getLocalDateTimeAsString(millisToDateTime(milllis));
+    }
 }

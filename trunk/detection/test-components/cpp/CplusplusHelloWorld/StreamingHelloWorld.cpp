@@ -26,6 +26,8 @@
 
 
 #include <log4cxx/xml/domconfigurator.h>
+#include <detectionComponentUtils.h>
+
 #include "StreamingHelloWorld.h"
 
 using namespace MPF::COMPONENT;
@@ -34,8 +36,9 @@ using namespace MPF::COMPONENT;
 StreamingHelloWorld::StreamingHelloWorld(const MPFStreamingVideoJob &job)
         : MPFStreamingDetectionComponent(job)
         , hw_logger_(GetLogger(job.run_directory))
-        , job_name_(job.job_name) {
-
+        , job_name_(job.job_name)
+        , confidence_threshold_(DetectionComponentUtils::GetProperty(job.job_properties, "CONFIDENCE_THRESHOLD", -1.0))
+{
     LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Initialized StreamingHelloWorld component.")
 }
 
@@ -58,8 +61,14 @@ bool StreamingHelloWorld::ProcessFrame(const cv::Mat &frame, int frame_number) {
         return false;
     }
 
-    LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Found activity in frame " << frame_number);
     MPFImageLocation detection(0, 0, frame.cols, frame.rows, 0.75, { {{"propName1", "propVal1"}} });
+    if (detection.confidence < confidence_threshold_) {
+        LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Found activity in frame " << frame_number
+                                     << ", but it was below the confidence threshold.");
+        return false;
+    }
+
+    LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Found activity in frame " << frame_number);
 
     bool add_to_existing_track = frame_number % 6 == 0 && !segment_detections_.empty();
     if (add_to_existing_track) {

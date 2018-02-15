@@ -55,7 +55,11 @@ public:
 
 private:
     log4cxx::LoggerPtr hw_logger_;
+
     std::string job_name_;
+
+    double confidence_threshold_;
+
     std::vector<MPF::COMPONENT::MPFVideoTrack> segment_detections_;
 
     static log4cxx::LoggerPtr GetLogger(const std::string &run_directory);

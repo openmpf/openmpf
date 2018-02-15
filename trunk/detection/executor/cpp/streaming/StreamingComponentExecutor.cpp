@@ -73,6 +73,7 @@ namespace MPF { namespace COMPONENT {
                     executor.Run<RetryStrategy::ALERT_WITH_TIMEOUT>();
                     break;
             }
+            LOG4CXX_INFO(logger, log_prefix << "Job has successfully completed because the quit command was received.");
 
             return ExitCode::SUCCESS;
         }
@@ -110,8 +111,9 @@ namespace MPF { namespace COMPONENT {
         , component_(std::move(component))
         , video_capture_(logger, settings_.stream_uri, job_)
         , detection_type_(detection_type)
+        , confidence_threshold_(DetectionComponentUtils::GetProperty(
+                    settings_.job_properties, "CONFIDENCE_THRESHOLD", ExecutorUtils::LOWEST_CONFIDENCE_THRESHOLD))
     {
-
     }
 
 
@@ -148,6 +150,7 @@ namespace MPF { namespace COMPONENT {
         int frame_number = -1;
         std::unordered_map<int, long> frame_timestamps;
         VideoSegmentInfo segment_info(0, 0, settings_.segment_size - 1, 0, 0);
+        bool begin_segment_called = false;
 
         try {
             LOG4CXX_INFO(logger_, log_prefix_ << "Connecting to stream at: " << settings_.stream_uri)
@@ -176,6 +179,7 @@ namespace MPF { namespace COMPONENT {
                     int segment_end = frame_number + settings_.segment_size - 1;
                     segment_info = VideoSegmentInfo(segment_number, frame_number, segment_end, frame.cols, frame.rows);
                     component_.BeginSegment(segment_info);
+                    begin_segment_called = true;
                     segment_activity_alert_sent = false;
                 }
 
@@ -196,7 +200,7 @@ namespace MPF { namespace COMPONENT {
                     frame_timestamps.clear();
                 }
             }
-            if (frame_number != segment_info.end_frame) {
+            if (frame_number != segment_info.end_frame && begin_segment_called) {
                 // send the summary report if we've started, but have not completed, the next segment
                 std::vector<MPFVideoTrack> tracks = component_.EndSegment();
                 LOG4CXX_INFO(logger_, log_prefix_ << "Send segment summary for final segment.")
@@ -207,8 +211,11 @@ namespace MPF { namespace COMPONENT {
         catch (const FatalError &ex) {
             // Send error report before actually handling exception.
             frame_timestamps.emplace(frame_number, GetTimestampMillis()); // Only inserts if key not already present.
-            std::vector<MPFVideoTrack> tracks = TryGetRemainingTracks();
-            FixTracks(segment_info, tracks);
+            std::vector<MPFVideoTrack> tracks;
+            if (begin_segment_called) {
+                tracks = TryGetRemainingTracks();
+                FixTracks(segment_info, tracks);
+            }
             sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps, ex.what());
             throw;
         }
@@ -265,7 +272,8 @@ namespace MPF { namespace COMPONENT {
 
     void StreamingComponentExecutor::FixTracks(const VideoSegmentInfo &segment_info,
             std::vector<MPFVideoTrack> &tracks) {
-        ExecutorUtils::FixTracks(logger_, segment_info, tracks);
+        ExecutorUtils::DropOutOfSegmentDetections(logger_, segment_info, tracks);
+        ExecutorUtils::DropLowConfidenceDetections(confidence_threshold_, tracks);
         video_capture_.ReverseTransform(tracks);
     }
 

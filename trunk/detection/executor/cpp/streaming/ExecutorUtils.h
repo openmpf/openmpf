@@ -30,6 +30,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <limits>
 #include <string>
 #include <thread>
 
@@ -40,8 +41,13 @@
 
 namespace MPF { namespace COMPONENT { namespace ExecutorUtils {
 
-    void FixTracks(log4cxx::LoggerPtr &logger, const VideoSegmentInfo &segment, std::vector<MPFVideoTrack> &tracks);
+    constexpr double LOWEST_CONFIDENCE_THRESHOLD = std::numeric_limits<double>::lowest();
 
+    void DropLowConfidenceDetections(double confidence_threshold, std::vector<MPFVideoTrack> &tracks);
+
+
+    void DropOutOfSegmentDetections(log4cxx::LoggerPtr &logger, const VideoSegmentInfo &segment,
+                                    std::vector<MPFVideoTrack> &tracks);
 
     // std::chrono::steady_clock::duration is implementation defined.
     // (In libstdc++.so.6.0.19 it is std::chrono::nanoseconds.)

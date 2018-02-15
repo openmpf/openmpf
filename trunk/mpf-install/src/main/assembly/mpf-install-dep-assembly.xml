@@ -32,7 +32,7 @@
   <includeBaseDirectory>false</includeBaseDirectory>
   <fileSets>
     <!-- Include everything that was installed in lib and config, as well as the 
-         amq_detection_component executable -->
+         amq_detection_component and streaming_component_executor executables -->
     <fileSet>
       <directory>${basedir}/../install/lib</directory>
       <outputDirectory>lib</outputDirectory>
@@ -53,6 +53,7 @@
       <directory>${basedir}/../install/bin</directory>
       <includes>
       	<include>amq_detection_component</include>
+        <include>streaming_component_executor</include>
         <include>component_dependency_finder.py</include>
       </includes>
       <outputDirectory>bin</outputDirectory>

@@ -38,6 +38,8 @@ import java.util.*;
         "errorMessage", "detectionType", "tracks" })
 public class JsonSegmentSummaryReport {
 
+    @JsonProperty("reportDate")
+    @JsonPropertyDescription("The timestamp for this report, local system time. Example: 2018-01-07 10:23:04.6.")
     private LocalDateTime reportDate = null;
     public LocalDateTime getReportDate() { return reportDate; }
     public void setReportDate(LocalDateTime reportDate) { this.reportDate = reportDate; }

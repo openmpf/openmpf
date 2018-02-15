@@ -141,13 +141,13 @@ public class CallbackUtils {
                          "summary report");
     }
 
-    // TODO: Implement doGetCallback
+    // TODO: Implement sendGetCallback
 
     private void sendPostCallback(Object json, String callbackUri, List<Long> jobIds, String callbackType) {
         HttpPost post = new HttpPost(callbackUri);
         post.addHeader("Content-Type", "application/json");
 
-        log.info("Starting HTTP POST of {} to {} for job ids {}.", callbackType, callbackUri, jobIds);
+        log.debug("Starting POST of {} callback to {} for job ids {}.", callbackType, callbackUri, jobIds);
         try {
 
             /*

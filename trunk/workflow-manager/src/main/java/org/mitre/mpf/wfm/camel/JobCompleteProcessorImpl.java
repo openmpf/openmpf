@@ -161,7 +161,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		final String jsonCallbackURL = redis.getCallbackURL(jobId);
 		final String jsonCallbackMethod = redis.getCallbackMethod(jobId);
 		if(jsonCallbackURL != null && jsonCallbackMethod != null && (jsonCallbackMethod.equals("POST") || jsonCallbackMethod.equals("GET"))) {
-			log.info("Starting {} callback to {} for job id {}.", jsonCallbackMethod, jsonCallbackURL, jobId);
+			log.debug("Starting {} callback to {} for job id {}.", jsonCallbackMethod, jsonCallbackURL, jobId);
 			try {
 				JsonCallbackBody jsonBody =new JsonCallbackBody(jobId, redis.getExternalId(jobId));
 				new Thread(new CallbackThread(jsonCallbackURL, jsonCallbackMethod, jsonBody)).start();

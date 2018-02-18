@@ -29,34 +29,33 @@ package org.mitre.mpf;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
 import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
-import org.mitre.mpf.interop.JsonCallbackBody;
-import org.mitre.mpf.interop.JsonJobRequest;
-import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.interop.JsonOutputObjectSummary;
+import org.mitre.mpf.interop.*;
 
 import java.io.File;
 
 public class SchemaCreator {
-	public static void main(String[] args) throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper();
-		JsonSchemaGenerator jsonSchemaGenerator = new JsonSchemaGenerator(objectMapper);
-		for(Class clazz : new Class[] {
-				// JsonAction.class,
-				JsonCallbackBody.class,
-				// JsonDetectionOutputObject.class,
-				// JsonDetectionProcessingError.class,
-				JsonJobRequest.class,
-				// JsonMarkupOutputObject.class,
-				// JsonMediaOutputObject.class,
-				JsonOutputObject.class,
-				JsonOutputObjectSummary.class
-				// JsonPipeline.class,
-				// JsonStage.class,
-				// JsonTrackOutputObject.class
-		}) {
-			JsonSchema jsonSchema = jsonSchemaGenerator.generateSchema(clazz);
-			objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(clazz.getSimpleName()+".schema.json"), jsonSchema);
-		}
-	}
+    public static void main(String[] args) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonSchemaGenerator jsonSchemaGenerator = new JsonSchemaGenerator(objectMapper);
+        for(Class clazz : new Class[] {
+                // JsonAction.class,
+                JsonCallbackBody.class,
+                // JsonDetectionOutputObject.class,
+                // JsonDetectionProcessingError.class,
+                JsonJobRequest.class,
+                // JsonMarkupOutputObject.class,
+                // JsonMediaOutputObject.class,
+                JsonOutputObject.class,
+                JsonOutputObjectSummary.class,
+                // JsonPipeline.class,
+                // JsonStage.class,
+                // JsonTrackOutputObject.class
+                JsonSegmentSummaryReport.class,
+                JsonHealthReportCollection.class
+        }) {
+            JsonSchema jsonSchema = jsonSchemaGenerator.generateSchema(clazz);
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(clazz.getSimpleName()+".schema.json"), jsonSchema);
+        }
+    }
 }
 

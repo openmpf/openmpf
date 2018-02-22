@@ -31,12 +31,36 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.mitre.mpf.mvc.model.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.mitre.mpf.mvc.model.ActionModel;
+import org.mitre.mpf.mvc.model.AddToPipelineModel;
+import org.mitre.mpf.mvc.model.PipelineComponentBasicInfo;
+import org.mitre.mpf.mvc.model.PipelineModel;
+import org.mitre.mpf.mvc.model.PipelinesModel;
+import org.mitre.mpf.mvc.model.TaskModel;
 import org.mitre.mpf.mvc.util.JsonView;
+import org.mitre.mpf.rest.api.PipelinesResponse;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.DuplicateNameWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.NotFoundWfmProcessingException;
-import org.mitre.mpf.wfm.pipeline.xml.*;
+import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.ActionDefinitionRef;
+import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.PipelineDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinitionRef;
+import org.mitre.mpf.wfm.pipeline.xml.TaskDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.TaskDefinitionRef;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
@@ -46,13 +70,14 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 
 @Api( value = "Pipelines",
@@ -73,20 +98,21 @@ public class PipelineController {
      *	/pipelines
      */
     //EXTERNAL
-    //1. REST API - Gets the available pipeline names that can be used to process media URIs
+    //1. REST API - Gets the available pipelines that can be used to process media URIs
     // pipelines: todo: the final /rest/pipelines REST API should be identical to what /pipelines is doing
     @RequestMapping(value = {"/rest/pipelines"}, method = RequestMethod.GET)
 	@ApiOperation(value="Retrieves list of available pipelines.",
-		notes="The response will be a JSON array of strings with each item being a pipeline.",
-		produces="application/json", response=String.class, responseContainer="List" )
+		notes="The response will be a JSON array of PipelinesResponse with each item naming the pipeline, and that pipelines capability to support a batch and/or a streaming job.",
+		produces="application/json", response=PipelinesResponse.class, responseContainer="List" )
     @ApiResponses(value = { 
     		@ApiResponse(code = 200, message = "Successful response"), 
     		@ApiResponse(code = 401, message = "Bad credentials") })
     @ResponseBody
-    public List<String> getAvailablePipelinesRest() {
-        return new ArrayList<>(pipelineService.getPipelineNames());
+    public List<PipelinesResponse> getAvailablePipelinesRest() {
+        SortedSet<String> pipelineNames = pipelineService.getPipelineNames();
+        return pipelineNames.stream().map(pipelineName -> new PipelinesResponse(pipelineName,
+            pipelineService.pipelineSupportsBatch(pipelineName), pipelineService.pipelineSupportsStreaming(pipelineName))).collect(Collectors.toList());
     }
-
 
     //INTERNAL
     /**
@@ -176,6 +202,7 @@ public class PipelineController {
         return pipelineDefinition;
     }
 
+    // This method is used when a custom pipeline is created using WFM Option Configuration Pipelines
     //INTERNAL
     /**
      * Creates a new pipeline
@@ -194,6 +221,12 @@ public class PipelineController {
         String description = pipelineModel.getDescription();
         //force uppercase
         String name = pipelineModel.getName().toUpperCase();
+
+        // Only allow pipelines names that contain letters, numbers, dash, hyphen or white space. Reject the pipeline if the name doesn't validate.
+        // Note the conversion to uppercase was already done, so we don't need to check for lowercase letters.
+        if ( !name.matches("([A-Z0-9 _-])+") ) {
+            throw new WfmProcessingException("Pipeline names can only contain letters, numbers, dash, hyphen or white space");
+        }
 
         PipelineDefinition pipelineDefinition = new PipelineDefinition(name, description);
         for (String taskName : pipelineModel.getTasksToAdd()) {
@@ -480,6 +513,7 @@ public class PipelineController {
         return JsonView.Render(responseTuple, response);
     }
 
+    // This method is used when a custom pipeline is created using WFM Option Configuration Pipelines 2
     //TODO: Remove when Pipelines1 page is phased out.
     @Deprecated
     @RequestMapping(value = "/pipelines/add-task-or-pipeline", method = RequestMethod.POST)
@@ -493,6 +527,13 @@ public class PipelineController {
             String description = addToPipelineModel.getDescription();
             //force uppercase
             String name = addToPipelineModel.getName().toUpperCase();
+
+            // Only allow pipelines names that contain letters, numbers, dash, hyphen or white space. Reject the pipeline if the name doesn't validate.
+            // Note the conversion to uppercase was already done, so we don't need to check for lowercase letters.
+            if ( !name.matches("([A-Z0-9 _-])+") ) {
+                throw new WfmProcessingException("Pipeline names can only contain letters, numbers, dash, hyphen or white space");
+            }
+
             String type = addToPipelineModel.getType();
 
             try {

@@ -39,6 +39,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.JobCreationResponse;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
+import org.mitre.mpf.rest.api.PipelinesResponse;
 import org.mitre.mpf.rest.api.SingleJobInfo;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -80,9 +81,9 @@ public class Main {
 		//getAvailableWorkPipelineNames
         String url = "http://localhost:8080/workflow-manager/rest/pipelines";
         Map<String, String> params = new HashMap<String, String>();  
-        List<String> availableWorkPipelines = client.get(url, params, new TypeReference<List<String>>() {});
-        System.out.println("availableWorkPipelines size: " + availableWorkPipelines.size());
-        System.out.println(Arrays.toString(availableWorkPipelines.toArray()));
+        List<PipelinesResponse> pipelineResponses = client.get(url, params, new TypeReference<List<PipelinesResponse>>() {});
+        System.out.println("availableWorkPipelines size: " + pipelineResponses.size());
+        System.out.println(Arrays.toString(pipelineResponses.stream().map(pipelineResponse -> pipelineResponse.getPipelineName()).toArray()));
         
         //processMedia        
 		JobCreationRequest jobCreationRequest = new JobCreationRequest();
@@ -93,9 +94,9 @@ public class Main {
 		jobCreationRequest.setExternalId("external id");
 		
 		//get first DLIB pipeline
-		String firstDlibPipeline = availableWorkPipelines.stream()
-				//.peek(pipepline -> System.out.println("will filter - " + pipepline))
-	            .filter(pipepline -> pipepline.startsWith("DLIB"))
+		String firstDlibPipeline = pipelineResponses.stream().map(PipelinesResponse::getPipelineName)
+				//.peek(pipelineName -> System.out.println("will filter - " + pipelineName))
+	            .filter(pipelineName -> pipelineName.startsWith("DLIB"))
 	            .findFirst()
 	            .get();
 		

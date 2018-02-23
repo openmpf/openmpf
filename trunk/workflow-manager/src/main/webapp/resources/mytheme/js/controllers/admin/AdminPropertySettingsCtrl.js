@@ -39,6 +39,7 @@ propSettingsModule.factory('PropertiesSvc', [
 '$resource',
 function ($resource) {
 
+	// brian directed here
 	var propertiesResource = $resource('properties', {}, {
 		update: {
 			method: 'PUT',

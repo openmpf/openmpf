@@ -254,16 +254,19 @@ public class PropertiesUtil {
 	}
 
 	//
-	// Detection Configuration
+	// Detection Configuration, only the detection configuration parameters may be modified after OpenMPF startup
 	//
 
 	@Value("${detection.artifact.extraction.policy}")
 	private ArtifactExtractionPolicy artifactExtractionPolicy;
 	public ArtifactExtractionPolicy getArtifactExtractionPolicy() { return artifactExtractionPolicy; }
+	public void setArtifactExtractionPolicy(ArtifactExtractionPolicy artifactExtractionPolicy) { this.artifactExtractionPolicy = artifactExtractionPolicy; }
 
 	@Value("${detection.sampling.interval}")
 	private int samplingInterval;
 	public int getSamplingInterval() { return samplingInterval; }
+	public void setSamplingInterval(int samplingInterval) { this.samplingInterval = samplingInterval; }
+	public boolean isSamplingIntervalChangeable() { return true; }
 
 	@Value("${detection.confidence.threshold}")
 	private double confidenceThreshold;

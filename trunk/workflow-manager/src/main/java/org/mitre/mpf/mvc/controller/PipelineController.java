@@ -239,7 +239,7 @@ public class PipelineController {
             // log the error, then rethrow the WfmProcessingException back to the caller for handling.
             log.error("pipeline name validation error with message: {}", e.getMessage());
             throw e;
-            
+
         }
     }
 

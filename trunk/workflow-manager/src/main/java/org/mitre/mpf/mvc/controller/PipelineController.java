@@ -102,7 +102,7 @@ public class PipelineController {
     // pipelines: todo: the final /rest/pipelines REST API should be identical to what /pipelines is doing
     @RequestMapping(value = {"/rest/pipelines"}, method = RequestMethod.GET)
 	@ApiOperation(value="Retrieves list of available pipelines.",
-		notes="The response will be a JSON array of PipelinesResponse with each item naming the pipeline, and that pipelines capability to support a batch and/or a streaming job.",
+		notes="The response will be a JSON array of PipelinesResponse with each item naming the pipeline, and that pipeline's capability to support a batch and/or a streaming job.",
 		produces="application/json", response=PipelinesResponse.class, responseContainer="List" )
     @ApiResponses(value = { 
     		@ApiResponse(code = 200, message = "Successful response"), 
@@ -202,7 +202,7 @@ public class PipelineController {
         return pipelineDefinition;
     }
 
-    // This method is used when a custom pipeline is created using WFM Option Configuration Pipelines
+    // This method is used when a custom pipeline is created using the WFM UI option "Configuration" --> "Pipelines 2"
     //INTERNAL
     /**
      * Creates a new pipeline
@@ -222,17 +222,25 @@ public class PipelineController {
         //force uppercase
         String name = pipelineModel.getName().toUpperCase();
 
-        // Only allow pipelines names that contain letters, numbers, dash, hyphen or white space. Reject the pipeline if the name doesn't validate.
-        // Note the conversion to uppercase was already done, so we don't need to check for lowercase letters.
-        if ( !name.matches("([A-Z0-9 _-])+") ) {
-            throw new WfmProcessingException("Pipeline names can only contain letters, numbers, dash, hyphen or white space");
-        }
+        try {
 
-        PipelineDefinition pipelineDefinition = new PipelineDefinition(name, description);
-        for (String taskName : pipelineModel.getTasksToAdd()) {
-            pipelineDefinition.getTaskRefs().add(new TaskDefinitionRef(taskName));
+            // Only allow pipelines names that contain uppercase letters, numbers, dash, hyphen or white space.
+            // This method may throw a WfmProcessingException, allowing for rejection of the pipeline if the name doesn't validate.
+            validateTaskOrPipelineName(name);
+
+            PipelineDefinition pipelineDefinition = new PipelineDefinition(name, description);
+            for (String taskName : pipelineModel.getTasksToAdd()) {
+                pipelineDefinition.getTaskRefs().add(new TaskDefinitionRef(taskName));
+            }
+            pipelineService.savePipeline(pipelineDefinition);
+
+        } catch (WfmProcessingException e) {
+
+            // log the error, then rethrow the WfmProcessingException back to the caller for handling.
+            log.error("pipeline name validation error with message: {}", e.getMessage());
+            throw e;
+            
         }
-        pipelineService.savePipeline(pipelineDefinition);
     }
 
     //INTERNAL
@@ -306,6 +314,10 @@ public class PipelineController {
         //force uppercase
         String name = taskModel.getName().toUpperCase();
 
+        // Only allow task names that contain uppercase letters, numbers, dash, hyphen or white space.
+        // This method may throw a WfmProcessingException, allowing for rejection of the task if the name doesn't validate.
+        validateTaskOrPipelineName(name);
+
         TaskDefinition taskDefinition = new TaskDefinition(name, description);
         for (String actionName : taskModel.getActionsToAdd()) {
             taskDefinition.getActions().add(new ActionDefinitionRef(actionName));
@@ -364,6 +376,7 @@ public class PipelineController {
         return action;
     }
 
+    // This method is used when a custom action is created using the WFM UI option "Configuration" --> "Pipelines 2"
     //INTERNAL
     /**
      * Adds an action with an associated action and properties.
@@ -379,12 +392,28 @@ public class PipelineController {
             produces = "application/json" )
     @ResponseBody
     public void createActionJson2(@RequestBody ActionModel actionModel, HttpServletResponse response) throws WfmProcessingException {
+
         Map<String, String> modifiedProperties;
         try {
+
+            // Only allow action names that contain letters (uppercase or lowercase at this stage of processing), numbers, dash, hyphen or white space.
+            // This method may throw a WfmProcessingException, allowing for rejection of the action if the name doesn't validate.
+            String name = actionModel.getActionName();
+            validateActionName(name);
+
             modifiedProperties = objectMapper.readValue(actionModel.getProperties(), HashMap.class);
+
+        } catch (WfmProcessingException wfme) {
+
+            // log the error, then rethrow the WfmProcessingException back to the caller for handling.
+            log.error("action name validation error with message: {}", wfme.getMessage());
+            throw wfme;
+
         } catch (Exception e) {
+
             log.error("error getting properties with message: {}", e.getMessage());
             throw new WfmProcessingException("Invalid properties value: " + actionModel.getProperties() + ".", e);
+
         }
 
         saveAction(actionModel, modifiedProperties);
@@ -483,11 +512,14 @@ public class PipelineController {
     //      and are still being used by piplines 1 page
     // old?    @RequestMapping(value = "/pipelines/algorithm-properties", method = RequestMethod.GET)
 
+    // This method is used when a custom action is created using the WFM UI option "Configuration" --> "Pipelines"
     //TODO: Remove when Pipelines1 page is phased out.
     @Deprecated
     @RequestMapping(value = "/pipelines/create-action", method = RequestMethod.POST)
     @ResponseBody
     public Object createActionJson(@RequestBody ActionModel actionModel, HttpServletResponse response) throws WfmProcessingException {
+
+
         Tuple<Boolean,String> responseTuple = null;
 
         //IMPORTANT!! - only passing in the modified properties in this method
@@ -501,7 +533,13 @@ public class PipelineController {
         }
 
         try {
-        	saveAction(actionModel, modifiedProperties);
+
+            // Only allow action names that contain letters (uppercase or lowercase at this stage of processing), numbers, dash, hyphen or white space.
+            // This method may throw a WfmProcessingException, allowing for rejection of the action if the name doesn't validate.
+            String name = actionModel.getActionName();
+            validateActionName(name);
+
+            saveAction(actionModel, modifiedProperties);
             log.debug("Successfully created action: " + actionModel.getActionName());
         	responseTuple = new Tuple<>(true, null);
         }
@@ -513,7 +551,7 @@ public class PipelineController {
         return JsonView.Render(responseTuple, response);
     }
 
-    // This method is used when a custom pipeline is created using WFM Option Configuration Pipelines 2
+    // This method is used when a custom pipeline is created using the WFM UI option "Configuration" --> "Pipelines"
     //TODO: Remove when Pipelines1 page is phased out.
     @Deprecated
     @RequestMapping(value = "/pipelines/add-task-or-pipeline", method = RequestMethod.POST)
@@ -528,15 +566,15 @@ public class PipelineController {
             //force uppercase
             String name = addToPipelineModel.getName().toUpperCase();
 
-            // Only allow pipelines names that contain letters, numbers, dash, hyphen or white space. Reject the pipeline if the name doesn't validate.
-            // Note the conversion to uppercase was already done, so we don't need to check for lowercase letters.
-            if ( !name.matches("([A-Z0-9 _-])+") ) {
-                throw new WfmProcessingException("Pipeline names can only contain letters, numbers, dash, hyphen or white space");
-            }
-
-            String type = addToPipelineModel.getType();
+            String type = null;
 
             try {
+
+                // Only allow pipelines names that contain uppercase letters, numbers, dash, hyphen or white space. Reject the pipeline if the name doesn't validate.
+                validateTaskOrPipelineName(name);
+
+                type = addToPipelineModel.getType();
+
                 //actions is handled by "/createaction"
                 if(type.equals("task")) {
                     TaskDefinition taskDefinition = new TaskDefinition(name, description);
@@ -565,5 +603,27 @@ public class PipelineController {
         }
 
         return JsonView.Render(responseTuple, response);
+    }
+
+    /** Only allow action names that contain letters, numbers, dash, hyphen or white space. The action should be rejected if the name doesn't validate.
+     * Note that action names can contain upper or lower case letters, as opposed to pipelineNames or taskNames which are always converted to uppercase.
+     * @param actionName name of the action to be validated.
+     * @exception WfmProcessingException is thrown if the actionName doesn't validate
+     **/
+    private void validateActionName(String actionName) throws WfmProcessingException {
+        if ( !actionName.matches("([a-zA-Z0-9 _-])+") ) {
+            throw new WfmProcessingException("Action names can only contain letters, numbers, dash, hyphen or white space. Action name " + actionName + " didn't validate.");
+        }
+    }
+
+    /** Only allow task or pipelines names that contain letters, numbers, dash, hyphen or white space. The task or pipeline should be rejected if the name doesn't validate.
+     * This method assumes the conversion from lower to uppercase has already been done, so there is no need to check for lowercase letters.
+     * @param name name of the task or pipelineto be validated.
+     * @exception WfmProcessingException is thrown if the task or pipeline name doesn't validate
+     **/
+    private void validateTaskOrPipelineName(String name) throws WfmProcessingException {
+        if ( !name.matches("([A-Z0-9 _-])+") ) {
+            throw new WfmProcessingException("Task or Pipeline names can only contain uppercase letters, numbers, dash, hyphen or white space. Name " + name + " didn't validate.");
+        }
     }
 }

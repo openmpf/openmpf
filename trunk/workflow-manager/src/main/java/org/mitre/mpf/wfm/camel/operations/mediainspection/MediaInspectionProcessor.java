@@ -156,6 +156,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
 		transientMedia.setLength(-1);
 	}
 
+	// inspectVideo may add the following properties to the transientMedias metadata: FRAME_COUNT, FPS, DURATION, ROTATION.
+    // The TransientMedias length will be set to FRAME_COUNT.
 	private void inspectVideo(File localFile, TransientMedia transientMedia) throws IOException, TikaException, SAXException {
 		// FRAME_COUNT
 

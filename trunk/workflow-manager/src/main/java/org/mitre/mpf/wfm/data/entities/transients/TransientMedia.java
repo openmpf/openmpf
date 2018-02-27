@@ -100,11 +100,6 @@ public class TransientMedia {
 	public int getLength() { return length; }
 	public void setLength(int length) { this.length = length; }
 
-	/** The number of frames per second for video files */
-	private float fps;
-	public float getFps() { return fps; }
-	public void setFps(float fps) { this.fps = fps; }
-
 	/** The SHA 256 hash of the local file (assuming it could be retrieved. */
 	private String sha256;
 	public String getSha256() { return sha256; }

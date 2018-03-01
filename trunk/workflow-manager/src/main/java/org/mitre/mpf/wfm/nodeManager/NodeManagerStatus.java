@@ -54,6 +54,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class NodeManagerStatus implements ClusterChangeNotifier {
 
+    private static final int VIEW_UPDATE_CHECK_TIME_MILLISEC = 500;
+    private static final int VIEW_UPDATE_MAX_WAIT_TIME_MILLISEC = 60_000;
+
     private static final Logger log = LoggerFactory.getLogger(NodeManagerStatus.class);
 
     @Autowired
@@ -65,32 +68,59 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     @Autowired
     private StreamingJobRequestBo streamingJobRequestBo;
 
+    // flag that indicates if the JGroups view been updated at least once
+    private boolean viewUpdated = false;
+
     private volatile boolean isRunning = false;
 
     private Map<String, ServiceDescriptor> serviceDescriptorMap = new ConcurrentHashMap<>();
 
 
     public void init(boolean reloadConfig) {
-        if(!reloadConfig) {
+        if (!reloadConfig) {
+            masterNode.setCallback(this);
             masterNode.run();
             isRunning = true;
         }
+
         try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
             if (masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri())) {
+                waitForViewUpdate();
                 masterNode.launchAllNodes();
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
-        }
-
-        if(!reloadConfig) {
-            masterNode.setCallback(this);
         }
 
         updateServiceDescriptors();
     }
 
+    private void waitForViewUpdate() {
+        // Wait until our view of JGroups is updated so we know the current cluster membership.
+        // This is necessary to avoid a race condition that may happen if child node-managers are already running.
+
+        // NOTE: We can call getView() on the JChannel to get the current view right away, but that may only contain
+        // the master node. If a child node is present, then ChannelReceiver.viewAccepted() should be called eventually,
+        // which results in the viewUpdated() callback.
+
+        try {
+            int cumulativeWaitTimeMillisec = 0;
+            while (!viewUpdated && cumulativeWaitTimeMillisec < VIEW_UPDATE_MAX_WAIT_TIME_MILLISEC) {
+                log.info("Waiting for cluster view update. Time spent waiting so far: " + cumulativeWaitTimeMillisec + " milliseconds."); // DEBUG
+                Thread.sleep(VIEW_UPDATE_CHECK_TIME_MILLISEC);
+                cumulativeWaitTimeMillisec += VIEW_UPDATE_CHECK_TIME_MILLISEC;
+            }
+        } catch (InterruptedException e) {
+            log.warn("Interruped while waiting for cluster view to be updated.");
+        }
+
+        if (!viewUpdated) {
+            log.warn("Cluster view has not updated yet. Proceeding anyway. " +
+                    "This may result in failure to launch services on nodes that have not yet been identified.");
+        } else {
+            log.debug("Cluster view updated at least once. Proceeding.");
+        }
+    }
 
     public void stop() {
         try {
@@ -214,6 +244,12 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     }
 
     @Override
+    public void viewUpdated() {
+        log.debug("Cluster view updated.");
+        viewUpdated = true;
+    }
+
+    @Override
     public void newManager(String hostname) {
         log.debug("{} manager has started.", hostname);
         //go ahead and launch anything that is able to launch (nothing that starts with a state of Delete or InactiveNoStart)
@@ -236,7 +272,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     public void serviceDown(ServiceDescriptor service) {
         updateServiceDescriptorEntry(service);
         broadcast( service, "OnServiceDown" );
-        log.info("{} has shut down.", service.getName());
+it        log.info("{} has shut down.", service.getName());
     }
 
     @Override

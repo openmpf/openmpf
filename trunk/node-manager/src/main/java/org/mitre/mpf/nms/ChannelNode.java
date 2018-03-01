@@ -148,7 +148,6 @@ public class ChannelNode {
     }
 
 
-
     /**
      * Shut down the baseNode cleanly
      */

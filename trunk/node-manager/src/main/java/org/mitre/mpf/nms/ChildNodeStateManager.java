@@ -155,12 +155,15 @@ public class ChildNodeStateManager extends ChannelReceiver {
      */
     public void shutdown(ServiceDescriptor desc, boolean markAsDelete, boolean noStartOnConfigChange) {
         // lookup node by name, remove from table, perform other actions (or let object do its own cleanup)
-        BaseServiceLauncher theApp = launchedAppsMap.get(desc.getName());
+        BaseServiceLauncher theApp = null;
+        synchronized (launchedAppsMap) {
+            theApp = launchedAppsMap.get(desc.getName());
+        }
         if (theApp != null) {
             //make sure the state does not go back to Inactive if removed from the config!
             theApp.shutdown();
             //TODO: this logic should be improved
-            if(noStartOnConfigChange) {
+            if (noStartOnConfigChange) {
                 updateState(desc, NodeManagerConstants.States.InactiveNoStart);
             } else {
                 NodeManagerConstants.States newState = markAsDelete
@@ -169,8 +172,9 @@ public class ChildNodeStateManager extends ChannelReceiver {
                 updateState(desc, newState);
             }
         }
-
-        launchedAppsMap.remove(desc.getName());
+        synchronized (launchedAppsMap) {
+            launchedAppsMap.remove(desc.getName());
+        }
     }
 
     /**
@@ -180,30 +184,34 @@ public class ChildNodeStateManager extends ChannelReceiver {
      */
     private void launch(ServiceDescriptor desc) {
         // create and launch a node of the specified type with the given name
-        if (!launchedAppsMap.containsKey(desc.getName())) {
-            BaseServiceLauncher launcher = BaseServiceLauncher.getLauncher(desc);
-
-            if (launcher != null) {
-                // if it's startable then hold onto it
-                if (launcher.startup(properties.getMinServiceUpTimeMillis())) {
+        BaseServiceLauncher launcher = null;
+        synchronized (launchedAppsMap) {
+            if (!launchedAppsMap.containsKey(desc.getName())) {
+                launcher = BaseServiceLauncher.getLauncher(desc);
+            }
+        }
+        if (launcher != null) {
+            // if it's startable then hold onto it
+            if (launcher.startup(properties.getMinServiceUpTimeMillis())) {
+                synchronized (launchedAppsMap) {
                     launchedAppsMap.put(launcher.getServiceName(), launcher);
-                    updateState(desc, NodeManagerConstants.States.Running);
-                    LOG.debug("Sending {} state for {}", NodeManagerConstants.States.Running, desc.getName());
-                } else {
-                    LOG.error("Could not launch: {} at path: {}", desc.getName(), desc.getService().getCmdPath());
-                    // Give time for things to propagate
-                    SleepUtil.interruptableSleep(2000);
-                    desc.setFatalIssueFlag(true);
-                    updateState(desc, NodeManagerConstants.States.Inactive);
                 }
+                updateState(desc, NodeManagerConstants.States.Running);
+                LOG.debug("Sending {} state for {}", NodeManagerConstants.States.Running, desc.getName());
             } else {
-                LOG.error("Could not create launcher for: {} at path: {}", desc.getName(),
-                        desc.getService().getCmdPath());
+                LOG.error("Could not launch: {} at path: {}", desc.getName(), desc.getService().getCmdPath());
                 // Give time for things to propagate
                 SleepUtil.interruptableSleep(2000);
                 desc.setFatalIssueFlag(true);
                 updateState(desc, NodeManagerConstants.States.Inactive);
             }
+        } else {
+            LOG.error("Could not create launcher for: {} at path: {}", desc.getName(),
+                    desc.getService().getCmdPath());
+            // Give time for things to propagate
+            SleepUtil.interruptableSleep(2000);
+            desc.setFatalIssueFlag(true);
+            updateState(desc, NodeManagerConstants.States.Inactive);
         }
     }
 
@@ -239,46 +247,48 @@ public class ChildNodeStateManager extends ChannelReceiver {
         while (isConnected()) {
             SleepUtil.interruptableSleep(2000);
 
-            int running = launchedAppsMap.size();
-            for (BaseServiceLauncher n : launchedAppsMap.values()) {
-                ServiceDescriptor sd = getServiceTable().get(n.getServiceName());
+            synchronized (launchedAppsMap) {
+                int running = launchedAppsMap.size();
+                for (BaseServiceLauncher n : launchedAppsMap.values()) {
+                    ServiceDescriptor sd = getServiceTable().get(n.getServiceName());
 
-                if (null == sd) {
-                    LOG.warn("Missing launched service: {}", n.getServiceName());
-                    continue;
-                }
-
-                // If a process we are responsible for is no longer running, notify the world, then mark it for
-                // deletion from our list of managed processes.  Don't delete in mid enumeration.
-                if (n.runToCompletion()) {
-                    LOG.debug("{} has gone offline", n.getServiceName());
-                    toDelete.add(n.getServiceName());
-                    sd.setFatalIssueFlag(n.getFatalProblemFlag());
-                    //mark as InactiveNoStart here if the fatal issue flag is set! will prevent that service from
-                    //starting on node manger config being saved or the worklow manager webapp being restarted
-                    if(n.getFatalProblemFlag()) {
-                        updateState(sd, NodeManagerConstants.States.InactiveNoStart);
-                    } else {
-                        updateState(sd, NodeManagerConstants.States.Inactive);
+                    if (null == sd) {
+                        LOG.warn("Missing launched service: {}", n.getServiceName());
+                        continue;
                     }
-                    running--;
-                    // Otherwise, just keep track of any restarts the process is going through
-                } else if (n.getRestartCount() > sd.getRestarts()) {
-                    LOG.debug("{} has a new restart count of {}", n.getServiceName(), n.getRestartCount());
-                    sd.setRestarts(n.getRestartCount());
-                    updateState(sd, sd.getLastKnownState());
-                }
-            }
-            // Anything that terminated (restart != true) has to be cleaned up outside the iterator above
-            for (String name : toDelete) {
-                launchedAppsMap.remove(name);
-            }
-            toDelete.clear();
 
-            if (running != lastRunning) {
-                LOG.info("At this point, there are {} running nodes", running);
+                    // If a process we are responsible for is no longer running, notify the world, then mark it for
+                    // deletion from our list of managed processes.  Don't delete in mid enumeration.
+                    if (n.runToCompletion()) {
+                        LOG.debug("{} has gone offline", n.getServiceName());
+                        toDelete.add(n.getServiceName());
+                        sd.setFatalIssueFlag(n.getFatalProblemFlag());
+                        //mark as InactiveNoStart here if the fatal issue flag is set! will prevent that service from
+                        //starting on node manger config being saved or the worklow manager webapp being restarted
+                        if (n.getFatalProblemFlag()) {
+                            updateState(sd, NodeManagerConstants.States.InactiveNoStart);
+                        } else {
+                            updateState(sd, NodeManagerConstants.States.Inactive);
+                        }
+                        running--;
+                        // Otherwise, just keep track of any restarts the process is going through
+                    } else if (n.getRestartCount() > sd.getRestarts()) {
+                        LOG.debug("{} has a new restart count of {}", n.getServiceName(), n.getRestartCount());
+                        sd.setRestarts(n.getRestartCount());
+                        updateState(sd, sd.getLastKnownState());
+                    }
+                }
+                // Anything that terminated (restart != true) has to be cleaned up outside the iterator above
+                for (String name : toDelete) {
+                    launchedAppsMap.remove(name);
+                }
+                toDelete.clear();
+
+                if (running != lastRunning) {
+                    LOG.info("At this point, there are {} running nodes", running);
+                }
+                lastRunning = running;
             }
-            lastRunning = running;
         }
     }
 }

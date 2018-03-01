@@ -65,12 +65,10 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
     private ClusterChangeNotifier notifier;          // For callbacks when changing node states
 
 
-
     protected ChannelReceiver(NodeManagerProperties properties, ChannelNode channelNode) {
         this.properties = properties;
         msgChannel = channelNode;
     }
-
 
     /**
      * a notifier will have methods called when the cluster state changes
@@ -136,7 +134,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         Map<String, Boolean> managersInView = new HashMap<>();
         for (Address addr : view.getMembers()) {
             String name = addr.toString();
-            LOG.debug("viewAccepted from {}", name);
+            LOG.info("Cluster view accepted from {}", name);
             // If it's a node manager then track it, it's name contains the machine name upon which it resides
             Pair<String, NodeTypes> hostNodeTypePair = AddressParser.parse(addr);
             if (hostNodeTypePair == null) {
@@ -208,6 +206,10 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         }
 
         super.viewAccepted(view);
+
+        if (notifier != null) {
+            notifier.viewUpdated();
+        }
     }
 
 

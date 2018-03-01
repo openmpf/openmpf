@@ -103,6 +103,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 			for (TransientMedia transientMedia : transientJob.getMedia()) {
 				if (!transientMedia.isFailed()) {
 					// If there exist media-specific properties for track merging, use them.
+					// Note: TrackMergingPlan.getSamplingInterval() is unused. For now, not adding FRAME_RATE_CAP to the track merging plan.
 					String samplingInterval = AggregateJobPropertiesUtil.calculateValue(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
 							transientAction.getProperties(), transientJob.getOverriddenJobProperties(),
 							transientAction, transientJob.getOverriddenAlgorithmProperties(),

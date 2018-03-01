@@ -28,15 +28,13 @@ package org.mitre.mpf.wfm.data.entities.transients;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.HashMap;
+import java.util.Map;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.MediaResource;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
-
-import java.util.HashMap;
-import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /** An in-flight media instance. */
@@ -83,6 +81,7 @@ public class TransientMedia {
 	}
 	public Map<String,String> getMetadata() { return metadata; }
 	public String getMetadata(String key) { return metadata.get(key); }
+	public boolean containsMetadata(String key) { return metadata.containsKey(key); }
 
 	/** The Algorithm properties to override for the medium. */
 	private Map<String,String> mediaSpecificProperties = new HashMap<>();

@@ -44,6 +44,14 @@ public class JniLoader {
 
     static {
         log.info("Loading JNI libraries...");
-        System.loadLibrary("mpfopencvjni");
+        try {
+            System.loadLibrary("mpfopencvjni");
+        }
+        catch (UnsatisfiedLinkError ex) {
+            log.warn("System.loadLibrary() failed due to: {}", ex.getMessage());
+            String libFullPath = System.getenv("MPF_HOME") + "/lib/libmpfopencvjni.so";
+            log.warn("Trying full path to library: {}", libFullPath);
+            System.load(libFullPath);
+        }
     }
 }

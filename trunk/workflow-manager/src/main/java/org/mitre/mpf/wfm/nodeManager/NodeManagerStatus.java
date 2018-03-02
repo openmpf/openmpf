@@ -68,7 +68,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     @Autowired
     private StreamingJobRequestBo streamingJobRequestBo;
 
-    // flag that indicates if the JGroups view been updated at least once
+    // flag that indicates if at least one view update was initiated by JGroups
     private boolean viewUpdated = false;
 
     private volatile boolean isRunning = false;
@@ -85,7 +85,11 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 
         try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
             if (masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri())) {
-                waitForViewUpdate();
+                if (!masterNode.areAllManagersPresent()) {
+                    waitForViewUpdate();
+                } else {
+                    log.info("All known node managers are available.");
+                }
                 masterNode.launchAllNodes();
             }
         } catch (IOException e) {
@@ -96,29 +100,32 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     }
 
     private void waitForViewUpdate() {
-        // Wait until our view of JGroups is updated so we know the current cluster membership.
-        // This is necessary to avoid a race condition that may happen if child node-managers are already running.
-
-        // NOTE: We can call getView() on the JChannel to get the current view right away, but that may only contain
-        // the master node. If a child node is present, then ChannelReceiver.viewAccepted() should be called eventually,
-        // which results in the viewUpdated() callback.
-
+        // Wait until our view is updated by JGroups so we know the current cluster membership.
+        // This is necessary to avoid a race condition that may happen if child node managers are already running
+        // but JGroups has yet to report that they are available.
+        int cumulativeWaitTimeMillisec = 0;
         try {
-            int cumulativeWaitTimeMillisec = 0;
+            if (!viewUpdated) {
+                log.info("Waiting up to " + VIEW_UPDATE_MAX_WAIT_TIME_MILLISEC + " milliseconds for cluster view update ...");
+            }
             while (!viewUpdated && cumulativeWaitTimeMillisec < VIEW_UPDATE_MAX_WAIT_TIME_MILLISEC) {
-                log.info("Waiting for cluster view update. Time spent waiting so far: " + cumulativeWaitTimeMillisec + " milliseconds."); // DEBUG
+                log.debug("Time spent waiting so far: " + cumulativeWaitTimeMillisec + " milliseconds");
                 Thread.sleep(VIEW_UPDATE_CHECK_TIME_MILLISEC);
                 cumulativeWaitTimeMillisec += VIEW_UPDATE_CHECK_TIME_MILLISEC;
             }
         } catch (InterruptedException e) {
-            log.warn("Interruped while waiting for cluster view to be updated.");
+            log.warn("Interruped while waiting for cluster view update.");
+        }
+
+        if (cumulativeWaitTimeMillisec > 0) {
+            log.info("Waited a total of " + cumulativeWaitTimeMillisec + " milliseconds for cluster view update.");
         }
 
         if (!viewUpdated) {
-            log.warn("Cluster view has not updated yet. Proceeding anyway. " +
-                    "This may result in failure to launch services on nodes that have not yet been identified.");
+            log.warn("Cluster view has not updated yet. Proceeding anyway. This may result in failure to launch " +
+                    "services on nodes that are not available or cannot be identified.");
         } else {
-            log.debug("Cluster view updated at least once. Proceeding.");
+            log.info("Cluster view updated. Proceeding.");
         }
     }
 
@@ -244,9 +251,11 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     }
 
     @Override
-    public void viewUpdated() {
-        log.debug("Cluster view updated.");
-        viewUpdated = true;
+    public void viewUpdated(boolean forced) {
+        if (!forced) {
+            log.debug("Cluster view updated.");
+            viewUpdated = true;
+        }
     }
 
     @Override
@@ -272,7 +281,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     public void serviceDown(ServiceDescriptor service) {
         updateServiceDescriptorEntry(service);
         broadcast( service, "OnServiceDown" );
-it        log.info("{} has shut down.", service.getName());
+        log.info("{} has shut down.", service.getName());
     }
 
     @Override

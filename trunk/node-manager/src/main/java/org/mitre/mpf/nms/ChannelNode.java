@@ -30,6 +30,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Receiver;
+import org.jgroups.View;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -157,5 +158,10 @@ public class ChannelNode {
         channel.close();
         isConnected = false;
         log.debug("Channel closed.");
+    }
+
+
+    public View getView() {
+        return channel.getView();
     }
 }

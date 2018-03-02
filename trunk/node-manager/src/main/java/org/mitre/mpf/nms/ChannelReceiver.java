@@ -122,6 +122,10 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
 
     @Override
     public void viewAccepted(View view) {
+        handleView(view, false);
+    }
+
+    public void handleView(View view, boolean forced) {
         // What is currently out there
         String participants = view.getMembers().stream()
                 .map(Object::toString)
@@ -208,7 +212,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         super.viewAccepted(view);
 
         if (notifier != null) {
-            notifier.viewUpdated();
+            notifier.viewUpdated(forced);
         }
     }
 
@@ -302,5 +306,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         LOG.debug("{} starting up", fqn);
         // this connects us to the jgroups channel defined, we are now live and ready for comm
         msgChannel.connect(fqn, this);
+
+        handleView(msgChannel.getView(), true);
     }
 }

@@ -32,8 +32,11 @@ public interface ClusterChangeNotifier {
 
     /**
      * Called every time the current view of the network is updated.
+     *
+     * @parm forced true if JChannel.getView() was used to force an update;
+     *              otherwise false if the update was initiated by JGroups
      */
-    public void viewUpdated();
+    public void viewUpdated(boolean forced);
 
     /**
      * Called when a new node-manager appears on the network

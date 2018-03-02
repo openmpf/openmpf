@@ -101,9 +101,10 @@ public class TestStreamingJobStartStop {
 		waitForCorrectNodes();
 
 		TransientStage stage1 = new TransientStage("stage1", "description", ActionType.DETECTION);
-		stage1.getActions().add(new TransientAction("Action1", "description", "HelloWorld"));
+		stage1.getActions().add(new TransientAction("Action1", "description", "SUBSENSE"));
 
-		TransientPipeline pipeline = new TransientPipeline("HELLOWORLD SAMPLE PIPELINE", "desc");
+		TransientPipeline pipeline = new TransientPipeline("SUBSENSE MOTION DETECTION (WITH TRACKING) PIPELINE",
+		                                                   "desc");
 		pipeline.getStages().add(stage1);
 
 
@@ -124,7 +125,9 @@ public class TestStreamingJobStartStop {
 
 
 		verify(_mockStreamingJobRequestBo, timeout(30_000))
-				.handleJobStatusChange(eq(jobId), or(eq(new StreamingJobStatus(StreamingJobStatusType.TERMINATED)), eq(new StreamingJobStatus(StreamingJobStatusType.CANCELLED))), gt(test_start_time));
+				.handleJobStatusChange(eq(jobId), or(eq(new StreamingJobStatus(StreamingJobStatusType.TERMINATED)),
+				                                     eq(new StreamingJobStatus(StreamingJobStatusType.CANCELLED))),
+				                       gt(test_start_time));
 
 		ArgumentCaptor<JsonSegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(JsonSegmentSummaryReport.class);
 

@@ -108,10 +108,6 @@ public class ChannelNode {
         return channel.getView();
     }
 
-    public String getName() {
-        return channel.getName();
-    }
-
     public boolean isConnected() {
         return isConnected;
     }

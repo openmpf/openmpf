@@ -155,9 +155,9 @@ public class ChildNodeStateManager extends ChannelReceiver {
      */
     public void shutdown(ServiceDescriptor desc, boolean markAsDelete, boolean noStartOnConfigChange) {
         // lookup node by name, remove from table, perform other actions (or let object do its own cleanup)
-        BaseServiceLauncher theApp = null;
+        BaseServiceLauncher theApp;
         synchronized (launchedAppsMap) {
-            theApp = launchedAppsMap.get(desc.getName());
+            theApp = launchedAppsMap.remove(desc.getName());
         }
         if (theApp != null) {
             //make sure the state does not go back to Inactive if removed from the config!
@@ -172,9 +172,6 @@ public class ChildNodeStateManager extends ChannelReceiver {
                 updateState(desc, newState);
             }
         }
-        synchronized (launchedAppsMap) {
-            launchedAppsMap.remove(desc.getName());
-        }
     }
 
     /**
@@ -183,31 +180,30 @@ public class ChildNodeStateManager extends ChannelReceiver {
      * @param desc - What we need to start
      */
     private void launch(ServiceDescriptor desc) {
-        // create and launch a node of the specified type with the given name
-        BaseServiceLauncher launcher = null;
+        boolean error = false;
         synchronized (launchedAppsMap) {
+            // create and launch a node of the specified type with the given name
+            BaseServiceLauncher launcher = null;
             if (!launchedAppsMap.containsKey(desc.getName())) {
                 launcher = BaseServiceLauncher.getLauncher(desc);
             }
-        }
-        if (launcher != null) {
-            // if it's startable then hold onto it
-            if (launcher.startup(properties.getMinServiceUpTimeMillis())) {
-                synchronized (launchedAppsMap) {
+            if (launcher != null) {
+                // if it's startable then hold onto it
+                if (launcher.startup(properties.getMinServiceUpTimeMillis())) {
                     launchedAppsMap.put(launcher.getServiceName(), launcher);
+                    updateState(desc, NodeManagerConstants.States.Running);
+                    LOG.debug("Sending {} state for {}", NodeManagerConstants.States.Running, desc.getName());
+                } else {
+                    LOG.error("Could not launch: {} at path: {}", desc.getName(), desc.getService().getCmdPath());
+                    error = true;
                 }
-                updateState(desc, NodeManagerConstants.States.Running);
-                LOG.debug("Sending {} state for {}", NodeManagerConstants.States.Running, desc.getName());
             } else {
-                LOG.error("Could not launch: {} at path: {}", desc.getName(), desc.getService().getCmdPath());
-                // Give time for things to propagate
-                SleepUtil.interruptableSleep(2000);
-                desc.setFatalIssueFlag(true);
-                updateState(desc, NodeManagerConstants.States.Inactive);
+                LOG.error("Could not create launcher for: {} at path: {}", desc.getName(),
+                        desc.getService().getCmdPath());
+                error = true;
             }
-        } else {
-            LOG.error("Could not create launcher for: {} at path: {}", desc.getName(),
-                    desc.getService().getCmdPath());
+        }
+        if (error) {
             // Give time for things to propagate
             SleepUtil.interruptableSleep(2000);
             desc.setFatalIssueFlag(true);

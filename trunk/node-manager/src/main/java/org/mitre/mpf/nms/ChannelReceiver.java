@@ -125,7 +125,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         handleView(view, false);
     }
 
-    public void handleView(View view, boolean forced) {
+    private void handleView(View view, boolean forced) {
         // What is currently out there
         String participants = view.getMembers().stream()
                 .map(Object::toString)
@@ -155,7 +155,9 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
                     NodeDescriptor mgr = nodeTable.get(mgrHost);
                     if (mgr == null) {
                         mgr = new NodeDescriptor(mgrHost);
-                        LOG.warn("New node-manager is online that wasn't preconfigured. Rogue?");
+                        if (!mgr.doesHostMatch(properties.getThisMpfNode())) { // don't warn about self
+                            LOG.warn("New node-manager is online that wasn't preconfigured. Rogue?");
+                        }
                         // Issue the callback
                         if (notifier != null) {
                             notifier.newManager(mgr.getHostname());

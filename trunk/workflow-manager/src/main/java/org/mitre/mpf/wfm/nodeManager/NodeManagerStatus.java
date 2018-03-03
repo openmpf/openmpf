@@ -114,7 +114,8 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
                 cumulativeWaitTimeMillisec += VIEW_UPDATE_CHECK_TIME_MILLISEC;
             }
         } catch (InterruptedException e) {
-            log.warn("Interruped while waiting for cluster view update.");
+            log.warn("Interrupted while waiting for cluster view update.");
+            Thread.currentThread().interrupt();
         }
 
         if (cumulativeWaitTimeMillisec > 0) {

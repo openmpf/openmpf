@@ -292,7 +292,7 @@ public class MasterNode {
 
 
     public List<Address> getCurrentNodeManagerHosts() {
-        return nodeStateManager.getMessageChannel().getChannel().getView().getMembers();
+        return nodeStateManager.getMessageChannel().getView().getMembers();
     }
 
 

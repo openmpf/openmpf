@@ -29,12 +29,9 @@ package org.mitre.mpf.wfm.data.entities.transients;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class TransientJob {
 	private long id;
@@ -63,10 +60,17 @@ public class TransientJob {
 	private Map<String, Map> overriddenAlgorithmProperties;
 	public Map<String, Map> getOverriddenAlgorithmProperties() { return overriddenAlgorithmProperties; }
 	public void setOverriddenAlgorithmProperties(Map<String, Map> overriddenAlgorithmProperties) { this.overriddenAlgorithmProperties = overriddenAlgorithmProperties; }
+    public void addOverriddenAlgorithmProperty(String algorithmName, String algorithmPropertyKey, String algorithmPropertyValue) {
+	    Map algMap = overriddenAlgorithmProperties.get(algorithmName);
+	    if ( algMap != null ) {
+	        algMap.put(algorithmPropertyKey, algorithmPropertyValue);
+        }
+	}
 
 	private Map<String, String> overriddenJobProperties;
 	public Map<String, String> getOverriddenJobProperties() { return overriddenJobProperties; }
 	public void setOverriddenJobProperties(Map<String, String> overriddenJobProperties) { this.overriddenJobProperties = overriddenJobProperties; }
+	public void addOverriddenJobProperty(String key, String value) { overriddenJobProperties.put(key,value); }
 
 	private boolean cancelled;
 	public boolean isCancelled() { return cancelled; }

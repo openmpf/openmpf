@@ -83,4 +83,9 @@ public class DetectionContext {
 		this.previousTracks = previousTracks;
 		this.segmentingPlan = segmentingPlan;
 	}
+
+	public String toString() {
+	    return "DetectionContext: jobId: " + jobId + ", stageIndex: " + stageIndex + ", stageName: " + stageName +
+            ", actionIndex: " + actionIndex + ", actionName: " + actionName + ", algorithmProperties: " + algorithmProperties;
+    }
 }

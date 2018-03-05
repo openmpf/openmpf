@@ -209,6 +209,15 @@ public class DetectionSplitter implements StageSplitter {
                 }
             }
 
+            // If the FRAME_RATE_CAP override of frame interval applies, then set computed frame interval in the job properties.
+            log.info("DetectionSplitter, debug: at end, have computedFrameInterval="+computedFrameInterval);
+            if ( computedFrameInterval != null ) {
+                transientJob.addOverriddenJobProperty(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY, computedFrameInterval.toString());
+                // This update to media specific properties should be put into REDIS, so it will show up in the output-object
+                redis.persistJob(transientJob);
+                log.info("Added computedFrameInterval " + computedFrameInterval + " to job properties due to FRAME_RATE_CAP override.");
+            }
+
             // Iterate through each of the actions and segment the media using the properties provided in that action.
 			for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
 
@@ -279,30 +288,35 @@ public class DetectionSplitter implements StageSplitter {
                     log.info("DetectionSplitter, debug: actionIndex= "+actionIndex+", transientAction.getAlgorithm()="+transientAction.getAlgorithm()+", in algorithm property section, media_fps=" + media_fps + ", computedFrameInterval=" + computedFrameInterval);
                     if ( media_fps != null ) {
 
-                        // Check for algorithm property FRAME_INTERVAL override of job property FRAME_RATE_CAP. If algorithm property FRAME_INTERVAL is found and not disabled,
-                        // then clear the computed frame interval because algorithm property FRAME_INTERVAL should take precedence over the FRAME_RATE_CAP job property.
+//                        // Check for an algorithm specific property FRAME_INTERVAL override of job property FRAME_RATE_CAP. If algorithm property FRAME_INTERVAL is found and not disabled,
+//                        // then clear the computed frame interval because algorithm property FRAME_INTERVAL should take precedence over the FRAME_RATE_CAP job property.
+//
+//                        log.info("DetectionSplitter, debug: in algorithm property section, job_alg_m.containsKey(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)= "+
+//                            job_alg_m.containsKey(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY));
+//                        log.info("DetectionSplitter, debug: in algorithm property section, Double.valueOf((String)job_alg_m.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY))="+
+//                            Double.valueOf((String)job_alg_m.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)));
+//
+//                        if ( computedFrameInterval != null && job_alg_m.containsKey(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
+//                             Double.valueOf((String)job_alg_m.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)) > 0  ) {
+//                            log.info("DetectionSplitter, debug: in algorithm property section, reset computedFrameInterval to null");
+//                            computedFrameInterval = null;
+//                        }
 
-                        log.info("DetectionSplitter, debug: in algorithm property section, job_alg_m.containsKey(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)= "+
-                            job_alg_m.containsKey(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY));
-                        log.info("DetectionSplitter, debug: in algorithm property section, Double.valueOf((String)job_alg_m.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY))="+
-                            Double.valueOf((String)job_alg_m.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)));
-
-                        if ( computedFrameInterval != null && job_alg_m.containsKey(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
-                             Double.valueOf((String)job_alg_m.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)) > 0  ) {
-                            log.info("DetectionSplitter, debug: in algorithm property section, reset computedFrameInterval to null");
-                            computedFrameInterval = null;
-                        }
-
-                        // Check for FRAME_RATE_CAP override of frame interval at any property level. If found to be set and not disabled,
-                        // then update the computed frame interval in the media specific properties because algorithm property FRAME_RATE_CAP should take precedence
-                        // over FRAME_INTERVAL at any property level.
+                        // Check for FRAME_RATE_CAP override of frame interval at the algorithm property level. If found to be set and not disabled,
+                        // then update the computed frame interval in the modified map so that algorithm property FRAME_RATE_CAP would take precedence
+                        // over FRAME_INTERVAL at a lower property level.
                         if ( job_alg_m.containsKey(MpfConstants.FRAME_RATE_CAP_PROPERTY) ) {
                             double frameRateCap = Double.parseDouble((String)job_alg_m.get(MpfConstants.FRAME_RATE_CAP_PROPERTY));
                             log.info("DetectionSplitter, debug: in algorithm property section, frameRateCap="+frameRateCap);
-                            // If the frame rate cap is not disabled, get the computed frame interval.
+                            // If the frame rate cap is not disabled, get the computed frame interval that should be used just for this algorithm, and add it to the modified map.
+                            // Once in the modified map, it should be added as a new algorithm property, stored in the transient job and
+                            // persisted to REDIS so it will show up in the output-object
                             if ( frameRateCap > 0 ) {
-                                computedFrameInterval = Math.max( 1, Math.floor(media_fps / frameRateCap) );
-                                log.info("DetectionSplitter, debug: in algorithm property section, set computedFrameInterval="+computedFrameInterval);
+                                Double algorithmLevelComputedFrameInterval = Math.max( 1, Math.floor(media_fps / frameRateCap) );
+                                log.info("DetectionSplitter, debug: in algorithm property section, set algorithmLevelComputedFrameInterval="+algorithmLevelComputedFrameInterval + " and added it to the modifiedMap and transient jobs algorithm properties");
+                                modifiedMap.put(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY, algorithmLevelComputedFrameInterval.toString());
+                                transientJob.addOverriddenAlgorithmProperty(transientAction.getAlgorithm(),MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY, algorithmLevelComputedFrameInterval.toString());
+                                redis.persistJob(transientJob);
                             }
                         }
 
@@ -317,16 +331,18 @@ public class DetectionSplitter implements StageSplitter {
 					}
 				}
 
-				// If the FRAME_RATE_CAP override of frame interval applies, then set computed frame interval in the media specific properties.
-                log.info("DetectionSplitter, debug: at end, have computedFrameInterval="+computedFrameInterval);
-                if ( computedFrameInterval != null ) {
-                    transientMedia.addMediaSpecificProperty(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY, computedFrameInterval.toString());
-                    log.info("Added computedFrameInterval " + computedFrameInterval + " to media specific properties due to FRAME_RATE_CAP override.");
-                    // This update to media specific properties should be put into REDIS
-                    redis.persistMedia(transientJob.getId(), transientMedia);
-                }
+//				// If the FRAME_RATE_CAP override of frame interval applies, then set computed frame interval in the media specific properties.
+//                log.info("DetectionSplitter, debug: at end, have computedFrameInterval="+computedFrameInterval);
+//                if ( computedFrameInterval != null ) {
+//                    transientMedia.addMediaSpecificProperty(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY, computedFrameInterval.toString());
+//                    log.info("Added computedFrameInterval " + computedFrameInterval + " to media specific properties due to FRAME_RATE_CAP override.");
+//                    // This update to media specific properties should be put into REDIS
+//                    redis.persistMedia(transientJob.getId(), transientMedia);
+//                }
 
 				modifiedMap.putAll(transientMedia.getMediaSpecificProperties());
+
+                System.out.println("DetectionSplitter, debug: modifiedMap = " + modifiedMap);
 
 				SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
 				List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
@@ -343,6 +359,9 @@ public class DetectionSplitter implements StageSplitter {
 						algorithmProperties,
 						previousTracks,
 						segmentingPlan);
+
+                System.out.println("DetectionSplitter, debug: detectionContext = " + detectionContext);
+
 				List<Message> detectionRequestMessages
 						= createDetectionRequestMessages(transientMedia, detectionContext);
 

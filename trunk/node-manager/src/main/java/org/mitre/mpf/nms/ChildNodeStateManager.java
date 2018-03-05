@@ -182,11 +182,12 @@ public class ChildNodeStateManager extends ChannelReceiver {
     private void launch(ServiceDescriptor desc) {
         boolean error = false;
         synchronized (launchedAppsMap) {
-            // create and launch a node of the specified type with the given name
-            BaseServiceLauncher launcher = null;
-            if (!launchedAppsMap.containsKey(desc.getName())) {
-                launcher = BaseServiceLauncher.getLauncher(desc);
+            if (launchedAppsMap.containsKey(desc.getName())) {
+                return;
             }
+
+            // create and launch a node of the specified type with the given name
+            BaseServiceLauncher launcher = BaseServiceLauncher.getLauncher(desc);
             if (launcher != null) {
                 // if it's startable then hold onto it
                 if (launcher.startup(properties.getMinServiceUpTimeMillis())) {
@@ -203,6 +204,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
                 error = true;
             }
         }
+
         if (error) {
             // Give time for things to propagate
             SleepUtil.interruptableSleep(2000);

@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
+import java.util.stream.Collectors;
 import org.apache.camel.Message;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
@@ -171,51 +172,58 @@ public class DetectionSplitter implements StageSplitter {
 				                                 0);
 			}
 
-            // Allow for FRAME_RATE_CAP to override FRAME_INTERVAL by creating new media property COMPUTED_FRAME_INTERVAL. Should only be
+            // Allow for FRAME_RATE_CAP to override FRAME_INTERVAL by creating new property COMPUTED_FRAME_INTERVAL. This property should only be
             // applicable to video media, which has metadata property FPS. Note: FRAME_RATE_CAP set to -1 means the FRAME_RATE_CAP override is disabled.
-            // FRAME_RATE_CAP override is allowed at 3 levels (system properties, job properties or pipeline properties).
+            // FRAME_RATE_CAP override is allowed at 3 levels (system properties, job properties or algorithm properties).
 
             Double media_fps = null;
+            Double computedFrameInterval = null;
             if ( transientMedia.containsMetadata("FPS") ) {
                 media_fps = Double.valueOf(transientMedia.getMetadata("FPS"));
             }
 
-            // Check for FRAME_RATE_CAP override of frame interval at the system property level for media which has media FPS defined. If found to be set,
-            // and not disabled, then the computed frame interval will later be added to the media specific properties. Note that job property FRAME_INTERVAL may take precedence
-            // over system property FRAME_RATE_CAP if it is present and has a value > 0, so that is accounted for below.
-            Double computedFrameInterval = null;
+            // Check for FRAME_RATE_CAP override of frame interval at the default system property level, but this should only
+            // be applicable for media which have FPS defined in the metadata. Otherwise, if FRAME_INTERVAL is not disabled at the
+            // system property level, use that as the default value.
             if ( media_fps != null && propertiesUtil.getFrameRateCap() > 0  ) {
-
-                // Check for possible job property FRAME_INTERVAL override of the FRAME_RATE_CAP system property. If job property FRAME_INTERVAL is present
-                // and not disabled, then the computed frame interval should be ignored.  Otherwise, get the computed frame interval that will later
-                // be added to the media specific properties.
-                if ( !( transientJob.getOverriddenJobProperties().containsKey(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
-                        Double.valueOf(transientJob.getOverriddenJobProperties().get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)) > 0 ) ) {
-                    // The goal of the FRAME_RATE_CAP is to ensure that a minimum number of frames are processed per second, which is why we round down this value if needed.
-                    // But, the value should always be at least 1.
-                    computedFrameInterval = Math.max(1, Math.floor(media_fps / propertiesUtil.getFrameRateCap()));
-                }
-
+                // Set the  frame interval from the default detection frame rate cap.
+                // The goal of the FRAME_RATE_CAP is to ensure that a minimum number of frames are processed per second, which is why we round down this value if needed.
+                // But, the value should always be at least 1.
+                computedFrameInterval = Math.max(1, Math.floor(media_fps / propertiesUtil.getFrameRateCap()));
+            } else if ( propertiesUtil.getSamplingInterval() > 0 ) {
+                // Set the  frame interval from the default detection sampling interval
+                computedFrameInterval = Double.valueOf(propertiesUtil.getSamplingInterval());
             }
 
-            // Check for possible FRAME_RATE_CAP override of frame interval at the job property level for media which has media FPS defined. If found to be set,
-            // and not disabled, then the computed frame interval will later be added to the media specific properties.
-            if ( media_fps != null && transientJob.getOverriddenJobProperties().containsKey(MpfConstants.FRAME_RATE_CAP_PROPERTY) ) {
-                double frameRateCap = Double.parseDouble(transientJob.getOverriddenJobProperties().get(MpfConstants.FRAME_RATE_CAP_PROPERTY));
-                if ( frameRateCap > 0 ) {
-                    // If the job property frame rate cap is not disabled, set the computed frame interval.
-                    computedFrameInterval = Math.max( 1, Math.floor(media_fps / frameRateCap));
-                    log.info("DetectionSplitter, debug: in job property section, set computedFrameInterval="+computedFrameInterval);
-                }
-            }
-
-            // If the FRAME_RATE_CAP override of frame interval applies, then set computed frame interval in the job properties.
-            log.info("DetectionSplitter, debug: at end, have computedFrameInterval="+computedFrameInterval);
-            if ( computedFrameInterval != null ) {
-                transientJob.addOverriddenJobProperty(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY, computedFrameInterval.toString());
-                // This update to media specific properties should be put into REDIS, so it will show up in the output-object
+            // Allow for FRAME_RATE_CAP or FRAME_INTERVAL as job properties to override the system default for frame interval.
+            if ( media_fps != null && transientJob.getOverriddenJobProperties().containsKey(MpfConstants.FRAME_RATE_CAP_PROPERTY) &&
+                 Double.valueOf(transientJob.getOverriddenJobProperties().get(MpfConstants.FRAME_RATE_CAP_PROPERTY)) > 0 ) {
+                // Apply override of FRAME_RATE_CAP_PROPERTY as a job property
+                computedFrameInterval = Math.max(1, Math.floor(media_fps / Double.valueOf(transientJob.getOverriddenJobProperties().get(MpfConstants.FRAME_RATE_CAP_PROPERTY))));
+                // This override as a job property should be included in the transient job, and the change should be stored in REDIS. Here we
+                // want to remove FRAME_INTERVAL job property, and replace it with COMPUTED_FRAME_INTERVAL property with value as computed.
+                transientJob.replaceOverriddenJobProperty(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY, computedFrameInterval.toString() );
+                // This update to job properties should be put into REDIS, so it will show up in the output-object
                 redis.persistJob(transientJob);
-                log.info("Added computedFrameInterval " + computedFrameInterval + " to job properties due to FRAME_RATE_CAP override.");
+                log.info("Added computedFrameInterval " + computedFrameInterval + " to job properties due to FRAME_RATE_CAP job properties override.");
+            } else if ( transientJob.getOverriddenJobProperties().containsKey(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
+                Double.valueOf(transientJob.getOverriddenJobProperties().get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)) > 0 ) {
+                // Apply override of FRAME_INTERVAL as a job property
+                computedFrameInterval = Double.valueOf(transientJob.getOverriddenJobProperties().get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY));
+                // This override as a job property should be included in the transient job, and the change should be stored in REDIS. Here we
+                // want to replace FRAME_INTERVAL job property with COMPUTED_FRAME_INTERVAL property, keeping with the value of the original FRAME_INTERVAL property
+                transientJob.renameOverriddenJobProperty(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY);
+                // This update to job properties should be put into REDIS, so it will show up in the output-object
+                redis.persistJob(transientJob);
+                log.info("Added computedFrameInterval " + computedFrameInterval + " to job properties due to FRAME_INTERVAL job properties override.");
+            } else if ( computedFrameInterval != null ) {
+                // If an override via the job properties wasn't specified, then we're using the system default value
+                // for frame interval we determined above - but, we want the
+                // property to be called COMPUTED_FRAME_INTERVAL, not FRAME_INTERVAL
+                transientJob.replaceOverriddenJobProperty(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY, computedFrameInterval.toString() );
+                // This update to job properties should be put into REDIS, so it will show up in the output-object
+                redis.persistJob(transientJob);
+                log.info("Added computedFrameInterval " + computedFrameInterval + " to job properties due to application of system default.");
             }
 
             // Iterate through each of the actions and segment the media using the properties provided in that action.
@@ -284,23 +292,9 @@ public class DetectionSplitter implements StageSplitter {
 					modifiedMap.putAll(job_alg_m);
 
 					// Special processing for video media, which had FPS defined in metadata.
-                    // Need to process the possibility of FRAME_RATE_CAP override of FRAME_INTERVAL.
+                    // Need to process the possibility of FRAME_RATE_CAP property override of FRAME_INTERVAL property.
                     log.info("DetectionSplitter, debug: actionIndex= "+actionIndex+", transientAction.getAlgorithm()="+transientAction.getAlgorithm()+", in algorithm property section, media_fps=" + media_fps + ", computedFrameInterval=" + computedFrameInterval);
                     if ( media_fps != null ) {
-
-//                        // Check for an algorithm specific property FRAME_INTERVAL override of job property FRAME_RATE_CAP. If algorithm property FRAME_INTERVAL is found and not disabled,
-//                        // then clear the computed frame interval because algorithm property FRAME_INTERVAL should take precedence over the FRAME_RATE_CAP job property.
-//
-//                        log.info("DetectionSplitter, debug: in algorithm property section, job_alg_m.containsKey(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)= "+
-//                            job_alg_m.containsKey(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY));
-//                        log.info("DetectionSplitter, debug: in algorithm property section, Double.valueOf((String)job_alg_m.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY))="+
-//                            Double.valueOf((String)job_alg_m.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)));
-//
-//                        if ( computedFrameInterval != null && job_alg_m.containsKey(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
-//                             Double.valueOf((String)job_alg_m.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)) > 0  ) {
-//                            log.info("DetectionSplitter, debug: in algorithm property section, reset computedFrameInterval to null");
-//                            computedFrameInterval = null;
-//                        }
 
                         // Check for FRAME_RATE_CAP override of frame interval at the algorithm property level. If found to be set and not disabled,
                         // then update the computed frame interval in the modified map so that algorithm property FRAME_RATE_CAP would take precedence
@@ -331,18 +325,26 @@ public class DetectionSplitter implements StageSplitter {
 					}
 				}
 
-//				// If the FRAME_RATE_CAP override of frame interval applies, then set computed frame interval in the media specific properties.
-//                log.info("DetectionSplitter, debug: at end, have computedFrameInterval="+computedFrameInterval);
-//                if ( computedFrameInterval != null ) {
-//                    transientMedia.addMediaSpecificProperty(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY, computedFrameInterval.toString());
-//                    log.info("Added computedFrameInterval " + computedFrameInterval + " to media specific properties due to FRAME_RATE_CAP override.");
-//                    // This update to media specific properties should be put into REDIS
-//                    redis.persistMedia(transientJob.getId(), transientMedia);
-//                }
-
 				modifiedMap.putAll(transientMedia.getMediaSpecificProperties());
 
                 System.out.println("DetectionSplitter, debug: modifiedMap = " + modifiedMap);
+
+                // Moving forward, WFM will only pass COMPUTED_FRAME_INTERVAL. So, if the user had specified FRAME_RATE_CAP, then at this point
+                // we would have both COMPUTED_FRAME_INTERVAL and FRAME_INTERVAL in the modifiedMap. If this is the case, then remove FRAME_INTERVAL from the modifiedMap.
+                // If the user has not specified FRAME_RATE_CAP, then just FRAME_INTERVAL is in the modifiedMap. If this is the case, then rename FRAME_INTERVAL property
+                // to be COMPUTED_FRAME_INTERVAL property.
+                if ( modifiedMap.keySet().stream().anyMatch(key -> key.equals(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY)) ) {
+                    // COMPUTED_FRAME_INTERVAL property is already in the modifiedMap, FRAME_INTERVAL property can be deleted from the modifiedMap.
+                    modifiedMap.entrySet().stream().filter(
+                        map -> !map.getKey().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)).collect(Collectors.toMap(map -> map.getKey(), map -> map.getValue()));
+                } else if ( modifiedMap.keySet().stream().anyMatch(key -> key.equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)) ) {
+                    // COMPUTED_FRAME_INTERVAL property is not in the modifiedMap, but FRAME_INTERVAL property is. Replace FRAME_INTERVAL property with COMPUTED_FRAME_INTERVAL property,
+                    // where COMPUTED_FRAME_INTERVAL has the value formerly provided by FRAME_INTERVAL property.
+                    String samplingInterval = modifiedMap.remove(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY);
+                    modifiedMap.put(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY, samplingInterval);
+                }
+
+                System.out.println("DetectionSplitter, debug: after FRAME_INTERVAL replacement, modifiedMap = " + modifiedMap);
 
 				SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
 				List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties

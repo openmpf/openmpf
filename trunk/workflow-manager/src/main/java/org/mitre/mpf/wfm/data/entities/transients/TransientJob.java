@@ -71,8 +71,17 @@ public class TransientJob {
 	public Map<String, String> getOverriddenJobProperties() { return overriddenJobProperties; }
 	public void setOverriddenJobProperties(Map<String, String> overriddenJobProperties) { this.overriddenJobProperties = overriddenJobProperties; }
 	public void addOverriddenJobProperty(String key, String value) { overriddenJobProperties.put(key,value); }
+	public void renameOverriddenJobProperty(String oldKey, String newKey) {
+	    String value = overriddenJobProperties.remove(oldKey);
+        overriddenJobProperties.put(newKey, value);
+	}
+    public void replaceOverriddenJobProperty(String oldKey, String newKey, String newValue) {
+        overriddenJobProperties.remove(oldKey);
+        overriddenJobProperties.put(newKey, newValue);
+    }
 
-	private boolean cancelled;
+
+    private boolean cancelled;
 	public boolean isCancelled() { return cancelled; }
 
 	private String callbackURL;

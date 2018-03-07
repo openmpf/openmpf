@@ -66,6 +66,20 @@ public class TransientJob {
 	        algMap.put(algorithmPropertyKey, algorithmPropertyValue);
         }
 	}
+	public void renameOverriddenAlgorithmProperty(String algorithmName, String oldKey, String newKey) {
+        Map algMap = overriddenAlgorithmProperties.get(algorithmName);
+        if ( algMap != null ) {
+            String value = (String)algMap.remove(oldKey);
+            algMap.put(newKey,value);
+        }
+    }
+	public void replaceOverriddenAlgorithmProperty(String algorithmName, String oldKey, String newKey, String newValue) {
+        Map algMap = overriddenAlgorithmProperties.get(algorithmName);
+        if ( algMap != null ) {
+            algMap.remove(oldKey);
+            algMap.put(newKey, newValue);
+        }
+    }
 
 	private Map<String, String> overriddenJobProperties;
 	public Map<String, String> getOverriddenJobProperties() { return overriddenJobProperties; }

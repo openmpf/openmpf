@@ -31,6 +31,14 @@ import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
 public interface ClusterChangeNotifier {
 
     /**
+     * Called every time the current view of the network is updated.
+     *
+     * @parm forced true if JChannel.getView() was used to force an update;
+     *              otherwise false if the update was initiated by JGroups
+     */
+    public void viewUpdated(boolean forced);
+
+    /**
      * Called when a new node-manager appears on the network
      *
      * @param hostname
@@ -69,10 +77,14 @@ public interface ClusterChangeNotifier {
      * Called when an existing service (process) has been removed from the node manager config via the master node, 
      * has been shut down, and ready to be removed from the service table if desired
      *
-     * @param service
+     * @param serviceDescriptor
      */
-	public void serviceReadyToRemove(ServiceDescriptor serviceDescriptor);
+    public void serviceReadyToRemove(ServiceDescriptor serviceDescriptor);
 
-
-	public void streamingJobExited(StreamingJobExitedMessage message);
+    /**
+     * Called when a streaming job process exits.
+     *
+     * @param message
+     */
+    public void streamingJobExited(StreamingJobExitedMessage message);
 }

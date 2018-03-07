@@ -54,6 +54,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class NodeManagerStatus implements ClusterChangeNotifier {
 
+    private static final int VIEW_UPDATE_CHECK_TIME_MILLISEC = 500;
+    private static final int VIEW_UPDATE_MAX_WAIT_TIME_MILLISEC = 60_000;
+
     private static final Logger log = LoggerFactory.getLogger(NodeManagerStatus.class);
 
     @Autowired
@@ -65,32 +68,67 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     @Autowired
     private StreamingJobRequestBo streamingJobRequestBo;
 
+    // flag that indicates if at least one view update was initiated by JGroups
+    private boolean viewUpdated = false;
+
     private volatile boolean isRunning = false;
 
     private Map<String, ServiceDescriptor> serviceDescriptorMap = new ConcurrentHashMap<>();
 
 
     public void init(boolean reloadConfig) {
-        if(!reloadConfig) {
+        if (!reloadConfig) {
+            masterNode.setCallback(this);
             masterNode.run();
             isRunning = true;
         }
+
         try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
             if (masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri())) {
+                if (!masterNode.areAllManagersPresent()) {
+                    waitForViewUpdate();
+                } else {
+                    log.info("All known node managers are available.");
+                }
                 masterNode.launchAllNodes();
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
-        }
-
-        if(!reloadConfig) {
-            masterNode.setCallback(this);
         }
 
         updateServiceDescriptors();
     }
 
+    private void waitForViewUpdate() {
+        // Wait until our view is updated by JGroups so we know the current cluster membership.
+        // This is necessary to avoid a race condition that may happen if child node managers are already running
+        // but JGroups has yet to report that they are available.
+        int cumulativeWaitTimeMillisec = 0;
+        try {
+            if (!viewUpdated) {
+                log.info("Waiting up to " + VIEW_UPDATE_MAX_WAIT_TIME_MILLISEC + " milliseconds for cluster view update ...");
+            }
+            while (!viewUpdated && cumulativeWaitTimeMillisec < VIEW_UPDATE_MAX_WAIT_TIME_MILLISEC) {
+                log.debug("Time spent waiting so far: " + cumulativeWaitTimeMillisec + " milliseconds");
+                Thread.sleep(VIEW_UPDATE_CHECK_TIME_MILLISEC);
+                cumulativeWaitTimeMillisec += VIEW_UPDATE_CHECK_TIME_MILLISEC;
+            }
+        } catch (InterruptedException e) {
+            log.warn("Interrupted while waiting for cluster view update.");
+            Thread.currentThread().interrupt();
+        }
+
+        if (cumulativeWaitTimeMillisec > 0) {
+            log.info("Waited a total of " + cumulativeWaitTimeMillisec + " milliseconds for cluster view update.");
+        }
+
+        if (!viewUpdated) {
+            log.warn("Cluster view has not updated yet. Proceeding anyway. This may result in failure to launch " +
+                    "services on nodes that are not available or cannot be identified.");
+        } else {
+            log.info("Cluster view updated. Proceeding.");
+        }
+    }
 
     public void stop() {
         try {
@@ -211,6 +249,14 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
         datamap.put( "name", serviceName );
         datamap.put( "event", event );
         AtmosphereController.broadcast( AtmosphereChannel.SSPC_SERVICE, event, datamap );
+    }
+
+    @Override
+    public void viewUpdated(boolean forced) {
+        if (!forced) {
+            log.debug("Cluster view updated.");
+            viewUpdated = true;
+        }
     }
 
     @Override

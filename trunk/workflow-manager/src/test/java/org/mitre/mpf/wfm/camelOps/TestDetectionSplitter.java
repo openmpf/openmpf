@@ -27,8 +27,14 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import com.google.common.collect.Lists;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.camel.CamelContext;
+import org.apache.camel.Exchange;
 import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultExchange;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
 import org.junit.Test;
@@ -38,11 +44,20 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.StageSplitter;
+import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionSplitter;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
+import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,11 +65,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -71,6 +81,16 @@ public class TestDetectionSplitter {
 
     @Autowired
     private IoUtils ioUtils;
+
+    @Autowired
+    private JsonUtils jsonUtils;
+
+    @Autowired
+    @Qualifier(MediaInspectionProcessor.REF)
+    private WfmProcessorInterface mediaInspectionProcessor;
+
+    @Autowired
+    private Redis redis;
 
     @Qualifier(DetectionSplitter.REF)
     @Autowired
@@ -111,7 +131,132 @@ public class TestDetectionSplitter {
         testTransientStage.getActions().add(detectionAction);
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testTransientStage);
         Assert.assertTrue(responseList.size() == 0);
+
     }
+
+
+    @Test
+    public void testAlgorithmPropertyFrameRateCapOverrideOfSystemProperties() throws Exception {
+        long jobId = 512345;
+        String externalId = "5externalId";
+
+        // Testing FRAME_RATE_CAP as an algorithm property override of FRAME_INTERVAL and FRAME_RATE_CAP as system properties.
+        Map<String, String> actionProperties = Collections.emptyMap();
+        Map<String, String> jobProperties = Collections.emptyMap();
+        Map<String, Map> algorithmProperties = new HashMap();
+        Map<String, String> faceCvAlgorithmProperties = new HashMap();
+        faceCvAlgorithmProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, "10");
+        algorithmProperties.put("FACECV", faceCvAlgorithmProperties);
+
+//        Map<String, String> actionProperties = new HashMap<>();
+//        actionProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
+//        actionProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
+//        actionProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
+//        actionProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
+
+        TransientPipeline dummyPipeline = new TransientPipeline("OCV FACE DETECTION PIPELINE", "TestDetectionSplitter Pipeline");
+        TransientStage dummyStageDet = new TransientStage("DETECTION", "dummyDetectionDescription", ActionType.DETECTION);
+        TransientAction dummyAction = new TransientAction("FACECV", "dummyDescriptionFACECV", "FACECV");
+        dummyAction.setProperties(actionProperties);
+        dummyStageDet.getActions().add(dummyAction);
+        dummyPipeline.getStages().add(dummyStageDet);
+
+        final int testStage = 0;
+        final int testPriority = 4;
+        final boolean testOutputEnabled = true;
+        TransientJob testJob = new TransientJob(jobId, externalId, dummyPipeline, testStage,
+            testPriority, testOutputEnabled, false);
+        TransientMedia testMedia = new TransientMedia(next(),
+            ioUtils.findFile("/samples/video_01.mp4").toString());
+        testMedia.setLength(300);
+        testMedia.setType("VIDEO");
+        System.out.println("TestDetectionSplitter, debug: created testMedia with id " + testMedia.getId());
+
+        List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
+        testJob.setMedia(listMedia);
+//        TransientStage testTransientStage = new TransientStage("stageName", "stageDescr", ActionType.DETECTION);
+//        testPipe.getStages().add(testTransientStage);
+//
+//        TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo");
+//        detectionAction.setProperties(actionProperties);
+//        testTransientStage.getActions().add(detectionAction);
+
+//
+//
+//
+//
+//
+//
+//
+//
+//        TransientJob testJob = createSimpleJobForTest(jobId, externalId, dummyPipeline, actionProperties, "/samples/video_01.mp4", "VIDEO");
+        testJob.getOverriddenJobProperties().putAll(jobProperties);
+        testJob.getOverriddenAlgorithmProperties().putAll(algorithmProperties);
+        redis.persistJob(testJob);
+        TransientJob transientJobCopy = redis.getJob(jobId);
+        List<TransientMedia> transientMediaList = transientJobCopy.getMedia();
+
+        // Need to run MediaInspectionProcessor on the Media, so that inspectMedia to add FPS and other metadata to the TransientMedia for this test to work
+        for (TransientMedia media : transientMediaList) {
+            System.out.println("TestDetectionSplitter, debug: for jobId= " + jobId + ", processing media with id " + media.getId());
+            Exchange exchange = new DefaultExchange(camelContext);
+            exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, jobId);
+            exchange.getIn().setBody(jsonUtils.serialize(media));
+            exchange.getOut().setHeader(MpfHeaders.JOB_ID, jobId);
+            System.out.println("TestDetectionSplitter, debug: for jobId= " + jobId + ", calling mediaInpectionProcessor on media " + media);
+            mediaInspectionProcessor.wfmProcess(exchange);
+
+            TransientJob debugTransientJob = redis.getJob(jobId);
+            System.out.println("TestDetectionSplitter, debug: after return from mediaInpectionProcessor, TransientJob for jobId=" + jobId + " is " + debugTransientJob);
+            List<TransientMedia> debugTransientMediaList = debugTransientJob.getMedia();
+            Assert.assertEquals(1, debugTransientMediaList.size());
+            TransientMedia debugTransientMedia = debugTransientMediaList.get(0);
+            System.out.println("TestDetectionSplitter, debug: after return from mediaInpectionProcessor, debugTransientMedia="+debugTransientMedia);
+            System.out.println("TestDetectionSplitter, debug: after return from mediaInpectionProcessor, debugTransientMedia.getMetadata()="+debugTransientMedia.getMetadata());
+            System.out.println("TestDetectionSplitter, debug: after return from mediaInpectionProcessor, debugTransientMedia.isFailed()="+debugTransientMedia.isFailed());
+        }
+
+        // Need to refresh the job from REDIS since the mediaInspectionProcessor may have updated the jobs media
+        testJob = redis.getJob(jobId);
+
+        System.out.println("TestDetectionSplitter, debug: testJob.getPipeline().getStages().size()= "+ testJob.getPipeline().getStages().size());
+        System.out.println("TestDetectionSplitter, debug: calling detectionStageSplitter.performSplit on stage " + testJob.getPipeline().getStages().get(0));
+        List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
+        System.out.println("TestDetectionSplitter, debug: returned from detectionStageSplitter.performSplit");
+
+        // Processing of a video should have replaced algorithm sub-job property FRAME_INTERVAL with property COMPUTED_FRAME_INTERVAL
+        Assert.assertEquals(1, responseList.size());
+        Message message = responseList.get(0);
+        System.out.println("TestDetectionSplitter, debug: message is " + message);
+        Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
+        DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
+
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream()
+            .peek(k -> log.info("test1, peeking: k={}",k)).map( p -> p.getPropertyName() ).peek( n -> log.info("peeking2: n={}", n))
+            .anyMatch(k -> k.equals(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY)));
+
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream()
+            .peek(k -> log.info("test2, peeking: k={}",k)).map( p -> p.getPropertyName() ).peek( n -> log.info("peeking2: n={}", n))
+            .noneMatch(k -> k.equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)));
+
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     @Test
     public void testJobPropertiesOverride() throws Exception {
@@ -340,10 +485,14 @@ public class TestDetectionSplitter {
         final long testId = 12345;
         final String testExternalId = "externID";
         final TransientPipeline testPipe = new TransientPipeline("testPipe", "testDescr");
+        return createSimpleJobForTest(testId, testExternalId, testPipe, actionProperties, mediaUri, mediaType);
+    }
+
+    private TransientJob createSimpleJobForTest(long testJobId, String testExternalId, TransientPipeline testPipe, Map<String, String> actionProperties, String mediaUri, String mediaType) throws WfmProcessingException {
         final int testStage = 0;
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
-        TransientJob testJob = new TransientJob(testId, testExternalId, testPipe, testStage, testPriority, testOutputEnabled, false);
+        TransientJob testJob = new TransientJob(testJobId, testExternalId, testPipe, testStage, testPriority, testOutputEnabled, false);
         TransientMedia testMedia = new TransientMedia(next(), ioUtils.findFile(mediaUri).toString());
         testMedia.setLength(300);
         testMedia.setType(mediaType);

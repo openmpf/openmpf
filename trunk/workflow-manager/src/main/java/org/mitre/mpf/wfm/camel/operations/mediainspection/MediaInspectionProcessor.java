@@ -78,6 +78,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
 		TransientMedia transientMedia = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TransientMedia.class);
 		log.debug("Inspecting Media {}.", transientMedia.getId());
+        System.out.println("MediaInspectionProcessor, debug: Inspecting Media with id ="+ transientMedia.getId());
 
 		if(!transientMedia.isFailed()) {
 			// Any request to pull a remote file should have already populated the local uri.
@@ -92,6 +93,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 				} catch(IOException ioe) {
 					transientMedia.setFailed(true);
 					transientMedia.setMessage("Could not calculate the SHA-256 hash for the file due to an exception.");
+					log.error("Could not calculate the SHA-256 hash for the file due to IOException.", ioe);
 				}
 
 				try {
@@ -100,8 +102,10 @@ public class MediaInspectionProcessor extends WfmProcessor {
 				} catch(IOException ioe) {
 					transientMedia.setFailed(true);
 					transientMedia.setMessage("Could not determine the MIME type for the media due to an exception.");
+                    log.error("Could not determine the MIME type for the media due to IOException.", ioe);
 				}
 
+                System.out.println("MediaInspectionProcessor, debug: transientMedia.getMediaType()=" + transientMedia.getMediaType());
 				switch(transientMedia.getMediaType()) {
 					case AUDIO:
 						inspectAudio(localFile, transientMedia);
@@ -119,10 +123,11 @@ public class MediaInspectionProcessor extends WfmProcessor {
 						// DEBUG
 						//transientMedia.setFailed(true);
 						//transientMedia.setMessage("Unsupported file format.");
+                        log.error("transientMedia.getMediaType() = {} is undefined. ", transientMedia.getMediaType());
 						break;
 				}
 			} catch (Exception exception) {
-				log.warn("[Job {}|*|*] Failed to inspect {} due to an exception.", exchange.getIn().getHeader(MpfHeaders.JOB_ID), transientMedia.getLocalPath(), exception);
+				log.error("[Job {}|*|*] Failed to inspect {} due to an exception.", exchange.getIn().getHeader(MpfHeaders.JOB_ID), transientMedia.getLocalPath(), exception);
 				transientMedia.setFailed(true);
 				if (exception instanceof TikaException) {
 					transientMedia.setMessage("Tika media inspection error: " + exception.getMessage());
@@ -131,7 +136,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 				}
 			}
 		} else {
-			log.debug("[Job {}|*|*] Skipping inspection of Media #{} as it is in an error state.", transientMedia.getId());
+			log.error("[Job {}|*|*] Skipping inspection of Media #{} as it is in an error state.", transientMedia.getId());
 		}
 
 		// Copy these headers to the output exchange.
@@ -140,10 +145,19 @@ public class MediaInspectionProcessor extends WfmProcessor {
 		exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
 
 		exchange.getOut().setBody(jsonUtils.serialize(transientMedia));
+        System.out.println("MediaInspectionProcessor, debug: transientMedia.isFailed()="+  transientMedia.isFailed());
 		if (transientMedia.isFailed()) {
 			redis.setJobStatus(exchange.getIn().getHeader(MpfHeaders.JOB_ID,Long.class), BatchJobStatusType.IN_PROGRESS_ERRORS);
+            System.out.println("MediaInspectionProcessor, debug: REDIS jobStatus with jobId=" + exchange.getIn().getHeader(MpfHeaders.JOB_ID,Long.class));
 		}
-		redis.persistMedia(exchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class), transientMedia);
+        System.out.println("MediaInspectionProcessor, debug: redis="+ redis);
+        System.out.println("MediaInspectionProcessor, debug: exchange="+  exchange);
+        System.out.println("MediaInspectionProcessor, debug: transientMedia="+  transientMedia);
+        System.out.println("MediaInspectionProcessor, debug: transientMedia.getId()="+ transientMedia.getId());
+        System.out.println("MediaInspectionProcessor, debug: transientMedia.getMetadata()="+  transientMedia.getMetadata());
+        System.out.println("MediaInspectionProcessor, debug: exchange.getOut()="+  exchange.getOut());
+        System.out.println("MediaInspectionProcessor, debug: REDIS persistingMedia with jobId=" + exchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class));
+        redis.persistMedia(exchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class), transientMedia);
 	}
 
 	private void inspectAudio(File localFile, TransientMedia transientMedia) throws IOException, TikaException, SAXException {
@@ -163,6 +177,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
 		// Use the frame counter native library to calculate the length of videos.
 		log.debug("Counting frames in '{}'.", localFile);
+        System.out.println("MediaInspectionProcessor.inspectVideo(), debug: localFile="+  localFile);
 
 		// We can't get the frame count directly from a gif,
 		// so iterate over the frames and count them one by one
@@ -183,10 +198,12 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
 		Metadata videoMetadata = generateFFMPEGMetadata(localFile);
 		String fpsStr = videoMetadata.get("xmpDM:videoFrameRate");
+        System.out.println("MediaInspectionProcessor.inspectVideo(), debug: fpsStr="+  fpsStr);
 		double fps = 0;
 		if (fpsStr != null) {
 			fps = Double.parseDouble(fpsStr);
 			transientMedia.addMetadata("FPS", Double.toString(fps));
+            System.out.println("MediaInspectionProcessor.inspectVideo(), debug: set FPS=" +  fps + ", in metadata.");
 		}
 
 		// DURATION

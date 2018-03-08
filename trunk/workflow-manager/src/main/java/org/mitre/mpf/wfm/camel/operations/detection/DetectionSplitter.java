@@ -140,15 +140,6 @@ public class DetectionSplitter implements StageSplitter {
 		assert transientJob != null : "The provided transientJob must not be null.";
 		assert transientStage != null : "The provided transientStage must not be null.";
 
-		System.out.println("DetectionSplitter.performSplit(), debug: got transientJob="+transientJob);
-        System.out.println("DetectionSplitter.performSplit(), debug: got transientStage="+transientStage);
-
-		try {
-		    throw new Exception("Deliberate exception in DetectionSplitter.performSplit to produce debug stack dump.");
-        } catch (Exception e) {
-		    e.printStackTrace();
-        }
-
 		List<Message> messages = new ArrayList<>();
 
 		// Is this the first detection stage in the pipeline?

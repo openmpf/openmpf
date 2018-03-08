@@ -159,6 +159,13 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
 
+	@Test(timeout = 15 * MINUTES)
+	public void runDarknetDetectVideo() throws Exception {
+		runSystemTest("TINY YOLO OBJECT DETECTION PIPELINE",
+		              "output/object/runDarknetDetectVideo.json",
+		              "/samples/face/video_01.mp4");
+	}
+
 
 	@Test(timeout = 5 * MINUTES)
     public void runMogThenOcvFaceFeedForwardRegionTest() {
@@ -201,6 +208,40 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 		runFeedForwardRegionTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
 		                         "PERSON", firstMotionFrame, maxXMotion);
+	}
+
+	private static final Map<String, String> TINY_YOLO_CONFIG = ImmutableMap.of(
+			"NETWORK_CONFIG_FILE", "config/cfg/tiny-yolo.cfg",
+			"WEIGHTS_FILE", "config/weights/tiny-yolo.weights",
+			"NAMES_FILE", "config/data/coco.names");
+
+
+	private static Map<String, String> getTinyYoloConfig(Map<String, String> otherProperties) {
+		Map<String, String> result = new HashMap<>(otherProperties);
+		result.putAll(TINY_YOLO_CONFIG);
+		return result;
+	}
+
+
+	@Test(timeout = 5 * MINUTES)
+	public void runMogThenDarknetFeedForwardRegionTest() {
+		String actionTaskName = "TEST DARKNET WITH FEED FORWARD SUPERSET REGION";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "DARKNET",
+		          getTinyYoloConfig(ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION")));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED SUPERSET REGION TO DARKNET PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		int maxXMotion = 320 / 2; // Video is 320 x 300 and only the person on the left side of the frame moves.
+
+		runFeedForwardRegionTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
+		                         "OBJECT", firstMotionFrame, maxXMotion);
 	}
 
 
@@ -437,6 +478,28 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 		int minXRightDetection = 320 / 2;  // Video is 320x300 and there is a person on the right side of the frame.
 		runFeedForwardFullFrameTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
 		                            "PERSON", firstMotionFrame, maxXLeftDetection, minXRightDetection);
+	}
+
+
+	@Test(timeout = 5 * MINUTES)
+	public void runMogThenDarknetFeedForwardFullFrameTest() {
+		String actionTaskName = "TEST DARKNET WITH FEED FORWARD FULL FRAME";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "DARKNET",
+		          getTinyYoloConfig(ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME")));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED FULL FRAME TO DARKNET PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		int maxXLeftDetection = 320 / 2;  // Video is 320x300 and there is a person on the left side of the frame.
+		int minXRightDetection = 320 / 2;  // Video is 320x300 and there is a person on the right side of the frame.
+		runFeedForwardFullFrameTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
+		                            "OBJECT", firstMotionFrame, maxXLeftDetection, minXRightDetection);
 	}
 
 

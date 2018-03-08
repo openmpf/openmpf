@@ -134,25 +134,52 @@ public class TestDetectionSplitter {
 
     }
 
-
-    @Test
-    public void testAlgorithmPropertyFrameRateCapOverrideOfSystemProperties() throws Exception {
-        long jobId = 512345;
-        String externalId = "5externalId";
-
-        // Testing FRAME_RATE_CAP as an algorithm property override of FRAME_INTERVAL and FRAME_RATE_CAP as system properties.
-        Map<String, String> actionProperties = Collections.emptyMap();
-        Map<String, String> jobProperties = Collections.emptyMap();
-        Map<String, Map> algorithmProperties = new HashMap();
-        Map<String, String> faceCvAlgorithmProperties = new HashMap();
-        faceCvAlgorithmProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, "10");
-        algorithmProperties.put("FACECV", faceCvAlgorithmProperties);
-
-//        Map<String, String> actionProperties = new HashMap<>();
+//    @Test
+//    public void testAlgorithmPropertyFrameRateCapOverrideOfSystemProperties() throws Exception {
+//        long jobId = 5123451;
+//        String externalId = "5externalId";
+//
+//        // Testing FRAME_RATE_CAP as an action property override of FRAME_INTERVAL and FRAME_RATE_CAP as system properties.
+//        Map<String, String> actionProperties = Collections.emptyMap();
+//        Map<String, String> jobProperties = Collections.emptyMap();
+//        Map<String, Map> algorithmProperties = Collections.emptyMap();
+//
+//        actionProperties = new HashMap<>();
 //        actionProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
+//        actionProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, "10");
 //        actionProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
 //        actionProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
 //        actionProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
+//    }
+//
+
+    private List<TransientMedia> createFrameRateCapTestImageMedia( String mediaFilename, Map<String, String> mediaProperties ) {
+        TransientMedia testMedia = new TransientMedia(next(), ioUtils.findFile(mediaFilename).toString());
+        testMedia.setType("IMAGE");
+        for ( Map.Entry mediaProperty : mediaProperties.entrySet() ) {
+            testMedia.addMediaSpecificProperty((String)mediaProperty.getKey(), (String)mediaProperty.getValue());
+        }
+
+        List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
+        return listMedia;
+    }
+
+    private List<TransientMedia> createFrameRateCapTestVideoMedia( String mediaFilename, int mediaLength, Map<String, String> mediaProperties ) {
+        TransientMedia testMedia = new TransientMedia(next(),
+            ioUtils.findFile(mediaFilename).toString());
+        testMedia.setLength(mediaLength);
+        testMedia.setType("VIDEO");
+        for ( Map.Entry mediaProperty : mediaProperties.entrySet() ) {
+            testMedia.addMediaSpecificProperty((String)mediaProperty.getKey(), (String)mediaProperty.getValue());
+        }
+
+        List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
+        return listMedia;
+    }
+
+    private TransientJob createFrameRateCapTestJob( long jobId, String externalId, List<TransientMedia> listMedia,
+                                                    Map<String, String> actionProperties, Map<String, String> jobProperties,
+                                                    Map<String, Map> algorithmProperties, Map<String, String> mediaProperties) {
 
         TransientPipeline dummyPipeline = new TransientPipeline("OCV FACE DETECTION PIPELINE", "TestDetectionSplitter Pipeline");
         TransientStage dummyStageDet = new TransientStage("DETECTION", "dummyDetectionDescription", ActionType.DETECTION);
@@ -166,81 +193,87 @@ public class TestDetectionSplitter {
         final boolean testOutputEnabled = true;
         TransientJob testJob = new TransientJob(jobId, externalId, dummyPipeline, testStage,
             testPriority, testOutputEnabled, false);
-        TransientMedia testMedia = new TransientMedia(next(),
-            ioUtils.findFile("/samples/video_01.mp4").toString());
-        testMedia.setLength(300);
-        testMedia.setType("VIDEO");
-        System.out.println("TestDetectionSplitter, debug: created testMedia with id " + testMedia.getId());
 
-        List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
         testJob.setMedia(listMedia);
-//        TransientStage testTransientStage = new TransientStage("stageName", "stageDescr", ActionType.DETECTION);
-//        testPipe.getStages().add(testTransientStage);
-//
-//        TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo");
-//        detectionAction.setProperties(actionProperties);
-//        testTransientStage.getActions().add(detectionAction);
-
-//
-//
-//
-//
-//
-//
-//
-//
-//        TransientJob testJob = createSimpleJobForTest(jobId, externalId, dummyPipeline, actionProperties, "/samples/video_01.mp4", "VIDEO");
         testJob.getOverriddenJobProperties().putAll(jobProperties);
         testJob.getOverriddenAlgorithmProperties().putAll(algorithmProperties);
         redis.persistJob(testJob);
-        TransientJob transientJobCopy = redis.getJob(jobId);
-        List<TransientMedia> transientMediaList = transientJobCopy.getMedia();
 
         // Need to run MediaInspectionProcessor on the Media, so that inspectMedia to add FPS and other metadata to the TransientMedia for this test to work
-        for (TransientMedia media : transientMediaList) {
-            System.out.println("TestDetectionSplitter, debug: for jobId= " + jobId + ", processing media with id " + media.getId());
+        for (TransientMedia media : redis.getJob(jobId).getMedia()) {
             Exchange exchange = new DefaultExchange(camelContext);
             exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, jobId);
             exchange.getIn().setBody(jsonUtils.serialize(media));
             exchange.getOut().setHeader(MpfHeaders.JOB_ID, jobId);
-            System.out.println("TestDetectionSplitter, debug: for jobId= " + jobId + ", calling mediaInpectionProcessor on media " + media);
             mediaInspectionProcessor.wfmProcess(exchange);
-
-            TransientJob debugTransientJob = redis.getJob(jobId);
-            System.out.println("TestDetectionSplitter, debug: after return from mediaInpectionProcessor, TransientJob for jobId=" + jobId + " is " + debugTransientJob);
-            List<TransientMedia> debugTransientMediaList = debugTransientJob.getMedia();
-            Assert.assertEquals(1, debugTransientMediaList.size());
-            TransientMedia debugTransientMedia = debugTransientMediaList.get(0);
-            System.out.println("TestDetectionSplitter, debug: after return from mediaInpectionProcessor, debugTransientMedia="+debugTransientMedia);
-            System.out.println("TestDetectionSplitter, debug: after return from mediaInpectionProcessor, debugTransientMedia.getMetadata()="+debugTransientMedia.getMetadata());
-            System.out.println("TestDetectionSplitter, debug: after return from mediaInpectionProcessor, debugTransientMedia.isFailed()="+debugTransientMedia.isFailed());
         }
 
-        // Need to refresh the job from REDIS since the mediaInspectionProcessor may have updated the jobs media
-        testJob = redis.getJob(jobId);
+        // Return the job refreshed from REDIS since the mediaInspectionProcessor may have updated the jobs media
+        return redis.getJob(jobId);
+    }
 
-        System.out.println("TestDetectionSplitter, debug: testJob.getPipeline().getStages().size()= "+ testJob.getPipeline().getStages().size());
-        System.out.println("TestDetectionSplitter, debug: calling detectionStageSplitter.performSplit on stage " + testJob.getPipeline().getStages().get(0));
+    @Test
+    public void testAlgorithmPropertyFrameRateCapOverrideOfSystemProperties() throws Exception {
+        long videoJobId = 512345;
+        String externalId = "algOverrideTest";
+
+        // Video test: Testing FRAME_RATE_CAP as an algorithm property override of FRAME_INTERVAL and FRAME_RATE_CAP as system properties.
+        Map<String, String> actionProperties = Collections.emptyMap();
+        Map<String, String> jobProperties = Collections.emptyMap();
+        Map<String, Map> algorithmProperties = new HashMap();
+        Map<String, String> faceCvAlgorithmProperties = new HashMap();
+        faceCvAlgorithmProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, "10");
+        algorithmProperties.put("FACECV", faceCvAlgorithmProperties);
+        Map<String, String> mediaProperties = Collections.emptyMap();
+
+        List<TransientMedia> listMedia = createFrameRateCapTestVideoMedia( "/samples/video_01.mp4", 300, mediaProperties );
+        TransientJob testJob = createFrameRateCapTestJob( videoJobId, externalId, listMedia,
+                                                          actionProperties, jobProperties, algorithmProperties,  mediaProperties);
+
+        // Test the DetectionSplitter on this job
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
-        System.out.println("TestDetectionSplitter, debug: returned from detectionStageSplitter.performSplit");
 
         // Processing of a video should have replaced algorithm sub-job property FRAME_INTERVAL with property COMPUTED_FRAME_INTERVAL
         Assert.assertEquals(1, responseList.size());
         Message message = responseList.get(0);
-        System.out.println("TestDetectionSplitter, debug: message is " + message);
         Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
         DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
 
+        // For a job with video media, this test is successful if the sub-job algorithm properties contain COMPUTED_FRAME_INTERVAL property
+        // and does not contain FRAME_INTERVAL property
         Assert.assertTrue(request.getAlgorithmPropertyList().stream()
-            .peek(k -> log.info("test1, peeking: k={}",k)).map( p -> p.getPropertyName() ).peek( n -> log.info("peeking2: n={}", n))
+            .map( p -> p.getPropertyName() )
             .anyMatch(k -> k.equals(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY)));
 
         Assert.assertTrue(request.getAlgorithmPropertyList().stream()
-            .peek(k -> log.info("test2, peeking: k={}",k)).map( p -> p.getPropertyName() ).peek( n -> log.info("peeking2: n={}", n))
+            .map( p -> p.getPropertyName() )
             .noneMatch(k -> k.equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)));
 
+        // Image test: Testing FRAME_RATE_CAP as an algorithm property override of FRAME_INTERVAL and FRAME_RATE_CAP as system properties.
+        long imageJobId = 512346;
 
+        listMedia = createFrameRateCapTestImageMedia( "/samples/meds-aa-S001-01-exif-rotation.jpg", mediaProperties );
+        testJob = createFrameRateCapTestJob( imageJobId, externalId, listMedia,
+            actionProperties, jobProperties, algorithmProperties,  mediaProperties);
 
+        // Test the DetectionSplitter on this job
+        responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
+
+        // Processing of a video should have replaced algorithm sub-job property FRAME_INTERVAL with property COMPUTED_FRAME_INTERVAL
+        Assert.assertEquals(1, responseList.size());
+        message = responseList.get(0);
+        Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
+        request = (DetectionProtobuf.DetectionRequest) message.getBody();
+
+        // For a job with image media, this test is successful if the sub-job algorithm properties contains FRAME_INTERVAL property
+        // and does not contain COMPUTED_FRAME_INTERVAL property
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream()
+            .map( p -> p.getPropertyName() )
+            .anyMatch(k -> k.equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)));
+
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream()
+            .map( p -> p.getPropertyName() )
+            .noneMatch(k -> k.equals(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY)));
 
 
     }

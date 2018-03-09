@@ -638,7 +638,7 @@ public class TestDetectionSplitter {
 
         // For a job with video media, this test is successful if the sub-job algorithm properties contain COMPUTED_FRAME_INTERVAL property
         // and does not contain FRAME_INTERVAL property
-        DetectionProtobuf.DetectionRequest request1 =  testFrameRateCapOverrideOfSystemPropertiesOnVideo(videoJobId, externalId,
+        DetectionProtobuf.DetectionRequest request1 =  testFrameRateCapPropertyOverride(videoJobId, externalId,
             actionProperties, jobProperties, algorithmProperties, mediaProperties);
         List<AlgorithmProperty> algorithmPropertyList1 = request1.getAlgorithmPropertyList();
 

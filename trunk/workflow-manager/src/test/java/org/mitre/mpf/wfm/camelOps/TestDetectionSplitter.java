@@ -418,8 +418,7 @@ public class TestDetectionSplitter {
     }
 
     private TransientJob createFrameRateCapTestJob( long jobId, String externalId, List<TransientMedia> listMedia,
-        Map<String, String> actionProperties, Map<String, String> jobProperties,
-        Map<String, Map> algorithmProperties, Map<String, String> mediaProperties) {
+        Map<String, String> actionProperties, Map<String, String> jobProperties, Map<String, Map> algorithmProperties) {
 
         TransientPipeline dummyPipeline = new TransientPipeline("OCV FACE DETECTION PIPELINE", "TestDetectionSplitter Pipeline");
         TransientStage dummyStageDet = new TransientStage("DETECTION", "dummyDetectionDescription", ActionType.DETECTION);
@@ -452,36 +451,15 @@ public class TestDetectionSplitter {
         return redis.getJob(jobId);
     }
 
-    public DetectionProtobuf.DetectionRequest testFrameRateCapOverrideOfSystemPropertiesOnImage(long imageJobId, String externalId,
-        Map<String, String> actionProperties, Map<String, String> jobProperties,
-        Map<String, Map> algorithmProperties, Map<String, String> mediaProperties) throws Exception {
+    public DetectionProtobuf.DetectionRequest testFrameRateCapPropertyOverride(long videoJobId, String externalId,
+                                    Map<String, String> actionProperties, Map<String, String> jobProperties,
+                                    Map<String, Map> algorithmProperties, Map<String, String> mediaProperties) throws Exception {
 
-        // Image test: Testing FRAME_RATE_CAP as property override of FRAME_INTERVAL and FRAME_RATE_CAP as system properties.
-
-        List<TransientMedia> listMedia = createFrameRateCapTestImageMedia( "/samples/meds-aa-S001-01-exif-rotation.jpg", mediaProperties );
-        TransientJob testJob = createFrameRateCapTestJob( imageJobId, externalId, listMedia,
-            actionProperties, jobProperties, algorithmProperties,  mediaProperties);
-
-        // Test the DetectionSplitter on this job
-        List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
-
-        Assert.assertTrue(responseList.size() >= 1);
-        Message message = responseList.get(0);
-        Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
-
-        return (DetectionProtobuf.DetectionRequest) message.getBody();
-    }
-
-    public DetectionProtobuf.DetectionRequest testFrameRateCapOverrideOfSystemPropertiesOnVideo(long videoJobId, String externalId,
-        Map<String, String> actionProperties, Map<String, String> jobProperties,
-        Map<String, Map> algorithmProperties, Map<String, String> mediaProperties) throws Exception {
-
-        // Video test: Testing FRAME_RATE_CAP as property override of FRAME_INTERVAL and FRAME_RATE_CAP as system properties.
         List<TransientMedia> listMedia = createFrameRateCapTestVideoMedia( "/samples/video_01.mp4", 300, mediaProperties );
         TransientJob testJob = createFrameRateCapTestJob( videoJobId, externalId, listMedia,
-            actionProperties, jobProperties, algorithmProperties,  mediaProperties);
+                                                          actionProperties, jobProperties, algorithmProperties);
 
-        // Test the DetectionSplitter on this job
+        // Run the DetectionSplitter on this job, and return the response for evaluation.
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
 
         Assert.assertTrue(responseList.size() >= 1);
@@ -494,10 +472,10 @@ public class TestDetectionSplitter {
     @Test
     public void testFrameRateCapSystemProperties() throws Exception {
         long videoJobId = 412345;
-        long imageJobId = 412346;
         String externalId = "baselineFrameRateCapOverrideTest";
 
         // Testing FRAME_INTERVAL and FRAME_RATE_CAP as system properties.
+        // Note: to test all use cases, the caller has to change the defaults in the property file.
         Map<String, String> actionProperties = Collections.emptyMap();
         Map<String, String> jobProperties = Collections.emptyMap();
         Map<String, Map> algorithmProperties = Collections.emptyMap();
@@ -506,7 +484,7 @@ public class TestDetectionSplitter {
         // For a job with video media, this test is successful if the sub-job algorithm properties contains COMPUTED_FRAME_INTERVAL property
         // that is equal to the default FRAME_INTERVAL system property (if FRAME_RATE_CAP system property is disabled). If not disabled,
         // then COMPUTED_FRAME_INTERVAL should be derived from FRAME_RATE_CAP system property.
-        DetectionProtobuf.DetectionRequest request1 = testFrameRateCapOverrideOfSystemPropertiesOnVideo(videoJobId, externalId,
+        DetectionProtobuf.DetectionRequest request1 = testFrameRateCapPropertyOverride(videoJobId, externalId,
                                                                 actionProperties, jobProperties, algorithmProperties, mediaProperties);
 
         // Need to find COMPUTED_FRAME_INTERVAL property, this test passes when:
@@ -537,58 +515,116 @@ public class TestDetectionSplitter {
 
     @Test
     public void testActionPropertyFrameRateCapOverrideOfSystemProperties() throws Exception {
-        long videoJobId = 412345;
-        long imageJobId = 412346;
-        String externalId = "actOverrideTest";
+        long videoJobId1 = 412341;
+        long videoJobId2 = videoJobId1 + 1;
+        long videoJobId3 = videoJobId1 + 2;
+        long videoJobId4 = videoJobId1 + 3;
+        String externalId = "actionFrameRateCapOverrideTest";
 
-        // Testing FRAME_RATE_CAP as an action property override of FRAME_INTERVAL and FRAME_RATE_CAP as system properties.
-        Map<String, String> actionProperties = Collections.emptyMap();
+        // Testing FRAME_RATE_CAP or FRAME_INTERVAL as an action property override of FRAME_INTERVAL and FRAME_RATE_CAP as system properties.
+        // Note: to test all use cases, the caller has to change the defaults in the property file.
+        Map<String, String> actionProperties = new HashMap<>();
         Map<String, String> jobProperties = Collections.emptyMap();
         Map<String, Map> algorithmProperties = Collections.emptyMap();
         Map<String, String> mediaProperties = Collections.emptyMap();
 
-        actionProperties = new HashMap<>();
-        actionProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
-        actionProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, "10");
-        actionProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
-        actionProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
-        actionProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
+        // Run the FRAME_INTERVAL override test.
+        Double frameInterval = 20.0;
+        actionProperties.clear();
+        actionProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, frameInterval.toString());
 
-        // For a job with video media, this test is successful if the sub-job algorithm properties contain COMPUTED_FRAME_INTERVAL property
-        // and does not contain FRAME_INTERVAL property
-        DetectionProtobuf.DetectionRequest request1 = testFrameRateCapOverrideOfSystemPropertiesOnVideo(videoJobId, externalId,
+        // This test is successful if the sub-job algorithm properties contain COMPUTED_FRAME_INTERVAL property
+        // whose value is the same as the input FRAME_INTERVAL action property value. The sub-job algorithm properties
+        // should not contain FRAME_INTERVAL property.
+        DetectionProtobuf.DetectionRequest request1 = testFrameRateCapPropertyOverride(videoJobId1, externalId,
             actionProperties, jobProperties, algorithmProperties, mediaProperties);
 
-        List<AlgorithmProperty> algorithmPropertyList1 = request1.getAlgorithmPropertyList();
-
-        Assert.assertTrue(algorithmPropertyList1.stream()
-            .map( p -> p.getPropertyName() )
-            .anyMatch(k -> k.equals(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY)));
-
-        Assert.assertTrue(algorithmPropertyList1.stream()
+        // The sub-job algorithm properties should not contain the FRAME_INTERVAL property.
+        Assert.assertTrue(request1.getAlgorithmPropertyList().stream()
             .map( p -> p.getPropertyName() )
             .noneMatch(k -> k.equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)));
 
-        // For a job with image media, this test is successful if the sub-job algorithm properties contains FRAME_INTERVAL property
-        // and does not contain COMPUTED_FRAME_INTERVAL property
-        DetectionProtobuf.DetectionRequest request2 = testFrameRateCapOverrideOfSystemPropertiesOnImage(imageJobId, externalId,
+        // COMPUTED_FRAME_INTERVAL property value should be the same as the overridden FRAME_INTERVAL property value.
+        Assert.assertTrue(request1.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+             return (prop.getPropertyName().equals(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY) &&
+                    prop.getPropertyValue().equals(frameInterval.toString()) );
+        }));
+
+        // Run the FRAME_RATE_CAP override test with FRAME_RATE_CAP not disabled.
+        actionProperties.clear();
+        actionProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, frameInterval.toString());
+        actionProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, "10");
+
+        // This test is successful if the sub-job algorithm properties contain COMPUTED_FRAME_INTERVAL property
+        // whose value is >= 1, can't validate the actual value because we have no access to FPS at this level.
+        // The sub-job algorithm properties should not contain FRAME_INTERVAL property.
+        DetectionProtobuf.DetectionRequest request2 = testFrameRateCapPropertyOverride(videoJobId2, externalId,
             actionProperties, jobProperties, algorithmProperties, mediaProperties);
 
-        List<AlgorithmProperty> algorithmPropertyList2 = request2.getAlgorithmPropertyList();
-
-        Assert.assertTrue(algorithmPropertyList2.stream()
+        // The sub-job algorithm properties should not contain the FRAME_INTERVAL property.
+        Assert.assertTrue(request2.getAlgorithmPropertyList().stream()
             .map( p -> p.getPropertyName() )
-            .anyMatch(k -> k.equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)));
+            .noneMatch(k -> k.equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)));
 
-        Assert.assertTrue(algorithmPropertyList2.stream()
+        // The value of COMPUTED_FRAME_INTERVAL should be >= 1
+        Assert.assertTrue(request2.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+            return (prop.getPropertyName().equals(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY) &&
+                Double.valueOf(prop.getPropertyValue()) >= 1 );
+        }));
+
+        // Run the FRAME_RATE_CAP override test with FRAME_RATE_CAP disabled.
+        actionProperties.clear();
+        actionProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, frameInterval.toString());
+        actionProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, "-1");
+
+        // This test is successful if the sub-job algorithm properties contain COMPUTED_FRAME_INTERVAL property
+        // whose value is the same as action property FRAME_INTERVAL.
+        // The sub-job algorithm properties should not contain FRAME_INTERVAL property.
+        DetectionProtobuf.DetectionRequest request3 = testFrameRateCapPropertyOverride(videoJobId3, externalId,
+            actionProperties, jobProperties, algorithmProperties, mediaProperties);
+
+        // The sub-job algorithm properties should not contain the FRAME_INTERVAL property.
+        Assert.assertTrue(request3.getAlgorithmPropertyList().stream()
             .map( p -> p.getPropertyName() )
-            .noneMatch(k -> k.equals(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY)));
+            .noneMatch(k -> k.equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)));
+
+        // COMPUTED_FRAME_INTERVAL property value should be the same as the overridden FRAME_INTERVAL property value.
+        Assert.assertTrue(request3.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+            return (prop.getPropertyName().equals(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY) &&
+                Double.valueOf(prop.getPropertyValue()).equals(frameInterval) );
+        }));
+
+        // Run the FRAME_RATE_CAP override test with both FRAME_RATE_CAP and FRAME_INTERVAL disabled.
+        // Should fall back to system property values.
+        actionProperties.clear();
+        actionProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "-1");
+        actionProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, "-1");
+
+        // This test is successful if the sub-job algorithm properties contain COMPUTED_FRAME_INTERVAL property
+        // whose value is the same as system property FRAME_INTERVAL (if system property detection.frame.rate.cap is disabled).
+        // Otherwise, COMPUTED_FRAME_INTERVAL property should be derived from detection.frame.rate.cap and we should only
+        // check that COMPUTED_FRAME_INTERVAL is >= 1 (since we have no access to FPS for the media, can't do any better check than that).
+        // The sub-job algorithm properties should never contain FRAME_INTERVAL property.
+        DetectionProtobuf.DetectionRequest request4 = testFrameRateCapPropertyOverride(videoJobId4, externalId,
+            actionProperties, jobProperties, algorithmProperties, mediaProperties);
+
+        // The sub-job algorithm properties should not contain the FRAME_INTERVAL property.
+        Assert.assertTrue(request4.getAlgorithmPropertyList().stream()
+            .map( p -> p.getPropertyName() )
+            .noneMatch(k -> k.equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)));
+
+        // COMPUTED_FRAME_INTERVAL property value should be the same as the overridden FRAME_INTERVAL system property value.
+        Assert.assertTrue(request4.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+            return (prop.getPropertyName().equals(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY) &&
+                Double.valueOf(prop.getPropertyValue()) == propertiesUtil.getSamplingInterval() );
+        }));
+
     }
 
     @Test
     public void testAlgorithmPropertyFrameRateCapOverrideOfSystemProperties() throws Exception {
         long videoJobId = 512345;
-        long imageJobId = 512346;
+//        long imageJobId = 512346;
         String externalId = "algOverrideTest";
 
         // Testing FRAME_RATE_CAP as an algorithm property override of FRAME_INTERVAL and FRAME_RATE_CAP as system properties.
@@ -614,19 +650,19 @@ public class TestDetectionSplitter {
             .map( p -> p.getPropertyName() )
             .noneMatch(k -> k.equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)));
 
-        // For a job with image media, this test is successful if the sub-job algorithm properties contains FRAME_INTERVAL property
-        // and does not contain COMPUTED_FRAME_INTERVAL property
-        DetectionProtobuf.DetectionRequest request2 = testFrameRateCapOverrideOfSystemPropertiesOnImage(imageJobId, externalId,
-            actionProperties, jobProperties, algorithmProperties, mediaProperties);
-        List<AlgorithmProperty> algorithmPropertyList2 = request2.getAlgorithmPropertyList();
-
-        Assert.assertTrue(algorithmPropertyList2.stream()
-            .map( p -> p.getPropertyName() )
-            .anyMatch(k -> k.equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)));
-
-        Assert.assertTrue(algorithmPropertyList2.stream()
-            .map( p -> p.getPropertyName() )
-            .noneMatch(k -> k.equals(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY)));
+//        // For a job with image media, this test is successful if the sub-job algorithm properties contains FRAME_INTERVAL property
+//        // and does not contain COMPUTED_FRAME_INTERVAL property
+//        DetectionProtobuf.DetectionRequest request2 = testFrameRateCapOverrideOfSystemPropertiesOnImage(imageJobId, externalId,
+//            actionProperties, jobProperties, algorithmProperties, mediaProperties);
+//        List<AlgorithmProperty> algorithmPropertyList2 = request2.getAlgorithmPropertyList();
+//
+//        Assert.assertTrue(algorithmPropertyList2.stream()
+//            .map( p -> p.getPropertyName() )
+//            .anyMatch(k -> k.equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)));
+//
+//        Assert.assertTrue(algorithmPropertyList2.stream()
+//            .map( p -> p.getPropertyName() )
+//            .noneMatch(k -> k.equals(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY)));
 
     }
 

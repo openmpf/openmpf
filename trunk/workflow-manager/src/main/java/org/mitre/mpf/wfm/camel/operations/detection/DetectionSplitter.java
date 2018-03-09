@@ -191,16 +191,12 @@ public class DetectionSplitter implements StageSplitter {
                     // The goal of the FRAME_RATE_CAP is to ensure that a minimum number of frames are processed per second, which is why we round down this value if needed.
                     // But, the value should always be at least 1.
                     computedFrameInterval = Math.max(1, Math.floor(media_fps / propertiesUtil.getFrameRateCap()));
-                    log.info("Set computed frame interval to {} from system property FRAME_RATE_CAP using FPS {} ", computedFrameInterval, media_fps);
                 } else if ( propertiesUtil.getSamplingInterval() > 0 ) {
                     // Set the  frame interval from the default detection sampling interval
                     computedFrameInterval = Double.valueOf(propertiesUtil.getSamplingInterval());
-                    log.info("Set computed frame interval to {} from system property FRAME_INTERVAL", computedFrameInterval);
                 }
 
             }
-            System.out.println("DetectionSplitter, debug: media_fps=" + media_fps);
-            System.out.println("DetectionSplitter, debug: computedFrameInterval=" + computedFrameInterval);
 
             // Iterate through each of the actions and segment the media using the properties provided in that action.
 			for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
@@ -215,7 +211,6 @@ public class DetectionSplitter implements StageSplitter {
                 // that override the previous determination of computed frame interval based upon system properties.
                 if ( media_fps != null ) {
                     computedFrameInterval = getComputedFrameIntervalForVideo(media_fps, transientAction.getProperties(), computedFrameInterval);
-                    log.info("Set computed frame interval to {} from action property with FPS {} ", computedFrameInterval, media_fps);
                 }
 
                 // current modifiedMap properties overridden by action properties
@@ -243,7 +238,6 @@ public class DetectionSplitter implements StageSplitter {
                 // that override the previous determination of computed frame interval based upon action or system properties.
                 if ( media_fps != null ) {
                     computedFrameInterval = getComputedFrameIntervalForVideo(media_fps, transientJob.getOverriddenJobProperties(), computedFrameInterval);
-                    log.info("Set computed frame interval to {} from job property with FPS {} ", computedFrameInterval, media_fps);
                 }
 
                 // Note: by this point override of system properties by job properties has already been applied to the transient job.
@@ -275,7 +269,6 @@ public class DetectionSplitter implements StageSplitter {
                     // that override the computed frame interval previously determined from the job, action or system properties.
                     if ( media_fps != null ) {
                         computedFrameInterval = getComputedFrameIntervalForVideo(media_fps, job_alg_m, computedFrameInterval);
-                        log.info("Set computed frame interval to {} from algorithm property with FPS {} ", computedFrameInterval, media_fps);
                     }
 
                     // see if any of these algorithm properties are transform properties.  If so, clear the
@@ -295,7 +288,6 @@ public class DetectionSplitter implements StageSplitter {
                 // that override the computed frame interval previously determined from the algorithm, job, action or system properties.
                 if ( media_fps != null ) {
                     computedFrameInterval = getComputedFrameIntervalForVideo(media_fps, transientMedia.getMediaSpecificProperties(), computedFrameInterval);
-                    log.info("Set computed frame interval to {} from media property with FPS {} ", computedFrameInterval, media_fps);
                 }
 
 				for (String key : transformProperties) {
@@ -325,8 +317,6 @@ public class DetectionSplitter implements StageSplitter {
                     redis.persistJob(transientJob);
                 }
 
-                System.out.println("DetectionSplitter, debug: modifiedMap = " + modifiedMap);
-
 				SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
 				List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
 						= convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
@@ -342,8 +332,6 @@ public class DetectionSplitter implements StageSplitter {
 						algorithmProperties,
 						previousTracks,
 						segmentingPlan);
-
-                System.out.println("DetectionSplitter, debug: detectionContext = " + detectionContext);
 
 				List<Message> detectionRequestMessages
 						= createDetectionRequestMessages(transientMedia, detectionContext);

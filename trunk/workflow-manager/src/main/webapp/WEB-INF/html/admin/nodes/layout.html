@@ -147,31 +147,38 @@
     </div>
 </script>
 
-<!-- Add New Node dialog box -->
-<script type="text/ng-template" id="add-new-node-dialog.html">
-    <div class="modal-header"><h3 class="modal-title">Add New Node</h3></div>
+<!-- Add Node dialog box -->
+<script type="text/ng-template" id="add-node-dialog.html">
+    <div class="modal-header"><h3 class="modal-title">Add Node</h3></div>
     <div class="modal-body">
-        <div ng-if="data.hostnames.length === 0">
-            All available nodes have already been configured.
-        </div>
-        <div ng-if="data.hostnames.length > 0">
-            Select the hostname of the new node:
+        <div ng-show="data.hostnames.length > 0">
+            Select the hostname of a known node, or add a spare node:
             <br/>
-            <select ng-model="data.selected" ng-init="data.selected=data.hostnames[0]" class="form-control">
+            <select ng-model="data.selected"  ng-init="data.selected=data.hostnames[0]" class="form-control">
                 <option ng-repeat="item in data.hostnames" value="{{item}}"> {{item}}</option>
+                <option> Add a spare node...</option>
             </select>
+        </div>
+        <div ng-show="data.hostnames.length === 0">
+            All known nodes already added to cluster.
+        </div>
+        <div ng-show="data.hostnames.length === 0 || data.selected == ' Add a spare node...'">
             <br/>
-            <div class="checkbox">
-                <label>
-                    <input type="checkbox" id="new_node_all_services"> Add all available services?
-                </label>
-            </div>
+            Type the IP address or hostname of a spare node:
             <br/>
-            <em>Nodes can only be added to the system once they have been configured into the MPF cluster. Please see the MPF Installation guide for instructions.</em>
+            <input ng-model="data.spare" type="text" width="100%" class="forminput">
+        </div>
+        <br/>
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" id="new_node_all_services"> Add all available services?
+            </label>
         </div>
     </div>
     <div class="modal-footer">
-        <button class="btn btn-primary" ng-disabled="data.selected===undefined" ng-click="ok(data.selected)">Add Node</button>
+        <button class="btn btn-primary"
+                ng-disabled="(!data.selected && !data.spare) || (data.selected == ' Add a spare node...' && !data.spare)"
+                ng-click="ok([data.selected, data.spare])">Add Node</button>
         <button class="btn btn-default" ng-click="cancel()">Cancel</button>
     </div>
 </script>

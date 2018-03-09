@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,45 +23,42 @@
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
+---
+#file: update-all-mpf-nodes.yml
 
-import sys
+# Example usage:
+# ansible-playbook <path>/update-all-mpf-nodes.yml --ask-pass --user $USER_NAME --become --ask-become-pass --extra-vars all_mpf_nodes="hostA.somedomain[7800],hostB.somedomain[7800],"
 
-import argh
-import argh.utils
+# DEBUG
+# ansible-playbook /home/mpf/git/openmpf-projects/openmpf/trunk/ansible/install/ansible/update-all-mpf-nodes.yml --user $USER_NAME -e master_host "{{ hostvars[groups['mpf-master'][0]]['inventory_hostname'] }}" -e all_mpf_nodes="hostA.somedomain[7800],hostB.somedomain[7800],"
 
-import mpf_clean
-import mpf_nodes
-import mpf_sys
-import mpf_users
-import mpf_util
+- hosts: all
 
+  vars:
+    - mpf_home: "{{ lookup('env','MPF_HOME') | default('/opt/mpf', true) }}"
+    - deployment_config: "{{ lookup('file', '{{ mpf_home }}/share/deployment_config.json') | from_json }}"
 
-def main():
-    parser = PrintHelpOnErrorParser()
-    parser.add_commands(mpf_sys.COMMANDS)
-    parser.add_commands(mpf_users.COMMANDS)
-    parser.add_commands(mpf_clean.COMMANDS)
-    parser.add_commands(mpf_nodes.COMMANDS)
+  pre_tasks:
+    - name: Set workflow manager REST endpoint to update ALL_MPF_NODES
+      set_fact:
+        can_update_nodes: "{% if deployment_config.https.install and keystore_filest.stat.exists == False %}False{% else %}True{% endif %}"
+        update_nodes_uri: "{% if deployment_config.https.install %}https://{{ master_host }}:8443/workflow-manager/rest/env/update?allMpfNodes={% else %}http://{{ master_host }}:8080/workflow-manager/rest/env/update?allMpfNodes={% endif %}"
 
-    subs = argh.utils.get_subparsers(parser)
-    subs.help = 'For command specific arguments and help run: %(prog)s <command> --help\n'
-    subs.metavar = 'Commands'
-
-    try:
-        parser.dispatch()
-    except mpf_util.MpfError as err:
-        parser.exit('error: %s' % err.message)
-
-
-class PrintHelpOnErrorParser(argh.ArghParser):
-    def error(self, message):
-        if len(sys.argv) > 1:
-            super(PrintHelpOnErrorParser, self).error(message)
-        else:
-            # no command provided
-            self.print_help()
-            self.exit(2, '\n%s: error: %s\n' % (self.prog, message))
-
-
-if __name__ == '__main__':
-    main()
+  post_tasks:
+    - name: "Update workflow manager ALL_MPF_NODES"
+      uri:
+        url: "{{ update_nodes_uri }}{{ all_mpf_nodes }}"
+        method: GET
+        follow_redirects: all
+        force_basic_auth: yes
+        user: "admin"
+        password: "{{ admin_wfm_pw }}"
+        status_code: 200
+        return_content: yes
+        timeout: 150
+        validate_certs: no
+      environment:
+        no_proxy: "{{ master_host }}"
+      when: can_update_nodes
+      register: update_results
+      failed_when: update_results.status == 404

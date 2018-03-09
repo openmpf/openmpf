@@ -24,12 +24,12 @@
 # limitations under the License.                                            #
 #############################################################################
 
+import argh
 import argparse
 import os
-
-import argh
 import pymysql
 import pymysql.constants.ER
+import string
 
 
 def arg_group(*arg_defs):
@@ -68,14 +68,56 @@ class VerifyNoWhiteSpace(argparse.Action):
         super(VerifyNoWhiteSpace, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parser, namespace, value, option_string=None):
+        verify_no_white_space(self, parser, namespace, value)
+
+def verify_no_white_space(self, parser, namespace, value):
+    arg_name = self.metavar or self.dest
+    if not value:
+        parser.error('%s can not be the empty string' % arg_name)
+    elif has_whitespace(value):
+        parser.error('%s can not contain whitespace' % arg_name)
+    else:
+        setattr(namespace, self.dest, value)
+
+class VerifyHostnameOrIpAddress(argparse.Action):
+    """ Ensures that a command line argument is a valid hostname or IP address. Exits with a warning otherwise """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        super(VerifyHostnameOrIpAddress, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parser, namespace, value, option_string=None):
+        verify_no_white_space(self, parser, namespace, value)
+
         arg_name = self.metavar or self.dest
-        if not value:
-            parser.error('%s can not be the empty string' % arg_name)
-        elif has_whitespace(value):
-            parser.error('%s can not contain whitespace' % arg_name)
+        invalidChars = set(string.punctuation.replace(".", ""))
+        if any(char in invalidChars for char in value):
+            parser.error('%s can not contain special characters: %s' % (arg_name, list(invalidChars)))
+        elif value.startswith('.'):
+            parser.error('%s must not start with \'.\'' % arg_name)
+        elif value.endswith('.'):
+            parser.error('%s must not end with \'.\'' % arg_name)
         else:
             setattr(namespace, self.dest, value)
 
+class VerifyPortRange(argparse.Action):
+    """ Ensures that a command line argument is a number in the range [0, 65535]. Exits with a warning
+     if the argument is not a number or not in that range"""
+
+    def __init__(self, option_strings, dest, **kwargs):
+        super(VerifyPortRange, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parser, namespace, value, option_string=None):
+        arg_name = self.metavar or self.dest
+        try:
+            num = int(value)
+        except ValueError:
+            parser.error('%s must be a number' % arg_name)
+        if num < 0:
+            parser.error('%s can not be < 0' % arg_name)
+        elif num > 65535:
+            parser.error('%s can not be > 65535' % arg_name)
+        else:
+            setattr(namespace, self.dest, value)
 
 class _EnvDefault(argparse.Action):
     def __init__(self, env_var_name, required=True, default=None, **kwargs):

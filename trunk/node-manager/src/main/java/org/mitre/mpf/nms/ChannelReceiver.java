@@ -65,12 +65,10 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
     private ClusterChangeNotifier notifier;          // For callbacks when changing node states
 
 
-
     protected ChannelReceiver(NodeManagerProperties properties, ChannelNode channelNode) {
         this.properties = properties;
         msgChannel = channelNode;
     }
-
 
     /**
      * a notifier will have methods called when the cluster state changes
@@ -124,6 +122,10 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
 
     @Override
     public void viewAccepted(View view) {
+        handleView(view, false);
+    }
+
+    private void handleView(View view, boolean forced) {
         // What is currently out there
         String participants = view.getMembers().stream()
                 .map(Object::toString)
@@ -136,7 +138,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         Map<String, Boolean> managersInView = new HashMap<>();
         for (Address addr : view.getMembers()) {
             String name = addr.toString();
-            LOG.debug("viewAccepted from {}", name);
+            LOG.info("Cluster view accepted from {}", name);
             // If it's a node manager then track it, it's name contains the machine name upon which it resides
             Pair<String, NodeTypes> hostNodeTypePair = AddressParser.parse(addr);
             if (hostNodeTypePair == null) {
@@ -153,7 +155,9 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
                     NodeDescriptor mgr = nodeTable.get(mgrHost);
                     if (mgr == null) {
                         mgr = new NodeDescriptor(mgrHost);
-                        LOG.warn("New node-manager is online that wasn't preconfigured. Rogue?");
+                        if (!mgr.doesHostMatch(properties.getThisMpfNode())) { // don't warn about self
+                            LOG.warn("New node-manager is online that wasn't preconfigured. Rogue?");
+                        }
                         // Issue the callback
                         if (notifier != null) {
                             notifier.newManager(mgr.getHostname());
@@ -208,6 +212,10 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         }
 
         super.viewAccepted(view);
+
+        if (notifier != null) {
+            notifier.viewUpdated(forced);
+        }
     }
 
 
@@ -300,5 +308,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         LOG.debug("{} starting up", fqn);
         // this connects us to the jgroups channel defined, we are now live and ready for comm
         msgChannel.connect(fqn, this);
+
+        handleView(msgChannel.getView(), true);
     }
 }

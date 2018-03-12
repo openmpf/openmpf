@@ -26,28 +26,33 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import org.mitre.mpf.mvc.model.PropertyModel;
-import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Profile;
-import org.springframework.context.annotation.Scope;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
+ import org.mitre.mpf.mvc.model.PropertyModel;
+ import org.mitre.mpf.wfm.service.MpfService;
+ import org.mitre.mpf.wfm.util.PropertiesUtil;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.beans.factory.annotation.Qualifier;
+ import org.springframework.context.annotation.Profile;
+ import org.springframework.context.annotation.Scope;
+ import org.springframework.core.io.support.PropertiesLoaderUtils;
+ import org.springframework.http.HttpStatus;
+ import org.springframework.http.ResponseEntity;
+ import org.springframework.stereotype.Controller;
+ import org.springframework.web.bind.annotation.RequestBody;
+ import org.springframework.web.bind.annotation.RequestMapping;
+ import org.springframework.web.bind.annotation.RequestMethod;
+ import org.springframework.web.bind.annotation.ResponseBody;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.*;
+ import javax.servlet.http.HttpServletRequest;
+ import java.io.IOException;
+ import java.io.OutputStream;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.Objects;
+ import java.util.Properties;
 
-import static java.util.stream.Collectors.toList;
+ import static java.util.stream.Collectors.toList;
 
 // NOTE: Don't use @Scope("request") because this class should be treated as a singleton.
 
@@ -98,7 +103,6 @@ public class AdminPropertySettingsController
 	public void saveProperties(@RequestBody List<PropertyModel> propertyModels, HttpServletRequest request) throws IOException {
 		if (!LoginController.getAuthenticationModel(request).isAdmin()) {
 			throw new IllegalStateException("A non-admin tried to modify properties.");
-
 		}
 
 		if (propertyModels.isEmpty()) {
@@ -129,5 +133,16 @@ public class AdminPropertySettingsController
 	@ResponseBody
 	public int getDefaultJobPriority() {
 		return propertiesUtil.getJmsPriority();
-	}	
+	}
+
+
+	// EXTERNAL: Only used by "mpf add-node" and "mpf remove-node"
+	@RequestMapping(value = {"/rest/properties/all-mpf-nodes"}, method = RequestMethod.PUT)
+	public ResponseEntity<Object> setAllMpfNodes(@RequestBody String allMpfNodes, HttpServletRequest request) {
+		if (!LoginController.getAuthenticationModel(request).isAdmin()) {
+			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+		}
+        propertiesUtil.setAllMpfNodes(allMpfNodes);
+		return new ResponseEntity<>(HttpStatus.OK);
+	}
 }

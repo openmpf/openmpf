@@ -316,7 +316,7 @@ public class StreamingJobController {
 
                 cancelResponse = new StreamingJobCancelResponse(jobId,
                     streamingJobRequest.getOutputObjectDirectory(), doCleanup,
-                    MpfResponse.RESPONSE_CODE_SUCCESS, "success");
+                    MpfResponse.RESPONSE_CODE_SUCCESS, null);
             } catch (WfmProcessingException e) {
                 log.error("Streaming job with id {} couldn't be cancelled, error is '{}'", jobId, e.getMessage());
                 cancelResponse = new StreamingJobCancelResponse(jobId,

@@ -59,7 +59,7 @@ import java.util.stream.Collectors;
 
 @Component
 public class PipelineServiceImpl implements PipelineService {
-    private static final Logger log = LoggerFactory.getLogger(PipelineService.class);
+    private static final Logger log = LoggerFactory.getLogger(PipelineServiceImpl.class);
 
     @Autowired
     @Qualifier(PropertiesUtil.REF)

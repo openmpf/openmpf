@@ -25,9 +25,12 @@
 #############################################################################
 
 import argh
+import base64
+import getpass
 import string
 import urllib2
 
+import mpf_sys
 import mpf_util
 
 
@@ -49,17 +52,39 @@ def add_node(node, port=None, all_mpf_nodes=None, workflow_manager_url=None):
         print mpf_util.MsgUtil.red('Child node: %s has not been added' % node)
         return
 
-    node_with_port = ''.join([node,'[',port,']'])
-    new_nodes = ','.join([string.rstrip(all_mpf_nodes,','),node_with_port])
-
-    endpoint_url = ''.join([string.rstrip(workflow_manager_url,'/'),'/rest/env/update?allMpfNodes=',new_nodes])
+    # If the WFM is running, update the env. variable being used by the WFM
+    request = urllib2.Request(workflow_manager_url)
+    request.get_method = lambda: 'HEAD'
     try:
-        response = urllib2.urlopen(endpoint_url) # DEBUG
-        print response.read() # DEBUG
+        urllib2.urlopen(request)
+        wfm_running = True
     except:
-        print mpf_util.MsgUtil.red('Problem connecting to: %s' % endpoint_url)
-        print mpf_util.MsgUtil.red('Child node: %s has not been added' % node)
-        raise
+        wfm_running = False
+        print mpf_util.MsgUtil.yellow("Detected that the Workflow Manager is not running. Proceeding.")
+
+    if  wfm_running:
+        print "Detected that the Workflow Manager is running. Updating value of ALL_MPF_NODES used by the Workflow Manager."
+
+        node_with_port = ''.join([node,'[',port,']'])
+        new_nodes = ','.join([string.rstrip(all_mpf_nodes,','),node_with_port,'']) # add trailing comma
+
+        endpoint_url = ''.join([string.rstrip(workflow_manager_url,'/'),'/rest/properties/all-mpf-nodes'])
+
+        print 'Enter the credentials for a Workflow Manager administrator:'
+        username = raw_input('Username: ')
+        password = getpass.getpass('Password: ')
+
+        request = urllib2.Request(endpoint_url, data=new_nodes)
+        request.get_method = lambda: 'PUT'
+        base64string = base64.b64encode('%s:%s' % (username, password))
+        request.add_header('Authorization', 'Basic %s' % base64string)
+
+        try:
+            urllib2.urlopen(request)
+        except:
+            print mpf_util.MsgUtil.red('Problem connecting to: %s' % endpoint_url)
+            print mpf_util.MsgUtil.red('Child node: %s has not been added' % node)
+            raise
 
     # TODO: modify system files on master
 

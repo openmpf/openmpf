@@ -32,7 +32,8 @@ import org.mitre.mpf.mvc.util.tailer.FilteredMpfLogTailerListener;
 import org.mitre.mpf.mvc.util.tailer.MpfLogLevel;
 import org.mitre.mpf.mvc.util.tailer.MpfLogTailer;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.nodeManager.NodeManagerStatus;
+ import org.mitre.mpf.wfm.enums.EnvVar;
+ import org.mitre.mpf.wfm.nodeManager.NodeManagerStatus;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +66,7 @@ public class AdminLogsController
 
 	public static final String DEFAULT_ERROR_VIEW = "error";
 
-    private static final String thisHost = System.getenv("THIS_MPF_NODE");
+    private static final String thisHost = System.getenv(EnvVar.THIS_MPF_NODE);
 
     private final FilenameFilter filenameFilter = new LogFilenameFilter();
 

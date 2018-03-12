@@ -31,6 +31,7 @@ import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
+import org.mitre.mpf.wfm.enums.EnvVar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -427,7 +428,7 @@ public class PropertiesUtil {
 	}
 
 	public String getThisMpfNodeHostName() {
-		return System.getenv("THIS_MPF_NODE");
+		return System.getenv(EnvVar.THIS_MPF_NODE);
 	}
 
 	//
@@ -533,6 +534,17 @@ public class PropertiesUtil {
 		return streamingJobStallAlertThreshold;
 	}
 
+	// Changing the value of an env. variable in the OS will not have any impact on a running JDK process which is using
+	// the old env. variable value. Thus, we use this class to keep track of the runtime value, which is initialized to
+	// the env. variable, but can be changed while the WFM is running. Changing it will not set the env. variable in
+	// /etc/profile.d/mpf.sh.
+	private String allMpfNodes = System.getenv(EnvVar.ALL_MPF_NODES);
+	public String getAllMpfNodes() {
+		return allMpfNodes;
+	}
+	public void setAllMpfNodes(String allMpfNodes) {
+		this.allMpfNodes = allMpfNodes;
+	}
 
 	private void createConfigFiles() throws IOException {
 		if (!mediaTypesFile.exists()) {

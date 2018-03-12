@@ -37,8 +37,10 @@ import org.mitre.mpf.rest.api.node.DeployedNodeManagerModel;
 import org.mitre.mpf.rest.api.node.DeployedServiceModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
+import org.mitre.mpf.wfm.enums.EnvVar;
 import org.mitre.mpf.wfm.nodeManager.NodeManagerStatus;
 import org.mitre.mpf.wfm.service.NodeManagerService;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,6 +79,9 @@ public class NodeController {
 	// TODO: should retrieve info for this using mpfService
 	@Autowired
 	private NodeManagerStatus nodeManagerStatus;
+
+	@Autowired
+	private PropertiesUtil propertiesUtil;
 
 	private Map<String, ServiceModel> nodeManagerPaletteMap = null;
 
@@ -138,7 +143,7 @@ public class NodeController {
 	@RequestMapping(value = "/nodes/all-mpf-nodes", method = RequestMethod.GET)
 	@ResponseBody
 	public List<String> getAllMpfNodes() {
-		final String value = System.getenv("ALL_MPF_NODES");
+		String value = propertiesUtil.getAllMpfNodes();
 		List<String> allMpfNodes = new ArrayList<String>();
 		if (!StringUtils.isNullOrEmpty(value)) {
 			for (String mpfNode : value.split(",")) {
@@ -160,7 +165,7 @@ public class NodeController {
 	@ResponseBody
 	public String getMasterNode() {
 		String masterNode;
-		masterNode = System.getenv("THIS_MPF_NODE");
+		masterNode = System.getenv(EnvVar.THIS_MPF_NODE);
 		if ( StringUtils.isNullOrEmpty( masterNode ) ) {
 			// apparently, getting the current host is non-trivial, the solution below is
 			//	based on the following articles:
@@ -171,7 +176,7 @@ public class NodeController {
 				InetAddress localhost = InetAddress.getLocalHost();
 				masterNode = localhost.getHostName();
 			} catch (UnknownHostException e) {
-				masterNode = System.getenv("HOSTNAME");
+				masterNode = System.getenv(EnvVar.HOSTNAME);
 				if ( masterNode == null ) {
 					Process p;
 					try {

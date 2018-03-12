@@ -30,6 +30,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Receiver;
+import org.jgroups.View;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,13 +104,13 @@ public class ChannelNode {
         return channel.getAddress();
     }
 
-    public JChannel getChannel() {
-        return channel;
+    public View getView() {
+        return channel.getView();
     }
 
-    public boolean isConnected() { return isConnected; }
-
-
+    public boolean isConnected() {
+        return isConnected;
+    }
 
     public void sendToChild(String hostname, Serializable message) {
         Address nodeAddress = getNodeAddress(hostname, NodeTypes.NodeManager);
@@ -118,7 +119,7 @@ public class ChannelNode {
 
     private Address getNodeAddress(String hostname, NodeTypes nodeType) {
         Pair<String, NodeTypes> searchPair = Pair.of(hostname, nodeType);
-        return getChannel().getView().getMembers().stream()
+        return getView().getMembers().stream()
                 .filter(addr -> searchPair.equals(AddressParser.parse(addr)))
                 .findAny()
 		        .orElseThrow(() -> new IllegalStateException(String.format(
@@ -137,7 +138,7 @@ public class ChannelNode {
 
 
     private Address getMasterNodeAddress() {
-        List<Address> memberAddresses = getChannel().getView().getMembers();
+        List<Address> memberAddresses = getView().getMembers();
         for (Address address : memberAddresses) {
             Pair<String, NodeTypes> hostType = AddressParser.parse(address);
             if (hostType != null && hostType.getRight() == NodeTypes.MasterNode) {
@@ -146,7 +147,6 @@ public class ChannelNode {
         }
         throw new IllegalStateException("Unable to locate master node.");
     }
-
 
 
     /**

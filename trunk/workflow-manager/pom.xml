@@ -992,6 +992,7 @@
                     <excludes>
                         <exclude>**/TestWorkflowManager.java</exclude>
                     </excludes>
+                    <argLine>-Djava.library.path=${env.MPF_HOME}/lib</argLine>
                 </configuration>
             </plugin>
             <plugin>

@@ -42,17 +42,13 @@ import mpf_util
 @argh.arg('--workflow-manager-url', default='http://localhost:8080/workflow-manager/',
           help='Url to Workflow Manager')
 def add_node(node, port=None, all_mpf_nodes=None, workflow_manager_url=None):
-    """ Adds a spare node to the Workflow Manager """
+    """ Adds a spare node to the OpenMPF cluster """
 
-    nodes_list = []
-    for known_node_with_port in all_mpf_nodes.split(','):
-        known_node = known_node_with_port.split('[')[0]
-        if known_node:
-            nodes_list.append(known_node)
+    [nodes_list, _] = get_nodes_list(all_mpf_nodes)
 
     # Check if node is already in all-mpf-nodes
     if node in nodes_list:
-        print mpf_util.MsgUtil.red('Child node %s is already in the list of known nodes: %s' % (node, known_nodes))
+        print mpf_util.MsgUtil.red('Child node %s is already in the list of known nodes: %s' % (node, nodes_list))
         print mpf_util.MsgUtil.red('Child node %s has not been added to the cluster.' % node)
         return
 
@@ -62,33 +58,11 @@ def add_node(node, port=None, all_mpf_nodes=None, workflow_manager_url=None):
     new_nodes_with_ports = ','.join([string.rstrip(all_mpf_nodes,','),node_with_port,'']) # add trailing comma
 
     # If the WFM is running, update the env. variable being used by the WFM
-    request = urllib2.Request(workflow_manager_url)
-    request.get_method = lambda: 'HEAD'
-    try:
-        urllib2.urlopen(request)
-        wfm_running = True
-    except:
-        wfm_running = False
-        print mpf_util.MsgUtil.yellow("Detected that the Workflow Manager is not running. Proceeding.")
-
-    if  wfm_running:
-        print "Detected that the Workflow Manager is running. Updating value of ALL_MPF_NODES used by the Workflow Manager."
-
-        endpoint_url = ''.join([string.rstrip(workflow_manager_url,'/'),'/rest/properties/all-mpf-nodes'])
-
-        print 'Enter the credentials for a Workflow Manager administrator:'
-        username = raw_input('Username: ')
-        password = getpass.getpass('Password: ')
-
-        request = urllib2.Request(endpoint_url, data=new_nodes_with_ports)
-        request.get_method = lambda: 'PUT'
-        base64string = base64.b64encode('%s:%s' % (username, password))
-        request.add_header('Authorization', 'Basic %s' % base64string)
-
+    if is_wfm_running(workflow_manager_url):
+        print 'Updating value of ALL_MPF_NODES used by the Workflow Manager.'
         try:
-            urllib2.urlopen(request)
+            update_wfm_all_mpf_nodes(workflow_manager_url, new_nodes_with_ports)
         except:
-            print mpf_util.MsgUtil.red('Problem connecting to %s' % endpoint_url)
             print mpf_util.MsgUtil.red('Child node %s has not been added to the cluster.' % node)
             raise
 
@@ -100,17 +74,93 @@ def add_node(node, port=None, all_mpf_nodes=None, workflow_manager_url=None):
         print mpf_util.MsgUtil.yellow('Child node %s has not been completely added to the cluster. Manual steps required.' % node)
     else:
         print mpf_util.MsgUtil.green('Child node %s has been added to the cluster.' % node)
-        print mpf_util.MsgUtil.green('Add the node through the Nodes page of the Web UI to configure services.')
+        print mpf_util.MsgUtil.green('Refresh the Nodes page of the Web UI if it\'s currently open.')
+        print mpf_util.MsgUtil.green('Use that page to add the node and configure services.')
         print mpf_util.MsgUtil.green('Run \"source /etc/profile.d/mpf.sh\" in any open terminal windows.')
 
 
 @argh.arg('node', help='hostname or IP address of child node to remove', action=mpf_util.VerifyHostnameOrIpAddress)
+@mpf_util.env_arg('--all-mpf-nodes', 'ALL_MPF_NODES', help='List of all known nodes.')
 @argh.arg('--workflow-manager-url', default='http://localhost:8080/workflow-manager',
           help='Url to Workflow Manager')
-def remove_node(node, workflow_manager_url=None):
-    """ Removes a child node from the Workflow Manager """
-    # TODO: Implement me!
-    print mpf_util.MsgUtil.green('Child node %s has been removed.' % node)
+def remove_node(node, all_mpf_nodes=None, workflow_manager_url=None):
+    """ Removes a child node from the OpenMPF cluster """
+
+    [nodes_list, nodes_with_ports_list] = get_nodes_list(all_mpf_nodes)
+
+    # Check if node is in all-mpf-nodes
+    try:
+        index = nodes_list.index(node) # will throw ValueError if not found
+        del nodes_list[index]
+        del nodes_with_ports_list[index]
+    except ValueError:
+        print mpf_util.MsgUtil.yellow('Child node %s is not in the list of known nodes: %s' % (node, nodes_list))
+        print mpf_util.MsgUtil.yellow('Nothing to do.')
+        return
+
+    new_nodes_with_ports = ','.join(nodes_with_ports_list) + ',' # add trailing comma
+
+    # If the WFM is running, update the env. variable being used by the WFM and the WFM nodes config
+    if is_wfm_running(workflow_manager_url):
+        print 'Updating value of ALL_MPF_NODES used by the Workflow Manager and current node configuration.'
+        try:
+            update_wfm_all_mpf_nodes(workflow_manager_url, new_nodes_with_ports)
+        except:
+            print mpf_util.MsgUtil.red('Child node %s has not been removed from the cluster.' % node)
+            raise
+
+    # Modify system files
+    updated_mpf_sh = update_mpf_sh(new_nodes_with_ports)
+    updated_ansible_hosts = update_ansible_hosts(nodes_list)
+
+    if not updated_mpf_sh or not updated_ansible_hosts:
+        print mpf_util.MsgUtil.yellow('Child node %s has not been completely removed from the cluster. Manual steps required.' % node)
+    else:
+        print mpf_util.MsgUtil.green('Child node %s has been removed from the cluster.' % node)
+        print mpf_util.MsgUtil.green('Refresh the Nodes page of the Web UI if it\'s currently open.')
+        print mpf_util.MsgUtil.green('Run \"source /etc/profile.d/mpf.sh\" in any open terminal windows.')
+
+
+def get_nodes_list(all_mpf_nodes):
+    nodes_list = []
+    nodes_with_ports_list = []
+    for known_node_with_port in all_mpf_nodes.split(','):
+        known_node = known_node_with_port.split('[')[0]
+        if known_node:
+                nodes_list.append(known_node)
+                nodes_with_ports_list.append(known_node_with_port)
+    return nodes_list, nodes_with_ports_list
+
+
+def is_wfm_running(wfm_manager_url):
+    request = urllib2.Request(wfm_manager_url)
+    request.get_method = lambda: 'HEAD'
+    try:
+        urllib2.urlopen(request)
+        print 'Detected that the Workflow Manager is running.'
+        return True
+    except:
+        print mpf_util.MsgUtil.yellow('Detected that the Workflow Manager is not running. Proceeding.')
+        return False
+
+
+def update_wfm_all_mpf_nodes(wfm_manager_url, nodes_with_ports):
+    endpoint_url = ''.join([string.rstrip(wfm_manager_url,'/'),'/rest/nodes/all-mpf-nodes'])
+
+    print 'Enter the credentials for a Workflow Manager administrator:'
+    username = raw_input('Username: ')
+    password = getpass.getpass('Password: ')
+
+    request = urllib2.Request(endpoint_url, data=nodes_with_ports)
+    request.get_method = lambda: 'PUT'
+    base64string = base64.b64encode('%s:%s' % (username, password))
+    request.add_header('Authorization', 'Basic %s' % base64string)
+
+    try:
+        urllib2.urlopen(request)
+    except:
+        print mpf_util.MsgUtil.red('Problem connecting to %s' % endpoint_url)
+        raise
 
 
 def update_mpf_sh(nodes_with_ports):

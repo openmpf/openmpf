@@ -30,8 +30,6 @@ import java.io.Serializable;
 
 /**
  * Used to send messages about the status of a Node.
- * <br/>
- * A node being one of the {@link ChannelReceiver.NodeTypes}
  */
 public class NodeStatusUpdate implements Serializable {
     private final NodeDescriptor node;

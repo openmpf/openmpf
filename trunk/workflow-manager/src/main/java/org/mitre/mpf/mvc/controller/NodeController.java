@@ -58,10 +58,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.stream.Collectors;
 
 // swagger includes
 
@@ -243,7 +241,7 @@ public class NodeController {
 		// admin
 		MpfResponse mpfResponse = new MpfResponse(
 				MpfResponse.RESPONSE_CODE_ERROR,
-				"Error while saving the node configuration - please check server logs.");
+				"Error while saving the node configuration. Please check server logs.");
 
 		boolean validAuth = false;
 
@@ -289,7 +287,7 @@ public class NodeController {
 			throws InterruptedException, IOException {
 		MpfResponse mpfResponse = new MpfResponse(
 				MpfResponse.RESPONSE_CODE_ERROR,
-				"Error while saving the node configuration - please check server logs.");
+				"Error while saving the node configuration. Please check server logs.");
 		saveNodeManagerConfig(nodeManagerModels, mpfResponse);
 		return mpfResponse;
 	}
@@ -332,7 +330,7 @@ public class NodeController {
 		// POSTing to this external REST endpoint requires the user to be an
 		// admin
 		MpfResponse mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR,
-		                                          "Error while starting service - please check server logs.");
+		                                          "Error while starting service. Please check server logs.");
 
 		boolean validAuth = startStopNodeService(httpServletRequest, "start", serviceName,
 				mpfResponse);
@@ -356,7 +354,7 @@ public class NodeController {
 		// POSTing to this external REST endpoint requires the user to be an
 		// admin
 		MpfResponse mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR,
-		                                          "Error while stopping service - please check server logs.");
+		                                          "Error while stopping service. Please check server logs.");
 
 		boolean validAuth = startStopNodeService(httpServletRequest, "stop", serviceName,
 				mpfResponse);
@@ -375,7 +373,7 @@ public class NodeController {
 			@PathVariable("serviceName") String serviceName) {
 
 		MpfResponse mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR,
-		                                          "Error while changing service state - please check server logs.");
+		                                          "Error while changing service state. Please check server logs.");
 
 		if (startOrStopStr.equals("start")) {
 			startService(serviceName, mpfResponse);
@@ -389,6 +387,34 @@ public class NodeController {
 		}
 
 		return mpfResponse;
+	}
+
+	// EXTERNAL: Only used by "mpf add-node" and "mpf remove-node"
+	@RequestMapping(value = {"/rest/nodes/all-mpf-nodes"}, method = RequestMethod.PUT)
+	public ResponseEntity<MpfResponse> setAllMpfNodes(@RequestBody String allMpfNodes, HttpServletRequest request)
+			throws IOException, InterruptedException {
+
+		if (!LoginController.getAuthenticationModel(request).isAdmin()) {
+			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+		}
+
+		// Update the value of ALL_MPF_NODES used by the WFM at runtime.
+		propertiesUtil.setAllMpfNodes(allMpfNodes);
+
+		// If one or more nodes have been removed, then remove them from the nodes config.
+		// Don't add new nodes to the nodes config. Leave that to the user.
+		List<String> hosts = Arrays.asList(allMpfNodes.split(","));
+
+		List<NodeManagerModel> newNodeManagerModels = nodeManagerService.getNodeManagerModels().stream().filter(
+				model -> hosts.contains(model.getHost())).collect(Collectors.toList());
+
+		MpfResponse mpfResponse = new MpfResponse(
+				MpfResponse.RESPONSE_CODE_ERROR,
+				"Error while saving the node configuration. Please check server logs.");
+
+		saveNodeManagerConfig(newNodeManagerModels, mpfResponse);
+
+		return new ResponseEntity<>(mpfResponse, HttpStatus.OK);
 	}
 
 	private DeployedNodeManagerModel getNodeManagerInfo() {

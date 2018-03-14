@@ -46,16 +46,8 @@ fi
 # NOTE: As of Java 8, PermGen no longer exists. Native system memory is used to store class data.
 
 JAVA_FLAGS="-Djava.library.path=${MPF_HOME}/lib"
-JGROUPS_FLAGS=""
 
-if [ -n "${THIS_MPF_NODE}" -a -n "${ALL_MPF_NODES}" ]; then
-    JGROUPS_FLAGS="-Djgroups.tcp.address=${THIS_MPF_NODE} -Djgroups.tcp.port=7800 -Djgroups.tcpping.initial_hosts=${ALL_MPF_NODES}"
-else
-    log_warn "THIS_MPF_NODE and/or ALL_MPF_NODES for jgroups are not set"
-fi  
-
-# MPF_JAVA_FLAGS is usually set in the service definition in a  nodeManagerConfig.xml
 set -x
-exec ${JAVA_HOME}/bin/java ${JAVA_FLAGS} ${MPF_JAVA_FLAGS} ${JGROUPS_FLAGS} ${QUEUE_FLAGS} $*
+exec ${JAVA_HOME}/bin/java ${JAVA_FLAGS} ${QUEUE_FLAGS} $*
 set +x
 

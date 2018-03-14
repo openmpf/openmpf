@@ -53,8 +53,7 @@ public class NodeManager implements Runnable {
         nodeStateManager.shutdown();
     }
 
-
-
+    
     public static void main(String[] args) {
         LOG.info("NodeManager started");
 

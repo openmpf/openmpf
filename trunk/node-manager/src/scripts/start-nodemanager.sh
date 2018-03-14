@@ -62,7 +62,7 @@ cd /
 # log_info "Using MPF_HOME=${MPF_HOME}" "${logfile}" false
 
 # jar process will manage its own log; log will be rotated every night at midnight
-nohup  ${javabin} ${JGROUPS_FLAGS} ${MPF_JAVA_FLAGS} -jar ${jarfile} > /dev/null & #2>&1 #now displaying std err
+nohup  ${javabin} ${JGROUPS_FLAGS} -jar ${jarfile} > /dev/null & #2>&1 #now displaying std err
 
 # pid of the nohup process
 pid=$!

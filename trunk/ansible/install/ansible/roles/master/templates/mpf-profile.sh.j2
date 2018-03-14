@@ -23,7 +23,7 @@
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
-#This file managed by ansible. Do not edit directly
+# This file managed by ansible and command line tools. Do not edit directly.
 export no_proxy=localhost,{{ repo_host }}
 export MPF_USER=mpf
 export MPF_HOME={{ mpf_home }}
@@ -32,7 +32,7 @@ export JAVA_HOME=/usr/java/latest
 export THIS_MPF_NODE={{ inventory_hostname }}
 export ALL_MPF_NODES={{ master_host }}[7800],{% if groups['mpf-child'] is defined %}{% for host in groups['mpf-child'] %}{{ host }}[7800],{% endfor %}{% endif %}
 
-#CATALINA_OPTS is set in {{ tomcat_home }}/bin/setenv.sh
+# CATALINA_OPTS is set in {{ tomcat_home }}/bin/setenv.sh
 
 export ACTIVE_MQ_HOST="failover://(tcp://{{ master_host }}:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
 command -v register-python-argcomplete > /dev/null && eval "$(register-python-argcomplete mpf)"

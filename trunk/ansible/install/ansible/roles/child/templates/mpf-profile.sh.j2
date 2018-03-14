@@ -23,15 +23,18 @@
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
-#This file managed by ansible. Do not edit directly
+# This file managed by ansible. Do not edit directly.
 export no_proxy=localhost,{{ repo_host }}
 export MPF_USER=mpf
 export MPF_HOME={{ mpf_home }}
 export MPF_LOG_PATH={{ mpf_home }}/share/logs
 export JAVA_HOME=/usr/java/latest
 export THIS_MPF_NODE={{ inventory_hostname }}
+
+# This value will not be updated when a spare node is added through the command line on the master node.
+# Initially, the spare node will be seen as a rogue, which is not a problem.
 export ALL_MPF_NODES={{ master_host }}[7800],{% if groups['mpf-child'] is defined %}{% for host in groups['mpf-child'] %}{{ host }}[7800],{% endfor %}{% endif %}
 
-#This line must come after ALL_MPF_NODES
+# This line must come after ALL_MPF_NODES.
 export CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.port=7800 -Djava.library.path={{ mpf_home }}/lib -Djgroups.tcpping.initial_hosts='$ALL_MPF_NODES'"
 export ACTIVE_MQ_HOST="failover://(tcp://{{ master_host }}:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"

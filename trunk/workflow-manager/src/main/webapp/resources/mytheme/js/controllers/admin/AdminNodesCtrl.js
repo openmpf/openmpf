@@ -287,26 +287,14 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
 
     $scope.addNode = function () {
         $confirm({hostnames: getConfigurableHostnames()}, {templateUrl: 'add-node-dialog.html'})
-            .then(function (data) {
-                $log.debug("data", data); // DEBUG
-                var selected = data[0];
-                var spare = data[1];
-                var hostname;
-                if (!selected || selected == " Add a spare node...") {
-                    hostname = spare;
-                } else {
-                    hostname = selected;
+            .then(function (selectedHostname) {
+                if (selectedHostname) {
+                    var services = [];
+                    if ($("#add_node_all_services").prop("checked")) services = angular.copy($scope.serviceCatalog);
+                    var node = {"host": selectedHostname, "services": services};
+                    configurations.push(node);
+                    saveConfigs();
                 }
-                $log.debug("hostname", hostname); // DEBUG
-
-                var services = [];
-                if ($("#new_node_all_services").prop("checked")) services = angular.copy($scope.serviceCatalog);
-                var node = {"host": hostname, "services": services};
-                configurations.push(node);
-                saveConfigs();
-
-                // TODO: Explain steps to make permanent or ...
-                // TODO: Figure out alternative to using /etc/profile.d/mpf and /etc/ansible/hosts (own by "mpf" user, supplement somehow?)
             });
     };
 

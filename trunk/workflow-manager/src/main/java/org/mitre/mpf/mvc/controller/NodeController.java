@@ -401,10 +401,18 @@ public class NodeController {
 		// Update the value of ALL_MPF_NODES used by the WFM at runtime.
 		propertiesUtil.setAllMpfNodes(allMpfNodes);
 
+		List<String> hosts = new ArrayList<>();
+		for (String node : Arrays.asList(allMpfNodes.split(","))) {
+			String host = node.split("\\[")[0];
+			if (!host.isEmpty()) {
+				hosts.add(host);
+			}
+		}
+
+		log.info("hosts: " + hosts); // DEBUG
+
 		// If one or more nodes have been removed, then remove them from the nodes config.
 		// Don't add new nodes to the nodes config. Leave that to the user.
-		List<String> hosts = Arrays.asList(allMpfNodes.split(","));
-
 		List<NodeManagerModel> newNodeManagerModels = nodeManagerService.getNodeManagerModels().stream().filter(
 				model -> hosts.contains(model.getHost())).collect(Collectors.toList());
 

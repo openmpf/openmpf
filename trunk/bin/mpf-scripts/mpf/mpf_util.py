@@ -89,7 +89,7 @@ class VerifyHostnameOrIpAddress(argparse.Action):
         verify_no_white_space(self, parser, namespace, value)
 
         arg_name = self.metavar or self.dest
-        invalidChars = set(string.punctuation.replace(".", ""))
+        invalidChars = set(string.punctuation.replace(".", "").replace("_","").replace("-",""))
         if any(char in invalidChars for char in value):
             parser.error('%s can not contain special characters: %s' % (arg_name, list(invalidChars)))
         elif value.startswith('.'):

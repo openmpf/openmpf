@@ -544,7 +544,8 @@ public class ITWebREST {
 			String test_pipeline = testing_pipelines.getString(i);
 			boolean found = false;
 			for (int j = 0; j < pipelines.length(); j++) {
-				if (pipelines.getString(j).equals(test_pipeline)) {
+				JSONObject pipeline = pipelines.getJSONObject(j);
+				if (pipeline.getString("pipelineName").equals(test_pipeline)) {
 					found = true;
 					break;
 				}

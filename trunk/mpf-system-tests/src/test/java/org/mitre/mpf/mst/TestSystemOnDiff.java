@@ -241,7 +241,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 		int maxXMotion = 320 / 2; // Video is 320 x 300 and only the person on the left side of the frame moves.
 
 		runFeedForwardRegionTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
-		                         "OBJECT", firstMotionFrame, maxXMotion);
+		                         "CLASS", firstMotionFrame, maxXMotion);
 	}
 
 
@@ -499,7 +499,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 		int maxXLeftDetection = 320 / 2;  // Video is 320x300 and there is a person on the left side of the frame.
 		int minXRightDetection = 320 / 2;  // Video is 320x300 and there is a person on the right side of the frame.
 		runFeedForwardFullFrameTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
-		                            "OBJECT", firstMotionFrame, maxXLeftDetection, minXRightDetection);
+		                            "CLASS", firstMotionFrame, maxXLeftDetection, minXRightDetection);
 	}
 
 

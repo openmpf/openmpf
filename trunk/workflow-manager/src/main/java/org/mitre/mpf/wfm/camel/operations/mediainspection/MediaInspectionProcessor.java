@@ -91,8 +91,9 @@ public class MediaInspectionProcessor extends WfmProcessor {
 					transientMedia.setSha256(DigestUtils.sha256Hex(inputStream));
 				} catch(IOException ioe) {
 					transientMedia.setFailed(true);
-					transientMedia.setMessage("Could not calculate the SHA-256 hash for the file due to an exception.");
-					log.error("Could not calculate the SHA-256 hash for the file due to IOException.", ioe);
+					String errorMessage = "Could not calculate the SHA-256 hash for the file due to IOException.";
+					transientMedia.setMessage(errorMessage);
+					log.error(errorMessage, ioe);
 				}
 
 				try {
@@ -100,8 +101,9 @@ public class MediaInspectionProcessor extends WfmProcessor {
 					transientMedia.setType(type);
 				} catch(IOException ioe) {
 					transientMedia.setFailed(true);
-					transientMedia.setMessage("Could not determine the MIME type for the media due to an exception.");
-                    log.error("Could not determine the MIME type for the media due to IOException.", ioe);
+					String errorMessage = "Could not determine the MIME type for the media due to IOException.";
+					transientMedia.setMessage(errorMessage);
+                    log.error(errorMessage, ioe);
 				}
 
 				switch(transientMedia.getMediaType()) {

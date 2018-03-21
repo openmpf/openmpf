@@ -110,7 +110,10 @@ public class DetectionSplitter implements StageSplitter {
 			MpfConstants.AUTO_ROTATE_PROPERTY,
 			MpfConstants.AUTO_FLIP_PROPERTY};
 
-	/**
+	@Autowired
+    private AdaptiveFrameIntervalPropertyState adaptiveFrameIntervalPropertyState;
+
+    /**
 	 * Translates a collection of properties into a collection of AlgorithmProperty ProtoBuf messages.
 	 * If the input is null or empty, an empty collection is returned.
 	 */
@@ -140,10 +143,19 @@ public class DetectionSplitter implements StageSplitter {
 		assert transientJob != null : "The provided transientJob must not be null.";
 		assert transientStage != null : "The provided transientStage must not be null.";
 
+		log.info("DetectionSplitter.performSplit(): debug, called for jobId = " + transientJob.getId() + ", adaptiveFrameIntervalPropertyState initialized to " + adaptiveFrameIntervalPropertyState);
+
 		List<Message> messages = new ArrayList<>();
 
 		// Is this the first detection stage in the pipeline?
 		boolean isFirstDetectionStage = isFirstDetectionOperation(transientJob);
+
+		// TODO: is there a better way to do this? adaptiveFrameIntervalPropertyState needs to be initialized for each TransientJob being processed
+        // Without this initialization statement, adaptiveFrameIntervalPropertyState isn't getting initialized and the 40 frame rate cap
+        // test cases defined in TestDetectionSplitter fails because the state variable isn't being initialized.
+		if ( isFirstDetectionStage ) {
+            adaptiveFrameIntervalPropertyState.init();
+        }
 
 		for (TransientMedia transientMedia : transientJob.getMedia()) {
 
@@ -171,79 +183,72 @@ public class DetectionSplitter implements StageSplitter {
 				                                 0);
 			}
 
-            // Allow for FRAME_RATE_CAP to override FRAME_INTERVAL by creating new property COMPUTED_FRAME_INTERVAL. This property is only
-            // applicable to videos, which has metadata property FPS.
-            // Note: FRAME_RATE_CAP set to -1 means the FRAME_RATE_CAP override is disabled.
-            // FRAME_RATE_CAP override is allowed at 5 levels: system properties (lowest priority), action properties, job properties, algorithm properties or media properties (highest priority).
-
-            Double mediaFPS = null;
-            Double computedFrameInterval = null;
-            if ( transientMedia.containsMetadata("FPS") ) {
-
-                // Get the videos frame rate from the metadata.
-                mediaFPS = Double.valueOf(transientMedia.getMetadata("FPS"));
-
-                // Check for FRAME_RATE_CAP override of frame interval for videos at the default system property level.
-                // If present and not disabled, set the computed frame interval from frame rate cap.
-                // Otherwise, if FRAME_INTERVAL is not disabled at the system property level, use that as the default value for computed frame interval.
-                if ( propertiesUtil.getFrameRateCap() > 0 ) {
-                    // Set the  frame interval from the default detection frame rate cap.
-                    // The goal of the FRAME_RATE_CAP is to ensure that a minimum number of frames are processed per second, which is why we round down this value if needed.
-                    // But, the value should always be at least 1.
-                    computedFrameInterval = Math.max(1, Math.floor(mediaFPS / propertiesUtil.getFrameRateCap()));
-                } else if ( propertiesUtil.getSamplingInterval() > 0 ) {
-                    // Set the  frame interval from the default detection sampling interval
-                    computedFrameInterval = Double.valueOf(propertiesUtil.getSamplingInterval());
-                }
-
-            }
-
             // Iterate through each of the actions and segment the media using the properties provided in that action.
 			for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
 
-				// starting setting of priorities here:  getting action property defaults
-				TransientAction transientAction = transientStage.getActions().get(actionIndex);
+                // starting setting of priorities here:  getting action property defaults
+                TransientAction transientAction = transientStage.getActions().get(actionIndex);
 
-				// modifiedMap initialized with algorithm specific properties
-				Map<String, String> modifiedMap = new HashMap<>(getAlgorithmProperties(transientAction.getAlgorithm()));
-
-                // If processing a video, determine the computed frame interval based upon FRAME_RATE_CAP or FRAME_INTERVAL specified as action properties
-                // that override the previous determination of computed frame interval based upon system properties.
-                if ( mediaFPS != null ) {
-                    computedFrameInterval = getComputedFrameIntervalForVideo(mediaFPS, transientAction.getProperties(), computedFrameInterval);
-                }
+                // modifiedMap initialized with algorithm specific properties
+                Map<String, String> modifiedMap = new HashMap<>(
+                    getAlgorithmProperties(transientAction.getAlgorithm()));
 
                 // current modifiedMap properties overridden by action properties
-				modifiedMap.putAll(transientAction.getProperties());
+                modifiedMap.putAll(transientAction.getProperties());
+
+                // OpenMPF allows for FRAME_RATE_CAP override of FRAME_INTERVAL and/or disable of FRAME_RATE_CAP or FRAME_INTERVAL for videos on a level-by-level basis.
+                if (transientMedia.containsMetadata("FPS")) {
+
+                    // Update state for video media at the action property level.
+                    adaptiveFrameIntervalPropertyState.setAdaptiveFrameIntervalPropertyState(transientAction.getProperties(),
+                                                                AdaptiveFrameIntervalPropertyState.PropertyLevel.ACTION_LEVEL);
+
+                    // If the FRAME_RATE_CAP override of FRAME_INTERVAL has been detected at this property level, then
+                    // remove FRAME_INTERVAL from the modifiedMap because the applied property FRAME_RATE_CAP would
+                    // override any specification of FRAME_INTERVAL at this property level.
+                    if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyOverrideEnabled() ) {
+                        modifiedMap.remove(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY);
+                    }
+
+                }
 
                 // If the job is overriding properties related to flip, rotation, or ROI, we should reset all related
-				// action properties to default.  We assume that when the user overrides one rotation/flip/roi
-				// property for a piece of media, they are specifying all of the rotation/flip/roi properties they want
-				// applied for this medium.  This logic is applied THREE times
-				//            -- once for job properties,
-				//            -- once for algorithm properties
-				//            -- and once for media properties.
-				// If the overridden job properties contain any of these values, pipeline properties are reset.
-				// If algorithm properties contain any of these values, overridden job properties and pipeline properties are reset.
-				// If media properties are specified, overridden algorithm properties and job properties and pipeline properties are reset.
+                // action properties to default.  We assume that when the user overrides one rotation/flip/roi
+                // property for a piece of media, they are specifying all of the rotation/flip/roi properties they want
+                // applied for this medium.  This logic is applied THREE times
+                //            -- once for job properties,
+                //            -- once for algorithm properties
+                //            -- and once for media properties.
+                // If the overridden job properties contain any of these values, pipeline properties are reset.
+                // If algorithm properties contain any of these values, overridden job properties and pipeline properties are reset.
+                // If media properties are specified, overridden algorithm properties and job properties and pipeline properties are reset.
 
-				for (String key : transformProperties) {
-					if (transientJob.getOverriddenJobProperties().containsKey(key)) {
-						clearTransformPropertiesFromMap(modifiedMap);
-						break;
-					}
-				}
-
-                // If processing a video, determine the computed frame interval based upon FRAME_RATE_CAP or FRAME_INTERVAL specified as job properties
-                // that override the previous determination of computed frame interval based upon action or system properties.
-                if ( mediaFPS != null ) {
-                    computedFrameInterval = getComputedFrameIntervalForVideo(mediaFPS, transientJob.getOverriddenJobProperties(), computedFrameInterval);
+                for (String key : transformProperties) {
+                    if (transientJob.getOverriddenJobProperties().containsKey(key)) {
+                        clearTransformPropertiesFromMap(modifiedMap);
+                        break;
+                    }
                 }
 
                 // Note: by this point override of system properties by job properties has already been applied to the transient job.
-				modifiedMap.putAll(transientJob.getOverriddenJobProperties());
+                modifiedMap.putAll(transientJob.getOverriddenJobProperties());
 
-				// overriding by AlgorithmProperties.  Note that algorithm-properties are of type
+                // OpenMPF allows for FRAME_RATE_CAP override of FRAME_INTERVAL and/or disable of FRAME_RATE_CAP or FRAME_INTERVAL for videos on a level-by-level basis.
+                if ( transientMedia.containsMetadata("FPS") ) {
+
+                    // Update state for video media at the job property level.
+                    adaptiveFrameIntervalPropertyState.setAdaptiveFrameIntervalPropertyState(transientJob.getOverriddenJobProperties(),
+                                                                AdaptiveFrameIntervalPropertyState.PropertyLevel.JOB_LEVEL);
+
+                    // If the FRAME_RATE_CAP override of FRAME_INTERVAL has been detected at this property level, then
+                    // remove FRAME_INTERVAL from the modifiedMap because the applied property FRAME_RATE_CAP would
+                    // override any specification of FRAME_INTERVAL at this property level.
+                    if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyOverrideEnabled() ) {
+                        modifiedMap.remove(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY);
+                    }
+                }
+
+                // overriding by AlgorithmProperties.  Note that algorithm-properties are of type
 				// Map<String,Map>, so the transform properties to be overridden are actually in the value section of the Map returned
 				// by transientJob.getOverriddenAlgorithmProperties().  This is handled here.
 				// Note that the intent is to override ALL transform properties if ANY single transform properties is overridden
@@ -263,13 +268,7 @@ public class DetectionSplitter implements StageSplitter {
 				// Note that this implementation depends on algorithm property keys matching what would be returned by transientAction.getAlgorithm()
 				if (transientJob.getOverriddenAlgorithmProperties().keySet().contains(transientAction.getAlgorithm())) {
 					// this transient job contains the a algorithm property which may override what is in our current action
-					Map job_alg_m = transientJob.getOverriddenAlgorithmProperties().get(transientAction.getAlgorithm());
-
-                    // If processing a video, determine the computed frame interval based upon FRAME_RATE_CAP or FRAME_INTERVAL specified as algorithm properties
-                    // that override the computed frame interval previously determined from the job, action or system properties.
-                    if ( mediaFPS != null ) {
-                        computedFrameInterval = getComputedFrameIntervalForVideo(mediaFPS, job_alg_m, computedFrameInterval);
-                    }
+					Map<String,String> job_alg_m = transientJob.getOverriddenAlgorithmProperties().get(transientAction.getAlgorithm());
 
                     // see if any of these algorithm properties are transform properties.  If so, clear the
 					// current set of transform properties from the map to allow for this algorithm properties to
@@ -282,13 +281,23 @@ public class DetectionSplitter implements StageSplitter {
 					}
 					modifiedMap.putAll(job_alg_m);
 
-                } // end of algorithm name conditional
+                    // OpenMPF allows for FRAME_RATE_CAP override of FRAME_INTERVAL and/or disable of FRAME_RATE_CAP or FRAME_INTERVAL for videos on a level-by-level basis.
+                    // Check for these conditions for video media at the algorithm property level.
+                    if ( transientMedia.containsMetadata("FPS") ) {
 
-                // If processing a video, determine the computed frame interval based upon FRAME_RATE_CAP or FRAME_INTERVAL specified as media properties
-                // that override the computed frame interval previously determined from the algorithm, job, action or system properties.
-                if ( mediaFPS != null ) {
-                    computedFrameInterval = getComputedFrameIntervalForVideo(mediaFPS, transientMedia.getMediaSpecificProperties(), computedFrameInterval);
-                }
+                        // Update state for video media at the algorithm property level.
+                        adaptiveFrameIntervalPropertyState.setAdaptiveFrameIntervalPropertyState(job_alg_m,
+                                                            AdaptiveFrameIntervalPropertyState.PropertyLevel.ALGORITHM_LEVEL);
+
+                        // If the FRAME_RATE_CAP override of FRAME_INTERVAL has been detected at this property level, then
+                        // remove FRAME_INTERVAL from the modifiedMap because the applied property FRAME_RATE_CAP would
+                        // override any specification of FRAME_INTERVAL at this property level.
+                        if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyOverrideEnabled() ) {
+                            modifiedMap.remove(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY);
+                        }
+                    }
+
+                } // end of algorithm name conditional
 
 				for (String key : transformProperties) {
 					if (transientMedia.getMediaSpecificProperties().containsKey(key)) {
@@ -298,23 +307,37 @@ public class DetectionSplitter implements StageSplitter {
 				}
 
 				modifiedMap.putAll(transientMedia.getMediaSpecificProperties());
+                
+                if ( transientMedia.containsMetadata("FPS") ) {
+                    
+                    // OpenMPF allows for FRAME_RATE_CAP override of FRAME_INTERVAL and/or disable of FRAME_RATE_CAP or FRAME_INTERVAL for videos on a level-by-level basis.
+                    // Update state for video media at the at the media property level.
+                    adaptiveFrameIntervalPropertyState.setAdaptiveFrameIntervalPropertyState(transientMedia.getMediaSpecificProperties(),
+                                                                    AdaptiveFrameIntervalPropertyState.PropertyLevel.MEDIA_LEVEL);
 
-                // Moving forward COMPUTED_FRAME_INTERVAL rather than FRAME_INTERVAL will always be
-                // part of the job properties map for each sub-job when processing a video. So, if computed frame interval
-                // has been set from the media, algorithm, job, action or system properties - then
-                // store the value in the modified map (i.e. the map which contains properties to be sent to the sub-job)
-                // and store the computed frame interval in the TransientJob algorithm properties.
-                // Also persist the update to REDIS so that the change will be in the json output object.
-                if ( computedFrameInterval != null ){
-                    // For videos, phasing out FRAME_INTERVAL property in favor of COMPUTED_FRAME_INTERVAL_PROPERTY property sent to each sub-job.
-                    modifiedMap.remove(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY);
-                    modifiedMap.put(MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY, computedFrameInterval.toString());
-                    // Replace the FRAME_INTERVAL property (if it exists) with the new COMPUTED_FRAME_INTERVAL value
-                    // in the transient job and persist it to REDIS so it will show up in the output-object.
-                    transientJob.replaceOverriddenAlgorithmProperty(transientAction.getAlgorithm(),
-                                        MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, MpfConstants.COMPUTED_FRAME_INTERVAL_PROPERTY,
-                                        computedFrameInterval.toString());
-                    redis.persistJob(transientJob);
+                    // If the FRAME_RATE_CAP override of FRAME_INTERVAL has been detected at this property level, then
+                    // remove FRAME_INTERVAL from the modifiedMap because the applied property FRAME_RATE_CAP would
+                    // override any specification of FRAME_INTERVAL at this property level.
+                    if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyOverrideEnabled() ) {
+                        modifiedMap.remove(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY);
+                    }
+
+                    // Determine the computed frame interval based upon the modifiedMap properties.
+                    // At this point, modifiedMap may contain FRAME_RATE_CAP and/or FRAME_INTERVAL after the media, algorithm, job,
+                    // or action property level-by-level overrides have been applied. This following code
+                    // determines computed frame interval based upon which of those properties have been found, and whether or not
+                    // the values of those properties have been disabled.
+                    // System properties may be used to provide as a default value for computed frame interval if FRAME_RATE_CAP and/or FRAME_INTERVAL
+                    // are disabled by setting to <= 0.
+                    
+                    // Get the videos frame rate from the metadata.
+                    double mediaFPS = Double.valueOf(transientMedia.getMetadata("FPS"));
+                    int computedFrameInterval = getComputedFrameIntervalForVideo(adaptiveFrameIntervalPropertyState, mediaFPS, modifiedMap);
+                    // If we have a computed frame interval, then replace the current value of FRAME_INTERVAL that will be sent to
+                    // each sub-job with the computed frame interval
+                    if ( computedFrameInterval != -1 ) {
+                        modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, Integer.toString(computedFrameInterval));
+                     }
                 }
 
 				SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
@@ -483,26 +506,102 @@ public class DetectionSplitter implements StageSplitter {
 				.collect(toMap(PropertyDefinition::getName, PropertyDefinition::getDefaultValue));
 	}
 
-
     /**
-     * Get the computed frame interval for a video by applying the FRAME_RATE_CAP / FRAME_INTERVAL property override strategy.
-     * @param mediaFPS Video frame rate per second, may not be null.
-     * @param propertyOverrideMap Property override map.
-     * @param lastComputedFrameInterval Previously computed frame interval, may be null.
-     * @return Computed frame interval, may be null.
+     * Get the computed frame interval for a video by applying the FRAME_RATE_CAP / FRAME_INTERVAL property override strategy. Note that if FRAME_RATE_CAP or FRAME_INTERVAL
+     * are disabled (i.e. set to <= 0) at a higher property level, then a non-disabled property value at a lower property level will be ignored. Property level rankings for OpenMPF
+     * are: (lowest) system properties, action properties, job properties, algorithm properties, media properties (highest)
+     * The adaptive frame interval strategy for OpenMPF is:
+     * - Condition 1: If FRAME_RATE_CAP is present and not disabled, ignore FRAME_INTERVAL and use FRAME_RATE_CAP to derive computed frame interval.
+     * - Condition 2: If FRAME_RATE_CAP is present and disabled, and FRAME_INTERVAL is present and not disabled, then use FRAME_INTERVAL value.
+     * - Condition 3: If FRAME_RATE_CAP is present and disabled, and FRAME_INTERVAL is not present then only consider FRAME_INTERVAL at lower property levels until the default FRAME_INTERVAL system property is reached.
+     * - Condition 4: If FRAME_RATE_CAP is not present and FRAME_INTERVAL is not present check for FRAME_RATE_CAP or FRAME_INTERVAL at lower property levels until the default FRAME_RATE_CAP or FRAME_INTERVAL system properties are reached.
+     * - Condition 5: If FRAME_RATE_CAP is not present and FRAME_INTERVAL is present and not disabled check then use FRAME_INTERVAL value at this level.
+     * - Condition 6: If FRAME_RATE_CAP is not present and FRAME_INTERVAL is present and disabled check then only consider FRAME_RATE_CAP at lower property levels until the default FRAME_RATE_CAP system property is reached.
+     *   But, if FRAME_RATE_CAP system property is <= 0, this combination of both disabled properties should result in setting the
+     *   frame interval to 1 (no matter what the frame interval system property is).
+     * @param adaptiveFrameIntervalPropertyState current state after ranked FRAME_RATE_CAP and FRAME_INTERVAL properties have been applied
+     * @param mediaFPS Video frame rate per second, must be > 0.
+     * @param modifiedMap the modifiedMap contains the set of properties that will be sent to each sub-job
+     * @return Computed frame interval, may be returned as -1 if not set.
      */
-    private Double getComputedFrameIntervalForVideo( Double mediaFPS, Map<String,String> propertyOverrideMap, Double lastComputedFrameInterval) {
-	    Double computedFrameInterval = null;
-        if ( propertyOverrideMap.containsKey(MpfConstants.FRAME_RATE_CAP_PROPERTY) && Double.valueOf(propertyOverrideMap.get(MpfConstants.FRAME_RATE_CAP_PROPERTY)) > 0) {
-            // Apply override of FRAME_RATE_CAP_PROPERTY property to media
-            computedFrameInterval = Math.max(1, Math.floor(mediaFPS / Double.valueOf(propertyOverrideMap.get(MpfConstants.FRAME_RATE_CAP_PROPERTY))));
-        } else if ( propertyOverrideMap.containsKey(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) && Double.valueOf(propertyOverrideMap.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)) > 0) {
-            // Apply override of FRAME_INTERVAL property
-            computedFrameInterval = Double.valueOf(propertyOverrideMap.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY));
-        } else if ( lastComputedFrameInterval != null ) {
-            // Let the computed frame interval take on the previously established value (if it was previously set).
-            computedFrameInterval = lastComputedFrameInterval;
+    private int getComputedFrameIntervalForVideo( AdaptiveFrameIntervalPropertyState adaptiveFrameIntervalPropertyState, double mediaFPS, Map<String,String> modifiedMap) {
+
+        int computedFrameInterval = -1;
+
+        log.info("getComputedFrameIntervalForVideo(): debug, adaptiveFrameIntervalPropertyState=" + adaptiveFrameIntervalPropertyState);
+
+        if ( modifiedMap.containsKey(MpfConstants.FRAME_RATE_CAP_PROPERTY) ) {
+            log.info("getComputedFrameIntervalForVideo(): debug, modifiedMap contains FRAME_RATE_CAP_PROPERTY " + " with value " + modifiedMap.get(MpfConstants.FRAME_RATE_CAP_PROPERTY));
         }
+        if ( modifiedMap.containsKey(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) ) {
+            log.info("getComputedFrameIntervalForVideo(): debug, modifiedMap contains MEDIA_SAMPLING_INTERVAL_PROPERTY " + " with value " + modifiedMap.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY));
+        }
+
+        if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyOverrideEnabled()) {
+
+            // Condition 1: If FRAME_RATE_CAP is present and not disabled, ignore FRAME_INTERVAL and use FRAME_RATE_CAP to derive computed frame interval.
+            computedFrameInterval = (int) Math.max(1, Math.floor(mediaFPS / Double.valueOf(modifiedMap.get(MpfConstants.FRAME_RATE_CAP_PROPERTY))));
+
+        } else if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertySpecifiedAndDisabled() && adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndNotDisabled() ) {
+
+            // Condition 2: If FRAME_RATE_CAP is present as disabled and FRAME_INTERVAL was specified and never disabled, then use whatever FRAME_INTERVAL is in the modifiedMap.
+            // modifiedMap should contain FRAME_INTERVAL from the highest ranked set of properties.
+            computedFrameInterval = Integer.valueOf(modifiedMap.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY));
+
+        } else if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertySpecifiedAndDisabled() && adaptiveFrameIntervalPropertyState.isFrameIntervalPropertyNotSpecified() ) {
+
+            // Condition 3: If FRAME_RATE_CAP is present as disabled, and FRAME_INTERVAL was never specified, then use whatever FRAME_INTERVAL from the system properties. If
+            // if the FRAME_INTERVAL system property is disabled, then use fallback value of 1 for FRAME_INTERVAL.
+            if (propertiesUtil.getSamplingInterval() > 0) {
+                // Set the  frame interval from the default detection sampling interval
+                computedFrameInterval = Integer.valueOf(propertiesUtil.getSamplingInterval());
+            } else {
+                // If both system properties are disabled, then always use FRAME_INTERVAL of 1.
+                computedFrameInterval = 1;
+            }
+
+        } else if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyNotSpecified() && adaptiveFrameIntervalPropertyState.isFrameIntervalPropertyNotSpecified() ) {
+
+            // Condition 4: If neither FRAME_RATE_CAP nor FRAME_INTERVAL were ever specified then check for FRAME_RATE_CAP or FRAME_INTERVAL in the default system properties
+            if (propertiesUtil.getFrameRateCap() > 0) {
+                // Set the  frame interval from the default detection frame rate cap.
+                // The goal of the FRAME_RATE_CAP is to ensure that a minimum number of frames are processed per second, which is why we round down this value if needed.
+                // But, the value should always be at least 1.
+                computedFrameInterval = (int) Math.max(1, Math.floor(mediaFPS / propertiesUtil.getFrameRateCap()));
+            } else if (propertiesUtil.getSamplingInterval() > 0) {
+                // Set the  frame interval from the default detection sampling interval
+                computedFrameInterval = Integer.valueOf(propertiesUtil.getSamplingInterval());
+            } else {
+                // If both system properties are disabled, then always use FRAME_INTERVAL of 1.
+                computedFrameInterval = 1;
+            }
+
+        } else if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyNotSpecified() && adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndNotDisabled() ) {
+
+            // Condition 5: If FRAME_RATE_CAP was never specified and FRAME_INTERVAL was specified and not disabled check then use FRAME_INTERVAL value at this level.
+            computedFrameInterval = Integer.valueOf(modifiedMap.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY));
+
+        } else if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyNotSpecified() && adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndDisabled() ) {
+
+            // Condition 6: If FRAME_RATE_CAP was never specified and the FRAME_INTERVAL was specified as disabled, then check for FRAME_RATE_CAP in the default system properties.
+            // If the FRAME_RATE_CAP in the default system properties is disabled, then fallback to using FRAME_INTERVAL of 1.
+            if (propertiesUtil.getFrameRateCap() > 0) {
+                // Set the  frame interval from the default detection frame rate cap.
+                // The goal of the FRAME_RATE_CAP is to ensure that a minimum number of frames are processed per second, which is why we round down this value if needed.
+                // But, the value should always be at least 1.
+                computedFrameInterval = (int) Math.max(1, Math.floor(mediaFPS / propertiesUtil.getFrameRateCap()));
+            } else {
+                // If both system properties are disabled, then always use FRAME_INTERVAL of 1.
+                computedFrameInterval = 1;
+            }
+
+        }
+
         return computedFrameInterval;
+
     }
+
+
+
+
 }

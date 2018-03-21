@@ -64,29 +64,38 @@ def add_node(node, port=None, all_mpf_nodes=None, workflow_manager_url=None):
         print mpf_util.MsgUtil.yellow('Child node %s has not been added to the cluster.' % node)
         return
 
-    node_with_port = ''.join([node,'[',port,']'])
-    new_nodes_with_ports = ','.join([string.rstrip(all_mpf_nodes,','),node_with_port,'']) # add trailing comma
-
-    # If the WFM is running, update the env. variable being used by the WFM
-    if is_wfm_running(workflow_manager_url):
-        print 'Updating value of ALL_MPF_NODES used by the Workflow Manager.'
-        try:
-            update_wfm_all_mpf_nodes(workflow_manager_url, new_nodes_with_ports)
-        except:
-            print mpf_util.MsgUtil.red('Child node %s has not been added to the cluster.' % node)
-            raise
-
-    # Modify system files
-    updated_mpf_sh = update_mpf_sh(new_nodes_with_ports)
-    updated_ansible_hosts = update_ansible_hosts(node)
+    # Add node to known_hosts
     updated_known_hosts = update_known_hosts(node)
 
-    if not updated_mpf_sh or not updated_ansible_hosts or not updated_known_hosts:
+    if updated_known_hosts:
+
+        node_with_port = ''.join([node,'[',port,']'])
+        new_nodes_with_ports = ','.join([string.rstrip(all_mpf_nodes,','),node_with_port,'']) # add trailing comma
+
+        # If the WFM is running, update the env. variable being used by the WFM
+        wfm_running = is_wfm_running(workflow_manager_url)
+        if wfm_running:
+            print 'Updating value of ALL_MPF_NODES used by the Workflow Manager.'
+            try:
+                update_wfm_all_mpf_nodes(workflow_manager_url, new_nodes_with_ports)
+            except:
+                print mpf_util.MsgUtil.red('Child node %s has not been added to the cluster.' % node)
+                raise
+
+        # Modify system files
+        updated_mpf_sh = update_mpf_sh(new_nodes_with_ports)
+        updated_ansible_hosts = update_ansible_hosts(node, True)
+
+    if not updated_known_hosts or not updated_mpf_sh or not updated_ansible_hosts:
         print mpf_util.MsgUtil.yellow('Child node %s has not been completely added to the cluster. Manual steps required.' % node)
     else:
         print mpf_util.MsgUtil.green('Child node %s has been added to the cluster.' % node)
-        print mpf_util.MsgUtil.green('Refresh the Nodes page of the Web UI if it\'s currently open.')
-        print mpf_util.MsgUtil.green('Use that page to add the node and configure services.')
+        if wfm_running:
+            print mpf_util.MsgUtil.green('Refresh the Nodes page of the Web UI if it\'s currently open.')
+            print mpf_util.MsgUtil.green('Use that page to add the node and configure services.')
+        else:
+            print mpf_util.MsgUtil.green('Add the node and configure services using Nodes page of the Web UI '
+                                         'the next time you start the Workflow Manager.')
         print mpf_util.MsgUtil.green('Run \"source /etc/profile.d/mpf.sh\" in any open terminal windows.')
 
 
@@ -121,7 +130,8 @@ def remove_node(node, all_mpf_nodes=None, workflow_manager_url=None):
     new_nodes_with_ports = ','.join(nodes_with_ports_list) + ',' # add trailing comma
 
     # If the WFM is running, update the env. variable being used by the WFM and the WFM nodes config
-    if is_wfm_running(workflow_manager_url):
+    wfm_running = is_wfm_running(workflow_manager_url)
+    if wfm_running:
         print 'Updating value of ALL_MPF_NODES used by the Workflow Manager and current node configuration.'
         try:
             update_wfm_all_mpf_nodes(workflow_manager_url, new_nodes_with_ports)
@@ -131,13 +141,17 @@ def remove_node(node, all_mpf_nodes=None, workflow_manager_url=None):
 
     # Modify system files
     updated_mpf_sh = update_mpf_sh(new_nodes_with_ports)
-    updated_ansible_hosts = update_ansible_hosts(node)
+    updated_ansible_hosts = update_ansible_hosts(node, False)
 
     if not updated_mpf_sh or not updated_ansible_hosts:
         print mpf_util.MsgUtil.yellow('Child node %s has not been completely removed from the cluster. Manual steps required.' % node)
     else:
         print mpf_util.MsgUtil.green('Child node %s has been removed from the cluster.' % node)
-        print mpf_util.MsgUtil.green('Refresh the Nodes page of the Web UI if it\'s currently open.')
+        if wfm_running:
+            print mpf_util.MsgUtil.green('Refresh the Nodes page of the Web UI if it\'s currently open.')
+        else:
+            print mpf_util.MsgUtil.green('Remove the node using Nodes page of the Web UI '
+                                         'the next time you start the Workflow Manager.')
         print mpf_util.MsgUtil.green('Run \"source /etc/profile.d/mpf.sh\" in any open terminal windows.')
 
 
@@ -210,7 +224,7 @@ def update_mpf_sh(nodes_with_ports):
     return not error
 
 
-def update_ansible_hosts(node):
+def update_ansible_hosts(node, add_node):
     filepath = '/etc/ansible/hosts' # DEBUG: /home/mpf/Desktop/TMP/hosts-test
     findstr = '[mpf-child]'
     error = False
@@ -249,7 +263,9 @@ def update_ansible_hosts(node):
 
     if not error:
         remove_all(child_node_list, node) # just in case, prevent duplicates
-        child_node_list.append(node)
+
+        if add_node:
+            child_node_list.append(node)
 
         # Create a temporary file so that we can write to it without root privileges
         temppath = create_temp_copy(filepath)
@@ -291,21 +307,21 @@ def update_known_hosts(node):
     else:
         with open(temppath, 'r') as file:
             data = file.read()
-            if 'Invalid argument' in data:
+            if 'Invalid argument' in data or 'No route to host' in data:
                 error = True
 
     if error:
-        print mpf_util.MsgUtil.red('Error: Could not get public SSH key(s) for %s.' % node)
+        print mpf_util.MsgUtil.red('Error: Could not get public SSH key(s) for %s. '
+                                   'Please ensure that the node is online and try again.' % node)
 
     if not error and os.system('echo \'' + data.strip() + '\'  &>> ' + filepath) != 0:
         print mpf_util.MsgUtil.red('Error: Could not add %s entry to %s.' % (node, filepath))
+        print mpf_util.MsgUtil.yellow('Please manually add %s entry to %s.' % (node, filepath))
         error = True
 
     remove_temp(temppath)
 
-    if error:
-        print mpf_util.MsgUtil.yellow('Please manually add %s entry to %s.' % (node, filepath))
-    else:
+    if not error:
         print 'Updated ' + filepath + '.'
 
     return not error

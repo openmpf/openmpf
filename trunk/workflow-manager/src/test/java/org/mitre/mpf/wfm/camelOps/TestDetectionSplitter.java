@@ -451,42 +451,48 @@ public class TestDetectionSplitter {
     // need to store mediaFPS as a class property so we can determine computed frame interval for verification of the frame rate cap tests.
     double mediaFPS;
 
-    private DetectionProtobuf.DetectionRequest createFrameRateTestTransientJobAndPerformDetectionSplit(long jobId, String externalId,
+    private DetectionProtobuf.DetectionRequest createFrameRateTestTransientJobAndPerformDetectionSplit(
                                     Integer frameIntervalMediaPropertyValue, Integer frameRateCapMediaPropertyValue,
                                     Integer frameIntervalAlgorithmPropertyValue, Integer frameRateCapAlgorithmPropertyValue,
                                     Integer frameIntervalJobPropertyValue, Integer frameRateCapJobPropertyValue,
                                     Integer frameIntervalActionPropertyValue, Integer frameRateCapActionPropertyValue) throws Exception {
+
+        long jobId = next();
+        String externalId = "frameRateCapTest-" + Long.toString(jobId);
+
+        log.info("createFrameRateTestTransientJobAndPerformDetectionSplit, debug: frameIntervalMediaPropertyValue=" + frameIntervalMediaPropertyValue + ", frameRateCapMediaPropertyValue="+frameRateCapMediaPropertyValue);
+        log.info("createFrameRateTestTransientJobAndPerformDetectionSplit, debug: frameIntervalAlgorithmPropertyValue=" + frameIntervalAlgorithmPropertyValue + ", frameRateCapAlgorithmPropertyValue="+frameRateCapAlgorithmPropertyValue);
 
         Map<String, String> actionProperties = new HashMap();
         Map<String, String> jobProperties = new HashMap();
         Map<String, Map> algorithmProperties = new HashMap();
         Map<String, String> mediaProperties = new HashMap();
 
-        if ( frameIntervalActionPropertyValue != null && frameIntervalActionPropertyValue > 0 )
+        if ( frameIntervalActionPropertyValue != null )
             actionProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, frameIntervalActionPropertyValue.toString());
-        if ( frameRateCapActionPropertyValue != null && frameRateCapActionPropertyValue > 0 )
+        if ( frameRateCapActionPropertyValue != null )
             actionProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCapActionPropertyValue.toString());
 
-        if ( frameIntervalJobPropertyValue != null && frameIntervalJobPropertyValue > 0 )
+        if ( frameIntervalJobPropertyValue != null )
             jobProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, frameIntervalJobPropertyValue.toString());
-        if ( frameRateCapJobPropertyValue != null && frameRateCapJobPropertyValue > 0 )
+        if ( frameRateCapJobPropertyValue != null )
             jobProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCapJobPropertyValue.toString());
 
-        if ( frameIntervalAlgorithmPropertyValue != null && frameIntervalAlgorithmPropertyValue > 0 ) {
+        if ( frameIntervalAlgorithmPropertyValue != null ) {
             Map<String, String> faceCvAlgorithmProperties = new HashMap();
             faceCvAlgorithmProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, frameIntervalAlgorithmPropertyValue.toString());
             algorithmProperties.put("FACECV", faceCvAlgorithmProperties);
         }
-        if ( frameRateCapAlgorithmPropertyValue != null && frameRateCapAlgorithmPropertyValue > 0 ) {
+        if ( frameRateCapAlgorithmPropertyValue != null ) {
             Map<String, String> faceCvAlgorithmProperties = algorithmProperties.get("FACECV");
             if ( faceCvAlgorithmProperties == null ) faceCvAlgorithmProperties = new HashMap();
             faceCvAlgorithmProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCapAlgorithmPropertyValue.toString());
             algorithmProperties.put("FACECV", faceCvAlgorithmProperties);
         }
 
-        if ( frameIntervalMediaPropertyValue != null && frameIntervalMediaPropertyValue > 0 )
+        if ( frameIntervalMediaPropertyValue != null )
             mediaProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, frameIntervalMediaPropertyValue.toString());
-        if ( frameRateCapMediaPropertyValue != null && frameRateCapMediaPropertyValue > 0 )
+        if ( frameRateCapMediaPropertyValue != null )
             mediaProperties.put(MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCapMediaPropertyValue.toString());
 
         TransientJob testJob = createFrameRateCapTestTransientJob( jobId, externalId,
@@ -502,6 +508,9 @@ public class TestDetectionSplitter {
         Assert.assertTrue(responseList.size() >= 1);
         Message message = responseList.get(0);
         Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
+
+        // Once we've formed the request, remove the test job from REDIS.
+        redis.clearJob(jobId);
 
         return (DetectionProtobuf.DetectionRequest) message.getBody();
     }
@@ -519,8 +528,6 @@ public class TestDetectionSplitter {
     @Test
     // Baseline test: testing override result using current FRAME_INTERVAL and FRAME_RATE_CAP system property settings.
     public void testFrameRateCapTestOverrideOfSystemProperties() throws Exception {
-        long localJobId = next();
-        String externalId = "frameRateCapOverrideSystemPropertiesTest";
 
         // Testing override of FRAME_INTERVAL and FRAME_RATE_CAP as system properties.
         // Note: to test all use cases, the caller would have to change the defaults in the mpf property file.
@@ -536,7 +543,7 @@ public class TestDetectionSplitter {
         // For a job with video media, this test is successful if the sub-job algorithm properties contains FRAME_INTERVAL property
         // that is equal to the default FRAME_INTERVAL system property (if FRAME_RATE_CAP system property is disabled). If not disabled,
         // then FRAME_INTERVAL should be derived from FRAME_RATE_CAP system property.
-        DetectionProtobuf.DetectionRequest request1 = createFrameRateTestTransientJobAndPerformDetectionSplit(localJobId, externalId,
+        DetectionProtobuf.DetectionRequest request1 = createFrameRateTestTransientJobAndPerformDetectionSplit(
             frameIntervalActionPropertyValue, frameRateCapActionPropertyValue, frameIntervalJobPropertyValue, frameRateCapJobPropertyValue,
             frameIntervalAlgorithmPropertyValue, frameRateCapAlgorithmPropertyValue, frameIntervalMediaPropertyValue, frameRateCapMediaPropertyValue);
 
@@ -548,7 +555,7 @@ public class TestDetectionSplitter {
             }));
         } else {
             // System property detection.frame.rate.cap is not disabled, check value as derived from FPS and system property detection.frame.rate.cap.
-            int expectedComputedFrameInterval = getVideoMediaExpectedComputedFrameInterval(localJobId, propertiesUtil.getFrameRateCap());
+            int expectedComputedFrameInterval = getVideoMediaExpectedComputedFrameInterval(propertiesUtil.getFrameRateCap());
             Assert.assertTrue(request1.getAlgorithmPropertyList().stream().anyMatch(prop -> {
                 return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
                         Integer.valueOf(prop.getPropertyValue()).equals(expectedComputedFrameInterval) );
@@ -573,78 +580,26 @@ public class TestDetectionSplitter {
         int algLevelFrameRateCap = 20;
         int medLevelFrameRateCap = 25;
 
-        Integer parameterDisable = -1;
-        Integer parameterNotSpecified = null;
+        // Keeping two distinct variable names so the tests are more readable.
+        Integer frameIntervalParameterDisable = -1;
+        Integer frameRateCapParameterDisable = -1;
+        Integer frameIntervalParameterNotSpecified = null;
+        Integer frameRateCapParameterNotSpecified = null;
 
-        long localJobId;
         DetectionProtobuf.DetectionRequest request;
 
-        // TODO use Mock to test system property combinations. For now, just use what is available in PropertiesUtil
+        // TODO use Mock to test system property combinations. For now, just use what is available in PropertiesUtil. Question though,
+        // Mock can change the system properties in the TestDetectionSplitter class, but PropertiesUtil which is used in DetectionSplitter class
+        // will still be using settings from mpf.properties - so I'm not sure if using Mock will work to support changing combinations of
+        // system properties test.
 
-        // Tests 1-3: vary combination of media property FRAME_INTERVAL keeping FRAME_RATE_CAP consistent. Lower property levels not specified
+        // Tests 1-9: test 9 combinations of media property FRAME_INTERVAL and FRAME_RATE_CAP with the lower property levels not specified.
 
-        // Test1: media level test with both FRAME_INTERVAL and FRAME_RATE_CAP specified (FRAME_RATE_CAP override applies). Lower property level not specified.
-        localJobId = next();
-        request = createFrameRateTestTransientJobAndPerformDetectionSplit(localJobId, baselineExternalId+Long.toString(next()),
-                                                                                                                medLevelFrameInterval, medLevelFrameRateCap,
-                                                                                                                parameterNotSpecified, parameterNotSpecified,
-                                                                                                                parameterNotSpecified, parameterNotSpecified,
-                                                                                                                parameterNotSpecified, parameterNotSpecified);
-
-        // In this case, resultant FRAME_INTERVAL property value should be derived from the frame rate cap media property.
-        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
-            return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
-                    Integer.valueOf(prop.getPropertyValue()).equals(getVideoMediaExpectedComputedFrameInterval(medLevelFrameRateCap)) );
-        }));
-
-        // Once done with the test, remove the test job from REDIS.
-        redis.clearJob(localJobId);
-
-        // Test2: media level test with FRAME_INTERVAL not specified and FRAME_RATE_CAP specified. Lower property level not specified.
-        localJobId = next();
-        request = createFrameRateTestTransientJobAndPerformDetectionSplit(localJobId, baselineExternalId+Long.toString(next()),
-                                                                            parameterNotSpecified, medLevelFrameRateCap,
-                                                                            parameterNotSpecified, parameterNotSpecified,
-                                                                            parameterNotSpecified, parameterNotSpecified,
-                                                                            parameterNotSpecified, parameterNotSpecified);
-
-        // In this case, resultant FRAME_INTERVAL property value should be derived from frame rate cap media property.
-        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
-            return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
-                    Integer.valueOf(prop.getPropertyValue()).equals(getVideoMediaExpectedComputedFrameInterval(medLevelFrameRateCap)) );
-        }));
-
-        // Once done with the test, remove the test job from REDIS.
-        redis.clearJob(localJobId);
-
-        // Test3: media level test with FRAME_INTERVAL disabled and FRAME_RATE_CAP specified. Lower property level not specified.
-        localJobId = next();
-        request = createFrameRateTestTransientJobAndPerformDetectionSplit(localJobId, baselineExternalId+Long.toString(next()),
-                                                                            parameterDisable, medLevelFrameRateCap,
-                                                                            parameterNotSpecified, parameterNotSpecified,
-                                                                            parameterNotSpecified, parameterNotSpecified,
-                                                                            parameterNotSpecified, parameterNotSpecified);
-        // In this case, resultant FRAME_INTERVAL property value should be derived from frame rate cap media property.
-        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
-            return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
-                    Integer.valueOf(prop.getPropertyValue()).equals(getVideoMediaExpectedComputedFrameInterval(medLevelFrameRateCap)) );
-        }));
-
-        // Once done with the test, remove the test job from REDIS.
-        redis.clearJob(localJobId);
-
-        // Tests 4-6: vary combination of media property FRAME_INTERVAL keeping FRAME_RATE_CAP consistent, with one-down-lower property level specified.
-
-        // Test4: media level test with both FRAME_INTERVAL and FRAME_RATE_CAP specified (FRAME_RATE_CAP override applies), with one-down-lower property level specified.
-
-        localJobId = next();
-
-        request = createFrameRateTestTransientJobAndPerformDetectionSplit(localJobId, baselineExternalId+Long.toString(next()),
-            medLevelFrameInterval, medLevelFrameRateCap,
-            algLevelFrameInterval, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified);
-
+        // Test1: media level test with both FRAME_INTERVAL and FRAME_RATE_CAP specified (FRAME_RATE_CAP override applies) with the lower property level not specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(medLevelFrameInterval, medLevelFrameRateCap, // media level property values
+                                                                          frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified, // algorithm level property values
+                                                                          frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified, // job level property values
+                                                                          frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified); // action level property values.
 
         // In this case, resultant FRAME_INTERVAL property value should be derived from the frame rate cap media property.
         Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
@@ -652,16 +607,11 @@ public class TestDetectionSplitter {
                     Integer.valueOf(prop.getPropertyValue()).equals(getVideoMediaExpectedComputedFrameInterval(medLevelFrameRateCap)) );
         }));
 
-        // Once done with the test, remove the test job from REDIS.
-        redis.clearJob(localJobId);
-
-        // Test5: media level test with FRAME_INTERVAL not specified and FRAME_RATE_CAP specified, with one-down-lower property level specified.
-        localJobId = next();
-        request = createFrameRateTestTransientJobAndPerformDetectionSplit(localJobId, baselineExternalId+Long.toString(next()),
-            parameterNotSpecified, medLevelFrameRateCap,
-            algLevelFrameInterval, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified);
+        // Test2: media level test with FRAME_INTERVAL not specified and FRAME_RATE_CAP specified with the lower property level not specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(frameIntervalParameterNotSpecified, medLevelFrameRateCap,
+                                                                          frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                          frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                          frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
 
         // In this case, resultant FRAME_INTERVAL property value should be derived from frame rate cap media property.
         Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
@@ -669,144 +619,229 @@ public class TestDetectionSplitter {
                     Integer.valueOf(prop.getPropertyValue()).equals(getVideoMediaExpectedComputedFrameInterval(medLevelFrameRateCap)) );
         }));
 
-        // Once done with the test, remove the test job from REDIS.
-        redis.clearJob(localJobId);
+        // Test3: media level test with FRAME_INTERVAL disabled and FRAME_RATE_CAP specified with the lower property level not specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(frameIntervalParameterDisable, medLevelFrameRateCap,
+                                                                          frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                          frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                          frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
 
-        // Test6: media level test with FRAME_INTERVAL disabled and FRAME_RATE_CAP specified, with one-down-lower property level specified.
-        localJobId = next();
-        request = createFrameRateTestTransientJobAndPerformDetectionSplit(localJobId, baselineExternalId+Long.toString(next()),
-            parameterDisable, medLevelFrameRateCap,
-            algLevelFrameInterval, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified);
         // In this case, resultant FRAME_INTERVAL property value should be derived from frame rate cap media property.
         Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
             return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
                     Integer.valueOf(prop.getPropertyValue()).equals(getVideoMediaExpectedComputedFrameInterval(medLevelFrameRateCap)) );
         }));
 
-        // Once done with the test, remove the test job from REDIS.
-        redis.clearJob(localJobId);
-
-
-
-        // Tests 7-12: keep media property FRAME_INTERVAL consistent and vary combination of FRAME_RATE_CAP. Lower property levels not specified
-
-        // Test7: media level test with both FRAME_INTERVAL and FRAME_RATE_CAP specified (FRAME_RATE_CAP override applies). Lower property level not specified.
-        localJobId = next();
-        request = createFrameRateTestTransientJobAndPerformDetectionSplit(localJobId, baselineExternalId+Long.toString(next()),
-            medLevelFrameInterval, medLevelFrameRateCap,
-            parameterNotSpecified, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified);
-
-        // In this case, resultant FRAME_INTERVAL property value should be derived from the frame rate cap media property.
-        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
-            return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
-                    Integer.valueOf(prop.getPropertyValue()).equals(getVideoMediaExpectedComputedFrameInterval(medLevelFrameRateCap)) );
-        }));
-
-        // Once done with the test, remove the test job from REDIS.
-        redis.clearJob(localJobId);
-
-        // Test8: media level test with FRAME_INTERVAL specified and FRAME_RATE_CAP not specified. Lower property level not specified.
-        localJobId = next();
-        log.info("TestDetectionSplitter running Test8, localJobId = " + localJobId);
-        request = createFrameRateTestTransientJobAndPerformDetectionSplit(localJobId, baselineExternalId+Long.toString(next()),
-            medLevelFrameInterval, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified);
-
-        log.info("TestDetectionSplitter running Test8, medLevelFrameInterval = " + medLevelFrameInterval);
-        log.info("TestDetectionSplitter running Test8, mediaFPS = " + mediaFPS);
-//        log.info("TestDetectionSplitter running Test8, getVideoMediaExpectedComputedFrameInterval(medLevelFrameRateCap) = " + getVideoMediaExpectedComputedFrameInterval(medLevelFrameRateCap));
+        // Test4: media level test with FRAME_INTERVAL specified and FRAME_RATE_CAP not specified with the lower property level not specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(medLevelFrameInterval, frameRateCapParameterNotSpecified,
+                                                                          frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                          frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                          frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
 
         // In this case, resultant FRAME_INTERVAL property value should be same as FRAME_INTERVAL media property.
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+            return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
+                    Integer.valueOf(prop.getPropertyValue()).equals(medLevelFrameInterval) );
+        }));
+
+        // Test5: media level test with neither FRAME_INTERVAL nor FRAME_RATE_CAP specified with the lower property level not specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                             frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                             frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                             frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
+
+        // In this case, resultant FRAME_INTERVAL property value should be derived from FRAME_RATE_CAP system property if not disabled, otherwise
+        // the value should be the same as the FRAME_INTERVAL system property if not disabled, default to a value of 1 if both FRAME_RATE_CAP and
+        // FRAME_INTERVAL system properties are disabled.
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+            return ( prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
+                    ( ( propertiesUtil.getFrameRateCap() > 0 && Integer.valueOf(prop.getPropertyValue()) == getVideoMediaExpectedComputedFrameInterval(propertiesUtil.getFrameRateCap()) ) ||
+                        ( propertiesUtil.getSamplingInterval() > 0 && Integer.valueOf(prop.getPropertyValue()) == (int)propertiesUtil.getSamplingInterval() ) ||
+                        ( propertiesUtil.getFrameRateCap() <= 0 && propertiesUtil.getSamplingInterval() <= 0 && Integer.valueOf(prop.getPropertyValue()) == 1 ) ) );
+        }));
+
+        // Test6: media level test with FRAME_INTERVAL disabled and FRAME_RATE_CAP not specified with the lower property level not specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(frameIntervalParameterDisable, frameRateCapParameterNotSpecified,
+                                                                             frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                             frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                             frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
+
+        // In this case, resultant FRAME_INTERVAL property value should be derived from FRAME_RATE_CAP system property if not disabled, otherwise
+        // the value should default to a value of 1 since FRAME_INTERVAL is disabled at the higher property level.
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+            return ( prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
+                ( ( propertiesUtil.getFrameRateCap() > 0 && Integer.valueOf(prop.getPropertyValue()) == getVideoMediaExpectedComputedFrameInterval(propertiesUtil.getFrameRateCap()) ) ||
+                    ( propertiesUtil.getFrameRateCap() <= 0 && Integer.valueOf(prop.getPropertyValue()) == 1 ) ) );
+        }));
+
+
+        // Test7: media level test with FRAME_INTERVAL specified and FRAME_RATE_CAP disabled with the lower property level not specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(medLevelFrameInterval, frameRateCapParameterDisable,
+                                                                          frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                          frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                          frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
+
+        // In this case, resultant FRAME_INTERVAL property value should be same as FRAME_INTERVAL media property.
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+            return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
+                Integer.valueOf(prop.getPropertyValue()).equals(medLevelFrameInterval) );
+        }));
+
+        // Test8: media level test with FRAME_INTERVAL not specified and FRAME_RATE_CAP disabled with the lower property level not specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(frameIntervalParameterNotSpecified, frameRateCapParameterDisable,
+                                                                             frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                             frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                             frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
+
+        // In this case, since FRAME_RATE_CAP is disabled at the higher property level, the resultant FRAME_INTERVAL property value
+        // should be the same as the FRAME_INTERVAL system property if not disabled, default to a value of 1 if the
+        // FRAME_INTERVAL system property is disabled.
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+            return ( prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
+                ( ( propertiesUtil.getSamplingInterval() > 0 && Integer.valueOf(prop.getPropertyValue()) == (int)propertiesUtil.getSamplingInterval() ) ||
+                    ( propertiesUtil.getSamplingInterval() <= 0 && Integer.valueOf(prop.getPropertyValue()) == 1 ) ) );
+        }));
+
+        // Test9: media level test with both FRAME_INTERVAL and FRAME_RATE_CAP disabled with the lower property level not specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(frameIntervalParameterDisable, frameRateCapParameterDisable,
+                                                                             frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                             frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+                                                                             frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
+
+        // In this case, since both FRAME_RATE_CAP and FRAME_INTERVAL are disabled at the higher property level,
+        // the resultant FRAME_INTERVAL property value default to a value of 1.
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+            return ( prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) && Integer.valueOf(prop.getPropertyValue()) == 1 );
+        }));
+
+
+        // Tests 10-18: repeat the last 9 test combinations of media property FRAME_INTERVAL and FRAME_RATE_CAP
+        // with the one-level-down FRAME_INTERVAL property specified (we won't be including any tests for one-level-down properties disabled)
+
+        // Test10: media level test with both FRAME_INTERVAL and FRAME_RATE_CAP specified (FRAME_RATE_CAP override applies) with the one-level-down FRAME_INTERVAL property specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(medLevelFrameInterval, medLevelFrameRateCap, // media level property values
+            algLevelFrameInterval, frameRateCapParameterNotSpecified, // algorithm level property values
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified, // job level property values
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified); // action level property values.
+
+        // In this case, resultant FRAME_INTERVAL property value should be derived from the frame rate cap media property.
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+            return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
+                Integer.valueOf(prop.getPropertyValue()).equals(getVideoMediaExpectedComputedFrameInterval(medLevelFrameRateCap)) );
+        }));
+
+        // Test11: media level test with FRAME_INTERVAL not specified and FRAME_RATE_CAP specified with the one-level-down FRAME_INTERVAL property specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(frameIntervalParameterNotSpecified, medLevelFrameRateCap,
+            algLevelFrameInterval, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
+
+        // In this case, resultant FRAME_INTERVAL property value should be derived from frame rate cap media property.
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+            return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
+                Integer.valueOf(prop.getPropertyValue()).equals(getVideoMediaExpectedComputedFrameInterval(medLevelFrameRateCap)) );
+        }));
+
+        // Test12: media level test with FRAME_INTERVAL disabled and FRAME_RATE_CAP specified with the one-level-down FRAME_INTERVAL property specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(frameIntervalParameterDisable, medLevelFrameRateCap,
+            algLevelFrameInterval, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
+
+        // In this case, resultant FRAME_INTERVAL property value should be derived from frame rate cap media property.
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+            return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
+                Integer.valueOf(prop.getPropertyValue()).equals(getVideoMediaExpectedComputedFrameInterval(medLevelFrameRateCap)) );
+        }));
+
+        // Test13: media level test with FRAME_INTERVAL specified and FRAME_RATE_CAP not specified with the one-level-down FRAME_INTERVAL property specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(medLevelFrameInterval, frameRateCapParameterNotSpecified,
+            algLevelFrameInterval, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
+
+        // In this case, resultant FRAME_INTERVAL property value should be same as the FRAME_INTERVAL media property.
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+            return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
+                Integer.valueOf(prop.getPropertyValue()).equals(medLevelFrameInterval) );
+        }));
+
+        // Test14: media level test with neither FRAME_INTERVAL nor FRAME_RATE_CAP specified with the one-level-down FRAME_INTERVAL property specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+            algLevelFrameInterval, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
+
+        // In this case, resultant FRAME_INTERVAL property value should be the same as FRAME_INTERVAL algorithm property.
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+            return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
+                Integer.valueOf(prop.getPropertyValue()).equals(algLevelFrameInterval) );
+        }));
+
+        // Test15: media level test with FRAME_INTERVAL disabled and FRAME_RATE_CAP not specified with the one-level-down FRAME_INTERVAL property specified.
+        log.info("Test15 debug, running test 15 with algLevelFrameInterval="+algLevelFrameInterval);
+        log.info("Test15 debug, running test 15 with propertiesUtil.getFrameRateCap()="+propertiesUtil.getFrameRateCap());
+
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(frameIntervalParameterDisable, frameRateCapParameterNotSpecified,
+            algLevelFrameInterval, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
+
+        // In this case, resultant FRAME_INTERVAL property value should be derived from FRAME_RATE_CAP system property if not disabled, otherwise
+        // the value should default to a value of 1 since FRAME_INTERVAL is disabled at the higher property level.
         Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
             if ( prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) ) {
-                log.info("TestDetectionSplitter done running Test8, prop FRAME_INTERVAL has value " + prop.getPropertyValue());
+                log.info("Test15 debug, prop.getPropertyValue() = " + prop.getPropertyValue());
             }
-            return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
-                    Integer.valueOf(prop.getPropertyValue()).equals(medLevelFrameInterval) );
+            return ( prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
+                ( ( propertiesUtil.getFrameRateCap() > 0 && Integer.valueOf(prop.getPropertyValue()) == getVideoMediaExpectedComputedFrameInterval(propertiesUtil.getFrameRateCap()) ) ||
+                    ( propertiesUtil.getFrameRateCap() <= 0 && Integer.valueOf(prop.getPropertyValue()) == 1 ) ) );
         }));
 
-        // Once done with the test, remove the test job from REDIS.
-        redis.clearJob(localJobId);
-
-        // Test9: media level test with FRAME_INTERVAL specified and FRAME_RATE_CAP disabled. Lower property level not specified.
-        localJobId = next();
-        request = createFrameRateTestTransientJobAndPerformDetectionSplit(localJobId, baselineExternalId+Long.toString(next()),
-            medLevelFrameInterval, parameterDisable,
-            parameterNotSpecified, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified);
-        // In this case, resultant FRAME_INTERVAL property value should be same as FRAME_INTERVAL media property.
-        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
-            return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
-                    Integer.valueOf(prop.getPropertyValue()).equals(medLevelFrameInterval) );
-        }));
-
-        // Once done with the test, remove the test job from REDIS.
-        redis.clearJob(localJobId);
-
-        // Tests 10-12: keep media property FRAME_INTERVAL consistent and vary combination of FRAME_RATE_CAP with one-down-lower property level specified.
-
-        // Test10: media level test with both FRAME_INTERVAL and FRAME_RATE_CAP specified (FRAME_RATE_CAP override applies), with one-down-lower property level specified.
-        localJobId = next();
-        request = createFrameRateTestTransientJobAndPerformDetectionSplit(localJobId, baselineExternalId+Long.toString(next()),
-            medLevelFrameInterval, medLevelFrameRateCap,
-            parameterNotSpecified, algLevelFrameRateCap,
-            parameterNotSpecified, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified);
-
-        // In this case, resultant FRAME_INTERVAL property value should be derived from the frame rate cap media property.
-        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
-            return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
-                    Integer.valueOf(prop.getPropertyValue()).equals(getVideoMediaExpectedComputedFrameInterval(medLevelFrameRateCap)) );
-        }));
-
-        // Once done with the test, remove the test job from REDIS.
-        redis.clearJob(localJobId);
-
-        // Test11: media level test with FRAME_INTERVAL specified and FRAME_RATE_CAP not specified, with one-down-lower property level specified.
-        localJobId = next();
-        request = createFrameRateTestTransientJobAndPerformDetectionSplit(localJobId, baselineExternalId+Long.toString(next()),
-            medLevelFrameInterval, parameterNotSpecified,
-            parameterNotSpecified, algLevelFrameRateCap,
-            parameterNotSpecified, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified);
+        // Test16: media level test with FRAME_INTERVAL specified and FRAME_RATE_CAP disabled with the one-level-down FRAME_INTERVAL property specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(medLevelFrameInterval, frameRateCapParameterDisable,
+            algLevelFrameInterval, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
 
         // In this case, resultant FRAME_INTERVAL property value should be same as FRAME_INTERVAL media property.
         Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
             return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
-                    Integer.valueOf(prop.getPropertyValue()).equals(medLevelFrameInterval) );
+                Integer.valueOf(prop.getPropertyValue()).equals(medLevelFrameInterval) );
         }));
 
-        // Once done with the test, remove the test job from REDIS.
-        redis.clearJob(localJobId);
+        // Test17: media level test with FRAME_INTERVAL not specified and FRAME_RATE_CAP disabled with the one-level-down FRAME_INTERVAL property specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(frameIntervalParameterNotSpecified, frameRateCapParameterDisable,
+            algLevelFrameInterval, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
 
-        // Test12: media level test with FRAME_INTERVAL specified and FRAME_RATE_CAP disabled, with one-down-lower property level specified.
-        localJobId = next();
-        request = createFrameRateTestTransientJobAndPerformDetectionSplit(localJobId, baselineExternalId+Long.toString(next()),
-            medLevelFrameInterval, parameterDisable,
-            parameterNotSpecified, algLevelFrameRateCap,
-            parameterNotSpecified, parameterNotSpecified,
-            parameterNotSpecified, parameterNotSpecified);
-        // In this case, resultant FRAME_INTERVAL property value should be same as FRAME_INTERVAL media property.
+        // In this case, resultant FRAME_INTERVAL property value should be same as FRAME_INTERVAL algorithm property.
         Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
             return (prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) &&
-                    Integer.valueOf(prop.getPropertyValue()).equals(medLevelFrameInterval) );
+                Integer.valueOf(prop.getPropertyValue()).equals(algLevelFrameInterval) );
         }));
 
-        // Once done with the test, remove the test job from REDIS.
-        redis.clearJob(localJobId);
+        // Test18: media level test with both FRAME_INTERVAL and FRAME_RATE_CAP disabled with the one-level-down FRAME_INTERVAL property specified.
+        request = createFrameRateTestTransientJobAndPerformDetectionSplit(frameIntervalParameterDisable, frameRateCapParameterDisable,
+            algLevelFrameInterval, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified,
+            frameIntervalParameterNotSpecified, frameRateCapParameterNotSpecified);
+
+        // In this case, since both FRAME_RATE_CAP and FRAME_INTERVAL are disabled at the higher property level,
+        // the resultant FRAME_INTERVAL property value default to a value of 1.
+        Assert.assertTrue(request.getAlgorithmPropertyList().stream().anyMatch(prop -> {
+            return ( prop.getPropertyName().equals(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY) && Integer.valueOf(prop.getPropertyValue()) == 1 );
+        }));
+
+
+        // Tests 19-28: repeat the first 9 test combinations of media property FRAME_INTERVAL and FRAME_RATE_CAP
+        // with the one-level-down FRAME_RATE_CAP property specified (we won't be including any tests for one-level-down properties disabled)
 
 
 
 
-        // TODO, repeat Tests 1-6: vary combination of job property FRAME_INTERVAL keeping FRAME_RATE_CAP consistent, without and without specifying lower ranked properties
-        // TODO, repeat Tests 7-12: keep job property FRAME_INTERVAL consistent and vary FRAME_RATE_CAP, with and without specifying lower ranked properties
+
+
     }
 
 }

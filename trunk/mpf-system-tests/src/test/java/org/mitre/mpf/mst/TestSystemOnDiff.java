@@ -211,9 +211,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 	}
 
 	private static final Map<String, String> TINY_YOLO_CONFIG = ImmutableMap.of(
-			"NETWORK_CONFIG_FILE", "config/cfg/tiny-yolo.cfg",
-			"WEIGHTS_FILE", "config/weights/tiny-yolo.weights",
-			"NAMES_FILE", "config/data/coco.names");
+			"MODEL_NAME", "tiny yolo");
 
 
 	private static Map<String, String> getTinyYoloConfig(Map<String, String> otherProperties) {

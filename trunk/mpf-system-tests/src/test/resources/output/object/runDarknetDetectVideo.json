@@ -16,9 +16,7 @@
                         "description": "Runs the Tiny YOLO object detection Darknet model.",
                         "properties": {
                             "CONFIDENCE_THRESHOLD": "0.5",
-                            "NAMES_FILE": "config/data/coco.names",
-                            "WEIGHTS_FILE": "config/weights/tiny-yolo.weights",
-                            "NETWORK_CONFIG_FILE": "config/cfg/tiny-yolo.cfg"
+                            "MODEL_NAME": "tiny yolo"
                         }
                     }
                 ]

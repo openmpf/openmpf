@@ -150,9 +150,11 @@ public class DetectionSplitter implements StageSplitter {
 		// Is this the first detection stage in the pipeline?
 		boolean isFirstDetectionStage = isFirstDetectionOperation(transientJob);
 
-		// TODO: is there a better way to do this? adaptiveFrameIntervalPropertyState needs to be initialized for each TransientJob being processed
+		// TODO: there must be a better way to do this, feedback is requested, adaptiveFrameIntervalPropertyState needs to be initialized for each TransientJob being processed
         // Without this initialization statement, adaptiveFrameIntervalPropertyState isn't getting initialized and the 40 frame rate cap
-        // test cases defined in TestDetectionSplitter fails because the state variable isn't being initialized.
+        // test cases defined in TestDetectionSplitter fails because the state variable isn't being initialized. But, the following
+        // condition will only be true if the TransientJob has the first stage being a Detection. How to check for the first time
+        // this DetectionSplitter has been called for a TransientJob?
 		if ( isFirstDetectionStage ) {
             adaptiveFrameIntervalPropertyState.init();
         }
@@ -340,6 +342,9 @@ public class DetectionSplitter implements StageSplitter {
                      }
                 }
 
+                // TODO, I don't see any protection in here for a user specifying FRAME_INTERVAL of -1 for non-video media. The
+                // createSegmentingPlan method will send a warning about using FRAME_INTERVAL set to 1 if this occurs. Is this ok?
+
 				SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
 				List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
 						= convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
@@ -517,6 +522,8 @@ public class DetectionSplitter implements StageSplitter {
      * - Condition 4: If FRAME_RATE_CAP is not present and FRAME_INTERVAL is not present check for FRAME_RATE_CAP or FRAME_INTERVAL at lower property levels until the default FRAME_RATE_CAP or FRAME_INTERVAL system properties are reached.
      * - Condition 5: If FRAME_RATE_CAP is not present and FRAME_INTERVAL is present and not disabled check then use FRAME_INTERVAL value at this level.
      * - Condition 6: If FRAME_RATE_CAP is not present and FRAME_INTERVAL is present and disabled check then only consider FRAME_RATE_CAP at lower property levels until the default FRAME_RATE_CAP system property is reached.
+     * - Condition 7: If both FRAME_RATE_CAP and FRAME_INTERVAL are present and disabled at any level, this should result in setting the
+     *   frame interval to 1
      *   But, if FRAME_RATE_CAP system property is <= 0, this combination of both disabled properties should result in setting the
      *   frame interval to 1 (no matter what the frame interval system property is).
      * @param adaptiveFrameIntervalPropertyState current state after ranked FRAME_RATE_CAP and FRAME_INTERVAL properties have been applied
@@ -537,9 +544,15 @@ public class DetectionSplitter implements StageSplitter {
             log.info("getComputedFrameIntervalForVideo(): debug, modifiedMap contains MEDIA_SAMPLING_INTERVAL_PROPERTY " + " with value " + modifiedMap.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY));
         }
 
-        if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyOverrideEnabled()) {
+        if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyOverrideEnabled() ||
+            ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertySpecifiedAndNotDisabled() &&
+                (adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndNotDisabled() || adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndDisabled() ) &&
+                adaptiveFrameIntervalPropertyState.getFrameRateCapPropertyLevel().ordinal() >=
+                    adaptiveFrameIntervalPropertyState.getFrameIntervalPropertyLevel().ordinal() ) ) {
 
-            // Condition 1: If FRAME_RATE_CAP is present and not disabled, ignore FRAME_INTERVAL and use FRAME_RATE_CAP to derive computed frame interval.
+            // Condition 1a: If FRAME_RATE_CAP override of FRAME_INTERVAL has been detected, or
+            // Condition 1b: If FRAME_RATE_CAP is present and not disabled at some equal or higher property level than FRAME_INTERVAL has been specified or disabled.
+            // then use FRAME_RATE_CAP to derive computed frame interval.
             computedFrameInterval = (int) Math.max(1, Math.floor(mediaFPS / Double.valueOf(modifiedMap.get(MpfConstants.FRAME_RATE_CAP_PROPERTY))));
 
         } else if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertySpecifiedAndDisabled() && adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndNotDisabled() ) {
@@ -589,13 +602,19 @@ public class DetectionSplitter implements StageSplitter {
                 // Set the  frame interval from the default detection frame rate cap.
                 // The goal of the FRAME_RATE_CAP is to ensure that a minimum number of frames are processed per second, which is why we round down this value if needed.
                 // But, the value should always be at least 1.
-                computedFrameInterval = (int) Math.max(1, Math.floor(mediaFPS / propertiesUtil.getFrameRateCap()));
+                computedFrameInterval = (int) Math
+                    .max(1, Math.floor(mediaFPS / propertiesUtil.getFrameRateCap()));
             } else {
                 // If both system properties are disabled, then always use FRAME_INTERVAL of 1.
                 computedFrameInterval = 1;
             }
 
+        } else if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertySpecifiedAndDisabled() && adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndDisabled() ) {
+            // Condition 7: If both FRAME_RATE_CAP and FRAME_INTERVAL are present and disabled at any level, this should result in setting the frame interval to 1.
+            computedFrameInterval = 1;
         }
+
+        log.info("getComputedFrameIntervalForVideo(): debug, returning computedFrameInterval=" + computedFrameInterval);
 
         return computedFrameInterval;
 

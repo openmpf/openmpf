@@ -402,11 +402,6 @@ public class TestDetectionSplitter {
         Map<String, String> actionProperties, Map<String, String> jobProperties,
         Map<String, Map> algorithmProperties, Map<String,String> mediaProperties) {
 
-        log.info("createFrameRateCapTestTransientJob, debug: mediaProperties=" + mediaProperties);
-        log.info("createFrameRateCapTestTransientJob, debug: algorithmProperties=" + algorithmProperties);
-        log.info("createFrameRateCapTestTransientJob, debug: jobProperties=" + jobProperties);
-        log.info("createFrameRateCapTestTransientJob, debug: actionProperties=" + actionProperties);
-
         TransientMedia testMedia = new TransientMedia(next(), ioUtils.findFile("/samples/video_01.mp4").toString());
         testMedia.setLength(300);
         testMedia.setType("VIDEO");
@@ -459,9 +454,6 @@ public class TestDetectionSplitter {
 
         long jobId = next();
         String externalId = "frameRateCapTest-" + Long.toString(jobId);
-
-        log.info("createFrameRateTestTransientJobAndPerformDetectionSplit, debug: frameIntervalMediaPropertyValue=" + frameIntervalMediaPropertyValue + ", frameRateCapMediaPropertyValue="+frameRateCapMediaPropertyValue);
-        log.info("createFrameRateTestTransientJobAndPerformDetectionSplit, debug: frameIntervalAlgorithmPropertyValue=" + frameIntervalAlgorithmPropertyValue + ", frameRateCapAlgorithmPropertyValue="+frameRateCapAlgorithmPropertyValue);
 
         Map<String, String> actionProperties = new HashMap();
         Map<String, String> jobProperties = new HashMap();
@@ -576,18 +568,19 @@ public class TestDetectionSplitter {
     int algLevelFrameRateCap = 20;
     int medLevelFrameRateCap = 25;
 
+    // Keeping two distinct variable names for marking a property as disabled or not specified so the frame rate cap tests will be more readable.
+    Integer frameIntervalParameterDisable = -1;
+    Integer frameRateCapParameterDisable = -1;
+    Integer frameIntervalParameterNotSpecified = null;
+    Integer frameRateCapParameterNotSpecified = null;
+
+
     // This method runs the 9 FRAME_RATE_CAP and FRAME_INTERVAL combinations at the media property level, plus includes an addition 9 tests
     // where a one-property-level-down (i.e. algorithm level) FRAME_INTERVAL is added to the 9 test cases, plus
     // includes an addition 9 tests where a one-property-level-down (i.e. algorithm level) FRAME_RATE_CAP
     // is added to the 9 test cases. This is a total of 27 media property level tests, 9 baseline plus 18 with one-level-down fallback (no disable) testing.
     @Test
     public void testFrameRateCapOverrideMediaLevelTest() throws Exception {
-
-        // Keeping two distinct variable names so the tests are more readable.
-        Integer frameIntervalParameterDisable = -1;
-        Integer frameRateCapParameterDisable = -1;
-        Integer frameIntervalParameterNotSpecified = null;
-        Integer frameRateCapParameterNotSpecified = null;
 
         DetectionProtobuf.DetectionRequest request;
 
@@ -947,18 +940,13 @@ public class TestDetectionSplitter {
 
     } // End of method testFrameRateCapOverrideMediaLevelTest
 
+
     // This method runs the 9 FRAME_RATE_CAP and FRAME_INTERVAL combinations at the algorithm property level, plus includes an addition 9 tests
     // where a one-property-level-down (i.e. job level) FRAME_INTERVAL is added to the 9 test cases, plus
     // includes an addition 9 tests where a one-property-level-down (i.e. job level) FRAME_RATE_CAP
     // is added to the 9 test cases. This is a total of 27 algorithm property level tests, 9 baseline plus 18 with one-level-down fallback (no disable) testing.
     @Test
     public void testFrameRateCapOverrideAlgorithmLevelTest() throws Exception {
-
-        // Keeping two distinct variable names so the tests are more readable.
-        Integer frameIntervalParameterDisable = -1;
-        Integer frameRateCapParameterDisable = -1;
-        Integer frameIntervalParameterNotSpecified = null;
-        Integer frameRateCapParameterNotSpecified = null;
 
         DetectionProtobuf.DetectionRequest request;
 
@@ -1343,21 +1331,12 @@ public class TestDetectionSplitter {
     } // end of testFrameRateCapOverrideAlgorithmLevelTest
 
 
-
-
-
     // This method runs the 9 FRAME_RATE_CAP and FRAME_INTERVAL combinations at the job property level, plus includes an addition 9 tests
     // where a one-property-level-down (i.e. action level) FRAME_INTERVAL is added to the 9 test cases, plus
     // includes an addition 9 tests where a one-property-level-down (i.e. action level) FRAME_RATE_CAP
     // is added to the 9 test cases. This is a total of 27 job property level tests, 9 baseline plus 18 with one-level-down fallback (no disable) testing.
     @Test
     public void testFrameRateCapOverrideJobLevelTest() throws Exception {
-
-        // Keeping two distinct variable names so the tests are more readable.
-        Integer frameIntervalParameterDisable = -1;
-        Integer frameRateCapParameterDisable = -1;
-        Integer frameIntervalParameterNotSpecified = null;
-        Integer frameRateCapParameterNotSpecified = null;
 
         DetectionProtobuf.DetectionRequest request;
 
@@ -1727,12 +1706,6 @@ public class TestDetectionSplitter {
     // This method runs the 9 FRAME_RATE_CAP and FRAME_INTERVAL combinations at the action property level.
     @Test
     public void testFrameRateCapOverrideActionLevelTest() throws Exception {
-
-        // Keeping two distinct variable names so the tests are more readable.
-        Integer frameIntervalParameterDisable = -1;
-        Integer frameRateCapParameterDisable = -1;
-        Integer frameIntervalParameterNotSpecified = null;
-        Integer frameRateCapParameterNotSpecified = null;
 
         DetectionProtobuf.DetectionRequest request;
 

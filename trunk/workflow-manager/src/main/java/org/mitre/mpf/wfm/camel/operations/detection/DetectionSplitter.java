@@ -546,12 +546,14 @@ public class DetectionSplitter implements StageSplitter {
 
         if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyOverrideEnabled() ||
             ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertySpecifiedAndNotDisabled() &&
-                (adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndNotDisabled() || adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndDisabled() ) &&
-                adaptiveFrameIntervalPropertyState.getFrameRateCapPropertyLevel().ordinal() >=
-                    adaptiveFrameIntervalPropertyState.getFrameIntervalPropertyLevel().ordinal() ) ) {
+                ( adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndDisabled() || adaptiveFrameIntervalPropertyState.isFrameIntervalPropertyNotSpecified() ) ) ||
+            ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertySpecifiedAndNotDisabled() &&
+                adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndNotDisabled() &&
+                adaptiveFrameIntervalPropertyState.getFrameRateCapPropertyLevel().ordinal() >= adaptiveFrameIntervalPropertyState.getFrameIntervalPropertyLevel().ordinal() ) ) {
 
             // Condition 1a: If FRAME_RATE_CAP override of FRAME_INTERVAL has been detected, or
-            // Condition 1b: If FRAME_RATE_CAP is present and not disabled at some equal or higher property level than FRAME_INTERVAL has been specified or disabled.
+            // Condition 1b: If FRAME_RATE_CAP is present and not disabled and FRAME_INTERVAL has been disabled or has not been specified.
+            // Condition 1c: If FRAME_RATE_CAP is present and not disabled at some equal or higher property level than FRAME_INTERVAL has been specified.
             // then use FRAME_RATE_CAP to derive computed frame interval.
             computedFrameInterval = (int) Math.max(1, Math.floor(mediaFPS / Double.valueOf(modifiedMap.get(MpfConstants.FRAME_RATE_CAP_PROPERTY))));
 

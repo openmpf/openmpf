@@ -263,4 +263,7 @@ public class NodeManagerServiceImpl implements NodeManagerService {
         }
     }
 
+    public void updateInitialHosts(List<String> hosts, List<Integer> ports) {
+        nodeManagerStatus.updateInitialHosts(hosts, ports);
+    }
 }

@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -358,5 +359,10 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
                 status = new StreamingJobStatus(StreamingJobStatusType.ERROR, message.reason.detail);
         }
         streamingJobRequestBo.handleJobStatusChange(message.jobId, status, System.currentTimeMillis());
+    }
+
+
+    public void updateInitialHosts(List<String> hosts, List<Integer> ports) {
+        masterNode.updateInitialHosts(hosts, ports);
     }
 }

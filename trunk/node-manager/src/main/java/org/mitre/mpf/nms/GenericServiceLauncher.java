@@ -61,7 +61,7 @@ public class GenericServiceLauncher extends BaseServiceLauncher  {
      */
     @Override
     public void sendShutdownToApp() {
-        LOG.debug("Sending down 'q' to {}", this.getServiceName());
+        LOG.info("Sending down 'q' to {}", this.getServiceName());
         // processbuilder doesn't give us the pid to send a signal and Windows doesn't have signals.
         this.sendLine("q\n");
         

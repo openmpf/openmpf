@@ -179,7 +179,7 @@ public class OutputShredder implements Runnable {
                     inLine = rdr.readLine();
                 }
             } catch (IOException ex) {
-                LOG.debug("IOException reading from {}: ", outputName, ex);
+                LOG.info("IOException reading from {}: ", outputName, ex);
                 break;  // an exception prolly means I/O closed or done, so we're done
             }
         }

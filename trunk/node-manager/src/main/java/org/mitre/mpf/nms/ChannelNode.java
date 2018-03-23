@@ -27,16 +27,18 @@
 package org.mitre.mpf.nms;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.jgroups.Address;
-import org.jgroups.JChannel;
-import org.jgroups.Receiver;
-import org.jgroups.View;
+import org.jgroups.*;
+import org.jgroups.protocols.TCPPING;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -62,8 +64,8 @@ public class ChannelNode {
         try {
 	        channel = new JChannel(properties.getJGroupsConfig().getURL());
 	        channel.setName(nodeName);
-            channel.connect(properties.getChannelName());
             channel.setReceiver(receiver);
+            channel.connect(properties.getChannelName());
             channel.getState(null, 10000);
             isConnected = true;
         } catch (Exception e) {
@@ -153,10 +155,49 @@ public class ChannelNode {
      * Shut down the baseNode cleanly
      */
     public void shutdown() {
-        log.debug("Shutdown requested.");
+        log.info("Shutdown requested.");
         channel.disconnect();
         channel.close();
         isConnected = false;
-        log.debug("Channel closed.");
+        log.info("Channel closed.");
+    }
+
+
+    public void updateInitialHosts(List<String> hosts, List<Integer> ports) {
+        Protocol protocol = channel.getProtocolStack().findProtocol(TCPPING.class);
+        if (protocol == null) {
+            log.error("Error: Cannot find TCPPING protocol. Cannot update JGroups initial host list."); // DEBUG
+            return;
+        }
+
+        TCPPING tcpping = (TCPPING) protocol;
+
+        // NOTE: A TCPPING port_range of 10 for host 10.0.2.100 will result in the following initial host entries:
+        // { 10.0.2.100:7800, 10.0.2.100:7801, 10.0.2.100:7802, 10.0.2.100:7803, 10.0.2.100:7804, 10.0.2.100:7805,
+        //   10.0.2.100:7806, 10.0.2.100:7807, 10.0.2.100:7808, 10.0.2.100:7809, 10.0.2.100:7810 }
+        int portRange = tcpping.getPortRange();
+
+        List<IpAddress> ipAddressList = new ArrayList<>();
+        for (int i = 0; i < hosts.size(); i++) {
+            for (int j = 0; j <= portRange; j++) {
+                try {
+                    IpAddress ipAddress = new IpAddress(hosts.get(i), ports.get(i) + j);
+                    ipAddressList.add(ipAddress);
+                } catch (UnknownHostException e) {
+                    log.error("Unknown host: \"" + hosts.get(i) + ":" + (ports.get(i) + j) + "\".");
+                }
+            }
+        }
+
+        List<PhysicalAddress> initialHostList = tcpping.getInitialHosts();
+        log.info("TCPPING initial host list: " + initialHostList); // DEBUG
+
+        // Only add to the initial hosts list. Removing from it may cause strange behaviors.
+
+        ipAddressList.removeAll(initialHostList); // only new nodes are left
+        initialHostList.addAll(ipAddressList);    // add only new nodes
+
+        // NOTE: JGroups peer discovery is handled by MERGE2 at a period that is randomized
+        // between min_interval and max_interval. New nodes will not be immediately available.
     }
 }

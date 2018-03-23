@@ -398,18 +398,59 @@ public class NodeController {
 			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 		}
 
-		// Update the value of ALL_MPF_NODES used by the WFM at runtime.
-		propertiesUtil.setAllMpfNodes(allMpfNodes);
+		String allNodes = allMpfNodes;
+		if (allMpfNodes.startsWith(",")) {
+			allNodes = allNodes.substring(1);
+		}
 
+		boolean error = false;
 		List<String> hosts = new ArrayList<>();
-		for (String node : Arrays.asList(allMpfNodes.split(","))) {
-			String host = node.split("\\[")[0];
-			if (!host.isEmpty()) {
-				hosts.add(host);
+		List<Integer> ports = new ArrayList<>();
+
+		for (String node : Arrays.asList(allNodes.split(","))) {
+			boolean parseError = false;
+
+			String[] tokens = node.split("\\[");
+			if (tokens.length == 2) {
+				String host = tokens[0];
+				tokens = tokens[1].split("\\]");
+				if (tokens.length == 1) {
+					try {
+						int port = Integer.parseInt(tokens[0]);
+						hosts.add(host);
+						ports.add(port);
+					} catch(NumberFormatException e) {
+						log.error("Error while parsing port for \"" + node + "\". " + tokens[0] + " is not a number.");
+						parseError = true;
+					}
+				} else {
+					log.error("Error while parsing port for \"" + node + "\".");
+					parseError = true;
+				}
+			} else {
+				log.error("Error while parsing \"" + node + "\".");
+				parseError = true;
+			}
+
+			if (parseError) {
+				log.error("Each node should be specified as \"<hostname>[<port>]\".");
+				error = true;
 			}
 		}
 
+		if (error) {
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		}
+
+		// Update the value of ALL_MPF_NODES used by the WFM at runtime.
+		// This value is used to populate the list of available nodes in the Nodes UI.
+		propertiesUtil.setAllMpfNodes(allNodes);
+
 		log.info("hosts: " + hosts); // DEBUG
+
+		// Update the initial_hosts list used by JGroups.
+		nodeManagerService.updateInitialHosts(hosts, ports); // DEBUG
+
 
 		// If one or more nodes have been removed, then remove them from the nodes config.
 		// Don't add new nodes to the nodes config. Leave that to the user.

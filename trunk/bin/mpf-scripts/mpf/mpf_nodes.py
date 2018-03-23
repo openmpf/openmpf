@@ -46,6 +46,15 @@ import mpf_util
 def add_node(node, port=None, all_mpf_nodes=None, workflow_manager_url=None):
     """ Adds a spare node to the OpenMPF cluster """
 
+    # TODO:
+    # - go back to using MERGE2
+    # - don't make node commands depend on value of ALL_MPF_NODES; instead read value from file
+    # - make node commands idempotent (display warning if node already exists, or doesn't exist)
+    # - check if spare node-manager is running:
+    #   - wait for up to 1 minute to see if peer in view after updating initial_hosts
+    #     (implement endpoint to get hosts in view - periodically check)
+
+
     # User test
     if not getpass.getuser() == 'mpf':
         print mpf_util.MsgUtil.yellow('Please run this command as the \'mpf\' user.')

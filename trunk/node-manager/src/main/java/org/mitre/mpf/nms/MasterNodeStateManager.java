@@ -105,7 +105,7 @@ public class MasterNodeStateManager extends ChannelReceiver {
                         getNotifier().serviceReadyToRemove(getServiceTable().get(name));
                         break;
                     default:
-                        LOG.debug("Unprocessed ServiceStatusUpdate state of '{}' for service '{}'.", state, name);
+                        LOG.info("Unprocessed ServiceStatusUpdate state of '{}' for service '{}'.", state, name);
                 }
             }
         } else if (obj instanceof NodeStatusUpdate) {
@@ -132,7 +132,7 @@ public class MasterNodeStateManager extends ChannelReceiver {
                         getNotifier().managerDown(name);
                         break;
                     default:
-                        LOG.debug("Unprocessed Manager StatusUpdate state: {} ", state);
+                        LOG.info("Unprocessed Manager StatusUpdate state: {} ", state);
                 }
             }
         }
@@ -140,7 +140,7 @@ public class MasterNodeStateManager extends ChannelReceiver {
 
 
     public void launchAllNodes() {
-        LOG.debug("Launch all nodes called");
+        LOG.info("Launch all nodes called");
         synchronized (getServiceTable()) {
             getServiceTable().values().forEach(this::launchNode);
         }
@@ -177,17 +177,17 @@ public class MasterNodeStateManager extends ChannelReceiver {
                     lastKnownState == NodeManagerConstants.States.Delete) { //also ignoring Delete! - there have been cases where the node manager
                 //has not processed the Delete request before getting to this point! - TODO: prevent Delete from jumping to Launching
                 //using a better method, the same goes for other states changes - use the ordinal subtraction method found elsewhere in the node manager source!
-                LOG.debug("Will not start the service '{}', the current state is '{}'.", sd.getName(), lastKnownState);
+                LOG.info("Will not start the service '{}', the current state is '{}'.", sd.getName(), lastKnownState);
                 //could clean up nodes from the service table in this state if desired
                 return false;
             } else {
-                LOG.debug("State prior to launching {} on {} is {}: ", sd.getName(), sd.getHost(), lastKnownState);
+                LOG.info("State prior to launching {} on {} is {}: ", sd.getName(), sd.getHost(), lastKnownState);
                 updateState(sd, NodeManagerConstants.States.Launching);
-                LOG.debug("Launching {} on {}: ", sd.getName(), sd.getHost());
+                LOG.info("Launching {} on {}: ", sd.getName(), sd.getHost());
                 return true;
             }
         } else {
-            LOG.debug("Not relaunching {} on {} - (already running or asked to start)", sd.getName(), sd.getHost());
+            LOG.info("Not relaunching {} on {} - (already running or asked to start)", sd.getName(), sd.getHost());
             return false;
         }
     }
@@ -197,7 +197,7 @@ public class MasterNodeStateManager extends ChannelReceiver {
      */
     private void shutdownService(ServiceDescriptor service) {
         // identify the owning NodeManagering the service and send it a msg
-        LOG.debug("Shutting down {}: ", service.getName());
+        LOG.info("Shutting down {}: ", service.getName());
 
         // Notify the world that we want this node dead if it is running, or just mark as INACTIVE if not
         // The second case exists if there was never a node manager to start it.  We don't want it lingering

@@ -57,4 +57,6 @@ public interface NodeManagerService {
     public boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels) throws IOException;
 
     public boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels, boolean reload) throws IOException;
+
+    public void updateInitialHosts(List<String> hosts, List<Integer> ports);
 }

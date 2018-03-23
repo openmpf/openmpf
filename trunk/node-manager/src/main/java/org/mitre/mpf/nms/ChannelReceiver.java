@@ -38,11 +38,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.stream.Collectors.joining;
@@ -88,7 +85,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
      */
     @Override
     public void getState(OutputStream output) throws Exception {
-        LOG.debug("Responding to cluster state request");
+        LOG.info("Responding to cluster state request");
 
         synchronized (serviceTable) {
             org.jgroups.util.Util.objectToStream(serviceTable, new DataOutputStream(output));
@@ -106,7 +103,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
      */
     @Override
     public void setState(InputStream input) throws Exception {
-        LOG.debug("Setting cluster state");
+        LOG.info("Setting cluster state");
 
         synchronized (serviceTable) {
             Map newMap = (Map) org.jgroups.util.Util.objectFromStream(new DataInputStream(input));
@@ -130,7 +127,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         String participants = view.getMembers().stream()
                 .map(Object::toString)
                 .collect(joining(" "));
-        LOG.debug("Current Participants: {}", participants);
+        LOG.info("Current Participants: {}", participants);
 
         // First step, compare the view of node-manager members to our list of node-manager states built over time
         // The view can contain both NodeManagers AND nodes.  One must iterate through the members is this current view
@@ -169,10 +166,10 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
                     }
                     break;
                 case MasterNode:
-                    LOG.debug("Received view from MasterNode {}", name);
+                    LOG.info("Received view from MasterNode {}", name);
                     break;
                 case ReceiverNode:
-                    LOG.debug("Received view from a generic receiver node {}", name);
+                    LOG.info("Received view from a generic receiver node {}", name);
                     break;
                 default:
                     // shouldn't be here!
@@ -305,10 +302,14 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         }
         String fqn = AddressParser.createFqn(nodeType, properties.getThisMpfNode(), description);
 
-        LOG.debug("{} starting up", fqn);
+        LOG.info("{} starting up", fqn);
         // this connects us to the jgroups channel defined, we are now live and ready for comm
         msgChannel.connect(fqn, this);
 
         handleView(msgChannel.getView(), true);
+    }
+
+    public void updateInitialHosts(List<String> hosts, List<Integer> ports) {
+        msgChannel.updateInitialHosts(hosts, ports);
     }
 }

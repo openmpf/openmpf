@@ -26,12 +26,15 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection;
 
-import java.util.Map;
-import javax.annotation.PostConstruct;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import java.util.Map;
+
+// TODO: Remove this class.
 
 @Component
 public class AdaptiveFrameIntervalPropertyState {

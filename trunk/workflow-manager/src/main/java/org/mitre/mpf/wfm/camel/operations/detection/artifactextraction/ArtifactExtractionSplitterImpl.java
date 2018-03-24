@@ -107,9 +107,12 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 				for (TransientMedia transientMedia : transientJob.getMedia()) {
 
 					String extractionPolicyProperty = AggregateJobPropertiesUtil.calculateValue(
-							MpfConstants.ARTIFACT_EXTRACTION_POLICY_PROPERTY, transientAction.getProperties(),
-							transientJob.getOverriddenJobProperties(), transientAction, transientJob.getOverriddenAlgorithmProperties(),
-							transientMedia.getMediaSpecificProperties());
+							MpfConstants.ARTIFACT_EXTRACTION_POLICY_PROPERTY,
+							transientAction.getProperties(),
+							transientJob.getOverriddenJobProperties(),
+							transientAction,
+							transientJob.getOverriddenAlgorithmProperties(),
+							transientMedia.getMediaSpecificProperties()).getValue();
 					ArtifactExtractionPolicy artifactExtractionPolicy = getDetectionExtractionPolicy(extractionPolicyProperty);
 
 					if (artifactExtractionPolicy != ArtifactExtractionPolicy.NONE) {

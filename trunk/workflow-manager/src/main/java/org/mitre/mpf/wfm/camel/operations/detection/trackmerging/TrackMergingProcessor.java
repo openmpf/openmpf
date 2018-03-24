@@ -104,30 +104,45 @@ public class TrackMergingProcessor extends WfmProcessor {
 				if (!transientMedia.isFailed()) {
 					// If there exist media-specific properties for track merging, use them.
 					// Note: TrackMergingPlan.getSamplingInterval() is unused. For now, not adding FRAME_RATE_CAP to the track merging plan.
-					String samplingInterval = AggregateJobPropertiesUtil.calculateValue(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
-							transientAction.getProperties(), transientJob.getOverriddenJobProperties(),
-							transientAction, transientJob.getOverriddenAlgorithmProperties(),
-							transientMedia.getMediaSpecificProperties());
+					String samplingInterval = AggregateJobPropertiesUtil.calculateValue(
+							MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
+							transientAction.getProperties(),
+							transientJob.getOverriddenJobProperties(),
+							transientAction,
+							transientJob.getOverriddenAlgorithmProperties(),
+							transientMedia.getMediaSpecificProperties()).getValue();
 
-					String minTrackLength = AggregateJobPropertiesUtil.calculateValue(MpfConstants.MIN_TRACK_LENGTH,
-							transientAction.getProperties(), transientJob.getOverriddenJobProperties(),
-							transientAction, transientJob.getOverriddenAlgorithmProperties(),
-							transientMedia.getMediaSpecificProperties());
+					String minTrackLength = AggregateJobPropertiesUtil.calculateValue(
+							MpfConstants.MIN_TRACK_LENGTH,
+							transientAction.getProperties(),
+							transientJob.getOverriddenJobProperties(),
+							transientAction,
+							transientJob.getOverriddenAlgorithmProperties(),
+							transientMedia.getMediaSpecificProperties()).getValue();
 
-					String mergeTracks = AggregateJobPropertiesUtil.calculateValue(MpfConstants.MERGE_TRACKS_PROPERTY,
-							transientAction.getProperties(), transientJob.getOverriddenJobProperties(),
-							transientAction, transientJob.getOverriddenAlgorithmProperties(),
-							transientMedia.getMediaSpecificProperties());
+					String mergeTracks = AggregateJobPropertiesUtil.calculateValue(
+							MpfConstants.MERGE_TRACKS_PROPERTY,
+							transientAction.getProperties(),
+							transientJob.getOverriddenJobProperties(),
+							transientAction,
+							transientJob.getOverriddenAlgorithmProperties(),
+							transientMedia.getMediaSpecificProperties()).getValue();
 
-					String minGapBetweenTracks = AggregateJobPropertiesUtil.calculateValue(MpfConstants.MIN_GAP_BETWEEN_TRACKS,
-							transientAction.getProperties(), transientJob.getOverriddenJobProperties(),
-							transientAction, transientJob.getOverriddenAlgorithmProperties(),
-							transientMedia.getMediaSpecificProperties());
+					String minGapBetweenTracks = AggregateJobPropertiesUtil.calculateValue(
+							MpfConstants.MIN_GAP_BETWEEN_TRACKS,
+							transientAction.getProperties(),
+							transientJob.getOverriddenJobProperties(),
+							transientAction,
+							transientJob.getOverriddenAlgorithmProperties(),
+							transientMedia.getMediaSpecificProperties()).getValue();
 
-					String minTrackOverlap = AggregateJobPropertiesUtil.calculateValue(MpfConstants.MIN_TRACK_OVERLAP,
-							transientAction.getProperties(), transientJob.getOverriddenJobProperties(),
-							transientAction, transientJob.getOverriddenAlgorithmProperties(),
-							transientMedia.getMediaSpecificProperties());
+					String minTrackOverlap = AggregateJobPropertiesUtil.calculateValue(
+							MpfConstants.MIN_TRACK_OVERLAP,
+							transientAction.getProperties(),
+							transientJob.getOverriddenJobProperties(),
+							transientAction,
+							transientJob.getOverriddenAlgorithmProperties(),
+							transientMedia.getMediaSpecificProperties()).getValue();
 
 					TrackMergingPlan trackMergingPlan = createTrackMergingPlan(samplingInterval, minTrackLength, mergeTracks, minGapBetweenTracks, minTrackOverlap);
 

@@ -27,87 +27,55 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import com.google.common.collect.Lists;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import org.apache.camel.CamelContext;
-import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultExchange;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.StageSplitter;
-import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionSplitter;
-import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
-@RunWith(SpringJUnit4ClassRunner.class)
-@RunListener.ThreadSafe
+// TODO: Re-enable the following three annotations.
+// Disabled for now because the testFrameRateCapOverrideXyzLevel() methods don't need to load the app context.
+
+// @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
+// @RunWith(SpringJUnit4ClassRunner.class)
+// @RunListener.ThreadSafe
 public class TestDetectionSplitter {
     private static final Logger log = LoggerFactory.getLogger(TestDetectionSplitter.class);
     private static final int MINUTES = 1000 * 60; // 1000 milliseconds/second & 60 seconds/minute.
 
-    @Autowired
-    private ApplicationContext context;
-
-    @Autowired
-    private CamelContext camelContext;
+    // TODO: Re-enable the following annotation.
+    // Disabled for now because the testFrameRateCapOverrideXyzLevel() methods don't need to load the app context.
+    // @Autowired
+    // private ApplicationContext context;
 
     @Autowired
     private IoUtils ioUtils;
-
-    @Autowired
-    private PropertiesUtil propertiesUtil;
-
-    @Autowired
-    private JsonUtils jsonUtils;
-
-    @Autowired
-    @Qualifier(MediaInspectionProcessor.REF)
-    private WfmProcessorInterface mediaInspectionProcessor;
-
-    @Autowired
-    private Redis redis;
 
     @Qualifier(DetectionSplitter.REF)
     @Autowired
     private StageSplitter detectionStageSplitter;
 
-    private PropertiesUtil _mockPropertiesUtil;
-
     private static final MutableInt SEQUENCE = new MutableInt();
 
-    public int next() {
+    public int nextId() {
         synchronized (SEQUENCE) {
             int next = SEQUENCE.getValue();
             SEQUENCE.increment();
@@ -124,7 +92,7 @@ public class TestDetectionSplitter {
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
         TransientJob testJob = new TransientJob(testId, testExternalId, testPipe, testStage, testPriority, testOutputEnabled, false);
-        TransientMedia testMedia = new TransientMedia(next(), ioUtils.findFile("/samples/new_face_video.avi").toString());
+        TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile("/samples/new_face_video.avi").toString());
         testMedia.setType("VIDEO");
         List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
         testJob.setMedia(listMedia);
@@ -379,7 +347,7 @@ public class TestDetectionSplitter {
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
         TransientJob testJob = new TransientJob(testJobId, testExternalId, testPipe, testStage, testPriority, testOutputEnabled, false);
-        TransientMedia testMedia = new TransientMedia(next(), ioUtils.findFile(mediaUri).toString());
+        TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile(mediaUri).toString());
         testMedia.setLength(300);
         testMedia.setType(mediaType);
 
@@ -398,17 +366,17 @@ public class TestDetectionSplitter {
     // The following set of DetectionSplitter tests specifically test FRAME_RATE_CAP vs. FRAME_INTERVAL property
     // overrides at various category levels (system, action, job, algorithm, and media, with media properties being the highest ranking).
 
-    private TransientJob createFrameRateCapTestTransientJob( long jobId, String externalId,
+    private TransientJob createFrameRateCapTestTransientJob(
         Map<String, String> actionProperties, Map<String, String> jobProperties,
         Map<String, Map> algorithmProperties, Map<String,String> mediaProperties) {
 
-        TransientMedia testMedia = new TransientMedia(next(), ioUtils.findFile("/samples/video_01.mp4").toString());
-        testMedia.setLength(300);
+        TransientMedia testMedia = new TransientMedia(nextId(), "/path/to/dummy/media");
         testMedia.setType("VIDEO");
         for ( Map.Entry mediaProperty : mediaProperties.entrySet() ) {
             testMedia.addMediaSpecificProperty((String)mediaProperty.getKey(), (String)mediaProperty.getValue());
 
         }
+
         List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
         TransientPipeline dummyPipeline = new TransientPipeline("OCV FACE DETECTION PIPELINE", "TestDetectionSplitter Pipeline");
         TransientStage dummyStageDet = new TransientStage("DETECTION", "dummyDetectionDescription", ActionType.DETECTION);
@@ -417,18 +385,17 @@ public class TestDetectionSplitter {
         dummyStageDet.getActions().add(dummyAction);
         dummyPipeline.getStages().add(dummyStageDet);
 
-        final int testStage = 0;
-        final int testPriority = 4;
-        final boolean testOutputEnabled = true;
-        TransientJob testJob = new TransientJob(jobId, externalId, dummyPipeline, testStage,
-            testPriority, testOutputEnabled, false);
+        TransientJob testJob = new TransientJob(nextId(), null, dummyPipeline, 0, 0, false, false);
 
         testJob.setMedia(listMedia);
         testJob.getOverriddenJobProperties().putAll(jobProperties);
         testJob.getOverriddenAlgorithmProperties().putAll(algorithmProperties);
 
-        redis.persistJob(testJob);
+        return testJob;
 
+        // redis.persistJob(testJob);
+
+        /*
         // Need to run MediaInspectionProcessor on the video media, so that inspectMedia method will be called to add FPS and other metadata to the TransientMedia.
         // This is needed for this test to work.
         for (TransientMedia media : redis.getJob(jobId).getMedia()) {
@@ -438,11 +405,13 @@ public class TestDetectionSplitter {
             exchange.getOut().setHeader(MpfHeaders.JOB_ID, jobId);
             mediaInspectionProcessor.wfmProcess(exchange);
         }
+        */
 
         // Return the transient job refreshed from REDIS since the mediaInspectionProcessor may have updated the media that was associated with the job.
-        return redis.getJob(jobId);
+        // return redis.getJob(jobId);
     }
 
+    /* DJV
     // need to store mediaFPS as a class property so we can determine computed frame interval for verification of the frame rate cap tests.
     double mediaFPS;
 
@@ -516,7 +485,52 @@ public class TestDetectionSplitter {
         double mediaFPS = Double.valueOf(transientMedia.getMetadata("FPS"));
         return (int) Math.max(1, Math.floor(mediaFPS / frameRateCapPropertyValue));
     }
+    */
 
+    private void putStringInMapIfNotNull(Map map, String key, Object value) {
+        if (value != null) {
+            map.put(key, value.toString());
+        }
+    }
+
+    private void checkCalcFrameInterval(Integer frameIntervalSystemPropVal, Integer frameRateCapSystemPropVal,
+                                    Integer frameIntervalActionPropVal, Integer frameRateCapActionPropVal,
+                                    Integer frameIntervalJobPropVal, Integer frameRateCapJobPropVal,
+                                    Integer frameIntervalAlgPropVal, Integer frameRateCapAlgPropVal,
+                                    Integer frameIntervalMediaPropVal, Integer frameRateCapMediaPropVal,
+                                    double mediaFPS, Integer expectedFrameInterval) {
+
+        Map<String, String> actionProps = new HashMap();
+        putStringInMapIfNotNull(actionProps, MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, frameIntervalActionPropVal);
+        putStringInMapIfNotNull(actionProps, MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCapActionPropVal);
+
+        Map<String, String> jobProps = new HashMap();
+        putStringInMapIfNotNull(jobProps, MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, frameIntervalJobPropVal);
+        putStringInMapIfNotNull(jobProps, MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCapJobPropVal);
+
+        Map<String, String> algProps = new HashMap();
+        putStringInMapIfNotNull(algProps, MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, frameIntervalAlgPropVal);
+        putStringInMapIfNotNull(algProps, MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCapAlgPropVal);
+
+        Map<String, Map> metaAlgProps = new HashMap();
+        metaAlgProps.put("FACECV", algProps);
+
+        Map<String, String> mediaProps = new HashMap();
+        putStringInMapIfNotNull(mediaProps, MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, frameIntervalMediaPropVal);
+        putStringInMapIfNotNull(mediaProps, MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCapMediaPropVal);
+
+        TransientJob testJob = createFrameRateCapTestTransientJob(actionProps, jobProps, metaAlgProps, mediaProps);
+
+        String calcFrameInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
+                testJob.getPipeline().getStages().get(0).getActions().get(0),
+                testJob,
+                testJob.getMedia().get(0),
+                frameIntervalSystemPropVal, frameRateCapSystemPropVal, mediaFPS);
+
+        Assert.assertEquals(expectedFrameInterval.toString(), calcFrameInterval);
+    }
+
+    /* DJV
     @Test
     // Baseline test: testing override result using current FRAME_INTERVAL and FRAME_RATE_CAP system property settings.
     public void testFrameRateCapTestOverrideOfSystemProperties() throws Exception {
@@ -553,9 +567,100 @@ public class TestDetectionSplitter {
                         Integer.valueOf(prop.getPropertyValue()).equals(expectedComputedFrameInterval) );
             }));
         }
+    }
+    */
 
+    @Test
+    public void testFrameRateCapOverrideSystemLevel() throws Exception {
+        // Tests 1-4: test 4 combinations of system property FRAME_INTERVAL and FRAME_RATE_CAP.
+
+        // Test1: system level test with both FRAME_INTERVAL and FRAME_RATE_CAP specified (FRAME_RATE_CAP override applies).
+        checkCalcFrameInterval(7,5, null,null, null,null, null,null, null,null, 30, 6);
+
+        // Test2: system level test with FRAME_INTERVAL disabled and FRAME_RATE_CAP specified.
+        checkCalcFrameInterval(-1,5, null,null, null,null, null,null, null,null, 30, 6);
+
+        // Test3: system level test with FRAME_INTERVAL specified and FRAME_RATE_CAP disabled.
+        checkCalcFrameInterval(7,-1, null,null, null,null, null,null, null,null, 30, 7);
+
+        // Test4: system level test with both FRAME_INTERVAL and FRAME_RATE_CAP disabled.
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,null, null,null, 30, 1);
     }
 
+    // TODO: Add other testFrameRateCapOverrideXyzLevel() methods here
+
+    @Test
+    public void testFrameRateCapOverrideMediaLevel() {
+        // Tests 1-9: test 9 combinations of media property FRAME_INTERVAL and FRAME_RATE_CAP with the lower property levels not specified.
+
+        // Test1: media level test with both FRAME_INTERVAL and FRAME_RATE_CAP specified (FRAME_RATE_CAP override applies) with the lower property level not specified.
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,null, 7,5, 30, 6);
+
+        // Test2: media level test with FRAME_INTERVAL not specified and FRAME_RATE_CAP specified with the lower property level not specified.
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,null, null,5, 30, 6);
+
+        // Test3: media level test with FRAME_INTERVAL disabled and FRAME_RATE_CAP specified with the lower property level not specified.
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,null, -1,5, 30, 6);
+
+        // Test4: media level test with FRAME_INTERVAL specified and FRAME_RATE_CAP not specified with the lower property level not specified.
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,null, 7,null, 30, 7);
+
+        // Test5: media level test with neither FRAME_INTERVAL nor FRAME_RATE_CAP specified with the lower property level not specified.
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,null, null,null, 30, 1);
+
+        // Test6: media level test with FRAME_INTERVAL disabled and FRAME_RATE_CAP not specified with the lower property level not specified.
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,null, -1,null, 30, 1);
+
+        // Test7: media level test with FRAME_INTERVAL specified and FRAME_RATE_CAP disabled with the lower property level not specified.
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,null, 7,-1, 30, 7);
+
+        // Test8: media level test with FRAME_INTERVAL not specified and FRAME_RATE_CAP disabled with the lower property level not specified.
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,null, null,-1, 30, 1);
+
+        // Test9: media level test with both FRAME_INTERVAL and FRAME_RATE_CAP disabled with the lower property level not specified.
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,null, -1,-1, 30, 1);
+
+        // Tests 10-18: repeat the last 9 test combinations of media property FRAME_INTERVAL and FRAME_RATE_CAP
+        // with the one-level-down FRAME_INTERVAL property specified (we won't be including any tests for one-level-down properties disabled)
+
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,null, 7,5, 30, 6);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,null, null,5, 30, 6);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,null, -1,5, 30, 6);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,null, 7,null, 30, 7);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,null, null,null, 30, 3);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,null, -1,null, 30, 1);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,null, 7,-1, 30, 7);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,null, null,-1, 30, 3);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,null, -1,-1, 30, 1);
+
+        // Tests 19-28: repeat the first 9 test combinations of media property FRAME_INTERVAL and FRAME_RATE_CAP
+        // with the one-level-down FRAME_RATE_CAP property specified (we won't be including any tests for one-level-down properties disabled)
+
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,6, 7,5, 30, 6);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,6, null,5, 30, 6);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,6, -1,5, 30, 6);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,6, 7,null, 30, 7);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,6, null,null, 30, 5);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,6, -1,null, 30, 5);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,6, 7,-1, 30, 7);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,6, null,-1, 30, 1);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, null,6, -1,-1, 30, 1);
+
+        // Tests 29-37: repeat the first 9 test combinations of media property FRAME_INTERVAL and FRAME_RATE_CAP
+        // with the one-level-down with both FRAME_INTERVAL and FRAME_RATE_CAP properties specified (we won't be including any tests for one-level-down properties disabled)
+
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,6, 7,5, 30, 6);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,6, null,5, 30, 6);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,6, -1,5, 30, 6);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,6, 7,null, 30, 7);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,6, null,null, 30, 5);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,6, -1,null, 30, 5);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,6, 7,-1, 30, 7);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,6, null,-1, 30, 3);
+        checkCalcFrameInterval(-1,-1, null,null, null,null, 3,6, -1,-1, 30, 1);
+    }
+
+    /* DJV
     // Assign unique values based upon property level so we can better track application of property values. Defining these properties outside of
     // the methods we are using them in below so we can be sure that the property level values are unique and easily tracked.
 
@@ -1841,5 +1946,6 @@ public class TestDetectionSplitter {
                 && Integer.valueOf(prop.getPropertyValue()) == 1);
         }));
     } // end of method testFrameRateCapOverrideActionLevelTest
+    */
 
 }

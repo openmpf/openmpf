@@ -26,45 +26,29 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection;
 
-import static java.util.stream.Collectors.toMap;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
 import org.apache.camel.Message;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
-import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.enums.MediaType;
-import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
-import org.mitre.mpf.wfm.segmenting.AudioMediaSegmenter;
-import org.mitre.mpf.wfm.segmenting.DefaultMediaSegmenter;
-import org.mitre.mpf.wfm.segmenting.ImageMediaSegmenter;
-import org.mitre.mpf.wfm.segmenting.MediaSegmenter;
-import org.mitre.mpf.wfm.segmenting.SegmentingPlan;
-import org.mitre.mpf.wfm.segmenting.VideoMediaSegmenter;
+import org.mitre.mpf.wfm.segmenting.*;
 import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+
+import java.util.*;
+
+import static java.util.stream.Collectors.toMap;
 
 // DetectionSplitter will take in Job and Stage(Action), breaking them into managable work units for the Components
 
@@ -110,8 +94,10 @@ public class DetectionSplitter implements StageSplitter {
 			MpfConstants.AUTO_ROTATE_PROPERTY,
 			MpfConstants.AUTO_FLIP_PROPERTY};
 
+	/* DJV
 	@Autowired
     private AdaptiveFrameIntervalPropertyState adaptiveFrameIntervalPropertyState;
+    */
 
     /**
 	 * Translates a collection of properties into a collection of AlgorithmProperty ProtoBuf messages.
@@ -148,6 +134,7 @@ public class DetectionSplitter implements StageSplitter {
 		// Is this the first detection stage in the pipeline?
 		boolean isFirstDetectionStage = isFirstDetectionOperation(transientJob);
 
+		/* DJV
 		// TODO: there must be a better way to do this, feedback is requested, adaptiveFrameIntervalPropertyState needs to be initialized for each TransientJob being processed
         // Without this initialization statement, adaptiveFrameIntervalPropertyState isn't getting initialized and the 40 frame rate cap
         // test cases defined in TestDetectionSplitter fails because the state variable isn't being initialized. But, the following
@@ -156,6 +143,7 @@ public class DetectionSplitter implements StageSplitter {
 		if ( isFirstDetectionStage ) {
             adaptiveFrameIntervalPropertyState.init();
         }
+        */
 
 		for (TransientMedia transientMedia : transientJob.getMedia()) {
 
@@ -196,6 +184,7 @@ public class DetectionSplitter implements StageSplitter {
                 // current modifiedMap properties overridden by action properties
                 modifiedMap.putAll(transientAction.getProperties());
 
+                /* DJV
                 // OpenMPF allows for FRAME_RATE_CAP override of FRAME_INTERVAL and/or disable of FRAME_RATE_CAP or FRAME_INTERVAL for videos on a level-by-level basis.
                 if (transientMedia.containsMetadata("FPS")) {
 
@@ -211,6 +200,7 @@ public class DetectionSplitter implements StageSplitter {
                     }
 
                 }
+                */
 
                 // If the job is overriding properties related to flip, rotation, or ROI, we should reset all related
                 // action properties to default.  We assume that when the user overrides one rotation/flip/roi
@@ -233,6 +223,7 @@ public class DetectionSplitter implements StageSplitter {
                 // Note: by this point override of system properties by job properties has already been applied to the transient job.
                 modifiedMap.putAll(transientJob.getOverriddenJobProperties());
 
+                /* DJV
                 // OpenMPF allows for FRAME_RATE_CAP override of FRAME_INTERVAL and/or disable of FRAME_RATE_CAP or FRAME_INTERVAL for videos on a level-by-level basis.
                 if ( transientMedia.containsMetadata("FPS") ) {
 
@@ -247,6 +238,7 @@ public class DetectionSplitter implements StageSplitter {
                         modifiedMap.remove(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY);
                     }
                 }
+                */
 
                 // overriding by AlgorithmProperties.  Note that algorithm-properties are of type
 				// Map<String,Map>, so the transform properties to be overridden are actually in the value section of the Map returned
@@ -281,6 +273,7 @@ public class DetectionSplitter implements StageSplitter {
 					}
 					modifiedMap.putAll(job_alg_m);
 
+					/* DJV
                     // OpenMPF allows for FRAME_RATE_CAP override of FRAME_INTERVAL and/or disable of FRAME_RATE_CAP or FRAME_INTERVAL for videos on a level-by-level basis.
                     // Check for these conditions for video media at the algorithm property level.
                     if ( transientMedia.containsMetadata("FPS") ) {
@@ -296,6 +289,7 @@ public class DetectionSplitter implements StageSplitter {
                             modifiedMap.remove(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY);
                         }
                     }
+                    */
 
                 } // end of algorithm name conditional
 
@@ -307,7 +301,8 @@ public class DetectionSplitter implements StageSplitter {
 				}
 
 				modifiedMap.putAll(transientMedia.getMediaSpecificProperties());
-                
+
+				/* DJV
                 if ( transientMedia.containsMetadata("FPS") ) {
                     
                     // Update state for video media at the at the media property level.
@@ -343,10 +338,19 @@ public class DetectionSplitter implements StageSplitter {
 
                 // TODO, I don't see any protection in here for a user specifying FRAME_INTERVAL of -1 for non-video media. The
                 // createSegmentingPlan method will send a warning about using FRAME_INTERVAL set to 1 if this occurs. Is this ok?
+                */
 
 				SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
 				List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
 						= convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
+
+				if ( transientMedia.containsMetadata("FPS")) {
+					String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
+							transientAction, transientJob, transientMedia,
+							propertiesUtil.getSamplingInterval(), propertiesUtil.getFrameRateCap(),
+							Double.valueOf(transientMedia.getMetadata("FPS")));
+					modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
+				}
 
 				// get detection request messages from ActiveMQ
 				DetectionContext detectionContext = new DetectionContext(
@@ -510,6 +514,7 @@ public class DetectionSplitter implements StageSplitter {
 				.collect(toMap(PropertyDefinition::getName, PropertyDefinition::getDefaultValue));
 	}
 
+
     /**
      * Get the computed frame interval for a video by applying the FRAME_RATE_CAP / FRAME_INTERVAL property override strategy. Note that if FRAME_RATE_CAP or FRAME_INTERVAL
      * is disabled (i.e. set to <= 0) at a higher property level, then a non-disabled property value at a lower property level will be ignored. Property level rankings for OpenMPF
@@ -529,6 +534,7 @@ public class DetectionSplitter implements StageSplitter {
      * @param modifiedMap the modifiedMap contains the set of properties that will be sent to each sub-job.
      * @return Computed frame interval, may be returned as -1 if not set based upon the adaptive frame interval strategy.
      */
+    /* DJV
     private int getComputedFrameIntervalForVideo( AdaptiveFrameIntervalPropertyState adaptiveFrameIntervalPropertyState, double mediaFPS, Map<String,String> modifiedMap) {
 
         int computedFrameInterval = -1;
@@ -612,5 +618,5 @@ public class DetectionSplitter implements StageSplitter {
         return computedFrameInterval;
 
     }
-
+    */
 }

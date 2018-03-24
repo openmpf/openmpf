@@ -340,10 +340,6 @@ public class DetectionSplitter implements StageSplitter {
                 // createSegmentingPlan method will send a warning about using FRAME_INTERVAL set to 1 if this occurs. Is this ok?
                 */
 
-				SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
-				List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
-						= convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
-
 				if ( transientMedia.containsMetadata("FPS")) {
 					String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
 							transientAction, transientJob, transientMedia,
@@ -351,6 +347,10 @@ public class DetectionSplitter implements StageSplitter {
 							Double.valueOf(transientMedia.getMetadata("FPS")));
 					modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
 				}
+
+				SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
+				List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
+						= convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
 
 				// get detection request messages from ActiveMQ
 				DetectionContext detectionContext = new DetectionContext(

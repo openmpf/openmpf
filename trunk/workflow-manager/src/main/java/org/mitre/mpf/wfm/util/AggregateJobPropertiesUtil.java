@@ -96,7 +96,7 @@ public class AggregateJobPropertiesUtil {
      * @param jobProperties job properties which are possed in to the JSON job request
      * @param algorithmNameFromAction algorithm name from the currently defined action
      * @param algorithmProperties algorithm properties (algorithm properties specific to this job)
-     * @return property info after checking for that property within the prioritized categories of property containers, or null if not found
+     * @return property info after checking for that property within the prioritized categories of property containers
      */
     private static PropertyInfo calculateValue(String propertyName, Map<String,String> actionProperties,
                                                Map<String, String> jobProperties,
@@ -120,7 +120,7 @@ public class AggregateJobPropertiesUtil {
             return new PropertyInfo(propertyName, actionProperties.get(propertyName), PropertyLevel.ACTION);
         }
 
-        return null;
+        return new PropertyInfo(propertyName, null, PropertyLevel.NONE);
     }
 
     /** Return the value of the named property, checking for that property in each of the categories of property collections,
@@ -133,7 +133,7 @@ public class AggregateJobPropertiesUtil {
      * @param actionDefinition Action definition
      * @param algorithmProperties algorithm properties (algorithm properties specific to this job)
      * @param mediaProperties highest priority media properties
-     * @return property info after checking for that property within the prioritized categories of property containers, or null if not found
+     * @return property info after checking for that property within the prioritized categories of property containers
      */
     public static PropertyInfo calculateValue(String propertyName, Map<String,String> actionProperties,
                                               Map<String, String> jobProperties,
@@ -158,7 +158,7 @@ public class AggregateJobPropertiesUtil {
      * @param transientAction Action currently being processed
      * @param algorithmProperties algorithm properties (algorithm properties specific to this job)
      * @param mediaProperties highest priority media properties
-     * @return property info after checking for that property within the prioritized categories of property containers, or null if not found
+     * @return property info after checking for that property within the prioritized categories of property containers
      */
     public static PropertyInfo calculateValue(String propertyName, Map<String,String> actionProperties,
                                               Map<String, String> jobProperties,
@@ -183,7 +183,7 @@ public class AggregateJobPropertiesUtil {
      * @param actionDefinition Action definition
      * @param algorithmProperties algorithm properties (algorithm properties specific to this job)
      * @param mediaProperties highest priority media properties
-     * @return property info after checking for that property within the prioritized categories of property containers, or null if not found
+     * @return property info after checking for that property within the prioritized categories of property containers
      */
     public static PropertyInfo calculateValue(String propertyName, Collection<PropertyDefinitionRef> actionProperties,
                                               Map<String, String> jobProperties,
@@ -214,7 +214,7 @@ public class AggregateJobPropertiesUtil {
             }
         }
 
-        return null;
+        return new PropertyInfo(propertyName, null, PropertyLevel.NONE);
     }
 
     /** Return the value of the named property, checking for that property in each of the categories of property collections,
@@ -227,7 +227,7 @@ public class AggregateJobPropertiesUtil {
      * @param transientAction Action currently being processed
      * @param algorithmProperties algorithm properties (algorithm properties specific to this job)
      * @param mediaProperties highest priority media properties
-     * @return property info after checking for that property within the prioritized categories of property containers, or null if not found
+     * @return property info after checking for that property within the prioritized categories of property containers
      */
     public static PropertyInfo calculateValue(String propertyName, Collection<PropertyDefinitionRef> actionProperties,
                                               Map<String, String> jobProperties,
@@ -258,7 +258,7 @@ public class AggregateJobPropertiesUtil {
             }
         }
 
-        return null;
+        return new PropertyInfo(propertyName, null, PropertyLevel.NONE);
     }
 
 
@@ -322,12 +322,12 @@ public class AggregateJobPropertiesUtil {
                 transientJob.getOverriddenAlgorithmProperties(),
                 transientMedia.getMediaSpecificProperties());
 
-        if (frameIntervalPropInfo == null) {
+        if (frameIntervalPropInfo.getLevel() == PropertyLevel.NONE) {
             frameIntervalPropInfo = new PropertyInfo(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
                     Integer.toString(systemFrameInterval), PropertyLevel.SYSTEM);
         }
 
-        if (frameRateCapPropInfo == null) {
+        if (frameRateCapPropInfo.getLevel() == PropertyLevel.NONE) {
             frameRateCapPropInfo = new PropertyInfo(MpfConstants.FRAME_RATE_CAP_PROPERTY,
                     Integer.toString(systemFrameRateCap), PropertyLevel.SYSTEM);
         }

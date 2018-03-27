@@ -48,13 +48,11 @@ def add_node(node, port=None, workflow_manager_url=None):
     """ Adds a spare node to the OpenMPF cluster """
 
     # TODO:
+    # - TEST: remove node from WFM twice in a row
     # - go back to using MERGE2
-    # - don't make node commands depend on value of ALL_MPF_NODES; instead read value from file
-    # - make node commands idempotent (display warning if node already exists, or doesn't exist)
     # - check if spare node-manager is running:
     #   - wait for up to 1 minute to see if peer in view after updating initial_hosts
     #     (implement endpoint to get hosts in view - periodically check)
-    # - Add version to these scripts and update "update version" script in built tools
 
 
     # Fail fast if we're not the mpf user
@@ -81,7 +79,7 @@ def add_node(node, port=None, workflow_manager_url=None):
     # Check if node is already in all-mpf-nodes
     if node in nodes_list:
         print mpf_util.MsgUtil.yellow('Child node %s is already in the list of known nodes: %s' % (node, nodes_list))
-        print mpf_util.MsgUtil.yellow('Child node %s has not been added to the cluster.' % node)
+        print mpf_util.MsgUtil.yellow('Please remove it first.')
         return
 
     # Add node to known_hosts
@@ -151,9 +149,8 @@ def remove_node(node, workflow_manager_url=None):
         index = nodes_list.index(node) # will throw ValueError if not found
         del nodes_with_ports_list[index]
     except ValueError:
-        print mpf_util.MsgUtil.yellow('Child node %s is not in the list of known nodes: %s' % (node, nodes_list))
-        print mpf_util.MsgUtil.yellow('Nothing to do.')
-        return
+        print mpf_util.MsgUtil.yellow('Child node %s is not in the list of known nodes: %s. '
+                                      'Proceeding anyway.' % (node, nodes_list))
 
     new_nodes_with_ports = ','.join(nodes_with_ports_list) + ',' # add trailing comma
 
@@ -202,7 +199,7 @@ def is_wfm_running(wfm_manager_url):
         print 'Detected that the Workflow Manager is running.'
         return True
     except:
-        print mpf_util.MsgUtil.yellow('Detected that the Workflow Manager is not running. Proceeding.')
+        print mpf_util.MsgUtil.yellow('Detected that the Workflow Manager is not running. Proceeding anyway.')
         return False
 
 

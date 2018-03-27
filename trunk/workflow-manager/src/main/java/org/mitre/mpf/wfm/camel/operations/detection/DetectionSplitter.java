@@ -26,17 +26,38 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection;
 
+import static java.util.stream.Collectors.toMap;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
 import org.apache.camel.Message;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.*;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
+import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfEndpoints;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
-import org.mitre.mpf.wfm.segmenting.*;
+import org.mitre.mpf.wfm.segmenting.AudioMediaSegmenter;
+import org.mitre.mpf.wfm.segmenting.DefaultMediaSegmenter;
+import org.mitre.mpf.wfm.segmenting.ImageMediaSegmenter;
+import org.mitre.mpf.wfm.segmenting.MediaSegmenter;
+import org.mitre.mpf.wfm.segmenting.SegmentingPlan;
+import org.mitre.mpf.wfm.segmenting.VideoMediaSegmenter;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -45,10 +66,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-
-import static java.util.stream.Collectors.toMap;
 
 // DetectionSplitter will take in Job and Stage(Action), breaking them into managable work units for the Components
 
@@ -340,20 +357,53 @@ public class DetectionSplitter implements StageSplitter {
                 // createSegmentingPlan method will send a warning about using FRAME_INTERVAL set to 1 if this occurs. Is this ok?
                 */
 
-				if ( transientMedia.containsMetadata("FPS")) {
+                DetectionContext detectionContext = null;
+
+                if ( transientMedia.containsMetadata("FPS")) {
+                    // Segmenting plan is only used by the VideoMediaSegmenter, so only create the DetectionContext to include the segmenting plan for jobs with video media.
 					String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
 							transientAction, transientJob, transientMedia,
 							propertiesUtil.getSamplingInterval(), propertiesUtil.getFrameRateCap(),
 							Double.valueOf(transientMedia.getMetadata("FPS")));
 					modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
-				}
 
-				SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
-				List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
-						= convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
+//                    SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
+//                    List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
+//                        = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
+//
+//                    detectionContext = new DetectionContext(
+//                        transientJob.getId(),
+//                        transientJob.getCurrentStage(),
+//                        transientStage.getName(),
+//                        actionIndex,
+//                        transientAction.getName(),
+//                        isFirstDetectionStage,
+//                        algorithmProperties,
+//                        previousTracks,
+//                        segmentingPlan);
 
+				} else {
+
+//                    // For jobs with non-video media, create the DetectionContext without a segmenting plan.
+//                    List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
+//                        = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
+//                    detectionContext = new DetectionContext(
+//                        transientJob.getId(),
+//                        transientJob.getCurrentStage(),
+//                        transientStage.getName(),
+//                        actionIndex,
+//                        transientAction.getName(),
+//                        isFirstDetectionStage,
+//                        algorithmProperties,
+//                        previousTracks);
+                }
+
+
+                SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
+                List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
+                    = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
 				// get detection request messages from ActiveMQ
-				DetectionContext detectionContext = new DetectionContext(
+				detectionContext = new DetectionContext(
 						transientJob.getId(),
 						transientJob.getCurrentStage(),
 						transientStage.getName(),
@@ -364,6 +414,7 @@ public class DetectionSplitter implements StageSplitter {
 						previousTracks,
 						segmentingPlan);
 
+                // get detection request messages from ActiveMQ
 				List<Message> detectionRequestMessages
 						= createDetectionRequestMessages(transientMedia, detectionContext);
 
@@ -514,109 +565,4 @@ public class DetectionSplitter implements StageSplitter {
 				.collect(toMap(PropertyDefinition::getName, PropertyDefinition::getDefaultValue));
 	}
 
-
-    /**
-     * Get the computed frame interval for a video by applying the FRAME_RATE_CAP / FRAME_INTERVAL property override strategy. Note that if FRAME_RATE_CAP or FRAME_INTERVAL
-     * is disabled (i.e. set to <= 0) at a higher property level, then a non-disabled property value at a lower property level will be ignored. Property level rankings for OpenMPF
-     * are: (lowest) system properties, action properties, job properties, algorithm properties, media properties (highest)
-     * The adaptive frame interval strategy for OpenMPF is:
-     * - Condition 1: If FRAME_RATE_CAP is present and not disabled, ignore FRAME_INTERVAL and use FRAME_RATE_CAP to derive computed frame interval.
-     * - Condition 2: If FRAME_RATE_CAP is present and disabled, and FRAME_INTERVAL is present and not disabled, then use FRAME_INTERVAL value.
-     * - Condition 3: If FRAME_RATE_CAP is present and disabled, and FRAME_INTERVAL is not present then only consider FRAME_INTERVAL at lower property levels until the default FRAME_INTERVAL system property is reached.
-     * - Condition 4: If FRAME_RATE_CAP is not present and FRAME_INTERVAL is not present check for FRAME_RATE_CAP or FRAME_INTERVAL at lower property levels until the default FRAME_RATE_CAP or FRAME_INTERVAL system properties are reached.
-     * - Condition 5: If FRAME_RATE_CAP is not present and FRAME_INTERVAL is present and not disabled check then use FRAME_INTERVAL value at this level.
-     * - Condition 6: If FRAME_RATE_CAP is not present and FRAME_INTERVAL is present and disabled check then only consider FRAME_RATE_CAP at lower property levels until the default FRAME_RATE_CAP system property is reached.
-     * - Condition 7: If both FRAME_RATE_CAP and FRAME_INTERVAL are present and disabled at any level, this should result in setting the frame interval to 1
-     *   But, if FRAME_RATE_CAP system property is <= 0, this combination of both disabled properties should result in setting the
-     *   frame interval to 1 (no matter what the frame interval system property is).
-     * @param adaptiveFrameIntervalPropertyState current state after ranked FRAME_RATE_CAP and FRAME_INTERVAL properties have been applied.
-     * @param mediaFPS Video frame rate per second, must be > 0.
-     * @param modifiedMap the modifiedMap contains the set of properties that will be sent to each sub-job.
-     * @return Computed frame interval, may be returned as -1 if not set based upon the adaptive frame interval strategy.
-     */
-    /* DJV
-    private int getComputedFrameIntervalForVideo( AdaptiveFrameIntervalPropertyState adaptiveFrameIntervalPropertyState, double mediaFPS, Map<String,String> modifiedMap) {
-
-        int computedFrameInterval = -1;
-
-        if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyOverrideEnabled() ||
-
-            ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertySpecifiedAndNotDisabled() &&
-                ( adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndDisabled() || adaptiveFrameIntervalPropertyState.isFrameIntervalPropertyNotSpecified() ) ) ||
-
-            ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertySpecifiedAndNotDisabled() &&
-                adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndNotDisabled() &&
-                adaptiveFrameIntervalPropertyState.getFrameRateCapPropertyLevel().ordinal() >= adaptiveFrameIntervalPropertyState.getFrameIntervalPropertyLevel().ordinal() ) ) {
-
-            // Condition 1a: If FRAME_RATE_CAP override of FRAME_INTERVAL has been detected, or
-            // Condition 1b: If FRAME_RATE_CAP is present and not disabled and FRAME_INTERVAL has been disabled or has not been specified.
-            // Condition 1c: If FRAME_RATE_CAP is present and not disabled at some equal or higher property level than FRAME_INTERVAL has been specified.
-            // then use FRAME_RATE_CAP to derive computed frame interval.
-            computedFrameInterval = (int) Math.max(1, Math.floor(mediaFPS / Double.valueOf(modifiedMap.get(MpfConstants.FRAME_RATE_CAP_PROPERTY))));
-
-        } else if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertySpecifiedAndDisabled() && adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndNotDisabled() ) {
-
-            // Condition 2: If FRAME_RATE_CAP is present as disabled and FRAME_INTERVAL was specified and never disabled, then use whatever FRAME_INTERVAL is in the modifiedMap.
-            // modifiedMap should contain FRAME_INTERVAL from the highest ranked set of properties.
-            computedFrameInterval = Integer.valueOf(modifiedMap.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY));
-
-        } else if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertySpecifiedAndDisabled() && adaptiveFrameIntervalPropertyState.isFrameIntervalPropertyNotSpecified() ) {
-
-            // Condition 3: If FRAME_RATE_CAP is present as disabled, and FRAME_INTERVAL was never specified, then use whatever FRAME_INTERVAL from the system properties. If
-            // if the FRAME_INTERVAL system property is disabled, then use fallback value of 1 for FRAME_INTERVAL.
-            if (propertiesUtil.getSamplingInterval() > 0) {
-                // Set the  frame interval from the default detection sampling interval
-                computedFrameInterval = Integer.valueOf(propertiesUtil.getSamplingInterval());
-            } else {
-                // If both system properties are disabled, then always use FRAME_INTERVAL of 1.
-                computedFrameInterval = 1;
-            }
-
-        } else if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyNotSpecified() && adaptiveFrameIntervalPropertyState.isFrameIntervalPropertyNotSpecified() ) {
-
-            // Condition 4: If neither FRAME_RATE_CAP nor FRAME_INTERVAL were ever specified then check for FRAME_RATE_CAP or FRAME_INTERVAL in the default system properties
-            if (propertiesUtil.getFrameRateCap() > 0) {
-                // Set the  frame interval from the default detection frame rate cap.
-                // The goal of the FRAME_RATE_CAP is to ensure that a minimum number of frames are processed per second, which is why we round down this value if needed.
-                // But, the value should always be at least 1.
-                computedFrameInterval = (int) Math.max(1, Math.floor(mediaFPS / propertiesUtil.getFrameRateCap()));
-            } else if (propertiesUtil.getSamplingInterval() > 0) {
-                // Set the  frame interval from the default detection sampling interval
-                computedFrameInterval = Integer.valueOf(propertiesUtil.getSamplingInterval());
-            } else {
-                // If both system properties are disabled, then always use FRAME_INTERVAL of 1.
-                computedFrameInterval = 1;
-            }
-
-        } else if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyNotSpecified() && adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndNotDisabled() ) {
-
-            // Condition 5: If FRAME_RATE_CAP was never specified and FRAME_INTERVAL was specified and not disabled check then use FRAME_INTERVAL value at this level.
-            computedFrameInterval = Integer.valueOf(modifiedMap.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY));
-
-        } else if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyNotSpecified() && adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndDisabled() ) {
-
-            // Condition 6: If FRAME_RATE_CAP was never specified and the FRAME_INTERVAL was specified as disabled, then check for FRAME_RATE_CAP in the default system properties.
-            // If the FRAME_RATE_CAP in the default system properties is disabled, then fallback to using FRAME_INTERVAL of 1.
-            if (propertiesUtil.getFrameRateCap() > 0) {
-                // Set the  frame interval from the default detection frame rate cap.
-                // The goal of the FRAME_RATE_CAP is to ensure that a minimum number of frames are processed per second, which is why we round down this value if needed.
-                // But, the value should always be at least 1.
-                computedFrameInterval = (int) Math
-                    .max(1, Math.floor(mediaFPS / propertiesUtil.getFrameRateCap()));
-            } else {
-                // If both system properties are disabled, then always use FRAME_INTERVAL of 1.
-                computedFrameInterval = 1;
-            }
-
-        } else if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertySpecifiedAndDisabled() && adaptiveFrameIntervalPropertyState.isFrameIntervalPropertySpecifiedAndDisabled() ) {
-
-            // Condition 7: If both FRAME_RATE_CAP and FRAME_INTERVAL are present and disabled at any level, this should result in setting the frame interval to 1.
-            computedFrameInterval = 1;
-
-        }
-
-        return computedFrameInterval;
-
-    }
-    */
 }

@@ -249,7 +249,7 @@ public class DetectionSplitter implements StageSplitter {
 				}
 
 				modifiedMap.putAll(transientMedia.getMediaSpecificProperties());
-                
+
                 DetectionContext detectionContext = null;
 
                 if ( transientMedia.containsMetadata("FPS")) {

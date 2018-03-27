@@ -28,8 +28,10 @@ import argh
 import base64
 import getpass
 import os
+import re
 import shutil
 import string
+import subprocess
 import tempfile
 import urllib2
 
@@ -40,10 +42,9 @@ import mpf_util
 
 @argh.arg('node', help='hostname or IP address of spare child node to add', action=mpf_util.VerifyHostnameOrIpAddress)
 @argh.arg('--port', default='7800', help='JGroups port that spare child node will use', action=mpf_util.VerifyPortRange)
-@mpf_util.env_arg('--all-mpf-nodes', 'ALL_MPF_NODES', help='List of all known nodes.')
 @argh.arg('--workflow-manager-url', default='http://localhost:8080/workflow-manager/',
           help='Url to Workflow Manager')
-def add_node(node, port=None, all_mpf_nodes=None, workflow_manager_url=None):
+def add_node(node, port=None, workflow_manager_url=None):
     """ Adds a spare node to the OpenMPF cluster """
 
     # TODO:
@@ -53,9 +54,10 @@ def add_node(node, port=None, all_mpf_nodes=None, workflow_manager_url=None):
     # - check if spare node-manager is running:
     #   - wait for up to 1 minute to see if peer in view after updating initial_hosts
     #     (implement endpoint to get hosts in view - periodically check)
+    # - Add version to these scripts and update "update version" script in built tools
 
 
-    # User test
+    # Fail fast if we're not the mpf user
     if not getpass.getuser() == 'mpf':
         print mpf_util.MsgUtil.yellow('Please run this command as the \'mpf\' user.')
         return
@@ -63,6 +65,15 @@ def add_node(node, port=None, all_mpf_nodes=None, workflow_manager_url=None):
     # Fail fast if user doesn't have root privileges
     if os.system('sudo whoami &> /dev/null') != 0:
         print mpf_util.MsgUtil.red('Root privilege test failed.')
+        return
+
+    # Fail fast if mpf.sh is invalid
+    [mpf_sh_valid, all_mpf_nodes] = check_mpf_sh()
+    if not mpf_sh_valid:
+        return
+
+    # Fail fast if ansible hosts file is invalid
+    if not check_ansible_hosts():
         return
 
     [nodes_list, _] = get_nodes_list(all_mpf_nodes)
@@ -109,13 +120,12 @@ def add_node(node, port=None, all_mpf_nodes=None, workflow_manager_url=None):
 
 
 @argh.arg('node', help='hostname or IP address of child node to remove', action=mpf_util.VerifyHostnameOrIpAddress)
-@mpf_util.env_arg('--all-mpf-nodes', 'ALL_MPF_NODES', help='List of all known nodes.')
 @argh.arg('--workflow-manager-url', default='http://localhost:8080/workflow-manager',
           help='Url to Workflow Manager')
-def remove_node(node, all_mpf_nodes=None, workflow_manager_url=None):
+def remove_node(node, workflow_manager_url=None):
     """ Removes a child node from the OpenMPF cluster """
 
-    # User test
+    # Fail fast if we're not the mpf user
     if not getpass.getuser() == 'mpf':
         print mpf_util.MsgUtil.yellow('Please run this command as the \'mpf\' user.')
         return
@@ -123,6 +133,15 @@ def remove_node(node, all_mpf_nodes=None, workflow_manager_url=None):
     # Fail fast if user doesn't have root privileges
     if os.system('sudo whoami &> /dev/null') != 0:
         print mpf_util.MsgUtil.red('Root privilege test failed.')
+        return
+
+    # Fail fast if mpf.sh is invalid
+    [mpf_sh_valid, all_mpf_nodes] = check_mpf_sh()
+    if not mpf_sh_valid:
+        return
+
+    # Fail fast if ansible hosts file is invalid
+    if not check_ansible_hosts():
         return
 
     [nodes_list, nodes_with_ports_list] = get_nodes_list(all_mpf_nodes)
@@ -206,36 +225,50 @@ def update_wfm_all_mpf_nodes(wfm_manager_url, nodes_with_ports):
         raise
 
 
+def check_mpf_sh():
+    if not os.path.isfile(MPF_SH_FILE_PATH):
+        print mpf_util.MsgUtil.red('Error: Could not open ' + MPF_SH_FILE_PATH + '.')
+        return [False, None]
+
+    if call(['grep', '-q', MPF_SH_SEARCH_STR, MPF_SH_FILE_PATH]) != 0:
+        print mpf_util.MsgUtil.red('Error: Could not find \"' + MPF_SH_SEARCH_STR + '\" in ' + MPF_SH_FILE_PATH + '.')
+        return [False, None]
+
+    process = subprocess.Popen(['sed', '-n', 's/^' + MPF_SH_SEARCH_STR + '\\(.*\\)/\\1/p', MPF_SH_FILE_PATH], stdout=subprocess.PIPE)
+    [out, _] = process.communicate() # blocking
+    if process.returncode != 0:
+        print mpf_util.MsgUtil.red('Error: Could not parse \"' + MPF_SH_SEARCH_STR + '\" in ' + MPF_SH_FILE_PATH + '.')
+        return [False, None]
+
+    return [True, out.strip()]
+
+
 def update_mpf_sh(nodes_with_ports):
-    filepath = '/etc/profile.d/mpf.sh' # DEBUG: /home/mpf/Desktop/TMP/mpf-test.sh
-    findstr = 'export ALL_MPF_NODES='
+    # NOTE: check_mpf_sh() should be called before this function
 
-    error = False
+    if call(['sudo', 'sed', '-i', 's/\\(' + MPF_SH_SEARCH_STR + '\\).*/\\1' + nodes_with_ports + '/', MPF_SH_FILE_PATH]) != 0:
+        print mpf_util.MsgUtil.red('Error: Could not update \"' + MPF_SH_SEARCH_STR + '\" in ' + MPF_SH_FILE_PATH + '.')
+        print mpf_util.MsgUtil.red('Please manually update \"' + MPF_SH_SEARCH_STR + '\" in ' + MPF_SH_FILE_PATH + '.')
+        return False
 
-    if not os.path.isfile(filepath):
-        print mpf_util.MsgUtil.red('Error: Could not open ' + filepath + '.')
-        error = True
+    print 'Updated \"' + MPF_SH_SEARCH_STR + '\" in ' + MPF_SH_FILE_PATH + '.'
+    return True
 
-    if not error:
-        if call(['grep', '-q', findstr, filepath]) != 0:
-            print mpf_util.MsgUtil.red('Error: Could not find \"' + findstr + '\" in ' + filepath + '.')
-            error = True
-        else:
-            if call(['sudo', 'sed', '-i', 's/\\(' + findstr + '\\).*/\\1' + nodes_with_ports + '/', filepath]) != 0:
-                print mpf_util.MsgUtil.red('Error: Could not update \"' + findstr + '\" in ' + filepath + '.')
-                error = True
-            else:
-                print 'Updated \"' + findstr + '\" in ' + filepath + '.'
 
-    if error:
-        print mpf_util.MsgUtil.red('Please manually update \"' + findstr + '\" in ' + filepath + '.')
+def check_ansible_hosts():
+    if not os.path.isfile(ANSIBLE_HOSTS_FILE_PATH):
+        print mpf_util.MsgUtil.red('Error: Could not open ' + ANSIBLE_HOSTS_FILE_PATH + '.')
+        return False
 
-    return not error
+    if call(['grep', '-q', re.escape(ANSIBLE_HOSTS_SEARCH_STR), ANSIBLE_HOSTS_FILE_PATH]) != 0:
+        print mpf_util.MsgUtil.red('Error: Could not find \"' + ANSIBLE_HOSTS_SEARCH_STR + '\" in ' + ANSIBLE_HOSTS_FILE_PATH + '.')
+        return False
+
+    return True
 
 
 def update_ansible_hosts(node, add_node):
-    filepath = '/etc/ansible/hosts' # DEBUG: /home/mpf/Desktop/TMP/hosts-test
-    findstr = '[mpf-child]'
+    # NOTE: check_ansible_hosts() should be called before this function
     error = False
 
     try:
@@ -244,14 +277,14 @@ def update_ansible_hosts(node, add_node):
         stop_line_num = -1
         child_node_list = []
 
-        with open(filepath, 'r') as file:
+        with open(ANSIBLE_HOSTS_FILE_PATH, 'r') as file:
             lines = file.readlines()
 
             for line in lines:
                 stripped_line = line.strip()
                 curr_line_num += 1
                 if start_line_num == -1:
-                    if stripped_line == findstr:
+                    if stripped_line == ANSIBLE_HOSTS_SEARCH_STR:
                         start_line_num = curr_line_num
                 elif not stripped_line:
                     stop_line_num = curr_line_num-1 # reached blank line
@@ -260,14 +293,14 @@ def update_ansible_hosts(node, add_node):
                     child_node_list.append(stripped_line)
 
             if start_line_num == -1:
-                print mpf_util.MsgUtil.red('Error: Could not find \"' + findstr + '\" in ' + filepath + '.')
+                print mpf_util.MsgUtil.red('Error: Could not find \"' + ANSIBLE_HOSTS_SEARCH_STR + '\" in ' + ANSIBLE_HOSTS_FILE_PATH + '.')
                 error = True
             else:
                 if stop_line_num == -1:
                     stop_line_num = curr_line_num # reached end of file
 
     except IOError:
-        print mpf_util.MsgUtil.red('Error: Could not open ' + filepath + '.')
+        print mpf_util.MsgUtil.red('Error: Could not open ' + ANSIBLE_HOSTS_FILE_PATH + '.')
         error = True
 
     if not error:
@@ -277,40 +310,40 @@ def update_ansible_hosts(node, add_node):
             child_node_list.append(node)
 
         # Create a temporary file so that we can write to it without root privileges
-        temppath = create_temp_copy(filepath)
+        temppath = create_temp_copy(ANSIBLE_HOSTS_FILE_PATH)
 
         with open(temppath, 'w') as file:
             for i in range (0, len(lines)):
                 if i < start_line_num or i > stop_line_num:
                     file.write(lines[i])
                 elif i == start_line_num:
-                    file.write(findstr + '\n')
+                    file.write(ANSIBLE_HOSTS_SEARCH_STR + '\n')
                     for child_node in child_node_list:
                         file.write(child_node + '\n')
 
-        if call(['sudo', 'cp', '--no-preserve=mode,ownership', temppath, filepath]) != 0:
-            print mpf_util.MsgUtil.red('Error: Could not replace ' + filepath + '.')
+        if call(['sudo', 'cp', '--no-preserve=mode,ownership', temppath, ANSIBLE_HOSTS_FILE_PATH]) != 0:
+            print mpf_util.MsgUtil.red('Error: Could not replace ' + ANSIBLE_HOSTS_FILE_PATH + '.')
             error = True
 
         remove_temp(temppath)
 
     if error:
-        print mpf_util.MsgUtil.red('Please manually update \"' + findstr + '\" in ' + filepath + '.')
+        print mpf_util.MsgUtil.red('Please manually update \"' + ANSIBLE_HOSTS_SEARCH_STR + '\" in ' + ANSIBLE_HOSTS_FILE_PATH + '.')
     else:
-        print 'Updated \"' + findstr + '\" in ' + filepath + '.'
+        print 'Updated \"' + ANSIBLE_HOSTS_SEARCH_STR + '\" in ' + ANSIBLE_HOSTS_FILE_PATH + '.'
 
     return not error
 
 
 def update_known_hosts(node):
     # NOTE: Run keygen and keyscan as the 'mpf' user
-    filepath = '~/.ssh/known_hosts'
     error = False
 
     # This call may fail if the node doesn't exist in ~/.ssh/known_hosts. That's okay.
     os.system('ssh-keygen -R ' + node + ' &> /dev/null')
 
     temppath = create_temp()
+    print 'Retrieving public SSH key(s) for %s.' % node
     if os.system('ssh-keyscan ' + node + ' &>> ' + temppath) != 0:
         error = True
     else:
@@ -323,15 +356,15 @@ def update_known_hosts(node):
         print mpf_util.MsgUtil.red('Error: Could not get public SSH key(s) for %s. '
                                    'Please ensure that the node is online and try again.' % node)
 
-    if not error and os.system('echo \'' + data.strip() + '\'  &>> ' + filepath) != 0:
-        print mpf_util.MsgUtil.red('Error: Could not add %s entry to %s.' % (node, filepath))
-        print mpf_util.MsgUtil.yellow('Please manually add %s entry to %s.' % (node, filepath))
+    if not error and os.system('echo \'' + data.strip() + '\'  &>> ' + KNOWN_HOSTS_FILE_PATH) != 0:
+        print mpf_util.MsgUtil.red('Error: Could not add %s entry to %s.' % (node, KNOWN_HOSTS_FILE_PATH))
+        print mpf_util.MsgUtil.yellow('Please manually add %s entry to %s.' % (node, KNOWN_HOSTS_FILE_PATH))
         error = True
 
     remove_temp(temppath)
 
     if not error:
-        print 'Updated ' + filepath + '.'
+        print 'Updated ' + KNOWN_HOSTS_FILE_PATH + '.'
 
     return not error
 
@@ -356,5 +389,13 @@ def remove_temp(temppath):
 def remove_all(list, value):
     list[:] = (x for x in list if x != value)
 
+
+MPF_SH_FILE_PATH = '/etc/profile.d/mpf.sh' # DEBUG: /home/mpf/Desktop/TMP/mpf-test.sh
+MPF_SH_SEARCH_STR = 'export ALL_MPF_NODES='
+
+ANSIBLE_HOSTS_FILE_PATH = '/etc/ansible/hosts' # DEBUG: /home/mpf/Desktop/TMP/hosts-test
+ANSIBLE_HOSTS_SEARCH_STR = '[mpf-child]'
+
+KNOWN_HOSTS_FILE_PATH = '~/.ssh/known_hosts'
 
 COMMANDS = (add_node, remove_node)

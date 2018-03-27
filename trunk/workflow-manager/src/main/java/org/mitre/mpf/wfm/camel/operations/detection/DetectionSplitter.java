@@ -111,11 +111,6 @@ public class DetectionSplitter implements StageSplitter {
 			MpfConstants.AUTO_ROTATE_PROPERTY,
 			MpfConstants.AUTO_FLIP_PROPERTY};
 
-	/* DJV
-	@Autowired
-    private AdaptiveFrameIntervalPropertyState adaptiveFrameIntervalPropertyState;
-    */
-
     /**
 	 * Translates a collection of properties into a collection of AlgorithmProperty ProtoBuf messages.
 	 * If the input is null or empty, an empty collection is returned.
@@ -150,17 +145,6 @@ public class DetectionSplitter implements StageSplitter {
 
 		// Is this the first detection stage in the pipeline?
 		boolean isFirstDetectionStage = isFirstDetectionOperation(transientJob);
-
-		/* DJV
-		// TODO: there must be a better way to do this, feedback is requested, adaptiveFrameIntervalPropertyState needs to be initialized for each TransientJob being processed
-        // Without this initialization statement, adaptiveFrameIntervalPropertyState isn't getting initialized and the 40 frame rate cap
-        // test cases defined in TestDetectionSplitter fails because the state variable isn't being initialized. But, the following
-        // condition will only be true if the TransientJob has the first stage being a Detection. How to check for the first time
-        // this DetectionSplitter has been called for a TransientJob?
-		if ( isFirstDetectionStage ) {
-            adaptiveFrameIntervalPropertyState.init();
-        }
-        */
 
 		for (TransientMedia transientMedia : transientJob.getMedia()) {
 
@@ -201,24 +185,6 @@ public class DetectionSplitter implements StageSplitter {
                 // current modifiedMap properties overridden by action properties
                 modifiedMap.putAll(transientAction.getProperties());
 
-                /* DJV
-                // OpenMPF allows for FRAME_RATE_CAP override of FRAME_INTERVAL and/or disable of FRAME_RATE_CAP or FRAME_INTERVAL for videos on a level-by-level basis.
-                if (transientMedia.containsMetadata("FPS")) {
-
-                    // Update state for video media at the action property level.
-                    adaptiveFrameIntervalPropertyState.setAdaptiveFrameIntervalPropertyState(transientAction.getProperties(),
-                                                                                            AdaptiveFrameIntervalPropertyState.PropertyLevel.ACTION_LEVEL);
-
-                    // If the FRAME_RATE_CAP override of FRAME_INTERVAL has been detected at this property level, then
-                    // remove FRAME_INTERVAL from the modifiedMap because the applied property FRAME_RATE_CAP would
-                    // override any specification of FRAME_INTERVAL at this property level.
-                    if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyOverrideEnabled() ) {
-                        modifiedMap.remove(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY);
-                    }
-
-                }
-                */
-
                 // If the job is overriding properties related to flip, rotation, or ROI, we should reset all related
                 // action properties to default.  We assume that when the user overrides one rotation/flip/roi
                 // property for a piece of media, they are specifying all of the rotation/flip/roi properties they want
@@ -239,23 +205,6 @@ public class DetectionSplitter implements StageSplitter {
 
                 // Note: by this point override of system properties by job properties has already been applied to the transient job.
                 modifiedMap.putAll(transientJob.getOverriddenJobProperties());
-
-                /* DJV
-                // OpenMPF allows for FRAME_RATE_CAP override of FRAME_INTERVAL and/or disable of FRAME_RATE_CAP or FRAME_INTERVAL for videos on a level-by-level basis.
-                if ( transientMedia.containsMetadata("FPS") ) {
-
-                    // Update state for video media at the job property level.
-                    adaptiveFrameIntervalPropertyState.setAdaptiveFrameIntervalPropertyState(transientJob.getOverriddenJobProperties(),
-                                                                                    AdaptiveFrameIntervalPropertyState.PropertyLevel.JOB_LEVEL);
-
-                    // If the FRAME_RATE_CAP override of FRAME_INTERVAL has been detected at this property level, then
-                    // remove FRAME_INTERVAL from the modifiedMap because the applied property FRAME_RATE_CAP would
-                    // override any specification of FRAME_INTERVAL at this property level.
-                    if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyOverrideEnabled() ) {
-                        modifiedMap.remove(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY);
-                    }
-                }
-                */
 
                 // overriding by AlgorithmProperties.  Note that algorithm-properties are of type
 				// Map<String,Map>, so the transform properties to be overridden are actually in the value section of the Map returned
@@ -290,24 +239,6 @@ public class DetectionSplitter implements StageSplitter {
 					}
 					modifiedMap.putAll(job_alg_m);
 
-					/* DJV
-                    // OpenMPF allows for FRAME_RATE_CAP override of FRAME_INTERVAL and/or disable of FRAME_RATE_CAP or FRAME_INTERVAL for videos on a level-by-level basis.
-                    // Check for these conditions for video media at the algorithm property level.
-                    if ( transientMedia.containsMetadata("FPS") ) {
-
-                        // Update state for video media at the algorithm property level.
-                        adaptiveFrameIntervalPropertyState.setAdaptiveFrameIntervalPropertyState(job_alg_m,
-                                                                        AdaptiveFrameIntervalPropertyState.PropertyLevel.ALGORITHM_LEVEL);
-
-                        // If the FRAME_RATE_CAP override of FRAME_INTERVAL has been detected at this property level, then
-                        // remove FRAME_INTERVAL from the modifiedMap because the applied property FRAME_RATE_CAP would
-                        // override any specification of FRAME_INTERVAL at this property level.
-                        if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyOverrideEnabled() ) {
-                            modifiedMap.remove(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY);
-                        }
-                    }
-                    */
-
                 } // end of algorithm name conditional
 
 				for (String key : transformProperties) {
@@ -318,101 +249,50 @@ public class DetectionSplitter implements StageSplitter {
 				}
 
 				modifiedMap.putAll(transientMedia.getMediaSpecificProperties());
-
-				/* DJV
-                if ( transientMedia.containsMetadata("FPS") ) {
-                    
-                    // Update state for video media at the at the media property level.
-                    adaptiveFrameIntervalPropertyState.setAdaptiveFrameIntervalPropertyState(transientMedia.getMediaSpecificProperties(),
-                                                                                            AdaptiveFrameIntervalPropertyState.PropertyLevel.MEDIA_LEVEL);
-
-                    // If the FRAME_RATE_CAP override of FRAME_INTERVAL has been detected at this property level, then
-                    // remove FRAME_INTERVAL from the modifiedMap because the applied property FRAME_RATE_CAP would
-                    // override any specification of FRAME_INTERVAL at this property level.
-                    if ( adaptiveFrameIntervalPropertyState.isFrameRateCapPropertyOverrideEnabled() ) {
-                        modifiedMap.remove(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY);
-                    }
-
-                    // Determine the adaptive frame interval based upon the FRAME_RATE_CAP vs. FRAME_INTERVAL state as
-                    // tracked by adaptiveFrameIntervalPropertyState along with the cleaned up properties in the modifiedMap.
-                    // At this point, modifiedMap may contain FRAME_RATE_CAP or FRAME_INTERVAL after the media, algorithm, job,
-                    // or action property level-by-level comparison or overrides have been applied. This following code
-                    // determines the adapted frame interval based upon which of those properties have been found, at which property level, and whether or not
-                    // those properties have been disabled.
-                    // System properties may be used to provide as a default value for computed frame interval if FRAME_RATE_CAP and/or FRAME_INTERVAL
-                    // are disabled by setting to <= 0.
-                    
-                    // Get the videos frame rate from the metadata.
-                    double mediaFPS = Double.valueOf(transientMedia.getMetadata("FPS"));
-                    int computedFrameInterval = getComputedFrameIntervalForVideo(adaptiveFrameIntervalPropertyState, mediaFPS, modifiedMap);
-
-                    // If computed frame interval has been determined, then replace the current value of FRAME_INTERVAL that will be sent to
-                    // each sub-job with the computed frame interval.
-                    if ( computedFrameInterval != -1 ) {
-                        modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, Integer.toString(computedFrameInterval));
-                     }
-                }
-
-                // TODO, I don't see any protection in here for a user specifying FRAME_INTERVAL of -1 for non-video media. The
-                // createSegmentingPlan method will send a warning about using FRAME_INTERVAL set to 1 if this occurs. Is this ok?
-                */
-
+                
                 DetectionContext detectionContext = null;
 
                 if ( transientMedia.containsMetadata("FPS")) {
+
                     // Segmenting plan is only used by the VideoMediaSegmenter, so only create the DetectionContext to include the segmenting plan for jobs with video media.
+
 					String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
 							transientAction, transientJob, transientMedia,
 							propertiesUtil.getSamplingInterval(), propertiesUtil.getFrameRateCap(),
 							Double.valueOf(transientMedia.getMetadata("FPS")));
 					modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
 
-//                    SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
-//                    List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
-//                        = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
-//
-//                    detectionContext = new DetectionContext(
-//                        transientJob.getId(),
-//                        transientJob.getCurrentStage(),
-//                        transientStage.getName(),
-//                        actionIndex,
-//                        transientAction.getName(),
-//                        isFirstDetectionStage,
-//                        algorithmProperties,
-//                        previousTracks,
-//                        segmentingPlan);
+                    SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
+                    List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
+                        = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
+
+                    detectionContext = new DetectionContext(
+                        transientJob.getId(),
+                        transientJob.getCurrentStage(),
+                        transientStage.getName(),
+                        actionIndex,
+                        transientAction.getName(),
+                        isFirstDetectionStage,
+                        algorithmProperties,
+                        previousTracks,
+                        segmentingPlan);
 
 				} else {
 
-//                    // For jobs with non-video media, create the DetectionContext without a segmenting plan.
-//                    List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
-//                        = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
-//                    detectionContext = new DetectionContext(
-//                        transientJob.getId(),
-//                        transientJob.getCurrentStage(),
-//                        transientStage.getName(),
-//                        actionIndex,
-//                        transientAction.getName(),
-//                        isFirstDetectionStage,
-//                        algorithmProperties,
-//                        previousTracks);
+                    // For jobs with non-video media, create the DetectionContext without a segmenting plan.
+                    List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
+                        = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
+
+                    detectionContext = new DetectionContext(
+                        transientJob.getId(),
+                        transientJob.getCurrentStage(),
+                        transientStage.getName(),
+                        actionIndex,
+                        transientAction.getName(),
+                        isFirstDetectionStage,
+                        algorithmProperties,
+                        previousTracks);
                 }
-
-
-                SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
-                List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
-                    = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
-				// get detection request messages from ActiveMQ
-				detectionContext = new DetectionContext(
-						transientJob.getId(),
-						transientJob.getCurrentStage(),
-						transientStage.getName(),
-						actionIndex,
-						transientAction.getName(),
-						isFirstDetectionStage,
-						algorithmProperties,
-						previousTracks,
-						segmentingPlan);
 
                 // get detection request messages from ActiveMQ
 				List<Message> detectionRequestMessages

@@ -65,11 +65,6 @@ public class PipelineServiceImpl implements PipelineService {
     @Qualifier(PropertiesUtil.REF)
     private PropertiesUtil propertiesUtil;
 
-    @Autowired
-    @Qualifier("loadedProperties")
-    private Properties properties;
-
-
     private XStream xStream;
 
     private final Map<String, AlgorithmDefinition> algorithms = new HashMap<String, AlgorithmDefinition>();
@@ -459,7 +454,9 @@ public class PipelineServiceImpl implements PipelineService {
 
     private void addAlgorithm(AlgorithmDefinition algorithm) {
         algorithm.getProvidesCollection().getAlgorithmProperties()
-		        .forEach(pd -> pd.setDefaultValue(properties));
+                .stream()
+                .filter(pd -> pd.getPropertiesKey() != null)
+                .forEach(pd -> pd.setDefaultValue(propertiesUtil.lookup(pd.getPropertiesKey())));
 
         validateAlgorithm(algorithm);
         log.debug("{}: Adding algorithm", StringUtils.upperCase(algorithm.getName()));

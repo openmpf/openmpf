@@ -63,21 +63,6 @@ public class DetectionContext {
 	private final Set<Track> previousTracks;
 	public Set<Track> getPreviousTracks() { return previousTracks; }
 
-	// Constructor for jobs that don't require a segmenting plan, such as non-video jobs.
-    public DetectionContext(
-        long jobId,
-        int stageIndex,
-        String stageName,
-        int actionIndex,
-        String actionName,
-        boolean isFirstDetectionStage,
-        List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties,
-        Set<Track> previousTracks) {
-
-        this(jobId, stageIndex, stageName, actionIndex, actionName, isFirstDetectionStage, algorithmProperties, previousTracks, null);
-    }
-
-    // Constructor for jobs that require a segmenting plan, such as video jobs.
     public DetectionContext(
 			long jobId,
 			int stageIndex,

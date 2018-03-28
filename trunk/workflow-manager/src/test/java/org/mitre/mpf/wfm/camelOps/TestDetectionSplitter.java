@@ -48,6 +48,7 @@ import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
 import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
@@ -97,6 +98,8 @@ public class TestDetectionSplitter {
         TransientJob testJob = new TransientJob(testId, testExternalId, testPipe, testStage, testPriority, testOutputEnabled, false);
         TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile("/samples/new_face_video.avi").toString());
         testMedia.setType("VIDEO");
+        // Video media must have FPS in metadata to support adaptive frame interval processing.
+        testMedia.addMetadata("FPS", "30");
         List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
         testJob.setMedia(listMedia);
         TransientStage testTransientStage = new TransientStage("stageName", "stageDescr", ActionType.DETECTION);
@@ -353,6 +356,10 @@ public class TestDetectionSplitter {
         TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile(mediaUri).toString());
         testMedia.setLength(300);
         testMedia.setType(mediaType);
+        // Video media must have FPS in metadata to support adaptive frame interval processing.
+        if ( testMedia.getMediaType() == MediaType.VIDEO ) {
+            testMedia.addMetadata("FPS", "30");
+        }
 
         List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
         testJob.setMedia(listMedia);
@@ -365,11 +372,10 @@ public class TestDetectionSplitter {
         return testJob;
     }
 
-
     // The following set of DetectionSplitter tests specifically test FRAME_RATE_CAP vs. FRAME_INTERVAL property
     // overrides at various category levels (system, action, job, algorithm, and media, with media properties being the highest ranking).
 
-    private TransientJob createFrameRateCapTestTransientJob(
+    private TransientJob createSimpleJobForFrameRateCapTest(
         Map<String, String> actionProperties, Map<String, String> jobProperties,
         Map<String, Map> algorithmProperties, Map<String,String> mediaProperties) {
 
@@ -430,7 +436,7 @@ public class TestDetectionSplitter {
         putStringInMapIfNotNull(mediaProps, MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, frameIntervalMediaPropVal);
         putStringInMapIfNotNull(mediaProps, MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCapMediaPropVal);
 
-        TransientJob testJob = createFrameRateCapTestTransientJob(actionProps, jobProps, metaAlgProps, mediaProps);
+        TransientJob testJob = createSimpleJobForFrameRateCapTest(actionProps, jobProps, metaAlgProps, mediaProps);
 
         String calcFrameInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
                 testJob.getPipeline().getStages().get(0).getActions().get(0),
@@ -444,6 +450,9 @@ public class TestDetectionSplitter {
     @Test
     public void testFrameRateCapOverrideSystemLevel() throws Exception {
         // Tests 1-4: test 4 combinations of system property FRAME_INTERVAL and FRAME_RATE_CAP.
+
+        // Argument order for checkCalcFrameInterval is: frameInterval, frameRateCap pair for property levels in this order: system, action, job, algorithm, media -
+        // with the last two arguments being: mediaFPS and the expected value for adaptive frame interval.
 
         // Test1: system level test with both FRAME_INTERVAL and FRAME_RATE_CAP specified (FRAME_RATE_CAP override applies).
         checkCalcFrameInterval(7,5, null,null, null,null, null,null, null,null, 30, 6);
@@ -462,9 +471,6 @@ public class TestDetectionSplitter {
     public void testFrameRateCapOverrideActionLevel() {
 
         // Tests 1-9: test 9 combinations of action property FRAME_INTERVAL and FRAME_RATE_CAP with the lower property levels not specified.
-
-        // Argument order for checkCalcFrameInterval is: frameInterval, frameRateCap pair for property levels in this order: system, action, job, algorithm, media -
-        // with the last two arguments being: mediaFPS and the expected value for adaptive frame interval.
 
         // Test1: action level test with both FRAME_INTERVAL and FRAME_RATE_CAP specified (FRAME_RATE_CAP override applies) with the lower property level not specified.
         checkCalcFrameInterval(-1, -1, 14, 10, null, null, null, null, null, null, 30, 3);
@@ -536,9 +542,6 @@ public class TestDetectionSplitter {
 
          // Tests 1-9: test 9 combinations of job property FRAME_INTERVAL and FRAME_RATE_CAP with the lower property levels not specified.
 
-         // Argument order for checkCalcFrameInterval is: frameInterval, frameRateCap pair for property levels in this order: system, action, job, algorithm, media -
-         // with the last two arguments being: mediaFPS and the expected value for adaptive frame interval.
-
          // Test1: job level test with both FRAME_INTERVAL and FRAME_RATE_CAP specified (FRAME_RATE_CAP override applies) with the lower property level not specified.
          checkCalcFrameInterval(-1, -1, null, null, 14, 10, null, null, null, null, 30, 3);
 
@@ -608,9 +611,6 @@ public class TestDetectionSplitter {
      public void testFrameRateCapOverrideAlgorithmLevel() {
 
          // Tests 1-9: test 9 combinations of algorithm property FRAME_INTERVAL and FRAME_RATE_CAP with the lower property levels not specified.
-
-         // Argument order for checkCalcFrameInterval is: frameInterval, frameRateCap pair for property levels in this order: system, action, job, algorithm, media -
-         // with the last two arguments being: mediaFPS and the expected value for adaptive frame interval.
 
          // Test1: algorithm level test with both FRAME_INTERVAL and FRAME_RATE_CAP specified (FRAME_RATE_CAP override applies) with the lower property level not specified.
          checkCalcFrameInterval(-1, -1, null, null, null, null, 14, 10, null, null, 30, 3);

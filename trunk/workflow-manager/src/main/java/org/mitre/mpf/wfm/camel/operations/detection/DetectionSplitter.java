@@ -160,7 +160,6 @@ public class DetectionSplitter implements StageSplitter {
 			// If this is the first detection stage in the pipeline, we should segment the entire media for detection.
 			// If this is not the first detection stage, we should build segments based off of the previous stage's
 			// tracks. Note that the TimePairs created for these Tracks use the non-feed-forward version of timeUtils.createTimePairsForTracks
-			// TODO look here for any modifications required to be made to support feed-forward
 			SortedSet<Track> previousTracks;
 			if (isFirstDetectionStage) {
 				previousTracks = Collections.emptySortedSet();
@@ -250,23 +249,24 @@ public class DetectionSplitter implements StageSplitter {
 
 				modifiedMap.putAll(transientMedia.getMediaSpecificProperties());
 
-                DetectionContext detectionContext = null;
+                SegmentingPlan segmentingPlan = null;
 
                 if ( transientMedia.containsMetadata("FPS")) {
 
                     // Segmenting plan is only used by the VideoMediaSegmenter, so only create the DetectionContext to include the segmenting plan for jobs with video media.
 
-					String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
-							transientAction, transientJob, transientMedia,
-							propertiesUtil.getSamplingInterval(), propertiesUtil.getFrameRateCap(),
-							Double.valueOf(transientMedia.getMetadata("FPS")));
-					modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
+                    String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
+                        transientAction, transientJob, transientMedia,
+                        propertiesUtil.getSamplingInterval(), propertiesUtil.getFrameRateCap(),
+                        Double.valueOf(transientMedia.getMetadata("FPS")));
+                    modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
 
-                    SegmentingPlan segmentingPlan = createSegmentingPlan(modifiedMap);
-                    List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
-                        = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
+                    segmentingPlan = createSegmentingPlan(modifiedMap);
+                }
 
-                    detectionContext = new DetectionContext(
+                List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
+
+                DetectionContext detectionContext = new DetectionContext(
                         transientJob.getId(),
                         transientJob.getCurrentStage(),
                         transientStage.getName(),
@@ -277,26 +277,8 @@ public class DetectionSplitter implements StageSplitter {
                         previousTracks,
                         segmentingPlan);
 
-				} else {
-
-                    // For jobs with non-video media, create the DetectionContext without a segmenting plan.
-                    List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
-                        = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
-
-                    detectionContext = new DetectionContext(
-                        transientJob.getId(),
-                        transientJob.getCurrentStage(),
-                        transientStage.getName(),
-                        actionIndex,
-                        transientAction.getName(),
-                        isFirstDetectionStage,
-                        algorithmProperties,
-                        previousTracks);
-                }
-
                 // get detection request messages from ActiveMQ
-				List<Message> detectionRequestMessages
-						= createDetectionRequestMessages(transientMedia, detectionContext);
+				List<Message> detectionRequestMessages = createDetectionRequestMessages(transientMedia, detectionContext);
 
 				for (Message message : detectionRequestMessages) {
 					message.setHeader(MpfHeaders.RECIPIENT_QUEUE,

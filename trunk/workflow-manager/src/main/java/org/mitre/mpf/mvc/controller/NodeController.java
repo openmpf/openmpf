@@ -27,6 +27,7 @@
 package org.mitre.mpf.mvc.controller;
 
 import io.swagger.annotations.*;
+import org.apache.commons.collections.map.LinkedMap;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.h2.util.StringUtils;
@@ -118,7 +119,7 @@ public class NodeController {
 	// EXTERNAL
 	@RequestMapping(value = "/rest/nodes/hosts", method = RequestMethod.GET)
 	@ApiOperation(value = "Returns a collection of key-value pairs <String, Boolean> containing a hostname and its node configuration status. "
-			+ "If the configuration status is 'true' that hostname is configurated to run a node manager.", notes = "The response is a set of JSON key-value pairs, where the key is the hostname and the value is the configuration status.", produces = "application/json")
+			+ "If the configuration status is 'true' that hostname is configured to run a node manager.", notes = "The response is a set of JSON key-value pairs, where the key is the hostname and the value is the configuration status.", produces = "application/json")
 	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successful response"),
 			@ApiResponse(code = 401, message = "Bad credentials") })
 	@ResponseBody
@@ -408,6 +409,10 @@ public class NodeController {
 		List<Integer> ports = new ArrayList<>();
 
 		for (String node : Arrays.asList(allNodes.split(","))) {
+			if (node.isEmpty()) {
+				continue;
+			}
+
 			boolean parseError = false;
 
 			String[] tokens = node.split("\\[");
@@ -448,9 +453,14 @@ public class NodeController {
 
 		log.info("hosts: " + hosts); // DEBUG
 
-		// Update the initial_hosts list used by JGroups.
-		nodeManagerService.updateInitialHosts(hosts, ports); // DEBUG
-
+		try {
+			// Update the initial_hosts list used by JGroups.
+			nodeManagerService.updateInitialHosts(hosts, ports); // DEBUG
+		} catch (IllegalStateException e) {
+			log.error(e.getMessage());
+			MpfResponse mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR, e.getMessage());
+			return new ResponseEntity<>(mpfResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 
 		// If one or more nodes have been removed, then remove them from the nodes config.
 		// Don't add new nodes to the nodes config. Leave that to the user.
@@ -463,8 +473,34 @@ public class NodeController {
 
 		saveNodeManagerConfig(newNodeManagerModels, mpfResponse);
 
-		return new ResponseEntity<>(mpfResponse, HttpStatus.OK);
+		return new ResponseEntity<>(mpfResponse,
+				mpfResponse.getResponseCode() == MpfResponse.RESPONSE_CODE_ERROR ? HttpStatus.INTERNAL_SERVER_ERROR : HttpStatus.OK);
 	}
+
+
+	// EXTERNAL: Only used by "mpf list-nodes"
+	@RequestMapping(value = "/rest/nodes/available-nodes", method = RequestMethod.GET)
+	@ResponseBody
+	public Map<String, Boolean> getAvailableNodes() {
+
+		Set<String> availableNodes = new TreeSet(); // lexicographical order
+		Set<String> unavailableNodes = new TreeSet(); // lexicographical order
+
+		for (String node : getNodeManagerHosts().keySet()) {
+			if (nodeManagerStatus.getCurrentNodeManagerHostsAddressMap().containsKey(node)) {
+				availableNodes.add(node);
+			} else {
+				unavailableNodes.add(node);
+			}
+		}
+
+		Map<String, Boolean> availableNodeMap = new LinkedMap(); // maintain insertion order
+		availableNodes.stream().forEach(n -> availableNodeMap.put(n, true));
+		unavailableNodes.stream().forEach(n -> availableNodeMap.put(n, false));
+
+		return availableNodeMap;
+	}
+
 
 	private DeployedNodeManagerModel getNodeManagerInfo() {
 		// This grabs all of the services and does not organize them into a

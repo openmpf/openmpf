@@ -49,6 +49,7 @@ def add_node(node, port=None, workflow_manager_url=None):
 
     # TODO:
     # - TEST: remove node from WFM twice in a row
+    # - TEST: register plugin
     # - go back to using MERGE2
     # - check if spare node-manager is running:
     #   - wait for up to 1 minute to see if peer in view after updating initial_hosts
@@ -74,7 +75,7 @@ def add_node(node, port=None, workflow_manager_url=None):
     if not check_ansible_hosts():
         return
 
-    [nodes_list, _] = get_nodes_list(all_mpf_nodes)
+    [nodes_list, _] = parse_nodes_list(all_mpf_nodes)
 
     # Check if node is already in all-mpf-nodes
     if node in nodes_list:
@@ -99,6 +100,8 @@ def add_node(node, port=None, workflow_manager_url=None):
             except:
                 print mpf_util.MsgUtil.red('Child node %s has not been added to the cluster.' % node)
                 raise
+        else:
+            print mpf_util.MsgUtil.yellow('Proceeding anyway.')
 
         # Modify system files
         updated_mpf_sh = update_mpf_sh(new_nodes_with_ports)
@@ -142,15 +145,15 @@ def remove_node(node, workflow_manager_url=None):
     if not check_ansible_hosts():
         return
 
-    [nodes_list, nodes_with_ports_list] = get_nodes_list(all_mpf_nodes)
+    [nodes_list, nodes_with_ports_list] = parse_nodes_list(all_mpf_nodes)
 
     # Check if node is in all-mpf-nodes
     try:
         index = nodes_list.index(node) # will throw ValueError if not found
         del nodes_with_ports_list[index]
     except ValueError:
-        print mpf_util.MsgUtil.yellow('Child node %s is not in the list of known nodes: %s. '
-                                      'Proceeding anyway.' % (node, nodes_list))
+        print mpf_util.MsgUtil.yellow('Child node %s is not in the list of known nodes: %s.' % (node, nodes_list))
+        print mpf_util.MsgUtil.yellow('Proceeding anyway.')
 
     new_nodes_with_ports = ','.join(nodes_with_ports_list) + ',' # add trailing comma
 
@@ -163,6 +166,8 @@ def remove_node(node, workflow_manager_url=None):
         except:
             print mpf_util.MsgUtil.red('Child node %s has not been removed from the cluster.' % node)
             raise
+    else:
+        print mpf_util.MsgUtil.yellow('Proceeding anyway.')
 
     # Modify system files
     updated_mpf_sh = update_mpf_sh(new_nodes_with_ports)
@@ -180,7 +185,38 @@ def remove_node(node, workflow_manager_url=None):
         print mpf_util.MsgUtil.green('Run \"source /etc/profile.d/mpf.sh\" in any open terminal windows.')
 
 
-def get_nodes_list(all_mpf_nodes):
+@argh.arg('--workflow-manager-url', default='http://localhost:8080/workflow-manager',
+          help='Url to Workflow Manager')
+def list_nodes(workflow_manager_url=None):
+    """ List available nodes in the OpenMPF cluster """
+
+    if not is_wfm_running(workflow_manager_url):
+        print mpf_util.MsgUtil.yellow('Cannot list available nodes.')
+        return
+
+    endpoint_url = ''.join([string.rstrip(workflow_manager_url,'/'),'/rest/nodes/available-nodes'])
+
+    print 'Enter the credentials for a Workflow Manager user:'
+    username = raw_input('Username: ')
+    password = getpass.getpass('Password: ')
+
+    request = urllib2.Request(endpoint_url)
+    request.get_method = lambda: 'GET'
+    base64string = base64.b64encode('%s:%s' % (username, password))
+    request.add_header('Authorization', 'Basic %s' % base64string)
+
+    try:
+        response = urllib2.urlopen(request).read()
+    except:
+        print mpf_util.MsgUtil.red('Problem connecting to %s' % endpoint_url)
+        raise
+
+    print response # DEBUG
+
+    # TODO: format and print results
+
+
+def parse_nodes_list(all_mpf_nodes):
     nodes_list = []
     nodes_with_ports_list = []
     for known_node_with_port in all_mpf_nodes.split(','):
@@ -199,7 +235,7 @@ def is_wfm_running(wfm_manager_url):
         print 'Detected that the Workflow Manager is running.'
         return True
     except:
-        print mpf_util.MsgUtil.yellow('Detected that the Workflow Manager is not running. Proceeding anyway.')
+        print mpf_util.MsgUtil.yellow('Detected that the Workflow Manager is not running.')
         return False
 
 
@@ -395,4 +431,4 @@ ANSIBLE_HOSTS_SEARCH_STR = '[mpf-child]'
 
 KNOWN_HOSTS_FILE_PATH = '~/.ssh/known_hosts'
 
-COMMANDS = (add_node, remove_node)
+COMMANDS = (add_node, remove_node, list_nodes)

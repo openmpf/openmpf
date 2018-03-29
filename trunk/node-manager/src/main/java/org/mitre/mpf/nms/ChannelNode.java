@@ -166,8 +166,7 @@ public class ChannelNode {
     public void updateInitialHosts(List<String> hosts, List<Integer> ports) {
         Protocol protocol = channel.getProtocolStack().findProtocol(TCPPING.class);
         if (protocol == null) {
-            log.error("Error: Cannot find TCPPING protocol. Cannot update JGroups initial host list."); // DEBUG
-            return;
+            throw new IllegalStateException("Error: Cannot find TCPPING protocol. Cannot update JGroups initial host list.");
         }
 
         TCPPING tcpping = (TCPPING) protocol;
@@ -199,5 +198,16 @@ public class ChannelNode {
 
         // NOTE: JGroups peer discovery is handled by MERGE2 at a period that is randomized
         // between min_interval and max_interval. New nodes will not be immediately available.
+    }
+
+
+    public List<PhysicalAddress> getInitialHosts() {
+        Protocol protocol = channel.getProtocolStack().findProtocol(TCPPING.class);
+        if (protocol == null) {
+            throw new IllegalStateException("Error: Cannot find TCPPING protocol. Cannot retrieve JGroups initial host list.");
+        }
+
+        TCPPING tcpping = (TCPPING) protocol;
+        return tcpping.getInitialHosts();
     }
 }

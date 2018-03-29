@@ -275,6 +275,10 @@ public class PropertiesUtil {
 	private int samplingInterval;
 	public int getSamplingInterval() { return samplingInterval; }
 
+	@Value("${detection.frame.rate.cap}")
+    private int frameRateCap;
+	public int getFrameRateCap() { return frameRateCap; }
+
 	@Value("${detection.confidence.threshold}")
 	private double confidenceThreshold;
 	public double getConfidenceThreshold() { return confidenceThreshold; }

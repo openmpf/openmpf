@@ -202,11 +202,11 @@ public class StreamingJobController {
             if ( !streamingJobCreationRequest.isValidRequest() ) {
                 // The streaming job failed the API syntax check, the job request is malformed. Reject the job and send an error response.
                 return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(), "malformed request");
-            } else if ( !StreamResource.isSupportedUriScheme(streamingJobCreationRequest.getStreamUri()) ) {
+            } else if ( !StreamResource.isSupportedUriScheme(streamingJobCreationRequest.getStream().getStreamUri()) ) {
                 // The streaming job failed the check for supported stream protocol check, so OpenMPF can't process the requested stream URI.
                 // Reject the job and send an error response.
                 return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),
-                    "malformed or unsupported stream URI: " + streamingJobCreationRequest.getStreamUri());
+                    "malformed or unsupported stream URI: " + streamingJobCreationRequest.getStream().getStreamUri());
             } else if ( !pipelineService.pipelineSupportsStreaming(streamingJobCreationRequest.getPipelineName()) ) {
                 // The streaming job failed the pipeline check. The requested pipeline doesn't support streaming.
                 // Reject the job and send an error response.
@@ -223,7 +223,7 @@ public class StreamingJobController {
                 }
 
                 JsonStreamingInputObject json_stream = new JsonStreamingInputObject(
-                        streamingJobCreationRequest.getStreamUri(),
+                        streamingJobCreationRequest.getStream().getStreamUri(),
                         streamingJobCreationRequest.getSegmentSize(),
                         streamingJobCreationRequest.getMediaProperties());
 

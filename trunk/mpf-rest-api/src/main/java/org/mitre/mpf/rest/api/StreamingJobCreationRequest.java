@@ -26,9 +26,15 @@
 
 package org.mitre.mpf.rest.api;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import java.util.HashMap;
 import java.util.Map;
 
+// swagger includes
+@Api(value = "streaming-jobs")
+@ApiModel(description="StreamingJobCreationRequest model")
 public class StreamingJobCreationRequest {
 	private Map<String, String> jobProperties = new HashMap<>();
 	private Map<String, Map<String,String>> algorithmProperties = new HashMap<>();
@@ -52,6 +58,7 @@ public class StreamingJobCreationRequest {
 		return stream;
 	}
 	public void setStream(JobCreationStreamData streamData) { this.stream = streamData; }
+	@ApiModelProperty(hidden = true)
 	public String getStreamUri() { return stream.getStreamUri(); }
 
 	public Map<String, String> getMediaProperties() { return stream.getMediaProperties(); }

@@ -81,8 +81,7 @@
         <xml-apis.xml-apis.version>1.4.01</xml-apis.xml-apis.version>
         <org.seleniumhq.selenium.selenium-java.version>2.53.0</org.seleniumhq.selenium.selenium-java.version>
         <maven.test.failure.ignore>true</maven.test.failure.ignore>
-      <!-- spring-framework upgraded to 4.2.8.RELEASE to accommodate SpringFox upgrade to 2.6.1 -->
-        <spring.framework.version>4.2.8.RELEASE</spring.framework.version>
+        <spring.framework.version>4.2.5.RELEASE</spring.framework.version>
         <hibernate.framework.version>5.0.8.Final</hibernate.framework.version>
         <hibernate.validator.version>5.2.4.Final</hibernate.validator.version>
         <javax.el.api.version>2.2.4</javax.el.api.version>
@@ -127,8 +126,7 @@
 		<xstream.version>1.4.8</xstream.version>
 		<common.beanutils.version>1.9.2</common.beanutils.version>
 		<mysql.connector.java.version>5.1.36</mysql.connector.java.version>
-      <!-- joda-time upgraded to 2.9.4 to accommodate SpringFox upgrade to 2.6.1 -->
-		<joda.time.version>2.9.4</joda.time.version>
+		<joda.time.version>2.8.2</joda.time.version>
 		<joda.time.hibernate.version>1.4</joda.time.hibernate.version>
 		<jadira.usertype.core.version>5.0.0.GA</jadira.usertype.core.version>
 		<bonecp.spring.version>0.8.0.RELEASE</bonecp.spring.version>
@@ -145,12 +143,7 @@
 		<velocity.version>1.7</velocity.version>
 		<google.protobuf.version>2.6.1</google.protobuf.version>
 		<janino.version>2.7.8</janino.version>
-      <!-- upgraded SpringFox to 2.6.1 to allow for using @ApiModelProperty annotation hidden attribute. Hidden attribute was -->
-      <!-- supported starting in SpringFox 2.6. -->
-      <!-- TODO Does SpringFox 2.6.1 support disabling of validation via an external server? (r.e. comment below) -->
-      <!-- According to the release notes at https://github.com/springfox/springfox/blob/master/docs/release-notes.md -->
-      <!-- Bug #951 was fixed in SpringFox 2.3. so the upgrade to SpringFox 2.6.1 should be ok - but how to test this? -->
-		<springfox.swagger.version>2.6.1</springfox.swagger.version>
+		<springfox.swagger.version>2.1.1</springfox.swagger.version>
     <!-- this is an older version of SpringFox, but it is the only version that enables us to disable validation via an external server; -->
     <!-- for more information, see https://github.com/springfox/springfox/issues/951.  Version 2.3 of SpringFox is supposed to bring     -->
     <!-- this functionality back, but as of mpf release 4, this is not yet ready, so we're forced to use 2.1.1 -->

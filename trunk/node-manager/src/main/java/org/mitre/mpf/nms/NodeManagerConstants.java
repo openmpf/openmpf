@@ -43,7 +43,6 @@ public class NodeManagerConstants {
      * ShuttingDownNoRestart - requesting to go down and then be set to InactiveNoRestart
      * Inactive - currently no longer active after being told to shutdown
      * InactiveNoStart - currently no longer active after being told to shutdown and not allowed to start again if changes are made
-     * Failed - crashed
      * Unknown - never setup in any way (default)
      * Delete - shut down and set to DeleteInactive
      * DeleteInactive - the service is now shut down and ready to be removed from the service table if desired

@@ -26,7 +26,9 @@
 
 import argh
 import base64
+import collections
 import getpass
+import json
 import os
 import re
 import shutil
@@ -188,7 +190,7 @@ def remove_node(node, workflow_manager_url=None):
 @argh.arg('--workflow-manager-url', default='http://localhost:8080/workflow-manager',
           help='Url to Workflow Manager')
 def list_nodes(workflow_manager_url=None):
-    """ List available nodes in the OpenMPF cluster """
+    """ List JGroups membership for nodes in the OpenMPF cluster """
 
     if not is_wfm_running(workflow_manager_url):
         print mpf_util.MsgUtil.yellow('Cannot list available nodes.')
@@ -206,14 +208,23 @@ def list_nodes(workflow_manager_url=None):
     request.add_header('Authorization', 'Basic %s' % base64string)
 
     try:
-        response = urllib2.urlopen(request).read()
+        response = urllib2.urlopen(request)
     except:
         print mpf_util.MsgUtil.red('Problem connecting to %s' % endpoint_url)
         raise
 
-    print response # DEBUG
+    data = json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(response.read())
 
-    # TODO: format and print results
+    if not data:
+        print mpf_util.MsgUtil.red('No nodes are available.')
+        return
+
+    print 'JGroups node membership:'
+    for host in data:
+        if data[host] == 'Available':
+            print host + ': [  ' + mpf_util.MsgUtil.green(data[host]) + '  ]'
+        else:
+            print host + ': [  ' + mpf_util.MsgUtil.yellow(data[host]) + '  ]'
 
 
 def parse_nodes_list(all_mpf_nodes):

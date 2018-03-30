@@ -26,12 +26,13 @@
 
 package org.mitre.mpf.wfm.service;
 
+import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
-import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.wfm.util.Tuple;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 
@@ -59,4 +60,6 @@ public interface NodeManagerService {
     public boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels, boolean reload) throws IOException;
 
     public void updateInitialHosts(List<String> hosts, List<Integer> ports);
+
+    public Map<InetAddress, Boolean> getAvailableHosts();
 }

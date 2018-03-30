@@ -35,6 +35,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
+// parses JGroups UUID address representation
 public class AddressParser {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AddressParser.class);

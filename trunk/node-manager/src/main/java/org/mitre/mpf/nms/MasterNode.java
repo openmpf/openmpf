@@ -41,6 +41,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.util.*;
 
 @Component
@@ -317,6 +318,11 @@ public class MasterNode {
 
     public void updateInitialHosts(List<String> hosts, List<Integer> ports) {
         nodeStateManager.updateInitialHosts(hosts, ports);
+    }
+
+
+    public Map<InetAddress, Boolean> getAvailableHosts() {
+        return nodeStateManager.getAvailableHosts();
     }
 }
 

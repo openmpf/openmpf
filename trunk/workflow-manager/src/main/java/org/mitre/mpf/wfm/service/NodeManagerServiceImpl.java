@@ -49,6 +49,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.net.InetAddress;
 import java.util.*;
 
 import static java.util.stream.Collectors.toCollection;
@@ -265,5 +266,9 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
     public void updateInitialHosts(List<String> hosts, List<Integer> ports) {
         nodeManagerStatus.updateInitialHosts(hosts, ports);
+    }
+
+    public Map<InetAddress, Boolean> getAvailableHosts() {
+        return nodeManagerStatus.getAvailableHosts();
     }
 }

@@ -38,6 +38,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -234,7 +235,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
     }
 
     public Set<String> getRunningNodes() {
-        // no need to have conncurrent hashmap
+        // no need to have concurrent hashmap
         Set<String> rn = new HashSet<>();
         for (Entry<String, NodeDescriptor> e : this.nodeTable.entrySet()) {
             if (e.getValue().getLastKnownState() == NodeManagerConstants.States.Running) {
@@ -311,5 +312,9 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
 
     public void updateInitialHosts(List<String> hosts, List<Integer> ports) {
         msgChannel.updateInitialHosts(hosts, ports);
+    }
+
+    public Map<InetAddress, Boolean> getAvailableHosts() {
+        return msgChannel.getAvailableHosts();
     }
 }

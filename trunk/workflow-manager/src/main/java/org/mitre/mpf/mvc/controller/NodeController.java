@@ -481,22 +481,26 @@ public class NodeController {
 	// EXTERNAL: Only used by "mpf list-nodes"
 	@RequestMapping(value = "/rest/nodes/available-nodes", method = RequestMethod.GET)
 	@ResponseBody
-	public Map<String, Boolean> getAvailableNodes() {
+	public Map<String, String> getAvailableNodes() {
 
-		Set<String> availableNodes = new TreeSet(); // lexicographical order
-		Set<String> unavailableNodes = new TreeSet(); // lexicographical order
+		List<String> allMpfNodes = getAllMpfNodes();
+		Map<InetAddress, Boolean> availableHosts = nodeManagerService.getAvailableHosts(); // TODO: Check for IllegalStateException
 
-		for (String node : getNodeManagerHosts().keySet()) {
-			if (nodeManagerStatus.getCurrentNodeManagerHostsAddressMap().containsKey(node)) {
-				availableNodes.add(node);
-			} else {
-				unavailableNodes.add(node);
+		Map<String, String> availableNodeMap = new LinkedMap(); // maintain insertion order
+		for (InetAddress inetAddress : availableHosts.keySet()) {
+			String ip = inetAddress.getHostAddress();
+			String hostname = inetAddress.getHostName();
+			String key = ip.equals(hostname) ? ip : ip + " (" + hostname + ")";
+			if (allMpfNodes.contains(ip) || allMpfNodes.contains(hostname)) {
+				if (availableHosts.get(inetAddress)) {
+					availableNodeMap.put(key, "Available");
+				} else {
+					availableNodeMap.put(key, "Unavailable");
+				}
+			} else{
+				availableNodeMap.put(key, "Removed");
 			}
 		}
-
-		Map<String, Boolean> availableNodeMap = new LinkedMap(); // maintain insertion order
-		availableNodes.stream().forEach(n -> availableNodeMap.put(n, true));
-		unavailableNodes.stream().forEach(n -> availableNodeMap.put(n, false));
 
 		return availableNodeMap;
 	}

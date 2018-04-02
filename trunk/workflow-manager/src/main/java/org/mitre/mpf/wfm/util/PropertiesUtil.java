@@ -280,6 +280,7 @@ public class PropertiesUtil {
 	@Value("${detection.frame.rate.cap}")
     private int frameRateCap;
 	public int getFrameRateCap() { return frameRateCap; }
+	public void setFrameRateCap(int frameRateCap) { this.frameRateCap = frameRateCap; }
 
 	@Value("${detection.confidence.threshold}")
 	private double confidenceThreshold;

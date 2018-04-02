@@ -266,39 +266,46 @@ public class PropertiesUtil {
 	private int samplingInterval;
 	public int getSamplingInterval() { return samplingInterval; }
 	public void setSamplingInterval(int samplingInterval) { this.samplingInterval = samplingInterval; }
-	public boolean isSamplingIntervalChangeable() { return true; }
 
 	@Value("${detection.confidence.threshold}")
 	private double confidenceThreshold;
 	public double getConfidenceThreshold() { return confidenceThreshold; }
+	public void setConfidenceThreshold(double confidenceThreshold) { this.confidenceThreshold = confidenceThreshold; }
 
 	@Value("${detection.segment.minimum.gap}")
 	private int minAllowableSegmentGap;
 	public int getMinAllowableSegmentGap() { return minAllowableSegmentGap; }
+	public void setMinAllowableSegmentGap(int minAllowableSegmentGap) { this.minAllowableSegmentGap = minAllowableSegmentGap; }
 
 	@Value("${detection.segment.target.length}")
 	private int targetSegmentLength;
 	public int getTargetSegmentLength() { return targetSegmentLength; }
+	public void setTargetSegmentLength(int targetSegmentLength) { this.targetSegmentLength = targetSegmentLength; }
 
 	@Value("${detection.segment.minimum.length}")
 	private int minSegmentLength;
 	public int getMinSegmentLength() { return minSegmentLength; }
+	public void setMinSegmentLength(int minSegmentLength) { this.minSegmentLength = minSegmentLength; }
 
 	@Value("${detection.track.merging.enabled}")
 	private boolean trackMerging;
 	public boolean isTrackMerging() { return trackMerging; }
+	public void setTrackMerging(boolean trackMerging) { this.trackMerging = trackMerging; }
 
 	@Value("${detection.track.min.gap}")
 	private int minAllowableTrackGap;
 	public int getMinAllowableTrackGap() { return minAllowableTrackGap; }
+	public void setMinAllowableTrackGap(int minAllowableTrackGap) { this.minAllowableTrackGap = minAllowableTrackGap; }
 
 	@Value("${detection.track.minimum.length}")
 	private int minTrackLength;
 	public int getMinTrackLength() { return minTrackLength; }
+	public void setMinTrackLength(int minTrackLength) { this.minTrackLength = minTrackLength; }
 
 	@Value("${detection.track.overlap.threshold}")
 	private double trackOverlapThreshold;
 	public double getTrackOverlapThreshold() { return trackOverlapThreshold; }
+	public void setTrackOverlapThreshold(double trackOverlapThreshold) { this.trackOverlapThreshold = trackOverlapThreshold; }
 
 	//
 	// JMS Configuration

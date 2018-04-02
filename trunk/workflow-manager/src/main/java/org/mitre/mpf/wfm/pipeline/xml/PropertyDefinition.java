@@ -32,8 +32,6 @@ import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Properties;
-
 @XStreamAlias("property")
 public class PropertyDefinition {
 	private static final Logger log = LoggerFactory.getLogger(PropertyDefinition.class);
@@ -58,6 +56,7 @@ public class PropertyDefinition {
 
 	@XStreamAsAttribute
 	protected String propertiesKey;
+	public String getPropertiesKey() { return propertiesKey; }
 
 
 	public PropertyDefinition(String name, ValueType type, String description, String defaultValue, String propertiesKey) {
@@ -72,10 +71,8 @@ public class PropertyDefinition {
 		this(name, type, description, defaultValue, null);
 	}
 
-	public void setDefaultValue(Properties properties) {
-		if (propertiesKey != null) {
-			defaultValue = properties.getProperty(propertiesKey);
-		}
+	public void setDefaultValue(String defaultValue) {
+		this.defaultValue = defaultValue;
 	}
 
 	@Override

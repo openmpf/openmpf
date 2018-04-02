@@ -56,7 +56,6 @@ public class StatusViewContext {
         Address localAddress = nodeStateManager.getMessageChannel().getAddress();
         _nodeAddresses = nodeStateManager
                 .getMessageChannel()
-                .getChannel()
                 .getView()
                 .getMembers()
                 .stream()

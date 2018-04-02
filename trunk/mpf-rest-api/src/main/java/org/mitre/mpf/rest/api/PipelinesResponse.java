@@ -24,29 +24,37 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.rest.api;
 
-public class MpfConstants {
-	public static final String
-		FRAME_RATE_CAP_PROPERTY = "FRAME_RATE_CAP",
-		ARTIFACT_EXTRACTION_POLICY_PROPERTY = "ARTIFACT_EXTRACTION_POLICY",
-		MEDIA_SAMPLING_INTERVAL_PROPERTY = "FRAME_INTERVAL",
-		CONFIDENCE_THRESHOLD_PROPERTY = "CONFIDENCE_THRESHOLD",
-		MINIMUM_GAP_BETWEEN_SEGMENTS = "MIN_GAP_BETWEEN_SEGMENTS",
-		TARGET_SEGMENT_LENGTH_PROPERTY = "TARGET_SEGMENT_LENGTH",
-		MINIMUM_SEGMENT_LENGTH_PROPERTY = "MIN_SEGMENT_LENGTH",
-		MERGE_TRACKS_PROPERTY = "MERGE_TRACKS",
-		MIN_GAP_BETWEEN_TRACKS = "MIN_GAP_BETWEEN_TRACKS",
-		MIN_TRACK_LENGTH = "MIN_TRACK_LENGTH",
-		MIN_TRACK_OVERLAP = "MIN_OVERLAP",
-		SEARCH_REGION_ENABLE_DETECTION_PROPERTY = "SEARCH_REGION_ENABLE_DETECTION",
-		SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY = "SEARCH_REGION_TOP_LEFT_X_DETECTION",
-		SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY = "SEARCH_REGION_TOP_LEFT_Y_DETECTION",
-		SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY = "SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION",
-		SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY = "SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION",
-		ROTATION_PROPERTY = "ROTATION",
-		HORIZONTAL_FLIP_PROPERTY = "HORIZONTAL_FLIP",
-		AUTO_ROTATE_PROPERTY = "AUTO_ROTATE",
-		AUTO_FLIP_PROPERTY = "AUTO_FLIP",
-		REPORT_ERROR = "REPORT_ERROR";
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+// swagger includes
+@Api(value = "pipelines")
+@ApiModel(description="PipelinesResponse model")
+public class PipelinesResponse {
+
+    private String pipelineName;
+    @ApiModelProperty(position=1, required = true)
+    public String getPipelineName() { return pipelineName; }
+    public void setPipelineName(String pipelineName) { this.pipelineName = pipelineName; }
+
+    private boolean supportsBatch;
+    @ApiModelProperty(position=2, required = true)
+    public boolean getSupportsBatch() { return supportsBatch; }
+    public void setSupportsBatch(boolean supportsBatch) { this.supportsBatch = supportsBatch; }
+
+    private boolean supportsStreaming;
+    @ApiModelProperty(position=3, required = true)
+    public boolean getSupportsStreaming() { return supportsStreaming; }
+    public void setSupportsStreaming(boolean supportsStreaming) { this.supportsStreaming = supportsStreaming; }
+
+    public PipelinesResponse() {}
+
+    public PipelinesResponse( String pipelineName, boolean supportsBatch, boolean supportsStreaming ) {
+        this.pipelineName = pipelineName;
+        this.supportsBatch = supportsBatch;
+        this.supportsStreaming = supportsStreaming;
+    }
 }

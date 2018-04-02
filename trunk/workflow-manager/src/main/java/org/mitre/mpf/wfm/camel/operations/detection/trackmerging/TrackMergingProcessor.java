@@ -180,7 +180,8 @@ public class TrackMergingProcessor extends WfmProcessor {
 	}
 
 	private TrackMergingPlan createTrackMergingPlan(String samplingIntervalProperty, String minTrackLengthProperty, String mergeTracksProperty, String minGapBetweenTracksProperty, String minTrackOverlapProperty) {
-		int samplingInterval = propertiesUtil.getSamplingInterval(); // get FRAME_INTERVAL system property
+		int defaultSamplingInterval = propertiesUtil.getSamplingInterval(); // get FRAME_INTERVAL system property, is mutable so it is only captured once.
+		int samplingInterval = defaultSamplingInterval;
 		boolean mergeTracks = propertiesUtil.isTrackMerging();
 		int minGapBetweenTracks = propertiesUtil.getMinAllowableTrackGap();
 		int minTrackLength = propertiesUtil.getMinTrackLength();
@@ -190,7 +191,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 			try {
 				samplingInterval = Integer.valueOf(samplingIntervalProperty);
 				if (samplingInterval < 1) {
-					samplingInterval = propertiesUtil.getSamplingInterval(); // get FRAME_INTERVAL system property
+					samplingInterval = defaultSamplingInterval; // use default from the FRAME_INTERVAL system property
 					log.warn("'{}' is not an acceptable " + MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY + " value. Defaulting to '{}'.", samplingIntervalProperty, samplingInterval);
 				}
 			} catch (NumberFormatException exception) {

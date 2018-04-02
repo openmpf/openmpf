@@ -255,13 +255,18 @@ public class DetectionSplitter implements StageSplitter {
 
                     // Segmenting plan is only used by the VideoMediaSegmenter, so only create the DetectionContext to include the segmenting plan for jobs with video media.
 
+                    // Since the detection system properties are mutable, grab the sampling interval system property value just once in case
+                    // the system property value is changed on the UI while this method is still processing the job. Note that the sampling interval system property
+                    // is the only property that is accessed via propertiesUtil more than once in this class, which is why it is getting special handling here.
+					int defaultSamplingInterval = propertiesUtil.getSamplingInterval();
+
                     String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
                         transientAction, transientJob, transientMedia,
-                        propertiesUtil.getSamplingInterval(), propertiesUtil.getFrameRateCap(),
+                        defaultSamplingInterval, propertiesUtil.getFrameRateCap(),
                         Double.valueOf(transientMedia.getMetadata("FPS")));
                     modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
 
-                    segmentingPlan = createSegmentingPlan(modifiedMap);
+                    segmentingPlan = createSegmentingPlan(defaultSamplingInterval, modifiedMap);
                 }
 
                 List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
@@ -325,10 +330,16 @@ public class DetectionSplitter implements StageSplitter {
 		}
 	}
 
-	private SegmentingPlan createSegmentingPlan(Map<String, String> properties) {
+    /**
+     * Create the segmenting plan using the properties defined for the sub-job.
+     * @param defaultSamplingInterval FRAME_INTERVAL system property (frame interval default value)
+     * @param properties properties defined for the sub-job
+     * @return
+     */
+	private SegmentingPlan createSegmentingPlan(int defaultSamplingInterval, Map<String, String> properties) {
 		int targetSegmentLength = propertiesUtil.getTargetSegmentLength();
 		int minSegmentLength = propertiesUtil.getMinSegmentLength();
-		int samplingInterval = propertiesUtil.getSamplingInterval(); // get FRAME_INTERVAL system property
+        int samplingInterval = defaultSamplingInterval;
 		int minGapBetweenSegments = propertiesUtil.getMinAllowableSegmentGap();
 
 		// TODO: Better to use direct map access rather than a loop, but that requires knowing the case of the keys in the map.
@@ -365,7 +376,7 @@ public class DetectionSplitter implements StageSplitter {
 					try {
 						samplingInterval = Integer.valueOf(property.getValue());
 						if (samplingInterval < 1) {
-							samplingInterval = propertiesUtil.getSamplingInterval(); // get FRAME_INTERVAL system property
+							samplingInterval = defaultSamplingInterval;
 							log.warn("'{}' is not an acceptable {} value. Defaulting to '{}'.",
 							         MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
 							         property.getValue(),

@@ -52,7 +52,6 @@ public class StreamingJobCreationRequest {
 		return stream;
 	}
 	public void setStream(JobCreationStreamData streamData) { this.stream = streamData; }
-	public String getStreamUri() { return stream.getStreamUri(); }
 
 	public Map<String, String> getMediaProperties() { return stream.getMediaProperties(); }
 	public int getSegmentSize() {

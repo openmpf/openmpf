@@ -26,7 +26,17 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import static java.util.stream.Collectors.toList;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import javax.servlet.http.HttpServletRequest;
 import org.mitre.mpf.mvc.model.PropertyModel;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -41,13 +51,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
-
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.*;
-
-import static java.util.stream.Collectors.toList;
 
 // NOTE: Don't use @Scope("request") because this class should be treated as a singleton.
 
@@ -95,7 +98,7 @@ public class AdminPropertySettingsController
 
 	@ResponseBody
 	@RequestMapping(value = "/properties", method = RequestMethod.PUT)
-	public void saveProperties(@RequestBody List<PropertyModel> propertyModels, HttpServletRequest request) throws IOException {
+	public void saveProperties(@RequestBody List<PropertyModel> propertyModels, HttpServletRequest request) throws WfmProcessingException, IOException {
 		if (!LoginController.getAuthenticationModel(request).isAdmin()) {
 			throw new IllegalStateException("A non-admin tried to modify properties.");
 
@@ -114,6 +117,9 @@ public class AdminPropertySettingsController
 		try (OutputStream outputStream = propertiesUtil.getCustomPropertiesFile().getOutputStream()) {
 			customProperties.store(outputStream, "modified");
 		}
+
+		// Call method to iterate through the updated properties, and store any of the mutable "detection." system property values that were changed.
+        propertiesUtil.updateDetectionSystemPropertyValues(propertyModels);
 
 		mpfService.addStandardSystemMessage("eServerPropertiesChanged");
 	}

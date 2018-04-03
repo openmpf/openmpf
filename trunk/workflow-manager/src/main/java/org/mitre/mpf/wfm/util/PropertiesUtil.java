@@ -630,7 +630,7 @@ public class PropertiesUtil {
 
     // Update an boolean from a String, retaining the original value of the boolean if the updatedStringValue isn't true or false.
     // Note: we don't want to assume that a non-true value is false, because we want to keep the original value if the updated value isn't valid true or false.
-    public boolean updateValueFromString(String updatedStringValue, boolean originalValue) {
+    private boolean updateValueFromString(String updatedStringValue, boolean originalValue) {
         boolean value = originalValue;
         if ( updatedStringValue != null ) {
             if ( updatedStringValue.equalsIgnoreCase("true") ) {
@@ -643,7 +643,7 @@ public class PropertiesUtil {
     }
 
     // Update an integer from a String, retaining the original value of the integer if the updatedStringValue can't be parsed.
-    public int updateValueFromString(String updatedStringValue, int originalValue) {
+    private int updateValueFromString(String updatedStringValue, int originalValue) {
         int value = originalValue;
         try {
             value = Integer.valueOf(updatedStringValue);
@@ -654,7 +654,7 @@ public class PropertiesUtil {
     }
 
     // Update a double from a String, retaining the original value of the double if the updatedStringValue can't be parsed.
-    public double updateValueFromString(String updatedStringValue, double originalValue) {
+    private double updateValueFromString(String updatedStringValue, double originalValue) {
         double value = originalValue;
         try {
             value = Double.valueOf(updatedStringValue);

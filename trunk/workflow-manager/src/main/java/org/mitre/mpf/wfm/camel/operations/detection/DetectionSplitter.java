@@ -42,6 +42,7 @@ import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
@@ -60,7 +61,6 @@ import org.mitre.mpf.wfm.segmenting.SegmentingPlan;
 import org.mitre.mpf.wfm.segmenting.VideoMediaSegmenter;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,9 +73,6 @@ import org.springframework.stereotype.Component;
 public class DetectionSplitter implements StageSplitter {
 	private static final Logger log = LoggerFactory.getLogger(DetectionSplitter.class);
 	public static final String REF = "detectionStageSplitter";
-
-	@Autowired
-	private PropertiesUtil propertiesUtil;
 
 	@Autowired
 	@Qualifier(RedisImpl.REF)
@@ -255,18 +252,13 @@ public class DetectionSplitter implements StageSplitter {
 
                     // Segmenting plan is only used by the VideoMediaSegmenter, so only create the DetectionContext to include the segmenting plan for jobs with video media.
 
-                    // Since the detection system properties are mutable, grab the sampling interval system property value just once in case
-                    // the system property value is changed on the UI while this method is still processing the job. Note that the sampling interval system property
-                    // is the only property that is accessed via propertiesUtil more than once in this class, which is why it is getting special handling here.
-					int defaultSamplingInterval = propertiesUtil.getSamplingInterval();
-
                     String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
                         transientAction, transientJob, transientMedia,
-                        defaultSamplingInterval, propertiesUtil.getFrameRateCap(),
+						transientJob.getDetectionSystemProperties().getSamplingInterval(), transientJob.getDetectionSystemProperties().getFrameRateCap(),
                         Double.valueOf(transientMedia.getMetadata("FPS")));
                     modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
 
-                    segmentingPlan = createSegmentingPlan(defaultSamplingInterval, modifiedMap);
+                    segmentingPlan = createSegmentingPlan(transientJob.getDetectionSystemProperties(), modifiedMap);
                 }
 
                 List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
@@ -332,15 +324,15 @@ public class DetectionSplitter implements StageSplitter {
 
     /**
      * Create the segmenting plan using the properties defined for the sub-job.
-     * @param defaultSamplingInterval FRAME_INTERVAL system property (frame interval default value)
+     * @param detectionSystemProperties detection system properties whose values were in effect when the transient job was created (contains system property default values)
      * @param properties properties defined for the sub-job
      * @return
      */
-	private SegmentingPlan createSegmentingPlan(int defaultSamplingInterval, Map<String, String> properties) {
-		int targetSegmentLength = propertiesUtil.getTargetSegmentLength();
-		int minSegmentLength = propertiesUtil.getMinSegmentLength();
-        int samplingInterval = defaultSamplingInterval;
-		int minGapBetweenSegments = propertiesUtil.getMinAllowableSegmentGap();
+	private SegmentingPlan createSegmentingPlan(TransientDetectionSystemProperties detectionSystemProperties, Map<String, String> properties) {
+		int targetSegmentLength = detectionSystemProperties.getTargetSegmentLength();
+		int minSegmentLength = detectionSystemProperties.getMinSegmentLength();
+        int samplingInterval = detectionSystemProperties.getSamplingInterval();
+		int minGapBetweenSegments = detectionSystemProperties.getMinAllowableSegmentGap();
 
 		// TODO: Better to use direct map access rather than a loop, but that requires knowing the case of the keys in the map.
 		// Enforce case-sensitivity throughout the WFM.
@@ -376,7 +368,7 @@ public class DetectionSplitter implements StageSplitter {
 					try {
 						samplingInterval = Integer.valueOf(property.getValue());
 						if (samplingInterval < 1) {
-							samplingInterval = defaultSamplingInterval;
+							samplingInterval = detectionSystemProperties.getSamplingInterval();
 							log.warn("'{}' is not an acceptable {} value. Defaulting to '{}'.",
 							         MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
 							         property.getValue(),

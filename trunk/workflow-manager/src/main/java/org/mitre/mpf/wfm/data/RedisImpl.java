@@ -80,6 +80,7 @@ public class RedisImpl implements Redis {
     // The following constants are provided to avoid making typographical errors when formulating keys.
     // Note: BATCH_JOB represents a batch job, while STREAMING_JOB represents a streaming job.
     private static final String
+            JOB_DETECTION_SYSTEM_PROPERTIES = "JOB_DETECTION_SYSTEM_PROPERTIES",
             CANCELLED = "CANCELLED",
             DETAIL = "DETAIL",
             ERRORS = "ERRORS",
@@ -579,8 +580,13 @@ public class RedisImpl implements Redis {
             // Get the hash containing the job properties.
             Map<String, Object> jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
 
+            // Get the detection system properties id for this job from the job hash and form the key needed to reconstruct the TransientDetectionSystemProperties from redis.
+            long detectionSystemPropertiesId = (Long)jobHash.get(JOB_DETECTION_SYSTEM_PROPERTIES);
+            String detectionSystemPropertiesKey = key(BATCH_JOB, jobId, JOB_DETECTION_SYSTEM_PROPERTIES, detectionSystemPropertiesId);
+
             TransientJob transientJob = new TransientJob(jobId,
                     (String) (jobHash.get(EXTERNAL_ID)),
+                    jsonUtils.deserialize((byte[]) (jobHash.get(detectionSystemPropertiesKey)), TransientDetectionSystemProperties.class),
                     jsonUtils.deserialize((byte[]) (jobHash.get(PIPELINE)), TransientPipeline.class),
                     (Integer) (jobHash.get(TASK)),
                     (Integer) (jobHash.get(PRIORITY)),
@@ -618,7 +624,6 @@ public class RedisImpl implements Redis {
         }
 
     }
-
 
     /**
      * Get the transient representation of the streaming job as specified by the streaming jobs unique jobId.
@@ -770,6 +775,17 @@ public class RedisImpl implements Redis {
         // less complex data structures such as lists and hashes (maps). The jobHash variable
         // is used to store the simple properties of a job in a map.
         Map<String, Object> jobHash = new HashMap<>();
+
+        if ( transientJob.getDetectionSystemProperties() == null ) {
+            throw new WfmProcessingException("Error: transientDetectionSystemProperties found to be null for jobId " + transientJob.getId() + ".");
+        }
+
+        // Store the detection system properties associated with the batch job.
+        // The key for the detection system properties associated with this job would be something like BATCH_JOB:5:JOB_DETECTION_SYSTEM_PROPERTIES:16
+        String detectionSystemPropertiesKey = key(BATCH_JOB, transientJob.getId(), JOB_DETECTION_SYSTEM_PROPERTIES, transientJob.getDetectionSystemProperties().getId());
+        redisTemplate.boundValueOps(detectionSystemPropertiesKey).set(jsonUtils.serialize(transientJob.getDetectionSystemProperties()));
+        // Associate the detection system properties id with this job hash.
+        jobHash.put(JOB_DETECTION_SYSTEM_PROPERTIES, transientJob.getDetectionSystemProperties().getId());
 
         // The collection of Redis-assigned IDs for the media elements associated with this job.
         List<Long> mediaIds = new ArrayList<>();

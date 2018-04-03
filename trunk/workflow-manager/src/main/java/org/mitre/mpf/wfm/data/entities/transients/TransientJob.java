@@ -73,8 +73,13 @@ public class TransientJob {
 	private String callbackMethod;
 	public String getCallbackMethod() { return callbackMethod; }
 
+	// Detection system properties for this job are immutable, values shouldn't change once the job is created.
+	private TransientDetectionSystemProperties detectionSystemProperties;
+	public TransientDetectionSystemProperties getDetectionSystemProperties() { return detectionSystemProperties; }
+
 	public TransientJob(long id,
 						String externalId,
+						TransientDetectionSystemProperties detectionSystemProperties,
 						TransientPipeline pipeline,
 						int currentStage,
 						int priority,
@@ -83,6 +88,7 @@ public class TransientJob {
 		this.id = id;
 		this.externalId = externalId;
 		this.pipeline = pipeline;
+		this.detectionSystemProperties = detectionSystemProperties;
 		this.currentStage = currentStage;
 		this.priority = priority;
 		this.outputEnabled = outputEnabled;
@@ -95,14 +101,15 @@ public class TransientJob {
 	@JsonCreator
 	public TransientJob(@JsonProperty("id") long id,
 	                    @JsonProperty("externalId") String externalId,
-	                    @JsonProperty("pipeline") TransientPipeline pipeline,
+                        @JsonProperty("detectionSystemProperties") TransientDetectionSystemProperties detectionSystemProperties,
+                        @JsonProperty("pipeline") TransientPipeline pipeline,
 	                    @JsonProperty("currentStage") int currentStage,
 	                    @JsonProperty("priority") int priority,
 	                    @JsonProperty("outputEnabled") boolean outputEnabled,
 	                    @JsonProperty("cancelled") boolean cancelled,
 						@JsonProperty("callbackURL") String callbackURL,
 						@JsonProperty("callbackMethod") String callbackMethod) {
-		this(id,externalId,pipeline,currentStage,priority,outputEnabled,cancelled);
+		this(id,externalId,detectionSystemProperties,pipeline,currentStage,priority,outputEnabled,cancelled);
 		this.callbackURL = callbackURL;
 		this.callbackMethod = callbackMethod;
 	}

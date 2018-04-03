@@ -29,7 +29,9 @@ package org.mitre.mpf.wfm.util;
 import org.apache.commons.io.IOUtils;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
+import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -264,65 +266,91 @@ public class PropertiesUtil {
 	}
 
 	//
-	// Detection Configuration, only the detection configuration parameters may be modified after OpenMPF startup
+	// Detection Configuration, only the detection configuration parameters may be modified after OpenMPF startup without requiring an OpenMPF restart
 	//
 
 	@Value("${detection.artifact.extraction.policy}")
 	private ArtifactExtractionPolicy artifactExtractionPolicy;
 	public ArtifactExtractionPolicy getArtifactExtractionPolicy() { return artifactExtractionPolicy; }
-	public void setArtifactExtractionPolicy(ArtifactExtractionPolicy artifactExtractionPolicy) { this.artifactExtractionPolicy = artifactExtractionPolicy; }
 
 	@Value("${detection.sampling.interval}")
 	private int samplingInterval;
 	public int getSamplingInterval() { return samplingInterval; }
-	public void setSamplingInterval(int samplingInterval) { this.samplingInterval = samplingInterval; }
 
 	@Value("${detection.frame.rate.cap}")
     private int frameRateCap;
 	public int getFrameRateCap() { return frameRateCap; }
-	public void setFrameRateCap(int frameRateCap) { this.frameRateCap = frameRateCap; }
 
 	@Value("${detection.confidence.threshold}")
 	private double confidenceThreshold;
 	public double getConfidenceThreshold() { return confidenceThreshold; }
-	public void setConfidenceThreshold(double confidenceThreshold) { this.confidenceThreshold = confidenceThreshold; }
 
 	@Value("${detection.segment.minimum.gap}")
 	private int minAllowableSegmentGap;
 	public int getMinAllowableSegmentGap() { return minAllowableSegmentGap; }
-	public void setMinAllowableSegmentGap(int minAllowableSegmentGap) { this.minAllowableSegmentGap = minAllowableSegmentGap; }
 
 	@Value("${detection.segment.target.length}")
 	private int targetSegmentLength;
 	public int getTargetSegmentLength() { return targetSegmentLength; }
-	public void setTargetSegmentLength(int targetSegmentLength) { this.targetSegmentLength = targetSegmentLength; }
 
 	@Value("${detection.segment.minimum.length}")
 	private int minSegmentLength;
 	public int getMinSegmentLength() { return minSegmentLength; }
-	public void setMinSegmentLength(int minSegmentLength) { this.minSegmentLength = minSegmentLength; }
 
 	@Value("${detection.track.merging.enabled}")
 	private boolean trackMerging;
 	public boolean isTrackMerging() { return trackMerging; }
-	public void setTrackMerging(boolean trackMerging) { this.trackMerging = trackMerging; }
 
 	@Value("${detection.track.min.gap}")
 	private int minAllowableTrackGap;
 	public int getMinAllowableTrackGap() { return minAllowableTrackGap; }
-	public void setMinAllowableTrackGap(int minAllowableTrackGap) { this.minAllowableTrackGap = minAllowableTrackGap; }
 
 	@Value("${detection.track.minimum.length}")
 	private int minTrackLength;
 	public int getMinTrackLength() { return minTrackLength; }
-	public void setMinTrackLength(int minTrackLength) { this.minTrackLength = minTrackLength; }
 
 	@Value("${detection.track.overlap.threshold}")
 	private double trackOverlapThreshold;
 	public double getTrackOverlapThreshold() { return trackOverlapThreshold; }
-	public void setTrackOverlapThreshold(double trackOverlapThreshold) { this.trackOverlapThreshold = trackOverlapThreshold; }
 
-	//
+    /**
+     * Create the storage container containing the current values of the "detection." system properties.
+     * @return container object containing the values of the "detection." system properties at the time this method was called.
+     */
+	public synchronized TransientDetectionSystemProperties createTransientDetectionSystemProperties() {
+        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties();
+        return transientDetectionSystemProperties;
+    }
+
+    /**
+     * Iterate through updated properties and update any "detection." system property values that were changed.
+     * This version of the method will change detection system properties for all OpenMPF users.
+     * Note: this method will not change any properties whose updated values are not valid, the original values will be retained.
+     * @param propertyModels list of updated properties
+     * @exception WfmProcessingException is thrown if a detection property that has not been handled is encountered.
+     */
+    public synchronized void updateDetectionSystemPropertyValues(List<PropertyModel> propertyModels) throws WfmProcessingException {
+        for (PropertyModel pm : propertyModels) {
+            if ( pm.getKey().startsWith("detection.") ) {
+                switch (pm.getKey()) {
+                    case "detection.artifact.extraction.policy": this.artifactExtractionPolicy = ArtifactExtractionPolicy.parse(pm.getValue()); break;
+                    case "detection.sampling.interval" : this.samplingInterval = updateValueFromString(pm.getValue(), this.samplingInterval); break;
+                    case "detection.frame.rate.cap" : this.frameRateCap = updateValueFromString(pm.getValue(), this.frameRateCap); break;
+                    case "detection.confidence.threshold" : this.confidenceThreshold = updateValueFromString(pm.getValue(), this.confidenceThreshold); break;
+                    case "detection.segment.minimum.gap" : this.minAllowableSegmentGap = updateValueFromString(pm.getValue(), this.minAllowableSegmentGap); break;
+                    case "detection.segment.target.length" : this.targetSegmentLength = updateValueFromString(pm.getValue(), this.targetSegmentLength); break;
+                    case "detection.segment.minimum.length" : this.minSegmentLength = updateValueFromString(pm.getValue(), this.minSegmentLength); break;
+                    case "detection.track.merging.enabled" : this.trackMerging = updateValueFromString(pm.getValue(), this.trackMerging); break;
+                    case "detection.track.min.gap" : this.minAllowableTrackGap = updateValueFromString(pm.getValue(), this.minAllowableTrackGap); break;
+                    case "detection.track.minimum.length" : this.minTrackLength = updateValueFromString(pm.getValue(), this.minTrackLength); break;
+                    case "detection.track.overlap.threshold" : this.trackOverlapThreshold = updateValueFromString(pm.getValue(), this.trackOverlapThreshold); break;
+                    default: throw new WfmProcessingException("Error, updated property " + pm.getKey() + " isn't handled.");
+                }
+            }
+        }
+    }
+
+    //
 	// JMS Configuration
 	//
 
@@ -599,6 +627,42 @@ public class PropertiesUtil {
 			Files.createDirectories(resourceDir);
 		}
 	}
+
+    // Update an boolean from a String, retaining the original value of the boolean if the updatedStringValue isn't true or false.
+    // Note: we don't want to assume that a non-true value is false, because we want to keep the original value if the updated value isn't valid true or false.
+    public boolean updateValueFromString(String updatedStringValue, boolean originalValue) {
+        boolean value = originalValue;
+        if ( updatedStringValue != null ) {
+            if ( updatedStringValue.equalsIgnoreCase("true") ) {
+                value = Boolean.TRUE;
+            } else if ( updatedStringValue.equalsIgnoreCase("false") ) {
+                value = Boolean.FALSE;
+            }
+        }
+        return value;
+    }
+
+    // Update an integer from a String, retaining the original value of the integer if the updatedStringValue can't be parsed.
+    public int updateValueFromString(String updatedStringValue, int originalValue) {
+        int value = originalValue;
+        try {
+            value = Integer.valueOf(updatedStringValue);
+        } catch (NumberFormatException e) {
+            // Do nothing, keeping the original value.
+        }
+        return value;
+    }
+
+    // Update a double from a String, retaining the original value of the double if the updatedStringValue can't be parsed.
+    public double updateValueFromString(String updatedStringValue, double originalValue) {
+        double value = originalValue;
+        try {
+            value = Double.valueOf(updatedStringValue);
+        } catch (NumberFormatException e) {
+            // Do nothing, keeping the original value.
+        }
+        return value;
+    }
 
 }
 

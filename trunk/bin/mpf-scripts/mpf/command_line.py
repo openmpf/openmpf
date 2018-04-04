@@ -51,7 +51,7 @@ def main():
     try:
         parser.dispatch()
     except mpf_util.MpfError as err:
-        parser.exit('error: %s' % err.message)
+        parser.exit(mpf_util.MsgUtil.red('Error: %s' % err.message))
 
 
 class PrintHelpOnErrorParser(argh.ArghParser):
@@ -61,7 +61,7 @@ class PrintHelpOnErrorParser(argh.ArghParser):
         else:
             # no command provided
             self.print_help()
-            self.exit(2, '\n%s: error: %s\n' % (self.prog, message))
+            self.exit(2, mpf_util.MsgUtil.red('\n%s: Error: %s\n' % (self.prog, message)))
 
 
 if __name__ == '__main__':

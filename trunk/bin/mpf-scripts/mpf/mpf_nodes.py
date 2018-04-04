@@ -207,7 +207,18 @@ def list_nodes(workflow_manager_url=None):
     """ List JGroups membership for nodes in the OpenMPF cluster """
 
     if not is_wfm_running(workflow_manager_url):
-        print mpf_util.MsgUtil.yellow('Cannot list available nodes.')
+        print mpf_util.MsgUtil.yellow('Cannot determine JGroups membership.')
+
+        [mpf_sh_valid, all_mpf_nodes] = check_mpf_sh()
+        if not mpf_sh_valid:
+            return
+
+        [nodes_list, _] = parse_nodes_list(all_mpf_nodes)
+        if not nodes_list:
+            print mpf_util.MsgUtil.red('No nodes configured in %s.' % MPF_SH_FILE_PATH)
+        else:
+            print 'Nodes configured in ' + MPF_SH_FILE_PATH + ':\n' + '\n'.join(nodes_list)
+
         return
 
     [username, password] = get_username_and_password(False)
@@ -251,9 +262,8 @@ def get_wfm_nodes(wfm_manager_url, username, password):
 
     try:
         response = urllib2.urlopen(request)
-    except:
-        print mpf_util.MsgUtil.red('Problem connecting to %s' % endpoint_url)
-        raise
+    except IOError as err:
+        raise mpf_util.MpfError('Problem connecting to ' + endpoint_url + ':\n' + str(err))
 
     return json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(response.read())
 
@@ -310,9 +320,8 @@ def update_wfm_all_mpf_nodes(wfm_manager_url, username, password, nodes_with_por
 
     try:
         urllib2.urlopen(request)
-    except:
-        print mpf_util.MsgUtil.red('Problem connecting to %s' % endpoint_url)
-        raise
+    except IOError as err:
+        raise mpf_util.MpfError('Problem connecting to ' + endpoint_url + ':\n' + str(err))
 
 
 def check_mpf_sh():

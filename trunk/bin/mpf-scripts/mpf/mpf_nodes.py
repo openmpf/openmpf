@@ -35,6 +35,7 @@ import shutil
 import string
 import subprocess
 import tempfile
+import time
 import urllib2
 
 from subprocess import call
@@ -98,7 +99,8 @@ def add_node(node, port=None, workflow_manager_url=None):
         if wfm_running:
             print 'Updating value of ALL_MPF_NODES used by the Workflow Manager.'
             try:
-                update_wfm_all_mpf_nodes(workflow_manager_url, new_nodes_with_ports)
+                [username, password] = get_username_and_password(True)
+                update_wfm_all_mpf_nodes(workflow_manager_url, username, password, new_nodes_with_ports)
             except:
                 print mpf_util.MsgUtil.red('Child node %s has not been added to the cluster.' % node)
                 raise
@@ -113,13 +115,17 @@ def add_node(node, port=None, workflow_manager_url=None):
         print mpf_util.MsgUtil.yellow('Child node %s has not been completely added to the cluster. Manual steps required.' % node)
     else:
         print mpf_util.MsgUtil.green('Child node %s has been added to the cluster.' % node)
-        if wfm_running:
-            print mpf_util.MsgUtil.green('Refresh the Nodes page of the Web UI if it\'s currently open.')
-            print mpf_util.MsgUtil.green('Use that page to add the node and configure services.')
-        else:
+        if not wfm_running:
             print mpf_util.MsgUtil.green('Add the node and configure services using Nodes page of the Web UI '
                                          'the next time you start the Workflow Manager.')
-        print mpf_util.MsgUtil.green('Run \"source /etc/profile.d/mpf.sh\" in any open terminal windows.')
+        else:
+            data = check_node_availability(workflow_manager_url, username, password, node)
+            print_cluster_membership(data)
+
+            print mpf_util.MsgUtil.green('Refresh the Nodes page of the Web UI if it\'s currently open.')
+            print mpf_util.MsgUtil.green('Use that page to add the node and configure services.')
+
+        print mpf_util.MsgUtil.green('Run \"source /etc/profile.d/mpf.sh\" in all open terminal windows.')
 
 
 @argh.arg('node', help='hostname or IP address of child node to remove', action=mpf_util.VerifyHostnameOrIpAddress)
@@ -164,7 +170,8 @@ def remove_node(node, workflow_manager_url=None):
     if wfm_running:
         print 'Updating value of ALL_MPF_NODES used by the Workflow Manager and current node configuration.'
         try:
-            update_wfm_all_mpf_nodes(workflow_manager_url, new_nodes_with_ports)
+            [username, password] = get_username_and_password(True)
+            update_wfm_all_mpf_nodes(workflow_manager_url, username, password, new_nodes_with_ports)
         except:
             print mpf_util.MsgUtil.red('Child node %s has not been removed from the cluster.' % node)
             raise
@@ -179,12 +186,19 @@ def remove_node(node, workflow_manager_url=None):
         print mpf_util.MsgUtil.yellow('Child node %s has not been completely removed from the cluster. Manual steps required.' % node)
     else:
         print mpf_util.MsgUtil.green('Child node %s has been removed from the cluster.' % node)
-        if wfm_running:
-            print mpf_util.MsgUtil.green('Refresh the Nodes page of the Web UI if it\'s currently open.')
-        else:
+        if not wfm_running:
             print mpf_util.MsgUtil.green('Remove the node using Nodes page of the Web UI '
                                          'the next time you start the Workflow Manager.')
-        print mpf_util.MsgUtil.green('Run \"source /etc/profile.d/mpf.sh\" in any open terminal windows.')
+        else:
+            data = get_wfm_nodes(workflow_manager_url, username, password)
+            if data and node in data and data[node] != 'Removed':
+                print mpf_util.MsgUtil.red('%s status is not "Removed".' % node)
+
+            print_cluster_membership(data)
+
+            print mpf_util.MsgUtil.green('Refresh the Nodes page of the Web UI if it\'s currently open.')
+
+        print mpf_util.MsgUtil.green('Run \"source /etc/profile.d/mpf.sh\" in all open terminal windows.')
 
 
 @argh.arg('--workflow-manager-url', default='http://localhost:8080/workflow-manager',
@@ -196,11 +210,39 @@ def list_nodes(workflow_manager_url=None):
         print mpf_util.MsgUtil.yellow('Cannot list available nodes.')
         return
 
-    endpoint_url = ''.join([string.rstrip(workflow_manager_url,'/'),'/rest/nodes/available-nodes'])
+    [username, password] = get_username_and_password(False)
+    data = get_wfm_nodes(workflow_manager_url, username, password)
 
-    print 'Enter the credentials for a Workflow Manager user:'
+    print_cluster_membership(data)
+
+
+def print_cluster_membership(data):
+    if not data:
+        print mpf_util.MsgUtil.red('No nodes are available.')
+        return
+
+    print 'JGroups node membership:'
+    for host in data:
+        if data[host] == 'Available':
+            print host + ': [  ' + mpf_util.MsgUtil.green(data[host]) + '  ]'
+        else:
+            print host + ': [  ' + mpf_util.MsgUtil.yellow(data[host]) + '  ]'
+
+
+def get_username_and_password(for_admin):
+    if (for_admin):
+        print 'Enter the credentials for a Workflow Manager administrator:'
+    else:
+        print 'Enter the credentials for a Workflow Manager user:'
+
     username = raw_input('Username: ')
     password = getpass.getpass('Password: ')
+
+    return [username, password]
+
+
+def get_wfm_nodes(wfm_manager_url, username, password):
+    endpoint_url = ''.join([string.rstrip(wfm_manager_url,'/'),'/rest/nodes/available-nodes'])
 
     request = urllib2.Request(endpoint_url)
     request.get_method = lambda: 'GET'
@@ -213,18 +255,26 @@ def list_nodes(workflow_manager_url=None):
         print mpf_util.MsgUtil.red('Problem connecting to %s' % endpoint_url)
         raise
 
-    data = json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(response.read())
+    return json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(response.read())
 
-    if not data:
-        print mpf_util.MsgUtil.red('No nodes are available.')
-        return
 
-    print 'JGroups node membership:'
-    for host in data:
-        if data[host] == 'Available':
-            print host + ': [  ' + mpf_util.MsgUtil.green(data[host]) + '  ]'
-        else:
-            print host + ': [  ' + mpf_util.MsgUtil.yellow(data[host]) + '  ]'
+def check_node_availability(workflow_manager_url, username, password, node, check_secs = 10):
+    print 'Waiting up to a minute for ' + node + ' to become available.'
+
+    total_time_secs = 0
+    data = get_wfm_nodes(workflow_manager_url, username, password)
+    while (not data or not node in data or data[node] != 'Available') and total_time_secs < 60:
+        print node + ' is not available yet. Sleeping for ' + str(check_secs) + ' seconds ...'
+        time.sleep(check_secs)
+        total_time_secs += check_secs
+        data = get_wfm_nodes(workflow_manager_url, username, password)
+
+    if data and node in data and data[node] == 'Available':
+        print mpf_util.MsgUtil.green('%s is available.' % node)
+    else:
+        print mpf_util.MsgUtil.yellow('%s is not available.' % node)
+
+    return data
 
 
 def parse_nodes_list(all_mpf_nodes):
@@ -250,12 +300,8 @@ def is_wfm_running(wfm_manager_url):
         return False
 
 
-def update_wfm_all_mpf_nodes(wfm_manager_url, nodes_with_ports):
+def update_wfm_all_mpf_nodes(wfm_manager_url, username, password, nodes_with_ports):
     endpoint_url = ''.join([string.rstrip(wfm_manager_url,'/'),'/rest/nodes/all-mpf-nodes'])
-
-    print 'Enter the credentials for a Workflow Manager administrator:'
-    username = raw_input('Username: ')
-    password = getpass.getpass('Password: ')
 
     request = urllib2.Request(endpoint_url, data=nodes_with_ports)
     request.get_method = lambda: 'PUT'

@@ -34,7 +34,9 @@ import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.EnvVar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.support.AbstractBeanFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.Resource;
@@ -113,6 +115,14 @@ public class PropertiesUtil {
 		}
 
 		return child.toAbsolutePath().toFile();
+	}
+
+
+	@Autowired
+	private AbstractBeanFactory beanFactory;
+
+	public String lookup(String propertyName) {
+		return beanFactory.resolveEmbeddedValue(String.format("${%s}", propertyName));
 	}
 
 	//
@@ -265,6 +275,10 @@ public class PropertiesUtil {
 	@Value("${detection.sampling.interval}")
 	private int samplingInterval;
 	public int getSamplingInterval() { return samplingInterval; }
+
+	@Value("${detection.frame.rate.cap}")
+    private int frameRateCap;
+	public int getFrameRateCap() { return frameRateCap; }
 
 	@Value("${detection.confidence.threshold}")
 	private double confidenceThreshold;

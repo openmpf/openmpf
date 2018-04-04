@@ -63,7 +63,7 @@ public class DetectionContext {
 	private final Set<Track> previousTracks;
 	public Set<Track> getPreviousTracks() { return previousTracks; }
 
-	public DetectionContext(
+    public DetectionContext(
 			long jobId,
 			int stageIndex,
 			String stageName,
@@ -83,4 +83,9 @@ public class DetectionContext {
 		this.previousTracks = previousTracks;
 		this.segmentingPlan = segmentingPlan;
 	}
+
+	public String toString() {
+	    return "DetectionContext: jobId: " + jobId + ", stageIndex: " + stageIndex + ", stageName: " + stageName +
+            ", actionIndex: " + actionIndex + ", actionName: " + actionName + ", algorithmProperties: " + algorithmProperties;
+    }
 }

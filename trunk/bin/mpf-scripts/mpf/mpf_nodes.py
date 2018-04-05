@@ -274,7 +274,7 @@ def check_node_availability(workflow_manager_url, username, password, node, chec
     total_time_secs = 0
     data = get_wfm_nodes(workflow_manager_url, username, password)
     while (not data or not node in data or data[node] != 'Available') and total_time_secs < 60:
-        print node + ' is not available yet. Sleeping for ' + str(check_secs) + ' seconds ...'
+        print node + ' is not available yet. Sleeping for ' + str(check_secs) + ' seconds...'
         time.sleep(check_secs)
         total_time_secs += check_secs
         data = get_wfm_nodes(workflow_manager_url, username, password)

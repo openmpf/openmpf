@@ -66,8 +66,7 @@
          oob_thread_pool.queue_max_size="100"
          oob_thread_pool.rejection_policy="discard"/>
     <!-- initial_hosts should include the names of all possible hosts (machines) in our cluster -->
-    <TCPPING initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800]}"
-             port_range="10"/>
+    <TCPPING initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800]}"/>
     <MERGE2  min_interval="10000"
              max_interval="30000"/>
     <FD_SOCK/>

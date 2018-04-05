@@ -53,7 +53,8 @@ public class AddressParser {
 		Matcher matcher = FQN_PATTERN.matcher(addrString);
 
 		if (!matcher.matches() || matcher.groupCount() < 3) {
-			LOG.warn("Address {} is not well formed.", address);
+			LOG.warn("Address " + address + " is not in the form <node-type>" + FQN_SEP + "<host>"
+					+ FQN_SEP + "<description>. It may correspond to a rogue node.");
 			return null;
 		}
 

@@ -549,9 +549,9 @@ public class PropertiesUtil {
 	}
 
 	// Changing the value of an env. variable in the OS will not have any impact on a running JDK process which is using
-	// the old env. variable value. Thus, we use this class to keep track of the runtime value, which is initialized to
-	// the env. variable, but can be changed while the WFM is running. Changing it will not set the env. variable in
-	// /etc/profile.d/mpf.sh.
+	// the old env. variable value. Thus, we use this data member to keep track of the runtime value, which is
+	// initialized to the env. variable, but can be changed while the WFM is running. Changing it will not set the env.
+	// variable in /etc/profile.d/mpf.sh.
 	private String allMpfNodes = System.getenv(EnvVar.ALL_MPF_NODES);
 	public String getAllMpfNodes() {
 		return allMpfNodes;

@@ -389,7 +389,7 @@ class TomcatManager(BaseMpfSystemDependencyManager):
                 return True
             else:
                 raise FailedToStartError(self.dependency_name(),
-                                         'Tomcat is running but the Workflow Manager is not')
+                                         'Tomcat is running but the Workflow Manager is not.')
         except urllib2.URLError as err:
             # ECONNREFUSED occurs when Tomcat isn't running
             # ECONNRESET occurs when Tomcat shuts down

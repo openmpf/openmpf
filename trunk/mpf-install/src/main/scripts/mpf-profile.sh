@@ -42,10 +42,17 @@ export MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 export MPF_LOG_PATH=$MPF_HOME/logs
 export JAVA_HOME=/usr/java/latest
 export THIS_MPF_NODE=$HOSTNAME
-export ALL_MPF_NODES=$THIS_MPF_NODE[7800]
+export MASTER_MPF_NODE=$THIS_MPF_NODE
 
-export CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.port=7800 -Djava.library.path=$MPF_HOME/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
-export ACTIVE_MQ_HOST="failover://(tcp://$HOSTNAME:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
+# TODO: Update:
+# - /opt/apache-tomcat/bin/setenv.sh (Build Guide)
+# - openmpf/trunk/ansible/install/ansible/roles/child/templates/mpf-profile.sh.j2
+# - openmpf/trunk/ansible/install/ansible/roles/master/tasks/tomcat.yml
+# - openmpf/trunk/ansible/install/ansible/roles/master/tasks/https.yml
+
+export CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.address=${THIS_MPF_NODE} -Djgroups.tcp.port=7800 -Djgroups.file_ping.location=${MPF_HOME}/share/nodes -Djava.library.path=$MPF_HOME/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
+
+export ACTIVE_MQ_HOST="failover://(tcp://$MASTER_MPF_NODE:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
 
 # enable tab completion for mpf script
 command -v register-python-argcomplete > /dev/null && eval "$(register-python-argcomplete mpf)"

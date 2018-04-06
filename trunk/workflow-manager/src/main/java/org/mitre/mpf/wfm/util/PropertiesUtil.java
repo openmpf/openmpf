@@ -395,6 +395,21 @@ public class PropertiesUtil {
 	}
 
 
+	@Value("${data.known.nodes.file}")
+	private FileSystemResource knownNodesData;
+
+	public WritableResource getKnownNodes() {
+		if (!knownNodesData.exists()) {
+			try (PrintWriter printWriter = new PrintWriter(knownNodesData.getOutputStream())) {
+				printWriter.write(getThisMpfNodeHostName());
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to write to known nodes file.", e);
+			}
+		}
+		return knownNodesData;
+	}
+
+
 	//
 	// Component upload and registration properties
 	//
@@ -548,6 +563,7 @@ public class PropertiesUtil {
 		return streamingJobStallAlertThreshold;
 	}
 
+	/*
 	// Changing the value of an env. variable in the OS will not have any impact on a running JDK process which is using
 	// the old env. variable value. Thus, we use this data member to keep track of the runtime value, which is
 	// initialized to the env. variable, but can be changed while the WFM is running. Changing it will not set the env.
@@ -559,6 +575,7 @@ public class PropertiesUtil {
 	public void setAllMpfNodes(String allMpfNodes) {
 		this.allMpfNodes = allMpfNodes;
 	}
+	*/
 
 	private void createConfigFiles() throws IOException {
 		if (!mediaTypesFile.exists()) {

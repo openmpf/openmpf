@@ -69,49 +69,54 @@ def add_node(node, port=None, workflow_manager_url=None):
         print mpf_util.MsgUtil.red('Root privilege test failed.')
         return
 
-    # Fail fast if mpf.sh is invalid
-    [mpf_sh_valid, all_mpf_nodes] = check_mpf_sh()
-    if not mpf_sh_valid:
-        return
+    # # Fail fast if mpf.sh is invalid
+    # [mpf_sh_valid, all_mpf_nodes] = check_mpf_sh()
+    # if not mpf_sh_valid:
+    #     return
 
     # Fail fast if ansible hosts file is invalid
     if not check_ansible_hosts():
         return
 
-    [nodes_list, _] = parse_nodes_list(all_mpf_nodes)
+    # [nodes_list, _] = parse_nodes_list(all_mpf_nodes)
 
-    # Check if node is already in all-mpf-nodes
+    nodes_list = get_known_nodes()
+
+    # Check if node is already known
     if node in nodes_list:
         print mpf_util.MsgUtil.yellow('Child node %s is already in the list of known nodes: %s' % (node, nodes_list))
         print mpf_util.MsgUtil.yellow('Please remove it first.')
         return
+
+    nodes_list.append(node)
 
     # Add node to known_hosts
     updated_known_hosts = update_known_hosts(node)
 
     if updated_known_hosts:
 
-        node_with_port = ''.join([node,'[',port,']'])
-        new_nodes_with_ports = ','.join([string.rstrip(all_mpf_nodes,','),node_with_port,'']) # add trailing comma
+        #node_with_port = ''.join([node,'[',port,']'])
+        #new_nodes_with_ports = ','.join([string.rstrip(all_mpf_nodes,','),node_with_port,'']) # add trailing comma
 
-        # If the WFM is running, update the env. variable being used by the WFM
+        # # If the WFM is running, update the env. variable being used by the WFM
         wfm_running = is_wfm_running(workflow_manager_url)
         if wfm_running:
-            print 'Updating value of ALL_MPF_NODES used by the Workflow Manager.'
-            try:
-                [username, password] = get_username_and_password(True)
-                update_wfm_all_mpf_nodes(workflow_manager_url, username, password, new_nodes_with_ports)
-            except:
-                print mpf_util.MsgUtil.red('Child node %s has not been added to the cluster.' % node)
-                raise
-        else:
-            print mpf_util.MsgUtil.yellow('Proceeding anyway.')
+        #     print 'Updating value of ALL_MPF_NODES used by the Workflow Manager.'
+        #     try:
+            [username, password] = get_username_and_password(True)
+        #         update_wfm_all_mpf_nodes(workflow_manager_url, username, password, new_nodes_with_ports)
+        #     except:
+        #         print mpf_util.MsgUtil.red('Child node %s has not been added to the cluster.' % node)
+        #         raise
+        # else:
+        #     print mpf_util.MsgUtil.yellow('Proceeding anyway.')
 
         # Modify system files
-        updated_mpf_sh = update_mpf_sh(new_nodes_with_ports)
+        # updated_mpf_sh = update_mpf_sh(new_nodes_with_ports)
+        updated_known_nodes = update_known_nodes(nodes_list)
         updated_ansible_hosts = update_ansible_hosts(node, True)
 
-    if not updated_known_hosts or not updated_mpf_sh or not updated_ansible_hosts:
+    if not updated_known_hosts or not updated_known_nodes or not updated_ansible_hosts:
         print mpf_util.MsgUtil.yellow('Child node %s has not been completely added to the cluster. Manual steps required.' % node)
     else:
         print mpf_util.MsgUtil.green('Child node %s has been added to the cluster.' % node)
@@ -125,7 +130,7 @@ def add_node(node, port=None, workflow_manager_url=None):
             print mpf_util.MsgUtil.green('Refresh the Nodes page of the Web UI if it\'s currently open.')
             print mpf_util.MsgUtil.green('Use that page to add the node and configure services.')
 
-        print mpf_util.MsgUtil.green('Run \"source /etc/profile.d/mpf.sh\" in all open terminal windows.')
+        #print mpf_util.MsgUtil.green('Run \"source /etc/profile.d/mpf.sh\" in all open terminal windows.')
 
 
 @argh.arg('node', help='hostname or IP address of child node to remove', action=mpf_util.VerifyHostnameOrIpAddress)
@@ -144,45 +149,48 @@ def remove_node(node, workflow_manager_url=None):
         print mpf_util.MsgUtil.red('Root privilege test failed.')
         return
 
-    # Fail fast if mpf.sh is invalid
-    [mpf_sh_valid, all_mpf_nodes] = check_mpf_sh()
-    if not mpf_sh_valid:
-        return
+    # # Fail fast if mpf.sh is invalid
+    # [mpf_sh_valid, all_mpf_nodes] = check_mpf_sh()
+    # if not mpf_sh_valid:
+    #     return
 
     # Fail fast if ansible hosts file is invalid
     if not check_ansible_hosts():
         return
 
-    [nodes_list, nodes_with_ports_list] = parse_nodes_list(all_mpf_nodes)
+    #[nodes_list, nodes_with_ports_list] = parse_nodes_list(all_mpf_nodes)
+    nodes_list = get_known_nodes()
 
     # Check if node is in all-mpf-nodes
     try:
         index = nodes_list.index(node) # will throw ValueError if not found
-        del nodes_with_ports_list[index]
+        #del nodes_with_ports_list[index]
+        del nodes_list[index]
     except ValueError:
         print mpf_util.MsgUtil.yellow('Child node %s is not in the list of known nodes: %s.' % (node, nodes_list))
         print mpf_util.MsgUtil.yellow('Proceeding anyway.')
 
-    new_nodes_with_ports = ','.join(nodes_with_ports_list) + ',' # add trailing comma
+    #new_nodes_with_ports = ','.join(nodes_with_ports_list) + ',' # add trailing comma
 
     # If the WFM is running, update the env. variable being used by the WFM and the WFM nodes config
     wfm_running = is_wfm_running(workflow_manager_url)
     if wfm_running:
-        print 'Updating value of ALL_MPF_NODES used by the Workflow Manager and current node configuration.'
-        try:
-            [username, password] = get_username_and_password(True)
-            update_wfm_all_mpf_nodes(workflow_manager_url, username, password, new_nodes_with_ports)
-        except:
-            print mpf_util.MsgUtil.red('Child node %s has not been removed from the cluster.' % node)
-            raise
-    else:
-        print mpf_util.MsgUtil.yellow('Proceeding anyway.')
+        #print 'Updating value of ALL_MPF_NODES used by the Workflow Manager and current node configuration.'
+        #try:
+        [username, password] = get_username_and_password(True)
+        #    update_wfm_all_mpf_nodes(workflow_manager_url, username, password, new_nodes_with_ports)
+        #except:
+        #    print mpf_util.MsgUtil.red('Child node %s has not been removed from the cluster.' % node)
+        #    raise
+    #else:
+    #    print mpf_util.MsgUtil.yellow('Proceeding anyway.')
 
     # Modify system files
-    updated_mpf_sh = update_mpf_sh(new_nodes_with_ports)
+    #updated_mpf_sh = update_mpf_sh(new_nodes_with_ports)
+    updated_known_nodes = update_known_nodes(nodes_list)
     updated_ansible_hosts = update_ansible_hosts(node, False)
 
-    if not updated_mpf_sh or not updated_ansible_hosts:
+    if not updated_known_nodes or not updated_ansible_hosts:
         print mpf_util.MsgUtil.yellow('Child node %s has not been completely removed from the cluster. Manual steps required.' % node)
     else:
         print mpf_util.MsgUtil.green('Child node %s has been removed from the cluster.' % node)
@@ -198,7 +206,7 @@ def remove_node(node, workflow_manager_url=None):
 
             print mpf_util.MsgUtil.green('Refresh the Nodes page of the Web UI if it\'s currently open.')
 
-        print mpf_util.MsgUtil.green('Run \"source /etc/profile.d/mpf.sh\" in all open terminal windows.')
+        #print mpf_util.MsgUtil.green('Run \"source /etc/profile.d/mpf.sh\" in all open terminal windows.')
 
 
 @argh.arg('--workflow-manager-url', default='http://localhost:8080/workflow-manager',
@@ -206,25 +214,27 @@ def remove_node(node, workflow_manager_url=None):
 def list_nodes(workflow_manager_url=None):
     """ List JGroups membership for nodes in the OpenMPF cluster """
 
-    if not is_wfm_running(workflow_manager_url):
-        print mpf_util.MsgUtil.yellow('Cannot determine JGroups membership.')
+    # if not is_wfm_running(workflow_manager_url):
+    #     print mpf_util.MsgUtil.yellow('Cannot determine JGroups membership.')
+    #
+    #     [mpf_sh_valid, all_mpf_nodes] = check_mpf_sh()
+    #     if not mpf_sh_valid:
+    #         return
+    #
+    #     [nodes_list, _] = parse_nodes_list(all_mpf_nodes)
+    #     if not nodes_list:
+    #         print mpf_util.MsgUtil.red('No nodes configured in %s.' % MPF_SH_FILE_PATH)
+    #     else:
+    #         print 'Nodes configured in ' + MPF_SH_FILE_PATH + ':\n' + '\n'.join(nodes_list)
+    #
+    #     return
+    #
+    # [username, password] = get_username_and_password(False)
+    # data = get_wfm_nodes(workflow_manager_url, username, password)
+    #
+    # print_cluster_membership(data)
 
-        [mpf_sh_valid, all_mpf_nodes] = check_mpf_sh()
-        if not mpf_sh_valid:
-            return
-
-        [nodes_list, _] = parse_nodes_list(all_mpf_nodes)
-        if not nodes_list:
-            print mpf_util.MsgUtil.red('No nodes configured in %s.' % MPF_SH_FILE_PATH)
-        else:
-            print 'Nodes configured in ' + MPF_SH_FILE_PATH + ':\n' + '\n'.join(nodes_list)
-
-        return
-
-    [username, password] = get_username_and_password(False)
-    data = get_wfm_nodes(workflow_manager_url, username, password)
-
-    print_cluster_membership(data)
+    print get_known_nodes()
 
 
 def print_cluster_membership(data):
@@ -252,20 +262,28 @@ def get_username_and_password(for_admin):
     return [username, password]
 
 
-def get_wfm_nodes(wfm_manager_url, username, password):
-    endpoint_url = ''.join([string.rstrip(wfm_manager_url,'/'),'/rest/nodes/available-nodes'])
+def get_known_nodes():
+    if not os.path.isfile(KNOWN_NODES_FILE_PATH):
+        return [os.environ['THIS_MPF_NODE']]
 
-    request = urllib2.Request(endpoint_url)
-    request.get_method = lambda: 'GET'
-    base64string = base64.b64encode('%s:%s' % (username, password))
-    request.add_header('Authorization', 'Basic %s' % base64string)
+    with open(KNOWN_NODES_FILE_PATH, 'r') as file:
+        return file.read().splitlines()
 
-    try:
-        response = urllib2.urlopen(request)
-    except IOError as err:
-        raise mpf_util.MpfError('Problem connecting to ' + endpoint_url + ':\n' + str(err))
 
-    return json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(response.read())
+# def get_wfm_nodes(wfm_manager_url, username, password):
+#     endpoint_url = ''.join([string.rstrip(wfm_manager_url,'/'),'/rest/nodes/available-nodes'])
+#
+#     request = urllib2.Request(endpoint_url)
+#     request.get_method = lambda: 'GET'
+#     base64string = base64.b64encode('%s:%s' % (username, password))
+#     request.add_header('Authorization', 'Basic %s' % base64string)
+#
+#     try:
+#         response = urllib2.urlopen(request)
+#     except IOError as err:
+#         raise mpf_util.MpfError('Problem connecting to ' + endpoint_url + ':\n' + str(err))
+#
+#     return json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(response.read())
 
 
 def check_node_availability(workflow_manager_url, username, password, node, check_secs = 10):
@@ -342,16 +360,30 @@ def check_mpf_sh():
     return [True, out.strip()]
 
 
-def update_mpf_sh(nodes_with_ports):
-    # NOTE: check_mpf_sh() should be called before this function
+# def update_mpf_sh(nodes_with_ports):
+#     # NOTE: check_mpf_sh() should be called before this function
+#
+#     if call(['sudo', 'sed', '-i', 's/\\(' + MPF_SH_SEARCH_STR + '\\).*/\\1' + nodes_with_ports + '/', MPF_SH_FILE_PATH]) != 0:
+#         print mpf_util.MsgUtil.red('Error: Could not update \"' + MPF_SH_SEARCH_STR + '\" in ' + MPF_SH_FILE_PATH + '.')
+#         print mpf_util.MsgUtil.red('Please manually update \"' + MPF_SH_SEARCH_STR + '\" in ' + MPF_SH_FILE_PATH + '.')
+#         return False
+#
+#     print 'Updated \"' + MPF_SH_SEARCH_STR + '\" in ' + MPF_SH_FILE_PATH + '.'
+#     return True
 
-    if call(['sudo', 'sed', '-i', 's/\\(' + MPF_SH_SEARCH_STR + '\\).*/\\1' + nodes_with_ports + '/', MPF_SH_FILE_PATH]) != 0:
-        print mpf_util.MsgUtil.red('Error: Could not update \"' + MPF_SH_SEARCH_STR + '\" in ' + MPF_SH_FILE_PATH + '.')
-        print mpf_util.MsgUtil.red('Please manually update \"' + MPF_SH_SEARCH_STR + '\" in ' + MPF_SH_FILE_PATH + '.')
-        return False
 
-    print 'Updated \"' + MPF_SH_SEARCH_STR + '\" in ' + MPF_SH_FILE_PATH + '.'
+def update_known_nodes(nodes_list):
+    # TODO: Only do this if the WFM isn't running; otherwise, use a REST endpoint (and sync blocks around the resource)
+    # TODO: Treat JGroups nodes that aren't in this file as rogues
+    # TODO: Use $MPF_HOME/data/jgroups
+    # TODO: Remove wait for configured members on startup?
+    with open(KNOWN_NODES_FILE_PATH, 'w') as file:
+        for node in nodes_list:
+            file.write("%s\n" % node)
+
+    print 'Updated ' + KNOWN_NODES_FILE_PATH + '.'
     return True
+
 
 
 def check_ansible_hosts():
@@ -488,6 +520,8 @@ def remove_temp(temppath):
 def remove_all(list, value):
     list[:] = (x for x in list if x != value)
 
+
+KNOWN_NODES_FILE_PATH = os.environ['MPF_HOME'] + '/data/knownNodes.txt'
 
 MPF_SH_FILE_PATH = '/etc/profile.d/mpf.sh' # DEBUG: /home/mpf/Desktop/TMP/mpf-test.sh
 MPF_SH_SEARCH_STR = 'export ALL_MPF_NODES='

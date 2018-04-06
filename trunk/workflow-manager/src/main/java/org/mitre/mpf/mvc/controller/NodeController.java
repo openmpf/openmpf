@@ -28,6 +28,7 @@ package org.mitre.mpf.mvc.controller;
 
 import io.swagger.annotations.*;
 import org.apache.commons.collections.map.LinkedMap;
+import org.apache.commons.io.IOUtils;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.h2.util.StringUtils;
@@ -54,9 +55,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
@@ -139,9 +138,10 @@ public class NodeController {
 	 * get all mpf nodes env var
 	 */
 	// INTERNAL
-	@RequestMapping(value = "/nodes/all-mpf-nodes", method = RequestMethod.GET)
+	@RequestMapping(value = "/nodes/all-mpf-nodes", method = RequestMethod.GET) // TODO: Rename endpoint
 	@ResponseBody
-	public List<String> getAllMpfNodes() {
+	public List<String> getAllMpfNodes() throws IOException {
+		/*
 		String value = propertiesUtil.getAllMpfNodes();
 		List<String> allMpfNodes = new ArrayList<String>();
 		if (!StringUtils.isNullOrEmpty(value)) {
@@ -152,6 +152,9 @@ public class NodeController {
 			}
 		}
 		return allMpfNodes;
+		*/
+
+		return IOUtils.readLines(propertiesUtil.getKnownNodes().getInputStream(), "UTF-8");
 	}
 
 	/*
@@ -390,6 +393,7 @@ public class NodeController {
 		return mpfResponse;
 	}
 
+	// TODO: Refactor to take one hostname and add it to knownNodes.txt
 	// EXTERNAL: Only used by "mpf add-node" and "mpf remove-node"
 	@RequestMapping(value = {"/rest/nodes/all-mpf-nodes"}, method = RequestMethod.PUT)
 	public ResponseEntity<MpfResponse> setAllMpfNodes(@RequestBody String allMpfNodes, HttpServletRequest request)
@@ -447,9 +451,19 @@ public class NodeController {
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
 
+
+		/*
 		// Update the value of ALL_MPF_NODES used by the WFM at runtime.
 		// This value is used to populate the list of available nodes in the Nodes UI.
 		propertiesUtil.setAllMpfNodes(allNodes);
+		*/
+
+		try (OutputStream outputStream = propertiesUtil.getKnownNodes().getOutputStream()) {
+			IOUtils.writeLines(hosts, null, outputStream, "UTF-8");
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to write to known nodes file.", e);
+		}
+
 
 		log.info("hosts: " + hosts); // DEBUG
 
@@ -481,7 +495,7 @@ public class NodeController {
 	// EXTERNAL: Only used by "mpf list-nodes"
 	@RequestMapping(value = "/rest/nodes/available-nodes", method = RequestMethod.GET)
 	@ResponseBody
-	public Map<String, String> getAvailableNodes() {
+	public Map<String, String> getAvailableNodes() throws IOException {
 
 		List<String> allMpfNodes = getAllMpfNodes();
 		Map<InetAddress, Boolean> availableHosts = nodeManagerService.getAvailableHosts(); // TODO: Check for IllegalStateException

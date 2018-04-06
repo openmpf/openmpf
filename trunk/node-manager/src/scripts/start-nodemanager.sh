@@ -47,10 +47,10 @@ fi
 
 javabin=${JAVA_HOME}/bin/java
 
-if [ -n "${THIS_MPF_NODE}" -a -n "${ALL_MPF_NODES}" ]; then
-    JGROUPS_FLAGS="-Djgroups.tcp.address=${THIS_MPF_NODE} -Djgroups.tcp.port=7800 -Djgroups.tcpping.initial_hosts=${ALL_MPF_NODES}"
+if [ -n "${THIS_MPF_NODE}" ]; then
+    JGROUPS_FLAGS="-Djgroups.tcp.address=${THIS_MPF_NODE} -Djgroups.tcp.port=7800 -Djgroups.file_ping.location=${MPF_HOME}/share/nodes"
 else
-    log_warn "THIS_MPF_NODE and/or ALL_MPF_NODES for jgroups are not set" "${logfile}" false
+    log_warn "THIS_MPF_NODE is not set" "${logfile}" false
 fi  
 
 # this should not be set unless running local tests

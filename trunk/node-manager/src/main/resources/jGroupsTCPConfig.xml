@@ -65,8 +65,15 @@
          oob_thread_pool.queue_enabled="false"
          oob_thread_pool.queue_max_size="100"
          oob_thread_pool.rejection_policy="discard"/>
+
     <!-- initial_hosts should include the names of all possible hosts (machines) in our cluster -->
-    <TCPPING initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800]}"/>
+    <!-- <TCPPING initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800]}"/> -->
+
+    <!-- <TCPGOSSIP initial_hosts="${jgroups.tcpgossip.initial_host:localhost}[12001]"/> -->
+
+    <FILE_PING location="${jgroups.file_ping.location:/tmp/jgroups}"/>
+
+
     <MERGE2  min_interval="10000"
              max_interval="30000"/>
     <FD_SOCK/>

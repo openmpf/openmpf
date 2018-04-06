@@ -29,23 +29,18 @@ package org.mitre.mpf.wfm.nodeManager;
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Service;
 
 @Service
 public class StartUp implements SmartLifecycle {
 
-	@Value("${masterNode.enabled}")
-	private boolean useMasterNode;
-
 	@Autowired
 	private NodeManagerStatus nodeManagerStatus;
 
 	@Override
 	public boolean isAutoStartup() {
-		//this property is not being used
-		return useMasterNode;
+		return true;
 	}
 
 	@Override

@@ -38,11 +38,14 @@ import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.wfm.camel.WfmSplitterInterface;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
+import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +74,10 @@ public class TestMediaInspectionSplitter {
     private JsonUtils jsonUtils;
 
     @Autowired
+    @Qualifier(PropertiesUtil.REF)
+    private PropertiesUtil propertiesUtil;
+
+    @Autowired
     @Qualifier(MediaInspectionSplitter.REF)
     private WfmSplitterInterface mediaInspectionSplitter;
 
@@ -93,7 +100,8 @@ public class TestMediaInspectionSplitter {
         final int testStage = 1;
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
-        TransientJob testJob = new TransientJob(jobId, testExternalId, testPipe, testStage, testPriority, testOutputEnabled, false);
+        TransientDetectionSystemProperties detectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
+        TransientJob testJob = new TransientJob(jobId, testExternalId, detectionSystemProperties, testPipe, testStage, testPriority, testOutputEnabled, false);
         final long testMediaId = 123456;
         final String testURI = "/samples/new_face_video.avi";
         TransientMedia testMedia = new TransientMedia(testMediaId, testURI);

@@ -250,6 +250,12 @@ public class RedisImpl implements Redis {
             if ( transientJob == null ) {
                 return;
             }
+
+            // Get the detection system properties id for this job and delete that id and the TransientDetectionSystemProperties from redis.
+            long detectionSystemPropertiesId = transientJob.getDetectionSystemProperties().getId();
+            redisTemplate.delete(key(BATCH_JOB, jobId, JOB_DETECTION_SYSTEM_PROPERTIES, detectionSystemPropertiesId));
+            redisTemplate.boundSetOps(JOB_DETECTION_SYSTEM_PROPERTIES).remove(Long.toString(detectionSystemPropertiesId));
+
             redisTemplate.boundSetOps(BATCH_JOB).remove(Long.toString(jobId));
             redisTemplate.delete(key(BATCH_JOB, jobId));
             for ( TransientMedia transientMedia : transientJob.getMedia() ) {
@@ -581,12 +587,16 @@ public class RedisImpl implements Redis {
             Map<String, Object> jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
 
             // Get the detection system properties id for this job from the job hash and form the key needed to reconstruct the TransientDetectionSystemProperties from redis.
-            long detectionSystemPropertiesId = (Long)jobHash.get(JOB_DETECTION_SYSTEM_PROPERTIES);
-            String detectionSystemPropertiesKey = key(BATCH_JOB, jobId, JOB_DETECTION_SYSTEM_PROPERTIES, detectionSystemPropertiesId);
+            Long detectionSystemPropertiesId = (Long)jobHash.get(JOB_DETECTION_SYSTEM_PROPERTIES);
+            if ( detectionSystemPropertiesId == null ) {
+                throw new WfmProcessingException("Error: detection system properties have not been stored in REDIS for batch job with jobId " + jobId);
+            }
+
+            TransientDetectionSystemProperties detectionSystemProperties = jsonUtils.deserialize((byte[]) (redisTemplate.boundValueOps(key(BATCH_JOB, jobId, JOB_DETECTION_SYSTEM_PROPERTIES, detectionSystemPropertiesId)).get()), TransientDetectionSystemProperties.class);
 
             TransientJob transientJob = new TransientJob(jobId,
                     (String) (jobHash.get(EXTERNAL_ID)),
-                    jsonUtils.deserialize((byte[]) (jobHash.get(detectionSystemPropertiesKey)), TransientDetectionSystemProperties.class),
+                    detectionSystemProperties,
                     jsonUtils.deserialize((byte[]) (jobHash.get(PIPELINE)), TransientPipeline.class),
                     (Integer) (jobHash.get(TASK)),
                     (Integer) (jobHash.get(PRIORITY)),
@@ -783,9 +793,11 @@ public class RedisImpl implements Redis {
         // Store the detection system properties associated with the batch job.
         // The key for the detection system properties associated with this job would be something like BATCH_JOB:5:JOB_DETECTION_SYSTEM_PROPERTIES:16
         String detectionSystemPropertiesKey = key(BATCH_JOB, transientJob.getId(), JOB_DETECTION_SYSTEM_PROPERTIES, transientJob.getDetectionSystemProperties().getId());
-        redisTemplate.boundValueOps(detectionSystemPropertiesKey).set(jsonUtils.serialize(transientJob.getDetectionSystemProperties()));
-        // Associate the detection system properties id with this job hash.
+
+        // Associate the detection system properties id with this job hash, and store the detection system properties for this job in REDIS.
         jobHash.put(JOB_DETECTION_SYSTEM_PROPERTIES, transientJob.getDetectionSystemProperties().getId());
+        TransientDetectionSystemProperties transientDetectionSystemProperties = transientJob.getDetectionSystemProperties();
+        redisTemplate.boundValueOps(detectionSystemPropertiesKey).set(jsonUtils.serialize(transientDetectionSystemProperties));
 
         // The collection of Redis-assigned IDs for the media elements associated with this job.
         List<Long> mediaIds = new ArrayList<>();

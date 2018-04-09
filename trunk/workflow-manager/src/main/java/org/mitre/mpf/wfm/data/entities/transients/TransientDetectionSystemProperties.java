@@ -28,21 +28,21 @@ package org.mitre.mpf.wfm.data.entities.transients;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 // This class is a container class for the detection.* system property values that are captured when a job (i.e. batch job only)
 // is created. Storing detection.* system property values in REDIS so that the system property values will remain
 // consistent throughout all pipeline stages of a batch job, even if the system property values are changed on the
 // UI while a job is being processed. This processing is not implemented for streaming jobs, since
 // streaming jobs may only be single stage at this time.
-public final class TransientDetectionSystemProperties {
+public class TransientDetectionSystemProperties {
 
-    @Autowired
-    @Qualifier(PropertiesUtil.REF)
-    private PropertiesUtil propertiesUtil;
+    private static final Logger log = LoggerFactory.getLogger(TransientDetectionSystemProperties.class);
 
     private long id; // Unique id for this transient object.
     public long getId() { return this.id; }
@@ -81,11 +81,13 @@ public final class TransientDetectionSystemProperties {
     public double getTrackOverlapThreshold() { return trackOverlapThreshold; }
 
     /**
-     * Default constructor sets this containers detection properties using PropertiesUtil detection system property getter methods.
-     * @param id Unique identifier for this transient object.
+     * Constructor sets this containers detection properties using PropertiesUtil detection system property getter methods.
      */
-    public TransientDetectionSystemProperties(long id) {
-        this.id = id;
+    public TransientDetectionSystemProperties(Redis redis, PropertiesUtil propertiesUtil) {
+        log.info("TransientDetectionSystemProperties: debug, redis=" + redis);
+        log.info("TransientDetectionSystemProperties: debug, propertiesUtil=" + propertiesUtil);
+        this.id = redis.getNextSequenceValue();
+        log.info("TransientDetectionSystemProperties: debug, initializing object with id = " + id);
         artifactExtractionPolicy = propertiesUtil.getArtifactExtractionPolicy();
         samplingInterval = propertiesUtil.getSamplingInterval();
         frameRateCap = propertiesUtil.getFrameRateCap();
@@ -97,10 +99,11 @@ public final class TransientDetectionSystemProperties {
         minAllowableTrackGap = propertiesUtil.getMinAllowableTrackGap();
         minTrackLength = propertiesUtil.getMinTrackLength();
         trackOverlapThreshold = propertiesUtil.getTrackOverlapThreshold();
+        log.info("TransientDetectionSystemProperties: debug, created TransientDetectionSystemProperties this = " + this);
     }
 
     @JsonCreator
-    public TransientDetectionSystemProperties(@JsonProperty("id") long id, @JsonProperty("artifactExtractionPolicy") String artifactExtractionPolicy,
+    public TransientDetectionSystemProperties(@JsonProperty("id") long id, @JsonProperty("artifactExtractionPolicy") ArtifactExtractionPolicy artifactExtractionPolicy,
         @JsonProperty("samplingInterval") int samplingInterval,
         @JsonProperty("frameRateCap") int frameRateCap,
         @JsonProperty("confidenceThreshold") double confidenceThreshold,
@@ -111,8 +114,9 @@ public final class TransientDetectionSystemProperties {
         @JsonProperty("minAllowableTrackGap") int minAllowableTrackGap,
         @JsonProperty("minTrackLength") int minTrackLength,
         @JsonProperty("trackOverlapThreshold") double trackOverlapThreshold ) {
+        log.info("TransientDetectionSystemProperties: JSON debug, building object with id = " + id);
         this.id = id;
-        this.artifactExtractionPolicy = ArtifactExtractionPolicy.parse(artifactExtractionPolicy);
+        this.artifactExtractionPolicy = artifactExtractionPolicy;
         this.samplingInterval = samplingInterval;
         this.frameRateCap = frameRateCap;
         this.confidenceThreshold = confidenceThreshold;
@@ -123,6 +127,11 @@ public final class TransientDetectionSystemProperties {
         this.minAllowableTrackGap = minAllowableTrackGap;
         this.minTrackLength = minTrackLength;
         this.trackOverlapThreshold = trackOverlapThreshold;
+        log.info("TransientDetectionSystemProperties: JSON debug, created TransientDetectionSystemProperties this = " + this);
     }
 
+    public String toString() {
+        return "TransientDetectionSystemProperties: id = " + id + ", artifactExtractionPolicy = " + artifactExtractionPolicy +
+            ", samplingInterval = " + samplingInterval + ", frameRateCap = " + frameRateCap;
+    }
 }

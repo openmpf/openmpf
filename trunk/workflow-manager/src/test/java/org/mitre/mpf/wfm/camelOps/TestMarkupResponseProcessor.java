@@ -40,10 +40,12 @@ import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,6 +80,10 @@ public class TestMarkupResponseProcessor {
     @Autowired
     private Redis redis;
 
+    @Autowired
+    @Qualifier(PropertiesUtil.REF)
+    private PropertiesUtil propertiesUtil;
+
     private static final MutableInt SEQUENCE = new MutableInt();
     public int next() {
         synchronized (SEQUENCE) {
@@ -95,7 +101,8 @@ public class TestMarkupResponseProcessor {
         final int priority = 5;
         final long mediaId = 0;
         TransientPipeline dummyPipeline = new TransientPipeline("testMarkupPipeline", "testMarkupPipelineDescription");
-        TransientJob dummyJob = new TransientJob(jobId, Long.toString(jobId), dummyPipeline, currentStage, priority, false, false);
+        TransientDetectionSystemProperties detectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
+        TransientJob dummyJob = new TransientJob(jobId, Long.toString(jobId), detectionSystemProperties, dummyPipeline, currentStage, priority, false, false);
         dummyJob.getMedia().add(new TransientMedia(mediaId, "/samples/meds1.jpg"));
         Markup.MarkupResponse.Builder builder = Markup.MarkupResponse.newBuilder();
         builder.setMediaId(mediaId);

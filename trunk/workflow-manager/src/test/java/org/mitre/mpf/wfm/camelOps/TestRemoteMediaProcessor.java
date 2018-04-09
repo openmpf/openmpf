@@ -39,11 +39,13 @@ import org.mitre.mpf.wfm.camel.WfmSplitterInterface;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
 import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,7 +88,8 @@ public class TestRemoteMediaProcessor {
 	private JsonUtils jsonUtils;
 
 	@Autowired
-	private Redis redis;
+	@Qualifier(PropertiesUtil.REF)
+	private PropertiesUtil propertiesUtil;
 
 	private TransientJob transientJob;
 
@@ -102,7 +105,8 @@ public class TestRemoteMediaProcessor {
 	@PostConstruct
 	public void init() throws Exception {
 		setHttpProxies();
-		transientJob = new TransientJob(next(), null, null, 0, 0, false, false) {{
+        TransientDetectionSystemProperties detectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
+        transientJob = new TransientJob(next(), null, detectionSystemProperties, null, 0, 0, false, false) {{
 			getMedia().add(new TransientMedia(next(), ioUtils.findFile("/samples/meds1.jpg").toString()));
 			getMedia().add(new TransientMedia(next(), EXT_IMG));
 		}};

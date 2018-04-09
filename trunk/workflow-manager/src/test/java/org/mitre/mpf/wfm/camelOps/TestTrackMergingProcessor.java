@@ -42,6 +42,7 @@ import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,6 +78,10 @@ public class TestTrackMergingProcessor {
 
     @Autowired
     private Redis redis;
+
+    @Autowired
+    @Qualifier(PropertiesUtil.REF)
+    private PropertiesUtil propertiesUtil;
 
     @Test(timeout = 5 * MINUTES)
     public void testTrackMergingOn() throws Exception {
@@ -156,7 +161,8 @@ public class TestTrackMergingProcessor {
         trackMergeStageDet.getActions().add(detectionAction);
 
         trackMergePipeline.getStages().add(trackMergeStageDet);
-        TransientJob trackMergeJob = new TransientJob(jobId, "999999", trackMergePipeline, stageIndex, priority, false, false);
+        TransientDetectionSystemProperties detectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
+        TransientJob trackMergeJob = new TransientJob(jobId, "999999", detectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
         trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
 
         redis.persistJob(trackMergeJob);
@@ -230,7 +236,8 @@ public class TestTrackMergingProcessor {
         trackMergeStageDet.getActions().add(detectionAction);
 
         trackMergePipeline.getStages().add(trackMergeStageDet);
-        TransientJob trackMergeJob = new TransientJob(jobId, "999999", trackMergePipeline, stageIndex, priority, false, false);
+        TransientDetectionSystemProperties detectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
+        TransientJob trackMergeJob = new TransientJob(jobId, "999999", detectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
         trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
 
         redis.persistJob(trackMergeJob);

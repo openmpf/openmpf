@@ -453,15 +453,25 @@ public class PipelineServiceImpl implements PipelineService {
     }
 
     private void addAlgorithm(AlgorithmDefinition algorithm) {
-        algorithm.getProvidesCollection().getAlgorithmProperties()
-                .stream()
-                .filter(pd -> pd.getPropertiesKey() != null)
-                .forEach(pd -> pd.setDefaultValue(propertiesUtil.lookup(pd.getPropertiesKey())));
+        setAlgorithmDefaultValues(algorithm);
 
         validateAlgorithm(algorithm);
         log.debug("{}: Adding algorithm", StringUtils.upperCase(algorithm.getName()));
         algorithms.put(StringUtils.upperCase(algorithm.getName()), algorithm);
     }
+
+
+    public void refreshAlgorithmDefaultValues() {
+        algorithms.values().forEach(this::setAlgorithmDefaultValues);
+    }
+
+    private void setAlgorithmDefaultValues(AlgorithmDefinition algorithm) {
+        algorithm.getProvidesCollection().getAlgorithmProperties()
+            .stream()
+            .filter(pd -> pd.getPropertiesKey() != null)
+            .forEach(pd -> pd.setDefaultValue(propertiesUtil.lookup(pd.getPropertiesKey())));
+    }
+
 
 
     @Override

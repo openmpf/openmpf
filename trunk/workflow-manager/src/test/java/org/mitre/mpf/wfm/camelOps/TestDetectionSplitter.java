@@ -43,6 +43,7 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionSplitter;
 import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
@@ -52,6 +53,7 @@ import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,6 +74,10 @@ public class TestDetectionSplitter {
 
     @Autowired
     private IoUtils ioUtils;
+
+    @Autowired
+    @Qualifier(PropertiesUtil.REF)
+    private PropertiesUtil propertiesUtil;
 
     @Qualifier(DetectionSplitter.REF)
     @Autowired
@@ -95,7 +101,8 @@ public class TestDetectionSplitter {
         final int testStage = 0;
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
-        TransientJob testJob = new TransientJob(testId, testExternalId, testPipe, testStage, testPriority, testOutputEnabled, false);
+        TransientDetectionSystemProperties detectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
+        TransientJob testJob = new TransientJob(testId, testExternalId, detectionSystemProperties, testPipe, testStage, testPriority, testOutputEnabled, false);
         TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile("/samples/new_face_video.avi").toString());
         testMedia.setType("VIDEO");
         // Video media must have FPS in metadata to support adaptive frame interval processing.
@@ -352,7 +359,8 @@ public class TestDetectionSplitter {
         final int testStage = 0;
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
-        TransientJob testJob = new TransientJob(testJobId, testExternalId, testPipe, testStage, testPriority, testOutputEnabled, false);
+        TransientDetectionSystemProperties detectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
+        TransientJob testJob = new TransientJob(testJobId, testExternalId, detectionSystemProperties, testPipe, testStage, testPriority, testOutputEnabled, false);
         TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile(mediaUri).toString());
         testMedia.setLength(300);
         testMedia.setType(mediaType);
@@ -394,7 +402,8 @@ public class TestDetectionSplitter {
         dummyStageDet.getActions().add(dummyAction);
         dummyPipeline.getStages().add(dummyStageDet);
 
-        TransientJob testJob = new TransientJob(nextId(), null, dummyPipeline, 0, 0, false, false);
+        TransientDetectionSystemProperties detectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
+        TransientJob testJob = new TransientJob(nextId(), null, detectionSystemProperties, dummyPipeline, 0, 0, false, false);
 
         testJob.setMedia(listMedia);
         testJob.getOverriddenJobProperties().putAll(jobProperties);

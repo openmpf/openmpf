@@ -26,11 +26,30 @@
 
 package org.mitre.mpf.wfm.util;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import javax.annotation.PostConstruct;
 import org.apache.commons.io.IOUtils;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.slf4j.Logger;
@@ -44,23 +63,19 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.time.LocalDateTime;
-import java.util.*;
-
 @Component(PropertiesUtil.REF)
 @Monitored
 public class PropertiesUtil {
-	private static final Logger log = LoggerFactory.getLogger(PropertiesUtil.class);
+
+    private static final Logger log = LoggerFactory.getLogger(PropertiesUtil.class);
 	public static final String REF = "propertiesUtil";
 
-	@PostConstruct
+    @Autowired
+    private Redis redis;
+
+    private TransientDetectionSystemProperties transientDetectionSystemProperties;
+
+    @PostConstruct
 	private void init() throws IOException, WfmProcessingException {
 		createConfigFiles();
 
@@ -102,6 +117,7 @@ public class PropertiesUtil {
 		log.debug("Output Objects Directory = {}", outputObjectsDirectory);
 		log.debug("Remote Media Cache Directory = {}", remoteMediaCacheDirectory);
 		log.debug("Uploaded Components Directory = {}", uploadedComponentsDirectory);
+
 	}
 
 	private static File createOrFail(Path parent, String subdirectory, Set<PosixFilePermission> permissions)
@@ -313,14 +329,29 @@ public class PropertiesUtil {
 	private double trackOverlapThreshold;
 	public double getTrackOverlapThreshold() { return trackOverlapThreshold; }
 
-    /**
-     * Create the storage container containing the current values of the "detection." system properties.
-     * @return container object containing the values of the "detection." system properties at the time this method was called.
-     */
-	public synchronized TransientDetectionSystemProperties createTransientDetectionSystemProperties() {
-        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties();
-        return transientDetectionSystemProperties;
-    }
+    // A static copy of TransientDetectionSystemProperties is required by TestUtil.
+    private static TransientDetectionSystemProperties transientDetectionSystemPropertiesSingleton;
+
+	/**
+	 * Create the storage container containing the current values of the "detection." system properties.
+	 * @return container object containing the values of the "detection." system properties at the time this method was called.
+	 */
+ 	public synchronized TransientDetectionSystemProperties createTransientDetectionSystemProperties() {
+        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(redis, this);
+        log.info("PropertiesUtil.createTransientDetectionSystemProperties(): returning transientDetectionSystemProperties = " + transientDetectionSystemProperties);
+		return transientDetectionSystemProperties;
+	}
+
+//	/** A static version of this method is needed by TestUtil.
+//	 * Create the storage container containing the current values of the "detection." system properties.
+//	 * @return container object containing the values of the "detection." system properties at the time this method was called.
+//	 */
+//	public synchronized static TransientDetectionSystemProperties createTransientDetectionSystemPropertiesSingleton() {
+//        transientDetectionSystemPropertiesSingleton = new TransientDetectionSystemProperties();
+//        transientDetectionSystemPropertiesSingleton.init();
+//        log.info("PropertiesUtil.createTransientDetectionSystemProperties(): returning transientDetectionSystemPropertiesSingleton = " + transientDetectionSystemPropertiesSingleton);
+//		return transientDetectionSystemPropertiesSingleton;
+//	}
 
     /**
      * Iterate through updated properties and update any "detection." system property values that were changed.

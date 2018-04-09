@@ -58,6 +58,7 @@ import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +77,11 @@ public class JobCreationProcessor extends WfmProcessor {
 	public static final String REF = "jobCreationProcessor";
 	private static final String INVALID_PIPELINE_MESSAGE = "INVALID_PIPELINE_MESSAGE";
 
-	@Autowired
+    @Autowired
+    @Qualifier(PropertiesUtil.REF)
+    private PropertiesUtil propertiesUtil;
+
+    @Autowired
 	@Qualifier(RedisImpl.REF)
 	private Redis redis;
 
@@ -166,8 +171,9 @@ public class JobCreationProcessor extends WfmProcessor {
 
             // Capture the state of the detection system properties at the time when this job is first created. Since the
             // detection system properties are mutable, we must insure that the job uses a consistent set of detection system
-            // properties through all stages of the jobs pipeline.
-            TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(redis.getNextSequenceValue());
+            // properties through all stages of the jobs pipeline by storing these detection system property values in REDIS.
+            TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
+			log.info("JobCreationProcessor: created transientDetectionSystemProperties=" + transientDetectionSystemProperties);
 
             TransientPipeline transientPipeline = buildPipeline(jobRequest.getPipeline());
 

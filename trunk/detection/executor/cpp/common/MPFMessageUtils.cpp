@@ -117,6 +117,8 @@ DetectionError translateMPFDetectionError(
             return DetectionError::MEMORY_ALLOCATION_FAILED;
         case MPF_OTHER_DETECTION_ERROR_TYPE:
             return DetectionError::UNRECOGNIZED_DETECTION_ERROR;
+        case MPF_GPU_ERROR:
+            return DetectionError::GPU_ERROR;
         default:
             return DetectionError::UNRECOGNIZED_DETECTION_ERROR;
     }
@@ -173,6 +175,8 @@ MPFDetectionError translateProtobufError(DetectionError err) {
             return MPF_MEMORY_ALLOCATION_FAILED;
         case DetectionError::UNRECOGNIZED_DETECTION_ERROR:
             return MPF_OTHER_DETECTION_ERROR_TYPE;
+        case DetectionError::GPU_ERROR:
+            return MPF_GPU_ERROR;
         default:
             return MPF_OTHER_DETECTION_ERROR_TYPE;
     }

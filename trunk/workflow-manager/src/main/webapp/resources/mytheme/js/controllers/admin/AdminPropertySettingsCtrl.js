@@ -55,6 +55,7 @@ function ($resource) {
 		this.value = serverProperties[this.key];
 	};
 
+	// look for detection. prefix, these are the properties that are mutable
 	var serverProperties;
 
 	return {
@@ -78,7 +79,13 @@ function ($resource) {
 			var saveResult = propertiesResource.update(modifiedProps);
 			saveResult.$promise.then(function () {
 				modifiedProps.forEach(function (prop) {
-					prop.needsRestart = true;
+					console.log("propertiesResource.update: found property named " + prop.key + " has been updated to value " + prop.value);
+					if ( prop.key.indexOf("detection.") === 0 ) {
+            console.log("propertiesResource.update: detection property named " + prop.key + " has been updated to value " + prop.value + ", no restart is required.");
+          } else {
+            console.log("propertiesResource.update: non-detection property named " + prop.key + " has been updated to value " + prop.value + ", a restart is required.");
+            prop.needsRestart = true;
+          }
 					serverProperties[prop.key] = prop.value;
 				});
 			});

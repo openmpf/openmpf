@@ -110,7 +110,13 @@ public class AdminPropertySettingsController
 
 		Properties customProperties = getCustomProperties();
 
+		boolean restartRequired = false;
 		for (PropertyModel pm : propertyModels) {
+		    log.info("AdminPropertySettingsController.saveProperties: debug, saving property pm="+pm);
+		    // If any property that does not start with "detection." has been found to have been changed, then restart of OpenMPF is required
+            if ( !restartRequired && !pm.getKey().startsWith("detection.") ) {
+                restartRequired = true;
+            }
 			customProperties.setProperty(pm.getKey(), pm.getValue());
 		}
 
@@ -121,7 +127,10 @@ public class AdminPropertySettingsController
 		// Call method to iterate through the updated properties, and store any of the mutable "detection." system property values that were changed.
         propertiesUtil.updateDetectionSystemPropertyValues(propertyModels);
 
-		mpfService.addStandardSystemMessage("eServerPropertiesChanged");
+		// Add system message if a restart of OpenMPF is required.
+        if ( restartRequired ) {
+            mpfService.addStandardSystemMessage("eServerPropertiesChanged");
+        }
 	}
 
 

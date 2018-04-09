@@ -448,6 +448,8 @@ public class MPFDetectionBuffer {
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.INVALID_ROTATION;
             case MPF_MEMORY_ALLOCATION_FAILED:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.MEMORY_ALLOCATION_FAILED;
+            case MPF_GPU_ERROR:
+                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.GPU_ERROR;
             default:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.UNRECOGNIZED_DETECTION_ERROR;
         }

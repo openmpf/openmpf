@@ -50,15 +50,12 @@ function ($resource) {
 	});
 
 	propertiesResource.prototype.valueChanged = function () {
-    if ( this.key.indexOf("detection.sampling.interval") === 0 ) {
-      console.log("in valueChanged prototype, this.key="+this.key+", this.value="+this.value+", serverProperties[this.key]="+serverProperties[this.key]+", returning "+
-          (this.value !== serverProperties[this.key]));
-    }
     return this.value !== serverProperties[this.key];
 	};
 
   propertiesResource.prototype.needsRestart = function () {
-     return this.needsRestart;
+    console.log(" propertiesResource.prototype.needsRestart JSON.stringify(this) is "+JSON.stringify(this));
+    return this.needsRestart;
   };
 
   propertiesResource.prototype.isDetectionProperty = function () {
@@ -104,9 +101,11 @@ function ($resource) {
 			saveResult.$promise.then(function () {
 				modifiedProps.forEach(function (prop) {
 				  // Each prop is of type org.mitre.mpf.mvc.model.PropertyModel. Change to the updated value of the modified property in serverProperties.
-          // If the modified property indicates that a value change requires a restart, set the flag to indicate a restart is needed.
-					serverProperties[prop.key] = prop.value;
-          prop.needsRestart = prop.needsRestartIfChanged();
+          // If the modified property indicates that a value change requires a restart, then prop.needsRestart will be set as needed.
+          console.log(" propertiesResource.update JSON.stringify(prop) is "+JSON.stringify(prop));
+          prop.needsRestart = prop.valueChanged() && prop.needsRestartIfChanged;
+          serverProperties[prop.key] = prop.value;
+          // prop.needsRestart = prop.needsRestartIfChanged;
 				});
 			});
 			return saveResult;

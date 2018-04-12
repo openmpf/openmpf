@@ -101,7 +101,8 @@ public class AdminPropertySettingsController
 
 	@ResponseBody
 	@RequestMapping(value = "/properties", method = RequestMethod.PUT)
-    /** Save changed system properties to the custom mpf properties file. If any detection system properties have changed, that are identified as changeable without OpenMPF restart,
+    /** Call this method to save system properties that have changed to the custom mpf properties file.
+     * If any detection system properties have changed, that are identified as changeable without OpenMPF restart,
      * then update those detection system properties via PropertiesUtil. Add system message if a restart of OpenMPF is required for any other system property that is changed and
      * requires a restart to apply the change.
      * @param propertyModels list of system properties that have changed since OpenMPF startup.
@@ -118,12 +119,11 @@ public class AdminPropertySettingsController
 
 		Properties customProperties = getCustomProperties();
 
-		boolean restartRequired = false;
 		for (PropertyModel pm : propertyModels) {
-		    // Not all of the property changes require a restart of OpenMPF.
-            if ( !restartRequired && pm.getNeedsRestartIfChanged() ) {
-                restartRequired = true;
-            }
+		    // Not all of the property changes require a restart of OpenMPF, set needsRestart based upon whether or not a restart is required if a properties value has changed.
+            pm.setIsValueChanged(pm.getValue());
+            pm.setNeedsRestart(pm.getIsValueChanged() && pm.getNeedsRestartIfChanged());
+            log.info("AdminPropertySettingsController.saveProperties: updated pm=" + pm);
 			customProperties.setProperty(pm.getKey(), pm.getValue());
 		}
 
@@ -138,7 +138,7 @@ public class AdminPropertySettingsController
         propertiesUtil.updateDetectionSystemPropertyValues(propertyModels);
 
 		// Add system message if a restart of OpenMPF is required.
-        if ( restartRequired ) {
+        if ( propertyModels.stream().anyMatch(pm -> pm.getNeedsRestart() ) ) {
             mpfService.addStandardSystemMessage("eServerPropertiesChanged");
         }
 	}

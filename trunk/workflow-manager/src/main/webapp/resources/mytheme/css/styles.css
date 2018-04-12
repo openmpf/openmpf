@@ -297,23 +297,11 @@ div.server-media .panel-body{
     font-weight: bold;
 }
 
-.labelChangedValueWithNoRestartRequired {
-    color: green !important;
-    font-weight: bold;
-}
-
 .valueNeedsServerRestart {
     color: blue !important;
     border-color: blue;
     backgound-color: #9999EE;
     font-weight: bold;
-}
-
-.valueChangedValueWithNoRestartRequiredIcon {
-  font-family: 'Glyphicons Halflings';
-  color: green !important;
-  font-weight: normal;
-  padding: 0px 2px 0px 1px;
 }
 
 .serverNeedsRestartIcon {

@@ -35,9 +35,7 @@ public class PropertyModel {
 
     private boolean _isValueChanged = false;
 	private boolean _needsRestartIfChanged = true;
-
-	// Storage of initial value for the set of properties that may be changed without restart (required for RESET)
-	private String _initialValue = null;
+	private boolean _needsRestart = false;
 
 	public PropertyModel() {
 
@@ -47,12 +45,6 @@ public class PropertyModel {
 		_key = key;
 		_value = value;
         _isValueChanged = isValueChanged;
-
-        // Store property value at OpenMPF startup (making it available for later reset for the set of properties that may be changed without OpenMPF restart).
-        if ( _initialValue == null ) {
-            _initialValue = value;
-        }
-
         _needsRestartIfChanged = needsRestartIfChanged;
 	}
 
@@ -60,7 +52,6 @@ public class PropertyModel {
 	public String getKey() {
 		return _key;
 	}
-
 	public void setKey(String key) {
 		_key = key;
 	}
@@ -69,31 +60,25 @@ public class PropertyModel {
 	public String getValue() {
 		return _value;
 	}
-
 	public void setValue(String value) {
 		_value = value;
 	}
 
 	public boolean getIsValueChanged() { return _isValueChanged; }
+    public void setIsValueChanged(String currentValue) {
+        _isValueChanged = currentValue.equals(_value);
+    }
+
 	public boolean getNeedsRestartIfChanged() {
 		return _needsRestartIfChanged;
 	}
 
-    /**
-     * Check to see if this property was changed by the admin to a value different than the initial value sometime after OpenMPF started.
-     * @return Returns true if the current property value is not the same as it was when OpenMPF started up, false otherwise.
-     */
-	public boolean getIsInitialValueChanged() {
-        return ! _value.equals(_initialValue);
-    }
-
-    /**
-     * Get the OpenMPF startup (initial) value of this property.
-     * @return the OpenMPF startup (initial) value of this property.
-     */
-	public String getInitialValue() { return _initialValue; }
-
-	public void setNeedsRestartIfChanged(boolean needsRestart) {
-        _needsRestartIfChanged = needsRestart;
+	public boolean getNeedsRestart() { return _needsRestart; }
+	public void setNeedsRestart(boolean needsRestart) {
+        _needsRestart = needsRestart;
 	}
+
+	public String toString() {
+	    return "_key: " + _key + ", _value: " + _value + ", _needsRestartIfChanged: " + _needsRestartIfChanged + ", _isValueChanged: " + _isValueChanged + ", _needsRestart: " + _needsRestart;
+    }
 }

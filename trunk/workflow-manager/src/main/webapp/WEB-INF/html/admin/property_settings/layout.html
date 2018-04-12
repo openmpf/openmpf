@@ -40,9 +40,6 @@
                 and the "Reset All Properties" button will only reset these properties to the last saved value on the server.
             </li>
             <li>
-              <span class="labelChangedValueWithNoRestartRequired">Properties in green have been saved to the server and will be in effect for any newly created and/or resubmitted jobs.</span>
-            </li>
-            <li>
                 <span class="labelNeedsServerRestart">Properties in blue</span> and/or marked with <span class="glyphicon-retweet serverNeedsRestartIcon"></span>
                 have been saved to the server, but will only take effect after the server is restarted.
             </li>
@@ -71,12 +68,12 @@
                     <!-- if the property has already been modified (exists in modifiedPropertiesMap) then change the style dependent upon whether or not OpenMPF needs to be restarted to apply the change -->
                   <td id="propertiesCellName_{{prop.key}}" class="formlabel smart-wrap">
                         <!-- if the value was changed, but restart is required then display the property name with the "needs restart" color. -->
-                        <!-- if the value was changed, but restart is not required then display the property name with the "no need for restart" color. -->
-												<span ng-class="{labelNeedsServerRestart: prop.valueChanged() && prop.needsRestart, formlabelChanged: prop.valueChanged()}">
+                        <!-- if the value was changed, but restart is not required then display the property name with the "value changed" color. -->
+												<span ng-class="{labelNeedsServerRestart: prop.needsRestart, formlabelChanged: prop.valueChanged()}">
 													{{prop.key}}
 												</span>
                     <!-- if this property was changed, and a restart is required to apply the change, then show to server restart glyph alongside the system property -->
-                    <span class="glyphicon glyphicon-retweet serverNeedsRestartIcon" ng-show="prop.valueChanged() && prop.needsRestartIfChanged"></span>
+                    <span class="glyphicon glyphicon-retweet serverNeedsRestartIcon" ng-show="prop.needsRestart"></span>
                     <!-- if this property was changed and has not yet been saved to the property file, then show the edit glyph alongside the system property -->
                     <span class="glyphicon-edit valueChangedIcon" ng-show="isAdmin && prop.valueChanged()"></span>
                   </td>

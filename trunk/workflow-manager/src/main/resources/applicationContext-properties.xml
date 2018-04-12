@@ -33,20 +33,24 @@
                            http://www.springframework.org/schema/util
                            http://www.springframework.org/schema/util/spring-util.xsd">
 
+    <bean id="customPropFile" class="org.springframework.core.io.FileSystemResource">
+        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/config/mpf-custom.properties</value></constructor-arg>
+    </bean>
+
     <beans profile="default">
-        <util:list id="propFiles">
+        <util:list id="propFiles" value-type="org.springframework.core.io.Resource">
             <value>classpath:properties/mpf.properties</value>
             <value>classpath:properties/mpf-private.properties</value>
-            <value type="org.springframework.core.io.FileSystemResource">#{systemEnvironment['MPF_HOME']}/config/mpf-custom.properties</value>
+            <ref bean="customPropFile" />
         </util:list>
     </beans>
 
     <beans profile="jenkins">
-        <util:list id="propFiles">
+        <util:list id="propFiles" value-type="org.springframework.core.io.Resource">
             <value>classpath:properties/mpf.properties</value>
             <value>classpath:properties/mpf-jenkins.properties</value>
             <value>classpath:properties/mpf-private.properties</value>
-            <value type="org.springframework.core.io.FileSystemResource">#{systemEnvironment['MPF_HOME']}/config/mpf-custom.properties</value>
+            <ref bean="customPropFile" />
         </util:list>
     </beans>
 

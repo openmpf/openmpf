@@ -94,6 +94,9 @@ public class PropertiesUtil {
 						PosixFilePermission.OTHERS_EXECUTE
 				));
 
+		// create the default models directory, although the user may have set "detection.models.dir.path" to something else
+		createOrFail(share, "models", permissions);
+
 		log.info("All file resources are stored within the shared directory '{}'.", share);
 		log.debug("Artifacts Directory = {}", artifactsDirectory);
 		log.debug("Markup Directory = {}", markupDirectory);
@@ -266,6 +269,9 @@ public class PropertiesUtil {
 	//
 	// Detection Configuration
 	//
+
+    // TODO: Use MPFPropertiesConfigurationBuilder for getters
+    // TODO: Add method to set custom properties that uses the builder
 
 	@Value("${detection.artifact.extraction.policy}")
 	private ArtifactExtractionPolicy artifactExtractionPolicy;

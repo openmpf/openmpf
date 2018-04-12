@@ -780,6 +780,12 @@
             <scope>test</scope>
         </dependency>
         <!-- / for testing HTTP callback -->
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <version>2.2</version>
+        </dependency>
     </dependencies>
 
     <!-- NOTE: profile tags override non-profile tags -->

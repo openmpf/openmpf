@@ -124,7 +124,7 @@
 		<mockito.core.version>1.10.19</mockito.core.version>
 		<commons.io.version>2.6</commons.io.version>
 		<xstream.version>1.4.8</xstream.version>
-		<common.beanutils.version>1.9.2</common.beanutils.version>
+		<common.beanutils.version>1.9.3</common.beanutils.version>
 		<mysql.connector.java.version>5.1.36</mysql.connector.java.version>
 		<joda.time.version>2.8.2</joda.time.version>
 		<joda.time.hibernate.version>1.4</joda.time.hibernate.version>

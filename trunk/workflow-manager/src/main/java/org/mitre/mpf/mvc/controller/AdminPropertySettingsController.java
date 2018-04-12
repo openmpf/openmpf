@@ -120,6 +120,7 @@ public class AdminPropertySettingsController
 
 
 	private Properties getCustomProperties() throws IOException {
+		// TODO: Use Apache commons configuration over PropertiesLoaderUtils since it does composite
 		return PropertiesLoaderUtils.loadProperties(propertiesUtil.getCustomPropertiesFile());
 	}
 

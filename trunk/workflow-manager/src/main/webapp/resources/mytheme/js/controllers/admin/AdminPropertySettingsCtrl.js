@@ -57,8 +57,8 @@ function ($resource) {
     return this.value !== serverProperties[this.key];
 	};
 
-  propertiesResource.prototype.needsRestartIfChanged = function () {
-     return this.needsRestartIfChanged;
+  propertiesResource.prototype.needsRestart = function () {
+     return this.needsRestart;
   };
 
   propertiesResource.prototype.isDetectionProperty = function () {
@@ -103,9 +103,10 @@ function ($resource) {
 			var saveResult = propertiesResource.update(modifiedProps);
 			saveResult.$promise.then(function () {
 				modifiedProps.forEach(function (prop) {
-				  // Each prop is of type org.mitre.mpf.mvc.model.PropertyModel. Change the updated value of the modified property in serverProperties.
-          // Note that each prop contains within it, the indicator specifying if OpenMPF needs to be restarted top apply the change. See PropertyModel method getNeedsRestartIfChanged().
+				  // Each prop is of type org.mitre.mpf.mvc.model.PropertyModel. Change to the updated value of the modified property in serverProperties.
+          // If the modified property indicates that a value change requires a restart, set the flag to indicate a restart is needed.
 					serverProperties[prop.key] = prop.value;
+          prop.needsRestart = prop.needsRestartIfChanged();
 				});
 			});
 			return saveResult;

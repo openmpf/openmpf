@@ -94,7 +94,7 @@ public class AdminPropertySettingsController
         // TODO, issue with detection.models.dir.path which is initialized using ${mpf.share.path} and already digested by Spring at this point. So, detection.models.dir.path exclusion is required
 		// Any property that starts with "detection." may be changed without requiring restart of OpenMPF, with the single exception of the detection.models.dir.path property.
         boolean isValueChanged = !Objects.equals(currentValue, modelValue);
-		boolean needsRestartIfChanged = (!key.startsWith("detection.") && isValueChanged && !key.equals("detection.models.dir.path"));
+		boolean needsRestartIfChanged = !key.startsWith("detection.") && !key.equals("detection.models.dir.path");
 		return new PropertyModel(key, modelValue, isValueChanged, needsRestartIfChanged);
 	}
 
@@ -120,7 +120,6 @@ public class AdminPropertySettingsController
 
 		boolean restartRequired = false;
 		for (PropertyModel pm : propertyModels) {
-		    log.info("AdminPropertySettingsController.saveProperties: debug, processing property pm.getKey()="+pm.getKey() + ", pm.getValue()=" + pm.getValue() +", pm.isValueChanged()=" + pm.getIsValueChanged() + ", pm.getNeedsRestartIfChanged()=" + pm.getNeedsRestartIfChanged());
 		    // Not all of the property changes require a restart of OpenMPF.
             if ( !restartRequired && pm.getNeedsRestartIfChanged() ) {
                 restartRequired = true;

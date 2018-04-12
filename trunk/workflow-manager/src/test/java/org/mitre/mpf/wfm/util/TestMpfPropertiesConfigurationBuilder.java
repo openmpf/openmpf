@@ -88,21 +88,19 @@ public class TestMpfPropertiesConfigurationBuilder {
         Assert.assertEquals(mpfHome + "/share/models/", mpfPropertiesconfig.getString(MODELS_DIR_KEY));
 
         // attempt to resolve every property value
-        int count = 0;
         Iterator<String> keyIterator = mpfPropertiesconfig.getKeys();
         while (keyIterator.hasNext()) {
             String key = keyIterator.next();
 
-            // NOTE: config.getProperty() doesn't do interpolation
-
-            // this call actually resolves the value; if interpolation fails, a ConfigurationException will be thrown
+            // NOTE: config.getProperty() doesn't do interpolation;
+            // this call actually resolves the value
             String value = mpfPropertiesconfig.getString(key);
 
             System.out.println(key + " = " + value); // DEBUG
-            count++;
-        }
 
-        Assert.assertEquals(79, count);
+            Assert.assertFalse(key + " has a value of \"" + value + "\", which contains \"${\". Failed interpolation?",
+                    value.contains("${"));
+        }
     }
 
     @Test

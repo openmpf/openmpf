@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.data.entities.transients;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -82,12 +81,11 @@ public class TransientDetectionSystemProperties {
 
     /**
      * Constructor sets this containers detection properties using PropertiesUtil detection system property getter methods.
+     * @param id unique id for this object (required for REDIS storage)
+     * @propertiesUtil provides access to current system property values.
      */
-    public TransientDetectionSystemProperties(Redis redis, PropertiesUtil propertiesUtil) {
-        log.info("TransientDetectionSystemProperties: debug, redis=" + redis);
-        log.info("TransientDetectionSystemProperties: debug, propertiesUtil=" + propertiesUtil);
-        this.id = redis.getNextSequenceValue();
-        log.info("TransientDetectionSystemProperties: debug, initializing object with id = " + id);
+    public TransientDetectionSystemProperties(long id, PropertiesUtil propertiesUtil) {
+        this.id = id;
         artifactExtractionPolicy = propertiesUtil.getArtifactExtractionPolicy();
         samplingInterval = propertiesUtil.getSamplingInterval();
         frameRateCap = propertiesUtil.getFrameRateCap();
@@ -114,7 +112,6 @@ public class TransientDetectionSystemProperties {
         @JsonProperty("minAllowableTrackGap") int minAllowableTrackGap,
         @JsonProperty("minTrackLength") int minTrackLength,
         @JsonProperty("trackOverlapThreshold") double trackOverlapThreshold ) {
-        log.info("TransientDetectionSystemProperties: JSON debug, building object with id = " + id);
         this.id = id;
         this.artifactExtractionPolicy = artifactExtractionPolicy;
         this.samplingInterval = samplingInterval;

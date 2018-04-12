@@ -39,7 +39,9 @@ propSettingsModule.factory('PropertiesSvc', [
 '$resource',
 function ($resource) {
 
-	// brian directed here
+	// This propertiesResource.update call uses the /properties REST endpoint (method: PUT)
+  // defined in AdminPropertySettingsController to save the system properties. The system properties are
+  // passed as a List of Java org.mitre.mpf.mvc.model.PropertyModel objects to the mpf properties file. i.e. will save the system properties to the properties file.
 	var propertiesResource = $resource('properties', {}, {
 		update: {
 			method: 'PUT',
@@ -48,10 +50,22 @@ function ($resource) {
 	});
 
 	propertiesResource.prototype.valueChanged = function () {
-		return this.value !== serverProperties[this.key];
+    if ( this.key.indexOf("detection.sampling.interval") === 0 ) {
+      console.log("in valueChanged prototype, this.key="+this.key+", this.value="+this.value+", serverProperties[this.key]="+serverProperties[this.key]+", returning "+
+          (this.value !== serverProperties[this.key]));
+    }
+    return this.value !== serverProperties[this.key];
 	};
 
-	propertiesResource.prototype.resetProperty = function () {
+  propertiesResource.prototype.needsRestartIfChanged = function () {
+     return this.needsRestartIfChanged;
+  };
+
+  propertiesResource.prototype.isDetectionProperty = function () {
+    return ( this.key.indexOf("detection.") === 0 );
+  };
+
+  propertiesResource.prototype.resetProperty = function () {
 		this.value = serverProperties[this.key];
 	};
 
@@ -59,8 +73,12 @@ function ($resource) {
 	var serverProperties;
 
 	return {
-		query: function () {
+
+    // Get the list of system properties.
+    query: function () {
 			serverProperties = { };
+			// Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get the system properties. This endpoint will
+      // return a List of org.mitre.mpf.mvc.model.PropertyModel objects.
 			var properties = propertiesResource.query();
 			properties
 				.$promise
@@ -71,21 +89,22 @@ function ($resource) {
 				});
 			return properties;
 		},
+
 		update: function (properties) {
+
+		  // Reduce the properties List of org.mitre.mpf.mvc.model.PropertyModel objects to only those that have values that have been changed, store reduced list in modifiedProps variable.
 			var modifiedProps = properties.filter(function (p) {
-				return p.valueChanged();
+			  return p.valueChanged();
 			});
 
+      // Save the list of modified system properties in var modifiedProps using propertiesResource.update method.
+      // Note: the update method uses the /properties REST endpoint (method: PUT) defined in AdminPropertySettingsController to save the
+      // modified system properties (as a List of org.mitre.mpf.mvc.model.PropertyModel objects) to the custom properties file.
 			var saveResult = propertiesResource.update(modifiedProps);
 			saveResult.$promise.then(function () {
 				modifiedProps.forEach(function (prop) {
-					console.log("propertiesResource.update: found property named " + prop.key + " has been updated to value " + prop.value);
-					if ( prop.key.indexOf("detection.") === 0 ) {
-            console.log("propertiesResource.update: detection property named " + prop.key + " has been updated to value " + prop.value + ", no restart is required.");
-          } else {
-            console.log("propertiesResource.update: non-detection property named " + prop.key + " has been updated to value " + prop.value + ", a restart is required.");
-            prop.needsRestart = true;
-          }
+				  // Each prop is of type org.mitre.mpf.mvc.model.PropertyModel. Change the updated value of the modified property in serverProperties.
+          // Note that each prop contains within it, the indicator specifying if OpenMPF needs to be restarted top apply the change. See PropertyModel method getNeedsRestartIfChanged().
 					serverProperties[prop.key] = prop.value;
 				});
 			});
@@ -121,6 +140,7 @@ function ($scope, $rootScope, $confirm, $state, PropertiesSvc, NotificationSvc) 
 
 	$scope.isAdmin = $rootScope.roleInfo.admin;
 
+	// Get the list of system properties (each property in the list is of type org.mitre.mpf.mvc.model.PropertyModel).
 	$scope.properties = PropertiesSvc.query();
 
 	$scope.resetAllProperties = function () {

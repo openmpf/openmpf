@@ -287,8 +287,18 @@ div.server-media .panel-body{
     color: blue;
 }
 
-.labelNeedsServerRestart {
+.labelValueNotChanged {
+  color: black !important;
+  font-weight: normal;
+}
+
+.labelNeedsServerRestart {: width:;
     color: blue !important;
+    font-weight: bold;
+}
+
+.labelChangedValueWithNoRestartRequired {
+    color: green !important;
     font-weight: bold;
 }
 
@@ -299,6 +309,13 @@ div.server-media .panel-body{
     font-weight: bold;
 }
 
+.valueChangedValueWithNoRestartRequiredIcon {
+  font-family: 'Glyphicons Halflings';
+  color: green !important;
+  font-weight: normal;
+  padding: 0px 2px 0px 1px;
+}
+
 .serverNeedsRestartIcon {
     font-family: 'Glyphicons Halflings';
     color: blue !important;
@@ -307,13 +324,18 @@ div.server-media .panel-body{
 }
 
 .formlabel {
-    color: #505050;
+    color: #505050; /* dark gray */
     text-align: left;
 }
 
 .formlabelChanged {
-    color: #ab5d05 !important;
+    color: #ab5d05 !important; /* burnt orange */
     font-weight: bold;
+}
+
+.formlabelChangedAppliedWithoutRestart {
+  color: #ab5d0f !important; /* dark green */
+  font-weight: bold;
 }
 
 .forminput {

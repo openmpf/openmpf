@@ -329,38 +329,43 @@ public class PropertiesUtil {
 	private double trackOverlapThreshold;
 	public double getTrackOverlapThreshold() { return trackOverlapThreshold; }
 
-    // A static copy of TransientDetectionSystemProperties is required by TestUtil.
-    private static TransientDetectionSystemProperties transientDetectionSystemPropertiesSingleton;
+//    // A static copy of TransientDetectionSystemProperties is required by TestUtil.
+//    private static TransientDetectionSystemProperties transientDetectionSystemPropertiesSingleton;
+//	private static final long TransientDetectionSystemPropertiesSingletonId = 0;
+//
+//    /** A static version of this method is needed by TestUtil.
+//     * Create the storage container containing the current values of the "detection." system properties.
+//     * @return container object containing the values of the "detection." system properties at the time this method was called.
+//     */
+//    public synchronized static TransientDetectionSystemProperties createTransientDetectionSystemPropertiesSingleton() {
+//        long uniqueId = 0;
+//        transientDetectionSystemPropertiesSingleton = new TransientDetectionSystemProperties(0, getArtifactExtractionPolicy(), );
+//        return transientDetectionSystemPropertiesSingleton;
+//    }
 
-	/**
+
+    /**
 	 * Create the storage container containing the current values of the "detection." system properties.
+     * This method, along with method updateDetectionSystemPropertyValues, is synchronized so that changes to the detection properties on the UI will be collected as an updated group
+     * and then collected into the TransientDetectionSystemProperties container.
 	 * @return container object containing the values of the "detection." system properties at the time this method was called.
 	 */
  	public synchronized TransientDetectionSystemProperties createTransientDetectionSystemProperties() {
-        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(redis, this);
-        log.info("PropertiesUtil.createTransientDetectionSystemProperties(): returning transientDetectionSystemProperties = " + transientDetectionSystemProperties);
+        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(redis.getNextSequenceValue(), this);
 		return transientDetectionSystemProperties;
 	}
-
-//	/** A static version of this method is needed by TestUtil.
-//	 * Create the storage container containing the current values of the "detection." system properties.
-//	 * @return container object containing the values of the "detection." system properties at the time this method was called.
-//	 */
-//	public synchronized static TransientDetectionSystemProperties createTransientDetectionSystemPropertiesSingleton() {
-//        transientDetectionSystemPropertiesSingleton = new TransientDetectionSystemProperties();
-//        transientDetectionSystemPropertiesSingleton.init();
-//        log.info("PropertiesUtil.createTransientDetectionSystemProperties(): returning transientDetectionSystemPropertiesSingleton = " + transientDetectionSystemPropertiesSingleton);
-//		return transientDetectionSystemPropertiesSingleton;
-//	}
 
     /**
      * Iterate through updated properties and update any "detection." system property values that were changed.
      * This version of the method will change detection system properties for all OpenMPF users.
      * Note: this method will not change any properties whose updated values are not valid, the original values will be retained.
+     * This method, along with method createTransientDetectionSystemProperties, is synchronized so that changes to the detection properties on the UI will be collected as an updated group
+     * and then collected into the TransientDetectionSystemProperties container when it is created in method createTransientDetectionSystemProperties.
      * @param propertyModels list of updated properties
      * @exception WfmProcessingException is thrown if a detection property that has not been handled is encountered.
      */
     public synchronized void updateDetectionSystemPropertyValues(List<PropertyModel> propertyModels) throws WfmProcessingException {
+        // TODO, potential issue with detection.model.dir.path property, which has been initialized from ${mpf.share.path}
         for (PropertyModel pm : propertyModels) {
             if ( pm.getKey().startsWith("detection.") ) {
                 switch (pm.getKey()) {
@@ -375,7 +380,10 @@ public class PropertiesUtil {
                     case "detection.track.min.gap" : this.minAllowableTrackGap = updateValueFromString(pm.getValue(), this.minAllowableTrackGap); break;
                     case "detection.track.minimum.length" : this.minTrackLength = updateValueFromString(pm.getValue(), this.minTrackLength); break;
                     case "detection.track.overlap.threshold" : this.trackOverlapThreshold = updateValueFromString(pm.getValue(), this.trackOverlapThreshold); break;
-                    default: throw new WfmProcessingException("Error, updated property " + pm.getKey() + " isn't handled.");
+                    default: log.warn("PropertiesUtils warning, update to property " + pm.getKey() + " to " + pm.getValue() + " isn't saved."); break;
+                }
+                if ( pm.getNeedsRestartIfChanged() ) {
+                    log.warn("PropertiesUtils warning, update to property " + pm.getKey() + " to " + pm.getValue() + " requires a restart.");
                 }
             }
         }

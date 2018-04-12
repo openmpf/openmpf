@@ -91,13 +91,21 @@ public class AdminPropertySettingsController
 		String currentValue = Objects.toString(entry.getValue(), null);
 		String modelValue = customProperties.getProperty(key, currentValue);
 
-		boolean needsRestart = !Objects.equals(currentValue, modelValue);
-		return new PropertyModel(key, modelValue, needsRestart);
+        // TODO, issue with detection.models.dir.path which is initialized using ${mpf.share.path} and already digested by Spring at this point. So, detection.models.dir.path exclusion is required
+		// Any property that starts with "detection." may be changed without requiring restart of OpenMPF, with the single exception of the detection.models.dir.path property.
+        boolean isValueChanged = !Objects.equals(currentValue, modelValue);
+		boolean needsRestartIfChanged = (!key.startsWith("detection.") && isValueChanged && !key.equals("detection.models.dir.path"));
+		return new PropertyModel(key, modelValue, isValueChanged, needsRestartIfChanged);
 	}
 
 
 	@ResponseBody
 	@RequestMapping(value = "/properties", method = RequestMethod.PUT)
+    /** Save changed system properties to the custom mpf properties file. If any detection system properties have changed, that are identified as changeable without OpenMPF restart,
+     * then update those detection system properties via PropertiesUtil. Add system message if a restart of OpenMPF is required for any other system property that is changed and
+     * requires a restart to apply the change.
+     * @param propertyModels list of system properties that have changed since OpenMPF startup.
+     */
 	public void saveProperties(@RequestBody List<PropertyModel> propertyModels, HttpServletRequest request) throws WfmProcessingException, IOException {
 		if (!LoginController.getAuthenticationModel(request).isAdmin()) {
 			throw new IllegalStateException("A non-admin tried to modify properties.");
@@ -112,9 +120,9 @@ public class AdminPropertySettingsController
 
 		boolean restartRequired = false;
 		for (PropertyModel pm : propertyModels) {
-		    log.info("AdminPropertySettingsController.saveProperties: debug, saving property pm="+pm);
-		    // If any property that does not start with "detection." has been found to have been changed, then restart of OpenMPF is required
-            if ( !restartRequired && !pm.getKey().startsWith("detection.") ) {
+		    log.info("AdminPropertySettingsController.saveProperties: debug, processing property pm.getKey()="+pm.getKey() + ", pm.getValue()=" + pm.getValue() +", pm.isValueChanged()=" + pm.getIsValueChanged() + ", pm.getNeedsRestartIfChanged()=" + pm.getNeedsRestartIfChanged());
+		    // Not all of the property changes require a restart of OpenMPF.
+            if ( !restartRequired && pm.getNeedsRestartIfChanged() ) {
                 restartRequired = true;
             }
 			customProperties.setProperty(pm.getKey(), pm.getValue());
@@ -124,7 +132,10 @@ public class AdminPropertySettingsController
 			customProperties.store(outputStream, "modified");
 		}
 
-		// Call method to iterate through the updated properties, and store any of the mutable "detection." system property values that were changed.
+		// Call method to iterate through the system properties that may have been updated on the UI,
+        // and store any of the "detection." system property values that were changed.
+        // Note that PropertiesUtils methods updateDetectionSystemPropertyValues and createTransientDetectionSystemProperties are synchronized
+        // so that a batch jobs detection system properties will stay constant while a job is running.
         propertiesUtil.updateDetectionSystemPropertyValues(propertyModels);
 
 		// Add system message if a restart of OpenMPF is required.

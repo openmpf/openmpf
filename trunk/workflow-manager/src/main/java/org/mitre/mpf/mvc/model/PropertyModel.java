@@ -33,18 +33,36 @@ public class PropertyModel {
 
 	private String _value;
 
-	private boolean _needsRestart;
+    private boolean _isValueChanged = false;
+	private boolean _needsRestartIfChanged = true;
 
+	// Storage of initial value for the set of properties that may be changed without restart (required for RESET)
+	private static String _initialValue = null;
+
+    // _isInitialValueChanged will only be true if the current property value is not the same as it was when OpenMPF started up.
+    private static boolean _isInitialValueChanged = false;
 
 	public PropertyModel() {
 
 	}
 
 
-	public PropertyModel( String key, String value, boolean needsRestart) {
+	public PropertyModel( String key, String value, boolean isValueChanged, boolean needsRestartIfChanged) {
 		_key = key;
 		_value = value;
-		_needsRestart = needsRestart;
+        _isValueChanged = isValueChanged;
+
+        // Store property value at OpenMPF startup (making it available for later reset for the set of properties that may be changed without OpenMPF restart).
+        if ( _initialValue == null ) {
+            _initialValue = value;
+        }
+
+        // If the value changed, is it currently the same as the initial value?
+        if ( isValueChanged && ! _value.equals(_initialValue) ) {
+            _isInitialValueChanged = true;
+        }
+
+        _needsRestartIfChanged = needsRestartIfChanged;
 	}
 
 
@@ -65,12 +83,24 @@ public class PropertyModel {
 		_value = value;
 	}
 
-
-	public boolean getNeedsRestart() {
-		return _needsRestart;
+	public boolean getIsValueChanged() { return _isValueChanged; }
+	public boolean getNeedsRestartIfChanged() {
+		return _needsRestartIfChanged;
 	}
 
-	public void setNeedsRestart(boolean needsRestart) {
-		_needsRestart = needsRestart;
+    /**
+     * Check to see if this property was changed by the admin to a value different than the initial value sometime after OpenMPF started.
+     * @return Returns true if the current property value is not the same as it was when OpenMPF started up, false otherwise.
+     */
+	public boolean getIsInitialValueChanged() { return _isInitialValueChanged; }
+
+    /**
+     * Get the OpenMPF startup (initial) value of this property.
+     * @return the OpenMPF startup (initial) value of this property.
+     */
+	public String getInitialValue() { return _initialValue; }
+
+	public void setNeedsRestartIfChanged(boolean needsRestart) {
+        _needsRestartIfChanged = needsRestart;
 	}
 }

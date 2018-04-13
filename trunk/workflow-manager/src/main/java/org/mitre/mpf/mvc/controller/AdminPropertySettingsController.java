@@ -26,16 +26,18 @@
 
 package org.mitre.mpf.mvc.controller;
 
+ import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -44,10 +46,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.util.*;
-
-import static java.util.stream.Collectors.toList;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
 
 // NOTE: Don't use @Scope("request") because this class should be treated as a singleton.
 
@@ -59,69 +61,53 @@ public class AdminPropertySettingsController
 	private static final Logger log = LoggerFactory.getLogger(AdminPropertySettingsController.class);
 
 	@Autowired
-	@Qualifier(PropertiesUtil.REF)
 	private PropertiesUtil propertiesUtil;
 
 	@Autowired
 	private MpfService mpfService;
 
-	@Autowired
-	@Qualifier("loadedProperties")
-	private Properties currentProperties;
-
-
+	@javax.annotation.Resource(name="customPropFile")
+	private Resource customPropFile;
 
 	@ResponseBody
 	@RequestMapping(value = "/properties", method = RequestMethod.GET)
-	public List<PropertyModel> getProperties() throws IOException {
-		Properties customProperties = getCustomProperties();
+	public List<PropertyModel> getProperties() {
 
-		return currentProperties.entrySet()
-				.stream()
-				.map(e -> convertEntryToModel(e, customProperties))
-				.collect(toList());
-	}
+		// TODO: Move this implementaiton to PropertiesUtil / MpfPropertiesConfigurationBuilder; remove customPropFile
 
+		// reload custom properties file from disk to compare against current properties in use
+		Configuration mpfCustomPropertiesConfig = getCustomPropertiesConfiguration(customPropFile);
 
-	private static PropertyModel convertEntryToModel(Map.Entry<?, ?> entry, Properties customProperties) {
-		String key = entry.getKey().toString();
-		String currentValue = Objects.toString(entry.getValue(), null);
-		String modelValue = customProperties.getProperty(key, currentValue);
+		// generate a complete list of property models and determine if a WFM restart is needed for each
+		List <PropertyModel> propertyModels = new ArrayList<>();
+		Iterator<String> propertyKeyIter = propertiesUtil.getKeyIterator();
+		while (propertyKeyIter.hasNext()) {
+			String key = propertyKeyIter.next();
+			String currentValue = propertiesUtil.lookup(key);
+			String customValue = mpfCustomPropertiesConfig.getString(key, currentValue);
 
-		boolean needsRestart = !Objects.equals(currentValue, modelValue);
-		return new PropertyModel(key, modelValue, needsRestart);
+			boolean needsRestart = !Objects.equals(currentValue, customValue);
+			propertyModels.add(new PropertyModel(key, customValue, needsRestart));
+		}
+
+		return propertyModels;
 	}
 
 
 	@ResponseBody
 	@RequestMapping(value = "/properties", method = RequestMethod.PUT)
-	public void saveProperties(@RequestBody List<PropertyModel> propertyModels, HttpServletRequest request) throws IOException {
+	public void saveProperties(@RequestBody List<PropertyModel> propertyModels, HttpServletRequest request) {
 		if (!LoginController.getAuthenticationModel(request).isAdmin()) {
 			throw new IllegalStateException("A non-admin tried to modify properties.");
-
 		}
 
 		if (propertyModels.isEmpty()) {
 			return;
 		}
 
-		Properties customProperties = getCustomProperties();
-
-		for (PropertyModel pm : propertyModels) {
-			customProperties.setProperty(pm.getKey(), pm.getValue());
-		}
-
-		try (OutputStream outputStream = propertiesUtil.getCustomPropertiesFile().getOutputStream()) {
-			customProperties.store(outputStream, "modified");
-		}
+		propertiesUtil.setAndSaveCustomProperties(propertyModels);
 
 		mpfService.addStandardSystemMessage("eServerPropertiesChanged");
-	}
-
-
-	private Properties getCustomProperties() throws IOException {
-		// TODO: Use Apache commons configuration over PropertiesLoaderUtils since it does composite
-		return PropertiesLoaderUtils.loadProperties(propertiesUtil.getCustomPropertiesFile());
 	}
 
 
@@ -130,5 +116,17 @@ public class AdminPropertySettingsController
 	@ResponseBody
 	public int getDefaultJobPriority() {
 		return propertiesUtil.getJmsPriority();
-	}	
+	}
+
+
+	private Configuration getCustomPropertiesConfiguration(Resource resource) {
+		try {
+			Configurations configs = new Configurations();
+			return configs.propertiesBuilder(resource.getURL()).getConfiguration();
+		} catch (ConfigurationException e) {
+			throw new IllegalStateException("Cannot create configuration from " + resource + ".", e);
+		} catch (IOException e) {
+			throw new IllegalStateException("Cannot get URL from " + resource + ".", e);
+		}
+	}
 }

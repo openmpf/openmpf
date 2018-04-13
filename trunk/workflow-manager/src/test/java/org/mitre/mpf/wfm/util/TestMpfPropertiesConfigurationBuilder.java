@@ -37,16 +37,19 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
+import org.mitre.mpf.mvc.model.PropertyModel;
+import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.WritableResource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.List;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
@@ -68,9 +71,12 @@ public class TestMpfPropertiesConfigurationBuilder {
     @javax.annotation.Resource(name="customPropFile")
     private Resource customPropFile;
 
+    @Autowired
+    private PropertiesUtil propertiesUtil;
+
     @Test
     public void testGetConfiguration() {
-        ImmutableConfiguration mpfPropertiesconfig = mpfPropertiesConfigurationBuilder.getConfiguration();
+        ImmutableConfiguration mpfPropertiesconfig = mpfPropertiesConfigurationBuilder.getCompleteConfiguration();
 
         Assert.assertEquals(1, mpfPropertiesconfig.getInt(FRAME_INTERVAL_KEY));
 
@@ -105,15 +111,15 @@ public class TestMpfPropertiesConfigurationBuilder {
 
     @Test
     public void testSave() throws ConfigurationException, IOException {
-        ImmutableConfiguration mpfPropertiesconfig = mpfPropertiesConfigurationBuilder.getConfiguration();
+        ImmutableConfiguration mpfPropertiesconfig = mpfPropertiesConfigurationBuilder.getCompleteConfiguration();
 
-        Map<String, String> newCustomPropertiesMap = new HashMap<>();
-        newCustomPropertiesMap.put(FRAME_INTERVAL_KEY, "4");
-        newCustomPropertiesMap.put(MODELS_DIR_KEY, "${" + SHARE_PATH_KEY +"}/new/dir/");
-        newCustomPropertiesMap.put(TIMEOUT_KEY, "60");
+        List<PropertyModel> newCustomPropertyModels = new ArrayList<>();
+        newCustomPropertyModels.add(new PropertyModel(FRAME_INTERVAL_KEY, "4", false));
+        newCustomPropertyModels.add(new PropertyModel(MODELS_DIR_KEY, "${" + SHARE_PATH_KEY +"}/new/dir/", false));
+        newCustomPropertyModels.add(new PropertyModel(TIMEOUT_KEY, "60", false));
 
         ImmutableConfiguration newMpfPropertiesConfig =
-                mpfPropertiesConfigurationBuilder.setAndSaveCustomProperties(newCustomPropertiesMap);
+                mpfPropertiesConfigurationBuilder.setAndSaveCustomProperties(newCustomPropertyModels);
 
         String mpfHome = System.getenv(MPF_HOME_ENV_VAR);
         Assert.assertNotNull(mpfHome);
@@ -149,5 +155,17 @@ public class TestMpfPropertiesConfigurationBuilder {
         // reset
         mpfCustomPropertiesConfig.clear();
         mpfCustomPropertiesConfigBuilder.save();
+    }
+
+    @Test
+    public void testPropertiesUtil() {
+        Assert.assertTrue(propertiesUtil.isAmqBrokerEnabled());
+
+        Assert.assertEquals(1, propertiesUtil.getAmqBrokerPurgeWhiteList().size());
+
+        Assert.assertEquals(ArtifactExtractionPolicy.VISUAL_EXEMPLARS_ONLY, propertiesUtil.getArtifactExtractionPolicy());
+
+        Assert.assertTrue(WritableResource.class.isAssignableFrom(propertiesUtil.getAlgorithmDefinitions().getClass()));
+        Assert.assertTrue(propertiesUtil.getAlgorithmDefinitions().exists());
     }
 }

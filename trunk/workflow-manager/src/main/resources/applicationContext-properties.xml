@@ -67,14 +67,8 @@
         </bean>
 
         <!-- Make properties available to Spring -->
+        <!-- This is necessary so that beans in other applicationContext*.xml files can reference property values by key -->
         <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-            <property name="ignoreResourceNotFound" value="true"/>
-            <property name="locations" ref="propFiles" />
-        </bean>
-
-        <!-- Registers a java.util.Properties object that can be injected.
-             The properties object will contain the same properties loaded by Spring. -->
-        <bean class="org.springframework.beans.factory.config.PropertiesFactoryBean" id="loadedProperties">
             <property name="ignoreResourceNotFound" value="true"/>
             <property name="locations" ref="propFiles" />
         </bean>

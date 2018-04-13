@@ -35,9 +35,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
 import java.util.Properties;
 
 /**
@@ -58,6 +55,8 @@ public class MediaTypeUtils {
         // Providing a way to statically access the properties that load on the component.
         mediaTypeProperties = localProperties;
     }
+
+    // TODO: Use Apache Commons Configuration
 
     @Resource(name="mediaTypeProperties")
     private Properties localProperties;

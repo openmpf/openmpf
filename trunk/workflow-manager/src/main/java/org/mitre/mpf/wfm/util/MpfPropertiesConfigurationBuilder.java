@@ -29,14 +29,15 @@ package org.mitre.mpf.wfm.util;
 import org.apache.commons.configuration2.*;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.mitre.mpf.mvc.model.PropertyModel;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class MpfPropertiesConfigurationBuilder {
@@ -60,15 +61,18 @@ public class MpfPropertiesConfigurationBuilder {
     public MpfPropertiesConfigurationBuilder() {} // empty to allow for Spring autowiring
 
     // TODO: Update PropertiesUtil to use this config to get all properties
-    public ImmutableConfiguration getConfiguration() {
+    public ImmutableConfiguration getCompleteConfiguration() {
         if (configCopy == null) {
             createCompositeConfiguration();
         }
         return configCopy;
     }
 
-    // TODO: Take "List<PropertyModel> propertyModels" (may be more than just detection.* props).
-    public ImmutableConfiguration setAndSaveCustomProperties(Map<String, String> propertyMap) {
+    public ImmutableConfiguration getCustomConfiguration() {
+        return mpfCustomPropertiesConfig;
+    }
+
+    public ImmutableConfiguration setAndSaveCustomProperties(List<PropertyModel> propertyModels) {
 
         // create a new builder and configuration to write the properties to disk
         // without affecting the values of the composite config
@@ -82,8 +86,9 @@ public class MpfPropertiesConfigurationBuilder {
             throw new IllegalStateException("Cannot create configuration from " + customPropFile + ".", e);
         }
 
-        for (String key : propertyMap.keySet()) {
-            Object value = propertyMap.get(key);
+        for (PropertyModel propModel : propertyModels) {
+            String key = propModel.getKey();
+            String value = propModel.getValue();
 
             // update all properties that will be written to disk
             tmpMpfCustomPropertiesConfig.setProperty(key, value);
@@ -146,7 +151,8 @@ public class MpfPropertiesConfigurationBuilder {
                 new FileBasedConfigurationBuilder<>(PropertiesConfiguration.class);
 
         Parameters configBuilderParameters = new Parameters();
-        fileBasedConfigBuilder.configure(configBuilderParameters.fileBased().setURL(url));
+        fileBasedConfigBuilder.configure(configBuilderParameters.fileBased().setURL(url)
+                .setListDelimiterHandler(new DefaultListDelimiterHandler(',')));
 
         return fileBasedConfigBuilder;
     }

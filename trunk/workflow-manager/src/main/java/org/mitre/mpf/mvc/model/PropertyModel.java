@@ -34,7 +34,7 @@ public class PropertyModel {
 	private String _value;
 
     private boolean _isValueChanged = false;
-	private boolean _needsRestartIfChanged = true;
+	private boolean _needsRestartIfChanged = false;
 	private boolean _needsRestart = false;
 
 	public PropertyModel() {

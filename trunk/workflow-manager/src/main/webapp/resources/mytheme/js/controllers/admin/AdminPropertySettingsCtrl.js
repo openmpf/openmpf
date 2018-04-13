@@ -54,7 +54,6 @@ function ($resource) {
 	};
 
   propertiesResource.prototype.needsRestart = function () {
-    console.log(" propertiesResource.prototype.needsRestart JSON.stringify(this) is "+JSON.stringify(this));
     return this.needsRestart;
   };
 
@@ -102,7 +101,6 @@ function ($resource) {
 				modifiedProps.forEach(function (prop) {
 				  // Each prop is of type org.mitre.mpf.mvc.model.PropertyModel. Change to the updated value of the modified property in serverProperties.
           // If the modified property indicates that a value change requires a restart, then prop.needsRestart will be set as needed.
-          console.log(" propertiesResource.update JSON.stringify(prop) is "+JSON.stringify(prop));
           prop.needsRestart = prop.valueChanged() && prop.needsRestartIfChanged;
           serverProperties[prop.key] = prop.value;
           // prop.needsRestart = prop.needsRestartIfChanged;

@@ -120,10 +120,13 @@ public class AdminPropertySettingsController
 		Properties customProperties = getCustomProperties();
 
 		for (PropertyModel pm : propertyModels) {
+            log.info("AdminPropertySettingsController.saveProperties: debug, processing pm = " + pm);
 		    // Not all of the property changes require a restart of OpenMPF, set needsRestart based upon whether or not a restart is required if a properties value has changed.
             pm.setIsValueChanged(pm.getValue());
+            log.info("AdminPropertySettingsController.saveProperties: debug, updated pm.getIsValueChanged()= " + pm.getIsValueChanged());
             pm.setNeedsRestart(pm.getIsValueChanged() && pm.getNeedsRestartIfChanged());
-            log.info("AdminPropertySettingsController.saveProperties: updated pm=" + pm);
+            log.info("AdminPropertySettingsController.saveProperties: debug, updated pm.getNeedsRestart() = "+ pm.getNeedsRestart());
+            log.info("AdminPropertySettingsController.saveProperties: debug, after update pm = " + pm);
 			customProperties.setProperty(pm.getKey(), pm.getValue());
 		}
 
@@ -139,6 +142,7 @@ public class AdminPropertySettingsController
 
 		// Add system message if a restart of OpenMPF is required.
         if ( propertyModels.stream().anyMatch(pm -> pm.getNeedsRestart() ) ) {
+            log.info("AdminPropertySettingsController.saveProperties: debug, a property that requires a restart was found");
             mpfService.addStandardSystemMessage("eServerPropertiesChanged");
         }
 	}

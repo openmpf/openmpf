@@ -129,6 +129,6 @@ public class TransientDetectionSystemProperties {
 
     public String toString() {
         return "TransientDetectionSystemProperties: id = " + id + ", artifactExtractionPolicy = " + artifactExtractionPolicy +
-            ", samplingInterval = " + samplingInterval + ", frameRateCap = " + frameRateCap;
+            ", samplingInterval = " + samplingInterval + ", frameRateCap = " + frameRateCap + ", confidenceThreshold = " + confidenceThreshold;
     }
 }

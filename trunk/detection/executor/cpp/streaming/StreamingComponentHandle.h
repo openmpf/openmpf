@@ -29,14 +29,11 @@
 #define MPF_STREAMINGCOMPONENTHANDLE_H
 
 
-#include <functional>
-#include <memory>
 #include <string>
 #include <vector>
 
-#include <dlfcn.h>
-
 #include <MPFStreamingDetectionComponent.h>
+#include <DlClassLoader.h>
 
 
 namespace MPF { namespace COMPONENT {
@@ -55,17 +52,7 @@ namespace MPF { namespace COMPONENT {
 
 
     private:
-        using loaded_component_t
-            = std::unique_ptr<MPFStreamingDetectionComponent, void(*)(MPFStreamingDetectionComponent*)>;
-
-        std::unique_ptr<void, decltype(&dlclose)> lib_handle_;
-
-        loaded_component_t loaded_component_;
-
-        static loaded_component_t LoadComponent(void* lib_handle, const MPFStreamingVideoJob &job);
-
-        template <typename TFunc>
-        static TFunc* LoadFunction(void* lib_handle, const char * symbol_name);
+        DlClassLoader<MPFStreamingDetectionComponent> component_loader_;
 
         [[noreturn]] static void WrapComponentException(const std::string &component_method);
     };

@@ -24,7 +24,6 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include <dlfcn.h>
 #include "StreamingComponentHandle.h"
 #include "ExecutorErrors.h"
 
@@ -32,57 +31,18 @@ namespace MPF { namespace COMPONENT {
 
     StreamingComponentHandle::StreamingComponentHandle(const std::string &lib_path,
                                                        const MPFStreamingVideoJob &job)
-            : lib_handle_(dlopen(lib_path.c_str(), RTLD_NOW), dlclose)
-            , loaded_component_(LoadComponent(lib_handle_.get(), job)) {
+    try : component_loader_(lib_path, "streaming_component_creator", "streaming_component_deleter", &job)
+    {
+    }
+    catch (const std::exception &ex) {
+        throw FatalError(ExitCode::COMPONENT_LOAD_ERROR, ex.what());
     }
 
-
-    StreamingComponentHandle::loaded_component_t StreamingComponentHandle::LoadComponent(
-            void *lib_handle, const MPFStreamingVideoJob &job) {
-
-        if (lib_handle == nullptr) {
-            throw FatalError(ExitCode::COMPONENT_LOAD_ERROR,
-                             std::string("Failed to open component library: ") + dlerror());
-        }
-
-        auto create_component_fn
-                = LoadFunction<MPFStreamingDetectionComponent* (const MPFStreamingVideoJob*)>(
-                        lib_handle, "streaming_component_creator");
-
-        auto delete_component_fn
-                = LoadFunction<void (MPFStreamingDetectionComponent*)>(lib_handle, "streaming_component_deleter");
-
-
-        loaded_component_t loaded_component(nullptr, delete_component_fn);
-        try {
-            loaded_component = { create_component_fn(&job),  delete_component_fn};
-        }
-        catch (...) {
-            WrapComponentException("constructor");
-        }
-
-        if (loaded_component == nullptr) {
-            throw FatalError(ExitCode::COMPONENT_LOAD_ERROR,
-                             "Failed to load component because the component_creator function returned null.");
-        }
-        return loaded_component;
-    }
-
-
-    template<typename TFunc>
-    TFunc* StreamingComponentHandle::LoadFunction(void *lib_handle, const char * symbol_name) {
-        auto result = reinterpret_cast<TFunc*>(dlsym(lib_handle, symbol_name));
-        if (result == nullptr) {
-            throw FatalError(ExitCode::COMPONENT_LOAD_ERROR,
-                             std::string("dlsym failed for ") + symbol_name + ": " + dlerror());
-        }
-        return result;
-    }
 
 
     std::string StreamingComponentHandle::GetDetectionType() {
         try {
-            return loaded_component_->GetDetectionType();
+            return component_loader_->GetDetectionType();
         }
         catch (...) {
             WrapComponentException("GetDetectionType");
@@ -92,7 +52,7 @@ namespace MPF { namespace COMPONENT {
 
     void StreamingComponentHandle::BeginSegment(const VideoSegmentInfo &segment_info) {
         try {
-            loaded_component_->BeginSegment(segment_info);
+            component_loader_->BeginSegment(segment_info);
         }
         catch (...) {
             WrapComponentException("BeginSegment");
@@ -101,7 +61,7 @@ namespace MPF { namespace COMPONENT {
 
     bool StreamingComponentHandle::ProcessFrame(const cv::Mat &frame, int frame_number) {
         try {
-            return loaded_component_->ProcessFrame(frame, frame_number);
+            return component_loader_->ProcessFrame(frame, frame_number);
         }
         catch (...) {
             WrapComponentException("ProcessFrame");
@@ -110,7 +70,7 @@ namespace MPF { namespace COMPONENT {
 
     std::vector<MPFVideoTrack> StreamingComponentHandle::EndSegment() {
         try {
-            return loaded_component_->EndSegment();
+            return component_loader_->EndSegment();
         }
         catch (...) {
             WrapComponentException("EndSegment");

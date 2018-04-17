@@ -28,6 +28,10 @@ package org.mitre.mpf.mvc.controller;
 
 import static java.util.stream.Collectors.toList;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
@@ -50,7 +54,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+// swagger includes
+
+ @Api(value = "properties", description = "Properties get and save")
 
 // NOTE: Don't use @Scope("request") because this class should be treated as a singleton.
 
@@ -73,16 +82,38 @@ public class AdminPropertySettingsController
 	private Properties currentProperties;
 
 
-
+    @ApiOperation(value = "Gets a list of system properties. If optional parameter whichPropertySet is not specified or is set to 'all', then all system properties are returned. "
+        + "If whichPropertySet is 'mutable', then only the system properties that may be changed without OpenMPF restart are returned. "
+        + "If whichPropertySet is 'immutable', then only the system properties that require restart of OpenMPF to apply property changes are returned.",
+        produces = "application/json", response=PropertyModel.class, responseContainer="List")
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successful response"),
+        @ApiResponse(code = 401, message = "Bad credentials")})
 	@ResponseBody
 	@RequestMapping(value = "/properties", method = RequestMethod.GET)
-	public List<PropertyModel> getProperties() throws IOException {
+	public List<PropertyModel> getProperties(@RequestParam(value = "whichPropertySet", required = false, defaultValue="all") String whichPropertySet) throws IOException {
 		Properties customProperties = getCustomProperties();
 
-		return currentProperties.entrySet()
-				.stream()
-				.map(e -> convertEntryToModel(e, customProperties))
-				.collect(toList());
+		// TODO detection.models.dir.path treated as a special case
+		if ( whichPropertySet.equalsIgnoreCase("mutable") ) {
+            return currentProperties.entrySet()
+                .stream()
+                .filter( e -> e.getKey().toString().startsWith("detection.") )
+                .filter( e -> !e.getKey().toString().equals("detection.models.dir.path") )
+                .map(e -> convertEntryToModel(e, customProperties))
+                .collect(toList());
+        } else if ( whichPropertySet.equalsIgnoreCase("immutable") ) {
+            return currentProperties.entrySet()
+                .stream()
+                .filter( e -> !e.getKey().toString().startsWith("detection.") || e.getKey().toString().equals("detection.models.dir.path") )
+                .map(e -> convertEntryToModel(e, customProperties))
+                .collect(toList());
+        } else {
+            return currentProperties.entrySet()
+                .stream()
+                .map(e -> convertEntryToModel(e, customProperties))
+                .collect(toList());
+        }
 	}
 
 

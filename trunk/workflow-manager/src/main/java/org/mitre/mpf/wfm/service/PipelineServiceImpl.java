@@ -77,6 +77,7 @@ public class PipelineServiceImpl implements PipelineService {
 
     @PostConstruct
     public void init() {
+        // Method is reading from the algorithms.xml file, to build up a collection of algorithm definitions.
         log.debug("Initializing PipelineManager");
         xStream = new XStream();
 
@@ -465,6 +466,7 @@ public class PipelineServiceImpl implements PipelineService {
         algorithms.values().forEach(this::setAlgorithmDefaultValues);
     }
 
+    // TODO, issue with pipelines that have already been created after a mutable system property is changed. Pipelines may need to be recreated if a mutable system property is changed (TBD).
     private void setAlgorithmDefaultValues(AlgorithmDefinition algorithm) {
         algorithm.getProvidesCollection().getAlgorithmProperties()
             .stream()

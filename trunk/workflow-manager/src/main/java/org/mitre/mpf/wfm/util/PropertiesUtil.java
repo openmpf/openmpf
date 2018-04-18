@@ -138,12 +138,12 @@ public class PropertiesUtil {
 		return mpfPropertiesConfig.getString(propertyName);
 	}
 
-	public Iterator<String> getKeyIterator() {
-		return mpfPropertiesConfig.getKeys();
+	public void setAndSaveCustomProperties(List<PropertyModel> propertyModels) {
+		mpfPropertiesConfig = mpfPropertiesConfigBuilder.setAndSaveCustomProperties(propertyModels);
 	}
 
-	public void setAndSaveCustomProperties(List<PropertyModel> propertyModels) {
-		mpfPropertiesConfigBuilder.setAndSaveCustomProperties(propertyModels);
+	public List<PropertyModel> getCustomProperties() {
+		return mpfPropertiesConfigBuilder.getCustomProperties();
 	}
 
 	//

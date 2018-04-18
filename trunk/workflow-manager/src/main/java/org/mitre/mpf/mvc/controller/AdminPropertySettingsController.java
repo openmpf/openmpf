@@ -46,10 +46,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 
 // NOTE: Don't use @Scope("request") because this class should be treated as a singleton.
 
@@ -66,31 +63,10 @@ public class AdminPropertySettingsController
 	@Autowired
 	private MpfService mpfService;
 
-	@javax.annotation.Resource(name="customPropFile")
-	private Resource customPropFile;
-
 	@ResponseBody
 	@RequestMapping(value = "/properties", method = RequestMethod.GET)
 	public List<PropertyModel> getProperties() {
-
-		// TODO: Move this implementaiton to PropertiesUtil / MpfPropertiesConfigurationBuilder; remove customPropFile
-
-		// reload custom properties file from disk to compare against current properties in use
-		Configuration mpfCustomPropertiesConfig = getCustomPropertiesConfiguration(customPropFile);
-
-		// generate a complete list of property models and determine if a WFM restart is needed for each
-		List <PropertyModel> propertyModels = new ArrayList<>();
-		Iterator<String> propertyKeyIter = propertiesUtil.getKeyIterator();
-		while (propertyKeyIter.hasNext()) {
-			String key = propertyKeyIter.next();
-			String currentValue = propertiesUtil.lookup(key);
-			String customValue = mpfCustomPropertiesConfig.getString(key, currentValue);
-
-			boolean needsRestart = !Objects.equals(currentValue, customValue);
-			propertyModels.add(new PropertyModel(key, customValue, needsRestart));
-		}
-
-		return propertyModels;
+		return propertiesUtil.getCustomProperties();
 	}
 
 

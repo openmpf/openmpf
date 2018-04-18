@@ -37,7 +37,10 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 @Component
 public class MpfPropertiesConfigurationBuilder {
@@ -50,11 +53,11 @@ public class MpfPropertiesConfigurationBuilder {
     @javax.annotation.Resource(name="propFiles")
     private List<Resource> propFiles;
 
-    private CompositeConfiguration compositeConfig;
+    private CompositeConfiguration mpfCompositeConfig;
 
     // return a copy so that if the original is modified it won't update existing configs in use;
     // also, it's better to maintain one copy than create multiple immutable copies
-    private PropertiesConfiguration configCopy;
+    private PropertiesConfiguration mpfConfigCopy;
 
     private PropertiesConfiguration mpfCustomPropertiesConfig;
 
@@ -62,17 +65,14 @@ public class MpfPropertiesConfigurationBuilder {
 
     // TODO: Update PropertiesUtil to use this config to get all properties
     public ImmutableConfiguration getCompleteConfiguration() {
-        if (configCopy == null) {
-            createCompositeConfiguration();
+        if (mpfConfigCopy == null) {
+            mpfCompositeConfig = createCompositeConfiguration();
+            updateConfigurationCopy();
         }
-        return configCopy;
+        return mpfConfigCopy;
     }
 
-    public ImmutableConfiguration getCustomConfiguration() {
-        return mpfCustomPropertiesConfig;
-    }
-
-    public ImmutableConfiguration setAndSaveCustomProperties(List<PropertyModel> propertyModels) {
+    public synchronized ImmutableConfiguration setAndSaveCustomProperties(List<PropertyModel> propertyModels) {
 
         // create a new builder and configuration to write the properties to disk
         // without affecting the values of the composite config
@@ -105,14 +105,42 @@ public class MpfPropertiesConfigurationBuilder {
             throw new IllegalStateException("Cannot save configuration to " + customPropFile + ".", e);
         }
 
-        createConfigurationCopy();
+        updateConfigurationCopy();
 
-        return configCopy; // return the updated config
+        return mpfConfigCopy; // return the updated config
     }
 
-    private void createCompositeConfiguration() {
+    public synchronized List<PropertyModel> getCustomProperties() {
 
-        compositeConfig = new CompositeConfiguration();
+        // create a new builder and configuration to read the properties on disk
+        FileBasedConfigurationBuilder<PropertiesConfiguration> tmpMpfCustomPropertiesConfigBuilder =
+                createFileBasedConfigurationBuilder(customPropFile);
+
+        Configuration tmpMpfCustomPropertiesConfig;
+        try {
+            tmpMpfCustomPropertiesConfig = tmpMpfCustomPropertiesConfigBuilder.getConfiguration();
+        } catch (ConfigurationException e) {
+            throw new IllegalStateException("Cannot create configuration from " + customPropFile + ".", e);
+        }
+
+        // generate a complete list of property models and determine if a WFM restart is needed for each
+        List <PropertyModel> propertyModels = new ArrayList<>();
+        Iterator<String> propertyKeyIter = mpfCompositeConfig.getKeys();
+        while (propertyKeyIter.hasNext()) {
+            String key = propertyKeyIter.next();
+            String currentValue = mpfCompositeConfig.getString(key);
+            String customValue = tmpMpfCustomPropertiesConfig.getString(key, currentValue);
+
+            boolean needsRestart = !Objects.equals(currentValue, customValue);
+            propertyModels.add(new PropertyModel(key, customValue, needsRestart));
+        }
+
+        return propertyModels;
+    }
+
+    private CompositeConfiguration createCompositeConfiguration() {
+
+        CompositeConfiguration compositeConfig = new CompositeConfiguration();
 
         // add resources in reverse order than they are specified in the application context XML;
         // the first configs that are added to the composite override property values in configs that are added later
@@ -135,7 +163,7 @@ public class MpfPropertiesConfigurationBuilder {
                     "custom configuration property file: " + propFiles);
         }
 
-        createConfigurationCopy();
+        return compositeConfig;
     }
 
     private FileBasedConfigurationBuilder<PropertiesConfiguration> createFileBasedConfigurationBuilder(Resource resource) {
@@ -157,13 +185,13 @@ public class MpfPropertiesConfigurationBuilder {
         return fileBasedConfigBuilder;
     }
 
-    private void createConfigurationCopy() {
+    private void updateConfigurationCopy() {
         PropertiesConfiguration tmpConfig = new PropertiesConfiguration();
 
         // this will copy over each property one at a time,
         // essentially generating a "flat" config from the composite config
-        ConfigurationUtils.copy(compositeConfig, tmpConfig);
+        ConfigurationUtils.copy(mpfCompositeConfig, tmpConfig);
 
-        configCopy = tmpConfig; // assignment is atomic
+        mpfConfigCopy = tmpConfig; // assignment is atomic
     }
 }

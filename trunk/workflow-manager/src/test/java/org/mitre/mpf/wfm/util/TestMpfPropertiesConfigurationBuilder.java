@@ -33,10 +33,8 @@ import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.junit.Assert;
-import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,7 +49,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
 @ActiveProfiles("jenkins")
@@ -75,7 +72,7 @@ public class TestMpfPropertiesConfigurationBuilder {
     private PropertiesUtil propertiesUtil;
 
     @Test
-    public void testGetConfiguration() {
+    public void testBuilderGetConfiguration() {
         ImmutableConfiguration mpfPropertiesconfig = mpfPropertiesConfigurationBuilder.getCompleteConfiguration();
 
         Assert.assertEquals(1, mpfPropertiesconfig.getInt(FRAME_INTERVAL_KEY));
@@ -110,7 +107,7 @@ public class TestMpfPropertiesConfigurationBuilder {
     }
 
     @Test
-    public void testSave() throws ConfigurationException, IOException {
+    public void testBuilderSave() throws ConfigurationException, IOException {
         ImmutableConfiguration mpfPropertiesconfig = mpfPropertiesConfigurationBuilder.getCompleteConfiguration();
 
         List<PropertyModel> newCustomPropertyModels = new ArrayList<>();
@@ -158,7 +155,7 @@ public class TestMpfPropertiesConfigurationBuilder {
     }
 
     @Test
-    public void testPropertiesUtil() {
+    public void testPropertiesUtilGetters() {
         Assert.assertTrue(propertiesUtil.isAmqBrokerEnabled());
 
         Assert.assertEquals(1, propertiesUtil.getAmqBrokerPurgeWhiteList().size());
@@ -167,5 +164,44 @@ public class TestMpfPropertiesConfigurationBuilder {
 
         Assert.assertTrue(WritableResource.class.isAssignableFrom(propertiesUtil.getAlgorithmDefinitions().getClass()));
         Assert.assertTrue(propertiesUtil.getAlgorithmDefinitions().exists());
+    }
+
+    @Test
+    public void testPropertiesUtilSave() {
+        List<PropertyModel> newCustomPropertyModels = new ArrayList<>();
+        newCustomPropertyModels.add(new PropertyModel(FRAME_INTERVAL_KEY, "4", false));
+        newCustomPropertyModels.add(new PropertyModel(TIMEOUT_KEY, "60", false));
+
+        // test current values
+        Assert.assertEquals(1, propertiesUtil.getSamplingInterval());
+        Assert.assertEquals(30, propertiesUtil.getWebSessionTimeout());
+
+        propertiesUtil.getCustomProperties().stream().forEach(m -> Assert.assertFalse(m.getKey() +
+                " should not need require a WFM restart", m.getNeedsRestart()));
+
+        propertiesUtil.setAndSaveCustomProperties(newCustomPropertyModels);
+        List<PropertyModel> properties = propertiesUtil.getCustomProperties();
+
+        // ensure detection value sticks
+        Assert.assertEquals(4, propertiesUtil.getSamplingInterval());
+        properties.stream().filter(m -> m.getKey().equals(FRAME_INTERVAL_KEY)).forEach(m -> Assert.assertFalse(m.getNeedsRestart()));
+
+        // ensure non-detection value doesn't stick
+        Assert.assertEquals(30, propertiesUtil.getWebSessionTimeout());
+        properties.stream().filter(m -> m.getKey().equals(TIMEOUT_KEY)).forEach(m -> Assert.assertTrue(m.getNeedsRestart()));
+
+        // reset
+        newCustomPropertyModels.clear();
+        newCustomPropertyModels.add(new PropertyModel(FRAME_INTERVAL_KEY, "1", false));
+        newCustomPropertyModels.add(new PropertyModel(TIMEOUT_KEY, "30", false));
+
+        propertiesUtil.setAndSaveCustomProperties(newCustomPropertyModels);
+        properties = propertiesUtil.getCustomProperties();
+
+        Assert.assertEquals(1, propertiesUtil.getSamplingInterval());
+        properties.stream().filter(m -> m.getKey().equals(FRAME_INTERVAL_KEY)).forEach(m -> Assert.assertFalse(m.getNeedsRestart()));
+
+        Assert.assertEquals(30, propertiesUtil.getWebSessionTimeout());
+        properties.stream().filter(m -> m.getKey().equals(TIMEOUT_KEY)).forEach(m -> Assert.assertFalse(m.getNeedsRestart()));
     }
 }

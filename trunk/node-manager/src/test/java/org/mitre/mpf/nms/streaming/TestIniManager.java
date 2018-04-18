@@ -31,8 +31,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.mitre.mpf.nms.NodeManagerProperties;
 import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
+import org.mitre.mpf.nms.util.PropertiesUtil;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -50,12 +50,12 @@ public class TestIniManager {
 	@Rule
 	public TemporaryFolder _tempFolder = new TemporaryFolder();
 
-	private NodeManagerProperties _mockProperties;
+	private PropertiesUtil _mockPropertiesUtil;
 
 	@Before
 	public void init() {
-		_mockProperties = mock(NodeManagerProperties.class);
-		when(_mockProperties.getIniFilesDir())
+		_mockPropertiesUtil = mock(PropertiesUtil.class);
+		when(_mockPropertiesUtil.getIniFilesDir())
 				.thenReturn(_tempFolder.getRoot().toPath().resolve("mpf-ini-files"));
 
 	}
@@ -63,7 +63,7 @@ public class TestIniManager {
 	//TODO: For future use.
 //	@Test
 //	public void canCreateIniFiles() throws IOException, NoSuchFieldException, IllegalAccessException {
-//		IniManager iniManager = new IniManager(_mockProperties);
+//		IniManager iniManager = new IniManager(_mockPropertiesUtil);
 //		LaunchStreamingJobMessage launchMessage = StreamingJobTestUtil.createLaunchMessage();
 //
 //		JobIniFiles jobIniFiles = iniManager.createJobIniFiles(launchMessage);
@@ -93,7 +93,7 @@ public class TestIniManager {
 
 	@Test
 	public void canCreateIniFiles() throws IOException, NoSuchFieldException, IllegalAccessException {
-		IniManager iniManager = new IniManager(_mockProperties);
+		IniManager iniManager = new IniManager(_mockPropertiesUtil);
 		LaunchStreamingJobMessage launchMessage = StreamingJobTestUtil.createLaunchMessage();
 
 		JobIniFiles jobIniFiles = iniManager.createJobIniFiles(launchMessage);

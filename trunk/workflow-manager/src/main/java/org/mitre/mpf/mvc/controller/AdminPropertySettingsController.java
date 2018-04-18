@@ -26,10 +26,7 @@
 
 package org.mitre.mpf.mvc.controller;
 
- import org.apache.commons.configuration2.Configuration;
-import org.apache.commons.configuration2.builder.fluent.Configurations;
-import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.mitre.mpf.mvc.model.PropertyModel;
+ import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -37,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -45,7 +41,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
 import java.util.List;
 
 // NOTE: Don't use @Scope("request") because this class should be treated as a singleton.
@@ -66,6 +61,7 @@ public class AdminPropertySettingsController
 	@ResponseBody
 	@RequestMapping(value = "/properties", method = RequestMethod.GET)
 	public List<PropertyModel> getProperties() {
+		// TODO: Test me!
 		return propertiesUtil.getCustomProperties();
 	}
 
@@ -73,6 +69,7 @@ public class AdminPropertySettingsController
 	@ResponseBody
 	@RequestMapping(value = "/properties", method = RequestMethod.PUT)
 	public void saveProperties(@RequestBody List<PropertyModel> propertyModels, HttpServletRequest request) {
+		// TODO: Test me!
 		if (!LoginController.getAuthenticationModel(request).isAdmin()) {
 			throw new IllegalStateException("A non-admin tried to modify properties.");
 		}
@@ -92,17 +89,5 @@ public class AdminPropertySettingsController
 	@ResponseBody
 	public int getDefaultJobPriority() {
 		return propertiesUtil.getJmsPriority();
-	}
-
-
-	private Configuration getCustomPropertiesConfiguration(Resource resource) {
-		try {
-			Configurations configs = new Configurations();
-			return configs.propertiesBuilder(resource.getURL()).getConfiguration();
-		} catch (ConfigurationException e) {
-			throw new IllegalStateException("Cannot create configuration from " + resource + ".", e);
-		} catch (IOException e) {
-			throw new IllegalStateException("Cannot get URL from " + resource + ".", e);
-		}
 	}
 }

@@ -108,6 +108,7 @@
         <spring.security.version>3.2.8.RELEASE</spring.security.version>
 		<commons.codec.version>1.10</commons.codec.version>	
 		<commons.collections4.version>4.0</commons.collections4.version>
+        <commons.configuration2.version>2.2</commons.configuration2.version>
 		<javax.inject.version>1</javax.inject.version>
 		<commons.dbcp.version>1.4</commons.dbcp.version>
 		<javax.jms.version>1.1</javax.jms.version>		
@@ -124,7 +125,7 @@
 		<mockito.core.version>1.10.19</mockito.core.version>
 		<commons.io.version>2.6</commons.io.version>
 		<xstream.version>1.4.8</xstream.version>
-		<common.beanutils.version>1.9.3</common.beanutils.version>
+		<commons.beanutils.version>1.9.3</commons.beanutils.version>
 		<mysql.connector.java.version>5.1.36</mysql.connector.java.version>
 		<joda.time.version>2.8.2</joda.time.version>
 		<joda.time.hibernate.version>1.4</joda.time.hibernate.version>

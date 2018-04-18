@@ -24,17 +24,54 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.nms;
+package org.mitre.mpf.nms.util;
 
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Path;
 
 @Component
-public class NodeManagerProperties {
+public class PropertiesUtil {
+
+	@javax.annotation.Resource(name="propFile")
+	private Resource propFile;
+
+	private PropertiesConfiguration propertiesConfig;
+
+	@PostConstruct
+	private void init() {
+		URL url;
+		try {
+			url = propFile.getURL();
+		} catch (IOException e) {
+			throw new IllegalStateException("Cannot get URL from " + propFile + ".", e);
+		}
+
+		FileBasedConfigurationBuilder<PropertiesConfiguration> fileBasedConfigBuilder =
+				new FileBasedConfigurationBuilder<>(PropertiesConfiguration.class);
+
+		Parameters configBuilderParameters = new Parameters();
+		fileBasedConfigBuilder.configure(configBuilderParameters.fileBased().setURL(url)
+				.setListDelimiterHandler(new DefaultListDelimiterHandler(',')));
+
+		try {
+			propertiesConfig = fileBasedConfigBuilder.getConfiguration();
+		} catch (ConfigurationException e) {
+			throw new IllegalStateException("Cannot create configuration from " + propFile + ".", e);
+		}
+	}
+
 
 	@Value("${mpf.jgroups.config}")
 	private Resource jGroupsConfig;
@@ -50,10 +87,8 @@ public class NodeManagerProperties {
 	}
 
 
-	@Value("${mpf.this.node}")
-	private String thisMpfNode;
 	public String getThisMpfNode() {
-		return thisMpfNode;
+		return propertiesConfig.getString("mpf.this.node");
 	}
 
 

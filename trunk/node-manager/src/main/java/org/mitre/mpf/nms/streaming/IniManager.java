@@ -28,9 +28,9 @@ package org.mitre.mpf.nms.streaming;
 
 import org.ini4j.Ini;
 import org.ini4j.Profile;
-import org.mitre.mpf.nms.util.EnvironmentVariableExpander;
-import org.mitre.mpf.nms.NodeManagerProperties;
 import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
+import org.mitre.mpf.nms.util.EnvironmentVariableExpander;
+import org.mitre.mpf.nms.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -48,21 +48,21 @@ public class IniManager {
 
 	public static final String MEDIA_PROPERTIES_SECTION = "Media Properties";
 
-	private final NodeManagerProperties _properties;
+	private final PropertiesUtil _propertiesUtil;
 
 
 	@Autowired
-	public IniManager(NodeManagerProperties properties) {
-		_properties = properties;
+	public IniManager(PropertiesUtil propertiesUtil) {
+		_propertiesUtil = propertiesUtil;
 	}
 
 
 
 	public JobIniFiles createJobIniFiles(LaunchStreamingJobMessage launchMessage) {
 		try {
-			Files.createDirectories(_properties.getIniFilesDir());
+			Files.createDirectories(_propertiesUtil.getIniFilesDir());
 			Path jobIniDir = Files.createTempDirectory(
-					_properties.getIniFilesDir(),
+					_propertiesUtil.getIniFilesDir(),
 					String.format("mpf-job-%s-ini-files", launchMessage.jobId))
 					.toAbsolutePath();
 

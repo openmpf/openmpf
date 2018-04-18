@@ -54,13 +54,13 @@ import java.util.List;
 @ActiveProfiles("jenkins")
 public class TestMpfPropertiesConfigurationBuilder {
 
-    private static String FRAME_INTERVAL_KEY = "detection.sampling.interval";
-    private static String MODELS_DIR_KEY = "detection.models.dir.path";
-    private static String VERSION_KEY = "mpf.version.timestamp";
-    private static String SHARE_PATH_KEY = "mpf.share.path";
-    private static String TIMEOUT_KEY = "web.session.timeout";
+    private static final String FRAME_INTERVAL_KEY = "detection.sampling.interval";
+    private static final String MODELS_DIR_KEY = "detection.models.dir.path";
+    private static final String VERSION_KEY = "mpf.version.timestamp";
+    private static final String SHARE_PATH_KEY = "mpf.share.path";
+    private static final String TIMEOUT_KEY = "web.session.timeout";
 
-    private static String MPF_HOME_ENV_VAR = "MPF_HOME";
+    private static final String MPF_HOME_ENV_VAR = "MPF_HOME";
 
     @Autowired
     MpfPropertiesConfigurationBuilder mpfPropertiesConfigurationBuilder;

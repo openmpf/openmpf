@@ -23,57 +23,37 @@
  * See the License for the specific language governing permissions and        *
  * limitations under the License.                                             *
  ******************************************************************************/
-package org.mitre.mpf.nms;
 
-import org.mitre.mpf.nms.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package org.mitre.mpf.nms.util;
+
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.stereotype.Component;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@Component
-public class NodeManager implements Runnable {
+@ContextConfiguration(locations = {"classpath:applicationContext-nm.xml"})
+@RunWith(SpringJUnit4ClassRunner.class)
+public class TestNodeManagerPropertiesUtil {
 
-    private static final Logger LOG = LoggerFactory.getLogger(NodeManager.class);
-
-    private final ChildNodeStateManager nodeStateManager;
-
+    private static final String THIS_MPF_NODE_ENV_VAR = "THIS_MPF_NODE";
 
     @Autowired
-    public NodeManager(ChildNodeStateManager nodeStateManager) {
-        this.nodeStateManager = nodeStateManager;
-    }
+    private PropertiesUtil propertiesUtil;
 
+    @Test
+    public void testPropertiesUtilGetters() {
+        Assert.assertEquals(System.getenv(THIS_MPF_NODE_ENV_VAR), propertiesUtil.getThisMpfNode());
+        /*
+        Assert.assertTrue(propertiesUtil.isAmqBrokerEnabled());
 
-    @Override
-    public void run() {
-        nodeStateManager.startReceiving(NodeTypes.NodeManager, "NodeManager");
-        nodeStateManager.run();
+        Assert.assertEquals(1, propertiesUtil.getAmqBrokerPurgeWhiteList().size());
 
-        nodeStateManager.shutdown();
-    }
+        Assert.assertEquals(ArtifactExtractionPolicy.VISUAL_EXEMPLARS_ONLY, propertiesUtil.getArtifactExtractionPolicy());
 
-
-
-    public static void main(String[] args) {
-        LOG.info("NodeManager started");
-
-        // Log that we are being shutdown, but more hooks are found during process launches in BaseNodeLauncher
-        Runtime.getRuntime().addShutdownHook(new Thread(
-                () -> LOG.info("NodeManager shutdown")));
-
-
-        try (ClassPathXmlApplicationContext context
-                     = new ClassPathXmlApplicationContext("applicationContext-nm.xml")) {
-            context.registerShutdownHook();
-
-            PropertiesUtil propertiesUtil = context.getBean(PropertiesUtil.class);
-            if (propertiesUtil.isNodeStatusPageEnabled()) {
-                context.getBean(NodeStatusHttpServer.class).start();
-            }
-
-            context.getBean(NodeManager.class).run();
-        }
+        Assert.assertTrue(WritableResource.class.isAssignableFrom(propertiesUtil.getAlgorithmDefinitions().getClass()));
+        Assert.assertTrue(propertiesUtil.getAlgorithmDefinitions().exists());
+        */
     }
 }

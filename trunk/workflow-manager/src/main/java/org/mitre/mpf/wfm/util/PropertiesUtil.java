@@ -289,10 +289,6 @@ public class PropertiesUtil {
 	// Detection configuration
 	//
 
-    // TODO: Use MPFPropertiesConfigurationBuilder for getters (all getters, since "env:" will mess Spring up)
-    // TODO: Add method to set custom properties that uses the builder
-    // TODO: Use raw Apache Commons Configuration for node-manager for "env" consistency
-
 	public ArtifactExtractionPolicy getArtifactExtractionPolicy() {
 		return mpfPropertiesConfig.get(ArtifactExtractionPolicy.class, "detection.artifact.extraction.policy");
 	}

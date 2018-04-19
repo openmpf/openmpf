@@ -40,11 +40,8 @@
     <context:component-scan base-package="org.mitre.mpf.nms" />
     <tx:annotation-driven/>
 
-    <!-- TODO: remove me! -->
-	<context:property-placeholder location="classpath:properties/nm.properties"/>
-
     <bean id="propFile" class="org.springframework.core.io.ClassPathResource">
-        <constructor-arg><value>classpath:properties/nm.properties</value></constructor-arg>
+        <constructor-arg><value>properties/nm.properties</value></constructor-arg>
     </bean>
 
 </beans>

@@ -32,6 +32,7 @@ import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.mitre.mpf.mvc.model.PropertyModel;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
@@ -48,10 +49,16 @@ public class MpfPropertiesConfigurationBuilder {
     public static final String DETECTION_KEY_PREFIX = "detection.";
 
     @javax.annotation.Resource(name="customPropFile")
-    private Resource customPropFile;
+    private FileSystemResource customPropFile;
+    public void setCustomPropFile(FileSystemResource customPropFile) {
+        this.customPropFile = customPropFile;
+    }
 
     @javax.annotation.Resource(name="propFiles")
     private List<Resource> propFiles;
+    public void setPropFiles(List<Resource> propFiles) {
+        this.propFiles = propFiles;
+    }
 
     private CompositeConfiguration mpfCompositeConfig;
 

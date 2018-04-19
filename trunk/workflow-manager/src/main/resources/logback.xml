@@ -132,10 +132,11 @@
     <!--<logger name="org.springframework.jms.connection.JmsTransactionManager" level="DEBUG"/>-->
     <!--<logger name="org.springframework.data.transaction.ChainedTransactionManager" level="TRACE"/>-->
 
-
     <!--<logger name="org.hibernate.cache" level="DEBUG"/>-->
     <!--<logger name="org.jnbis" level="INFO" additivity="false" />-->
     <!--<logger name="org.mitre.jetitor.util.JetitorUtils" level="INFO" additivity="false" />-->
+
+    <logger name="org.apache.commons.beanutils" level="WARN"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT-INFO"/>

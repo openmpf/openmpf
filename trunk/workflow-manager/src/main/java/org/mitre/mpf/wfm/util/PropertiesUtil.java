@@ -36,6 +36,7 @@ import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.*;
 import org.springframework.stereotype.Component;
 
@@ -56,10 +57,16 @@ public class PropertiesUtil {
 	public static final String REF = "propertiesUtil";
 
 	@Autowired
+	private ApplicationContext appContext;
+
+	@Autowired
 	private MpfPropertiesConfigurationBuilder mpfPropertiesConfigBuilder;
 
 	@javax.annotation.Resource(name="customPropFile")
-	private Resource customPropFile;
+	private FileSystemResource customPropFile;
+
+	@javax.annotation.Resource(name="mediaTypesFile")
+	private FileSystemResource mediaTypesFile;
 
 	private ImmutableConfiguration mpfPropertiesConfig;
 
@@ -72,7 +79,6 @@ public class PropertiesUtil {
 
 		mpfPropertiesConfig = mpfPropertiesConfigBuilder.getCompleteConfiguration();
 
-		FileSystemResource mediaTypesFile = getMediaTypesFile();
 		if (!mediaTypesFile.exists()) {
 			copyResource(mediaTypesFile, getMediaTypesTemplate());
 		}
@@ -350,7 +356,7 @@ public class PropertiesUtil {
 	}
 
 	private Resource getAlgorithmsTemplate() {
-		return new ClassPathResource(mpfPropertiesConfig.getString("data.algorithms.template"));
+		return appContext.getResource(mpfPropertiesConfig.getString("data.algorithms.template"));
 	}
 
 	public WritableResource getAlgorithmDefinitions() {
@@ -362,7 +368,7 @@ public class PropertiesUtil {
 	}
 
 	private Resource getActionsTemplate() {
-		return new ClassPathResource(mpfPropertiesConfig.getString("data.actions.template"));
+		return appContext.getResource(mpfPropertiesConfig.getString("data.actions.template"));
 	}
 
 	public WritableResource getActionDefinitions() {
@@ -374,7 +380,7 @@ public class PropertiesUtil {
 	}
 
 	private Resource getTasksTemplate() {
-		return new ClassPathResource(mpfPropertiesConfig.getString("data.tasks.template"));
+		return appContext.getResource(mpfPropertiesConfig.getString("data.tasks.template"));
 	}
 
 	public WritableResource getTaskDefinitions() {
@@ -386,7 +392,7 @@ public class PropertiesUtil {
 	}
 
 	private Resource getPipelinesTemplate() {
-		return new ClassPathResource(mpfPropertiesConfig.getString("data.pipelines.template"));
+		return appContext.getResource(mpfPropertiesConfig.getString("data.pipelines.template"));
 	}
 
 	public WritableResource getPipelineDefinitions() {
@@ -398,7 +404,7 @@ public class PropertiesUtil {
 	}
 
 	private Resource getNodeManagerPaletteTemplate() {
-		return new ClassPathResource(mpfPropertiesConfig.getString("data.nodemanagerpalette.template"));
+		return appContext.getResource(mpfPropertiesConfig.getString("data.nodemanagerpalette.template"));
 	}
 
 	public WritableResource getNodeManagerPalette() {
@@ -410,7 +416,7 @@ public class PropertiesUtil {
 	}
 
 	private Resource getNodeManagerConfigTemplate() {
-		return new ClassPathResource(mpfPropertiesConfig.getString("data.nodemanagerconfig.template"));
+		return appContext.getResource(mpfPropertiesConfig.getString("data.nodemanagerconfig.template"));
 	}
 
 	public WritableResource getNodeManagerConfigResource() {
@@ -423,7 +429,7 @@ public class PropertiesUtil {
 	}
 
 	private Resource getStreamingServicesTemplate() {
-		return new ClassPathResource(mpfPropertiesConfig.getString("data.streamingprocesses.template"));
+		return appContext.getResource(mpfPropertiesConfig.getString("data.streamingprocesses.template"));
 	}
 
 	public WritableResource getStreamingServices() {
@@ -440,7 +446,7 @@ public class PropertiesUtil {
 	}
 
 	private Resource getComponentInfoTemplate() {
-		return new ClassPathResource(mpfPropertiesConfig.getString("data.component.info.template"));
+		return appContext.getResource(mpfPropertiesConfig.getString("data.component.info.template"));
 	}
 
 	public WritableResource getComponentInfoFile() {
@@ -526,14 +532,14 @@ public class PropertiesUtil {
 		return mpfPropertiesConfig.getString("mpf.version.json.output.object.schema");
 	}
 
-	private FileSystemResource getMediaTypesFile() {
-		return new FileSystemResource(mpfPropertiesConfig.getString("config.mediaTypes.file"));
+
+	public FileSystemResource getMediaTypesFile() {
+		return mediaTypesFile;
 	}
 
 	private Resource getMediaTypesTemplate() {
-		return new ClassPathResource(mpfPropertiesConfig.getString("config.mediaTypes.template"));
+		return appContext.getResource(mpfPropertiesConfig.getString("config.mediaTypes.template"));
 	}
-
 
 	public String getAmqUri() {
 		return mpfPropertiesConfig.getString("mpf.output.objects.activemq.hostname");

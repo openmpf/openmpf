@@ -31,21 +31,27 @@ import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Iterator;
 
 @Component
 public class PropertiesUtil {
 
+	@Autowired
+	private ApplicationContext appContext;
+
 	@javax.annotation.Resource(name="propFile")
-	private Resource propFile;
+	private ClassPathResource propFile;
 
 	private PropertiesConfiguration propertiesConfig;
 
@@ -72,91 +78,65 @@ public class PropertiesUtil {
 		}
 	}
 
+	protected Iterator<String> getKeys() {
+		return propertiesConfig.getKeys();
+	}
 
-	@Value("${mpf.jgroups.config}")
-	private Resource jGroupsConfig;
+	public String lookup(String key) {
+		return propertiesConfig.getString(key);
+	}
+
 	public Resource getJGroupsConfig() {
-		return jGroupsConfig;
+		return appContext.getResource(propertiesConfig.getString("mpf.jgroups.config"));
 	}
 
-
-	@Value("${mpf.jgroups.channel.name}")
-	private String channelName;
 	public String getChannelName() {
-		return channelName;
+		return propertiesConfig.getString("mpf.jgroups.channel.name");
 	}
-
 
 	public String getThisMpfNode() {
 		return propertiesConfig.getString("mpf.this.node");
 	}
 
-
-	@Value("${min.service.timeup.millis}")
-	private int minServiceUpTimeMillis;
 	public int getMinServiceUpTimeMillis() {
-		return minServiceUpTimeMillis;
+		return propertiesConfig.getInt("min.service.timeup.millis");
 	}
 
-
-	@Value("${mpf.node.status.http.port}")
-	private int nodeStatusHttpPort;
 	public int getNodeStatusHttpPort() {
-		return nodeStatusHttpPort;
+		return propertiesConfig.getInt("mpf.node.status.http.port");
 	}
 
-
-	@Value("${mpf.node.status.page.enabled}")
-	private boolean nodeStatusPageEnabled;
 	public boolean isNodeStatusPageEnabled() {
-		return nodeStatusPageEnabled;
+		return propertiesConfig.getBoolean("mpf.node.status.page.enabled");
 	}
 
-
-	@Value("${streaming.job.ini.dir}")
-	private File iniFilesDir;
 	public Path getIniFilesDir() {
-		return iniFilesDir.toPath();
+		return Paths.get(propertiesConfig.getString("streaming.job.ini.dir"));
 	}
 
-
-	@Value("${streaming.process.max.restarts}")
-	private int streamingProcessMaxRestarts;
 	public int getStreamingProcessMaxRestarts() {
-		return streamingProcessMaxRestarts;
+		return propertiesConfig.getInt("streaming.process.max.restarts");
 	}
 
+	/* // TODO: For future use. Untested.
+	public String getStreamingFrameReaderExecutable() {
+		return propertiesConfig.getString("streaming.frame.reader.executable");
+	}
 
-	//TODO: For future use. Untested.
-//	@Value("${streaming.frame.reader.executable}")
-//	private String streamingFrameReaderExecutable;
-//	public String getStreamingFrameReaderExecutable() {
-//		return streamingFrameReaderExecutable;
-//	}
-//
-//
-//	@Value("${streaming.video.writer.executable}")
-//	private String streamingVideoWriterExecutable;
-//	public String getStreamingVideoWriterExecutable() {
-//		return streamingVideoWriterExecutable;
-//	}
-//
-//
-//	@Value("${streaming.component.executable}")
-//	private String streamingComponentExecutor;
-//	public String getStreamingComponentExecutor() {
-//		return streamingComponentExecutor;
-//	}
+	public String getStreamingVideoWriterExecutable() {
+		return propertiesConfig.getString("streaming.video.writer.executable");
+	}
 
-	@Value("${streaming.component.executable}")
-	private String streamingComponentExecutor;
 	public String getStreamingComponentExecutor() {
-		return streamingComponentExecutor;
+		return propertiesConfig.getString("streaming.component.executable");
+	}
+	*/
+
+	public String getStreamingComponentExecutor() {
+		return propertiesConfig.getString("streaming.component.executable");
 	}
 
-	@Value("${plugin.dir}")
-	private String pluginDir;
 	public String getPluginDir() {
-		return pluginDir;
+		return propertiesConfig.getString("plugin.dir");
 	}
 }

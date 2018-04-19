@@ -38,7 +38,7 @@ import org.junit.runner.RunWith;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.WritableResource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -52,7 +52,7 @@ import java.util.List;
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
 @ActiveProfiles("jenkins")
-public class TestMpfPropertiesConfigurationBuilder {
+public class TestPropertiesUtil {
 
     private static final String FRAME_INTERVAL_KEY = "detection.sampling.interval";
     private static final String MODELS_DIR_KEY = "detection.models.dir.path";
@@ -66,7 +66,7 @@ public class TestMpfPropertiesConfigurationBuilder {
     MpfPropertiesConfigurationBuilder mpfPropertiesConfigurationBuilder;
 
     @javax.annotation.Resource(name="customPropFile")
-    private Resource customPropFile;
+    private FileSystemResource customPropFile;
 
     @Autowired
     private PropertiesUtil propertiesUtil;

@@ -24,42 +24,64 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
 package org.mitre.mpf.wfm.util;
 
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-import java.util.Properties;
+import java.io.IOException;
+import java.net.URL;
 
-/**
- * The MediaTypeUtils class provides utilities for working with media types.
- *
- * Created by ecole on 3/22/16.
- */
 @Component(MediaTypeUtils.REF)
 public class MediaTypeUtils {
 
     private static final Logger log = LoggerFactory.getLogger(MediaTypeUtils.class);
     public static final String REF = "mediaTypeUtils";
 
-    private static Properties mediaTypeProperties;
+    @Autowired
+    private PropertiesUtil propertiesUtil;
+
+    private static FileSystemResource mediaTypesFile;
+
+    private static PropertiesConfiguration propertiesConfig;
 
     @PostConstruct
-    public void init(){
-        // Providing a way to statically access the properties that load on the component.
-        mediaTypeProperties = localProperties;
+    private void init() {
+        // get the media types properties file from the PropertiesUtil;
+        // the PropertiesUtil will ensure that it is copied from the template, if necessary
+        mediaTypesFile = propertiesUtil.getMediaTypesFile();
+
+        URL url;
+        try {
+            url = mediaTypesFile.getURL();
+        } catch (IOException e) {
+            throw new IllegalStateException("Cannot get URL from " + mediaTypesFile + ".", e);
+        }
+
+        FileBasedConfigurationBuilder<PropertiesConfiguration> fileBasedConfigBuilder =
+                new FileBasedConfigurationBuilder<>(PropertiesConfiguration.class);
+
+        Parameters configBuilderParameters = new Parameters();
+        fileBasedConfigBuilder.configure(configBuilderParameters.fileBased().setURL(url)
+                .setListDelimiterHandler(new DefaultListDelimiterHandler(',')));
+
+        try {
+            propertiesConfig = fileBasedConfigBuilder.getConfiguration();
+        } catch (ConfigurationException e) {
+            throw new IllegalStateException("Cannot create configuration from " + mediaTypesFile + ".", e);
+        }
     }
-
-    // TODO: Use Apache Commons Configuration
-
-    @Resource(name="mediaTypeProperties")
-    private Properties localProperties;
 
     /**
      * Uses the media mimeType and any whitelisted properties to determine how to process
@@ -71,12 +93,12 @@ public class MediaTypeUtils {
     public static MediaType parse(String mimeType) {
         String trimmedMimeType = TextUtils.trim(mimeType);
 
-        if (mediaTypeProperties==null) {
-            log.warn("media type properties not loaded.");
+        if (propertiesConfig == null) {
+            log.warn("Media type properties could not be loaded from " + mediaTypesFile + ".");
         } else {
-            String typeFromWhitelist = mediaTypeProperties.getProperty("whitelist." + mimeType);
+            String typeFromWhitelist = propertiesConfig.getString("whitelist." + mimeType);
             if (typeFromWhitelist != null) {
-                log.debug("MediaType Found in whitelist:"+mimeType + "  "+ typeFromWhitelist);
+                log.debug("Media type found in whitelist: " + mimeType + " is " + typeFromWhitelist);
                 MediaType type = MediaType.valueOf(typeFromWhitelist);
                 if (type != null) {
                     return type;

@@ -37,6 +37,10 @@
         <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/config/mpf-custom.properties</value></constructor-arg>
     </bean>
 
+    <bean id="mediaTypesFile" class="org.springframework.core.io.FileSystemResource">
+        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/config/mediaType.properties</value></constructor-arg>
+    </bean>
+
     <beans profile="default">
         <util:list id="propFiles" value-type="org.springframework.core.io.Resource">
             <value>classpath:properties/mpf.properties</value>
@@ -55,22 +59,26 @@
     </beans>
 
     <beans>
-        <bean id="mediaTypeProperties"
-              class="org.springframework.beans.factory.config.PropertiesFactoryBean">
-            <property name="ignoreResourceNotFound" value="true"/>
-            <property name="locations">
-                <list>
-                    <value>classpath:properties/mediaType.properties</value>
-                    <value type="org.springframework.core.io.FileSystemResource">${config.mediaTypes.file}</value>
-                </list>
-            </property>
+        <bean id="mpfPropertiesConfigBuilder" class="org.mitre.mpf.wfm.util.MpfPropertiesConfigurationBuilder">
+            <property name="customPropFile" ref="customPropFile" />
+            <property name="propFiles" ref="propFiles" />
+        </bean>
+
+        <bean id="mpfPropertiesConfig" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+            <property name="targetObject" ref="mpfPropertiesConfigBuilder" />
+            <property name="targetMethod" value="getCompleteConfiguration" />
         </bean>
 
         <!-- Make properties available to Spring -->
         <!-- This is necessary so that beans in other applicationContext*.xml files can reference property values by key -->
         <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-            <property name="ignoreResourceNotFound" value="true"/>
-            <property name="locations" ref="propFiles" />
+            <property name="properties">
+                <bean class="org.apache.commons.configuration2.spring.ConfigurationPropertiesFactoryBean">
+                    <constructor-arg>
+                        <ref bean="mpfPropertiesConfig" />
+                    </constructor-arg>
+                </bean>
+            </property>
         </bean>
      </beans>
 

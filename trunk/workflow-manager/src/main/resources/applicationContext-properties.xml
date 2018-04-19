@@ -42,19 +42,21 @@
     </bean>
 
     <beans profile="default">
+        <!-- Order is important. Files at the top override files at the bottom. -->
         <util:list id="propFiles" value-type="org.springframework.core.io.Resource">
-            <value>classpath:properties/mpf.properties</value>
-            <value>classpath:properties/mpf-private.properties</value>
             <ref bean="customPropFile" />
+            <value>classpath:properties/mpf-private.properties</value>
+            <value>classpath:properties/mpf.properties</value>
         </util:list>
     </beans>
 
     <beans profile="jenkins">
+        <!-- Order is important. Files at the top override files at the bottom. -->
         <util:list id="propFiles" value-type="org.springframework.core.io.Resource">
-            <value>classpath:properties/mpf.properties</value>
-            <value>classpath:properties/mpf-jenkins.properties</value>
-            <value>classpath:properties/mpf-private.properties</value>
             <ref bean="customPropFile" />
+            <value>classpath:properties/mpf-private.properties</value>
+            <value>classpath:properties/mpf-jenkins.properties</value>
+            <value>classpath:properties/mpf.properties</value>
         </util:list>
     </beans>
 

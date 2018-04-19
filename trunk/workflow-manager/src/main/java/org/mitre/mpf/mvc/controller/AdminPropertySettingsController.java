@@ -61,7 +61,6 @@ public class AdminPropertySettingsController
 	@ResponseBody
 	@RequestMapping(value = "/properties", method = RequestMethod.GET)
 	public List<PropertyModel> getProperties() {
-		// TODO: Test me!
 		return propertiesUtil.getCustomProperties();
 	}
 
@@ -69,7 +68,6 @@ public class AdminPropertySettingsController
 	@ResponseBody
 	@RequestMapping(value = "/properties", method = RequestMethod.PUT)
 	public void saveProperties(@RequestBody List<PropertyModel> propertyModels, HttpServletRequest request) {
-		// TODO: Test me!
 		if (!LoginController.getAuthenticationModel(request).isAdmin()) {
 			throw new IllegalStateException("A non-admin tried to modify properties.");
 		}

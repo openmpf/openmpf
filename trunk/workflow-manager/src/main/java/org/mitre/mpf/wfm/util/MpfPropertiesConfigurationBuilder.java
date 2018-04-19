@@ -157,15 +157,14 @@ public class MpfPropertiesConfigurationBuilder {
 
         CompositeConfiguration compositeConfig = new CompositeConfiguration();
 
-        // add resources in reverse order than they are specified in the application context XML;
+        // add resources in the order they are specified in the application context XML;
         // the first configs that are added to the composite override property values in configs that are added later
-        for (int i = propFiles.size() - 1; i >= 0; i--) {
-            Resource resource = propFiles.get(i);
+        for (Resource resource : propFiles) {
             try {
                 if (resource.equals(customPropFile)) {
                     mpfCustomPropertiesConfig = createFileBasedConfigurationBuilder(customPropFile).getConfiguration();
                     compositeConfig.addConfiguration(mpfCustomPropertiesConfig);
-                } else {
+                } else if (resource.exists()){
                     compositeConfig.addConfiguration(createFileBasedConfigurationBuilder(resource).getConfiguration());
                 }
             } catch (ConfigurationException e) {

@@ -339,13 +339,10 @@ public abstract class TestSystem {
 		private static void addPropertiesFile(GenericApplicationContext applicationCtx, String additionalPropsFile) {
 			BeanDefinition propFilesDef = applicationCtx.getBeanDefinition("propFiles");
 			MutablePropertyValues propertyValues = propFilesDef.getPropertyValues();
-			Collection<TypedStringValue> sourceList = (Collection<TypedStringValue>) propertyValues.get("sourceList");
+			List<Object> sourceList = (List<Object>) propertyValues.get("sourceList");
 
-			// add new file to the front of the list
-			List<TypedStringValue> newSourceList = new ArrayList<>(sourceList);
-			newSourceList.add(0, new TypedStringValue(additionalPropsFile));
-			propertyValues.removePropertyValue("sourceList");
-			propertyValues.add("sourceList", newSourceList);
+			// add new file to the front of the list so it overrides other files
+			sourceList.add(0, new TypedStringValue(additionalPropsFile, Resource.class.getName()));
 		}
 	}
 }

@@ -70,7 +70,6 @@ public class MpfPropertiesConfigurationBuilder {
 
     public MpfPropertiesConfigurationBuilder() {} // empty to allow for Spring autowiring
 
-    // TODO: Update PropertiesUtil to use this config to get all properties
     public ImmutableConfiguration getCompleteConfiguration() {
         if (mpfConfigCopy == null) {
             mpfCompositeConfig = createCompositeConfiguration();
@@ -146,6 +145,15 @@ public class MpfPropertiesConfigurationBuilder {
     }
 
     private CompositeConfiguration createCompositeConfiguration() {
+
+        if (!customPropFile.exists()) {
+            try {
+                PropertiesUtil.createParentDir(customPropFile);
+                customPropFile.getFile().createNewFile();
+            } catch (IOException e) {
+                throw new IllegalStateException("Cannot create " + customPropFile + ".", e);
+            }
+        }
 
         CompositeConfiguration compositeConfig = new CompositeConfiguration();
 

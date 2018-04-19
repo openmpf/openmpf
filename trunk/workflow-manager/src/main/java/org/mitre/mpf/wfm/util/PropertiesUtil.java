@@ -72,10 +72,6 @@ public class PropertiesUtil {
 
 	@PostConstruct
 	private void init() throws IOException, WfmProcessingException {
-		if (!customPropFile.exists()) {
-			createParentDir(customPropFile);
-			customPropFile.getFile().createNewFile();
-		}
 
 		mpfPropertiesConfig = mpfPropertiesConfigBuilder.getCompleteConfiguration();
 
@@ -609,7 +605,7 @@ public class PropertiesUtil {
 		}
 	}
 
-	private static void createParentDir(Resource resource) throws IOException {
+	public static void createParentDir(Resource resource) throws IOException {
 		Path resourcePath = Paths.get(resource.getURI());
 		Path resourceDir = resourcePath.getParent();
 		if ( Files.notExists(resourceDir) ) {

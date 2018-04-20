@@ -63,7 +63,7 @@ public class JsonComponentDescriptor {
 
     public String instructionsFile;
 
-    @NotNull(message = "must be java or c++")
+    @NotNull(message = "must be java, c++, or python")
     public ComponentLanguage sourceLanguage;
 
     public String batchLibrary;

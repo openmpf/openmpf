@@ -45,6 +45,7 @@
 #include "MPFDetectionBuffer.h"
 #include "CppComponentHandle.h"
 #include "ComponentLoadError.h"
+#include "PythonComponentHandle.h"
 
 #include <MPFDetectionComponent.h>
 
@@ -62,6 +63,15 @@ string GetFileName(const string& s) {
         return s.substr(i+1, s.length()-i);
     }
     return s;
+}
+
+bool is_python(const std::string &lib_path) {
+    static const std::string extension = ".py";
+    if (lib_path.size() < extension.size()) {
+        return false;
+    }
+    size_t start = lib_path.size() - extension.size();
+    return lib_path.find(".py", start) != std::string::npos;
 }
 
 template <typename ComponentHandle>
@@ -96,14 +106,22 @@ int main(int argc, char* argv[]) {
     }
 
     string broker_uri = argv[1];
+    string lib_path = argv[2];
     string request_queue = argv[3];
 
     LOG4CXX_DEBUG(logger, "library name = " << argv[2]);
     LOG4CXX_DEBUG(logger, "request queue = " << argv[3]);
 
+
     try {
-        CppComponentHandle component_handle(argv[2]);
-        return run_job(logger, broker_uri, request_queue, app_dir, component_handle);
+        if (is_python(lib_path)) {
+            PythonComponentHandle component_handle(logger, lib_path);
+            return run_job(logger, broker_uri, request_queue, app_dir, component_handle);
+        }
+        else {
+            CppComponentHandle component_handle(lib_path);
+            return run_job(logger, broker_uri, request_queue, app_dir, component_handle);
+        }
     }
     catch (const ComponentLoadError &ex) {
         LOG4CXX_ERROR(logger, "An error occurred while trying to load component: " << ex.what());

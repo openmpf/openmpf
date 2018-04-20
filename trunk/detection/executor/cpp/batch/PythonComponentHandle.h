@@ -24,43 +24,63 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.service.component;
+#ifndef MPF_PYTHONCOMPONENTHANDLE_H
+#define MPF_PYTHONCOMPONENTHANDLE_H
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+#include <string>
+#include <vector>
+#include <memory>
 
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Stream;
+#include <log4cxx/logger.h>
 
-import static java.util.stream.Collectors.toMap;
+#include <MPFDetectionObjects.h>
+#include <MPFDetectionComponent.h>
 
-public enum ComponentLanguage {
-    JAVA("java"),
-    CPP("c++"),
-    PYTHON("python");
 
-    private static final Map<String, ComponentLanguage> _namesMap = getNamesMap();
+namespace MPF { namespace COMPONENT {
 
-    private final String _stringValue;
 
-    ComponentLanguage(String stringValue) {
-        _stringValue = stringValue.toLowerCase();
-    }
+    class PythonComponentHandle {
+    public:
+        explicit PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &module_path);
 
-    @JsonCreator
-    public static ComponentLanguage forValue(String value) {
-        return _namesMap.get(value.toLowerCase());
-    }
+        PythonComponentHandle(PythonComponentHandle &&other) noexcept;
 
-    @JsonValue
-    public String getValue() {
-        return _stringValue;
-    }
+        PythonComponentHandle(const PythonComponentHandle &other) = delete;
 
-    private static Map<String, ComponentLanguage> getNamesMap() {
-        return Stream.of(ComponentLanguage.values())
-                .collect(toMap(ComponentLanguage::getValue, Function.identity()));
-    }
+        ~PythonComponentHandle();
 
-}
+        PythonComponentHandle& operator=(PythonComponentHandle &&other) noexcept;
+
+        PythonComponentHandle& operator=(const PythonComponentHandle &other) = delete;
+
+        void SetRunDirectory(const std::string &run_dir);
+
+        bool Init();
+
+        std::string GetDetectionType();
+
+        bool Supports(MPFDetectionDataType data_type);
+
+        MPFDetectionError GetDetections(const MPFVideoJob &job, std::vector<MPFVideoTrack> &tracks);
+
+        MPFDetectionError GetDetections(const MPFImageJob &job, std::vector<MPFImageLocation> &locations);
+
+        MPFDetectionError GetDetections(const MPFAudioJob &job, std::vector<MPFAudioTrack> &tracks);
+
+        MPFDetectionError GetDetections(const MPFGenericJob &job, std::vector<MPFGenericTrack> &tracks);
+
+        bool Close();
+
+    private:
+        // The pybind11 library declares everything with hidden visibility, so the pybind11 types cannot be
+        // referenced in a header file. To avoid referencing any pybind11 types the
+        // "Pointer to implementation" or "pImpl" pattern is used here. This also has the benefit that including
+        // this header, won't cause all of the Python headers to be included.
+        class impl;
+        std::unique_ptr<impl> impl_;
+    };
+}}
+
+
+#endif //MPF_PYTHONCOMPONENTHANDLE_H

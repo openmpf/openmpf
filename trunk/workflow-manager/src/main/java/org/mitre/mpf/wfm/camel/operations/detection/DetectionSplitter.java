@@ -143,6 +143,8 @@ public class DetectionSplitter implements StageSplitter {
 		// Is this the first detection stage in the pipeline?
 		boolean isFirstDetectionStage = isFirstDetectionOperation(transientJob);
 
+		log.info("DetectionSplitter: processing job " + transientJob.getId() + " stage " + transientJob.getCurrentStage());
+
 		for (TransientMedia transientMedia : transientJob.getMedia()) {
 
 			if (transientMedia.isFailed()) {
@@ -173,6 +175,8 @@ public class DetectionSplitter implements StageSplitter {
 
                 // starting setting of priorities here:  getting action property defaults
                 TransientAction transientAction = transientStage.getActions().get(actionIndex);
+
+                log.info("DetectionSplitter: processing actionIndex= " + actionIndex + " transientAction name, algorithm is " + transientAction.getName() + ", " + transientAction.getAlgorithm());
 
                 // modifiedMap initialized with algorithm specific properties
                 Map<String, String> modifiedMap = new HashMap<>(

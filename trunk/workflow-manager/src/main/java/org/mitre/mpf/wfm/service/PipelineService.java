@@ -101,4 +101,6 @@ public interface PipelineService {
 	void deletePipeline(String pipelineName);
 
 	void savePipeline(PipelineDefinition pipeline);
+
+	void refreshAlgorithmDefaultValues();
 }

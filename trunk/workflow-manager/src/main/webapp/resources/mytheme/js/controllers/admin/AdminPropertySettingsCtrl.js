@@ -70,12 +70,12 @@ function ($resource) {
 
 	return {
 
-    // Get the list of system properties.
-    query: function () {
+    // Get the list of all system properties.
+    queryAll: function () {
 			serverProperties = { };
-			// Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get the system properties. This endpoint will
-      // return a List of org.mitre.mpf.mvc.model.PropertyModel objects.
-			var properties = propertiesResource.query();
+			// Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get all of the system properties.
+      // This endpoint will return a List of org.mitre.mpf.mvc.model.PropertyModel objects.
+			var properties = propertiesResource.query({whichPropertySet: "all"});
 			properties
 				.$promise
 				.then(function () {
@@ -86,7 +86,39 @@ function ($resource) {
 			return properties;
 		},
 
-		update: function (properties) {
+    // Get the list of all mutable system properties.
+    queryMutable: function () {
+      serverProperties = { };
+      // Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get all of the mutable system properties.
+      // The mutable system properties can be changed, without requiring a restart of OpenMPF to apply the change.
+      var properties = propertiesResource.query({whichPropertySet: "mutable"});
+      properties
+      .$promise
+      .then(function () {
+        properties.forEach(function (prop) {
+          serverProperties[prop.key] = prop.value;
+        });
+      });
+      return properties;
+    },
+
+    // Get the list of all immutable system properties.
+    queryImmutable: function () {
+      serverProperties = { };
+      // Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get all of the immutable system properties.
+      // The immutable system properties require a restart of OpenMPF to apply the change.
+      var properties = propertiesResource.query({whichPropertySet: "immutable"});
+      properties
+      .$promise
+      .then(function () {
+        properties.forEach(function (prop) {
+          serverProperties[prop.key] = prop.value;
+        });
+      });
+      return properties;
+    },
+
+    update: function (properties) {
 
 		  // Reduce the properties List of org.mitre.mpf.mvc.model.PropertyModel objects to only those that have values that have been changed, store reduced list in modifiedProps variable.
 			var modifiedProps = properties.filter(function (p) {
@@ -138,27 +170,38 @@ function ($scope, $rootScope, $confirm, $state, PropertiesSvc, NotificationSvc) 
 
 	$scope.isAdmin = $rootScope.roleInfo.admin;
 
-	// Get the list of system properties (each property in the list is of type org.mitre.mpf.mvc.model.PropertyModel).
-	$scope.properties = PropertiesSvc.query();
+	// // Get the list of system properties (each property in the list is of type org.mitre.mpf.mvc.model.PropertyModel).
+	// $scope.properties = PropertiesSvc.queryAll();
 
-	$scope.resetAllProperties = function () {
-		PropertiesSvc.resetAll($scope.properties);
+  // Get the list of mutable system properties (each property in the list is of type org.mitre.mpf.mvc.model.PropertyModel).
+  $scope.mutableProperties = PropertiesSvc.queryMutable();
+
+  // Get the list of immutable system properties (each property in the list is of type org.mitre.mpf.mvc.model.PropertyModel).
+  $scope.immutableProperties = PropertiesSvc.queryImmutable();
+
+  $scope.resetAllProperties = function () {
+    PropertiesSvc.resetAll($scope.mutableProperties);
+    PropertiesSvc.resetAll($scope.immutableProperties);
 	};
 
 	$scope.unsavedPropertiesCount = function () {
-		return PropertiesSvc.unsavedPropertiesCount($scope.properties);
+		return PropertiesSvc.unsavedPropertiesCount($scope.mutableProperties) + PropertiesSvc.unsavedPropertiesCount($scope.immutableProperties);
 	};
 
-	$scope.hasUnsavedProperties = function () {
-		return PropertiesSvc.hasUnsavedProperties($scope.properties);
-	};
+  $scope.hasUnsavedProperties = function () {
+    return PropertiesSvc.hasUnsavedProperties($scope.mutableProperties) || PropertiesSvc.hasUnsavedProperties($scope.immutableProperties);
+  };
 
-	$scope.saveProperties = function () {
-		PropertiesSvc.update($scope.properties).$promise
+  $scope.saveProperties = function () {
+		PropertiesSvc.update($scope.mutableProperties).$promise
 			.then(function () {
-				NotificationSvc.success('Properties have been saved!');
+				NotificationSvc.success('Default Detection Properties have been saved!');
 			});
-	};
+    PropertiesSvc.update($scope.immutableProperties).$promise
+    .then(function () {
+      NotificationSvc.success('General System Properties have been saved!');
+    });
+  };
 
 
 	var confirmed = false;	// need to remember if we've asked the user the confirm, or else we'll get in loop

@@ -41,7 +41,10 @@ import java.util.Properties;
 import javax.servlet.http.HttpServletRequest;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.service.MpfService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,6 +84,12 @@ public class AdminPropertySettingsController
 	@Qualifier("loadedProperties")
 	private Properties currentProperties;
 
+	@Autowired
+	private PipelineService pipelineService;
+
+    @Autowired
+    @Qualifier(RedisImpl.REF)
+    private Redis redis;
 
     @ApiOperation(value = "Gets a list of system properties. If optional parameter whichPropertySet is not specified or is set to 'all', then all system properties are returned. "
         + "If whichPropertySet is 'mutable', then only the system properties that may be changed without OpenMPF restart are returned. "
@@ -134,7 +143,9 @@ public class AdminPropertySettingsController
 	@RequestMapping(value = "/properties", method = RequestMethod.PUT)
     /** Call this method to save system properties that have changed to the custom mpf properties file.
      * If any detection system properties have changed, that are identified as changeable without OpenMPF restart,
-     * then update those detection system properties via PropertiesUtil. Add system message if a restart of OpenMPF is required for any other system property that is changed and
+     * then update those detection system properties via PropertiesUtil. The updated detection system properties will also
+     * be stored in REDIS, so updated values can be used in the construction of new pipelines (created using newly created tasks).
+     * Add system message if a restart of OpenMPF is required for any other system property that is changed and
      * requires a restart to apply the change.
      * @param propertyModels list of system properties that have changed since OpenMPF startup.
      */
@@ -170,6 +181,10 @@ public class AdminPropertySettingsController
         // Note that PropertiesUtils methods updateDetectionSystemPropertyValues and createTransientDetectionSystemProperties are synchronized
         // so that a batch jobs detection system properties will stay constant while a job is running.
         propertiesUtil.updateDetectionSystemPropertyValues(propertyModels);
+
+		// After any dynamic detection system properties have been updated, then refresh the algorithm default values so
+        // they will be applied to new pipelines
+        pipelineService.refreshAlgorithmDefaultValues();
 
 		// Add system message if a restart of OpenMPF is required.
         if ( propertyModels.stream().anyMatch(pm -> pm.getNeedsRestart() ) ) {

@@ -154,6 +154,8 @@ public class NodeController {
 		return allMpfNodes;
 		*/
 
+		// getAvailableNodes(); // DEBUG
+
 		return IOUtils.readLines(propertiesUtil.getKnownNodes().getInputStream(), "UTF-8");
 	}
 

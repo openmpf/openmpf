@@ -33,9 +33,9 @@ public class PropertyModel {
 
 	private String _value;
 
-    private boolean _isValueChanged = false;
-	private boolean _needsRestartIfChanged = false;
-	private boolean _needsRestart = false;
+    private boolean _isValueChanged;
+	private boolean _needsRestartIfChanged;
+	private boolean _needsRestart;
 
 	public PropertyModel() {
 
@@ -69,6 +69,7 @@ public class PropertyModel {
         _isValueChanged = currentValue.equals(_value);
     }
 
+    public void setNeedsRestartIfChanged(boolean needsRestartIfChanged) { this._needsRestartIfChanged = needsRestartIfChanged; }
 	public boolean getNeedsRestartIfChanged() {
 		return _needsRestartIfChanged;
 	}

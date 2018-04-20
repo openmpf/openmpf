@@ -57,10 +57,6 @@ function ($resource) {
     return this.needsRestart;
   };
 
-  propertiesResource.prototype.isDetectionProperty = function () {
-    return ( this.key.indexOf("detection.") === 0 );
-  };
-
   propertiesResource.prototype.resetProperty = function () {
 		this.value = serverProperties[this.key];
 	};

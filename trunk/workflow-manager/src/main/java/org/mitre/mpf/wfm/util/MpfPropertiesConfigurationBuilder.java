@@ -38,10 +38,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Component
 public class MpfPropertiesConfigurationBuilder {
@@ -62,20 +59,19 @@ public class MpfPropertiesConfigurationBuilder {
 
     private CompositeConfiguration mpfCompositeConfig;
 
-    // return a copy so that if the original is modified it won't update existing configs in use;
-    // also, it's better to maintain one copy than create multiple immutable copies
-    private PropertiesConfiguration mpfConfigCopy;
+    // return a snapshot to users of this class to prevent the case where a property is being set / updated at the same
+    // time that properties are being read out of the config
+    // this is volatile to ensure the most updated version is used across threads
+    private volatile PropertiesConfiguration mpfConfigSnapshot;
 
     private PropertiesConfiguration mpfCustomPropertiesConfig;
 
-    public MpfPropertiesConfigurationBuilder() {} // empty to allow for Spring autowiring
-
     public ImmutableConfiguration getCompleteConfiguration() {
-        if (mpfConfigCopy == null) {
+        if (mpfConfigSnapshot == null) {
             mpfCompositeConfig = createCompositeConfiguration();
-            updateConfigurationCopy();
+            updateConfigurationSnapshot();
         }
-        return mpfConfigCopy;
+        return mpfConfigSnapshot;
     }
 
     public synchronized ImmutableConfiguration setAndSaveCustomProperties(List<PropertyModel> propertyModels) {
@@ -111,9 +107,9 @@ public class MpfPropertiesConfigurationBuilder {
             throw new IllegalStateException("Cannot save configuration to " + customPropFile + ".", e);
         }
 
-        updateConfigurationCopy();
+        updateConfigurationSnapshot();
 
-        return mpfConfigCopy; // return the updated config
+        return mpfConfigSnapshot;
     }
 
     public synchronized List<PropertyModel> getCustomProperties() {
@@ -134,14 +130,29 @@ public class MpfPropertiesConfigurationBuilder {
         Iterator<String> propertyKeyIter = mpfCompositeConfig.getKeys();
         while (propertyKeyIter.hasNext()) {
             String key = propertyKeyIter.next();
-            String currentValue = mpfCompositeConfig.getString(key);
-            String customValue = tmpMpfCustomPropertiesConfig.getString(key, currentValue);
 
-            boolean needsRestart = !Objects.equals(currentValue, customValue);
-            propertyModels.add(new PropertyModel(key, customValue, needsRestart));
+            // use uninterpolated values
+            String currentValue = getRawValue(mpfCompositeConfig, key);
+
+            if (tmpMpfCustomPropertiesConfig.containsKey(key)) {
+                String customValue = getRawValue(tmpMpfCustomPropertiesConfig, key);
+                boolean needsRestart = !Objects.equals(currentValue, customValue);
+                propertyModels.add(new PropertyModel(key, customValue, needsRestart));
+            } else {
+                propertyModels.add(new PropertyModel(key, currentValue, false));
+            }
         }
 
         return propertyModels;
+    }
+
+    private String getRawValue(Configuration config, String key) {
+        Object prop = config.getProperty(key);
+        String raw = prop.toString();
+        if (prop instanceof Collection<?>) {
+            return raw.substring(1, raw.length()-1); // remove the beginning "[" and ending "]"
+        }
+        return raw;
     }
 
     private CompositeConfiguration createCompositeConfiguration() {
@@ -199,13 +210,13 @@ public class MpfPropertiesConfigurationBuilder {
         return fileBasedConfigBuilder;
     }
 
-    private void updateConfigurationCopy() {
+    private void updateConfigurationSnapshot() {
         PropertiesConfiguration tmpConfig = new PropertiesConfiguration();
 
         // this will copy over each property one at a time,
         // essentially generating a "flat" config from the composite config
         ConfigurationUtils.copy(mpfCompositeConfig, tmpConfig);
 
-        mpfConfigCopy = tmpConfig; // assignment is atomic
+        mpfConfigSnapshot = tmpConfig;
     }
 }

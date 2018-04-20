@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.util;
 
 import org.apache.commons.configuration2.ImmutableConfiguration;
+import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.io.IOUtils;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
@@ -37,7 +38,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.core.io.*;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.InputStreamSource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -61,9 +65,6 @@ public class PropertiesUtil {
 
 	@Autowired
 	private MpfPropertiesConfigurationBuilder mpfPropertiesConfigBuilder;
-
-	@javax.annotation.Resource(name="customPropFile")
-	private FileSystemResource customPropFile;
 
 	@javax.annotation.Resource(name="mediaTypesFile")
 	private FileSystemResource mediaTypesFile;
@@ -142,6 +143,11 @@ public class PropertiesUtil {
 
 	public void setAndSaveCustomProperties(List<PropertyModel> propertyModels) {
 		mpfPropertiesConfig = mpfPropertiesConfigBuilder.setAndSaveCustomProperties(propertyModels);
+	}
+
+	// TODO: Use me!
+	public ImmutableConfiguration getDetectionConfiguration() {
+		return mpfPropertiesConfig.immutableSubset(MpfPropertiesConfigurationBuilder.DETECTION_KEY_PREFIX);
 	}
 
 	public List<PropertyModel> getCustomProperties() {
@@ -468,11 +474,29 @@ public class PropertiesUtil {
 	}
 
 	public int getNumStartUpServices() {
-		return mpfPropertiesConfig.getInt("startup.num.services.per.component", 0);
+		String key = "startup.num.services.per.component";
+		try {
+			return mpfPropertiesConfig.getInt(key);
+		} catch (ConversionException e) {
+			if (mpfPropertiesConfig.getString(key).startsWith("${")) {
+				log.warn("Unable to determine value for \"" + key + "\". It may not have been set via Maven. Using default value of \"0\".");
+				return 0;
+			}
+			throw e;
+		}
 	}
 
 	public boolean isStartupAutoRegistrationSkipped() {
-		return mpfPropertiesConfig.getBoolean("startup.auto.registration.skip.spring", false);
+		String key = "startup.auto.registration.skip.spring";
+		try {
+			return mpfPropertiesConfig.getBoolean(key);
+		} catch (ConversionException e) {
+			if (mpfPropertiesConfig.getString(key).startsWith("${")) {
+				log.warn("Unable to determine value for \"" + key + "\". It may not have been set via Maven. Using default value of \"false\".");
+				return false;
+			}
+			throw e;
+		}
 	}
 
 	public String getThisMpfNodeHostName() {

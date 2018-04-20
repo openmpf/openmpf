@@ -56,7 +56,6 @@ public class TestPropertiesUtil {
 
     private static final String FRAME_INTERVAL_KEY = "detection.sampling.interval";
     private static final String MODELS_DIR_KEY = "detection.models.dir.path";
-    private static final String VERSION_KEY = "mpf.version.timestamp";
     private static final String SHARE_PATH_KEY = "mpf.share.path";
     private static final String TIMEOUT_KEY = "web.session.timeout";
 
@@ -80,13 +79,6 @@ public class TestPropertiesUtil {
         String mpfHome = System.getenv(MPF_HOME_ENV_VAR);
         Assert.assertNotNull(mpfHome);
 
-        // NOTE: The next assert will fail if this test is run through IntelliJ unless "mvn compile" is run first.
-        // That can be done on the command line, or by adding a "Run Maven Goal" to the "Before launch" section
-        // of the IntelliJ test configuration and setting the "Command line" to "compile".
-
-        // ensure value carried over from pom (maven filtering)
-        Assert.assertFalse(mpfPropertiesconfig.getString(VERSION_KEY).contains(VERSION_KEY));
-
         // ensure "${mpf.share.path}" and $MPF_HOME are interpolated
         Assert.assertEquals(mpfHome + "/share/models/", mpfPropertiesconfig.getString(MODELS_DIR_KEY));
 
@@ -95,11 +87,15 @@ public class TestPropertiesUtil {
         while (keyIterator.hasNext()) {
             String key = keyIterator.next();
 
-            // NOTE: config.getProperty() doesn't do interpolation;
-            // this call actually resolves the value
+            // this call does interpolation
             String value = mpfPropertiesconfig.getString(key);
 
             System.out.println(key + " = " + value); // DEBUG
+
+            // NOTE: mpf.version.timestamp is set via maven filtering, so the next assert will fail if this test is run
+            // through IntelliJ unless "mvn compile" is run first. That can be done on the command line, or by adding a
+            // "Run Maven Goal" to the "Before launch" section of the IntelliJ test configuration and setting the
+            // "Command line" to "compile".
 
             Assert.assertFalse(key + " has a value of \"" + value + "\", which contains \"${\". Failed interpolation?",
                     value.contains("${"));

@@ -46,6 +46,7 @@ public class PropertyModel {
 		_value = value;
         _isValueChanged = isValueChanged;
         _needsRestartIfChanged = needsRestartIfChanged;
+        _needsRestart = _isValueChanged && _needsRestartIfChanged;
 	}
 
 

@@ -26,39 +26,40 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import static java.util.stream.Collectors.toList;
+ import static java.util.stream.Collectors.toList;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
-import javax.servlet.http.HttpServletRequest;
-import org.mitre.mpf.mvc.model.PropertyModel;
-import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
-import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.service.PipelineService;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Profile;
-import org.springframework.context.annotation.Scope;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+ import io.swagger.annotations.Api;
+ import io.swagger.annotations.ApiOperation;
+ import io.swagger.annotations.ApiResponse;
+ import io.swagger.annotations.ApiResponses;
+ import java.io.IOException;
+ import java.io.OutputStream;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.Objects;
+ import java.util.Optional;
+ import java.util.Properties;
+ import javax.servlet.http.HttpServletRequest;
+ import org.mitre.mpf.mvc.model.PropertyModel;
+ import org.mitre.mpf.wfm.WfmProcessingException;
+ import org.mitre.mpf.wfm.data.Redis;
+ import org.mitre.mpf.wfm.data.RedisImpl;
+ import org.mitre.mpf.wfm.service.MpfService;
+ import org.mitre.mpf.wfm.service.PipelineService;
+ import org.mitre.mpf.wfm.util.PropertiesUtil;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.beans.factory.annotation.Qualifier;
+ import org.springframework.context.annotation.Profile;
+ import org.springframework.context.annotation.Scope;
+ import org.springframework.core.io.support.PropertiesLoaderUtils;
+ import org.springframework.stereotype.Controller;
+ import org.springframework.web.bind.annotation.RequestBody;
+ import org.springframework.web.bind.annotation.RequestMapping;
+ import org.springframework.web.bind.annotation.RequestMethod;
+ import org.springframework.web.bind.annotation.RequestParam;
+ import org.springframework.web.bind.annotation.ResponseBody;
 
 // swagger includes
 
@@ -116,14 +117,13 @@ public class AdminPropertySettingsController
 		if ( whichPropertySet.equalsIgnoreCase("mutable") ) {
             return currentProperties.entrySet()
                 .stream()
-                .filter( e -> e.getKey().toString().startsWith("detection.") )
-                .filter( e -> !e.getKey().toString().equals("detection.models.dir.path") )
+                .filter( e -> !isRestartRequiredIfValueChanged((String)e.getKey()) )
                 .map(e -> convertEntryToModel(e, customProperties))
                 .collect(toList());
         } else if ( whichPropertySet.equalsIgnoreCase("immutable") ) {
             return currentProperties.entrySet()
                 .stream()
-                .filter( e -> !e.getKey().toString().startsWith("detection.") || e.getKey().toString().equals("detection.models.dir.path") )
+                .filter( e -> isRestartRequiredIfValueChanged((String)e.getKey()) )
                 .map(e -> convertEntryToModel(e, customProperties))
                 .collect(toList());
         } else {
@@ -134,6 +134,41 @@ public class AdminPropertySettingsController
         }
 	}
 
+    /**
+     * Get the PropertyModel associated with the specified property key.
+     * @param propertyKey system property key to search for.
+     * @return PropertyModel associated with the specified property key or null if not found.
+     * @throws IOException
+     */
+    @ApiOperation(value = "Gets the specified system property", produces = "application/json", response=PropertyModel.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successful response"),
+        @ApiResponse(code = 401, message = "Bad credentials")})
+    @ResponseBody
+    @RequestMapping(value = "/property", method = RequestMethod.GET)
+	public PropertyModel getProperty(@RequestParam(value = "propertyKey") String propertyKey) throws IOException {
+        Properties customProperties = getCustomProperties();
+        Optional<PropertyModel> propertyModel = currentProperties.entrySet().stream().filter(e -> e.getKey().equals(propertyKey))
+                                                                .map(e -> convertEntryToModel(e, customProperties)).findFirst();
+        return propertyModel.orElse(null);
+    }
+
+    /**
+     * Check all properties to see if any immutable system properties have changed and a restart is required.
+     * @return true if any immutable system properties have changed and a restart is required, false otherwise.
+     * @throws IOException
+     */
+    @ApiOperation(value = "Returns true if any immutable system properties have changed and a restart is required.", produces = "application/json", response=Boolean.class)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successful response"),
+        @ApiResponse(code = 401, message = "Bad credentials")})
+    @ResponseBody
+    @RequestMapping(value = "/restartRequired", method = RequestMethod.GET)
+    public boolean isRestartRequired() throws IOException {
+        Properties customProperties = getCustomProperties();
+        Optional<PropertyModel> propertyModel = currentProperties.entrySet().stream().map(e -> convertEntryToModel(e, customProperties)).filter(pm -> pm.getNeedsRestart()).findFirst();
+        return propertyModel.isPresent();
+    }
 
 	private static PropertyModel convertEntryToModel(Map.Entry<?, ?> entry, Properties customProperties) {
 		String key = entry.getKey().toString();
@@ -144,9 +179,9 @@ public class AdminPropertySettingsController
 		// Any property that starts with "detection." may be changed without requiring restart of OpenMPF, with the single exception of the detection.models.dir.path property.
         boolean isValueChanged = !Objects.equals(currentValue, modelValue);
 		boolean needsRestartIfChanged = isRestartRequiredIfValueChanged(key);
-        log.info("AdminPropertySettingsController.convertEntryToModel: debug, processing key = " + key);
-        log.info("AdminPropertySettingsController.convertEntryToModel: debug, needsRestartIfChanged = " + needsRestartIfChanged);
-		return new PropertyModel(key, modelValue, isValueChanged, needsRestartIfChanged);
+		PropertyModel propertyModel = new PropertyModel(key, modelValue, isValueChanged, needsRestartIfChanged);
+        log.info("AdminPropertySettingsController.convertEntryToModel: debug, returning propertyModel = " + propertyModel);
+		return propertyModel;
 	}
 
 

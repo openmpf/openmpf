@@ -161,8 +161,8 @@ function ($resource) {
 
 
 propSettingsModule.controller('AdminPropertySettingsCtrl', [
-'$scope', '$rootScope', '$confirm', '$state', 'PropertiesSvc', 'NotificationSvc',
-function ($scope, $rootScope, $confirm, $state, PropertiesSvc, NotificationSvc) {
+'$scope', '$rootScope', '$confirm', '$state', 'PropertiesSvc', 'NotificationSvc', '$q',
+function ($scope, $rootScope, $confirm, $state, PropertiesSvc, NotificationSvc, $q) {
 
 	$scope.isAdmin = $rootScope.roleInfo.admin;
 
@@ -189,16 +189,18 @@ function ($scope, $rootScope, $confirm, $state, PropertiesSvc, NotificationSvc) 
   };
 
   $scope.saveProperties = function () {
-		PropertiesSvc.update($scope.mutableProperties).$promise
-			.then(function () {
-				NotificationSvc.success('Default Detection Properties have been saved!');
-			});
-    PropertiesSvc.update($scope.immutableProperties).$promise
+
+    // satisfy both promises using $q.all before providing notification of success to the user.
+    $q.all([ PropertiesSvc.update($scope.mutableProperties).$promise, PropertiesSvc.update($scope.immutableProperties).$promise ])
     .then(function () {
-      NotificationSvc.success('General System Properties have been saved!');
+      NotificationSvc.success('System Properties have been saved!');
     });
+
   };
 
+  $scope.isRestartRequired = function() {
+
+  }
 
 	var confirmed = false;	// need to remember if we've asked the user the confirm, or else we'll get in loop
 	$scope.$on('$stateChangeStart', function (event, toState) {

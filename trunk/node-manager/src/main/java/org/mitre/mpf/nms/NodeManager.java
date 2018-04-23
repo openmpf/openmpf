@@ -25,6 +25,7 @@
  ******************************************************************************/
 package org.mitre.mpf.nms;
 
+import org.mitre.mpf.nms.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,8 +68,8 @@ public class NodeManager implements Runnable {
                      = new ClassPathXmlApplicationContext("applicationContext-nm.xml")) {
             context.registerShutdownHook();
 
-            NodeManagerProperties properties = context.getBean(NodeManagerProperties.class);
-            if (properties.isNodeStatusPageEnabled()) {
+            PropertiesUtil propertiesUtil = context.getBean(PropertiesUtil.class);
+            if (propertiesUtil.isNodeStatusPageEnabled()) {
                 context.getBean(NodeStatusHttpServer.class).start();
             }
 

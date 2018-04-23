@@ -24,53 +24,45 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.nodeManager;
+package org.mitre.mpf.nms.util;
 
-import org.javasimon.SimonManager;
-import org.javasimon.Split;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.SmartLifecycle;
-import org.springframework.stereotype.Service;
+import org.springframework.core.io.Resource;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@Service
-public class StartUp implements SmartLifecycle {
+import java.io.IOException;
+import java.util.Iterator;
 
-	@Autowired
-	private NodeManagerStatus nodeManagerStatus;
+@ContextConfiguration(locations = {"classpath:applicationContext-nm.xml"})
+@RunWith(SpringJUnit4ClassRunner.class)
+public class TestPropertiesUtil {
 
-	@Override
-	public boolean isAutoStartup() {
-		return true;
-	}
+    private static final String THIS_MPF_NODE_ENV_VAR = "THIS_MPF_NODE";
 
-	@Override
-	public void start() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.init(false);
-		split.stop();
-	}
+    @Autowired
+    private PropertiesUtil propertiesUtil;
 
-	@Override
-	public void stop() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.stop").start();
-		nodeManagerStatus.stop();
-		split.stop();
-	}
+    @Test
+    public void testPropertiesUtilGetters() throws IOException {
+        Assert.assertEquals(System.getenv(THIS_MPF_NODE_ENV_VAR), propertiesUtil.getThisMpfNode());
 
-	@Override
-	public boolean isRunning() {
-		return nodeManagerStatus.isRunning();
-	}
+        Assert.assertTrue(Resource.class.isAssignableFrom(propertiesUtil.getJGroupsConfig().getClass()));
+        Assert.assertNotNull(propertiesUtil.getJGroupsConfig().getURL());
 
-	@Override
-	public void stop(Runnable r) {
-		this.stop();
-		r.run();
-	}
+        // attempt to resolve every property value
+        Iterator<String> keyIterator = propertiesUtil.getKeys();
+        while (keyIterator.hasNext()) {
+            String key = keyIterator.next();
+            String value = propertiesUtil.lookup(key);
 
-	@Override
-	public int getPhase() {
-		return -1;
-	}
+            System.out.println(key + " = " + value); // DEBUG
+
+            Assert.assertFalse(key + " has a value of \"" + value + "\", which contains \"${\". Failed interpolation?",
+                    value.contains("${"));
+        }
+    }
 }
-

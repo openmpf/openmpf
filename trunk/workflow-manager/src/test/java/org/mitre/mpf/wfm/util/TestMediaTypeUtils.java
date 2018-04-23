@@ -24,53 +24,34 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.nodeManager;
+package org.mitre.mpf.wfm.util;
 
-import org.javasimon.SimonManager;
-import org.javasimon.Split;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mitre.mpf.wfm.enums.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.SmartLifecycle;
-import org.springframework.stereotype.Service;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@Service
-public class StartUp implements SmartLifecycle {
+@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
+@RunWith(SpringJUnit4ClassRunner.class)
+@ActiveProfiles("jenkins")
+public class TestMediaTypeUtils {
 
-	@Autowired
-	private NodeManagerStatus nodeManagerStatus;
+    @Autowired
+    private MediaTypeUtils mediaTypeUtils;
 
-	@Override
-	public boolean isAutoStartup() {
-		return true;
-	}
+    @Test
+    public void testParse() {
+        Assert.assertEquals(MediaType.VIDEO, mediaTypeUtils.parse("application/x-matroska"));
+        Assert.assertEquals(MediaType.VIDEO, mediaTypeUtils.parse("application/x-vnd.rn-realmedia"));
+        Assert.assertEquals(MediaType.VIDEO, mediaTypeUtils.parse("application/mp4"));
+        Assert.assertEquals(MediaType.VIDEO, mediaTypeUtils.parse("image/gif"));
 
-	@Override
-	public void start() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.init(false);
-		split.stop();
-	}
-
-	@Override
-	public void stop() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.stop").start();
-		nodeManagerStatus.stop();
-		split.stop();
-	}
-
-	@Override
-	public boolean isRunning() {
-		return nodeManagerStatus.isRunning();
-	}
-
-	@Override
-	public void stop(Runnable r) {
-		this.stop();
-		r.run();
-	}
-
-	@Override
-	public int getPhase() {
-		return -1;
-	}
+        Assert.assertEquals(MediaType.IMAGE, mediaTypeUtils.parse("image/jpeg"));
+        Assert.assertEquals(MediaType.AUDIO, mediaTypeUtils.parse("audio/mpeg"));
+        Assert.assertEquals(MediaType.UNKNOWN, mediaTypeUtils.parse("text/plain"));
+    }
 }
-

@@ -33,46 +33,54 @@
                            http://www.springframework.org/schema/util
                            http://www.springframework.org/schema/util/spring-util.xsd">
 
+    <bean id="customPropFile" class="org.springframework.core.io.FileSystemResource">
+        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/config/mpf-custom.properties</value></constructor-arg>
+    </bean>
+
+    <bean id="mediaTypesFile" class="org.springframework.core.io.FileSystemResource">
+        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/config/mediaType.properties</value></constructor-arg>
+    </bean>
+
     <beans profile="default">
-        <util:list id="propFiles">
-            <value>classpath:properties/mpf.properties</value>
+        <!-- Order is important. Files at the top override files at the bottom. -->
+        <util:list id="propFiles" value-type="org.springframework.core.io.Resource">
+            <ref bean="customPropFile" />
             <value>classpath:properties/mpf-private.properties</value>
-            <value type="org.springframework.core.io.FileSystemResource">#{systemEnvironment['MPF_HOME']}/config/mpf-custom.properties</value>
+            <value>classpath:properties/mpf.properties</value>
         </util:list>
     </beans>
 
     <beans profile="jenkins">
-        <util:list id="propFiles">
-            <value>classpath:properties/mpf.properties</value>
-            <value>classpath:properties/mpf-jenkins.properties</value>
+        <!-- Order is important. Files at the top override files at the bottom. -->
+        <util:list id="propFiles" value-type="org.springframework.core.io.Resource">
+            <ref bean="customPropFile" />
             <value>classpath:properties/mpf-private.properties</value>
-            <value type="org.springframework.core.io.FileSystemResource">#{systemEnvironment['MPF_HOME']}/config/mpf-custom.properties</value>
+            <value>classpath:properties/mpf-jenkins.properties</value>
+            <value>classpath:properties/mpf.properties</value>
         </util:list>
     </beans>
 
     <beans>
-        <bean id="mediaTypeProperties"
-              class="org.springframework.beans.factory.config.PropertiesFactoryBean">
-            <property name="ignoreResourceNotFound" value="true"/>
-            <property name="locations">
-                <list>
-                    <value>classpath:properties/mediaType.properties</value>
-                    <value type="org.springframework.core.io.FileSystemResource">${config.mediaTypes.file}</value>
-                </list>
-            </property>
+        <bean id="mpfPropertiesConfigBuilder" class="org.mitre.mpf.wfm.util.MpfPropertiesConfigurationBuilder">
+            <property name="customPropFile" ref="customPropFile" />
+            <property name="propFiles" ref="propFiles" />
+        </bean>
+
+        <bean id="mpfPropertiesConfig" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+            <property name="targetObject" ref="mpfPropertiesConfigBuilder" />
+            <property name="targetMethod" value="getCompleteConfiguration" />
         </bean>
 
         <!-- Make properties available to Spring -->
+        <!-- This is necessary so that beans in other applicationContext*.xml files can reference property values by key -->
         <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-            <property name="ignoreResourceNotFound" value="true"/>
-            <property name="locations" ref="propFiles" />
-        </bean>
-
-        <!-- Registers a java.util.Properties object that can be injected.
-             The properties object will contain the same properties loaded by Spring. -->
-        <bean class="org.springframework.beans.factory.config.PropertiesFactoryBean" id="loadedProperties">
-            <property name="ignoreResourceNotFound" value="true"/>
-            <property name="locations" ref="propFiles" />
+            <property name="properties">
+                <bean class="org.apache.commons.configuration2.spring.ConfigurationPropertiesFactoryBean">
+                    <constructor-arg>
+                        <ref bean="mpfPropertiesConfig" />
+                    </constructor-arg>
+                </bean>
+            </property>
         </bean>
      </beans>
 

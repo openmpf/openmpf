@@ -30,6 +30,7 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
+import org.mitre.mpf.nms.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -55,7 +56,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
     // the interface to JGroups
     private final ChannelNode msgChannel;
 
-    private final NodeManagerProperties properties;
+    private final PropertiesUtil propertiesUtil;
 
     // key is FQN of the service: for example, mpf1:Markup:1
     private final Map<String, ServiceDescriptor> serviceTable = new ConcurrentHashMap<>();
@@ -65,8 +66,8 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
     private ClusterChangeNotifier notifier;          // For callbacks when changing node states
 
 
-    protected ChannelReceiver(NodeManagerProperties properties, ChannelNode channelNode) {
-        this.properties = properties;
+    protected ChannelReceiver(PropertiesUtil propertiesUtil, ChannelNode channelNode) {
+        this.propertiesUtil = propertiesUtil;
         msgChannel = channelNode;
     }
 
@@ -155,7 +156,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
                     NodeDescriptor mgr = nodeTable.get(mgrHost);
                     if (mgr == null) {
                         mgr = new NodeDescriptor(mgrHost);
-                        if (!mgr.doesHostMatch(properties.getThisMpfNode())) { // don't warn about self
+                        if (!mgr.doesHostMatch(propertiesUtil.getThisMpfNode())) { // don't warn about self
                             LOG.warn("New node-manager is online that wasn't preconfigured. Rogue?");
                         }
                         // Issue the callback
@@ -303,7 +304,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         if (null == nodeType) {
             nodeType = NodeTypes.ReceiverNode;
         }
-        String fqn = AddressParser.createFqn(nodeType, properties.getThisMpfNode(), description);
+        String fqn = AddressParser.createFqn(nodeType, propertiesUtil.getThisMpfNode(), description);
 
         LOG.debug("{} starting up", fqn);
         // this connects us to the jgroups channel defined, we are now live and ready for comm

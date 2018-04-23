@@ -34,13 +34,14 @@ import org.mitre.mpf.wfm.enums.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 
 @Component(IoUtils.REF)
 public class IoUtils {
@@ -48,8 +49,7 @@ public class IoUtils {
     private static final Logger log = LoggerFactory.getLogger(IoUtils.class);
 
     @Autowired
-    @Qualifier(PropertiesUtil.REF)
-    private PropertiesUtil propertiesUtil;
+    private MediaTypeUtils mediaTypeUtils;
 
     // Detect is thread safe, so only one instance is needed.
     // See: {@link http://grokbase.com/t/tika/user/114qab9908/is-the-method-detect-of-instance-org-apache-tika-tika-thread-safe}
@@ -240,6 +240,6 @@ public class IoUtils {
      * @return
      */
     public boolean isApprovedContentType(String contentType) {
-        return MediaTypeUtils.parse(contentType) != null;
+        return mediaTypeUtils.parse(contentType) != null;
     }
 }

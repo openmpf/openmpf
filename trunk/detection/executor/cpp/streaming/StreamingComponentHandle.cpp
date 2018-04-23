@@ -31,7 +31,7 @@ namespace MPF { namespace COMPONENT {
 
     StreamingComponentHandle::StreamingComponentHandle(const std::string &lib_path,
                                                        const MPFStreamingVideoJob &job)
-    try : component_loader_(lib_path, "streaming_component_creator", "streaming_component_deleter", &job)
+    try : component_(lib_path, "streaming_component_creator", "streaming_component_deleter", &job)
     {
     }
     catch (const std::exception &ex) {
@@ -42,7 +42,7 @@ namespace MPF { namespace COMPONENT {
 
     std::string StreamingComponentHandle::GetDetectionType() {
         try {
-            return component_loader_->GetDetectionType();
+            return component_->GetDetectionType();
         }
         catch (...) {
             WrapComponentException("GetDetectionType");
@@ -52,7 +52,7 @@ namespace MPF { namespace COMPONENT {
 
     void StreamingComponentHandle::BeginSegment(const VideoSegmentInfo &segment_info) {
         try {
-            component_loader_->BeginSegment(segment_info);
+            component_->BeginSegment(segment_info);
         }
         catch (...) {
             WrapComponentException("BeginSegment");
@@ -61,7 +61,7 @@ namespace MPF { namespace COMPONENT {
 
     bool StreamingComponentHandle::ProcessFrame(const cv::Mat &frame, int frame_number) {
         try {
-            return component_loader_->ProcessFrame(frame, frame_number);
+            return component_->ProcessFrame(frame, frame_number);
         }
         catch (...) {
             WrapComponentException("ProcessFrame");
@@ -70,7 +70,7 @@ namespace MPF { namespace COMPONENT {
 
     std::vector<MPFVideoTrack> StreamingComponentHandle::EndSegment() {
         try {
-            return component_loader_->EndSegment();
+            return component_->EndSegment();
         }
         catch (...) {
             WrapComponentException("EndSegment");

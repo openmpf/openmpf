@@ -52,7 +52,7 @@ namespace MPF { namespace COMPONENT {
 
 
     private:
-        DlClassLoader<MPFStreamingDetectionComponent> component_loader_;
+        DlClassLoader<MPFStreamingDetectionComponent> component_;
 
         [[noreturn]] static void WrapComponentException(const std::string &component_method);
     };

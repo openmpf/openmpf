@@ -31,6 +31,7 @@ import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Receiver;
 import org.jgroups.View;
+import org.mitre.mpf.nms.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,22 +48,22 @@ public class ChannelNode {
 
     private static final Logger log = LoggerFactory.getLogger(ChannelNode.class);
 
-    private final NodeManagerProperties properties;
+    private final PropertiesUtil propertiesUtil;
 
     private JChannel channel;
     private boolean isConnected;
 
     @Autowired
-    public ChannelNode(NodeManagerProperties properties) {
-    	this.properties = properties;
+    public ChannelNode(PropertiesUtil propertiesUtil) {
+    	this.propertiesUtil = propertiesUtil;
     }
 
 
     public void connect(String nodeName, Receiver receiver) {
         try {
-	        channel = new JChannel(properties.getJGroupsConfig().getURL());
+	        channel = new JChannel(propertiesUtil.getJGroupsConfig().getURL());
 	        channel.setName(nodeName);
-            channel.connect(properties.getChannelName());
+            channel.connect(propertiesUtil.getChannelName());
             channel.setReceiver(receiver);
             channel.getState(null, 10000);
             isConnected = true;

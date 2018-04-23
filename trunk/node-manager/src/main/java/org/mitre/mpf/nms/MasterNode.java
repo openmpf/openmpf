@@ -103,6 +103,7 @@ public class MasterNode {
      * on that machine) to instruct to create nodes.
      *
      * @param masterConfigFile
+     * @param activeMqHostname
      * @return false if the file if xml parsing returns null or there are no nodes present 
      */
     public final boolean loadConfigFile(InputStream masterConfigFile, String activeMqHostname) {

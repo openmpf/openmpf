@@ -59,7 +59,7 @@
     </bean>
 
     <bean id="broker" class="org.apache.activemq.ActiveMQConnectionFactory">
-        <property name="brokerURL" value="${activemq.hostname}" />
+        <property name="brokerURL" value="#{systemEnvironment['ACTIVE_MQ_HOST']}" />
     </bean>
 
     <!-- Output Object JMS Configuration -->
@@ -90,6 +90,6 @@
     </bean>
 
     <bean id="outputBroker" class="org.apache.activemq.ActiveMQConnectionFactory">
-        <property name="brokerURL" value="${mpf.output.objects.activemq.hostname}" />
+        <property name="brokerURL" value="#{systemEnvironment['ACTIVE_MQ_HOST']}" />
     </bean>
 </beans>

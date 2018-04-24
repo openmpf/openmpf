@@ -29,7 +29,6 @@
 #include <sys/time.h>
 #include <cstdlib>
 #include <unistd.h>
-#include <dlfcn.h>  // for dlopen(), dlsym(), etc.
 
 #include <log4cxx/logger.h>
 #include <log4cxx/xml/domconfigurator.h>
@@ -39,18 +38,13 @@
 #include <log4cxx/logmanager.h>
 #include <log4cxx/level.h>
 
-#include <QDir>
-#include <QMap>
-#include <QHash>
-#include <QFile>
-#include <QObject>
-#include <QString>
-#include <QStringList>
 #include <QCoreApplication>
 #include <QTime>
 
 #include "MPFMessenger.h"
 #include "MPFDetectionBuffer.h"
+#include "CppComponentHandle.h"
+#include "ComponentLoadError.h"
 
 #include <MPFDetectionComponent.h>
 
@@ -70,6 +64,10 @@ string GetFileName(const string& s) {
     return s;
 }
 
+template <typename ComponentHandle>
+int run_job(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
+             const std::string &app_dir, ComponentHandle &detection_engine);
+
 /**
  * This is the main program for the Detection Component.  It accepts two
  * command line arguments: 1) the track request queue name, and 2) a log
@@ -82,62 +80,50 @@ string GetFileName(const string& s) {
  * @return An integer representing the exit status of the program
  */
 int main(int argc, char* argv[]) {
-    int pollingInterval = 1;
     // Create a Core Application so that we can access the path to the executable,
     // since the config and log files are found relative to that path.
     QCoreApplication *this_app = new QCoreApplication(argc, argv);
     string app_dir = (this_app->applicationDirPath()).toStdString();
     delete this_app;
 
-    string broker_uri = "failover://(tcp://localhost:61616?jms.prefetchPolicy.all=1)?startupMaxReconnectAttempts=1";
-    string request_queue = "";
-    // Set up activemq path
-    if (argc > 1)
-        broker_uri = string(argv[1]);
-
     log4cxx::xml::DOMConfigurator::configure(app_dir + "/../config/Log4cxxConfig.xml");
     log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("org.mitre.mpf.detection");
 
     if (argc < 4) {
-        LOG4CXX_ERROR(logger, "ERROR: the activemq broker uri, component library name, and request queue name must be supplied as arguments");
+        LOG4CXX_ERROR(logger,
+                      "ERROR: the activemq broker uri, component library name, and request queue name must be supplied as arguments");
         return -1;
     }
-    request_queue = string(argv[3]);
+
+    string broker_uri = argv[1];
+    string request_queue = argv[3];
 
     LOG4CXX_DEBUG(logger, "library name = " << argv[2]);
     LOG4CXX_DEBUG(logger, "request queue = " << argv[3]);
 
-    // Instantiate the component whose library was given as a command line argument
-    // The RTLD_NOW flag causes dlopen() to resolve all symbols now so if something is
-    // missing, we will fail now rather than later.
-    void *component_handle = dlopen(argv[2], RTLD_NOW);
-    if (NULL == component_handle) {
-        LOG4CXX_ERROR(logger, "Failed to open component library " << argv[2] << ": " << dlerror());
-	return(79);  // 79=ELIBACC Can not access a needed shared library
+    try {
+        CppComponentHandle component_handle(argv[2]);
+        return run_job(logger, broker_uri, request_queue, app_dir, component_handle);
     }
+    catch (const ComponentLoadError &ex) {
+        LOG4CXX_ERROR(logger, "An error occurred while trying to load component: " << ex.what());
+        return 38;
+    }
+    catch (const std::exception &ex) {
+        LOG4CXX_ERROR(logger, "An error occurred while running the job: " << ex.what());
+        return -1;
+    }
+    catch (...) {
+        LOG4CXX_ERROR(logger, "An error occurred while running the job.");
+        return -1;
+    }
+}
 
-    typedef MPFDetectionComponent* create_t();
-    typedef void destroy_t(MPFDetectionComponent*);
 
-    create_t* comp_create = (create_t*)dlsym(component_handle, "component_creator");
-    if (NULL == comp_create) {
-        LOG4CXX_ERROR(logger, "dlsym failed for component_creator: " << dlerror());
-        dlclose(component_handle);
-        return(38);  // 38=ENOSYS Function not implemented
-    }
-
-    destroy_t* comp_destroy = (destroy_t*)dlsym(component_handle, "component_deleter");
-    if (NULL == comp_destroy) {
-        LOG4CXX_ERROR(logger,"dlsym failed for component_deleter: " << dlerror());
-        dlclose(component_handle);
-        return(38);  // 38=ENOSYS Function not implemented
-    }
-    MPFDetectionComponent *detection_engine = comp_create();
-    if (NULL == detection_engine) {
-	LOG4CXX_ERROR(logger,"Detection component creation failed: ");
-	dlclose(component_handle);
-	return(79);  // 79=ELIBACC Can not access a needed shared library
-    }
+template <typename ComponentHandle>
+int run_job(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
+            const std::string &app_dir, ComponentHandle &detection_engine) {
+    int pollingInterval = 1;
 
     // Instantiate AMQ interface
     MPFMessenger messenger(logger);
@@ -161,9 +147,9 @@ int main(int argc, char* argv[]) {
 
         messenger.Startup(broker_uri, request_queue);
 
-        detection_engine->SetRunDirectory(app_dir + "/../plugins");
+        detection_engine.SetRunDirectory(app_dir + "/../plugins");
 
-        if (!detection_engine->Init()) {
+        if (!detection_engine.Init()) {
             LOG4CXX_ERROR(logger, "Detection component initialization failed, exiting.");
             return -1;
         }
@@ -256,9 +242,9 @@ int main(int argc, char* argv[]) {
 
                     LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing message on " << service_name << ".");
 
-                    string detection_type = detection_engine->GetDetectionType();
+                    string detection_type = detection_engine.GetDetectionType();
 
-                    if (detection_engine->Supports(data_type)) {
+                    if (detection_engine.Supports(data_type)) {
                         MPFDetectionError rc;
                         if (data_type == MPFDetectionDataType::VIDEO) {
                             vector <MPFVideoTrack> tracks;
@@ -275,7 +261,7 @@ int main(int argc, char* argv[]) {
                                                       algorithm_properties,
                                                       media_properties);
 
-                                rc = detection_engine->GetDetections(video_job, tracks);
+                                rc = detection_engine.GetDetections(video_job, tracks);
                             }
                             else {
                                 // Invoke the detection component
@@ -287,7 +273,7 @@ int main(int argc, char* argv[]) {
                                                       algorithm_properties,
                                                       media_properties);
 
-                                rc = detection_engine->GetDetections(video_job, tracks);
+                                rc = detection_engine.GetDetections(video_job, tracks);
                             }
 
                             msg_metadata->time_elapsed = time.elapsed();
@@ -314,7 +300,7 @@ int main(int argc, char* argv[]) {
                                                       algorithm_properties,
                                                       media_properties);
 
-                                rc = detection_engine->GetDetections(audio_job, tracks);
+                                rc = detection_engine.GetDetections(audio_job, tracks);
                             }
                             else {
                                 // Invoke the detection component
@@ -326,7 +312,7 @@ int main(int argc, char* argv[]) {
                                                       algorithm_properties,
                                                       media_properties);
 
-                                rc = detection_engine->GetDetections(audio_job, tracks);
+                                rc = detection_engine.GetDetections(audio_job, tracks);
                             }
                             msg_metadata->time_elapsed = time.elapsed();
 
@@ -350,7 +336,7 @@ int main(int argc, char* argv[]) {
                                                       algorithm_properties,
                                                       media_properties);
 
-                                rc = detection_engine->GetDetections(image_job, locations);
+                                rc = detection_engine.GetDetections(image_job, locations);
                             }
                             else {
                                 // Invoke the detection component
@@ -360,7 +346,7 @@ int main(int argc, char* argv[]) {
                                                       algorithm_properties,
                                                       media_properties);
 
-                                rc = detection_engine->GetDetections(image_job, locations);
+                                rc = detection_engine.GetDetections(image_job, locations);
                             }
                             msg_metadata->time_elapsed = time.elapsed();
 
@@ -394,7 +380,7 @@ int main(int argc, char* argv[]) {
                                                           algorithm_properties,
                                                           media_properties);
 
-                                rc = detection_engine->GetDetections(generic_job, tracks);
+                                rc = detection_engine.GetDetections(generic_job, tracks);
                             }
                             else {
                                 // Invoke the detection component
@@ -404,7 +390,7 @@ int main(int argc, char* argv[]) {
                                                           algorithm_properties,
                                                           media_properties);
 
-                                rc = detection_engine->GetDetections(generic_job, tracks);
+                                rc = detection_engine.GetDetections(generic_job, tracks);
                             }
                             msg_metadata->time_elapsed = time.elapsed();
 
@@ -474,7 +460,7 @@ int main(int argc, char* argv[]) {
         LOG4CXX_ERROR(logger, "Unknown Exception caught in main.cpp\n");
     }
 
-    if (!detection_engine->Close()) {
+    if (!detection_engine.Close()) {
         LOG4CXX_ERROR(logger, "Detection engine failed to close... ");
     }
 
@@ -494,9 +480,6 @@ int main(int argc, char* argv[]) {
         LOG4CXX_ERROR(logger, "Unknown Exception caught during message interface shutdown: "
                               << request_queue);
     }
-
-    // Delete the detection component
-    comp_destroy(detection_engine);
 
     // Close the logger
     log4cxx::LogManager::shutdown();

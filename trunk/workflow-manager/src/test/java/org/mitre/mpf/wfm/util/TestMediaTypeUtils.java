@@ -23,56 +23,35 @@
  * See the License for the specific language governing permissions and        *
  * limitations under the License.                                             *
  ******************************************************************************/
-package org.mitre.mpf.nms;
 
-import org.mitre.mpf.nms.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package org.mitre.mpf.wfm.util;
+
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mitre.mpf.wfm.enums.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.stereotype.Component;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@Component
-public class NodeManager implements Runnable {
-
-    private static final Logger LOG = LoggerFactory.getLogger(NodeManager.class);
-
-    private final ChildNodeStateManager nodeStateManager;
-
+@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
+@RunWith(SpringJUnit4ClassRunner.class)
+@ActiveProfiles("jenkins")
+public class TestMediaTypeUtils {
 
     @Autowired
-    public NodeManager(ChildNodeStateManager nodeStateManager) {
-        this.nodeStateManager = nodeStateManager;
-    }
+    private MediaTypeUtils mediaTypeUtils;
 
+    @Test
+    public void testParse() {
+        Assert.assertEquals(MediaType.VIDEO, mediaTypeUtils.parse("application/x-matroska"));
+        Assert.assertEquals(MediaType.VIDEO, mediaTypeUtils.parse("application/x-vnd.rn-realmedia"));
+        Assert.assertEquals(MediaType.VIDEO, mediaTypeUtils.parse("application/mp4"));
+        Assert.assertEquals(MediaType.VIDEO, mediaTypeUtils.parse("image/gif"));
 
-    @Override
-    public void run() {
-        nodeStateManager.startReceiving(NodeTypes.NodeManager, "NodeManager");
-        nodeStateManager.run();
-
-        nodeStateManager.shutdown();
-    }
-
-    
-    public static void main(String[] args) {
-        LOG.info("NodeManager started");
-
-        // Log that we are being shutdown, but more hooks are found during process launches in BaseNodeLauncher
-        Runtime.getRuntime().addShutdownHook(new Thread(
-                () -> LOG.info("NodeManager shutdown")));
-
-
-        try (ClassPathXmlApplicationContext context
-                     = new ClassPathXmlApplicationContext("applicationContext-nm.xml")) {
-            context.registerShutdownHook();
-
-            PropertiesUtil propertiesUtil = context.getBean(PropertiesUtil.class);
-            if (propertiesUtil.isNodeStatusPageEnabled()) {
-                context.getBean(NodeStatusHttpServer.class).start();
-            }
-
-            context.getBean(NodeManager.class).run();
-        }
+        Assert.assertEquals(MediaType.IMAGE, mediaTypeUtils.parse("image/jpeg"));
+        Assert.assertEquals(MediaType.AUDIO, mediaTypeUtils.parse("audio/mpeg"));
+        Assert.assertEquals(MediaType.UNKNOWN, mediaTypeUtils.parse("text/plain"));
     }
 }

@@ -31,6 +31,7 @@ import org.jgroups.*;
 import org.jgroups.protocols.TCPPING;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
+import org.mitre.mpf.nms.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,23 +51,23 @@ public class ChannelNode {
 
     private static final Logger log = LoggerFactory.getLogger(ChannelNode.class);
 
-    private final NodeManagerProperties properties;
+    private final PropertiesUtil propertiesUtil;
 
     private JChannel channel;
     private boolean isConnected;
 
     @Autowired
-    public ChannelNode(NodeManagerProperties properties) {
-    	this.properties = properties;
+    public ChannelNode(PropertiesUtil propertiesUtil) {
+    	this.propertiesUtil = propertiesUtil;
     }
 
 
     public void connect(String nodeName, Receiver receiver) {
         try {
-	        channel = new JChannel(properties.getJGroupsConfig().getURL());
+	        channel = new JChannel(propertiesUtil.getJGroupsConfig().getURL());
 	        channel.setName(nodeName);
             channel.setReceiver(receiver);
-            channel.connect(properties.getChannelName());
+            channel.connect(propertiesUtil.getChannelName());
             channel.getState(null, 10000);
             isConnected = true;
         } catch (Exception e) {

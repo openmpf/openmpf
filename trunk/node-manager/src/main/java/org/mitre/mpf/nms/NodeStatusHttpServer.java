@@ -32,6 +32,7 @@ import com.github.mustachejava.MustacheFactory;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import org.mitre.mpf.nms.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,21 +49,21 @@ public class NodeStatusHttpServer {
 
 	private static final Logger LOG = LoggerFactory.getLogger(NodeStatusHttpServer.class);
 
-	private final NodeManagerProperties properties;
+	private final PropertiesUtil propertiesUtil;
 
 	private final ChildNodeStateManager nodeStateManager;
 
 
 	@Autowired
-	public NodeStatusHttpServer(NodeManagerProperties properties, ChildNodeStateManager nodeStateManager) {
-		this.properties = properties;
+	public NodeStatusHttpServer(PropertiesUtil propertiesUtil, ChildNodeStateManager nodeStateManager) {
+		this.propertiesUtil = propertiesUtil;
 		this.nodeStateManager = nodeStateManager;
 	}
 
 
 	public void start() {
 		try {
-			HttpServer server = HttpServer.create(new InetSocketAddress(properties.getNodeStatusHttpPort()), 0);
+			HttpServer server = HttpServer.create(new InetSocketAddress(propertiesUtil.getNodeStatusHttpPort()), 0);
 			server.createContext("/", this::handle);
 			server.start();
 			LOG.info("Started node status debug page on port {}", server.getAddress().getPort());
@@ -78,7 +79,7 @@ public class NodeStatusHttpServer {
 		headers.set("Content-Type", "text/html");
 		exchange.sendResponseHeaders(200, 0);
 
-		StatusViewContext viewContext = new StatusViewContext(nodeStateManager, properties.getNodeStatusHttpPort());
+		StatusViewContext viewContext = new StatusViewContext(nodeStateManager, propertiesUtil.getNodeStatusHttpPort());
 
 		try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(exchange.getResponseBody()))) {
 			renderMustacheView(writer, viewContext);

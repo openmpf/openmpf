@@ -30,6 +30,7 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.mitre.mpf.nms.streaming.messages.StreamingJobMessage;
 import org.mitre.mpf.nms.streaming.ChildStreamingJobManager;
+import org.mitre.mpf.nms.util.PropertiesUtil;
 import org.mitre.mpf.nms.util.SleepUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +48,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
     private static final Logger LOG = LoggerFactory.getLogger(ChildNodeStateManager.class);
 
 
-    private final NodeManagerProperties properties;
+    private final PropertiesUtil propertiesUtil;
 
     private final ChildStreamingJobManager streamingJobManager;
 
@@ -55,10 +56,10 @@ public class ChildNodeStateManager extends ChannelReceiver {
 
 
     @Autowired
-    public ChildNodeStateManager(NodeManagerProperties properties, ChannelNode channelNode,
+    public ChildNodeStateManager(PropertiesUtil propertiesUtil, ChannelNode channelNode,
                                  ChildStreamingJobManager streamingJobManager) {
-        super(properties, channelNode);
-        this.properties = properties;
+        super(propertiesUtil, channelNode);
+        this.propertiesUtil = propertiesUtil;
         this.streamingJobManager = streamingJobManager;
     }
 
@@ -100,7 +101,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
                 }
             }
 
-            if (sd.doesHostMatch(properties.getThisMpfNode())) {
+            if (sd.doesHostMatch(propertiesUtil.getThisMpfNode())) {
                 // one of ours set it up correctly
                 switch (sd.getLastKnownState()) {
                     case Delete:
@@ -140,7 +141,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
 
                 // If we are not already deemed running, tell the world that indeed we are
                 if (msu.getLastKnownState() != NodeManagerConstants.States.Running
-                        && msu.getTheNode().doesHostMatch(properties.getThisMpfNode())) {
+                        && msu.getTheNode().doesHostMatch(propertiesUtil.getThisMpfNode())) {
                     updateState(msu.getTheNode(), NodeManagerConstants.States.Running);
                 }
             }
@@ -190,7 +191,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
             BaseServiceLauncher launcher = BaseServiceLauncher.getLauncher(desc);
             if (launcher != null) {
                 // if it's startable then hold onto it
-                if (launcher.startup(properties.getMinServiceUpTimeMillis())) {
+                if (launcher.startup(propertiesUtil.getMinServiceUpTimeMillis())) {
                     launchedAppsMap.put(launcher.getServiceName(), launcher);
                     updateState(desc, NodeManagerConstants.States.Running);
                     LOG.info("Sending {} state for {}", NodeManagerConstants.States.Running, desc.getName());
@@ -220,7 +221,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
      */
     public void run() {
         // We are running - tell the world
-        NodeDescriptor mgr = new NodeDescriptor(properties.getThisMpfNode());
+        NodeDescriptor mgr = new NodeDescriptor(propertiesUtil.getThisMpfNode());
         updateState(mgr, NodeManagerConstants.States.Running);
 
         // Now that we are all up and running and syncd with the cluster, see if we had been tasked
@@ -228,7 +229,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
         synchronized (getServiceTable()) {
             for (ServiceDescriptor sd : getServiceTable().values()) {
                 if (sd.doesStateMatch(NodeManagerConstants.States.Launching)
-                        && sd.doesHostMatch(properties.getThisMpfNode())) {
+                        && sd.doesHostMatch(propertiesUtil.getThisMpfNode())) {
                     // @todo: offline when messages came? If we went away the state of these would be running!
                     // System.err.println("Launching a previously setup node: " + sd.getName());
                     LOG.info("Launching a previously setup node: " + sd.getName());

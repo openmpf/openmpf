@@ -23,56 +23,46 @@
  * See the License for the specific language governing permissions and        *
  * limitations under the License.                                             *
  ******************************************************************************/
-package org.mitre.mpf.nms;
 
-import org.mitre.mpf.nms.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package org.mitre.mpf.nms.util;
+
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.stereotype.Component;
+import org.springframework.core.io.Resource;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@Component
-public class NodeManager implements Runnable {
+import java.io.IOException;
+import java.util.Iterator;
 
-    private static final Logger LOG = LoggerFactory.getLogger(NodeManager.class);
+@ContextConfiguration(locations = {"classpath:applicationContext-nm.xml"})
+@RunWith(SpringJUnit4ClassRunner.class)
+public class TestPropertiesUtil {
 
-    private final ChildNodeStateManager nodeStateManager;
-
+    private static final String THIS_MPF_NODE_ENV_VAR = "THIS_MPF_NODE";
 
     @Autowired
-    public NodeManager(ChildNodeStateManager nodeStateManager) {
-        this.nodeStateManager = nodeStateManager;
-    }
+    private PropertiesUtil propertiesUtil;
 
+    @Test
+    public void testPropertiesUtilGetters() throws IOException {
+        Assert.assertEquals(System.getenv(THIS_MPF_NODE_ENV_VAR), propertiesUtil.getThisMpfNode());
 
-    @Override
-    public void run() {
-        nodeStateManager.startReceiving(NodeTypes.NodeManager, "NodeManager");
-        nodeStateManager.run();
+        Assert.assertTrue(Resource.class.isAssignableFrom(propertiesUtil.getJGroupsConfig().getClass()));
+        Assert.assertNotNull(propertiesUtil.getJGroupsConfig().getURL());
 
-        nodeStateManager.shutdown();
-    }
+        // attempt to resolve every property value
+        Iterator<String> keyIterator = propertiesUtil.getKeys();
+        while (keyIterator.hasNext()) {
+            String key = keyIterator.next();
+            String value = propertiesUtil.lookup(key);
 
-    
-    public static void main(String[] args) {
-        LOG.info("NodeManager started");
+            System.out.println(key + " = " + value); // DEBUG
 
-        // Log that we are being shutdown, but more hooks are found during process launches in BaseNodeLauncher
-        Runtime.getRuntime().addShutdownHook(new Thread(
-                () -> LOG.info("NodeManager shutdown")));
-
-
-        try (ClassPathXmlApplicationContext context
-                     = new ClassPathXmlApplicationContext("applicationContext-nm.xml")) {
-            context.registerShutdownHook();
-
-            PropertiesUtil propertiesUtil = context.getBean(PropertiesUtil.class);
-            if (propertiesUtil.isNodeStatusPageEnabled()) {
-                context.getBean(NodeStatusHttpServer.class).start();
-            }
-
-            context.getBean(NodeManager.class).run();
+            Assert.assertFalse(key + " has a value of \"" + value + "\", which contains \"${\". Failed interpolation?",
+                    value.contains("${"));
         }
     }
 }

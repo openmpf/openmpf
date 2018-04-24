@@ -27,7 +27,7 @@
 package org.mitre.mpf.nms.streaming;
 
 import org.mitre.mpf.nms.util.EnvironmentVariableExpander;
-import org.mitre.mpf.nms.NodeManagerProperties;
+import org.mitre.mpf.nms.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,22 +38,22 @@ import java.util.Map;
 @Component
 public class StreamingProcessFactory {
 
-	private final NodeManagerProperties _properties;
+	private final PropertiesUtil _propertiesUtil;
 
 	@Autowired
-	public StreamingProcessFactory(NodeManagerProperties properties) {
-		_properties = properties;
+	public StreamingProcessFactory(PropertiesUtil propertiesUtil) {
+		_propertiesUtil = propertiesUtil;
 	}
 
 
 	//TODO: For future use. Untested.
 //	public StreamingProcess createFrameReaderProcess(Path iniPath) {
-//		return createProcess("FrameReader", _properties.getStreamingFrameReaderExecutable(), iniPath);
+//		return createProcess("FrameReader", _propertiesUtil.getStreamingFrameReaderExecutable(), iniPath);
 //	}
 //
 //
 //	public StreamingProcess createVideoWriterProcess(Path iniPath) {
-//		return createProcess("VideoWriter", _properties.getStreamingVideoWriterExecutable(), iniPath);
+//		return createProcess("VideoWriter", _propertiesUtil.getStreamingVideoWriterExecutable(), iniPath);
 //	}
 //
 //
@@ -64,7 +64,7 @@ public class StreamingProcessFactory {
 
 
 //	public StreamingProcess createComponentProcess(Path iniPath, Map<String, String> environmentVariables) {
-//		return createProcess("Component", _properties.getStreamingComponentExecutor(), iniPath,
+//		return createProcess("Component", _propertiesUtil.getStreamingComponentExecutor(), iniPath,
 //		                     environmentVariables);
 //	}
 
@@ -77,13 +77,13 @@ public class StreamingProcessFactory {
 //			.redirectErrorStream(true);
 //	processBuilder.environment().putAll(environmentVariables);
 //
-//	return new StreamingProcess(name, processBuilder, _properties.getStreamingProcessMaxRestarts());
+//	return new StreamingProcess(name, processBuilder, _propertiesUtil.getStreamingProcessMaxRestarts());
 //}
 
 
 	public StreamingProcess createComponentProcess(String componentName, Path iniPath, Map<String, String> environmentVariables) {
-		String[] command = { _properties.getStreamingComponentExecutor(), iniPath.toAbsolutePath().toString()} ;
-		File workingDirectory = new File(_properties.getPluginDir(), componentName);
+		String[] command = { _propertiesUtil.getStreamingComponentExecutor(), iniPath.toAbsolutePath().toString()} ;
+		File workingDirectory = new File(_propertiesUtil.getPluginDir(), componentName);
 
 		ProcessBuilder processBuilder = new ProcessBuilder(command)
 				.directory(workingDirectory)
@@ -91,6 +91,6 @@ public class StreamingProcessFactory {
 		processBuilder.environment().putAll(EnvironmentVariableExpander.expandValues(environmentVariables));
 
 		return new StreamingProcess("Component", processBuilder,
-		                            _properties.getStreamingProcessMaxRestarts());
+		                            _propertiesUtil.getStreamingProcessMaxRestarts());
 	}
 }

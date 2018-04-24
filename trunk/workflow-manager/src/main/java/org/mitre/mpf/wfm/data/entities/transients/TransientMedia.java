@@ -29,19 +29,16 @@ package org.mitre.mpf.wfm.data.entities.transients;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.HashMap;
-import java.util.Map;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.MediaResource;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /** An in-flight media instance. */
 public class TransientMedia {
-
-	@Autowired
-	private MediaTypeUtils mediaTypeUtils;
 
 	/** The unique identifier for this file. */
 	private long id;
@@ -92,7 +89,9 @@ public class TransientMedia {
 	public String getMediaSpecificProperty(String key) { return mediaSpecificProperties.get(key); }
 
 	@JsonIgnore
-	public MediaType getMediaType() { return MediaTypeUtils.parse(type); }
+	public MediaType getMediaType() {
+	    return MediaTypeUtils.parse(type);
+	}
 
 	/** The length of the medium in frames (for images and videos) or milliseconds (for audio). */
 	private int length;

@@ -97,6 +97,7 @@
     <logger name="org.springframework.context.annotation" level="WARN"/>
     <logger name="org.springframework.beans.factory" level="WARN"/>
     <logger name="org.apache.xbean.spring" level="WARN"/>
+    <logger name="org.apache.commons.beanutils" level="WARN"/>
     <logger name="org.mitre" level="INFO"/>
     <!--<logger name="org.jnbis" level="INFO" additivity="false" />-->
     <!--<logger name="org.mitre.jetitor.util.JetitorUtils" level="INFO" additivity="false" />-->

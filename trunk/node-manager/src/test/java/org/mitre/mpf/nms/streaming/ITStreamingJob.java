@@ -30,8 +30,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.mitre.mpf.nms.NodeManagerProperties;
 import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
+import org.mitre.mpf.nms.util.PropertiesUtil;
 import org.mockito.stubbing.Answer;
 
 import java.nio.file.Path;
@@ -50,15 +50,15 @@ public class ITStreamingJob {
 	@Rule
 	public TemporaryFolder _tempDir = new TemporaryFolder();
 
-	private NodeManagerProperties _mockProperties;
+	private PropertiesUtil _mockPropertiesUtil;
 
 	private StreamingProcessFactory _mockProcessFactory;
 
 
 	@Before
 	public void init() {
-		_mockProperties = mock(NodeManagerProperties.class);
-		when(_mockProperties.getIniFilesDir())
+		_mockPropertiesUtil = mock(PropertiesUtil.class);
+		when(_mockPropertiesUtil.getIniFilesDir())
 				.thenReturn(_tempDir.getRoot().toPath().resolve("mpf-ini-files"));
 
 		_mockProcessFactory = mock(StreamingProcessFactory.class);
@@ -77,7 +77,7 @@ public class ITStreamingJob {
 
 	@Test
 	public void testStreamingJobWithPythonProcess() throws InterruptedException, TimeoutException, ExecutionException {
-		StreamingJobFactory jobFactory = new StreamingJobFactory(_mockProcessFactory, new IniManager(_mockProperties));
+		StreamingJobFactory jobFactory = new StreamingJobFactory(_mockProcessFactory, new IniManager(_mockPropertiesUtil));
 
 		LaunchStreamingJobMessage launchJobMessage = StreamingJobTestUtil.createLaunchMessage();
 

@@ -118,11 +118,11 @@
               <!-- if the property has already been modified (exists in modifiedPropertiesMap) then change the style dependent upon whether or not OpenMPF needs to be restarted to apply the change -->
               <td id="imPropertiesCellName_{{prop.key}}" class="formlabel smart-wrap">
                 <!-- if the value was changed, then display the property name with the "needs restart" color. -->
-                <span ng-class="{labelNeedsServerRestart: prop.needsRestart, formlabelChanged: prop.valueChanged()}">
+                <span ng-class="{labelNeedsServerRestart: prop.changeRequiresRestart(), formlabelChanged: prop.valueChanged()}">
 													{{prop.key}}
 												</span>
                 <!-- if this property was changed, and a restart is required to apply the change, then show to server restart glyph alongside the system property -->
-                <span class="glyphicon glyphicon-retweet serverNeedsRestartIcon" ng-show="prop.needsRestart"></span>
+                <span class="glyphicon glyphicon-retweet serverNeedsRestartIcon" ng-show="prop.changeRequiresRestart()"></span>
                 <!-- if this property was changed and has not yet been saved to the property file, then show the edit glyph alongside the system property -->
                 <span class="glyphicon-edit valueChangedIcon" ng-show="isAdmin && prop.valueChanged()"></span>
               </td>
@@ -133,7 +133,7 @@
                        value="{{prop.value}}"
                        ng-readonly="!isAdmin" ng-disabled="!isAdmin"
                        class="forminput"
-                       ng-class="{valueNeedsServerRestart: prop.valueChanged() && prop.needsRestart, valuechanged: prop.valueChanged()}">
+                       ng-class="{valueNeedsServerRestart: prop.valueChanged() && prop.changeRequiresRestart(), valuechanged: prop.valueChanged()}">
               </td>
               <!-- if the property value has been changed, then display a reset property button -->
               <td>

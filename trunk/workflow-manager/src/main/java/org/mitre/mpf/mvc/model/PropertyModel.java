@@ -33,8 +33,6 @@ public class PropertyModel {
 
 	private String _value;
 
-//    private boolean _isValueChanged;
-//	private boolean _needsRestartIfChanged;
 	private boolean _needsRestart;
 
 	public PropertyModel() {
@@ -62,23 +60,12 @@ public class PropertyModel {
 		_value = value;
 	}
 
-//	public boolean getIsValueChanged() { return _isValueChanged; }
-//    public void setIsValueChanged(String currentValue) {
-//        _isValueChanged = currentValue.equals(_value);
-//    }
-//
-//    public void setNeedsRestartIfChanged(boolean needsRestartIfChanged) { this._needsRestartIfChanged = needsRestartIfChanged; }
-//	public boolean getNeedsRestartIfChanged() {
-//		return _needsRestartIfChanged;
-//	}
-
 	public boolean getNeedsRestart() { return _needsRestart; }
 	public void setNeedsRestart(boolean needsRestart) {
         _needsRestart = needsRestart;
 	}
 
 	public String toString() {
-//        return "_key: " + _key + ", _value: " + _value + ", _needsRestartIfChanged: " + _needsRestartIfChanged + ", _isValueChanged: " + _isValueChanged + ", _needsRestart: " + _needsRestart;
         return "_key: " + _key + ", _value: " + _value + ", _needsRestart: " + _needsRestart;
     }
 }

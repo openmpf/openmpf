@@ -137,28 +137,14 @@ public class AdminPropertySettingsController
             // Get an updated list of property models. Each element contains current value. Return only the immutable system properties by
             // filtering out the mutable detection properties from the list.
             ImmutableConfiguration detectionSystemProperties = propertiesUtil.getDetectionConfiguration();
-            log.info("getProperties(immutable), debug: dumping detectionSystemProperties keys");
-            detectionSystemProperties.getKeys().forEachRemaining( key -> {
-                log.info("getProperties(immutable), debug: processing detectionSystemProperties key " + key);
-            } );
-            return propertiesUtil.getCustomProperties().stream().peek(pm -> {
-                log.info("getProperties(immutable), debug: pm is "+pm);
-                log.info("getProperties(immutable), debug: detectionSystemProperties.containsKey(" + pm.getKey() + ") is "+detectionSystemProperties.containsKey(pm.getKey()));
-            }).filter(pm -> !detectionSystemProperties.containsKey(pm.getKey())).collect(toList());
+            return propertiesUtil.getCustomProperties().stream().filter(pm -> !detectionSystemProperties.containsKey(pm.getKey())).collect(toList());
 
         } else if ( whichPropertySet.equalsIgnoreCase("mutable") ) {
 
             // Get an updated list of property models. Each element contains current value. Return only the mutable system properties by
             // filtering out the immutable detection properties from the list.
             ImmutableConfiguration detectionSystemProperties = propertiesUtil.getDetectionConfiguration();
-            log.info("getProperties(mutable), debug: dumping detectionSystemProperties keys");
-            detectionSystemProperties.getKeys().forEachRemaining( key -> {
-                log.info("getProperties(mutable), debug: processing detectionSystemProperties key " + key);
-            } );
-            return propertiesUtil.getCustomProperties().stream().peek(pm -> {
-                log.info("getProperties(mutable), debug: pm is "+pm);
-                log.info("getProperties(mutable), debug: detectionSystemProperties.containsKey(" + pm.getKey() + ") is "+detectionSystemProperties.containsKey(pm.getKey()));
-            }).filter(pm -> detectionSystemProperties.containsKey(pm.getKey())).collect(toList());
+             return propertiesUtil.getCustomProperties().stream().filter(pm -> detectionSystemProperties.containsKey(pm.getKey())).collect(toList());
 
         } else {
             // by default, return all of the system properties - updated to contain current value.
@@ -213,14 +199,10 @@ public class AdminPropertySettingsController
             for ( int i=0; i<propertyModels.size() && !isFound; i++ ) {
                 isFound = updatedPM.getKey().equals(propertyModels.get(i).getKey());
             }
-            if ( isFound ) {
-                log.info("AdminPropertySettingsController.saveProperties: found updatedPM=" + updatedPM);
-            }
             return isFound;
         }).collect(Collectors.toList());
 
         // Note that the returned list may contain PropertyModels that may have a updated value of needsRestart.
-        log.info("AdminPropertySettingsController.saveProperties: returning updatedPropertyModels with size=" + updatedPropertyModels.size());
         return updatedPropertyModels;
 	}
 

@@ -27,10 +27,12 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import com.google.common.collect.Lists;
+import java.util.List;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultExchange;
+import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
 import org.junit.Test;
@@ -38,8 +40,6 @@ import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.wfm.camel.WfmSplitterInterface;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
@@ -53,8 +53,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import java.util.List;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -100,8 +98,8 @@ public class TestMediaInspectionSplitter {
         final int testStage = 1;
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
-        TransientDetectionSystemProperties detectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
-        TransientJob testJob = new TransientJob(jobId, testExternalId, detectionSystemProperties, testPipe, testStage, testPriority, testOutputEnabled, false);
+        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
+        TransientJob testJob = new TransientJob(jobId, testExternalId, detectionSystemPropertiesSnapshot, testPipe, testStage, testPriority, testOutputEnabled, false);
         final long testMediaId = 123456;
         final String testURI = "/samples/new_face_video.avi";
         TransientMedia testMedia = new TransientMedia(testMediaId, testURI);

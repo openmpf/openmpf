@@ -26,15 +26,31 @@
 
 package org.mitre.mpf.wfm.util;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.time.LocalDateTime;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import javax.annotation.PostConstruct;
 import org.apache.commons.configuration2.ImmutableConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.io.IOUtils;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,15 +61,6 @@ import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.time.LocalDateTime;
-import java.util.*;
 
 
 @Component(PropertiesUtil.REF)
@@ -152,7 +159,16 @@ public class PropertiesUtil {
 
 	// TODO: Use me!
 	public ImmutableConfiguration getDetectionConfiguration() {
-		return mpfPropertiesConfig.immutableSubset(MpfPropertiesConfigurationBuilder.DETECTION_KEY_PREFIX);
+
+        // Extract just the detection system properties as a PropertiesConfiguration for return to the caller.
+        PropertiesConfiguration detectionSubsetConfig = new PropertiesConfiguration();
+        mpfPropertiesConfig.getKeys().forEachRemaining( key -> {
+            if ( key.startsWith(MpfPropertiesConfigurationBuilder.DETECTION_KEY_PREFIX) ) {
+                detectionSubsetConfig.addProperty(key, mpfPropertiesConfig.getString(key));
+            }
+        } );
+
+        return detectionSubsetConfig;
 	}
 
     /**
@@ -350,71 +366,6 @@ public class PropertiesUtil {
 	public double getTrackOverlapThreshold() {
 		return mpfPropertiesConfig.getDouble("detection.track.overlap.threshold");
 	}
-
-//<<<<<<< HEAD
-////    // A static copy of TransientDetectionSystemProperties is required by TestUtil.
-////    private static TransientDetectionSystemProperties transientDetectionSystemPropertiesSingleton;
-////	private static final long TransientDetectionSystemPropertiesSingletonId = 0;
-////
-////    /** A static version of this method is needed by TestUtil.
-////     * Create the storage container containing the current values of the "detection." system properties.
-////     * @return container object containing the values of the "detection." system properties at the time this method was called.
-////     */
-////    public synchronized static TransientDetectionSystemProperties createTransientDetectionSystemPropertiesSingleton() {
-////        long uniqueId = 0;
-////        transientDetectionSystemPropertiesSingleton = new TransientDetectionSystemProperties(0, getArtifactExtractionPolicy(), );
-////        return transientDetectionSystemPropertiesSingleton;
-////    }
-//
-//
-//    /**
-//	 * Create the storage container containing the current values of the "detection." system properties.
-//     * This method, along with method updateDetectionSystemPropertyValues, is synchronized so that changes to the detection properties on the UI will be collected as an updated group
-//     * and then collected into the TransientDetectionSystemProperties container.
-//	 * @return container object containing the values of the "detection." system properties at the time this method was called.
-//	 */
-// 	public synchronized TransientDetectionSystemProperties createTransientDetectionSystemProperties() {
-//        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(redis.getNextSequenceValue(), this);
-//		return transientDetectionSystemProperties;
-//	}
-//
-//    /**
-//     * Iterate through updated properties and update any "detection." system property values that were changed.
-//     * This version of the method will change detection system properties for all OpenMPF users.
-//     * Note: this method will not change any properties whose updated values are not valid, the original values will be retained.
-//     * This method, along with method createTransientDetectionSystemProperties, is synchronized so that changes to the detection properties on the UI will be collected as an updated group
-//     * and then collected into the TransientDetectionSystemProperties container when it is created in method createTransientDetectionSystemProperties.
-//     * @param propertyModels list of updated properties
-//     * @exception WfmProcessingException is thrown if a detection property that has not been handled is encountered.
-//     */
-//    public synchronized void updateDetectionSystemPropertyValues(List<PropertyModel> propertyModels) throws WfmProcessingException {
-//        // TODO, potential issue with detection.model.dir.path property, which has been initialized from ${mpf.share.path}
-//        for (PropertyModel pm : propertyModels) {
-//            if ( pm.getKey().startsWith("detection.") ) {
-//                switch (pm.getKey()) {
-//                    case "detection.artifact.extraction.policy": this.artifactExtractionPolicy = ArtifactExtractionPolicy.parse(pm.getValue()); break;
-//                    case "detection.sampling.interval" : this.samplingInterval = updateValueFromString(pm.getValue(), this.samplingInterval); break;
-//                    case "detection.frame.rate.cap" : this.frameRateCap = updateValueFromString(pm.getValue(), this.frameRateCap); break;
-//                    case "detection.confidence.threshold" : this.confidenceThreshold = updateValueFromString(pm.getValue(), this.confidenceThreshold); break;
-//                    case "detection.segment.minimum.gap" : this.minAllowableSegmentGap = updateValueFromString(pm.getValue(), this.minAllowableSegmentGap); break;
-//                    case "detection.segment.target.length" : this.targetSegmentLength = updateValueFromString(pm.getValue(), this.targetSegmentLength); break;
-//                    case "detection.segment.minimum.length" : this.minSegmentLength = updateValueFromString(pm.getValue(), this.minSegmentLength); break;
-//                    case "detection.track.merging.enabled" : this.trackMerging = updateValueFromString(pm.getValue(), this.trackMerging); break;
-//                    case "detection.track.min.gap" : this.minAllowableTrackGap = updateValueFromString(pm.getValue(), this.minAllowableTrackGap); break;
-//                    case "detection.track.minimum.length" : this.minTrackLength = updateValueFromString(pm.getValue(), this.minTrackLength); break;
-//                    case "detection.track.overlap.threshold" : this.trackOverlapThreshold = updateValueFromString(pm.getValue(), this.trackOverlapThreshold); break;
-//                    default: log.warn("PropertiesUtils warning, update to property " + pm.getKey() + " to " + pm.getValue() + " isn't saved."); break;
-//                }
-//                if ( pm.getNeedsRestartIfChanged() ) {
-//                    log.warn("PropertiesUtils warning, update to property " + pm.getKey() + " to " + pm.getValue() + " requires a restart.");
-//                }
-//            }
-//        }
-//    }=
-//
-//    //
-//	// JMS Configuration
-//======
 
 	//
 	// JMS configuration
@@ -712,42 +663,6 @@ public class PropertiesUtil {
 			Files.createDirectories(resourceDir);
 		}
 	}
-
-//    // Update an boolean from a String, retaining the original value of the boolean if the updatedStringValue isn't true or false.
-//    // Note: we don't want to assume that a non-true value is false, because we want to keep the original value if the updated value isn't valid true or false.
-//    private boolean updateValueFromString(String updatedStringValue, boolean originalValue) {
-//        boolean value = originalValue;
-//        if ( updatedStringValue != null ) {
-//            if ( updatedStringValue.equalsIgnoreCase("true") ) {
-//                value = Boolean.TRUE;
-//            } else if ( updatedStringValue.equalsIgnoreCase("false") ) {
-//                value = Boolean.FALSE;
-//            }
-//        }
-//        return value;
-//    }
-//
-//    // Update an integer from a String, retaining the original value of the integer if the updatedStringValue can't be parsed.
-//    private int updateValueFromString(String updatedStringValue, int originalValue) {
-//        int value = originalValue;
-//        try {
-//            value = Integer.valueOf(updatedStringValue);
-//        } catch (NumberFormatException e) {
-//            // Do nothing, keeping the original value.
-//        }
-//        return value;
-//    }
-//
-//    // Update a double from a String, retaining the original value of the double if the updatedStringValue can't be parsed.
-//    private double updateValueFromString(String updatedStringValue, double originalValue) {
-//        double value = originalValue;
-//        try {
-//            value = Double.valueOf(updatedStringValue);
-//        } catch (NumberFormatException e) {
-//            // Do nothing, keeping the original value.
-//        }
-//        return value;
-//    }
 
 }
 

@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camelOps;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
+import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -161,8 +162,8 @@ public class TestTrackMergingProcessor {
         trackMergeStageDet.getActions().add(detectionAction);
 
         trackMergePipeline.getStages().add(trackMergeStageDet);
-        TransientDetectionSystemProperties detectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
-        TransientJob trackMergeJob = new TransientJob(jobId, "999999", detectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
+        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
+        TransientJob trackMergeJob = new TransientJob(jobId, "999999", detectionSystemPropertiesSnapshot, trackMergePipeline, stageIndex, priority, false, false);
         trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
 
         redis.persistJob(trackMergeJob);
@@ -236,8 +237,8 @@ public class TestTrackMergingProcessor {
         trackMergeStageDet.getActions().add(detectionAction);
 
         trackMergePipeline.getStages().add(trackMergeStageDet);
-        TransientDetectionSystemProperties detectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
-        TransientJob trackMergeJob = new TransientJob(jobId, "999999", detectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
+        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
+        TransientJob trackMergeJob = new TransientJob(jobId, "999999", detectionSystemPropertiesSnapshot, trackMergePipeline, stageIndex, priority, false, false);
         trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
 
         redis.persistJob(trackMergeJob);

@@ -33,10 +33,10 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import javax.servlet.http.HttpServletRequest;
+ import java.util.stream.Collectors;
+ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.service.MpfService;
@@ -73,45 +73,6 @@ public class AdminPropertySettingsController
 
 	@Autowired
 	private PipelineService pipelineService;
-
-    /** A subset of the OpenMPF system properties can be changed, without requiring a restart of OpenMPF.
-     * Based upon the key, determine if this property requires a restart if the value to this property is changed.
-     * @param key property key to be checked.
-     * @return true if this property requires a restart if the value to this property is changed, false otherwise.
-     */
-    // TODO detection.models.dir.path treated as a special case
-    private static boolean isRestartRequiredIfValueChanged(String key) {
-        return key.equals("detection.models.dir.path") || !key.startsWith("detection.");
-    }
-
-    @ApiOperation(value = "Gets a list of system properties. If optional parameter whichPropertySet is not specified or is set to 'all', then all system properties are returned. "
-        + "If whichPropertySet is 'mutable', then only the system properties that may be changed without OpenMPF restart are returned. "
-        + "If whichPropertySet is 'immutable', then only the system properties that require restart of OpenMPF to apply property changes are returned.",
-        produces = "application/json", response=PropertyModel.class, responseContainer="List")
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successful response"),
-        @ApiResponse(code = 401, message = "Bad credentials")})
-	@ResponseBody
-	@RequestMapping(value = "/properties", method = RequestMethod.GET)
-	public List<PropertyModel> getProperties(@RequestParam(value = "whichPropertySet", required = false, defaultValue="all") String whichPropertySet) throws IOException {
-
-        if ( whichPropertySet.equalsIgnoreCase("immutable") ) {
-            // Return the immutable system properties converted to a list of non-changeable PropertyModels
-            List<PropertyModel> immutablePropertyList = new ArrayList<PropertyModel>();
-            // Get the subset of immutable OpenMPF system properties
-            ImmutableConfiguration mutableSystemProperties = propertiesUtil.getDetectionConfiguration();
-            mutableSystemProperties.getKeys().forEachRemaining( key -> immutablePropertyList.add(new PropertyModel(key,mutableSystemProperties.getString(key), true)) );
-            return immutablePropertyList;
-        } else if ( whichPropertySet.equalsIgnoreCase("mutable") ) {
-            // return only the system properties that are mutable by filtering out the immutable properties from the list of all properties.
-            ImmutableConfiguration mutableSystemProperties = propertiesUtil.getDetectionConfiguration();
-            return propertiesUtil.getCustomProperties().stream().filter(pm -> !mutableSystemProperties.containsKey(pm.getKey())).collect(toList());
-        } else {
-            // by default, return all of the system properties - updated to contain current value.
-            return propertiesUtil.getCustomProperties();
-        }
-
-	}
 
     /**
      * Get the PropertyModel associated with the specified property key.
@@ -160,14 +121,58 @@ public class AdminPropertySettingsController
 
     }
 
-	@ResponseBody
-	@RequestMapping(value = "/properties", method = RequestMethod.GET)
-	public List<PropertyModel> getProperties() {
-        // Get an updated list of property models. Each element contains current value.
-		return propertiesUtil.getCustomProperties();
-	}
+    @ApiOperation(value = "Gets a list of system properties. If optional parameter whichPropertySet is not specified or is set to 'all', then all system properties are returned. "
+        + "If whichPropertySet is 'mutable', then only the system properties that may be changed without OpenMPF restart are returned. "
+        + "If whichPropertySet is 'immutable', then only the system properties that require restart of OpenMPF to apply property changes are returned.",
+        produces = "application/json", response=PropertyModel.class, responseContainer="List")
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successful response"),
+        @ApiResponse(code = 401, message = "Bad credentials")})
+    @ResponseBody
+    @RequestMapping(value = "/properties", method = RequestMethod.GET)
+    public List<PropertyModel> getProperties(@RequestParam(value = "whichPropertySet", required = false, defaultValue="all") String whichPropertySet) throws IOException {
 
-	@ResponseBody
+        if ( whichPropertySet.equalsIgnoreCase("immutable") ) {
+
+            // Get an updated list of property models. Each element contains current value. Return only the immutable system properties by
+            // filtering out the mutable detection properties from the list.
+            ImmutableConfiguration detectionSystemProperties = propertiesUtil.getDetectionConfiguration();
+            log.info("getProperties(immutable), debug: dumping detectionSystemProperties keys");
+            detectionSystemProperties.getKeys().forEachRemaining( key -> {
+                log.info("getProperties(immutable), debug: processing detectionSystemProperties key " + key);
+            } );
+            return propertiesUtil.getCustomProperties().stream().peek(pm -> {
+                log.info("getProperties(immutable), debug: pm is "+pm);
+                log.info("getProperties(immutable), debug: detectionSystemProperties.containsKey(" + pm.getKey() + ") is "+detectionSystemProperties.containsKey(pm.getKey()));
+            }).filter(pm -> !detectionSystemProperties.containsKey(pm.getKey())).collect(toList());
+
+        } else if ( whichPropertySet.equalsIgnoreCase("mutable") ) {
+
+            // Get an updated list of property models. Each element contains current value. Return only the mutable system properties by
+            // filtering out the immutable detection properties from the list.
+            ImmutableConfiguration detectionSystemProperties = propertiesUtil.getDetectionConfiguration();
+            log.info("getProperties(mutable), debug: dumping detectionSystemProperties keys");
+            detectionSystemProperties.getKeys().forEachRemaining( key -> {
+                log.info("getProperties(mutable), debug: processing detectionSystemProperties key " + key);
+            } );
+            return propertiesUtil.getCustomProperties().stream().peek(pm -> {
+                log.info("getProperties(mutable), debug: pm is "+pm);
+                log.info("getProperties(mutable), debug: detectionSystemProperties.containsKey(" + pm.getKey() + ") is "+detectionSystemProperties.containsKey(pm.getKey()));
+            }).filter(pm -> detectionSystemProperties.containsKey(pm.getKey())).collect(toList());
+
+        } else {
+            // by default, return all of the system properties - updated to contain current value.
+            return propertiesUtil.getCustomProperties();
+        }
+
+    }
+
+    @ApiOperation(value = "Saves the passed list of system properties. Note that the returned list may contain PropertyModels that may have a updated value of needsRestart.",
+        produces = "application/json", response=PropertyModel.class, responseContainer="List")
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "Successful response"),
+        @ApiResponse(code = 401, message = "Bad credentials")})
+    @ResponseBody
 	@RequestMapping(value = "/properties", method = RequestMethod.PUT)
     /** Call this method to save system properties that have changed to the custom mpf properties file.
      * If any detection system properties have changed, that are identified as changeable without OpenMPF restart,
@@ -176,15 +181,16 @@ public class AdminPropertySettingsController
      * Add system message if a restart of OpenMPF is required for any other system property that is changed and
      * requires a restart to apply the change.
      * @param propertyModels list of system properties that have changed since OpenMPF startup.
+     * @return updated property models are returned since the needsRestart property may have changed.
      */
-	public void saveProperties(@RequestBody List<PropertyModel> propertyModels, HttpServletRequest request) {
+	public List<PropertyModel> saveProperties(@RequestBody List<PropertyModel> propertyModels, HttpServletRequest request) {
 
 		if (!LoginController.getAuthenticationModel(request).isAdmin()) {
 			throw new IllegalStateException("A non-admin tried to modify properties.");
 		}
 
 		if (propertyModels.isEmpty()) {
-			return;
+			return propertyModels;
 		}
 
         // Call method to iterate through the system properties and update any properties that may have been updated on the UI,
@@ -196,11 +202,27 @@ public class AdminPropertySettingsController
 
 		// Add system message if a restart of OpenMPF is required.
         if ( checkForRestartRequired() ) {
-            log.info("AdminPropertySettingsController.saveProperties: debug, a property that requires a restart was found");
             mpfService.addStandardSystemMessage("eServerPropertiesChanged");
         }
-	}
 
+        // Get an updated list of property models. Adjust the returned list of PropertyModels so they will indicate
+        // whether or not a WFM restart is required to apply a change.
+        List<PropertyModel> updatedPropertyModels = propertiesUtil.getCustomProperties().stream().filter(updatedPM -> {
+            // filter the returned list to only include the set of properties that were just saved.
+            boolean isFound = false;
+            for ( int i=0; i<propertyModels.size() && !isFound; i++ ) {
+                isFound = updatedPM.getKey().equals(propertyModels.get(i).getKey());
+            }
+            if ( isFound ) {
+                log.info("AdminPropertySettingsController.saveProperties: found updatedPM=" + updatedPM);
+            }
+            return isFound;
+        }).collect(Collectors.toList());
+
+        // Note that the returned list may contain PropertyModels that may have a updated value of needsRestart.
+        log.info("AdminPropertySettingsController.saveProperties: returning updatedPropertyModels with size=" + updatedPropertyModels.size());
+        return updatedPropertyModels;
+	}
 
 	//gets the current default job priority value
 	@RequestMapping(value = "/properties/job-priority", method = RequestMethod.GET)

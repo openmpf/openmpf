@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camelOps;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
+import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -101,8 +102,8 @@ public class TestMarkupResponseProcessor {
         final int priority = 5;
         final long mediaId = 0;
         TransientPipeline dummyPipeline = new TransientPipeline("testMarkupPipeline", "testMarkupPipelineDescription");
-        TransientDetectionSystemProperties detectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
-        TransientJob dummyJob = new TransientJob(jobId, Long.toString(jobId), detectionSystemProperties, dummyPipeline, currentStage, priority, false, false);
+        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
+        TransientJob dummyJob = new TransientJob(jobId, Long.toString(jobId), detectionSystemPropertiesSnapshot, dummyPipeline, currentStage, priority, false, false);
         dummyJob.getMedia().add(new TransientMedia(mediaId, "/samples/meds1.jpg"));
         Markup.MarkupResponse.Builder builder = Markup.MarkupResponse.newBuilder();
         builder.setMediaId(mediaId);

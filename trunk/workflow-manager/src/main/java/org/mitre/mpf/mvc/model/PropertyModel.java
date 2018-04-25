@@ -33,21 +33,19 @@ public class PropertyModel {
 
 	private String _value;
 
-    private boolean _isValueChanged;
-	private boolean _needsRestartIfChanged;
+//    private boolean _isValueChanged;
+//	private boolean _needsRestartIfChanged;
 	private boolean _needsRestart;
 
 	public PropertyModel() {
 
 	}
 
-	public PropertyModel( String key, String value, boolean isValueChanged, boolean needsRestartIfChanged) {
-		_key = key;
-		_value = value;
-        _isValueChanged = isValueChanged;
-        _needsRestartIfChanged = needsRestartIfChanged;
-        _needsRestart = _isValueChanged && _needsRestartIfChanged;
-	}
+    public PropertyModel( String key, String value, boolean needsRestart) {
+        _key = key;
+        _value = value;
+        _needsRestart = needsRestart;
+    }
 
 
 	public String getKey() {
@@ -57,7 +55,6 @@ public class PropertyModel {
 		_key = key;
 	}
 
-
 	public String getValue() {
 		return _value;
 	}
@@ -65,15 +62,15 @@ public class PropertyModel {
 		_value = value;
 	}
 
-	public boolean getIsValueChanged() { return _isValueChanged; }
-    public void setIsValueChanged(String currentValue) {
-        _isValueChanged = currentValue.equals(_value);
-    }
-
-    public void setNeedsRestartIfChanged(boolean needsRestartIfChanged) { this._needsRestartIfChanged = needsRestartIfChanged; }
-	public boolean getNeedsRestartIfChanged() {
-		return _needsRestartIfChanged;
-	}
+//	public boolean getIsValueChanged() { return _isValueChanged; }
+//    public void setIsValueChanged(String currentValue) {
+//        _isValueChanged = currentValue.equals(_value);
+//    }
+//
+//    public void setNeedsRestartIfChanged(boolean needsRestartIfChanged) { this._needsRestartIfChanged = needsRestartIfChanged; }
+//	public boolean getNeedsRestartIfChanged() {
+//		return _needsRestartIfChanged;
+//	}
 
 	public boolean getNeedsRestart() { return _needsRestart; }
 	public void setNeedsRestart(boolean needsRestart) {
@@ -81,6 +78,7 @@ public class PropertyModel {
 	}
 
 	public String toString() {
-	    return "_key: " + _key + ", _value: " + _value + ", _needsRestartIfChanged: " + _needsRestartIfChanged + ", _isValueChanged: " + _isValueChanged + ", _needsRestart: " + _needsRestart;
+//        return "_key: " + _key + ", _value: " + _value + ", _needsRestartIfChanged: " + _needsRestartIfChanged + ", _isValueChanged: " + _isValueChanged + ", _needsRestart: " + _needsRestart;
+        return "_key: " + _key + ", _value: " + _value + ", _needsRestart: " + _needsRestart;
     }
 }

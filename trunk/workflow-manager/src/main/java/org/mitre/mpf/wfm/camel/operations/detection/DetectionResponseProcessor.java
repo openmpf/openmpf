@@ -133,7 +133,7 @@ public class DetectionResponseProcessor
 
 	// transientJob coming from REDIS
 	private double calculateConfidenceThreshold(ActionDefinition action, TransientJob job, TransientMedia media) {
-		double confidenceThreshold = job.getDetectionSystemProperties().getConfidenceThreshold();
+		double confidenceThreshold = job.getDetectionSystemPropertiesSnapshot().getDouble("detection.confidence.threshold");
 		String confidenceThresholdProperty = AggregateJobPropertiesUtil.calculateValue(
 				MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY,
 				action.getProperties(),

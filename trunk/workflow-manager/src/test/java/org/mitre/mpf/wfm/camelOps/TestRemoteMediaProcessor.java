@@ -26,10 +26,15 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
+import java.net.URI;
+import java.util.List;
+import java.util.UUID;
+import javax.annotation.PostConstruct;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultExchange;
+import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
 import org.junit.Test;
@@ -38,7 +43,6 @@ import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.WfmSplitterInterface;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
-import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
@@ -53,11 +57,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import javax.annotation.PostConstruct;
-import java.net.URI;
-import java.util.List;
-import java.util.UUID;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -105,8 +104,8 @@ public class TestRemoteMediaProcessor {
 	@PostConstruct
 	public void init() throws Exception {
 		setHttpProxies();
-        TransientDetectionSystemProperties detectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
-        transientJob = new TransientJob(next(), null, detectionSystemProperties, null, 0, 0, false, false) {{
+		ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
+        transientJob = new TransientJob(next(), null, detectionSystemPropertiesSnapshot, null, 0, 0, false, false) {{
 			getMedia().add(new TransientMedia(next(), ioUtils.findFile("/samples/meds1.jpg").toString()));
 			getMedia().add(new TransientMedia(next(), EXT_IMG));
 		}};

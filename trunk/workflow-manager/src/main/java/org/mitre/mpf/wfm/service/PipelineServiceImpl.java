@@ -466,7 +466,6 @@ public class PipelineServiceImpl implements PipelineService {
         algorithms.values().forEach(this::setAlgorithmDefaultValues);
     }
 
-    // TODO, issue with pipelines that have already been created after a mutable system property is changed. Pipelines may need to be recreated if a mutable system property is changed (TBD).
     private void setAlgorithmDefaultValues(AlgorithmDefinition algorithm) {
         algorithm.getProvidesCollection().getAlgorithmProperties()
             .stream()

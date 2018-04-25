@@ -39,6 +39,9 @@ propSettingsModule.factory('PropertiesSvc', [
 '$resource',
 function ($resource) {
 
+  // // The propertyChangesAppliedResource uses the /restartRequired REST endpoint (method: GET)
+  // var propertyChangesAppliedResource = $resource('restartRequired');
+
 	// This propertiesResource.update call uses the /properties REST endpoint (method: PUT)
   // defined in AdminPropertySettingsController to save the system properties. The system properties are
   // passed as a List of Java org.mitre.mpf.mvc.model.PropertyModel objects to the mpf properties file. i.e. will save the system properties to the properties file.
@@ -65,6 +68,14 @@ function ($resource) {
 	var serverProperties;
 
 	return {
+
+    // isRestartRequired: function () {
+	   //  var answer = false;
+	   //  var response = propertyChangesAppliedResource.get({}).$promise.then(function(isRequired) {
+	   //    answer = isRequired;
+    //   });
+	   //  return answer;
+    // },
 
     // Get the list of all system properties.
     queryAll: function () {
@@ -126,10 +137,12 @@ function ($resource) {
       // modified system properties (as a List of org.mitre.mpf.mvc.model.PropertyModel objects) to the custom properties file.
 			var saveResult = propertiesResource.update(modifiedProps);
 			saveResult.$promise.then(function () {
-				modifiedProps.forEach(function (prop) {
-				  // Each prop is of type org.mitre.mpf.mvc.model.PropertyModel. Change to the updated value of the modified property in serverProperties.
-          // If the modified property indicates that a value change requires a restart, then prop.needsRestart will be set as needed.
-          prop.needsRestart = prop.valueChanged() && prop.needsRestartIfChanged;
+       // modifiedProps.forEach(function (prop) {
+        saveResult.forEach(function (prop) {
+          console.log("update: processing each saveResult, prop=" + JSON.stringify(prop));
+          // // Each prop is of type org.mitre.mpf.mvc.model.PropertyModel. Change to the updated value of the modified property in serverProperties.
+          // // If the modified property indicates that a value change requires a restart, then prop.needsRestart will be set as needed.
+          // prop.needsRestart = prop.valueChanged() && prop.needsRestartIfChanged;
           serverProperties[prop.key] = prop.value;
           // prop.needsRestart = prop.needsRestartIfChanged;
 				});
@@ -166,9 +179,6 @@ function ($scope, $rootScope, $confirm, $state, PropertiesSvc, NotificationSvc, 
 
 	$scope.isAdmin = $rootScope.roleInfo.admin;
 
-	// // Get the list of system properties (each property in the list is of type org.mitre.mpf.mvc.model.PropertyModel).
-	// $scope.properties = PropertiesSvc.queryAll();
-
   // Get the list of mutable system properties (each property in the list is of type org.mitre.mpf.mvc.model.PropertyModel).
   $scope.mutableProperties = PropertiesSvc.queryMutable();
 
@@ -198,9 +208,7 @@ function ($scope, $rootScope, $confirm, $state, PropertiesSvc, NotificationSvc, 
 
   };
 
-  $scope.isRestartRequired = function() {
-
-  }
+  // $scope.isRestartRequired = PropertiesSvc.isRestartRequired();
 
 	var confirmed = false;	// need to remember if we've asked the user the confirm, or else we'll get in loop
 	$scope.$on('$stateChangeStart', function (event, toState) {

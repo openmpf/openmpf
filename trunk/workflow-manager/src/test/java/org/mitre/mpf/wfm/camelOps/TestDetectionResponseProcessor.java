@@ -27,15 +27,19 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
+import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
+import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
@@ -160,8 +164,10 @@ public class TestDetectionResponseProcessor {
         detectionStageDet.getActions().add(detectionAction);
 
         detectionPipeline.getStages().add(detectionStageDet);
-        TransientDetectionSystemProperties detectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
-        TransientJob detectionJob = new TransientJob(jobId, "234234", detectionSystemProperties, detectionPipeline, 0, 1, false, false);
+
+        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
+
+        TransientJob detectionJob = new TransientJob(jobId, "234234", detectionSystemPropertiesSnapshot, detectionPipeline, 0, 1, false, false);
         TransientMedia media = new TransientMedia(234234,ioUtils.findFile("/samples/video_01.mp4").toString());
         media.addMetadata("DURATION","3004");
         media.addMetadata("FPS","29.97");

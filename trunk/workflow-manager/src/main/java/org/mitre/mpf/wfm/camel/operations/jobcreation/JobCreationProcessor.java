@@ -31,6 +31,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import org.apache.camel.Exchange;
+import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonAction;
 import org.mitre.mpf.interop.JsonJobRequest;
@@ -49,7 +50,6 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
@@ -169,15 +169,15 @@ public class JobCreationProcessor extends WfmProcessor {
 				jobRequestEntity = jobRequestDao.findById(jobId);
 			}
 
-            // Capture the state of the detection system properties at the time when this job is first created. Since the
-            // detection system properties are mutable, we must insure that the job uses a consistent set of detection system
+            // Capture the current state of the detection system properties at the time when this job is created. Since the
+            // detection system properties may be changed by an administrator, we must insure that the job uses a consistent set of detection system
             // properties through all stages of the jobs pipeline by storing these detection system property values in REDIS.
-            TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createTransientDetectionSystemProperties();
-			log.info("JobCreationProcessor: created transientDetectionSystemProperties=" + transientDetectionSystemProperties);
+            ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
+			log.info("JobCreationProcessor: created detectionSystemPropertiesSnapshot=" + detectionSystemPropertiesSnapshot);
 
             TransientPipeline transientPipeline = buildPipeline(jobRequest.getPipeline());
 
-			TransientJob transientJob = new TransientJob(jobRequestEntity.getId(), jobRequest.getExternalId(), transientDetectionSystemProperties, transientPipeline,
+			TransientJob transientJob = new TransientJob(jobRequestEntity.getId(), jobRequest.getExternalId(), detectionSystemPropertiesSnapshot, transientPipeline,
                                                 0, jobRequest.getPriority(), jobRequest.isOutputObjectEnabled(), false,jobRequest.getCallbackURL(),jobRequest.getCallbackMethod());
 
 			transientJob.getOverriddenJobProperties().putAll(jobRequest.getJobProperties());

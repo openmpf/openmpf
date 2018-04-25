@@ -33,6 +33,7 @@ import junit.framework.TestCase;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
+import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
@@ -41,7 +42,9 @@ import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -66,11 +69,16 @@ public class TestRedisImpl extends TestCase {
     @Autowired
     private IoUtils ioUtils;
 
+    @Autowired
+    @Qualifier(PropertiesUtil.REF)
+    private PropertiesUtil propertiesUtil;
+
     @Test
     public void testSetJobStatus() throws Exception {
         final long jobId = 112235;
         Exchange exchange = new DefaultExchange(camelContext);
-        TransientJob job = TestUtil.setupJob(jobId, redis, ioUtils);
+        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
+        TransientJob job = TestUtil.setupJob(jobId, detectionSystemPropertiesSnapshot, redis, ioUtils);
         exchange.getIn().setBody(jsonUtils.serialize(job));
         redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_WARNINGS);
         Assert.assertEquals(BatchJobStatusType.IN_PROGRESS_WARNINGS, redis.getBatchJobStatus(jobId));
@@ -80,7 +88,9 @@ public class TestRedisImpl extends TestCase {
     public void testAlgorithmJobProperties() throws Exception {
         final long jobId = 112236;
         Exchange exchange = new DefaultExchange(camelContext);
-        TransientJob job = TestUtil.setupJob(jobId, redis, ioUtils);
+
+        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
+        TransientJob job = TestUtil.setupJob(jobId, detectionSystemPropertiesSnapshot, redis, ioUtils);
 
         HashMap<String, Map> overriddenAlgorithmProperties = new HashMap<>();
         HashMap<String, String> props = new HashMap<>();
@@ -98,4 +108,22 @@ public class TestRedisImpl extends TestCase {
         assertFalse(retrievedJob.getOverriddenAlgorithmProperties().get("ALGORITHM").isEmpty());
         assertEquals("VALUE", retrievedJob.getOverriddenAlgorithmProperties().get("ALGORITHM").get("DUMMY_PROPERTY"));
     }
+
+    @Test
+    public void testImmutableConfigurationPersistence() throws Exception {
+        final long jobId = 112236;
+        Exchange exchange = new DefaultExchange(camelContext);
+
+        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
+        TransientJob job = TestUtil.setupJob(jobId, detectionSystemPropertiesSnapshot, redis, ioUtils);
+
+        redis.persistJob(job);
+
+        TransientJob retrievedJob = redis.getJob(jobId);
+        assertNotNull(retrievedJob.getDetectionSystemPropertiesSnapshot());
+        assertFalse(retrievedJob.getDetectionSystemPropertiesSnapshot().isEmpty());
+        assertEquals(job.getDetectionSystemPropertiesSnapshot().getInt("detection.sampling.interval"),
+                     retrievedJob.getDetectionSystemPropertiesSnapshot().getInt("detection.sampling.interval"));
+    }
+
 }

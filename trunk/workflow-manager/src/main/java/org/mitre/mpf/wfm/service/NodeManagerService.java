@@ -32,9 +32,9 @@ import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.wfm.util.Tuple;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @org.springframework.stereotype.Service
 public interface NodeManagerService {
@@ -61,5 +61,5 @@ public interface NodeManagerService {
 
     public void updateInitialHosts(List<String> hosts, List<Integer> ports);
 
-    public Map<InetAddress, Boolean> getAvailableHosts();
+    public Set<String> getAvailableHosts();
 }

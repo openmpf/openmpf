@@ -41,7 +41,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.io.InputStream;
-import java.net.InetAddress;
 import java.util.*;
 
 @Component
@@ -322,7 +321,7 @@ public class MasterNode {
     }
 
 
-    public Map<InetAddress, Boolean> getAvailableHosts() {
+    public Set<String> getAvailableHosts() {
         return nodeStateManager.getAvailableHosts();
     }
 }

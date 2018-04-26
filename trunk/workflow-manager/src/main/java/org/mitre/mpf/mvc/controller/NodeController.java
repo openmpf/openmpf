@@ -27,7 +27,6 @@
 package org.mitre.mpf.mvc.controller;
 
 import io.swagger.annotations.*;
-import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -140,7 +139,7 @@ public class NodeController {
 	// INTERNAL
 	@RequestMapping(value = "/nodes/all-mpf-nodes", method = RequestMethod.GET) // TODO: Rename endpoint
 	@ResponseBody
-	public List<String> getAllMpfNodes() throws IOException {
+	public Set<String> getAllMpfNodes() throws IOException {
 		/*
 		String value = propertiesUtil.getAllMpfNodes();
 		List<String> allMpfNodes = new ArrayList<String>();
@@ -154,9 +153,9 @@ public class NodeController {
 		return allMpfNodes;
 		*/
 
-		// getAvailableNodes(); // DEBUG
+		// return IOUtils.readLines(propertiesUtil.getKnownNodes().getInputStream(), "UTF-8");
 
-		return IOUtils.readLines(propertiesUtil.getKnownNodes().getInputStream(), "UTF-8");
+		return nodeManagerService.getAvailableHosts();
 	}
 
 	/*
@@ -499,6 +498,7 @@ public class NodeController {
 	@ResponseBody
 	public Map<String, String> getAvailableNodes() throws IOException {
 
+		/*
 		List<String> allMpfNodes = getAllMpfNodes();
 		Map<InetAddress, Boolean> availableHosts = nodeManagerService.getAvailableHosts(); // TODO: Check for IllegalStateException
 
@@ -519,6 +519,9 @@ public class NodeController {
 		}
 
 		return availableNodeMap;
+		*/
+
+		return null; // DEBUG
 	}
 
 

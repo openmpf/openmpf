@@ -268,7 +268,7 @@ public class NodeManagerServiceImpl implements NodeManagerService {
         nodeManagerStatus.updateInitialHosts(hosts, ports);
     }
 
-    public Map<InetAddress, Boolean> getAvailableHosts() {
+    public Set<String> getAvailableHosts() {
         return nodeManagerStatus.getAvailableHosts();
     }
 }

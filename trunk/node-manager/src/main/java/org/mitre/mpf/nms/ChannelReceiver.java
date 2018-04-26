@@ -39,7 +39,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetAddress;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -155,7 +154,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
                     if (mgr == null) {
                         mgr = new NodeDescriptor(mgrHost);
                         if (!mgr.doesHostMatch(propertiesUtil.getThisMpfNode())) { // don't warn about self
-                            LOG.warn("New node-manager is online that wasn't preconfigured. Rogue?");
+                            LOG.warn("New node-manager is online that wasn't preconfigured. Rogue? Spare?");
                         }
                         // Issue the callback
                         if (notifier != null) {
@@ -315,7 +314,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         msgChannel.updateInitialHosts(hosts, ports);
     }
 
-    public Map<InetAddress, Boolean> getAvailableHosts() {
+    public Set<String> getAvailableHosts() {
         return msgChannel.getAvailableHosts();
     }
 }

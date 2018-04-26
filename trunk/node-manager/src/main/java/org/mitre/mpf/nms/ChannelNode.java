@@ -38,10 +38,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
-import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Light-weight access class for connecting to a JGroups channel
@@ -203,51 +204,23 @@ public class ChannelNode {
     }
 
 
-    public Map<InetAddress, Boolean> getAvailableHosts() {
-        Protocol protocol = channel.getProtocolStack().findProtocol(TCPPING.class);
-        if (protocol == null) {
-            throw new IllegalStateException("Error: Cannot find TCPPING protocol. Cannot retrieve JGroups initial host list.");
-        }
+    public Set<String> getAvailableHosts() {
 
         View view = channel.getView();
         if (view == null) {
-            throw new IllegalStateException("Error: JGroups channel has not connected yet. Cannot retrieve JGroups initial host list.");
+            throw new IllegalStateException("Error: JGroups channel has not connected yet. Cannot retrieve JGroups host list.");
         }
 
         List<Address> memberAddresses = view.getMembers();
 
-        Set<String> currentMemberIps = new HashSet<>();
+        Set<String> availableHosts = new TreeSet<>(); // ordered
         for (Address member : memberAddresses) {
             Pair<String, NodeTypes> pair = AddressParser.parse(member);
             if (pair != null && pair.getRight() == NodeTypes.NodeManager) {
-                currentMemberIps.add(pair.getLeft());
+                availableHosts.add(pair.getLeft());
             }
         }
 
-        TCPPING tcpping = (TCPPING) protocol;
-        List<PhysicalAddress> initialHostAddresses = tcpping.getInitialHosts();
-
-        Set<InetAddress> initialHostInetAddresses = initialHostAddresses.stream()
-                .map(h -> ((IpAddress)h).getIpAddress()).collect(Collectors.toSet());
-
-        Map<InetAddress, Boolean> availableHostsMap = new TreeMap<>(new Comparator<InetAddress>() {
-            // based on: https://stackoverflow.com/a/34441987
-            public int compare(InetAddress a, InetAddress b) {
-                byte[] aOctets = a.getAddress(), bOctets = b.getAddress();
-                int len = Math.max(aOctets.length, bOctets.length);
-                for (int i = 0; i < len; i++) {
-                    byte aOctet = (i >= len - aOctets.length) ? aOctets[i - (len - aOctets.length)] : 0;
-                    byte bOctet = (i >= len - bOctets.length) ? bOctets[i - (len - bOctets.length)] : 0;
-                    if (aOctet != bOctet) return (0xff & aOctet) - (0xff & bOctet); // sort by ascending IP address
-                }
-                return 0;
-            }
-        });
-
-        for (InetAddress inetAddress : initialHostInetAddresses) {
-            availableHostsMap.put(inetAddress, currentMemberIps.contains(inetAddress.getHostAddress()));
-        }
-
-        return availableHostsMap;
+        return availableHosts;
     }
 }

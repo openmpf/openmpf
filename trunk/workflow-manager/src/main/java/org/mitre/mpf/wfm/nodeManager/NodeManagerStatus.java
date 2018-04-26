@@ -47,10 +47,10 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
@@ -366,7 +366,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
         masterNode.updateInitialHosts(hosts, ports);
     }
 
-    public Map<InetAddress, Boolean> getAvailableHosts() {
+    public Set<String> getAvailableHosts() {
         return masterNode.getAvailableHosts();
     }
 }

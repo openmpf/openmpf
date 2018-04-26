@@ -27,8 +27,11 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import com.google.common.collect.Lists;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.camel.Message;
-import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
 import org.junit.Test;
@@ -39,7 +42,12 @@ import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionSplitter;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -53,11 +61,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -98,8 +101,11 @@ public class TestDetectionSplitter {
         final int testStage = 0;
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
-        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
-        TransientJob testJob = new TransientJob(testId, testExternalId, detectionSystemPropertiesSnapshot, testPipe, testStage, testPriority, testOutputEnabled, false);
+
+        // Capture a snapshot of the detection system property settings when the job is created.
+        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+
+        TransientJob testJob = new TransientJob(testId, testExternalId, transientDetectionSystemProperties, testPipe, testStage, testPriority, testOutputEnabled, false);
         TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile("/samples/new_face_video.avi").toString());
         testMedia.setType("video/avi");
         // Video media must have FPS in metadata to support adaptive frame interval processing.
@@ -356,8 +362,11 @@ public class TestDetectionSplitter {
         final int testStage = 0;
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
-        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
-        TransientJob testJob = new TransientJob(testJobId, testExternalId, detectionSystemPropertiesSnapshot, testPipe, testStage, testPriority, testOutputEnabled, false);
+
+        // Capture a snapshot of the detection system property settings when the job is created.
+        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+
+        TransientJob testJob = new TransientJob(testJobId, testExternalId, transientDetectionSystemProperties, testPipe, testStage, testPriority, testOutputEnabled, false);
         TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile(mediaUri).toString());
         testMedia.setLength(300);
         testMedia.setType(mediaType);
@@ -399,8 +408,10 @@ public class TestDetectionSplitter {
         dummyStageDet.getActions().add(dummyAction);
         dummyPipeline.getStages().add(dummyStageDet);
 
-        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
-        TransientJob testJob = new TransientJob(nextId(), null, detectionSystemPropertiesSnapshot, dummyPipeline, 0, 0, false, false);
+        // Capture a snapshot of the detection system property settings when the job is created.
+        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+
+        TransientJob testJob = new TransientJob(nextId(), null, transientDetectionSystemProperties, dummyPipeline, 0, 0, false, false);
 
         testJob.setMedia(listMedia);
         testJob.getOverriddenJobProperties().putAll(jobProperties);

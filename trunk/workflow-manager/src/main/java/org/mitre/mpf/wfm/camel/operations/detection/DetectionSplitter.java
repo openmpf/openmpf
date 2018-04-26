@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import org.apache.camel.Message;
-import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.camel.StageSplitter;
@@ -43,6 +42,7 @@ import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
@@ -273,8 +273,8 @@ public class DetectionSplitter implements StageSplitter {
 					log.info("DetectionSplitter: prior to AggregateJobPropertiesUtil.calculateFrameInterval call, transientMedia.getMediaSpecificProperties()="+transientMedia.getMediaSpecificProperties());
                     String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
                         transientAction, transientJob, transientMedia,
-						transientJob.getDetectionSystemPropertiesSnapshot().getInt("detection.sampling.interval"),
-						transientJob.getDetectionSystemPropertiesSnapshot().getInt("detection.frame.rate.cap"),
+						transientJob.getDetectionSystemPropertiesSnapshot().getSamplingInterval(),
+						transientJob.getDetectionSystemPropertiesSnapshot().getFrameRateCap(),
                         Double.valueOf(transientMedia.getMetadata("FPS")));
 
 					log.info("DetectionSplitter: resetting MEDIA_SAMPLING_INTERVAL_PROPERTY to calcframeInterval: " + calcframeInterval);
@@ -352,16 +352,15 @@ public class DetectionSplitter implements StageSplitter {
 
     /**
      * Create the segmenting plan using the properties defined for the sub-job.
-     * @param detectionSystemPropertiesSnapshot detection system properties whose values were in effect when the transient job was created (contains system property default values)
+     * @param transientDetectionSystemProperties contains detection system properties whose values were in effect when the transient job was created (will be used as system property default values)
      * @param properties properties defined for the sub-job
      * @return
      */
-	private SegmentingPlan createSegmentingPlan(ImmutableConfiguration detectionSystemPropertiesSnapshot, Map<String, String> properties) {
-		// TODO: might want to consider wrapping detectionSystemPropertiesSnapshot in another class so we don't have to reference the raw keys directly. Getter methods would be preferable.
-		int targetSegmentLength = detectionSystemPropertiesSnapshot.getInt("detection.segment.target.length");
-		int minSegmentLength = detectionSystemPropertiesSnapshot.getInt("detection.segment.minimum.length");
-        int samplingInterval = detectionSystemPropertiesSnapshot.getInt("detection.sampling.interval");
-		int minGapBetweenSegments = detectionSystemPropertiesSnapshot.getInt("detection.segment.minimum.gap");
+	private SegmentingPlan createSegmentingPlan(TransientDetectionSystemProperties transientDetectionSystemProperties, Map<String, String> properties) {
+		int targetSegmentLength = transientDetectionSystemProperties.getTargetSegmentLength();
+		int minSegmentLength = transientDetectionSystemProperties.getMinSegmentLength();
+        int samplingInterval = transientDetectionSystemProperties.getSamplingInterval();
+		int minGapBetweenSegments = transientDetectionSystemProperties.getMinAllowableSegmentGap();
 
 		// TODO: Better to use direct map access rather than a loop, but that requires knowing the case of the keys in the map.
 		// Enforce case-sensitivity throughout the WFM.
@@ -397,7 +396,7 @@ public class DetectionSplitter implements StageSplitter {
 					try {
 						samplingInterval = Integer.valueOf(property.getValue());
 						if (samplingInterval < 1) {
-							samplingInterval = detectionSystemPropertiesSnapshot.getInt("detection.sampling.interval");
+							samplingInterval = transientDetectionSystemProperties.getSamplingInterval();
 							log.warn("'{}' is not an acceptable {} value. Defaulting to '{}'.",
 							         MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
 							         property.getValue(),

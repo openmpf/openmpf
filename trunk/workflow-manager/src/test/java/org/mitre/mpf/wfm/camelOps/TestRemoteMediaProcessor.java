@@ -104,8 +104,11 @@ public class TestRemoteMediaProcessor {
 	@PostConstruct
 	public void init() throws Exception {
 		setHttpProxies();
-		ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
-        transientJob = new TransientJob(next(), null, detectionSystemPropertiesSnapshot, null, 0, 0, false, false) {{
+
+		// Capture a snapshot of the detection system property settings when the job is created.
+		TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+
+		transientJob = new TransientJob(next(), null, transientDetectionSystemProperties, null, 0, 0, false, false) {{
 			getMedia().add(new TransientMedia(next(), ioUtils.findFile("/samples/meds1.jpg").toString()));
 			getMedia().add(new TransientMedia(next(), EXT_IMG));
 		}};

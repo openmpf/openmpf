@@ -27,55 +27,125 @@
 package org.mitre.mpf.wfm.data.entities.transients;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO, could delete this class - but might end up reusing it as a wrapper class for system detection properties snapshot (ImmutableConfiguration) so we won't have to specify raw keys anymore
-// This class is a container class for the detection.* system property values that are captured in the
-// ImmutableConfiguration object detectionSystemPropertiesSnapshot when a batch job
-// is created. The detection.* system property values are being stored in REDIS so that
-// the system property values applicable to a job will remain
+// Wrapper class for the detection.* system property values that should have been captured in a
+// ImmutableConfiguration object when a batch job is created. The detection.* system property values will be
+// stored in REDIS so that the system property values applicable to a job will remain
 // consistent throughout all pipeline stages of a batch job, even if the system property values are changed on the
 // UI while the job is being processed. This processing is not implemented for streaming jobs, since
 // streaming jobs may only be single stage at this time.
+// Use of this wrapper class is necessary for two reasons: (1) ImmutableConfiguration isn't Serializable
+// (2) use of the wrapper class means that we can add getter methods for the detection properties.
 public class TransientDetectionSystemProperties {
 
     private static final Logger log = LoggerFactory.getLogger(TransientDetectionSystemProperties.class);
 
-    private long id; // Unique id for this transient object.
-    public long getId() { return this.id; }
+    // HashMap created from Collections.unmodifiableMap contains a snapshot of the detection.* system property values
+    private Map detectionSystemPropertiesSnapshot;
+    public Map getDetectionSystemPropertiesSnapshot() { return detectionSystemPropertiesSnapshot; }
 
-    private ImmutableConfiguration detectionSystemPropertiesSnapshot;
-    public ImmutableConfiguration getDetectionSystemPropertiesSnapshot() { return this.detectionSystemPropertiesSnapshot; }
+    @JsonIgnore
+    public boolean isEmpty() { return detectionSystemPropertiesSnapshot.isEmpty(); }
+
+    @JsonIgnore
+    public boolean equals(TransientDetectionSystemProperties otherTransientDetectionSystemProperties) {
+        return detectionSystemPropertiesSnapshot.equals(otherTransientDetectionSystemProperties.detectionSystemPropertiesSnapshot);
+    }
+
+    @JsonIgnore
+    public ArtifactExtractionPolicy getArtifactExtractionPolicy() {
+        return ArtifactExtractionPolicy.parse((String)detectionSystemPropertiesSnapshot.get("detection.artifact.extraction.policy"));
+     }
+
+    @JsonIgnore
+    public int getSamplingInterval() {
+        return Integer.valueOf((String)detectionSystemPropertiesSnapshot.get("detection.sampling.interval"));
+    }
+
+    @JsonIgnore
+    public int getFrameRateCap() {
+        return Integer.valueOf((String)detectionSystemPropertiesSnapshot.get("detection.frame.rate.cap"));
+    }
+
+    @JsonIgnore
+    public double getConfidenceThreshold() {
+        return Double.valueOf((String)detectionSystemPropertiesSnapshot.get("detection.confidence.threshold"));
+    }
+
+    @JsonIgnore
+    public int getMinAllowableSegmentGap() {
+        return Integer.valueOf((String)detectionSystemPropertiesSnapshot.get("detection.segment.minimum.gap"));
+    }
+
+    @JsonIgnore
+    public int getTargetSegmentLength() {
+        return Integer.valueOf((String)detectionSystemPropertiesSnapshot.get("detection.segment.target.length"));
+    }
+
+    @JsonIgnore
+    public int getMinSegmentLength() {
+        return Integer.valueOf((String)detectionSystemPropertiesSnapshot.get("detection.segment.minimum.length"));
+    }
+
+    @JsonIgnore
+    public boolean isTrackMerging() {
+        return Boolean.valueOf((String)detectionSystemPropertiesSnapshot.get("detection.track.merging.enabled"));
+    }
+
+    @JsonIgnore
+    public int getMinAllowableTrackGap() {
+        return Integer.valueOf((String)detectionSystemPropertiesSnapshot.get("detection.track.min.gap"));
+    }
+
+    @JsonIgnore
+    public int getMinTrackLength() {
+        return Integer.valueOf((String)detectionSystemPropertiesSnapshot.get("detection.track.minimum.length"));
+    }
+
+    @JsonIgnore
+    public double getTrackOverlapThreshold() {
+        return Double.valueOf((String)detectionSystemPropertiesSnapshot.get("detection.track.overlap.threshold"));
+    }
 
     /**
-     * Constructor sets this containers detection properties using PropertiesUtil getDetectionConfiguration method.
-     * @param id unique id for this object (a unique id is required for REDIS storage).
-     * @propertiesUtil provides access to current system property values via the PropertiesUtil getDetectionConfiguration method.
+     * Constructor set the detection properties in this wrapper using PropertiesUtil getDetectionConfiguration method.
+     * @propertiesUtil provides access to current system detection property values via the PropertiesUtil getDetectionConfiguration method.
      */
-    public TransientDetectionSystemProperties(long id, PropertiesUtil propertiesUtil) {
-        this.id = id;
-        this.detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
-        log.info("TransientDetectionSystemProperties: debug, created TransientDetectionSystemProperties this = " + this);
+    public TransientDetectionSystemProperties(PropertiesUtil propertiesUtil) {
+
+        ImmutableConfiguration detectionSystemPropertiesConfig = propertiesUtil.getDetectionConfiguration();
+
+        log.info("TransientDetectionSystemProperties: debug, captured detectionSystemPropertiesConfig of size = " + detectionSystemPropertiesConfig.size());
+        detectionSystemPropertiesConfig.getKeys().forEachRemaining( key -> {
+            log.info("TransientDetectionSystemProperties: debug, detectionSystemPropertiesConfig key is " + key + " whose value is " +
+                detectionSystemPropertiesConfig.getProperty(key) + " of type " + detectionSystemPropertiesConfig.getProperty(key).getClass());
+        } );
+
+        Map<String,Object> detMap = new HashMap<String,Object>();
+        // Put each property from the detectionSystemPropertiesConfig into the HashMap. Note that all property
+        // values were going into the HashMap as a String, because that is how they are represented in the ImmutableConfiguration object.
+        detectionSystemPropertiesConfig.getKeys().forEachRemaining( key -> detMap.put(key,detectionSystemPropertiesConfig.getProperty(key)) );
+        detectionSystemPropertiesSnapshot = Collections.unmodifiableMap(detMap);
+        log.info("TransientDetectionSystemProperties: debug, created property map detectionSystemPropertiesSnapshot=" + detectionSystemPropertiesSnapshot);
     }
 
     @JsonCreator
-    public TransientDetectionSystemProperties(@JsonProperty("id") long id,
-        @JsonProperty("detectionSystemPropertiesSnapshot") ImmutableConfiguration detectionSystemPropertiesSnapshot) {
-        this.id = id;
+    public TransientDetectionSystemProperties(@JsonProperty("detectionSystemPropertiesSnapshot") Map detectionSystemPropertiesSnapshot) {
         this.detectionSystemPropertiesSnapshot = detectionSystemPropertiesSnapshot;
-        log.info("TransientDetectionSystemProperties: JSON debug, created TransientDetectionSystemProperties this = " + this);
+        log.info("TransientDetectionSystemProperties: JSON debug, created property map detectionSystemPropertiesSnapshot=" + detectionSystemPropertiesSnapshot);
     }
 
     public String toString() {
-        return "TransientDetectionSystemProperties: id = " + id +
-            ", artifactExtractionPolicy = " + detectionSystemPropertiesSnapshot.get(ArtifactExtractionPolicy.class, "detection.artifact.extraction.policy") +
-            ", samplingInterval = " + detectionSystemPropertiesSnapshot.getInt("detection.sampling.interval") +
-            ", frameRateCap = " + detectionSystemPropertiesSnapshot.getInt("detection.frame.rate.cap") +
-            ", confidenceThreshold = " + detectionSystemPropertiesSnapshot.getDouble("detection.confidence.threshold");
+        return "TransientDetectionSystemProperties: entries with size: " + detectionSystemPropertiesSnapshot.entrySet().stream().peek(entry -> log.info("entry="+entry)).count();
     }
 }

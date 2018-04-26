@@ -102,8 +102,11 @@ public class TestMarkupResponseProcessor {
         final int priority = 5;
         final long mediaId = 0;
         TransientPipeline dummyPipeline = new TransientPipeline("testMarkupPipeline", "testMarkupPipelineDescription");
-        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
-        TransientJob dummyJob = new TransientJob(jobId, Long.toString(jobId), detectionSystemPropertiesSnapshot, dummyPipeline, currentStage, priority, false, false);
+
+        // Capture a snapshot of the detection system property settings when the job is created.
+        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+
+        TransientJob dummyJob = new TransientJob(jobId, Long.toString(jobId), transientDetectionSystemProperties, dummyPipeline, currentStage, priority, false, false);
         dummyJob.getMedia().add(new TransientMedia(mediaId, "/samples/meds1.jpg"));
         Markup.MarkupResponse.Builder builder = Markup.MarkupResponse.newBuilder();
         builder.setMediaId(mediaId);

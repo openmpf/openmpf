@@ -162,8 +162,11 @@ public class TestTrackMergingProcessor {
         trackMergeStageDet.getActions().add(detectionAction);
 
         trackMergePipeline.getStages().add(trackMergeStageDet);
-        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
-        TransientJob trackMergeJob = new TransientJob(jobId, "999999", detectionSystemPropertiesSnapshot, trackMergePipeline, stageIndex, priority, false, false);
+
+        // Capture a snapshot of the detection system property settings when the job is created.
+        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+
+        TransientJob trackMergeJob = new TransientJob(jobId, "999999", transientDetectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
         trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
 
         redis.persistJob(trackMergeJob);
@@ -237,8 +240,11 @@ public class TestTrackMergingProcessor {
         trackMergeStageDet.getActions().add(detectionAction);
 
         trackMergePipeline.getStages().add(trackMergeStageDet);
-        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
-        TransientJob trackMergeJob = new TransientJob(jobId, "999999", detectionSystemPropertiesSnapshot, trackMergePipeline, stageIndex, priority, false, false);
+
+        // Capture a snapshot of the detection system property settings when the job is created.
+        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+
+        TransientJob trackMergeJob = new TransientJob(jobId, "999999", transientDetectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
         trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
 
         redis.persistJob(trackMergeJob);

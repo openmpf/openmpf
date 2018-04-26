@@ -40,6 +40,7 @@ import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.wfm.camel.WfmSplitterInterface;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
@@ -98,8 +99,11 @@ public class TestMediaInspectionSplitter {
         final int testStage = 1;
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
-        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
-        TransientJob testJob = new TransientJob(jobId, testExternalId, detectionSystemPropertiesSnapshot, testPipe, testStage, testPriority, testOutputEnabled, false);
+
+        // Capture a snapshot of the detection system property settings when the job is created.
+        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+
+        TransientJob testJob = new TransientJob(jobId, testExternalId, transientDetectionSystemProperties, testPipe, testStage, testPriority, testOutputEnabled, false);
         final long testMediaId = 123456;
         final String testURI = "/samples/new_face_video.avi";
         TransientMedia testMedia = new TransientMedia(testMediaId, testURI);

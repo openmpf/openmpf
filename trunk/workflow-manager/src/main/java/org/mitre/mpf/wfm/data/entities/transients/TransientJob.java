@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.configuration2.ImmutableConfiguration;
 
 public class TransientJob {
 	private long id;
@@ -76,12 +75,12 @@ public class TransientJob {
 
 	// Detection system properties for this job should be immutable, system property values shouldn't change once the job is created.
 	// The detectionSystemPropertiesSnapshot contains the values of the detection system properties at the time this batch job was created.
-    private ImmutableConfiguration detectionSystemPropertiesSnapshot;
-    public ImmutableConfiguration getDetectionSystemPropertiesSnapshot() { return this.detectionSystemPropertiesSnapshot; }
+    private TransientDetectionSystemProperties detectionSystemPropertiesSnapshot;
+    public TransientDetectionSystemProperties getDetectionSystemPropertiesSnapshot() { return this.detectionSystemPropertiesSnapshot; }
 
 	public TransientJob(long id,
 						String externalId,
-                        ImmutableConfiguration detectionSystemPropertiesSnapshot,
+						TransientDetectionSystemProperties detectionSystemPropertiesSnapshot,
 						TransientPipeline pipeline,
 						int currentStage,
 						int priority,
@@ -103,7 +102,7 @@ public class TransientJob {
 	@JsonCreator
 	public TransientJob(@JsonProperty("id") long id,
 	                    @JsonProperty("externalId") String externalId,
-                        @JsonProperty("detectionSystemPropertiesSnapshot") ImmutableConfiguration detectionSystemPropertiesSnapshot,
+                        @JsonProperty("detectionSystemPropertiesSnapshot") TransientDetectionSystemProperties detectionSystemPropertiesSnapshot,
                         @JsonProperty("pipeline") TransientPipeline pipeline,
 	                    @JsonProperty("currentStage") int currentStage,
 	                    @JsonProperty("priority") int priority,

@@ -165,9 +165,10 @@ public class TestDetectionResponseProcessor {
 
         detectionPipeline.getStages().add(detectionStageDet);
 
-        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
+        // Capture a snapshot of the detection system property settings when the job is created.
+        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
 
-        TransientJob detectionJob = new TransientJob(jobId, "234234", detectionSystemPropertiesSnapshot, detectionPipeline, 0, 1, false, false);
+        TransientJob detectionJob = new TransientJob(jobId, "234234", transientDetectionSystemProperties, detectionPipeline, 0, 1, false, false);
         TransientMedia media = new TransientMedia(234234,ioUtils.findFile("/samples/video_01.mp4").toString());
         media.addMetadata("DURATION","3004");
         media.addMetadata("FPS","29.97");

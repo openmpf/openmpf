@@ -157,7 +157,7 @@ public class PropertiesUtil {
 		mpfPropertiesConfig = mpfPropertiesConfigBuilder.setAndSaveCustomProperties(propertyModels);
 	}
 
-	// TODO: Use me!
+	// Returns an ImmutableConfiguration object that only contains the detection system properties.
 	public ImmutableConfiguration getDetectionConfiguration() {
 
         // Extract just the detection system properties as a PropertiesConfiguration for return to the caller.

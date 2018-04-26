@@ -37,6 +37,7 @@ import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.IoUtils;
@@ -76,8 +77,10 @@ public class TestJobStatusCalculator extends TestCase {
     public void testCalculateStatusComplete() throws Exception {
         final long jobId = 112233;
         Exchange exchange = new DefaultExchange(camelContext);
-        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
-        TransientJob job = TestUtil.setupJob(jobId, detectionSystemPropertiesSnapshot, redis, ioUtils);
+
+        // Capture a snapshot of the detection system property settings when the job is created.
+        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+        TransientJob job = TestUtil.setupJob(jobId, transientDetectionSystemProperties, redis, ioUtils);
         exchange.getIn().setBody(jsonUtils.serialize(job));
         redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
         Assert.assertEquals(BatchJobStatusType.IN_PROGRESS,redis.getBatchJobStatus(jobId));
@@ -88,8 +91,8 @@ public class TestJobStatusCalculator extends TestCase {
     public void testCalculateStatusErrors() throws Exception {
         final long jobId = 112234;
         Exchange exchange = new DefaultExchange(camelContext);
-        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
-        TransientJob job = TestUtil.setupJob(jobId, detectionSystemPropertiesSnapshot, redis, ioUtils);
+        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+        TransientJob job = TestUtil.setupJob(jobId, transientDetectionSystemProperties, redis, ioUtils);
         exchange.getIn().setBody(jsonUtils.serialize(job));
         redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
         Assert.assertEquals(BatchJobStatusType.COMPLETE_WITH_ERRORS,jobStatusCalculator.calculateStatus(exchange));
@@ -99,8 +102,8 @@ public class TestJobStatusCalculator extends TestCase {
     public void testCalculateStatusWarnings() throws Exception {
         final long jobId = 112235;
         Exchange exchange = new DefaultExchange(camelContext);
-        ImmutableConfiguration detectionSystemPropertiesSnapshot = propertiesUtil.getDetectionConfiguration();
-        TransientJob job = TestUtil.setupJob(jobId, detectionSystemPropertiesSnapshot, redis, ioUtils);
+        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+         TransientJob job = TestUtil.setupJob(jobId, transientDetectionSystemProperties, redis, ioUtils);
         exchange.getIn().setBody(jsonUtils.serialize(job));
         redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_WARNINGS);
         Assert.assertEquals(BatchJobStatusType.COMPLETE_WITH_WARNINGS,jobStatusCalculator.calculateStatus(exchange));

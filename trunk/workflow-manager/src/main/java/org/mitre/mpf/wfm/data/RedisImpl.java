@@ -37,14 +37,13 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
-import org.apache.commons.configuration2.ImmutableConfiguration;
-import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
@@ -594,13 +593,9 @@ public class RedisImpl implements Redis {
             // Get the hash containing the job properties.
             Map<String, Object> jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
 
-            // A snapshot of the detection system properties was captured at the time when this job is created.
-            // Get the detection system properties snapshot persisted for this job from REDIS.
-            ImmutableConfiguration detectionSystemPropertiesSnapshot = getDetectionSystemProperties(jobId);
-
             TransientJob transientJob = new TransientJob(jobId,
                     (String) (jobHash.get(EXTERNAL_ID)),
-                    detectionSystemPropertiesSnapshot,
+                    jsonUtils.deserialize((byte[]) (jobHash.get(JOB_DETECTION_SYSTEM_PROPERTIES_SNAPSHOT)), TransientDetectionSystemProperties.class),
                     jsonUtils.deserialize((byte[]) (jobHash.get(PIPELINE)), TransientPipeline.class),
                     (Integer) (jobHash.get(TASK)),
                     (Integer) (jobHash.get(PRIORITY)),
@@ -811,6 +806,7 @@ public class RedisImpl implements Redis {
 
         // Copy the remaining properties from the java object to the job hash...
         // Note: need to convert from ByteArray (using JsonUtils.serialize) from REDIS to Java
+        jobHash.put(JOB_DETECTION_SYSTEM_PROPERTIES_SNAPSHOT, jsonUtils.serialize(transientJob.getDetectionSystemPropertiesSnapshot())); // Serialized to conserve space.
         jobHash.put(PIPELINE, jsonUtils.serialize(transientJob.getPipeline())); // Serialized to conserve space.
         jobHash.put(OVERRIDDEN_JOB_PROPERTIES, jsonUtils.serialize(transientJob.getOverriddenJobProperties()));
         jobHash.put(OVERRIDDEN_ALGORITHM_PROPERTIES, jsonUtils.serialize(transientJob.getOverriddenAlgorithmProperties()));
@@ -827,9 +823,6 @@ public class RedisImpl implements Redis {
         redisTemplate
                 .boundHashOps(key(BATCH_JOB, transientJob.getId())) // e.g., BATCH_JOB:5
                 .putAll(jobHash);
-
-        // Store the detection system properties snapshot for this job separately in REDIS.  Need to do this because ImmutableConfiguration isn't serializable.
-        persistDetectionSystemProperties(transientJob.getId(), transientJob.getDetectionSystemPropertiesSnapshot());
 
         // If this is the first time the job has been persisted, add the job's ID to the
         // collection of batch jobs known to the system so that we can assume that the key BATCH_JOB:N
@@ -859,43 +852,43 @@ public class RedisImpl implements Redis {
                 .set(jsonUtils.serialize(transientMedia));
     }
 
-    // ImmutableConfiguration isn't serializable, so persistence of the detection system properties has to be handled by storing the data in a separate hash
-    private synchronized void persistDetectionSystemProperties(long jobId, ImmutableConfiguration detectionSystemProperties) throws WfmProcessingException {
-
-        if ( detectionSystemProperties == null ) {
-            throw new WfmProcessingException("Error: the detection system properties captured for job " + jobId + " can't be null.");
-        } else if ( detectionSystemProperties.isEmpty() ) {
-            throw new WfmProcessingException("Error: the detection system properties captured for job " + jobId + " can't be empty.");
-        }
-
-        // create a HashMap storing each of the detection system properties separately.
-        Map<String,String> storageHash = new HashMap<String,String>();
-        detectionSystemProperties.getKeys().forEachRemaining( key -> {
-            log.info("redis:persistDetectionSystemProperties, debug: processing detectionSystemProperties key " + key + " with value " + detectionSystemProperties.getString(key));
-            storageHash.put(key,detectionSystemProperties.getString(key));
-        });
-
-        // Create a unique key for detectionSystemProperties for this job, the key format will be something like BATCH_JOB:1:JOB_DETECTION_SYSTEM_PROPERTIES_SNAPSHOT
-        String storageKey = key(BATCH_JOB, jobId, JOB_DETECTION_SYSTEM_PROPERTIES_SNAPSHOT);
-
-        // Store the detection system properties HashMap using the storage key.
-        redisTemplate.boundHashOps(storageKey).putAll(storageHash);
-    }
-
-    private synchronized ImmutableConfiguration getDetectionSystemProperties(long jobId) {
-
-        // Create the uniqe key for detectionSystemProperties that have been stored in REDIS for this job.
-        String storageKey = key(BATCH_JOB, jobId, JOB_DETECTION_SYSTEM_PROPERTIES_SNAPSHOT);
-
-        // Retrieve the detection system properties HashMap from REDIS using the storage key.
-        Map<String,String> storageHash = redisTemplate.boundHashOps(storageKey).entries();
-
-        // Reconstruct the the detection system properties as a PropertiesConfiguration and return the info to the caller.
-        PropertiesConfiguration detectionSystemProperties = new PropertiesConfiguration();
-        storageHash.entrySet().stream().forEach( entry -> detectionSystemProperties.addProperty(entry.getKey(), entry.getValue()) );
-
-        return detectionSystemProperties;
-    }
+//    // ImmutableConfiguration isn't serializable, so persistence of the detection system properties has to be handled by storing the data in a separate hash
+//    private synchronized void persistDetectionSystemProperties(long jobId, ImmutableConfiguration detectionSystemProperties) throws WfmProcessingException {
+//
+//        if ( detectionSystemProperties == null ) {
+//            throw new WfmProcessingException("Error: the detection system properties captured for job " + jobId + " can't be null.");
+//        } else if ( detectionSystemProperties.isEmpty() ) {
+//            throw new WfmProcessingException("Error: the detection system properties captured for job " + jobId + " can't be empty.");
+//        }
+//
+//        // create a HashMap storing each of the detection system properties separately.
+//        Map<String,String> storageHash = new HashMap<String,String>();
+//        detectionSystemProperties.getKeys().forEachRemaining( key -> {
+//            log.info("redis:persistDetectionSystemProperties, debug: processing detectionSystemProperties key " + key + " with value " + detectionSystemProperties.getString(key));
+//            storageHash.put(key,detectionSystemProperties.getString(key));
+//        });
+//
+//        // Create a unique key for detectionSystemProperties for this job, the key format will be something like BATCH_JOB:1:JOB_DETECTION_SYSTEM_PROPERTIES_SNAPSHOT
+//        String storageKey = key(BATCH_JOB, jobId, JOB_DETECTION_SYSTEM_PROPERTIES_SNAPSHOT);
+//
+//        // Store the detection system properties HashMap using the storage key.
+//        redisTemplate.boundHashOps(storageKey).putAll(storageHash);
+//    }
+//
+//    private synchronized ImmutableConfiguration getDetectionSystemProperties(long jobId) {
+//
+//        // Create the uniqe key for detectionSystemProperties that have been stored in REDIS for this job.
+//        String storageKey = key(BATCH_JOB, jobId, JOB_DETECTION_SYSTEM_PROPERTIES_SNAPSHOT);
+//
+//        // Retrieve the detection system properties HashMap from REDIS using the storage key.
+//        Map<String,String> storageHash = redisTemplate.boundHashOps(storageKey).entries();
+//
+//        // Reconstruct the the detection system properties as a PropertiesConfiguration and return the info to the caller.
+//        PropertiesConfiguration detectionSystemProperties = new PropertiesConfiguration();
+//        storageHash.entrySet().stream().forEach( entry -> detectionSystemProperties.addProperty(entry.getKey(), entry.getValue()) );
+//
+//        return detectionSystemProperties;
+//    }
 
     /**
      * Persist the stream data for a streaming job by storing it in the REDIS database

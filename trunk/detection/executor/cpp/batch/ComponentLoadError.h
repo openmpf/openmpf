@@ -24,69 +24,14 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include "StreamingComponentHandle.h"
-#include "ExecutorErrors.h"
+#ifndef MPF_COMPONENTLOADERROR_H
+#define MPF_COMPONENTLOADERROR_H
 
-namespace MPF { namespace COMPONENT {
-
-    StreamingComponentHandle::StreamingComponentHandle(const std::string &lib_path,
-                                                       const MPFStreamingVideoJob &job)
-    try : component_(lib_path, "streaming_component_creator", "streaming_component_deleter", &job)
-    {
-    }
-    catch (const std::exception &ex) {
-        throw FatalError(ExitCode::COMPONENT_LOAD_ERROR, ex.what());
-    }
+#include <stdexcept>
 
 
+class ComponentLoadError : public std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
 
-    std::string StreamingComponentHandle::GetDetectionType() {
-        try {
-            return component_->GetDetectionType();
-        }
-        catch (...) {
-            WrapComponentException("GetDetectionType");
-        }
-    }
-
-
-    void StreamingComponentHandle::BeginSegment(const VideoSegmentInfo &segment_info) {
-        try {
-            component_->BeginSegment(segment_info);
-        }
-        catch (...) {
-            WrapComponentException("BeginSegment");
-        }
-    }
-
-    bool StreamingComponentHandle::ProcessFrame(const cv::Mat &frame, int frame_number) {
-        try {
-            return component_->ProcessFrame(frame, frame_number);
-        }
-        catch (...) {
-            WrapComponentException("ProcessFrame");
-        }
-    }
-
-    std::vector<MPFVideoTrack> StreamingComponentHandle::EndSegment() {
-        try {
-            return component_->EndSegment();
-        }
-        catch (...) {
-            WrapComponentException("EndSegment");
-        }
-    }
-
-
-    void StreamingComponentHandle::WrapComponentException(const std::string &component_method) {
-        try {
-            throw;
-        }
-        catch (const std::exception &ex) {
-            throw InternalComponentError(component_method, ex.what());
-        }
-        catch (...) {
-            throw InternalComponentError(component_method);
-        }
-    }
-}}
+#endif //MPF_COMPONENTLOADERROR_H

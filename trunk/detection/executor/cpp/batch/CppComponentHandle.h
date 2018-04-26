@@ -24,69 +24,41 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include "StreamingComponentHandle.h"
-#include "ExecutorErrors.h"
+#ifndef MPF_CPPCOMPONENTHANDLE_H
+#define MPF_CPPCOMPONENTHANDLE_H
+
+#include <string>
+#include <DlClassLoader.h>
+
 
 namespace MPF { namespace COMPONENT {
 
-    StreamingComponentHandle::StreamingComponentHandle(const std::string &lib_path,
-                                                       const MPFStreamingVideoJob &job)
-    try : component_(lib_path, "streaming_component_creator", "streaming_component_deleter", &job)
-    {
-    }
-    catch (const std::exception &ex) {
-        throw FatalError(ExitCode::COMPONENT_LOAD_ERROR, ex.what());
-    }
+    class CppComponentHandle {
+    public:
+        explicit CppComponentHandle(const std::string &lib_path);
 
+        void SetRunDirectory(const std::string &run_dir);
 
+        bool Init();
 
-    std::string StreamingComponentHandle::GetDetectionType() {
-        try {
-            return component_->GetDetectionType();
-        }
-        catch (...) {
-            WrapComponentException("GetDetectionType");
-        }
-    }
+        std::string GetDetectionType();
 
+        bool Supports(MPFDetectionDataType data_type);
 
-    void StreamingComponentHandle::BeginSegment(const VideoSegmentInfo &segment_info) {
-        try {
-            component_->BeginSegment(segment_info);
-        }
-        catch (...) {
-            WrapComponentException("BeginSegment");
-        }
-    }
+        MPFDetectionError GetDetections(const MPFVideoJob &job, std::vector<MPFVideoTrack> &tracks);
 
-    bool StreamingComponentHandle::ProcessFrame(const cv::Mat &frame, int frame_number) {
-        try {
-            return component_->ProcessFrame(frame, frame_number);
-        }
-        catch (...) {
-            WrapComponentException("ProcessFrame");
-        }
-    }
+        MPFDetectionError GetDetections(const MPFImageJob &job, std::vector<MPFImageLocation> &locations);
 
-    std::vector<MPFVideoTrack> StreamingComponentHandle::EndSegment() {
-        try {
-            return component_->EndSegment();
-        }
-        catch (...) {
-            WrapComponentException("EndSegment");
-        }
-    }
+        MPFDetectionError GetDetections(const MPFAudioJob &job, std::vector<MPFAudioTrack> &tracks);
 
+        MPFDetectionError GetDetections(const MPFGenericJob &job, std::vector<MPFGenericTrack> &tracks);
 
-    void StreamingComponentHandle::WrapComponentException(const std::string &component_method) {
-        try {
-            throw;
-        }
-        catch (const std::exception &ex) {
-            throw InternalComponentError(component_method, ex.what());
-        }
-        catch (...) {
-            throw InternalComponentError(component_method);
-        }
-    }
+        bool Close();
+
+    private:
+        DlClassLoader<MPFDetectionComponent> component_;
+    };
 }}
+
+
+#endif //MPF_CPPCOMPONENTHANDLE_H

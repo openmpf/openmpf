@@ -24,69 +24,59 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include "StreamingComponentHandle.h"
-#include "ExecutorErrors.h"
+#include "CppComponentHandle.h"
+#include "ComponentLoadError.h"
+
 
 namespace MPF { namespace COMPONENT {
 
-    StreamingComponentHandle::StreamingComponentHandle(const std::string &lib_path,
-                                                       const MPFStreamingVideoJob &job)
-    try : component_(lib_path, "streaming_component_creator", "streaming_component_deleter", &job)
+
+    CppComponentHandle::CppComponentHandle(const std::string &lib_path)
+    try : component_(lib_path, "component_creator", "component_deleter")
     {
+
     }
     catch (const std::exception &ex) {
-        throw FatalError(ExitCode::COMPONENT_LOAD_ERROR, ex.what());
+        throw ComponentLoadError(ex.what());
+    }
+
+    void CppComponentHandle::SetRunDirectory(const std::string &run_dir) {
+        component_->SetRunDirectory(run_dir);
+    }
+
+    bool CppComponentHandle::Init() {
+        return component_->Init();
+    }
+
+    std::string CppComponentHandle::GetDetectionType() {
+        return component_->GetDetectionType();
+    }
+
+    bool CppComponentHandle::Supports(MPFDetectionDataType data_type) {
+        return component_->Supports(data_type);
+    }
+
+    MPFDetectionError CppComponentHandle::GetDetections(const MPFVideoJob &job, std::vector<MPFVideoTrack> &tracks) {
+        return component_->GetDetections(job, tracks);
+    }
+
+    MPFDetectionError CppComponentHandle::GetDetections(const MPFImageJob &job,
+                                                        std::vector<MPFImageLocation> &locations) {
+        return component_->GetDetections(job, locations);
+    }
+
+    MPFDetectionError CppComponentHandle::GetDetections(const MPFAudioJob &job, std::vector<MPFAudioTrack> &tracks) {
+        return component_->GetDetections(job, tracks);
+    }
+
+    MPFDetectionError CppComponentHandle::GetDetections(const MPFGenericJob &job,
+                                                        std::vector<MPFGenericTrack> &tracks) {
+        return component_->GetDetections(job, tracks);
+    }
+
+    bool CppComponentHandle::Close() {
+        return component_->Close();
     }
 
 
-
-    std::string StreamingComponentHandle::GetDetectionType() {
-        try {
-            return component_->GetDetectionType();
-        }
-        catch (...) {
-            WrapComponentException("GetDetectionType");
-        }
-    }
-
-
-    void StreamingComponentHandle::BeginSegment(const VideoSegmentInfo &segment_info) {
-        try {
-            component_->BeginSegment(segment_info);
-        }
-        catch (...) {
-            WrapComponentException("BeginSegment");
-        }
-    }
-
-    bool StreamingComponentHandle::ProcessFrame(const cv::Mat &frame, int frame_number) {
-        try {
-            return component_->ProcessFrame(frame, frame_number);
-        }
-        catch (...) {
-            WrapComponentException("ProcessFrame");
-        }
-    }
-
-    std::vector<MPFVideoTrack> StreamingComponentHandle::EndSegment() {
-        try {
-            return component_->EndSegment();
-        }
-        catch (...) {
-            WrapComponentException("EndSegment");
-        }
-    }
-
-
-    void StreamingComponentHandle::WrapComponentException(const std::string &component_method) {
-        try {
-            throw;
-        }
-        catch (const std::exception &ex) {
-            throw InternalComponentError(component_method, ex.what());
-        }
-        catch (...) {
-            throw InternalComponentError(component_method);
-        }
-    }
 }}

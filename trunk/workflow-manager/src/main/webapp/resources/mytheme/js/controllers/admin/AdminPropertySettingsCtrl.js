@@ -52,11 +52,7 @@ function ($resource) {
 	propertiesResource.prototype.valueChanged = function () {
     return this.value !== serverProperties[this.key].value;
 	};
-
-  propertiesResource.prototype.needsRestart = function () {
-    return this.needsRestart;
-  };
-
+  
   propertiesResource.prototype.changeRequiresRestart = function () {
     if ( serverProperties[this.key].needsRestart ) {
       return this.needsRestart || serverProperties[this.key].needsRestart;

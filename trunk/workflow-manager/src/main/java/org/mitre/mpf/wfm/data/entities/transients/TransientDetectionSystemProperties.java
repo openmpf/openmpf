@@ -125,24 +125,16 @@ public class TransientDetectionSystemProperties {
 
         ImmutableConfiguration detectionSystemPropertiesConfig = propertiesUtil.getDetectionConfiguration();
 
-        log.info("TransientDetectionSystemProperties: debug, captured detectionSystemPropertiesConfig of size = " + detectionSystemPropertiesConfig.size());
-        detectionSystemPropertiesConfig.getKeys().forEachRemaining( key -> {
-            log.info("TransientDetectionSystemProperties: debug, detectionSystemPropertiesConfig key is " + key + " whose value is " +
-                detectionSystemPropertiesConfig.getProperty(key) + " of type " + detectionSystemPropertiesConfig.getProperty(key).getClass());
-        } );
-
         Map<String,Object> detMap = new HashMap<String,Object>();
         // Put each property from the detectionSystemPropertiesConfig into the HashMap. Note that all property
         // values were going into the HashMap as a String, because that is how they are represented in the ImmutableConfiguration object.
         detectionSystemPropertiesConfig.getKeys().forEachRemaining( key -> detMap.put(key,detectionSystemPropertiesConfig.getProperty(key)) );
         detectionSystemPropertiesSnapshot = Collections.unmodifiableMap(detMap);
-        log.info("TransientDetectionSystemProperties: debug, created property map detectionSystemPropertiesSnapshot=" + detectionSystemPropertiesSnapshot);
     }
 
     @JsonCreator
     public TransientDetectionSystemProperties(@JsonProperty("detectionSystemPropertiesSnapshot") Map detectionSystemPropertiesSnapshot) {
-        this.detectionSystemPropertiesSnapshot = detectionSystemPropertiesSnapshot;
-        log.info("TransientDetectionSystemProperties: JSON debug, created property map detectionSystemPropertiesSnapshot=" + detectionSystemPropertiesSnapshot);
+        this.detectionSystemPropertiesSnapshot = Collections.unmodifiableMap(detectionSystemPropertiesSnapshot);
     }
 
     public String toString() {

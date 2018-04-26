@@ -143,8 +143,6 @@ public class DetectionSplitter implements StageSplitter {
 		// Is this the first detection stage in the pipeline?
 		boolean isFirstDetectionStage = isFirstDetectionOperation(transientJob);
 
-		log.info("DetectionSplitter: processing job " + transientJob.getId() + " stage " + transientJob.getCurrentStage());
-
 		for (TransientMedia transientMedia : transientJob.getMedia()) {
 
 			if (transientMedia.isFailed()) {
@@ -176,17 +174,12 @@ public class DetectionSplitter implements StageSplitter {
                 // starting setting of priorities here:  getting action property defaults
                 TransientAction transientAction = transientStage.getActions().get(actionIndex);
 
-                log.info("DetectionSplitter: processing actionIndex= " + actionIndex + " transientAction name, algorithm is " + transientAction.getName() + ", " + transientAction.getAlgorithm());
-
                 // modifiedMap initialized with algorithm specific properties
                 Map<String, String> modifiedMap = new HashMap<>(
                     getAlgorithmProperties(transientAction.getAlgorithm()));
 
-				log.info("DetectionSplitter: instantiated from transientAction algorithm, set modifiedMap: " + modifiedMap);
-
                 // current modifiedMap properties overridden by action properties
                 modifiedMap.putAll(transientAction.getProperties());
-				log.info("DetectionSplitter: updated from transientAction properties, updated modifiedMap: " + modifiedMap);
 
                 // If the job is overriding properties related to flip, rotation, or ROI, we should reset all related
                 // action properties to default.  We assume that when the user overrides one rotation/flip/roi
@@ -205,11 +198,9 @@ public class DetectionSplitter implements StageSplitter {
                         break;
                     }
                 }
-				log.info("DetectionSplitter: after clearing transform properties, updated modifiedMap: " + modifiedMap);
 
                 // Note: by this point override of system properties by job properties has already been applied to the transient job.
                 modifiedMap.putAll(transientJob.getOverriddenJobProperties());
-				log.info("DetectionSplitter: after putting in job properties, updated modifiedMap: " + modifiedMap);
 
                 // overriding by AlgorithmProperties.  Note that algorithm-properties are of type
 				// Map<String,Map>, so the transform properties to be overridden are actually in the value section of the Map returned
@@ -242,9 +233,7 @@ public class DetectionSplitter implements StageSplitter {
 							break;
 						}
 					}
-					log.info("DetectionSplitter: after clearing transform properties 2nd time, updated modifiedMap: " + modifiedMap);
 					modifiedMap.putAll(job_alg_m);
-					log.info("DetectionSplitter: after putting in algorithm properties, updated modifiedMap: " + modifiedMap);
 
                 } // end of algorithm name conditional
 
@@ -254,39 +243,26 @@ public class DetectionSplitter implements StageSplitter {
 						break;
 					}
 				}
-				log.info("DetectionSplitter: after clearing transform properties 3rd time, updated modifiedMap: " + modifiedMap);
 
 				modifiedMap.putAll(transientMedia.getMediaSpecificProperties());
-				log.info("DetectionSplitter: after putting in media properties, updated modifiedMap: " + modifiedMap);
 
                 SegmentingPlan segmentingPlan = null;
 
                 if ( transientMedia.containsMetadata("FPS")) {
 
                     // Segmenting plan is only used by the VideoMediaSegmenter, so only create the DetectionContext to include the segmenting plan for jobs with video media.
-					log.info("DetectionSplitter: prior to AggregateJobPropertiesUtil.calculateFrameInterval call, transientJob.getDetectionSystemPropertiesSnapshot()="+transientJob.getDetectionSystemPropertiesSnapshot());
-					log.info("DetectionSplitter: prior to AggregateJobPropertiesUtil.calculateFrameInterval call, transientAction.getName()="+transientAction.getName());
-					log.info("DetectionSplitter: prior to AggregateJobPropertiesUtil.calculateFrameInterval call, transientAction.getDescription()="+transientAction.getDescription());
-					log.info("DetectionSplitter: prior to AggregateJobPropertiesUtil.calculateFrameInterval call, transientAction.getAlgorithm()="+transientAction.getAlgorithm());
-					log.info("DetectionSplitter: prior to AggregateJobPropertiesUtil.calculateFrameInterval call, transientAction.getProperties="+transientAction.getProperties());
-					log.info("DetectionSplitter: prior to AggregateJobPropertiesUtil.calculateFrameInterval call, transientJob.getOverriddenJobProperties()="+transientJob.getOverriddenJobProperties());
-					log.info("DetectionSplitter: prior to AggregateJobPropertiesUtil.calculateFrameInterval call, transientMedia.getMediaSpecificProperties()="+transientMedia.getMediaSpecificProperties());
                     String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
                         transientAction, transientJob, transientMedia,
 						transientJob.getDetectionSystemPropertiesSnapshot().getSamplingInterval(),
 						transientJob.getDetectionSystemPropertiesSnapshot().getFrameRateCap(),
                         Double.valueOf(transientMedia.getMetadata("FPS")));
 
-					log.info("DetectionSplitter: resetting MEDIA_SAMPLING_INTERVAL_PROPERTY to calcframeInterval: " + calcframeInterval);
                     modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
 
                     segmentingPlan = createSegmentingPlan(transientJob.getDetectionSystemPropertiesSnapshot(), modifiedMap);
                 }
 
-				log.info("DetectionSplitter: calling convertPropertiesMapToAlgorithmPropertiesList with modifiedMap: " + modifiedMap);
                 List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
-
-                log.info("DetectionSplitter: constructed algorithmProperties: " + algorithmProperties);
 
                 DetectionContext detectionContext = new DetectionContext(
                         transientJob.getId(),
@@ -299,8 +275,6 @@ public class DetectionSplitter implements StageSplitter {
                         previousTracks,
                         segmentingPlan);
 
-				log.info("DetectionSplitter: constructed detectionContext: " + detectionContext);
-
                 // get detection request messages from ActiveMQ
 				List<Message> detectionRequestMessages = createDetectionRequestMessages(transientMedia, detectionContext);
 
@@ -311,7 +285,6 @@ public class DetectionSplitter implements StageSplitter {
 					                                transientAction.getAlgorithm()));
 					message.setHeader(MpfHeaders.JMS_REPLY_TO,
 					                  StringUtils.replace(MpfEndpoints.COMPLETED_DETECTIONS, "jms:", ""));
-					log.info("DetectionSplitter: constructed detection request message: " + message);
 				}
 				messages.addAll(detectionRequestMessages);
 				log.debug("[Job {}|{}|{}] Created {} work units for Media #{}.",

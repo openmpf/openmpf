@@ -144,7 +144,7 @@ public class AdminPropertySettingsController
             // Get an updated list of property models. Each element contains current value. Return only the mutable system properties by
             // filtering out the immutable detection properties from the list.
             ImmutableConfiguration detectionSystemProperties = propertiesUtil.getDetectionConfiguration();
-             return propertiesUtil.getCustomProperties().stream().filter(pm -> detectionSystemProperties.containsKey(pm.getKey())).collect(toList());
+            return propertiesUtil.getCustomProperties().stream().filter(pm -> detectionSystemProperties.containsKey(pm.getKey())).collect(toList());
 
         } else {
             // by default, return all of the system properties - updated to contain current value.
@@ -182,8 +182,8 @@ public class AdminPropertySettingsController
         // Call method to iterate through the system properties and update any properties that may have been updated on the UI,
 		propertiesUtil.setAndSaveCustomProperties(propertyModels);
 
-		// After any dynamic detection system properties have been updated, then refresh the algorithm default values so
-        // they will be applied to new pipelines
+		// After any dynamic detection system properties have been updated, refresh the algorithm default values so
+        // they will be applied to new pipelines.
         pipelineService.refreshAlgorithmDefaultValues();
 
 		// Add system message if a restart of OpenMPF is required.

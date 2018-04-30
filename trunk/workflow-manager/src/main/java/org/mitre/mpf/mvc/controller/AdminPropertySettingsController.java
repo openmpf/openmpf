@@ -28,15 +28,11 @@ package org.mitre.mpf.mvc.controller;
 
  import static java.util.stream.Collectors.toList;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
- import java.util.stream.Collectors;
- import javax.servlet.http.HttpServletRequest;
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.service.MpfService;
@@ -53,9 +49,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-
-// swagger includes
- @Api(value = "properties", description = "Properties get and save")
 
 // NOTE: Don't use @Scope("request") because this class should be treated as a singleton.
 @Controller
@@ -75,41 +68,6 @@ public class AdminPropertySettingsController
 	private PipelineService pipelineService;
 
     /**
-     * Get the PropertyModel associated with the specified property key.
-     * @param propertyKey system property key to search for.
-     * @return PropertyModel associated with the specified property key or null if not found.
-     * @throws IOException
-     */
-    @ApiOperation(value = "Gets the specified system property", produces = "application/json", response=PropertyModel.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successful response"),
-        @ApiResponse(code = 401, message = "Bad credentials")})
-    @ResponseBody
-    @RequestMapping(value = "/property", method = RequestMethod.GET)
-	public PropertyModel getProperty(@RequestParam(value = "propertyKey") String propertyKey) {
-
-        List<PropertyModel> customProperties = propertiesUtil.getCustomProperties();
-        Optional<PropertyModel> propertyModel = customProperties.stream().filter(e -> e.getKey().equals(propertyKey)).findFirst();
-
-        return propertyModel.orElse(null);
-    }
-
-    /**
-     * Check all properties to see if any immutable system properties have changed and a restart is required.
-     * @return true if any immutable system properties have changed and a restart is required, false otherwise.
-     * @throws IOException
-     */
-    @ApiOperation(value = "Returns true if any immutable system properties have changed and a restart is required, false otherwise.", produces = "application/json", response=Boolean.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successful response"),
-        @ApiResponse(code = 401, message = "Bad credentials")})
-    @ResponseBody
-    @RequestMapping(value = "/restartRequired", method = RequestMethod.GET)
-    public boolean isRestartRequired() {
-         return checkForRestartRequired();
-    }
-
-    /**
      * Check to see if a change to any of the immutable system properties requires a restart to apply the change..
      * @return Returns true if any immutable system properties have changed and a restart is required, false otherwise
      */
@@ -121,25 +79,26 @@ public class AdminPropertySettingsController
 
     }
 
-    @ApiOperation(value = "Gets a list of system properties. If optional parameter whichPropertySet is not specified or is set to 'all', then all system properties are returned. "
-        + "If whichPropertySet is 'mutable', then only the system properties that may be changed without OpenMPF restart are returned. "
-        + "If whichPropertySet is 'immutable', then only the system properties that require restart of OpenMPF to apply property changes are returned.",
-        produces = "application/json", response=PropertyModel.class, responseContainer="List")
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successful response"),
-        @ApiResponse(code = 401, message = "Bad credentials")})
+    /**
+     * Gets a list of system properties. If optional parameter propertySet is not specified or is set to 'all', then all system properties are returned.
+     * If propertySet is 'mutable', then only the system properties that may be changed without OpenMPF restart are returned.
+     * If propertySet is 'immutable', then only the system properties that require restart of OpenMPF to apply property changes are returned.
+     * @param propertySet property set selector
+     * @return updated property models
+     * @throws IOException
+     */
     @ResponseBody
     @RequestMapping(value = "/properties", method = RequestMethod.GET)
-    public List<PropertyModel> getProperties(@RequestParam(value = "whichPropertySet", required = false, defaultValue="all") String whichPropertySet) throws IOException {
+    public List<PropertyModel> getProperties(@RequestParam(value = "propertySet", required = false, defaultValue="all") String propertySet) throws IOException {
 
-        if ( whichPropertySet.equalsIgnoreCase("immutable") ) {
+        if ( propertySet.equalsIgnoreCase("immutable") ) {
 
             // Get an updated list of property models. Each element contains current value. Return only the immutable system properties by
             // filtering out the mutable detection properties from the list.
             ImmutableConfiguration detectionSystemProperties = propertiesUtil.getDetectionConfiguration();
             return propertiesUtil.getCustomProperties().stream().filter(pm -> !detectionSystemProperties.containsKey(pm.getKey())).collect(toList());
 
-        } else if ( whichPropertySet.equalsIgnoreCase("mutable") ) {
+        } else if ( propertySet.equalsIgnoreCase("mutable") ) {
 
             // Get an updated list of property models. Each element contains current value. Return only the mutable system properties by
             // filtering out the immutable detection properties from the list.
@@ -153,11 +112,6 @@ public class AdminPropertySettingsController
 
     }
 
-    @ApiOperation(value = "Saves the passed list of system properties. Note that the returned list may contain PropertyModels that may have a updated value of needsRestart.",
-        produces = "application/json", response=PropertyModel.class, responseContainer="List")
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successful response"),
-        @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
 	@RequestMapping(value = "/properties", method = RequestMethod.PUT)
     /** Call this method to save system properties that have changed to the custom mpf properties file.
@@ -189,6 +143,8 @@ public class AdminPropertySettingsController
 		// Add system message if a restart of OpenMPF is required.
         if ( checkForRestartRequired() ) {
             mpfService.addStandardSystemMessage("eServerPropertiesChanged");
+        } else {
+            mpfService.deleteStandardSystemMessage("eServerPropertiesChanged");
         }
 
         // Get an updated list of property models. Adjust the returned list of PropertyModels so they will indicate

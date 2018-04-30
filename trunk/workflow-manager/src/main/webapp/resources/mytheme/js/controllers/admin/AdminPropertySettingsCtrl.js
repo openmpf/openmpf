@@ -67,15 +67,20 @@ function ($resource) {
 
 	// look for detection. prefix, these are the properties that are mutable
 	var serverProperties;
+  var serverNeedsRestartFlag = false;
 
 	return {
+
+    serverNeedsRestart: function() {
+      return serverNeedsRestartFlag;
+    },
 
     // Get the list of all system properties.
     queryAll: function () {
 			serverProperties = { };
 			// Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get all of the system properties.
       // This endpoint will return a List of org.mitre.mpf.mvc.model.PropertyModel objects.
-			var properties = propertiesResource.query({whichPropertySet: "all"});
+			var properties = propertiesResource.query({propertySet: "all"});
 			properties
 				.$promise
 				.then(function () {
@@ -91,7 +96,7 @@ function ($resource) {
       serverProperties = { };
       // Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get all of the mutable system properties.
       // The mutable system properties can be changed, without requiring a restart of OpenMPF to apply the change.
-      var properties = propertiesResource.query({whichPropertySet: "mutable"});
+      var properties = propertiesResource.query({propertySet: "mutable"});
       properties
       .$promise
       .then(function () {
@@ -107,7 +112,7 @@ function ($resource) {
       serverProperties = { };
       // Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get all of the immutable system properties.
       // The immutable system properties require a restart of OpenMPF to apply the change.
-      var properties = propertiesResource.query({whichPropertySet: "immutable"});
+      var properties = propertiesResource.query({propertySet: "immutable"});
       properties
       .$promise
       .then(function () {
@@ -134,6 +139,10 @@ function ($resource) {
             // Each prop is of type org.mitre.mpf.mvc.model.PropertyModel.
             // If the modified property indicates that a value change requires a restart, then prop.needsRestart needs to be updated.
             serverProperties[prop.key] = {value: prop.value, needsRestart: prop.needsRestart};
+            if ( !serverNeedsRestartFlag && serverProperties[prop.key].needsRestart ) {
+                serverNeedsRestartFlag = true;
+            }
+
 				});
 			});
 			return saveResult;
@@ -157,7 +166,8 @@ function ($resource) {
 				return prop.valueChanged();
 			});
 		}
-	};
+
+  };
 }
 ]);
 
@@ -192,7 +202,11 @@ function ($scope, $rootScope, $confirm, $state, PropertiesSvc, NotificationSvc, 
     // satisfy both promises using $q.all before providing notification of success to the user.
     $q.all([ PropertiesSvc.update($scope.mutableProperties).$promise, PropertiesSvc.update($scope.immutableProperties).$promise ])
     .then(function () {
-      NotificationSvc.success('System Properties have been saved!');
+      if ( PropertiesSvc.serverNeedsRestart() ) {
+        NotificationSvc.success('System Properties have been saved, but the server needs to be restarted.');
+      } else {
+        NotificationSvc.success('System Properties have been saved!');
+      }
     });
 
   };

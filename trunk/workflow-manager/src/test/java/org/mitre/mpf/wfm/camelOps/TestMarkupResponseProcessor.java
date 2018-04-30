@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.camelOps;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
-import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -82,7 +81,6 @@ public class TestMarkupResponseProcessor {
     private Redis redis;
 
     @Autowired
-    @Qualifier(PropertiesUtil.REF)
     private PropertiesUtil propertiesUtil;
 
     private static final MutableInt SEQUENCE = new MutableInt();
@@ -104,7 +102,7 @@ public class TestMarkupResponseProcessor {
         TransientPipeline dummyPipeline = new TransientPipeline("testMarkupPipeline", "testMarkupPipelineDescription");
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
         TransientJob dummyJob = new TransientJob(jobId, Long.toString(jobId), transientDetectionSystemProperties, dummyPipeline, currentStage, priority, false, false);
         dummyJob.getMedia().add(new TransientMedia(mediaId, "/samples/meds1.jpg"));

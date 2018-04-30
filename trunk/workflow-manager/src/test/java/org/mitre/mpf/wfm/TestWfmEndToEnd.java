@@ -83,7 +83,6 @@ public class TestWfmEndToEnd {
 	protected IoUtils ioUtils;
 
 	@Autowired
-	@Qualifier(PropertiesUtil.REF)
 	protected PropertiesUtil propertiesUtil;
 
 	@Autowired

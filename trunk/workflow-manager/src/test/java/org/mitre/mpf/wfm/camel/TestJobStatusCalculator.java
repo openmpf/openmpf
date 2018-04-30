@@ -66,7 +66,6 @@ public class TestJobStatusCalculator extends TestCase {
     private CamelContext camelContext;
 
     @Autowired
-    @Qualifier(PropertiesUtil.REF)
     private PropertiesUtil propertiesUtil;
 
     @Autowired
@@ -79,7 +78,7 @@ public class TestJobStatusCalculator extends TestCase {
         Exchange exchange = new DefaultExchange(camelContext);
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
         TransientJob job = TestUtil.setupJob(jobId, transientDetectionSystemProperties, redis, ioUtils);
         exchange.getIn().setBody(jsonUtils.serialize(job));
         redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
@@ -91,7 +90,7 @@ public class TestJobStatusCalculator extends TestCase {
     public void testCalculateStatusErrors() throws Exception {
         final long jobId = 112234;
         Exchange exchange = new DefaultExchange(camelContext);
-        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
         TransientJob job = TestUtil.setupJob(jobId, transientDetectionSystemProperties, redis, ioUtils);
         exchange.getIn().setBody(jsonUtils.serialize(job));
         redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
@@ -102,7 +101,7 @@ public class TestJobStatusCalculator extends TestCase {
     public void testCalculateStatusWarnings() throws Exception {
         final long jobId = 112235;
         Exchange exchange = new DefaultExchange(camelContext);
-        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
          TransientJob job = TestUtil.setupJob(jobId, transientDetectionSystemProperties, redis, ioUtils);
         exchange.getIn().setBody(jsonUtils.serialize(job));
         redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_WARNINGS);

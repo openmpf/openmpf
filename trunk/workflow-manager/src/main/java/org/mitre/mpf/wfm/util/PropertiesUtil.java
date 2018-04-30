@@ -26,6 +26,8 @@
 
 package org.mitre.mpf.wfm.util;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,6 +53,7 @@ import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,7 +163,8 @@ public class PropertiesUtil {
 	// Returns an ImmutableConfiguration object that only contains the detection system properties.
 	public ImmutableConfiguration getDetectionConfiguration() {
 
-        // Extract just the detection system properties as a PropertiesConfiguration for return to the caller.
+        // Extract just the detection system properties as a PropertiesConfiguration for return to the caller. Note that this processing
+        // will preserve the "detection." prefix, whereas immutableSet doesn't.
         PropertiesConfiguration detectionSubsetConfig = new PropertiesConfiguration();
         mpfPropertiesConfig.getKeys().forEachRemaining( key -> {
             if ( key.startsWith(MpfPropertiesConfigurationBuilder.DETECTION_KEY_PREFIX) ) {
@@ -180,7 +184,36 @@ public class PropertiesUtil {
 		return mpfPropertiesConfigBuilder.getCustomProperties();
 	}
 
-	//
+    /**
+     * Returns a updated list of property models for the set of immutable properties. Each element contains current value,
+     * as well as a flag indicating whether or not a WFM restart is required to apply the change.
+     * @return Updated list of property models for the set of immutable properties.
+     */
+	public List<PropertyModel> getImmutableCustomProperties() {
+        // Get an updated list of property models. Each element contains current value. Return only the immutable system properties by
+        // filtering out the mutable detection properties from the list.
+        ImmutableConfiguration detectionSystemProperties = getDetectionConfiguration();
+        return getCustomProperties().stream().filter(pm -> !detectionSystemProperties.containsKey(pm.getKey())).collect(toList());
+    }
+
+    /**
+     * Returns a updated list of property models for the set of mutable properties. Each element contains current value,
+     * as well as a flag indicating whether or not a WFM restart is required to apply the change.
+     * @return Updated list of property models for the set of mutable properties.
+     */
+    public List<PropertyModel> getMutableCustomProperties() {
+        // Get an updated list of property models. Each element contains current value. Return only the mutable system properties by
+        // filtering out the immutable detection properties from the list.
+        ImmutableConfiguration detectionSystemProperties = getDetectionConfiguration();
+        return getCustomProperties().stream().filter(pm -> detectionSystemProperties.containsKey(pm.getKey())).collect(toList());
+    }
+
+    public TransientDetectionSystemProperties createDetectionSystemPropertiesSnapshot() {
+        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(getDetectionConfiguration());
+        return transientDetectionSystemProperties;
+    }
+
+    //
 	// JMX configuration
 	//
 

@@ -62,7 +62,6 @@ public class PipelineServiceImpl implements PipelineService {
     private static final Logger log = LoggerFactory.getLogger(PipelineService.class);
 
     @Autowired
-    @Qualifier(PropertiesUtil.REF)
     private PropertiesUtil propertiesUtil;
 
     private XStream xStream;

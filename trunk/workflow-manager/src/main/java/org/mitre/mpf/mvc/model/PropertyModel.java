@@ -61,9 +61,6 @@ public class PropertyModel {
 	}
 
 	public boolean getNeedsRestart() { return _needsRestart; }
-	public void setNeedsRestart(boolean needsRestart) {
-        _needsRestart = needsRestart;
-	}
 
 	public String toString() {
         return "_key: " + _key + ", _value: " + _value + ", _needsRestart: " + _needsRestart;

@@ -34,7 +34,6 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultExchange;
-import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
 import org.junit.Test;
@@ -87,7 +86,6 @@ public class TestRemoteMediaProcessor {
 	private JsonUtils jsonUtils;
 
 	@Autowired
-	@Qualifier(PropertiesUtil.REF)
 	private PropertiesUtil propertiesUtil;
 
 	private TransientJob transientJob;
@@ -106,7 +104,7 @@ public class TestRemoteMediaProcessor {
 		setHttpProxies();
 
 		// Capture a snapshot of the detection system property settings when the job is created.
-		TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+		TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
 		transientJob = new TransientJob(next(), null, transientDetectionSystemProperties, null, 0, 0, false, false) {{
 			getMedia().add(new TransientMedia(next(), ioUtils.findFile("/samples/meds1.jpg").toString()));

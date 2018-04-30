@@ -287,11 +287,6 @@ div.server-media .panel-body{
     color: blue;
 }
 
-.labelValueNotChanged {
-  color: black !important;
-  font-weight: normal;
-}
-
 .labelNeedsServerRestart {: width:;
     color: blue !important;
     font-weight: bold;
@@ -319,11 +314,6 @@ div.server-media .panel-body{
 .formlabelChanged {
     color: #ab5d05 !important; /* burnt orange */
     font-weight: bold;
-}
-
-.formlabelChangedAppliedWithoutRestart {
-  color: #ab5d0f !important; /* dark green */
-  font-weight: bold;
 }
 
 .forminput {

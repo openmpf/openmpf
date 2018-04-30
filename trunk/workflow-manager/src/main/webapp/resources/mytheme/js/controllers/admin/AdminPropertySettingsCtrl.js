@@ -29,209 +29,232 @@
 
 (function () {
 
-var propSettingsModule = angular.module('mpf.wfm.property.settings', [
-	'ngResource',
-	'angular-confirm'
-]);
+  var propSettingsModule = angular.module('mpf.wfm.property.settings', [
+    'ngResource',
+    'angular-confirm'
+  ]);
 
+  propSettingsModule.factory('PropertiesSvc', [
+    '$resource',
+    function ($resource) {
 
-propSettingsModule.factory('PropertiesSvc', [
-'$resource',
-function ($resource) {
-
-	// This propertiesResource.update call uses the /properties REST endpoint (method: PUT)
-  // defined in AdminPropertySettingsController to save the system properties. The system properties are
-  // passed as a List of Java org.mitre.mpf.mvc.model.PropertyModel objects to the mpf properties file. i.e. will save the system properties to the properties file.
-	var propertiesResource = $resource('properties', {}, {
-		update: {
-			method: 'PUT',
-			isArray: true
-		}
-	});
-
-	propertiesResource.prototype.valueChanged = function () {
-    return this.value !== serverProperties[this.key].value;
-	};
-  
-  propertiesResource.prototype.changeRequiresRestart = function () {
-    if ( serverProperties[this.key].needsRestart ) {
-      return this.needsRestart || serverProperties[this.key].needsRestart;
-    } else {
-      return this.needsRestart;
-    }
-  };
-
-  propertiesResource.prototype.resetProperty = function () {
-		this.value = serverProperties[this.key].value;
-	};
-
-	// look for detection. prefix, these are the properties that are mutable
-	var serverProperties;
-  var serverNeedsRestartFlag = false;
-
-	return {
-
-    serverNeedsRestart: function() {
-      return serverNeedsRestartFlag;
-    },
-
-    // Get the list of all system properties.
-    queryAll: function () {
-			serverProperties = { };
-			// Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get all of the system properties.
-      // This endpoint will return a List of org.mitre.mpf.mvc.model.PropertyModel objects.
-			var properties = propertiesResource.query({propertySet: "all"});
-			properties
-				.$promise
-				.then(function () {
-					properties.forEach(function (prop) {
-						serverProperties[prop.key] = {value: prop.value, needsRestart: prop.needsRestart};
-					});
-				});
-			return properties;
-		},
-
-    // Get the list of all mutable system properties.
-    queryMutable: function () {
-      serverProperties = { };
-      // Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get all of the mutable system properties.
-      // The mutable system properties can be changed, without requiring a restart of OpenMPF to apply the change.
-      var properties = propertiesResource.query({propertySet: "mutable"});
-      properties
-      .$promise
-      .then(function () {
-        properties.forEach(function (prop) {
-          serverProperties[prop.key] = {value: prop.value, needsRestart: prop.needsRestart};
-        });
+      // This propertiesResource.update call uses the /properties REST endpoint (method: PUT)
+      // defined in AdminPropertySettingsController to save the system properties. The system properties are
+      // passed as a List of Java org.mitre.mpf.mvc.model.PropertyModel objects to the mpf properties file. i.e. will save the system properties to the properties file.
+      var propertiesResource = $resource('properties', {}, {
+        update: {
+          method: 'PUT',
+          isArray: true
+        }
       });
-      return properties;
-    },
 
-    // Get the list of all immutable system properties.
-    queryImmutable: function () {
-      serverProperties = { };
-      // Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get all of the immutable system properties.
-      // The immutable system properties require a restart of OpenMPF to apply the change.
-      var properties = propertiesResource.query({propertySet: "immutable"});
-      properties
-      .$promise
-      .then(function () {
-        properties.forEach(function (prop) {
-          serverProperties[prop.key] = {value: prop.value, needsRestart: prop.needsRestart};
-        });
-      });
-      return properties;
-    },
+      propertiesResource.prototype.valueChanged = function () {
+        return this.value !== serverProperties[this.key].value;
+      };
 
-    update: function (properties) {
+      propertiesResource.prototype.changeRequiresRestart = function () {
+        if (serverProperties[this.key].needsRestart) {
+          return true;
+        } else {
+          return this.needsRestart;
+        }
+      };
 
-		  // Reduce the properties List of org.mitre.mpf.mvc.model.PropertyModel objects to only those that have values that have been changed, store reduced list in modifiedProps variable.
-			var modifiedProps = properties.filter(function (p) {
-			  return p.valueChanged();
-			});
+      propertiesResource.prototype.resetProperty = function () {
+        this.value = serverProperties[this.key].value;
+      };
 
-      // Save the list of modified system properties in var modifiedProps using propertiesResource.update method.
-      // Note: the update method uses the /properties REST endpoint (method: PUT) defined in AdminPropertySettingsController to save the
-      // modified system properties (as a List of org.mitre.mpf.mvc.model.PropertyModel objects) to the custom properties file.
-			var saveResult = propertiesResource.update(modifiedProps);
-			saveResult.$promise.then(function () {
-        saveResult.forEach(function (prop) {
-            // Each prop is of type org.mitre.mpf.mvc.model.PropertyModel.
-            // If the modified property indicates that a value change requires a restart, then prop.needsRestart needs to be updated.
-            serverProperties[prop.key] = {value: prop.value, needsRestart: prop.needsRestart};
-            if ( !serverNeedsRestartFlag && serverProperties[prop.key].needsRestart ) {
-                serverNeedsRestartFlag = true;
+      // look for detection. prefix, these are the properties that are mutable
+      var serverProperties;
+
+      return {
+
+        serverNeedsRestart: function () {
+          var immutablePropertiesChangedCount = 0;
+          if ( serverProperties ) {
+            for (var key in serverProperties){
+              if (serverProperties.hasOwnProperty(key)) {
+                 if ( serverProperties[key].needsRestart ) {
+                  ++immutablePropertiesChangedCount;
+                }
+              }
             }
+            return immutablePropertiesChangedCount > 0;
+          } else {
+            return false;
+          }
+        },
 
-				});
-			});
-			return saveResult;
-		},
-		resetAll: function (properties) {
-			properties.forEach(function (prop) {
-				prop.resetProperty();
-			});
-		},
-		unsavedPropertiesCount: function (properties) {
-			var count = 0;
-			properties.forEach(function (prop) {
-				if (prop.valueChanged()) {
-					count++;
-				}
-			});
-			return count;
-		},
-		hasUnsavedProperties: function (properties) {
-			return properties.some(function (prop) {
-				return prop.valueChanged();
-			});
-		}
+        // Get the list of all system properties.
+        queryAll: function () {
+          serverProperties = {};
+          // Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get all of the system properties.
+          // This endpoint will return a List of org.mitre.mpf.mvc.model.PropertyModel objects.
+          var properties = propertiesResource.query({propertySet: "all"});
+          properties
+          .$promise
+          .then(function () {
+            properties.forEach(function (prop) {
+              serverProperties[prop.key] = {
+                value: prop.value,
+                needsRestart: prop.needsRestart
+              };
+            });
+          });
+          return properties;
+        },
 
-  };
-}
-]);
+        // Get the list of all mutable system properties.
+        queryMutable: function () {
+          serverProperties = {};
+          // Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get all of the mutable system properties.
+          // The mutable system properties can be changed, without requiring a restart of OpenMPF to apply the change.
+          var properties = propertiesResource.query({propertySet: "mutable"});
+          properties
+          .$promise
+          .then(function () {
+            properties.forEach(function (prop) {
+              serverProperties[prop.key] = {
+                value: prop.value,
+                needsRestart: prop.needsRestart
+              };
+            });
+          });
+          return properties;
+        },
 
+        // Get the list of all immutable system properties.
+        queryImmutable: function () {
+          serverProperties = {};
+          // Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get all of the immutable system properties.
+          // The immutable system properties require a restart of OpenMPF to apply the change.
+          var properties = propertiesResource.query({propertySet: "immutable"});
+          properties
+          .$promise
+          .then(function () {
+            properties.forEach(function (prop) {
+              serverProperties[prop.key] = {
+                value: prop.value,
+                needsRestart: prop.needsRestart
+              };
+            });
+          });
+          return properties;
+        },
 
-propSettingsModule.controller('AdminPropertySettingsCtrl', [
-'$scope', '$rootScope', '$confirm', '$state', 'PropertiesSvc', 'NotificationSvc', '$q',
-function ($scope, $rootScope, $confirm, $state, PropertiesSvc, NotificationSvc, $q) {
+        update: function (properties) {
 
-	$scope.isAdmin = $rootScope.roleInfo.admin;
+          // Reduce the properties List of org.mitre.mpf.mvc.model.PropertyModel objects to only those that have values that have been changed, store reduced list in modifiedProps variable.
+          var modifiedProps = properties.filter(function (p) {
+            return p.valueChanged();
+          });
 
-  // Get the list of mutable system properties (each property in the list is of type org.mitre.mpf.mvc.model.PropertyModel).
-  $scope.mutableProperties = PropertiesSvc.queryMutable();
+          // Save the list of modified system properties in var modifiedProps using propertiesResource.update method.
+          // Note: the update method uses the /properties REST endpoint (method: PUT) defined in AdminPropertySettingsController to save the
+          // modified system properties (as a List of org.mitre.mpf.mvc.model.PropertyModel objects) to the custom properties file.
+          var saveResult = propertiesResource.update(modifiedProps);
+          saveResult.$promise.then(function () {
+            saveResult.forEach(function (prop) {
+              // Each prop is of type org.mitre.mpf.mvc.model.PropertyModel.
+              // If the modified property indicates that a value change requires a restart, then prop.needsRestart needs to be updated.
+              serverProperties[prop.key] = {
+                value: prop.value,
+                needsRestart: prop.needsRestart
+              };
+            });
+          });
+          return saveResult;
+        },
+        resetAll: function (properties) {
+          properties.forEach(function (prop) {
+            prop.resetProperty();
+          });
+        },
+        unsavedPropertiesCount: function (properties) {
+          var count = 0;
+          properties.forEach(function (prop) {
+            if (prop.valueChanged()) {
+              count++;
+            }
+          });
+          return count;
+        },
+        hasUnsavedProperties: function (properties) {
+          return properties.some(function (prop) {
+            return prop.valueChanged();
+          });
+        }
 
-  // Get the list of immutable system properties (each property in the list is of type org.mitre.mpf.mvc.model.PropertyModel).
-  $scope.immutableProperties = PropertiesSvc.queryImmutable();
+      };
+    }
+  ]);
 
-  $scope.resetAllProperties = function () {
-    PropertiesSvc.resetAll($scope.mutableProperties);
-    PropertiesSvc.resetAll($scope.immutableProperties);
-	};
+  propSettingsModule.controller('AdminPropertySettingsCtrl', [
+    '$scope', '$rootScope', '$confirm', '$state', 'PropertiesSvc',
+    'NotificationSvc', '$q',
+    function ($scope, $rootScope, $confirm, $state, PropertiesSvc,
+        NotificationSvc, $q) {
 
-	$scope.unsavedPropertiesCount = function () {
-		return PropertiesSvc.unsavedPropertiesCount($scope.mutableProperties) + PropertiesSvc.unsavedPropertiesCount($scope.immutableProperties);
-	};
+      $scope.isAdmin = $rootScope.roleInfo.admin;
 
-  $scope.hasUnsavedProperties = function () {
-    return PropertiesSvc.hasUnsavedProperties($scope.mutableProperties) || PropertiesSvc.hasUnsavedProperties($scope.immutableProperties);
-  };
+      // Get the list of mutable system properties (each property in the list is of type org.mitre.mpf.mvc.model.PropertyModel).
+      $scope.mutableProperties = PropertiesSvc.queryMutable();
 
-  $scope.saveProperties = function () {
+      // Get the list of immutable system properties (each property in the list is of type org.mitre.mpf.mvc.model.PropertyModel).
+      $scope.immutableProperties = PropertiesSvc.queryImmutable();
 
-    // satisfy both promises using $q.all before providing notification of success to the user.
-    $q.all([ PropertiesSvc.update($scope.mutableProperties).$promise, PropertiesSvc.update($scope.immutableProperties).$promise ])
-    .then(function () {
-      if ( PropertiesSvc.serverNeedsRestart() ) {
-        NotificationSvc.success('System Properties have been saved, but the server needs to be restarted.');
-      } else {
-        NotificationSvc.success('System Properties have been saved!');
-      }
-    });
+      $scope.resetAllProperties = function () {
+        PropertiesSvc.resetAll($scope.mutableProperties);
+        PropertiesSvc.resetAll($scope.immutableProperties);
+      };
 
-  };
+      $scope.unsavedPropertiesCount = function () {
+        return PropertiesSvc.unsavedPropertiesCount($scope.mutableProperties)
+            + PropertiesSvc.unsavedPropertiesCount($scope.immutableProperties);
+      };
 
-  // $scope.isRestartRequired = PropertiesSvc.isRestartRequired();
+      $scope.hasUnsavedProperties = function () {
+        return PropertiesSvc.hasUnsavedProperties($scope.mutableProperties)
+            || PropertiesSvc.hasUnsavedProperties($scope.immutableProperties);
+      };
 
-	var confirmed = false;	// need to remember if we've asked the user the confirm, or else we'll get in loop
-	$scope.$on('$stateChangeStart', function (event, toState) {
-		if (confirmed || !$scope.hasUnsavedProperties()) {
-			return;
-		}
+      $scope.saveProperties = function () {
 
-		event.preventDefault();	// stop the router right here, need to do this because of $confirm is asynchronous
+        // satisfy both promises using $q.all before providing notification of success to the user.
+        $q.all([PropertiesSvc.update($scope.mutableProperties).$promise,
+          PropertiesSvc.update($scope.immutableProperties).$promise])
+        .then(function () {
+          if (PropertiesSvc.serverNeedsRestart()) {
+            NotificationSvc.success(
+                'System Properties have been saved, but the server needs to be restarted.');
+          } else {
+            NotificationSvc.success('System Properties have been saved!');
+          }
+        });
 
-		$confirm({
-			title: "Unsaved changes",
-			text: "You have modified MPF properties, but have not saved them to the server.  If you continue to another page, you will lose the changes you have made.  Are you sure you want to leave this page?",
-			ok: "Yes",
-			cancel: "No"
-		}).then(function () {
-			confirmed = true;
-			$state.go(toState.name);
-		});
-	});
-}
-]);
+      };
+
+      // $scope.isRestartRequired = PropertiesSvc.isRestartRequired();
+
+      var confirmed = false;	// need to remember if we've asked the user the confirm, or else we'll get in loop
+      $scope.$on('$stateChangeStart', function (event, toState) {
+        if (confirmed || !$scope.hasUnsavedProperties()) {
+          return;
+        }
+
+        event.preventDefault();	// stop the router right here, need to do this because of $confirm is asynchronous
+
+        $confirm({
+          title: "Unsaved changes",
+          text: "You have modified MPF properties, but have not saved them to the server.  If you continue to another page, you will lose the changes you have made.  Are you sure you want to leave this page?",
+          ok: "Yes",
+          cancel: "No"
+        }).then(function () {
+          confirmed = true;
+          $state.go(toState.name);
+        });
+      });
+    }
+  ]);
 
 }());

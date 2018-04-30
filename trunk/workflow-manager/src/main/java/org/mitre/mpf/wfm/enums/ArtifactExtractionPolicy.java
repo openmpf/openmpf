@@ -52,6 +52,7 @@ public enum ArtifactExtractionPolicy {
 	 *
 	 * @param name The named enum value to retrieve. Leading/trailing whitespace is ignored, and case is not important.
      * @param defaultValue default value parameter to be used if the provided name is not valid.
+     * @return enum value with the given name or the default value if a policy of the specified name is not found.
 	 */
 	public static ArtifactExtractionPolicy parse(String name, ArtifactExtractionPolicy defaultValue) {
 		name = StringUtils.trimToNull(name);
@@ -70,6 +71,7 @@ public enum ArtifactExtractionPolicy {
      * ArtifactExtractionPolicy.DEFAULT is used.
      *
      * @param name The named enum value to retrieve. Leading/trailing whitespace is ignored, and case is not important.
+     * @return enum value with the given name or the default value if a policy of the specified name is not found.
      */
     public static ArtifactExtractionPolicy parse(String name) {
         return ArtifactExtractionPolicy.parse(name,DEFAULT);

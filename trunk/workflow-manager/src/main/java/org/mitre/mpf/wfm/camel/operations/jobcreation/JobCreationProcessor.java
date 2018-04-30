@@ -78,7 +78,6 @@ public class JobCreationProcessor extends WfmProcessor {
 	private static final String INVALID_PIPELINE_MESSAGE = "INVALID_PIPELINE_MESSAGE";
 
     @Autowired
-    @Qualifier(PropertiesUtil.REF)
     private PropertiesUtil propertiesUtil;
 
     @Autowired
@@ -170,10 +169,9 @@ public class JobCreationProcessor extends WfmProcessor {
 			}
 
             // Capture the current state of the detection system properties at the time when this job is created. Since the
-            // detection system properties may be changed by an administrator, we must insure that the job uses a consistent set of detection system
+            // detection system properties may be changed by an administrator, we must ensure that the job uses a consistent set of detection system
             // properties through all stages of the jobs pipeline by storing these detection system property values in REDIS.
-            TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
-			log.info("JobCreationProcessor: created transientDetectionSystemProperties=" + transientDetectionSystemProperties);
+            TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
             TransientPipeline transientPipeline = buildPipeline(jobRequest.getPipeline());
 

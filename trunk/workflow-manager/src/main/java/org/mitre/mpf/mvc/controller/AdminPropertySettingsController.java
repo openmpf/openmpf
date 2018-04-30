@@ -26,14 +26,11 @@
 
 package org.mitre.mpf.mvc.controller;
 
- import static java.util.stream.Collectors.toList;
-
-import java.io.IOException;
+ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
-import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.PipelineService;
@@ -93,17 +90,13 @@ public class AdminPropertySettingsController
 
         if ( propertySet.equalsIgnoreCase("immutable") ) {
 
-            // Get an updated list of property models. Each element contains current value. Return only the immutable system properties by
-            // filtering out the mutable detection properties from the list.
-            ImmutableConfiguration detectionSystemProperties = propertiesUtil.getDetectionConfiguration();
-            return propertiesUtil.getCustomProperties().stream().filter(pm -> !detectionSystemProperties.containsKey(pm.getKey())).collect(toList());
+            // Get an updated list of property models containing only the immutable properties. Each element contains current value.
+            return propertiesUtil.getImmutableCustomProperties();
 
         } else if ( propertySet.equalsIgnoreCase("mutable") ) {
 
-            // Get an updated list of property models. Each element contains current value. Return only the mutable system properties by
-            // filtering out the immutable detection properties from the list.
-            ImmutableConfiguration detectionSystemProperties = propertiesUtil.getDetectionConfiguration();
-            return propertiesUtil.getCustomProperties().stream().filter(pm -> detectionSystemProperties.containsKey(pm.getKey())).collect(toList());
+            // Get an updated list of property models containing only the mutable properties. Each element contains current value.
+            return propertiesUtil.getMutableCustomProperties();
 
         } else {
             // by default, return all of the system properties - updated to contain current value.

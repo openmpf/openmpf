@@ -33,7 +33,6 @@ import junit.framework.TestCase;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
-import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
@@ -45,7 +44,6 @@ import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -71,7 +69,6 @@ public class TestRedisImpl extends TestCase {
     private IoUtils ioUtils;
 
     @Autowired
-    @Qualifier(PropertiesUtil.REF)
     private PropertiesUtil propertiesUtil;
 
     @Test
@@ -79,7 +76,7 @@ public class TestRedisImpl extends TestCase {
         final long jobId = 112235;
         Exchange exchange = new DefaultExchange(camelContext);
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
         TransientJob job = TestUtil.setupJob(jobId, transientDetectionSystemProperties, redis, ioUtils);
         exchange.getIn().setBody(jsonUtils.serialize(job));
         redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_WARNINGS);
@@ -91,7 +88,7 @@ public class TestRedisImpl extends TestCase {
         final long jobId = 112236;
         Exchange exchange = new DefaultExchange(camelContext);
 
-        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
         TransientJob job = TestUtil.setupJob(jobId, transientDetectionSystemProperties, redis, ioUtils);
 
         HashMap<String, Map> overriddenAlgorithmProperties = new HashMap<>();
@@ -116,7 +113,7 @@ public class TestRedisImpl extends TestCase {
         final long jobId = 112236;
         Exchange exchange = new DefaultExchange(camelContext);
 
-        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
         TransientJob job = TestUtil.setupJob(jobId, transientDetectionSystemProperties, redis, ioUtils);
 
         redis.persistJob(job);

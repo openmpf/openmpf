@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,14 +116,19 @@ public class TransientDetectionSystemProperties {
         return Double.valueOf((String)detectionSystemPropertiesSnapshot.get("detection.track.overlap.threshold"));
     }
 
+    public String lookup(String propertyName) {
+        if ( detectionSystemPropertiesSnapshot.containsKey(propertyName ) ) {
+            return (String) detectionSystemPropertiesSnapshot.get(propertyName);
+        } else {
+            return null;
+        }
+    }
+
     /**
      * Constructor set the detection properties in this wrapper using PropertiesUtil getDetectionConfiguration method.
-     * @propertiesUtil provides access to current system detection property values via the PropertiesUtil getDetectionConfiguration method.
+     * @param detectionSystemPropertiesConfig immutable object containing current value of the detection system properties
      */
-    public TransientDetectionSystemProperties(PropertiesUtil propertiesUtil) {
-
-        ImmutableConfiguration detectionSystemPropertiesConfig = propertiesUtil.getDetectionConfiguration();
-
+    public TransientDetectionSystemProperties(ImmutableConfiguration detectionSystemPropertiesConfig) {
         Map<String,Object> detMap = new HashMap<String,Object>();
         // Put each property from the detectionSystemPropertiesConfig into the HashMap. Note that all property
         // values were going into the HashMap as a String, because that is how they are represented in the ImmutableConfiguration object.
@@ -138,6 +142,6 @@ public class TransientDetectionSystemProperties {
     }
 
     public String toString() {
-        return "TransientDetectionSystemProperties: entries with size: " + detectionSystemPropertiesSnapshot.entrySet().stream().peek(entry -> log.info("entry="+entry)).count();
+        return "TransientDetectionSystemProperties: contains snapshot " + detectionSystemPropertiesSnapshot;
     }
 }

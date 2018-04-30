@@ -188,7 +188,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 	 * @param mergeTracksProperty
 	 * @param minGapBetweenTracksProperty
 	 * @param minTrackOverlapProperty
-	 * @return
+	 * @return track merging plan based upon the specified conditions
 	 */
 	private TrackMergingPlan createTrackMergingPlan(TransientDetectionSystemProperties transientDetectionSystemProperties,
 									String samplingIntervalProperty, String minTrackLengthProperty, String mergeTracksProperty, String minGapBetweenTracksProperty, String minTrackOverlapProperty) {

@@ -32,7 +32,6 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultExchange;
-import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
 import org.junit.Test;
@@ -73,7 +72,6 @@ public class TestMediaInspectionSplitter {
     private JsonUtils jsonUtils;
 
     @Autowired
-    @Qualifier(PropertiesUtil.REF)
     private PropertiesUtil propertiesUtil;
 
     @Autowired
@@ -101,7 +99,7 @@ public class TestMediaInspectionSplitter {
         final boolean testOutputEnabled = true;
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
         TransientJob testJob = new TransientJob(jobId, testExternalId, transientDetectionSystemProperties, testPipe, testStage, testPriority, testOutputEnabled, false);
         final long testMediaId = 123456;

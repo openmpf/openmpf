@@ -26,8 +26,8 @@
 
 <div class="page-header text-center">
     <h3>Edit OpenMPF Properties</h3>
-    <page-info ng-show="isAdmin">This view allows an admin user to modify MPF properties. MPF properties consist of two types. The General System Properties are configured at startup, and would require a restart of OpenMPF to affect a change to those properties. The Default Job Properties are configured at startup, but may be changed by an administrator. If the change is applied the updated value will be used going forward for all current and future jobs. There are buttons to reset and save the General System Properties in the bottom table, and buttons to reset, apply and save the Default Job Properties in the top table. It is recommended that General System Properties only be changed and saved when there are no jobs being processed. An administrator will need to restart the web application for modified General System Properties to take effect. Restart is not required to apply Default Job Properties.</page-info>
-    <page-info ng-show="!isAdmin">This view shows the values of MPF properties.</page-info>
+    <page-info ng-show="isAdmin">This view allows an admin user to modify OpenMPF properties. Updating the General System Properties requires an administrator to restart the server for the changes to take effect. Updating the Default Detection Properties does not. The new Default Detection Properties values will be used for all new jobs, however new Actions / Pipelines may need to be created if property override is of concern. Currently running jobs will not be affected. Use the buttons at the bottom of the page to save and reset all properties.</page-info>
+    <page-info ng-show="!isAdmin">This view shows the values of OpenMPF properties.</page-info>
     <div class="text-left">
         <p>In the table below, the properties can take on several states:
         <ul>
@@ -96,6 +96,10 @@
 
                 </tbody>
             </table>
+
+          <!-- add some spacing between the tables -->
+          <br/>
+          <br/>
 
           <!-- immutable system properties are loaded once using the GET /properties endpoint when imutableProperties is referenced in the statement below -->
           <h4>General System Properties</h4>

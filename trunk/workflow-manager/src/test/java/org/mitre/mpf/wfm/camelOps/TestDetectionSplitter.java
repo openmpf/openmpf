@@ -76,7 +76,6 @@ public class TestDetectionSplitter {
     private IoUtils ioUtils;
 
     @Autowired
-    @Qualifier(PropertiesUtil.REF)
     private PropertiesUtil propertiesUtil;
 
     @Qualifier(DetectionSplitter.REF)
@@ -103,7 +102,7 @@ public class TestDetectionSplitter {
         final boolean testOutputEnabled = true;
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
         TransientJob testJob = new TransientJob(testId, testExternalId, transientDetectionSystemProperties, testPipe, testStage, testPriority, testOutputEnabled, false);
         TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile("/samples/new_face_video.avi").toString());
@@ -364,7 +363,7 @@ public class TestDetectionSplitter {
         final boolean testOutputEnabled = true;
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
         TransientJob testJob = new TransientJob(testJobId, testExternalId, transientDetectionSystemProperties, testPipe, testStage, testPriority, testOutputEnabled, false);
         TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile(mediaUri).toString());
@@ -409,7 +408,7 @@ public class TestDetectionSplitter {
         dummyPipeline.getStages().add(dummyStageDet);
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = new TransientDetectionSystemProperties(propertiesUtil);
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
         TransientJob testJob = new TransientJob(nextId(), null, transientDetectionSystemProperties, dummyPipeline, 0, 0, false, false);
 

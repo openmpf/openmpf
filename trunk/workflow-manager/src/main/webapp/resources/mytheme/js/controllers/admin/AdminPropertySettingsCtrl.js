@@ -49,10 +49,12 @@
       });
 
       propertiesResource.prototype.valueChanged = function () {
+        // TODO: investigate possible race condition, serverProperties may be used before it is set by queryMutable or queryImmutable functions
         return this.value !== serverProperties[this.key].value;
       };
 
       propertiesResource.prototype.changeRequiresRestart = function () {
+        // TODO: investigate possible race condition, serverProperties may be used before it is set by queryMutable or queryImmutable functions
         if (serverProperties[this.key].needsRestart) {
           return true;
         } else {
@@ -61,6 +63,7 @@
       };
 
       propertiesResource.prototype.resetProperty = function () {
+        // TODO: investigate possible race condition, serverProperties may be used before it is set by queryMutable or queryImmutable functions
         this.value = serverProperties[this.key].value;
       };
 
@@ -85,6 +88,7 @@
           }
         },
 
+        // TODO: this function might not be required. If not, remove it.
         // Get the list of all system properties.
         queryAll: function () {
           serverProperties = {};
@@ -106,6 +110,7 @@
 
         // Get the list of all mutable system properties.
         queryMutable: function () {
+          // TODO: only the mutable system properties should be cleared before getting a fresh set of mutable properties from the server
           serverProperties = {};
           // Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get all of the mutable system properties.
           // The mutable system properties can be changed, without requiring a restart of OpenMPF to apply the change.
@@ -125,6 +130,7 @@
 
         // Get the list of all immutable system properties.
         queryImmutable: function () {
+          // TODO: only the immutable system properties should be cleared before getting a fresh set of immutable properties from the server
           serverProperties = {};
           // Use the /properties REST endpoint (method: GET) defined in AdminPropertySettingsController to get all of the immutable system properties.
           // The immutable system properties require a restart of OpenMPF to apply the change.
@@ -220,6 +226,7 @@
 
       $scope.saveProperties = function () {
 
+        // TODO would be more efficient to update both sets of properties at once, rather than doing it in two REST calls.
         // satisfy both promises using $q.all before providing notification of success to the user.
         $q.all([PropertiesSvc.update($scope.mutableProperties).$promise,
           PropertiesSvc.update($scope.immutableProperties).$promise])
@@ -233,8 +240,6 @@
         });
 
       };
-
-      // $scope.isRestartRequired = PropertiesSvc.isRestartRequired();
 
       var confirmed = false;	// need to remember if we've asked the user the confirm, or else we'll get in loop
       $scope.$on('$stateChangeStart', function (event, toState) {

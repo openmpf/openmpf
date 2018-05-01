@@ -26,39 +26,17 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection;
 
-import static java.util.stream.Collectors.toMap;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
 import org.apache.camel.Message;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
-import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.enums.MediaType;
-import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
-import org.mitre.mpf.wfm.segmenting.AudioMediaSegmenter;
-import org.mitre.mpf.wfm.segmenting.DefaultMediaSegmenter;
-import org.mitre.mpf.wfm.segmenting.ImageMediaSegmenter;
-import org.mitre.mpf.wfm.segmenting.MediaSegmenter;
-import org.mitre.mpf.wfm.segmenting.SegmentingPlan;
-import org.mitre.mpf.wfm.segmenting.VideoMediaSegmenter;
+import org.mitre.mpf.wfm.segmenting.*;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.slf4j.Logger;
@@ -66,6 +44,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+
+import java.util.*;
+
+import static java.util.stream.Collectors.toMap;
 
 // DetectionSplitter will take in Job and Stage(Action), breaking them into managable work units for the Components
 
@@ -433,19 +415,18 @@ public class DetectionSplitter implements StageSplitter {
 
         // Collect the algorithm properties into a map, but for algorithm definitions that may have been updated from detection system properties
         // changed using the web UI, get the values of those properties from the detection system properties snapshot that was generated when the job was created.
-        // Note filter has been added to allow for usage of captured detection system properties when the algorithm PropertyDefinition propertiesKey is null.
-        // This processing is most applicable to jobs where the web UI may have been used to update properties between two stages of a pipeline.
+        // NOTE: A filter allows for usage of captured detection system properties when the algorithm PropertyDefinition propertiesKey is null.
         Map<String, String> algPropertiesMap = algorithm.getProvidesCollection().getAlgorithmProperties().stream()
-                                                 .filter( pd -> pd.getPropertiesKey() == null )
-                                                .collect(toMap(PropertyDefinition::getName, PropertyDefinition::getDefaultValue));
+                .filter( pd -> pd.getPropertiesKey() == null )
+                .collect(toMap(PropertyDefinition::getName, PropertyDefinition::getDefaultValue));
 
         // Next statement may replace or add some properties from detection system properties whose values were captured when this job was created.
-        // Only want to pull the value from this POJO if the PropertyDefinition has a proprietiesKey set.
-        // Info: the propertiesKey set to null denotes that the value should be pulled from a
-        // system property - in this case, using the cached system property from the POJO.
+        // Only want to pull the value from the snapshot if the PropertyDefinition has a proprietiesKey set.
+        // This processing is most applicable to jobs where the web UI may have been used to update properties between two stages of a pipeline.
         algorithm.getProvidesCollection().getAlgorithmProperties().stream()
-                                                 .filter( pd -> pd.getPropertiesKey() != null )
-                                                .forEach( pd -> algPropertiesMap.put(pd.getName(), transientDetectionSystemProperties.lookup(pd.getPropertiesKey())));
+                .filter( pd -> pd.getPropertiesKey() != null )
+                .forEach( pd -> algPropertiesMap.put(pd.getName(), transientDetectionSystemProperties.lookup(pd.getPropertiesKey())));
+
         return algPropertiesMap;
 
     }

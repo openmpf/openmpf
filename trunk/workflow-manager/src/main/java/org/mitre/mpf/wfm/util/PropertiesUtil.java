@@ -27,7 +27,6 @@
 package org.mitre.mpf.wfm.util;
 
 import org.apache.commons.configuration2.ImmutableConfiguration;
-import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.io.IOUtils;
 import org.javasimon.aop.Monitored;
@@ -153,21 +152,6 @@ public class PropertiesUtil {
 		mpfPropertiesConfig = mpfPropertiesConfigBuilder.setAndSaveCustomProperties(propertyModels);
 	}
 
-	// Returns an ImmutableConfiguration object that only contains the detection system properties.
-	public ImmutableConfiguration getDetectionConfiguration() {
-
-        // Extract just the detection system properties as a PropertiesConfiguration for return to the caller. Note that this processing
-        // will preserve the "detection." prefix, whereas immutableSet doesn't.
-        PropertiesConfiguration detectionSubsetConfig = new PropertiesConfiguration();
-        mpfPropertiesConfig.getKeys().forEachRemaining( key -> {
-            if ( key.startsWith(MpfPropertiesConfigurationBuilder.DETECTION_KEY_PREFIX) ) {
-                detectionSubsetConfig.addProperty(key, mpfPropertiesConfig.getString(key));
-            }
-        } );
-
-        return detectionSubsetConfig;
-	}
-
     /**
      * Returns a updated list of property models. Each element contains current value,
      * as well as a flag indicating whether or not a WFM restart is required to apply the change.
@@ -185,8 +169,7 @@ public class PropertiesUtil {
 	public List<PropertyModel> getImmutableCustomProperties() {
         // Get an updated list of property models. Each element contains current value. Return only the immutable system properties by
         // filtering out the mutable detection properties from the list.
-        ImmutableConfiguration detectionSystemProperties = getDetectionConfiguration();
-        return getCustomProperties().stream().filter(pm -> !detectionSystemProperties.containsKey(pm.getKey())).collect(toList());
+        return getCustomProperties().stream().filter(pm -> !isDetectionProperty(pm.getKey())).collect(toList());
     }
 
     /**
@@ -197,12 +180,21 @@ public class PropertiesUtil {
     public List<PropertyModel> getMutableCustomProperties() {
         // Get an updated list of property models. Each element contains current value. Return only the mutable system properties by
         // filtering out the immutable detection properties from the list.
-        ImmutableConfiguration detectionSystemProperties = getDetectionConfiguration();
-        return getCustomProperties().stream().filter(pm -> detectionSystemProperties.containsKey(pm.getKey())).collect(toList());
+        return getCustomProperties().stream().filter(pm -> isDetectionProperty(pm.getKey())).collect(toList());
+    }
+
+    private static boolean isDetectionProperty(String key) {
+        return key.startsWith(MpfPropertiesConfigurationBuilder.DETECTION_KEY_PREFIX);
     }
 
     public TransientDetectionSystemProperties createDetectionSystemPropertiesSnapshot() {
-        return new TransientDetectionSystemProperties(getDetectionConfiguration());
+        Map detMap = new HashMap<String, String>();
+        mpfPropertiesConfig.getKeys().forEachRemaining( key -> {
+            if (isDetectionProperty(key)) {
+                detMap.put(key, mpfPropertiesConfig.getString(key)); // resolve final value
+            }
+        } );
+        return new TransientDetectionSystemProperties(Collections.unmodifiableMap(detMap));
     }
 
     //

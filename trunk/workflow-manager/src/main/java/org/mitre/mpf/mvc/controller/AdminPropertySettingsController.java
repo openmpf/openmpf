@@ -26,12 +26,7 @@
 
 package org.mitre.mpf.mvc.controller;
 
- import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import javax.servlet.http.HttpServletRequest;
-import org.mitre.mpf.mvc.model.PropertyModel;
+ import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -41,13 +36,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
-// NOTE: Don't use @Scope("request") because this class should be treated as a singleton.
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.util.List;
+import java.util.Set;
+
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
+
+ // NOTE: Don't use @Scope("request") because this class should be treated as a singleton.
 @Controller
 @Scope("singleton")
 @Profile("website")
@@ -69,11 +68,8 @@ public class AdminPropertySettingsController
      * @return Returns true if any immutable system properties have changed and a restart is required, false otherwise
      */
     private boolean checkForRestartRequired() {
-
         // Get an updated list of property models. Each element contains current value. Check the flags to see if WFM restart is required to apply any change.
-        Optional<PropertyModel> propertyModel = propertiesUtil.getCustomProperties().stream().filter(pm -> pm.getNeedsRestart()).findFirst();
-        return propertyModel.isPresent();
-
+        return propertiesUtil.getCustomProperties().stream().anyMatch(PropertyModel::getNeedsRestart);
     }
 
     /**
@@ -142,17 +138,14 @@ public class AdminPropertySettingsController
 
         // Get an updated list of property models. Adjust the returned list of PropertyModels so they will indicate
         // whether or not a WFM restart is required to apply a change.
-        List<PropertyModel> updatedPropertyModels = propertiesUtil.getCustomProperties().stream().filter(updatedPM -> {
-            // filter the returned list to only include the set of properties that were just saved.
-            boolean isFound = false;
-            for ( int i=0; i<propertyModels.size() && !isFound; i++ ) {
-                isFound = updatedPM.getKey().equals(propertyModels.get(i).getKey());
-            }
-            return isFound;
-        }).collect(Collectors.toList());
+        Set<String> savedProperties = propertyModels.stream()
+                .map(PropertyModel::getKey)
+                .collect(toSet());
 
         // Note that the returned list may contain PropertyModels that may have a updated value of needsRestart.
-        return updatedPropertyModels;
+        return propertiesUtil.getCustomProperties().stream()
+                .filter(pm -> savedProperties.contains(pm.getKey()))
+                .collect(toList());
 	}
 
 	//gets the current default job priority value

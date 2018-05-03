@@ -65,19 +65,7 @@
             return {
 
                 serverNeedsRestart: function () {
-                    var immutablePropertiesChangedCount = 0;
-                    if (serverProperties) {
-                        for (var key in serverProperties) {
-                            if (serverProperties.hasOwnProperty(key)) { // filter out native JS properties
-                                if (serverProperties[key].needsRestart) {
-                                    ++immutablePropertiesChangedCount;
-                                }
-                            }
-                        }
-                        return immutablePropertiesChangedCount > 0;
-                    } else {
-                        return false;
-                    }
+                    return _.some(serverProperties, 'needsRestart'); // filters out native JS properties
                 },
 
                 // Get the list of all mutable system properties.

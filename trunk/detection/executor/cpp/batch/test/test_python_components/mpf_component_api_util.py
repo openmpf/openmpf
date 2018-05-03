@@ -227,31 +227,6 @@ def create_if_none(val, func):
         return val
 
 
-# def configure_logging_dict():
-#     conf_dict = {
-#         'version': 1,
-#         'formatters': {
-#             'simple': {
-#                 'format': '%(asctime)s %(levelname)-5s [%(filename)s:%(lineno)d] - %(message)s'
-#             }
-#         },
-#         'handlers': {
-#             'console': {
-#                 'class': 'logging.StreamHandler',
-#                 'level': 'NOTSET',
-#                 'formatter': 'simple',
-#                 'stream': 'ext://sys.stdout'
-#             }
-#         },
-#         'loggers': {
-#             'test_logger': {
-#                 'handlers': ('console',),
-#                 'propagate': False
-#             }
-#         },
-#     }
-#     logging.config.dictConfig(conf_dict)
-
 def get_full_log_path(filename):
     log_dir = os.path.expandvars('$MPF_LOG_PATH/$THIS_MPF_NODE/log')
     if not os.path.exists(log_dir):

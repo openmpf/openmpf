@@ -131,7 +131,6 @@ def run_component_test():
 
     logger.info('About to call get_detections_from_image')
     results = list(tc.get_detections_from_image(job))
-    # results = list(tc.get_detections_from_video(job))
     logger.info('get_detections_from_image found: %s detections', len(results))
     logger.info('get_detections_from_image results: %s', results)
 

@@ -31,30 +31,24 @@
 using namespace MPF::COMPONENT;
 
 
-log4cxx::LoggerPtr getLogger() {
+log4cxx::LoggerPtr get_logger() {
     log4cxx::LoggerPtr logger = log4cxx::Logger::getRootLogger();
     logger->setLevel(log4cxx::Level::getOff());
     return logger;
 }
 
 
-PythonComponentHandle get_component(bool generic_only=false) {
-    static const log4cxx::LoggerPtr logger = getLogger();
-    if (generic_only) {
-        return PythonComponentHandle(logger, "test_python_components/generic_only_component.py");
-    }
-    else {
-        return PythonComponentHandle(logger, "test_python_components/test_component.py");
-    }
+PythonComponentHandle get_test_component() {
+    return PythonComponentHandle(get_logger(), "test_python_components/test_component.py");
 }
 
 PythonComponentHandle get_generic_only_component() {
-    return get_component(true);
+    return PythonComponentHandle(get_logger(), "test_python_components/generic_only_component.py");
 }
 
 
 TEST(PythonComponentHandleTest, TestSupportsCheck) {
-    PythonComponentHandle py_component = get_component();
+    PythonComponentHandle py_component = get_test_component();
     ASSERT_TRUE(py_component.Supports(IMAGE));
     ASSERT_TRUE(py_component.Supports(VIDEO));
     ASSERT_TRUE(py_component.Supports(AUDIO));
@@ -69,7 +63,7 @@ TEST(PythonComponentHandleTest, TestSupportsCheck) {
 
 
 TEST(PythonComponentHandleTest, TestUnsupportedJobType) {
-    PythonComponentHandle py_component = get_component();
+    PythonComponentHandle py_component = get_test_component();
 
     ASSERT_FALSE(py_component.Supports(UNKNOWN));
     MPFGenericJob job("Test", "fake/path", {}, {});
@@ -92,7 +86,7 @@ void assert_has_echo_properties(const Properties &properties) {
 
 
 TEST(PythonComponentHandleTest, TestImageJob) {
-    PythonComponentHandle py_component = get_component();
+    PythonComponentHandle py_component = get_test_component();
     ASSERT_EQ(py_component.GetDetectionType(), "TestDetectionType");
 
     MPFImageJob job("Test Job Name", "path/to/media",
@@ -116,7 +110,7 @@ TEST(PythonComponentHandleTest, TestImageJob) {
 
 
 TEST(PythonComponentHandleTest, TestVideoJob) {
-    PythonComponentHandle py_component = get_component();
+    PythonComponentHandle py_component = get_test_component();
     MPFVideoJob job("Test Job", "path/to/media", 0, 10,
                     { { "echo_job", job_echo_msg } }, { { "echo_media", media_echo_msg } });
 
@@ -139,7 +133,7 @@ TEST(PythonComponentHandleTest, TestVideoJob) {
 
 
 TEST(PythonComponentHandleTest, TestAudioJob) {
-    PythonComponentHandle py_component = get_component();
+    PythonComponentHandle py_component = get_test_component();
     MPFAudioJob job("Test Job", "path/to/media", 20, 100,
                     { { "echo_job", job_echo_msg } }, { { "echo_media", media_echo_msg } });
 
@@ -189,7 +183,7 @@ TEST(PythonComponentHandleTest, TestGenericJob) {
 
 
 TEST(PythonComponentHandleTest, TestAudioFeedForward) {
-    PythonComponentHandle py_component = get_component();
+    PythonComponentHandle py_component = get_test_component();
 
     MPFAudioTrack ff_track(1, 2, .75, { {"prop1", "val1"}, {"prop2", "val2"} });
     MPFAudioJob job("Test Job", "path/to/media", 0, 100, ff_track, { }, {});
@@ -220,7 +214,7 @@ void assert_image_locations_equal(const MPFImageLocation &loc1, const MPFImageLo
 
 
 TEST(PythonComponentHandleTest, TestImageFeedForward) {
-    PythonComponentHandle py_component = get_component();
+    PythonComponentHandle py_component = get_test_component();
 
     MPFImageLocation ff_location(1, 2, 3, 4, .5, { {"prop1", "val1"}, {"prop2", "val2"} });
     MPFImageJob job("Test Job", "path/to/media", ff_location, {}, {});
@@ -235,7 +229,7 @@ TEST(PythonComponentHandleTest, TestImageFeedForward) {
 
 
 TEST(PythonComponentHandleTest, TestVideoFeedForward) {
-    PythonComponentHandle py_component = get_component();
+    PythonComponentHandle py_component = get_test_component();
 
     MPFVideoTrack ff_track(0, 10, .2, { {"prop1", "val1"}, {"prop2", "val2"} });
     ff_track.frame_locations.emplace(0, MPFImageLocation(1, 2, 3, 4, .5));
@@ -280,7 +274,7 @@ TEST(PythonComponentHandleTest, TestGenericFeedForward) {
 
 
 TEST(PythonComponentHandleTest, TestDetectionExceptionTranslation) {
-    PythonComponentHandle py_component = get_component();
+    PythonComponentHandle py_component = get_test_component();
     MPFDetectionError test_error = MPFDetectionError::MPF_INVALID_PROPERTY;
 
     MPFImageJob job("Test", "path/to/data", { {"raise_exception", std::to_string(test_error)} }, {});

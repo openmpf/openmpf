@@ -147,33 +147,11 @@ def configure_logging(log_file_name, debug=False):
     else:
         logger.setLevel(logging.INFO)
         handler = logging.FileHandler(util.get_full_log_path(log_file_name))
+
+    # Example log line: 2018-05-03 14:41:11,703 INFO  [test_component.py:44] - Logged message
     handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-5s [%(filename)s:%(lineno)d] - %(message)s'))
     logger.addHandler(handler)
     return logger
-
-
-def result_struct_test():
-    # p = Properties(hello=5)
-    # print p
-    # il = ImageLocation(1, 1, 2, 3, 4, Properties(hello='world'))
-    il = ImageLocation(1, 1, 2, 3, 4, {'hello': 'world'})
-    il.x_left_upper = 40
-    print il
-    print il.detection_properties
-    print str(il)
-
-    print '--'
-    # vt = VideoTrack(0, 10, -1, {1: il, 2: 'hello'})
-    vt = VideoTrack(0, 10, -1, {1: il})
-    vt.frame_locations[2] = ImageLocation(10, 10, 2, 3, 4, {'hello': 'world'})
-    vt.detection_properties['class'] = 'person'
-    print vt
-
-
-
-if __name__ == '__main__':
-    print list(DetectionError)
-    result_struct_test()
 
 
 

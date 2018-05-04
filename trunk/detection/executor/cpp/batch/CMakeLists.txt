@@ -27,8 +27,6 @@ cmake_minimum_required(VERSION 3.6)
 
 project(amq_detection_common)
 
-aux_source_directory(. SRC)
-
 ## Find Qt
 include(${QT_USE_FILE})
 add_definitions(${QT_DEFINITIONS})
@@ -58,6 +56,10 @@ install(FILES ${MATCHING_FILES} DESTINATION lib)
 
 include_directories(${MPF_PROTO_PATH})
 
+set(PYBIND11_CPP_STANDARD -std=c++11)
+set(PYBIND11_PYTHON_VERSION 2.7)
+add_subdirectory(pybind11)
+
 
 if(DEFINED ENV{MPF_SDK_INSTALL_PATH})
 	list(APPEND CMAKE_PREFIX_PATH $ENV{MPF_SDK_INSTALL_PATH}/lib/cmake)
@@ -68,11 +70,25 @@ find_package(mpfDetectionComponentApi REQUIRED)
 
 include_directories(${MSG_UTILS_DIR})
 
-add_executable(amq_detection_component ${SRC} ${MSG_UTILS_FILE})
-target_link_libraries(amq_detection_component mpfComponentInterface ${MPF_PROTOBUF_LIB} ${PROTOBUF_LIBRARY}
-	${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES})
+set(batch_executor_lib_files
+	ComponentLoadError.h
+	CppComponentHandle.cpp CppComponentHandle.h
+	MPFDetectionBuffer.cpp MPFDetectionBuffer.h
+	MPFMessenger.cpp MPFMessenger.h
+	PythonComponentHandle.cpp PythonComponentHandle.h)
 
-include_directories($<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
+add_library(batch_executor_lib OBJECT ${batch_executor_lib_files} ${MSG_UTILS_FILE})
+target_include_directories(batch_executor_lib PUBLIC
+	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>
+	$<TARGET_PROPERTY:pybind11::embed,INTERFACE_INCLUDE_DIRECTORIES>
+	)
+
+
+add_executable(amq_detection_component main.cpp $<TARGET_OBJECTS:batch_executor_lib>)
+
+target_link_libraries(amq_detection_component mpfComponentInterface ${MPF_PROTOBUF_LIB} ${PROTOBUF_LIBRARY}
+	${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES} pybind11::embed)
+
 
 install(TARGETS amq_detection_component
                 RUNTIME DESTINATION bin
@@ -80,3 +96,5 @@ install(TARGETS amq_detection_component
                 ARCHIVE DESTINATION lib)
 
 install(FILES Log4cxxConfig.xml DESTINATION config)
+
+add_subdirectory(test)

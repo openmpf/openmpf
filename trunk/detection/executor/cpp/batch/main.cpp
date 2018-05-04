@@ -45,6 +45,7 @@
 #include "MPFDetectionBuffer.h"
 #include "CppComponentHandle.h"
 #include "ComponentLoadError.h"
+#include "PythonComponentHandle.h"
 
 #include <MPFDetectionComponent.h>
 
@@ -64,8 +65,17 @@ string GetFileName(const string& s) {
     return s;
 }
 
+bool is_python(const std::string &lib_path) {
+    static const std::string extension = ".py";
+    if (lib_path.size() < extension.size()) {
+        return false;
+    }
+    size_t start = lib_path.size() - extension.size();
+    return lib_path.find(".py", start) != std::string::npos;
+}
+
 template <typename ComponentHandle>
-int run_job(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
+int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
              const std::string &app_dir, ComponentHandle &detection_engine);
 
 /**
@@ -96,14 +106,22 @@ int main(int argc, char* argv[]) {
     }
 
     string broker_uri = argv[1];
+    string lib_path = argv[2];
     string request_queue = argv[3];
 
     LOG4CXX_DEBUG(logger, "library name = " << argv[2]);
     LOG4CXX_DEBUG(logger, "request queue = " << argv[3]);
 
+
     try {
-        CppComponentHandle component_handle(argv[2]);
-        return run_job(logger, broker_uri, request_queue, app_dir, component_handle);
+        if (is_python(lib_path)) {
+            PythonComponentHandle component_handle(logger, lib_path);
+            return run_jobs(logger, broker_uri, request_queue, app_dir, component_handle);
+        }
+        else {
+            CppComponentHandle component_handle(lib_path);
+            return run_jobs(logger, broker_uri, request_queue, app_dir, component_handle);
+        }
     }
     catch (const ComponentLoadError &ex) {
         LOG4CXX_ERROR(logger, "An error occurred while trying to load component: " << ex.what());
@@ -121,14 +139,14 @@ int main(int argc, char* argv[]) {
 
 
 template <typename ComponentHandle>
-int run_job(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
+int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
             const std::string &app_dir, ComponentHandle &detection_engine) {
     int pollingInterval = 1;
 
     // Instantiate AMQ interface
     MPFMessenger messenger(logger);
 
-    // Remain in loop handling track request messages
+    // Remain in loop handling job request messages
     // until 'q\n' is received on stdin
     try {
 
@@ -404,7 +422,26 @@ int run_job(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std
                         }
 
                     } else {
-                        LOG4CXX_WARN(logger, "[" << job_name.str() << "] The detection component does not support detection data_type of " << data_type);
+                        std::string data_type_str;
+                        switch (data_type) {
+                            case UNKNOWN:
+                                data_type_str = "UNKNOWN";
+                                break;
+                            case VIDEO:
+                                data_type_str = "VIDEO";
+                                break;
+                            case IMAGE:
+                                data_type_str = "IMAGE";
+                                break;
+                            case AUDIO:
+                                data_type_str = "AUDIO";
+                                break;
+                            default:
+                                data_type_str = "INVALID_TYPE";
+                        }
+                        LOG4CXX_WARN(logger, "[" << job_name.str()
+                                << "] The detection component does not support detection data type of "
+                                << data_type_str);
 
                         msg_metadata->time_elapsed = time.elapsed();
 

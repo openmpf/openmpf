@@ -99,7 +99,7 @@ public class TestDescriptorValidator {
     @Test
     public void canValidateComponentLanguage() {
         JsonComponentDescriptor descriptor = new JsonComponentDescriptor();
-        assertValidationErrors(descriptor, "sourceLanguage must be java or c++");
+        assertValidationErrors(descriptor, "sourceLanguage must be java, c++, or python");
 
         descriptor.sourceLanguage = ComponentLanguage.forValue("java");
         assertFieldValid(descriptor, "sourceLanguage");
@@ -111,6 +111,12 @@ public class TestDescriptorValidator {
         assertFieldValid(descriptor, "sourceLanguage");
 
         descriptor.sourceLanguage = ComponentLanguage.forValue("C++");
+        assertFieldValid(descriptor, "sourceLanguage");
+
+        descriptor.sourceLanguage = ComponentLanguage.forValue("Python");
+        assertFieldValid(descriptor, "sourceLanguage");
+
+        descriptor.sourceLanguage = ComponentLanguage.forValue("python");
         assertFieldValid(descriptor, "sourceLanguage");
     }
 

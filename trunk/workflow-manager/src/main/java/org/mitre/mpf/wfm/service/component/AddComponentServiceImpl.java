@@ -455,20 +455,27 @@ public class AddComponentServiceImpl implements AddComponentService {
         String queueName = String.format("MPF.%s_%s_REQUEST", algorithmDef.getActionType(), algorithmDef.getName());
         Service algorithmService;
 
-        if (descriptor.sourceLanguage == ComponentLanguage.JAVA) {
-            algorithmService = new Service(serviceName, "${MPF_HOME}/bin/start-java-component.sh");
-            algorithmService.addArg(descriptor.batchLibrary);
-            algorithmService.addArg(queueName);
-            algorithmService.addArg(serviceName);
-            algorithmService.setLauncher("generic");
-            algorithmService.setWorkingDirectory("${MPF_HOME}/jars");
-        }
-        else { // ComponentLanguage.CPP
-            algorithmService = new Service(serviceName, "${MPF_HOME}/bin/amq_detection_component");
-            algorithmService.addArg(descriptor.batchLibrary);
-            algorithmService.addArg(queueName);
-            algorithmService.setLauncher("simple");
-            algorithmService.setWorkingDirectory("${MPF_HOME}/plugins/" + descriptor.componentName);
+        switch (descriptor.sourceLanguage) {
+            case JAVA:
+                algorithmService = new Service(serviceName, "${MPF_HOME}/bin/start-java-component.sh");
+                algorithmService.addArg(descriptor.batchLibrary);
+                algorithmService.addArg(queueName);
+                algorithmService.addArg(serviceName);
+                algorithmService.setLauncher("generic");
+                algorithmService.setWorkingDirectory("${MPF_HOME}/jars");
+                break;
+
+            case CPP:
+            case PYTHON:
+                algorithmService = new Service(serviceName, "${MPF_HOME}/bin/amq_detection_component");
+                algorithmService.addArg(descriptor.batchLibrary);
+                algorithmService.addArg(queueName);
+                algorithmService.setLauncher("simple");
+                algorithmService.setWorkingDirectory("${MPF_HOME}/plugins/" + descriptor.componentName);
+                break;
+
+            default:
+                throw new IllegalStateException("Unknown component language: " + descriptor.sourceLanguage);
         }
 
         algorithmService.setDescription(algorithmDef.getDescription());

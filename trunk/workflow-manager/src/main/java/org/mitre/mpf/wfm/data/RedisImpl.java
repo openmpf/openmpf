@@ -26,11 +26,29 @@
 
 package org.mitre.mpf.wfm.data;
 
+import java.io.File;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.util.JsonUtils;
@@ -42,12 +60,6 @@ import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-import java.io.File;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
 
 
 @Component(RedisImpl.REF)
@@ -80,6 +92,7 @@ public class RedisImpl implements Redis {
     // The following constants are provided to avoid making typographical errors when formulating keys.
     // Note: BATCH_JOB represents a batch job, while STREAMING_JOB represents a streaming job.
     private static final String
+            DETECTION_SYSTEM_PROPERTIES_SNAPSHOT = "DETECTION_SYSTEM_PROPERTIES_SNAPSHOT",
             CANCELLED = "CANCELLED",
             DETAIL = "DETAIL",
             ERRORS = "ERRORS",
@@ -249,6 +262,7 @@ public class RedisImpl implements Redis {
             if ( transientJob == null ) {
                 return;
             }
+
             redisTemplate.boundSetOps(BATCH_JOB).remove(Long.toString(jobId));
             redisTemplate.delete(key(BATCH_JOB, jobId));
             for ( TransientMedia transientMedia : transientJob.getMedia() ) {
@@ -581,6 +595,7 @@ public class RedisImpl implements Redis {
 
             TransientJob transientJob = new TransientJob(jobId,
                     (String) (jobHash.get(EXTERNAL_ID)),
+                    jsonUtils.deserialize((byte[]) (jobHash.get(DETECTION_SYSTEM_PROPERTIES_SNAPSHOT)), TransientDetectionSystemProperties.class),
                     jsonUtils.deserialize((byte[]) (jobHash.get(PIPELINE)), TransientPipeline.class),
                     (Integer) (jobHash.get(TASK)),
                     (Integer) (jobHash.get(PRIORITY)),
@@ -618,7 +633,6 @@ public class RedisImpl implements Redis {
         }
 
     }
-
 
     /**
      * Get the transient representation of the streaming job as specified by the streaming jobs unique jobId.
@@ -771,6 +785,10 @@ public class RedisImpl implements Redis {
         // is used to store the simple properties of a job in a map.
         Map<String, Object> jobHash = new HashMap<>();
 
+        if ( transientJob.getDetectionSystemPropertiesSnapshot() == null ) {
+            throw new WfmProcessingException("Error: transientDetectionSystemProperties found to be null for jobId " + transientJob.getId() + ".");
+        }
+
         // The collection of Redis-assigned IDs for the media elements associated with this job.
         List<Long> mediaIds = new ArrayList<>();
 
@@ -788,6 +806,7 @@ public class RedisImpl implements Redis {
 
         // Copy the remaining properties from the java object to the job hash...
         // Note: need to convert from ByteArray (using JsonUtils.serialize) from REDIS to Java
+        jobHash.put(DETECTION_SYSTEM_PROPERTIES_SNAPSHOT, jsonUtils.serialize(transientJob.getDetectionSystemPropertiesSnapshot())); // Serialized to conserve space.
         jobHash.put(PIPELINE, jsonUtils.serialize(transientJob.getPipeline())); // Serialized to conserve space.
         jobHash.put(OVERRIDDEN_JOB_PROPERTIES, jsonUtils.serialize(transientJob.getOverriddenJobProperties()));
         jobHash.put(OVERRIDDEN_ALGORITHM_PROPERTIES, jsonUtils.serialize(transientJob.getOverriddenAlgorithmProperties()));

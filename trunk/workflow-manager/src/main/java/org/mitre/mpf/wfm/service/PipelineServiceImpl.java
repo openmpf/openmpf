@@ -62,7 +62,6 @@ public class PipelineServiceImpl implements PipelineService {
     private static final Logger log = LoggerFactory.getLogger(PipelineService.class);
 
     @Autowired
-    @Qualifier(PropertiesUtil.REF)
     private PropertiesUtil propertiesUtil;
 
     private XStream xStream;
@@ -77,6 +76,7 @@ public class PipelineServiceImpl implements PipelineService {
 
     @PostConstruct
     public void init() {
+        // Method is reading from the algorithms.xml file, to build up a collection of algorithm definitions.
         log.debug("Initializing PipelineManager");
         xStream = new XStream();
 
@@ -453,15 +453,25 @@ public class PipelineServiceImpl implements PipelineService {
     }
 
     private void addAlgorithm(AlgorithmDefinition algorithm) {
-        algorithm.getProvidesCollection().getAlgorithmProperties()
-                .stream()
-                .filter(pd -> pd.getPropertiesKey() != null)
-                .forEach(pd -> pd.setDefaultValue(propertiesUtil.lookup(pd.getPropertiesKey())));
+        setAlgorithmDefaultValues(algorithm);
 
         validateAlgorithm(algorithm);
         log.debug("{}: Adding algorithm", StringUtils.upperCase(algorithm.getName()));
         algorithms.put(StringUtils.upperCase(algorithm.getName()), algorithm);
     }
+
+
+    public void refreshAlgorithmDefaultValues() {
+        algorithms.values().forEach(this::setAlgorithmDefaultValues);
+    }
+
+    private void setAlgorithmDefaultValues(AlgorithmDefinition algorithm) {
+        algorithm.getProvidesCollection().getAlgorithmProperties()
+            .stream()
+            .filter(pd -> pd.getPropertiesKey() != null)
+            .forEach(pd -> pd.setDefaultValue(propertiesUtil.lookup(pd.getPropertiesKey())));
+    }
+
 
 
     @Override

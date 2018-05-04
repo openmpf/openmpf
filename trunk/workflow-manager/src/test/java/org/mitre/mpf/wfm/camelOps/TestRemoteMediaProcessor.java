@@ -26,6 +26,10 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
+import java.net.URI;
+import java.util.List;
+import java.util.UUID;
+import javax.annotation.PostConstruct;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
@@ -38,12 +42,13 @@ import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.WfmSplitterInterface;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
-import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,11 +56,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import javax.annotation.PostConstruct;
-import java.net.URI;
-import java.util.List;
-import java.util.UUID;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -86,7 +86,7 @@ public class TestRemoteMediaProcessor {
 	private JsonUtils jsonUtils;
 
 	@Autowired
-	private Redis redis;
+	private PropertiesUtil propertiesUtil;
 
 	private TransientJob transientJob;
 
@@ -102,7 +102,11 @@ public class TestRemoteMediaProcessor {
 	@PostConstruct
 	public void init() throws Exception {
 		setHttpProxies();
-		transientJob = new TransientJob(next(), null, null, 0, 0, false, false) {{
+
+		// Capture a snapshot of the detection system property settings when the job is created.
+		TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+
+		transientJob = new TransientJob(next(), null, transientDetectionSystemProperties, null, 0, 0, false, false) {{
 			getMedia().add(new TransientMedia(next(), ioUtils.findFile("/samples/meds1.jpg").toString()));
 			getMedia().add(new TransientMedia(next(), EXT_IMG));
 		}};

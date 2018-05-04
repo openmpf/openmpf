@@ -39,7 +39,6 @@ import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.segmenting.*;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,11 +53,9 @@ import static java.util.stream.Collectors.toMap;
 
 @Component(DetectionSplitter.REF)
 public class DetectionSplitter implements StageSplitter {
+
     private static final Logger log = LoggerFactory.getLogger(DetectionSplitter.class);
     public static final String REF = "detectionStageSplitter";
-
-    @Autowired
-    private PropertiesUtil propertiesUtil;
 
     @Autowired
     @Qualifier(RedisImpl.REF)
@@ -161,8 +158,7 @@ public class DetectionSplitter implements StageSplitter {
                 TransientAction transientAction = transientStage.getActions().get(actionIndex);
 
                 // modifiedMap initialized with algorithm specific properties
-                Map<String, String> modifiedMap = new HashMap<>(
-                    getAlgorithmProperties(transientAction.getAlgorithm()));
+                Map<String, String> modifiedMap = new HashMap<>(getAlgorithmProperties(transientAction.getAlgorithm(), transientJob.getDetectionSystemPropertiesSnapshot()));
 
                 // current modifiedMap properties overridden by action properties
                 modifiedMap.putAll(transientAction.getProperties());
@@ -244,10 +240,10 @@ public class DetectionSplitter implements StageSplitter {
 
                     String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
                             transientAction, transientJob, transientMedia,
-                            propertiesUtil.getSamplingInterval(), propertiesUtil.getFrameRateCap(), fps);
+						transientJob.getDetectionSystemPropertiesSnapshot().getSamplingInterval(), transientJob.getDetectionSystemPropertiesSnapshot().getFrameRateCap(), fps);
                     modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
 
-                    segmentingPlan = createSegmentingPlan(modifiedMap);
+                    segmentingPlan = createSegmentingPlan(transientJob.getDetectionSystemPropertiesSnapshot(), modifiedMap);
                 }
 
                 List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
@@ -264,6 +260,7 @@ public class DetectionSplitter implements StageSplitter {
                         segmentingPlan);
 
                 // get detection request messages from ActiveMQ
+
                 List<Message> detectionRequestMessages = createDetectionRequestMessages(transientMedia, detectionContext);
 
                 for (Message message : detectionRequestMessages) {
@@ -311,11 +308,17 @@ public class DetectionSplitter implements StageSplitter {
         }
     }
 
-    private SegmentingPlan createSegmentingPlan(Map<String, String> properties) {
-        int targetSegmentLength = propertiesUtil.getTargetSegmentLength();
-        int minSegmentLength = propertiesUtil.getMinSegmentLength();
-        int samplingInterval = propertiesUtil.getSamplingInterval(); // get FRAME_INTERVAL system property
-        int minGapBetweenSegments = propertiesUtil.getMinAllowableSegmentGap();
+	/**
+	 * Create the segmenting plan using the properties defined for the sub-job.
+	 * @param transientDetectionSystemProperties contains detection system properties whose values were in effect when the transient job was created (will be used as system property default values)
+	 * @param properties properties defined for the sub-job
+	 * @return segmenting plan for this sub-job
+	 */
+    private SegmentingPlan createSegmentingPlan(TransientDetectionSystemProperties transientDetectionSystemProperties, Map<String, String> properties) {
+        int targetSegmentLength = transientDetectionSystemProperties.getTargetSegmentLength();
+        int minSegmentLength = transientDetectionSystemProperties.getMinSegmentLength();
+        int samplingInterval = transientDetectionSystemProperties.getSamplingInterval(); // get FRAME_INTERVAL system property
+        int minGapBetweenSegments = transientDetectionSystemProperties.getMinAllowableSegmentGap();
 
         // TODO: Better to use direct map access rather than a loop, but that requires knowing the case of the keys in the map.
         // Enforce case-sensitivity throughout the WFM.
@@ -351,7 +354,7 @@ public class DetectionSplitter implements StageSplitter {
                     try {
                         samplingInterval = Integer.valueOf(property.getValue());
                         if (samplingInterval < 1) {
-                            samplingInterval = propertiesUtil.getSamplingInterval(); // get FRAME_INTERVAL system property
+                            samplingInterval = transientDetectionSystemProperties.getSamplingInterval(); // get FRAME_INTERVAL system property
                             log.warn("'{}' is not an acceptable {} value. Defaulting to '{}'.",
                                      MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
                                      property.getValue(),
@@ -404,13 +407,28 @@ public class DetectionSplitter implements StageSplitter {
     }
 
 
-    private Map<String, String> getAlgorithmProperties(String algorithmName) {
+    private Map<String, String> getAlgorithmProperties(String algorithmName, TransientDetectionSystemProperties transientDetectionSystemProperties) {
         AlgorithmDefinition algorithm = pipelineService.getAlgorithm(algorithmName);
         if (algorithm == null) {
             return Collections.emptyMap();
         }
-        return algorithm.getProvidesCollection().getAlgorithmProperties().stream()
+
+        // Collect the algorithm properties into a map, but for algorithm definitions that may have been updated from detection system properties
+        // changed using the web UI, get the values of those properties from the detection system properties snapshot that was generated when the job was created.
+        // NOTE: A filter allows for usage of captured detection system properties when the algorithm PropertyDefinition propertiesKey is null.
+        Map<String, String> algPropertiesMap = algorithm.getProvidesCollection().getAlgorithmProperties().stream()
+                .filter( pd -> pd.getPropertiesKey() == null )
                 .collect(toMap(PropertyDefinition::getName, PropertyDefinition::getDefaultValue));
+
+        // Next statement may replace or add some properties from detection system properties whose values were captured when this job was created.
+        // Only want to pull the value from the snapshot if the PropertyDefinition has a proprietiesKey set.
+        // This processing is most applicable to jobs where the web UI may have been used to update properties between two stages of a pipeline.
+        algorithm.getProvidesCollection().getAlgorithmProperties().stream()
+                .filter( pd -> pd.getPropertiesKey() != null )
+                .forEach( pd -> algPropertiesMap.put(pd.getName(), transientDetectionSystemProperties.lookup(pd.getPropertiesKey())));
+
+        return algPropertiesMap;
+
     }
 
 }

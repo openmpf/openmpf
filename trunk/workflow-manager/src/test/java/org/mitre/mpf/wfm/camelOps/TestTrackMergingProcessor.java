@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.camelOps;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
@@ -42,6 +41,7 @@ import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,6 +77,9 @@ public class TestTrackMergingProcessor {
 
     @Autowired
     private Redis redis;
+
+    @Autowired
+    private PropertiesUtil propertiesUtil;
 
     @Test(timeout = 5 * MINUTES)
     public void testTrackMergingOn() throws Exception {
@@ -156,7 +159,11 @@ public class TestTrackMergingProcessor {
         trackMergeStageDet.getActions().add(detectionAction);
 
         trackMergePipeline.getStages().add(trackMergeStageDet);
-        TransientJob trackMergeJob = new TransientJob(jobId, "999999", trackMergePipeline, stageIndex, priority, false, false);
+
+        // Capture a snapshot of the detection system property settings when the job is created.
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+
+        TransientJob trackMergeJob = new TransientJob(jobId, "999999", transientDetectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
         trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
 
         redis.persistJob(trackMergeJob);
@@ -230,7 +237,11 @@ public class TestTrackMergingProcessor {
         trackMergeStageDet.getActions().add(detectionAction);
 
         trackMergePipeline.getStages().add(trackMergeStageDet);
-        TransientJob trackMergeJob = new TransientJob(jobId, "999999", trackMergePipeline, stageIndex, priority, false, false);
+
+        // Capture a snapshot of the detection system property settings when the job is created.
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+
+        TransientJob trackMergeJob = new TransientJob(jobId, "999999", transientDetectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
         trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
 
         redis.persistJob(trackMergeJob);

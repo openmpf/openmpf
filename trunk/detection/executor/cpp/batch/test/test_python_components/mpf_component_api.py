@@ -96,30 +96,32 @@ GenericJob = collections.namedtuple('GenericJob', ('job_name', 'data_uri', 'job_
 
 
 class DetectionError(util.EnumBase):
-    DETECTION_SUCCESS, \
-        OTHER_DETECTION_ERROR_TYPE, \
-        DETECTION_NOT_INITIALIZED, \
-        UNRECOGNIZED_DATA_TYPE, \
-        UNSUPPORTED_DATA_TYPE, \
-        INVALID_DATAFILE_URI, \
-        COULD_NOT_OPEN_DATAFILE, \
-        COULD_NOT_READ_DATAFILE, \
-        FILE_WRITE_ERROR, \
-        IMAGE_READ_ERROR, \
-        BAD_FRAME_SIZE, \
-        BOUNDING_BOX_SIZE_ERROR, \
-        INVALID_FRAME_INTERVAL, \
-        INVALID_START_FRAME, \
-        INVALID_STOP_FRAME, \
-        DETECTION_FAILED, \
-        DETECTION_TRACKING_FAILED, \
-        INVALID_PROPERTY, \
-        MISSING_PROPERTY, \
-        PROPERTY_IS_NOT_INT, \
-        PROPERTY_IS_NOT_FLOAT, \
-        INVALID_ROTATION, \
-        MEMORY_ALLOCATION_FAILED, \
-        GPU_ERROR = util.EnumBase.element_count(24)
+    (
+        DETECTION_SUCCESS,
+        OTHER_DETECTION_ERROR_TYPE,
+        DETECTION_NOT_INITIALIZED,
+        UNRECOGNIZED_DATA_TYPE,
+        UNSUPPORTED_DATA_TYPE,
+        INVALID_DATAFILE_URI,
+        COULD_NOT_OPEN_DATAFILE,
+        COULD_NOT_READ_DATAFILE,
+        FILE_WRITE_ERROR,
+        IMAGE_READ_ERROR,
+        BAD_FRAME_SIZE,
+        BOUNDING_BOX_SIZE_ERROR,
+        INVALID_FRAME_INTERVAL,
+        INVALID_START_FRAME,
+        INVALID_STOP_FRAME,
+        DETECTION_FAILED,
+        DETECTION_TRACKING_FAILED,
+        INVALID_PROPERTY,
+        MISSING_PROPERTY,
+        PROPERTY_IS_NOT_INT,
+        PROPERTY_IS_NOT_FLOAT,
+        INVALID_ROTATION,
+        MEMORY_ALLOCATION_FAILED,
+        GPU_ERROR
+    ) = util.EnumBase.element_count(24)
 
 
 class DetectionException(Exception):

@@ -74,24 +74,24 @@ TEST(PythonComponentHandleTest, TestUnsupportedJobType) {
 }
 
 
-const char * job_echo_msg = "I can access job properties";
-const char * media_echo_msg = "I can access media properties";
+constexpr auto job_echo_pair = std::make_pair("ECHO_JOB", "I can access job properties");
+constexpr auto media_echo_pair = std::make_pair("ECHO_MEDIA", "I can access media properties");
 
 
 // Make sure maps get converted between Python and C++ properly
 void assert_has_echo_properties(const Properties &properties) {
-    ASSERT_EQ(properties.at("echo_job"), job_echo_msg);
-    ASSERT_EQ(properties.at("echo_media"), media_echo_msg);
+    ASSERT_EQ(properties.at(job_echo_pair.first), job_echo_pair.second);
+    ASSERT_EQ(properties.at(media_echo_pair.first), media_echo_pair.second);
 }
 
 
 TEST(PythonComponentHandleTest, TestImageJob) {
     PythonComponentHandle py_component = get_test_component();
-    ASSERT_EQ(py_component.GetDetectionType(), "TestDetectionType");
+    ASSERT_EQ(py_component.GetDetectionType(), "TEST DETECTION TYPE");
 
     MPFImageJob job("Test Job Name", "path/to/media",
-                    { { "job prop 1" , "job val 1" }, { "echo_job", job_echo_msg } },
-                    { { "media prop 1" , "media val 1" }, { "echo_media", media_echo_msg } });
+                    { { "job prop 1" , "job val 1" }, job_echo_pair },
+                    { { "media prop 1" , "media val 1" }, media_echo_pair });
 
     std::vector<MPFImageLocation> results;
     auto rc = py_component.GetDetections(job, results);
@@ -112,7 +112,7 @@ TEST(PythonComponentHandleTest, TestImageJob) {
 TEST(PythonComponentHandleTest, TestVideoJob) {
     PythonComponentHandle py_component = get_test_component();
     MPFVideoJob job("Test Job", "path/to/media", 0, 10,
-                    { { "echo_job", job_echo_msg } }, { { "echo_media", media_echo_msg } });
+                    { job_echo_pair }, { media_echo_pair });
 
     std::vector<MPFVideoTrack> results;
     auto rc = py_component.GetDetections(job, results);
@@ -134,8 +134,8 @@ TEST(PythonComponentHandleTest, TestVideoJob) {
 
 TEST(PythonComponentHandleTest, TestAudioJob) {
     PythonComponentHandle py_component = get_test_component();
-    MPFAudioJob job("Test Job", "path/to/media", 20, 100,
-                    { { "echo_job", job_echo_msg } }, { { "echo_media", media_echo_msg } });
+    MPFAudioJob job("Test Job", "path/to/media", 0, -1,
+                    { job_echo_pair }, { media_echo_pair });
 
     std::vector<MPFAudioTrack> results;
     auto rc = py_component.GetDetections(job, results);
@@ -147,14 +147,14 @@ TEST(PythonComponentHandleTest, TestAudioJob) {
     const auto &track1 = results.at(0);
     assert_has_echo_properties(track1.detection_properties);
     ASSERT_FLOAT_EQ(track1.confidence, 0.75);
-    ASSERT_EQ(track1.start_time, 20);
-    ASSERT_EQ(track1.stop_time, 60);
+    ASSERT_EQ(track1.start_time, 0);
+    ASSERT_EQ(track1.stop_time, 10);
 
     const auto &track2 = results.at(1);
     assert_has_echo_properties(track2.detection_properties);
     ASSERT_FLOAT_EQ(track2.confidence, 1);
-    ASSERT_EQ(track2.start_time, 60);
-    ASSERT_EQ(track2.stop_time, 100);
+    ASSERT_EQ(track2.start_time, 10);
+    ASSERT_EQ(track2.stop_time, 20);
 }
 
 
@@ -162,7 +162,7 @@ TEST(PythonComponentHandleTest, TestGenericJob) {
     PythonComponentHandle py_component = get_generic_only_component();
 
     MPFGenericJob job("Test Job", "path/to/media",
-                      { { "echo_job", job_echo_msg } }, { { "echo_media", media_echo_msg } });
+                      { job_echo_pair }, { media_echo_pair });
 
     std::vector<MPFGenericTrack> results;
     auto rc = py_component.GetDetections(job, results);

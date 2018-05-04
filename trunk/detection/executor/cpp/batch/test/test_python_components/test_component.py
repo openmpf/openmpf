@@ -33,7 +33,7 @@ logger = mpf.configure_logging('python-test.log', True)
 
 
 class TestComponent(object):
-    detection_type = 'TestDetectionType'
+    detection_type = 'TEST DETECTION TYPE'
 
     def __init__(self):
         logger.info('Creating instance of TestComponent')
@@ -49,8 +49,8 @@ class TestComponent(object):
         echo_job, echo_media = TestComponent.get_echo_msgs(image_job)
 
         il.detection_properties['METADATA'] = 'extra info for first result'
-        il.detection_properties['echo_job'] = echo_job
-        il.detection_properties['echo_media'] = echo_media
+        il.detection_properties['ECHO_JOB'] = echo_job
+        il.detection_properties['ECHO_MEDIA'] = echo_media
 
         # Make sure generators are acceptable return values
         yield il
@@ -61,8 +61,8 @@ class TestComponent(object):
 
         yield mpf.ImageLocation(10, 20, 12, 34, -1,
                                 {'METADATA': 'extra info for second result',
-                                 'echo_job': echo_job,
-                                 'echo_media': echo_media})
+                                 'ECHO_JOB': echo_job,
+                                 'ECHO_MEDIA': echo_media})
 
         logger.info('[%s] Found %s detections', image_job.job_name, 2)
 
@@ -78,19 +78,19 @@ class TestComponent(object):
 
         track1 = mpf.VideoTrack(0, 1)
         track1.frame_locations[0] = mpf.ImageLocation(1, 2, 3, 4, -1,
-                                                      {'METADATA': 'test', 'echo_job': echo_job,
-                                                       'echo_media': echo_media})
+                                                      {'METADATA': 'test', 'ECHO_JOB': echo_job,
+                                                       'ECHO_MEDIA': echo_media})
 
         track1.frame_locations[1] = mpf.ImageLocation(5, 6, 7, 8, -1)
-        track1.frame_locations[1].detection_properties['echo_job'] = echo_job
-        track1.frame_locations[1].detection_properties['echo_media'] = echo_media
+        track1.frame_locations[1].detection_properties['ECHO_JOB'] = echo_job
+        track1.frame_locations[1].detection_properties['ECHO_MEDIA'] = echo_media
         track1.detection_properties.update(video_job.job_properties)
         track1.detection_properties.update(video_job.media_properties)
 
         track2 = mpf.VideoTrack(3, 4, -1,
-                                {3: mpf.ImageLocation(9, 10, 11, 12, -1, [('echo_job', echo_job),
-                                                                          ('echo_media', echo_media)])},
-                                mpf.Properties(echo_job=echo_job, echo_media=echo_media))
+                                {3: mpf.ImageLocation(9, 10, 11, 12, -1, [('ECHO_JOB', echo_job),
+                                                                          ('ECHO_MEDIA', echo_media)])},
+                                mpf.Properties(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media))
         # Make sure regular collections are accepted
         return [track1, track2]
 
@@ -101,19 +101,18 @@ class TestComponent(object):
         logger.info('[%s] Received audio job: %s', audio_job.job_name, audio_job)
         if audio_job.feed_forward_track is not None:
             return audio_job.feed_forward_track,
-        media_middle_time = (audio_job.stop_time + audio_job.start_time) / 2
         echo_job, echo_media = cls.get_echo_msgs(audio_job)
-        detection_properties = mpf.Properties(echo_job=echo_job, echo_media=echo_media)
+        detection_properties = mpf.Properties(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media)
 
-        track1 = mpf.AudioTrack(audio_job.start_time, media_middle_time, .75, detection_properties)
+        track1 = mpf.AudioTrack(0, 10, .75, detection_properties)
         # Make sure multiple return values are accepted
-        return track1, mpf.AudioTrack(media_middle_time, audio_job.stop_time, 1, detection_properties)
+        return track1, mpf.AudioTrack(10, 20, 1, detection_properties)
 
     @staticmethod
     def get_echo_msgs(job):
         #  Make sure properties get converted between C++ and Python properly
-        return (job.job_properties.get('echo_job', 'echo_job not present'),
-                job.media_properties.get('echo_media', 'echo_media not present'))
+        return (job.job_properties.get('ECHO_JOB', 'echo_job not present'),
+                job.media_properties.get('ECHO_MEDIA', 'echo_media not present'))
 
 
 # The component executor looks for a module level variable named EXPORT_MPF_COMPONENT and calls it to create a

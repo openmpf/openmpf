@@ -33,7 +33,7 @@ logger = mpf.configure_logging('python-generic-test.log', True)
 
 
 class GenericTestComponent(object):
-    detection_type = 'TestGenericDetectionType'
+    detection_type = 'TEST GENERIC DETECTION TYPE'
 
 
     @staticmethod
@@ -43,7 +43,7 @@ class GenericTestComponent(object):
             return generic_job.feed_forward_track,
 
         echo_job, echo_media = GenericTestComponent.get_echo_msgs(generic_job)
-        properties = mpf.Properties(echo_job=echo_job, echo_media=echo_media)
+        properties = mpf.Properties(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media)
         return mpf.GenericTrack(1, properties), mpf.GenericTrack(2, properties)
 
 
@@ -51,8 +51,8 @@ class GenericTestComponent(object):
     @staticmethod
     def get_echo_msgs(job):
         #  Make sure properties get converted between C++ and Python properly
-        return (job.job_properties.get('echo_job', 'echo_job not present'),
-                job.media_properties.get('echo_media', 'echo_media not present'))
+        return (job.job_properties.get('ECHO_JOB', 'echo_job not present'),
+                job.media_properties.get('ECHO_MEDIA', 'echo_media not present'))
 
 
 EXPORT_MPF_COMPONENT = GenericTestComponent

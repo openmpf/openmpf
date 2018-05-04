@@ -422,7 +422,26 @@ int run_job(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std
                         }
 
                     } else {
-                        LOG4CXX_WARN(logger, "[" << job_name.str() << "] The detection component does not support detection data_type of " << data_type);
+                        std::string data_type_str;
+                        switch (data_type) {
+                            case UNKNOWN:
+                                data_type_str = "UNKNOWN";
+                                break;
+                            case VIDEO:
+                                data_type_str = "VIDEO";
+                                break;
+                            case IMAGE:
+                                data_type_str = "IMAGE";
+                                break;
+                            case AUDIO:
+                                data_type_str = "AUDIO";
+                                break;
+                            default:
+                                data_type_str = "INVALID_TYPE";
+                        }
+                        LOG4CXX_WARN(logger, "[" << job_name.str()
+                                << "] The detection component does not support detection data_type of "
+                                << data_type_str);
 
                         msg_metadata->time_elapsed = time.elapsed();
 

@@ -75,7 +75,7 @@ bool is_python(const std::string &lib_path) {
 }
 
 template <typename ComponentHandle>
-int run_job(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
+int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
              const std::string &app_dir, ComponentHandle &detection_engine);
 
 /**
@@ -116,11 +116,11 @@ int main(int argc, char* argv[]) {
     try {
         if (is_python(lib_path)) {
             PythonComponentHandle component_handle(logger, lib_path);
-            return run_job(logger, broker_uri, request_queue, app_dir, component_handle);
+            return run_jobs(logger, broker_uri, request_queue, app_dir, component_handle);
         }
         else {
             CppComponentHandle component_handle(lib_path);
-            return run_job(logger, broker_uri, request_queue, app_dir, component_handle);
+            return run_jobs(logger, broker_uri, request_queue, app_dir, component_handle);
         }
     }
     catch (const ComponentLoadError &ex) {
@@ -139,14 +139,14 @@ int main(int argc, char* argv[]) {
 
 
 template <typename ComponentHandle>
-int run_job(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
+int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
             const std::string &app_dir, ComponentHandle &detection_engine) {
     int pollingInterval = 1;
 
     // Instantiate AMQ interface
     MPFMessenger messenger(logger);
 
-    // Remain in loop handling track request messages
+    // Remain in loop handling job request messages
     // until 'q\n' is received on stdin
     try {
 

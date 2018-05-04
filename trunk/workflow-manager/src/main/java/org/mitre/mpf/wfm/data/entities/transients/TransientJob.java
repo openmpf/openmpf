@@ -73,8 +73,15 @@ public class TransientJob {
 	private String callbackMethod;
 	public String getCallbackMethod() { return callbackMethod; }
 
+	// Detection system properties for this job should be immutable, the detection system property values
+	// shouldn't change once the job is created even if they are changed on the UI by an admin..
+	// The detectionSystemPropertiesSnapshot contains the values of the detection system properties at the time this batch job was created.
+    private TransientDetectionSystemProperties detectionSystemPropertiesSnapshot;
+    public TransientDetectionSystemProperties getDetectionSystemPropertiesSnapshot() { return this.detectionSystemPropertiesSnapshot; }
+
 	public TransientJob(long id,
 						String externalId,
+						TransientDetectionSystemProperties detectionSystemPropertiesSnapshot,
 						TransientPipeline pipeline,
 						int currentStage,
 						int priority,
@@ -83,6 +90,7 @@ public class TransientJob {
 		this.id = id;
 		this.externalId = externalId;
 		this.pipeline = pipeline;
+		this.detectionSystemPropertiesSnapshot = detectionSystemPropertiesSnapshot;
 		this.currentStage = currentStage;
 		this.priority = priority;
 		this.outputEnabled = outputEnabled;
@@ -95,14 +103,15 @@ public class TransientJob {
 	@JsonCreator
 	public TransientJob(@JsonProperty("id") long id,
 	                    @JsonProperty("externalId") String externalId,
-	                    @JsonProperty("pipeline") TransientPipeline pipeline,
+                        @JsonProperty("detectionSystemPropertiesSnapshot") TransientDetectionSystemProperties detectionSystemPropertiesSnapshot,
+                        @JsonProperty("pipeline") TransientPipeline pipeline,
 	                    @JsonProperty("currentStage") int currentStage,
 	                    @JsonProperty("priority") int priority,
 	                    @JsonProperty("outputEnabled") boolean outputEnabled,
 	                    @JsonProperty("cancelled") boolean cancelled,
 						@JsonProperty("callbackURL") String callbackURL,
 						@JsonProperty("callbackMethod") String callbackMethod) {
-		this(id,externalId,pipeline,currentStage,priority,outputEnabled,cancelled);
+		this(id,externalId,detectionSystemPropertiesSnapshot,pipeline,currentStage,priority,outputEnabled,cancelled);
 		this.callbackURL = callbackURL;
 		this.callbackMethod = callbackMethod;
 	}

@@ -49,6 +49,7 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
@@ -57,6 +58,7 @@ import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +77,10 @@ public class JobCreationProcessor extends WfmProcessor {
 	public static final String REF = "jobCreationProcessor";
 	private static final String INVALID_PIPELINE_MESSAGE = "INVALID_PIPELINE_MESSAGE";
 
-	@Autowired
+    @Autowired
+    private PropertiesUtil propertiesUtil;
+
+    @Autowired
 	@Qualifier(RedisImpl.REF)
 	private Redis redis;
 
@@ -163,9 +168,15 @@ public class JobCreationProcessor extends WfmProcessor {
 				jobRequestEntity = jobRequestDao.findById(jobId);
 			}
 
-			TransientPipeline transientPipeline = buildPipeline(jobRequest.getPipeline());
+            // Capture the current state of the detection system properties at the time when this job is created. Since the
+            // detection system properties may be changed by an administrator, we must ensure that the job uses a consistent set of detection system
+            // properties through all stages of the jobs pipeline by storing these detection system property values in REDIS.
+            TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
-			TransientJob transientJob = new TransientJob(jobRequestEntity.getId(), jobRequest.getExternalId(), transientPipeline, 0, jobRequest.getPriority(), jobRequest.isOutputObjectEnabled(), false,jobRequest.getCallbackURL(),jobRequest.getCallbackMethod());
+            TransientPipeline transientPipeline = buildPipeline(jobRequest.getPipeline());
+
+			TransientJob transientJob = new TransientJob(jobRequestEntity.getId(), jobRequest.getExternalId(), transientDetectionSystemProperties, transientPipeline,
+                                                0, jobRequest.getPriority(), jobRequest.isOutputObjectEnabled(), false,jobRequest.getCallbackURL(),jobRequest.getCallbackMethod());
 
 			transientJob.getOverriddenJobProperties().putAll(jobRequest.getJobProperties());
 
@@ -173,7 +184,8 @@ public class JobCreationProcessor extends WfmProcessor {
 			transientJob.getOverriddenAlgorithmProperties().putAll(jobRequest.getAlgorithmProperties());
 
 			transientJob.getMedia().addAll(buildMedia(jobRequest.getMedia()));
-			redis.persistJob(transientJob);
+
+            redis.persistJob(transientJob);
 
 			if (transientPipeline == null) {
 				redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);

@@ -440,7 +440,7 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                                 data_type_str = "INVALID_TYPE";
                         }
                         LOG4CXX_WARN(logger, "[" << job_name.str()
-                                << "] The detection component does not support detection data_type of "
+                                << "] The detection component does not support detection data type of "
                                 << data_type_str);
 
                         msg_metadata->time_elapsed = time.elapsed();

@@ -496,7 +496,7 @@ public class NodeController {
 	// EXTERNAL: Only used by "mpf list-nodes"
 	@RequestMapping(value = "/rest/nodes/available-nodes", method = RequestMethod.GET)
 	@ResponseBody
-	public Map<String, String> getAvailableNodes() throws IOException {
+	public Set<String> /* Map<String, String> */ getAvailableNodes() throws IOException {
 
 		/*
 		List<String> allMpfNodes = getAllMpfNodes();
@@ -521,7 +521,7 @@ public class NodeController {
 		return availableNodeMap;
 		*/
 
-		return null; // DEBUG
+		return getAllMpfNodes(); // DEBUG
 	}
 
 

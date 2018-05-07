@@ -214,9 +214,9 @@ def remove_node(node, workflow_manager_url=None):
 def list_nodes(workflow_manager_url=None):
     """ List JGroups membership for nodes in the OpenMPF cluster """
 
-    # if not is_wfm_running(workflow_manager_url):
-    #     print mpf_util.MsgUtil.yellow('Cannot determine JGroups membership.')
-    #
+    if not is_wfm_running(workflow_manager_url):
+        print mpf_util.MsgUtil.yellow('Cannot determine JGroups membership.')
+
     #     [mpf_sh_valid, all_mpf_nodes] = check_mpf_sh()
     #     if not mpf_sh_valid:
     #         return
@@ -229,12 +229,13 @@ def list_nodes(workflow_manager_url=None):
     #
     #     return
     #
-    # [username, password] = get_username_and_password(False)
-    # data = get_wfm_nodes(workflow_manager_url, username, password)
-    #
+
+    [username, password] = get_username_and_password(False)
+    print get_wfm_nodes(workflow_manager_url, username, password)
+
     # print_cluster_membership(data)
 
-    print get_known_nodes()
+    # print get_known_nodes()
 
 
 def print_cluster_membership(data):
@@ -270,20 +271,22 @@ def get_known_nodes():
         return file.read().splitlines()
 
 
-# def get_wfm_nodes(wfm_manager_url, username, password):
-#     endpoint_url = ''.join([string.rstrip(wfm_manager_url,'/'),'/rest/nodes/available-nodes'])
-#
-#     request = urllib2.Request(endpoint_url)
-#     request.get_method = lambda: 'GET'
-#     base64string = base64.b64encode('%s:%s' % (username, password))
-#     request.add_header('Authorization', 'Basic %s' % base64string)
-#
-#     try:
-#         response = urllib2.urlopen(request)
-#     except IOError as err:
-#         raise mpf_util.MpfError('Problem connecting to ' + endpoint_url + ':\n' + str(err))
-#
-#     return json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(response.read())
+def get_wfm_nodes(wfm_manager_url, username, password):
+    endpoint_url = ''.join([string.rstrip(wfm_manager_url,'/'),'/rest/nodes/available-nodes'])
+    request = urllib2.Request(endpoint_url)
+
+    request.get_method = lambda: 'GET'
+    base64string = base64.b64encode('%s:%s' % (username, password))
+    request.add_header('Authorization', 'Basic %s' % base64string)
+
+    try:
+        response = urllib2.urlopen(request)
+    except IOError as err:
+        raise mpf_util.MpfError('Problem connecting to ' + endpoint_url + ':\n' + str(err))
+
+    # return json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(response.read())
+
+    return response.read()
 
 
 def check_node_availability(workflow_manager_url, username, password, node, check_secs = 10):

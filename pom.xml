@@ -82,8 +82,8 @@
         <org.seleniumhq.selenium.selenium-java.version>2.53.0</org.seleniumhq.selenium.selenium-java.version>
         <maven.test.failure.ignore>true</maven.test.failure.ignore>
         <spring.framework.version>4.2.5.RELEASE</spring.framework.version>
-        <hibernate.framework.version>5.2.17.Final</hibernate.framework.version> <!-- 5.2.8.Final -->
-        <hibernate.validator.version>6.0.9.Final</hibernate.validator.version> <!-- 5.2.4.Final -->
+        <hibernate.framework.version>5.2.17.Final</hibernate.framework.version> <!-- 5.2.8.Final / 5.2.17.Final-->
+        <hibernate.validator.version>6.0.9.Final</hibernate.validator.version> <!-- 5.2.4.Final / 6.0.9.Final-->
         <javax.el.api.version>2.2.4</javax.el.api.version>
         <atomikos.framework.version>3.9.3</atomikos.framework.version>
         <camel.framework.version>2.16.2</camel.framework.version>

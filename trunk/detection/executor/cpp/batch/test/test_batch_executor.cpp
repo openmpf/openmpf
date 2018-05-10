@@ -27,6 +27,7 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include "../PythonComponentHandle.h"
+#include <Utils.h>
 
 using namespace MPF::COMPONENT;
 
@@ -37,13 +38,38 @@ log4cxx::LoggerPtr get_logger() {
     return logger;
 }
 
+std::vector<std::string> get_possible_api_paths() {
+    std::vector<std::string> raw_paths {
+            // Try to use version in repo before installed version, so that when run in a development environment the
+            // most up to date version of the component api is used. A developer also might run these tests before
+            // doing a full build and install.
+            // On Jenkins the first path will not exist, but that is okay because Jenkins does a full build and install
+            // before running these tests.
+            "~/openmpf-projects/openmpf-python-component-sdk/api",
+            "~/mpf-sdk-install/python/site-packages",
+            "$MPF_SDK_INSTALL_PATH/python/site-packages",
+            "$MPF_HOME/python/site-packages"
+    };
+
+    std::vector<std::string> expanded_paths;
+    for (const auto& raw_path : raw_paths)  {
+        std::string expanded;
+        std::string error = Utils::expandFileName(raw_path, expanded);
+        if (error.empty()) {
+            expanded_paths.push_back(std::move(expanded));
+        }
+    }
+    return expanded_paths;
+}
 
 PythonComponentHandle get_test_component() {
-    return PythonComponentHandle(get_logger(), "test_python_components/test_component.py");
+    return PythonComponentHandle(get_logger(), "test_python_components/test_component.py",
+                                 get_possible_api_paths());
 }
 
 PythonComponentHandle get_generic_only_component() {
-    return PythonComponentHandle(get_logger(), "test_python_components/generic_only_component.py");
+    return PythonComponentHandle(get_logger(), "test_python_components/generic_only_component.py",
+                                 get_possible_api_paths());
 }
 
 

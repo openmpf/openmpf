@@ -115,7 +115,8 @@ int main(int argc, char* argv[]) {
 
     try {
         if (is_python(lib_path)) {
-            PythonComponentHandle component_handle(logger, lib_path);
+            std::string python_component_api_path = app_dir + "/../python/site-packages";
+            PythonComponentHandle component_handle(logger, lib_path, python_component_api_path);
             return run_jobs(logger, broker_uri, request_queue, app_dir, component_handle);
         }
         else {

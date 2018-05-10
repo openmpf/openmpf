@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.interop.util;
 
-import java.util.Date;
 import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
 
 import java.time.Instant;
@@ -34,11 +33,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Date;
 
 public class TimeUtils {
 
     // All timestamps in OpenMPF should adhere to this date/time pattern.
-    public static final String TIMESTAMP_PATTERN = "yyyy-MM-dd kk:mm:ss.S";
+    public static final String TIMESTAMP_PATTERN = "yyyy-MM-dd HH:mm:ss.S";
 
     // The timestampFormatter must remain as a static, or the jackson conversion to JSON will no longer work
     private static final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN);

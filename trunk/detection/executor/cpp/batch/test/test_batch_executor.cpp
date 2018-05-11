@@ -45,7 +45,7 @@ std::vector<std::string> get_possible_api_paths() {
             // doing a full build and install.
             // On Jenkins the first path will not exist, but that is okay because Jenkins does a full build and install
             // before running these tests.
-            "~/openmpf-projects/openmpf-python-component-sdk/api",
+            "~/openmpf-projects/openmpf-python-component-sdk/detection/api",
             "~/mpf-sdk-install/python/site-packages",
             "$MPF_SDK_INSTALL_PATH/python/site-packages",
             "$MPF_HOME/python/site-packages"

@@ -217,7 +217,7 @@ namespace MPF { namespace COMPONENT {
                                                   const std::vector<std::string> &possible_module_dirs) {
             py::module::import("sys")
                     .attr("path")
-                    .attr("__setslice__")(0, 0, possible_module_dirs);  // prepend possible_module_dirs
+                    .attr("__setitem__")(py::slice(0, 0, 1), possible_module_dirs);  // prepend possible_module_dirs
             return py::module::import(module_name.c_str());
         }
 

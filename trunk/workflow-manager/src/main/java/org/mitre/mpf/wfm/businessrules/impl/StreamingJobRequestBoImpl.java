@@ -645,7 +645,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         }
     }
 
-    // TODO: Write system test for summary report callbacks.
     @Override
     public void handleNewSummaryReport(JsonSegmentSummaryReport summaryReport) {
         // Send summary report as soon as possible.

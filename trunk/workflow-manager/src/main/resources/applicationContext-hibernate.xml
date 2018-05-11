@@ -28,12 +28,36 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
-http://www.springframework.org/schema/beans/spring-beans.xsd">
+                           http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.LazyConnectionDataSourceProxy">
+        <property name="targetDataSource" ref="mainDataSource"/>
+    </bean>
+
+    <bean id="mainDataSource" class="com.jolbox.bonecp.BoneCPDataSource" destroy-method="close">
+
+        <!--<property name="idleConnectionTestPeriod" value="60"/>-->
+
+        <property name="maxConnectionsPerPartition" value="3"/>
+        <property name="minConnectionsPerPartition" value="1"/>
+        <property name="partitionCount" value="5"/>
+        <property name="acquireIncrement" value="10"/>
+        <property name="statementsCacheSize" value="50"/>
+        <!--<property name="releaseHelperThreads" value="3"/>-->
+
+        <property name="driverClass" value="${jdbc.driverClassName}"/>
+        <property name="jdbcUrl" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+        <!--<property name="connectionTimeoutInMs" value="10000"/>-->
+        <!--<property name="idleConnectionTestPeriodInSeconds" value="15"/>-->
+        <!--<property name="idleMaxAgeInSeconds" value="15"/>-->
+    </bean>
 
     <!-- Hibernate session factory -->
     <bean id="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
-        <property name="packagesToScan" value="org.mitre.mpf.wfm" />
-        <property name="dataSource" ref="dataSource" />
+        <property name="packagesToScan" value="org.mitre.mpf.wfm"/>
+        <property name="dataSource" ref="dataSource"/>
 
         <property name="hibernateProperties">
             <props>
@@ -46,7 +70,9 @@ http://www.springframework.org/schema/beans/spring-beans.xsd">
                 <prop key="hibernate.hbm2ddl.auto">${hibernate.update.mode:update}</prop>
                 <prop key="hibernate.cache.use_second_level_cache">true</prop>
                 <prop key="hibernate.cache.use_query_cache">true</prop>
-                <prop key="hibernate.cache.region.factory_class">org.hibernate.cache.infinispan.InfinispanRegionFactory</prop>
+                <prop key="hibernate.cache.region.factory_class">
+                    org.hibernate.cache.infinispan.InfinispanRegionFactory
+                </prop>
 
                 <prop key="hibernate.cache.infinispan.cachemanager">java:CacheManager/entity</prop>
                 <prop key="hibernate.cache.infinispan.cfg">infinispan.xml</prop>
@@ -56,16 +82,20 @@ http://www.springframework.org/schema/beans/spring-beans.xsd">
 
                 <!--<prop key="hibernate.transaction.manager_lookup_class">com.atomikos.icatch.jta.hibernate3.TransactionManagerLookup</prop>-->
                 <!--<prop key="hibernate.transaction.factory_class">org.hibernate.engine.transaction.internal.jta.CMTTransactionFactory</prop>-->
-                <prop key="hibernate.transaction.jta.platform">org.hibernate.service.jta.platform.internal.JBossStandAloneJtaPlatform</prop>
+                <prop key="hibernate.transaction.jta.platform">
+                    org.hibernate.service.jta.platform.internal.JBossStandAloneJtaPlatform
+                </prop>
 
-                <prop key="hibernate.transaction.manager_lookup_class">org.hibernate.cache.infinispan.tm.HibernateTransactionManagerLookup</prop>
+                <prop key="hibernate.transaction.manager_lookup_class">
+                    org.hibernate.cache.infinispan.tm.HibernateTransactionManagerLookup
+                </prop>
                 <!--<prop key="hibernate.transaction.factory_class">org.hibernate.engine.transaction.internal.jta.CMTTransactionFactory</prop>-->
             </props>
         </property>
 
         <!-- convert aaBb to aa_bb -->
         <property name="PhysicalNamingStrategy">
-            <bean class="org.mitre.mpf.wfm.data.ImprovedNamingStrategy" />
+            <bean class="org.mitre.mpf.wfm.data.ImprovedNamingStrategy"/>
         </property>
 
     </bean>

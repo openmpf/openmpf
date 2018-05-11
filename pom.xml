@@ -82,9 +82,12 @@
         <org.seleniumhq.selenium.selenium-java.version>2.53.0</org.seleniumhq.selenium.selenium-java.version>
         <maven.test.failure.ignore>true</maven.test.failure.ignore>
         <spring.framework.version>4.2.5.RELEASE</spring.framework.version>
+
         <hibernate.framework.version>5.0.8.Final</hibernate.framework.version> <!-- 5.0.8.Final / 5.2.17.Final-->
         <hibernate.validator.version>5.2.4.Final</hibernate.validator.version> <!-- 5.2.4.Final / 6.0.9.Final-->
-        <javax.el.api.version>2.2.4</javax.el.api.version>
+
+        <javax.el.api.version>2.2.4</javax.el.api.version> <!-- 2.2.4 / 3.0.0 -->
+
         <atomikos.framework.version>3.9.3</atomikos.framework.version>
         <camel.framework.version>2.16.2</camel.framework.version>
         <activemq.framework.version>5.13.0</activemq.framework.version>
@@ -157,8 +160,9 @@
 		<sphinx4.version>5prealpha-SNAPSHOT</sphinx4.version>
 		
 		<!-- added props node manager -->
-		<!-- <jgroups.version>3.6.4.Final</jgroups.version> -->
-		<jgroups.version>4.0.11.Final</jgroups.version>
+        <!-- hibernate-infinispan:jar:5.0.8 wants 3.6.2.Final -->
+        <!-- hibernate-infinispan:jar:5.2.17 wants 3.6.7.Final -->
+		<jgroups.version>4.0.11.Final</jgroups.version> <!-- 3.6.4.Final / 4.0.11.Final -->
 
 		<!-- added props mpf-markup -->
 		<junit.version>4.12</junit.version>

@@ -35,11 +35,15 @@ find_package(GTest)
 if (${GTEST_FOUND})
     enable_testing()
 
+    find_package(mpfComponentUtils REQUIRED)
+    find_package(OpenCV 3.3 EXACT REQUIRED PATHS /opt/opencv-3.3.0
+        COMPONENTS opencv_core opencv_imgcodecs opencv_imgproc opencv_videoio)
+
     add_executable(BatchExecutorTest test_batch_executor.cpp $<TARGET_OBJECTS:batch_executor_lib>)
 
     target_link_libraries(BatchExecutorTest GTest::GTest GTest::Main
-        mpfComponentInterface ${MPF_PROTOBUF_LIB} ${PROTOBUF_LIBRARY}
-        ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES} pybind11::embed
+        mpfComponentInterface mpfDetectionComponentApi mpfComponentUtils ${MPF_PROTOBUF_LIB} ${PROTOBUF_LIBRARY}
+        ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES} ${OpenCV_LIBS}  pybind11::embed
         )
 
 

@@ -83,6 +83,7 @@
                                 <argument>--build-dir=${components.build.dir}</argument>
                                 <argument>--java-sdk-src=${components.build.sdks.java}</argument>
                                 <argument>--cpp-sdk-src=${components.build.sdks.cpp}</argument>
+                                <argument>--python-sdk-src=${components.build.sdks.python}</argument>
                                 <argument>--component-search-path=${components.build.search.paths}</argument>
                                 <argument>--components=${components.build.components}</argument>
                                 <argument>--parallel=${components.build.parallel.builds}</argument>

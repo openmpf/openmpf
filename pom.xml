@@ -182,6 +182,7 @@
         <components.build.dir>${user.home}/mpf-component-build</components.build.dir>
         <components.build.sdks.java>${project.basedir}/../../openmpf-java-component-sdk</components.build.sdks.java>
         <components.build.sdks.cpp>${project.basedir}/../../openmpf-cpp-component-sdk</components.build.sdks.cpp>
+        <components.build.sdks.python>${project.basedir}/../../openmpf-python-component-sdk</components.build.sdks.python>
         <components.build.search.paths>${project.basedir}/../..</components.build.search.paths>
         <components.build.components>openmpf-components:openmpf-contrib-components</components.build.components>
         <components.build.parallel.builds>1</components.build.parallel.builds>

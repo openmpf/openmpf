@@ -127,7 +127,6 @@ namespace MPF { namespace COMPONENT {
                     + std::string(export_component_var)
                     + "\", " "which gets assigned to either a class or some other callable.";
 
-            initialize_python();
             py::module component_module = load_module_from_full_path(module_path);
 
             if (!py::hasattr(component_module, export_component_var)) {
@@ -214,6 +213,15 @@ namespace MPF { namespace COMPONENT {
         }
 
 
+        py::module load_module_from_possible_dirs(const std::string &module_name,
+                                                  const std::vector<std::string> &possible_module_dirs) {
+            py::module::import("sys")
+                    .attr("path")
+                    .attr("__setitem__")(py::slice(0, 0, 1), possible_module_dirs);  // prepend possible_module_dirs
+            return py::module::import(module_name.c_str());
+        }
+
+
         class ComponentApi {
         private:
             py::object image_job_ctor_;
@@ -230,8 +238,8 @@ namespace MPF { namespace COMPONENT {
             py::object detection_exception_ctor_;
 
         public:
-            ComponentApi()
-                    : ComponentApi(py::module::import("mpf_component_api"))
+            explicit ComponentApi(const std::vector<std::string> &possible_component_api_dirs)
+                    : ComponentApi(load_module_from_possible_dirs("mpf_component_api", possible_component_api_dirs))
             {
             }
 
@@ -408,6 +416,7 @@ namespace MPF { namespace COMPONENT {
         };
     }
 
+
     class PythonComponentHandle::impl {
     private:
         log4cxx::LoggerPtr logger_;
@@ -417,12 +426,18 @@ namespace MPF { namespace COMPONENT {
         // "'MPF::COMPONENT::PythonComponentHandle::impl' declared with greater visibility than the type of its field".
         // Putting any class that has fields that are pybind11 types in an anonymous namespace gets rid of
         // the compiler warning.
-        ComponentAttrs component_;
         ComponentApi component_api_;
 
+        ComponentAttrs component_;
+
     public:
-        explicit impl(const log4cxx::LoggerPtr &logger, const std::string &module_path)
-            : logger_(logger)
+        explicit impl(const log4cxx::LoggerPtr &logger, const std::string &module_path,
+                      const std::vector<std::string> &possible_component_api_dirs)
+            : logger_((
+                  // Use comma operator so that initialize_python gets called before any fields are initialized.
+                  initialize_python(), // result is discarded
+                  logger))
+            , component_api_(possible_component_api_dirs)
             , component_(module_path)
         {
         }
@@ -577,8 +592,16 @@ namespace MPF { namespace COMPONENT {
 
 
 
-    PythonComponentHandle::PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &module_path)
-            : impl_(new impl(logger, module_path))
+    PythonComponentHandle::PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &module_path,
+                                                 const std::string &component_api_dir)
+            : PythonComponentHandle(logger, module_path, std::vector<std::string>{ component_api_dir })
+    {
+    }
+
+
+    PythonComponentHandle::PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &module_path,
+                                                 const std::vector<std::string> &possible_component_api_dirs)
+            : impl_(new impl(logger, module_path, possible_component_api_dirs))
     {
     }
 

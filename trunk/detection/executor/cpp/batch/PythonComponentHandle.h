@@ -42,7 +42,11 @@ namespace MPF { namespace COMPONENT {
 
     class PythonComponentHandle {
     public:
-        explicit PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &module_path);
+        PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &module_path,
+                              const std::string &component_api_dir);
+
+        PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &module_path,
+                              const std::vector<std::string> &possible_component_api_dirs);
 
         PythonComponentHandle(PythonComponentHandle &&other) noexcept;
 

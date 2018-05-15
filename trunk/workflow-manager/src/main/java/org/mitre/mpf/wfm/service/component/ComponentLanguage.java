@@ -37,7 +37,8 @@ import static java.util.stream.Collectors.toMap;
 
 public enum ComponentLanguage {
     JAVA("java"),
-    CPP("c++");
+    CPP("c++"),
+    PYTHON("python");
 
     private static final Map<String, ComponentLanguage> _namesMap = getNamesMap();
 

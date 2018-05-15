@@ -27,15 +27,19 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
+import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
+import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
@@ -43,6 +47,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
@@ -52,6 +57,7 @@ import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +88,9 @@ public class TestDetectionResponseProcessor {
 
     @Autowired
     private Redis redis;
+
+    @Autowired
+    private PropertiesUtil propertiesUtil;
 
     @Autowired
     @Qualifier(DetectionResponseProcessor.REF)
@@ -154,7 +163,11 @@ public class TestDetectionResponseProcessor {
         detectionStageDet.getActions().add(detectionAction);
 
         detectionPipeline.getStages().add(detectionStageDet);
-        TransientJob detectionJob = new TransientJob(jobId, "234234", detectionPipeline, 0, 1, false, false);
+
+        // Capture a snapshot of the detection system property settings when the job is created.
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+
+        TransientJob detectionJob = new TransientJob(jobId, "234234", transientDetectionSystemProperties, detectionPipeline, 0, 1, false, false);
         TransientMedia media = new TransientMedia(234234,ioUtils.findFile("/samples/video_01.mp4").toString());
         media.addMetadata("DURATION","3004");
         media.addMetadata("FPS","29.97");

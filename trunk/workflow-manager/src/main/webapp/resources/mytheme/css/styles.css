@@ -307,12 +307,12 @@ div.server-media .panel-body{
 }
 
 .formlabel {
-    color: #505050;
+    color: #505050; /* dark gray */
     text-align: left;
 }
 
 .formlabelChanged {
-    color: #ab5d05 !important;
+    color: #ab5d05 !important; /* burnt orange */
     font-weight: bold;
 }
 

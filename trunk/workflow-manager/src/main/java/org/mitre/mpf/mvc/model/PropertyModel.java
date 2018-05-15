@@ -35,42 +35,34 @@ public class PropertyModel {
 
 	private boolean _needsRestart;
 
-
 	public PropertyModel() {
 
 	}
 
-
-	public PropertyModel( String key, String value, boolean needsRestart) {
-		_key = key;
-		_value = value;
-		_needsRestart = needsRestart;
-	}
+    public PropertyModel( String key, String value, boolean needsRestart) {
+        _key = key;
+        _value = value;
+        _needsRestart = needsRestart;
+    }
 
 
 	public String getKey() {
 		return _key;
 	}
-
 	public void setKey(String key) {
 		_key = key;
 	}
 
-
 	public String getValue() {
 		return _value;
 	}
-
 	public void setValue(String value) {
 		_value = value;
 	}
 
+	public boolean getNeedsRestart() { return _needsRestart; }
 
-	public boolean getNeedsRestart() {
-		return _needsRestart;
-	}
-
-	public void setNeedsRestart(boolean needsRestart) {
-		_needsRestart = needsRestart;
-	}
+	public String toString() {
+        return "_key: " + _key + ", _value: " + _value + ", _needsRestart: " + _needsRestart;
+    }
 }

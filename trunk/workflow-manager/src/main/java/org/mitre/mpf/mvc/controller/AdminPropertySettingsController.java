@@ -94,11 +94,14 @@ public class AdminPropertySettingsController
             // Get an updated list of property models containing only the mutable properties. Each element contains current value.
             return propertiesUtil.getMutableCustomProperties();
 
-        } else {
+        } else if ( propertySet.equalsIgnoreCase("all") ) {
             // by default, return all of the system properties - updated to contain current value.
             return propertiesUtil.getCustomProperties();
-        }
 
+        } else {
+            log.error("Unexpected \"propertySet\" value: \"" + propertySet + "\". Returning null.");
+            return null;
+        }
     }
 
     @ResponseBody

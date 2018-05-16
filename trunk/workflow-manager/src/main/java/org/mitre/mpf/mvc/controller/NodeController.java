@@ -27,7 +27,6 @@
 package org.mitre.mpf.mvc.controller;
 
 import io.swagger.annotations.*;
-import org.apache.commons.io.IOUtils;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.h2.util.StringUtils;
@@ -54,11 +53,12 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 // swagger includes
 
@@ -133,29 +133,54 @@ public class NodeController {
 	}
 
 	/*
-	 * GET /nodes/all-mpf-nodes 
-	 * get all mpf nodes env var
+	 * GET /nodes/all
 	 */
-	// INTERNAL
-	@RequestMapping(value = "/nodes/all-mpf-nodes", method = RequestMethod.GET) // TODO: Rename endpoint
+	// EXTERNAL: Only used by externally by "mpf list-nodes"
+	@RequestMapping(value = "/rest/nodes/all", method = RequestMethod.GET)
 	@ResponseBody
-	public Set<String> getAllMpfNodes() throws IOException {
-		/*
-		String value = propertiesUtil.getAllMpfNodes();
-		List<String> allMpfNodes = new ArrayList<String>();
-		if (!StringUtils.isNullOrEmpty(value)) {
-			for (String mpfNode : value.split(",")) {
+	public Set<String> getAllNodesRest(
+			@RequestParam(value = "type", required = false, defaultValue="all") String type) {
+		return getAllNodes(type);
+	}
+
+	// INTERNAL
+	@RequestMapping(value = "/nodes/all", method = RequestMethod.GET)
+	@ResponseBody
+	public Set<String> getAllNodes(
+			@RequestParam(value = "type", required = false, defaultValue="all") String type) {
+
+		Set coreNodes = new HashSet<String>();
+		String allMpfNodesStr = propertiesUtil.getAllMpfNodes();
+		if (!StringUtils.isNullOrEmpty(allMpfNodesStr)) {
+			for (String mpfNode : allMpfNodesStr.split(",")) {
 				// using regex if we change the port from 7800
 				// replace ports 2 to 5 digits long
-				allMpfNodes.add(mpfNode.replaceFirst("\\[\\d{2,5}\\]", ""));
+				coreNodes.add(mpfNode.replaceFirst("\\[\\d{2,5}\\]", ""));
 			}
 		}
-		return allMpfNodes;
-		*/
 
-		// return IOUtils.readLines(propertiesUtil.getKnownNodes().getInputStream(), "UTF-8");
+		if (type.equals("core")) {
+			return coreNodes;
+		}
 
-		return nodeManagerService.getAvailableHosts();
+		Set allAvailableNodes = nodeManagerService.getAvailableHosts();
+
+		Set nodes = new HashSet<String>();
+		if (type.equals("spare")) {
+			nodes.addAll(allAvailableNodes);
+			nodes.removeAll(coreNodes);
+			return nodes;
+		}
+
+		if (type.equals("all")) {
+			nodes.addAll(coreNodes);
+			nodes.addAll(allAvailableNodes);
+			return nodes;
+
+		}
+
+		log.error("Unexpected \"type\" value: \"" + type + "\". Returning null.");
+		return null;
 	}
 
 	/*
@@ -393,137 +418,6 @@ public class NodeController {
 
 		return mpfResponse;
 	}
-
-	// TODO: Refactor to take one hostname and add it to knownNodes.txt
-	// EXTERNAL: Only used by "mpf add-node" and "mpf remove-node"
-	@RequestMapping(value = {"/rest/nodes/all-mpf-nodes"}, method = RequestMethod.PUT)
-	public ResponseEntity<MpfResponse> setAllMpfNodes(@RequestBody String allMpfNodes, HttpServletRequest request)
-			throws IOException, InterruptedException {
-
-		if (!LoginController.getAuthenticationModel(request).isAdmin()) {
-			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-		}
-
-		String allNodes = allMpfNodes;
-		if (allMpfNodes.startsWith(",")) {
-			allNodes = allNodes.substring(1);
-		}
-
-		boolean error = false;
-		List<String> hosts = new ArrayList<>();
-		List<Integer> ports = new ArrayList<>();
-
-		for (String node : Arrays.asList(allNodes.split(","))) {
-			if (node.isEmpty()) {
-				continue;
-			}
-
-			boolean parseError = false;
-
-			String[] tokens = node.split("\\[");
-			if (tokens.length == 2) {
-				String host = tokens[0];
-				tokens = tokens[1].split("\\]");
-				if (tokens.length == 1) {
-					try {
-						int port = Integer.parseInt(tokens[0]);
-						hosts.add(host);
-						ports.add(port);
-					} catch(NumberFormatException e) {
-						log.error("Error while parsing port for \"" + node + "\". " + tokens[0] + " is not a number.");
-						parseError = true;
-					}
-				} else {
-					log.error("Error while parsing port for \"" + node + "\".");
-					parseError = true;
-				}
-			} else {
-				log.error("Error while parsing \"" + node + "\".");
-				parseError = true;
-			}
-
-			if (parseError) {
-				log.error("Each node should be specified as \"<hostname>[<port>]\".");
-				error = true;
-			}
-		}
-
-		if (error) {
-			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-		}
-
-
-		/*
-		// Update the value of ALL_MPF_NODES used by the WFM at runtime.
-		// This value is used to populate the list of available nodes in the Nodes UI.
-		propertiesUtil.setAllMpfNodes(allNodes);
-		*/
-
-		try (OutputStream outputStream = propertiesUtil.getKnownNodes().getOutputStream()) {
-			IOUtils.writeLines(hosts, null, outputStream, "UTF-8");
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to write to known nodes file.", e);
-		}
-
-
-		log.info("hosts: " + hosts); // DEBUG
-
-		try {
-			// Update the initial_hosts list used by JGroups.
-			nodeManagerService.updateInitialHosts(hosts, ports); // DEBUG
-		} catch (IllegalStateException e) {
-			log.error(e.getMessage());
-			MpfResponse mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR, e.getMessage());
-			return new ResponseEntity<>(mpfResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-
-		// If one or more nodes have been removed, then remove them from the nodes config.
-		// Don't add new nodes to the nodes config. Leave that to the user.
-		List<NodeManagerModel> newNodeManagerModels = nodeManagerService.getNodeManagerModels().stream().filter(
-				model -> hosts.contains(model.getHost())).collect(Collectors.toList());
-
-		MpfResponse mpfResponse = new MpfResponse(
-				MpfResponse.RESPONSE_CODE_ERROR,
-				"Error while saving the node configuration. Please check server logs.");
-
-		saveNodeManagerConfig(newNodeManagerModels, mpfResponse);
-
-		return new ResponseEntity<>(mpfResponse,
-				mpfResponse.getResponseCode() == MpfResponse.RESPONSE_CODE_ERROR ? HttpStatus.INTERNAL_SERVER_ERROR : HttpStatus.OK);
-	}
-
-
-	// EXTERNAL: Only used by "mpf list-nodes"
-	@RequestMapping(value = "/rest/nodes/available-nodes", method = RequestMethod.GET)
-	@ResponseBody
-	public Set<String> /* Map<String, String> */ getAvailableNodes() throws IOException {
-
-		/*
-		List<String> allMpfNodes = getAllMpfNodes();
-		Map<InetAddress, Boolean> availableHosts = nodeManagerService.getAvailableHosts(); // TODO: Check for IllegalStateException
-
-		Map<String, String> availableNodeMap = new LinkedMap(); // maintain insertion order
-		for (InetAddress inetAddress : availableHosts.keySet()) {
-			String ip = inetAddress.getHostAddress();
-			String hostname = inetAddress.getHostName();
-			String key = ip.equals(hostname) ? ip : ip + " (" + hostname + ")";
-			if (allMpfNodes.contains(ip) || allMpfNodes.contains(hostname)) {
-				if (availableHosts.get(inetAddress)) {
-					availableNodeMap.put(key, "Available");
-				} else {
-					availableNodeMap.put(key, "Unavailable");
-				}
-			} else{
-				availableNodeMap.put(key, "Removed");
-			}
-		}
-
-		return availableNodeMap;
-		*/
-
-		return getAllMpfNodes(); // DEBUG
-	}
-
 
 	private DeployedNodeManagerModel getNodeManagerInfo() {
 		// This grabs all of the services and does not organize them into a

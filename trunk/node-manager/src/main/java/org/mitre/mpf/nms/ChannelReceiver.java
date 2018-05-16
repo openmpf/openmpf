@@ -147,14 +147,14 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
                     String mgrHost = hostNodeTypePair.getLeft();
                     managersInView.put(mgrHost, Boolean.TRUE);
 
-                    // Normally, managers are known in advance by masters after loading an XML configuration file
-                    // It could happen that someone starts up a manager elsewhere on the network that isn't enumerated
-                    // Also, we have to consider that we've got one stopping/restarting over its lifecycle
+                    // Normally, managers are known in advance by masters after loading an XML configuration file.
+                    // It could happen that someone starts up a manager elsewhere on the network that isn't enumerated.
+                    // Also, we have to consider that we've got one stopping/restarting over its lifecycle.
                     NodeDescriptor mgr = nodeTable.get(mgrHost);
                     if (mgr == null) {
                         mgr = new NodeDescriptor(mgrHost);
                         if (!mgr.doesHostMatch(propertiesUtil.getThisMpfNode())) { // don't warn about self
-                            LOG.warn("New node-manager is online that wasn't preconfigured. Rogue? Spare?");
+                            LOG.warn("New node-manager is online that wasn't preconfigured. Treating as a spare node.");
                         }
                         // Issue the callback
                         if (notifier != null) {
@@ -201,7 +201,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
                             }
                         }
                     }
-                    LOG.error("Node-manager offline on " + entry.getKey());
+                    LOG.warn("Node-manager offline on " + entry.getKey());
                     if (notifier != null) {
                         notifier.managerDown(entry.getValue().getHostname());
                     }

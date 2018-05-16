@@ -550,6 +550,10 @@ public class PropertiesUtil {
         return System.getenv(EnvVar.THIS_MPF_NODE);
     }
 
+    public String getAllMpfNodes() {
+        return System.getenv(EnvVar.ALL_MPF_NODES);
+    }
+
     //
     // Web settings
     //

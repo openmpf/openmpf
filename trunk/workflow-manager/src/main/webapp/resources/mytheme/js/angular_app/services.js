@@ -356,9 +356,9 @@ AppServices.service('NodeService', function ($http, $timeout, $log,$filter) {
      * @returns {*}
      */
     this.getAllNodesHostnames= function () {
-        var promise = $http.get("nodes/all-mpf-nodes").then(function (response) {
+        var promise = $http.get("nodes/all").then(function (response) {
                 // The then function here is an opportunity to modify the response
-                //$log.debug('using $http to fetch : ', "nodes/all-mpf-nodes");
+                //$log.debug('using $http to fetch : ', "nodes/all");
                 //$log.debug('  returned data=', response.data);
                 var nodesList = [];
                 angular.forEach(response.data, function (obj) {

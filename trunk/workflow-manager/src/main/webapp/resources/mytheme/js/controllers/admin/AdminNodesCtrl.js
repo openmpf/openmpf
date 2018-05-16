@@ -39,7 +39,6 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
     $scope.btns_disabled = false;
     var refresh_counter = 0;
     var default_cursor = document.body.style.cursor;
-    var nodeHostnames = [];
     var configurations = [];    // the nodes' configurations
     var waitTimeout = null;
     var waitTimeoutDelay = 30000; //30 sec
@@ -55,10 +54,6 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
             ServicesCatalogService.getServicesCatalog(true).then(function (data) {
                 $log.debug("serviceCatalog", data);//angular.toJson(data)
                 $scope.serviceCatalog = $filter('orderBy')(data, 'serviceName');
-            });
-            NodeService.getAllNodesHostnames().then(function (data) {
-                $log.debug("NodesHostnames", data);
-                nodeHostnames = data;
             });
 
             getConfigs();
@@ -286,16 +281,18 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
     };
 
     $scope.addNode = function () {
-        $confirm({hostnames: getConfigurableHostnames()}, {templateUrl: 'add-node-dialog.html'})
-            .then(function (selectedHostname) {
-                if (selectedHostname) {
-                    var services = [];
-                    if ($("#add_node_all_services").prop("checked")) services = angular.copy($scope.serviceCatalog);
-                    var node = {"host": selectedHostname, "services": services};
-                    configurations.push(node);
-                    saveConfigs();
-                }
-            });
+        NodeService.getAllNodesHostnames().then(function (data) {
+            $confirm({hostnames: getConfigurableHostnames(data)}, {templateUrl: 'add-node-dialog.html'})
+                .then(function (selectedHostname) {
+                    if (selectedHostname) {
+                        var services = [];
+                        if ($("#add_node_all_services").prop("checked")) services = angular.copy($scope.serviceCatalog);
+                        var node = {"host": selectedHostname, "services": services};
+                        configurations.push(node);
+                        saveConfigs();
+                    }
+                });
+        });
     };
 
     $scope.addAllServices = function (hostname) {
@@ -324,15 +321,14 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
         saveConfigs();
     };
 
-    var getConfigurableHostnames = function () {
-        var fullList = nodeHostnames;
+    var getConfigurableHostnames = function (nodeHostnames) {
         var configList = [];
         var out = [];
 
         angular.forEach(configurations, function (item) {
             configList.push(item.host)
         });
-        angular.forEach(fullList, function (item) {
+        angular.forEach(nodeHostnames, function (item) {
             if (configList.indexOf(item) < 0) {
                 out.push(item)
             }

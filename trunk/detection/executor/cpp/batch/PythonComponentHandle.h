@@ -42,11 +42,8 @@ namespace MPF { namespace COMPONENT {
 
     class PythonComponentHandle {
     public:
-        PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &module_path,
-                              const std::string &component_api_dir);
-
-        PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &module_path,
-                              const std::vector<std::string> &possible_component_api_dirs);
+        PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &lib_path,
+                              const std::string &venv_activate_path="venv/bin/activate_this.py");
 
         PythonComponentHandle(PythonComponentHandle &&other) noexcept;
 

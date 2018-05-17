@@ -470,6 +470,7 @@ public class AddComponentServiceImpl implements AddComponentService {
                 algorithmService = new Service(serviceName, "${MPF_HOME}/bin/amq_detection_component");
                 algorithmService.addArg(descriptor.batchLibrary);
                 algorithmService.addArg(queueName);
+                algorithmService.addArg(descriptor.sourceLanguage.getValue());
                 algorithmService.setLauncher("simple");
                 algorithmService.setWorkingDirectory("${MPF_HOME}/plugins/" + descriptor.componentName);
                 break;

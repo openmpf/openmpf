@@ -36,12 +36,12 @@ namespace py = pybind11;
 namespace MPF { namespace COMPONENT {
 
     namespace {
-        namespace debug {
-            py::object get_builtin(const char *name) {
-                py::module builtin = py::module::import("__builtin__");
-                return builtin.attr(name);
-            }
+        py::object get_builtin(const char *name) {
+            py::module builtin = py::module::import("__builtin__");
+            return builtin.attr(name);
+        }
 
+        namespace debug {
             void dump_py_obj(const py::handle &object, bool deep=false, bool print_values=false) {
                 py::print("===Dumping Python Object===");
                 py::print("Object: ", object);
@@ -83,10 +83,15 @@ namespace MPF { namespace COMPONENT {
         }
 
 
-        void initialize_python() {
+        void activate_virtualenv(const std::string &venv_activate_path) {
+            get_builtin("execfile")(venv_activate_path, py::dict(py::arg("__file__")=venv_activate_path));
+        }
+
+        void initialize_python(const std::string &venv_activate_path) {
             static bool initialized = false;
             if (!initialized) {
                 py::initialize_interpreter();
+                activate_virtualenv(venv_activate_path);
                 initialized = true;
             }
         }
@@ -100,34 +105,28 @@ namespace MPF { namespace COMPONENT {
         }
 
 
-        py::module load_module_from_full_path(const std::string &module_path) {
-            try {
-                add_module_dir_to_python_path(module_path);
-                std::string module_name = get_module_name(module_path);
-                return py::module::import(module_name.c_str());
-            }
-            catch (const std::exception &ex) {
-                throw ComponentLoadError(
-                        "An error occurred while trying to import the component module located at \""
-                        + module_path + "\": " + ex.what());
-            }
-        }
-
-
         bool is_callable(py::handle obj) {
             // This returns true for any callable, not just functions.
             return py::isinstance<py::function>(obj);
         }
 
 
-        py::object load_component(const std::string &module_path) {
+        py::object load_component_from_module(const std::string &module_name, const std::string &module_path) {
             static const char * const export_component_var = "EXPORT_MPF_COMPONENT";
             static const std::string error_msg_end =
                     "Python components must declare a module level variable named \""
                     + std::string(export_component_var)
                     + "\", " "which gets assigned to either a class or some other callable.";
 
-            py::module component_module = load_module_from_full_path(module_path);
+            py::module component_module;
+            try {
+                component_module = py::module::import(module_name.c_str());
+            }
+            catch (const std::exception &ex) {
+                throw ComponentLoadError(
+                        "An error occurred while trying to import the component module located at \""
+                        + module_path + "\": " + ex.what());
+            }
 
             if (!py::hasattr(component_module, export_component_var)) {
                 throw ComponentLoadError(
@@ -143,9 +142,87 @@ namespace MPF { namespace COMPONENT {
                         + export_component_var + "\", but its value was neither a class nor a callable. "
                         + error_msg_end);
             }
+            return exported_component_class;
 
+        }
+
+        py::object load_component_from_file(const std::string &module_path) {
+            add_module_dir_to_python_path(module_path);
+            std::string module_name = get_module_name(module_path);
+            return load_component_from_module(module_name, module_path);
+        }
+
+
+        /*
+          Entry point documentation: https://setuptools.readthedocs.io/en/latest/pkg_resources.html#convenience-api
+          Example entry point declaration in a component's setup.py:
+          import setuptools
+          setuptools.setup(
+                name=...
+                ...
+                entry_points={
+                    'mpf.exported_component': 'component = my_module:MyComponentClass'
+                }
+            )
+        */
+        py::object load_component_from_package(const std::string &distribution_name) {
+            static const char * const entry_point_group = "mpf.exported_component";
+
+            py::module pkg_resources = py::module::import("pkg_resources");
+            py::dict entry_points;
             try {
-                return exported_component_class();
+                entry_points = pkg_resources.attr("get_entry_map")(distribution_name, entry_point_group);
+            }
+            catch (py::error_already_set &ex) {
+                if (!ex.matches(pkg_resources.attr("DistributionNotFound"))) {
+                    throw;
+                }
+            }
+
+            if (entry_points.size() < 1) {
+                try {
+                    return load_component_from_module(distribution_name, distribution_name);
+                }
+                catch (const ComponentLoadError &ex) {
+                    throw ComponentLoadError(
+                            "The \"" + distribution_name + "\" component did not declare an \"" + entry_point_group
+                            + "\" entry point so an attempt was made to load the component from a module named \""
+                            + distribution_name + "\", but that also failed due to: " + ex.what());
+                }
+            }
+
+            static const char * const expected_entry_point_name = "component";
+            // The left hand side of the '=' in entry point declaration should be "component"
+            py::handle component_entry_point = entry_points.attr("get")(expected_entry_point_name);
+            if (component_entry_point.is_none()) {
+                // An entry point in the "mpf.exported_component" group was found,
+                // but the left hand side of the '=' was something else.
+                // For example 'mpf.exported_component': 'MyComponentClass = my_module:MyComponentClass'
+                // We really only care about the entry point group, since we don't do anything with entry point name.
+                component_entry_point = entry_points.begin()->second;
+            }
+            return component_entry_point.attr("load")();
+        }
+
+
+        bool is_python_file(const std::string &lib_path) {
+            static const std::string extension = ".py";
+            if (lib_path.size() < extension.size()) {
+                return false;
+            }
+            size_t start = lib_path.size() - extension.size();
+            return lib_path.find(".py", start) != std::string::npos;
+        }
+
+
+
+
+        py::object load_component(const std::string &component_lib) {
+            py::object component_class = is_python_file(component_lib)
+                                         ? load_component_from_file(component_lib)
+                                         : load_component_from_package(component_lib);
+            try {
+                return component_class();
             }
             catch (const std::exception &ex) {
                 throw ComponentLoadError(
@@ -213,15 +290,6 @@ namespace MPF { namespace COMPONENT {
         }
 
 
-        py::module load_module_from_possible_dirs(const std::string &module_name,
-                                                  const std::vector<std::string> &possible_module_dirs) {
-            py::module::import("sys")
-                    .attr("path")
-                    .attr("__setitem__")(py::slice(0, 0, 1), possible_module_dirs);  // prepend possible_module_dirs
-            return py::module::import(module_name.c_str());
-        }
-
-
         class ComponentApi {
         private:
             py::object image_job_ctor_;
@@ -238,8 +306,8 @@ namespace MPF { namespace COMPONENT {
             py::object detection_exception_ctor_;
 
         public:
-            explicit ComponentApi(const std::vector<std::string> &possible_component_api_dirs)
-                    : ComponentApi(load_module_from_possible_dirs("mpf_component_api", possible_component_api_dirs))
+            explicit ComponentApi()
+                    : ComponentApi(py::module::import("mpf_component_api"))
             {
             }
 
@@ -431,14 +499,13 @@ namespace MPF { namespace COMPONENT {
         ComponentAttrs component_;
 
     public:
-        explicit impl(const log4cxx::LoggerPtr &logger, const std::string &module_path,
-                      const std::vector<std::string> &possible_component_api_dirs)
+        impl(const log4cxx::LoggerPtr &logger, const std::string &lib_path, const std::string &venv_activate_path)
             : logger_((
                   // Use comma operator so that initialize_python gets called before any fields are initialized.
-                  initialize_python(), // result is discarded
+                  initialize_python(venv_activate_path), // result is discarded
                   logger))
-            , component_api_(possible_component_api_dirs)
-            , component_(module_path)
+            , component_api_()
+            , component_(lib_path)
         {
         }
 
@@ -592,16 +659,10 @@ namespace MPF { namespace COMPONENT {
 
 
 
-    PythonComponentHandle::PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &module_path,
-                                                 const std::string &component_api_dir)
-            : PythonComponentHandle(logger, module_path, std::vector<std::string>{ component_api_dir })
-    {
-    }
 
-
-    PythonComponentHandle::PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &module_path,
-                                                 const std::vector<std::string> &possible_component_api_dirs)
-            : impl_(new impl(logger, module_path, possible_component_api_dirs))
+    PythonComponentHandle::PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &lib_path,
+                                                 const std::string &venv_activate_path)
+            : impl_(new impl(logger, lib_path, venv_activate_path))
     {
     }
 

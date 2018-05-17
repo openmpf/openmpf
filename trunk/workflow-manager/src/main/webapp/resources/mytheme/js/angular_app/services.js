@@ -350,28 +350,21 @@ AppServices.service('NodeService', function ($http, $timeout, $log,$filter) {
         return promise;
     };
 
-    /** http gets the hostnames of all nodes
-     * @param refetch - boolean to specify if this should drop the cached value and get the catalog afresh from the server
-     * @param debugging - boolean to specify adding some additional elements for debugging purposes
-     * @returns {*}
-     */
-    this.getAllNodesHostnames= function () {
-        var promise = $http.get("nodes/all").then(function (response) {
-                // The then function here is an opportunity to modify the response
-                //$log.debug('using $http to fetch : ', "nodes/all");
-                //$log.debug('  returned data=', response.data);
-                var nodesList = [];
-                angular.forEach(response.data, function (obj) {
-                    // deduplicate entries: ALL_MPF_NODES needs to specify the master node host twice
-                    //  because the configure script requires you to enter the hostname for the parent node
-                    //  to have a nodemanager.  the following removes the duplicate
-                    if (nodesList.indexOf(obj) == -1) {
-                        nodesList.push(obj);
-                    }
-                });
+    // http gets the hostnames of all nodes
+    this.getAllNodesHostnames= function (type = "all") {
+        var promise = $http.get("nodes/all?type=" + type).then(function (response) {
+            var nodesList = [];
+            angular.forEach(response.data, function (obj) {
+                // deduplicate entries: ALL_MPF_NODES needs to specify the master node host twice
+                //  because the configure script requires you to enter the hostname for the parent node
+                //  to have a nodemanager.  the following removes the duplicate
+                if (nodesList.indexOf(obj) == -1) {
+                    nodesList.push(obj);
+                }
+            });
 
-                // sort entries
-                nodesList = $filter('orderBy')(nodesList);
+            // sort entries
+            nodesList = $filter('orderBy')(nodesList);
                 return nodesList;
             });
         return promise;

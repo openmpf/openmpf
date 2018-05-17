@@ -38,13 +38,20 @@ angular.module('mpf.wfm.controller.AdminComponentRegistrationCtrl', [
 	'ui.bootstrap'
 ])
 .controller('AdminComponentRegistrationCtrl',
-['$scope', 'Components', 'NotificationSvc', '$uibModal',
-function ($scope, Components, NotificationSvc, $uibModal) {
+['$scope', 'Components', 'NotificationSvc', 'NodeService', '$uibModal',
+function ($scope, Components, NotificationSvc, NodeService, $uibModal) {
+
+    NodeService.getAllNodesHostnames("core").then(function (data) {
+        $scope.coreNodes = data;
+    });
+
+    NodeService.getAllNodesHostnames("spare").then(function (data) {
+        $scope.spareNodes = data;
+    });
 
 	$scope.components = Components.query();
 
 	var statesEnum = Components.statesEnum;
-	
 	
 	var refreshComponents = function () {
 		Components.query()

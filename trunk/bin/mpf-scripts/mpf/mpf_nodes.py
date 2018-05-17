@@ -59,8 +59,8 @@ def list_nodes(workflow_manager_url=None):
         return
 
     [username, password] = get_username_and_password(False)
-    core_nodes_list = get_core_nodes(workflow_manager_url, username, password)
-    spare_nodes_list = get_spare_nodes(workflow_manager_url, username, password)
+    core_nodes_list = get_all_wfm_nodes(workflow_manager_url, username, password, "core")
+    spare_nodes_list = get_all_wfm_nodes(workflow_manager_url, username, password, "spare")
 
     print "Core nodes: " + str(core_nodes_list)
 
@@ -82,17 +82,8 @@ def get_username_and_password(for_admin):
     return [username, password]
 
 
-def get_core_nodes(wfm_manager_url, username, password):
-    endpoint_url = ''.join([string.rstrip(wfm_manager_url,'/'),'/rest/nodes/all?type=core'])
-    return get_wfm_nodes(endpoint_url, username, password)
-
-
-def get_spare_nodes(wfm_manager_url, username, password):
-    endpoint_url = ''.join([string.rstrip(wfm_manager_url,'/'),'/rest/nodes/all?type=spare'])
-    return get_wfm_nodes(endpoint_url, username, password)
-
-
-def get_wfm_nodes(endpoint_url, username, password):
+def get_all_wfm_nodes(wfm_manager_url, username, password, type = "all"):
+    endpoint_url = ''.join([string.rstrip(wfm_manager_url,'/'),'/rest/nodes/all?type=' + type])
     request = urllib2.Request(endpoint_url)
 
     request.get_method = lambda: 'GET'

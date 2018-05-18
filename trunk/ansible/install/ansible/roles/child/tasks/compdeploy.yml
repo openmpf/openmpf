@@ -184,6 +184,7 @@
     - name: Install virtualenv
       pip:
         name: virtualenv
+        executable: pip2
       when: is_python_component
 
 

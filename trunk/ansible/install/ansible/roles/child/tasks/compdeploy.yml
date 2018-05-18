@@ -170,10 +170,21 @@
         msg="COMPONENT_DESCRIPTOR_PATH={{ component_descriptor.files[0].path }}"
 
 
+    - name: Check if component is a Python component
+      set_fact:
+        is_python_component: ext_component_descriptor.sourceLanguage|default('')|lower == "python"
+
+
     - name: Check if component has wheelhouse directory
       stat:
         path: "{{ plugins_dir }}/{{ component_tld }}/wheelhouse"
       register: comp_wheelhouse_dir
+
+
+    - name: Install virtualenv
+      pip:
+        name: virtualenv
+      when: is_python_component
 
 
     - name: Setup virtualenv for Python setuptools-based component
@@ -183,7 +194,7 @@
         virtualenv_python: python2.7
         extra_args: --find-links {{comp_wheelhouse_dir.stat.path}} --no-index
       when:
-        - ext_component_descriptor.sourceLanguage|lower == "python"
+        - is_python_component
         - comp_wheelhouse_dir.stat.exists
 
 
@@ -194,5 +205,5 @@
         virtualenv_python: python2.7
         extra_args: --find-links {{ lookup('env','MPF_HOME') }}/python/wheelhouse --no-index
       when:
-        - ext_component_descriptor.sourceLanguage|lower == "python"
+        - is_python_component
         - not comp_wheelhouse_dir.stat.exists

@@ -26,11 +26,6 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
-
-import javax.inject.Inject;
-
 import org.atmosphere.config.service.Disconnect;
 import org.atmosphere.config.service.ManagedService;
 import org.atmosphere.config.service.Message;
@@ -44,6 +39,10 @@ import org.mitre.mpf.mvc.model.AtmosphereChannel;
 import org.mitre.mpf.mvc.model.AtmosphereMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *  Workflow manager uses Atmosphere (https://github.com/Atmosphere/atmosphere) for asynchronous communication
@@ -139,7 +138,7 @@ public class AtmosphereController {
 	}
 
 	/**
-	 * generic wrapper to Braodcaster.broadcast()
+	 * generic wrapper to Broadcaster.broadcast()
 	 * this method should be called when an event has happened that needs to be broadcasted to the clients
 	 */
 	public static void broadcast(AtmosphereMessage msg) {

@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thoughtworks.xstream.XStream;
+import org.h2.util.StringUtils;
 import org.mitre.mpf.nms.xml.EnvironmentVariable;
 import org.mitre.mpf.nms.xml.NodeManager;
 import org.mitre.mpf.nms.xml.NodeManagers;
@@ -45,11 +46,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.WritableResource;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.net.InetAddress;
 import java.util.*;
 
 import static java.util.stream.Collectors.toCollection;
@@ -69,6 +70,22 @@ public class NodeManagerServiceImpl implements NodeManagerService {
     @Autowired
     private ObjectMapper objectMapper;
 
+    // The set of core nodes will not change while the WFM is running.
+    private Set coreNodes;
+
+
+    @PostConstruct
+    public void init() {
+        coreNodes = new HashSet<String>();
+        String allMpfNodesStr = propertiesUtil.getAllMpfNodes();
+        if (!StringUtils.isNullOrEmpty(allMpfNodesStr)) {
+            for (String mpfNode : allMpfNodesStr.split(",")) {
+                // using regex if we change the port from 7800
+                // replace ports 2 to 5 digits long
+                coreNodes.add(mpfNode.replaceFirst("\\[\\d{2,5}\\]", ""));
+            }
+        }
+    }
 
     @Override
     public boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels) throws IOException {
@@ -144,9 +161,9 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
 
 
-    private static NodeManagerModel convertToModel(NodeManager nodeManager) {
+    private NodeManagerModel convertToModel(NodeManager nodeManager) {
         NodeManagerModel model = new NodeManagerModel(nodeManager.getTarget());
-
+        model.setCoreNode(isCoreNode(model.getHost()));
         if (nodeManager.getServices() != null) {
             nodeManager.getServices().stream()
                 .map(ServiceModel::new)
@@ -164,10 +181,16 @@ public class NodeManagerServiceImpl implements NodeManagerService {
                 return new ArrayList<>();
             }
 
-            return managers.managers()
+            List<NodeManagerModel> nodeManagerModels = managers.managers()
                     .stream()
-                    .map(NodeManagerServiceImpl::convertToModel)
+                    .map(this::convertToModel)
                     .collect(toCollection(ArrayList::new));
+
+            // get the current view once, and then update all the models
+            Set<String> availableNodes = getAvailableNodes();
+            nodeManagerModels.stream().forEach(m -> m.setOnline(availableNodes.contains(m.getHost())));
+
+            return nodeManagerModels;
         }
         catch (IOException ex) {
             throw new UncheckedIOException("Unable to load node manager models", ex);
@@ -264,11 +287,18 @@ public class NodeManagerServiceImpl implements NodeManagerService {
         }
     }
 
-    public void updateInitialHosts(List<String> hosts, List<Integer> ports) {
-        nodeManagerStatus.updateInitialHosts(hosts, ports);
+    @Override
+    public Set<String> getCoreNodes() {
+        return coreNodes;
     }
 
-    public Set<String> getAvailableHosts() {
-        return nodeManagerStatus.getAvailableHosts();
+    @Override
+    public boolean isCoreNode(String host) {
+        return coreNodes.contains(host);
+    }
+
+    @Override
+    public Set<String> getAvailableNodes() {
+        return nodeManagerStatus.getAvailableNodes();
     }
 }

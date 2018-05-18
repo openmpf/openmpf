@@ -61,10 +61,11 @@ public enum AtmosphereChannel {
 
 	/** SSPC_NODE: node related events
 	 *  note this differs from previous event notifications where SSPC_NODE and SSPC_SERVICE were all part of a single web service
+	 *  Events(s):
+	 * 		OnNewManager - when a node manager is started
+	 * 		OnManagerDown - when a node manager is stopped
 	 * 	Event(s) not yet implemented:
 	 * 		OnNodeConfigurationChanged - ???
-	 * 		OnNewManager - ???
-	 * 		OnManagerDown - ???
 	 */
 	SSPC_NODE,
 

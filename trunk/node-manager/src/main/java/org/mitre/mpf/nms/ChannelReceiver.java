@@ -310,11 +310,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         handleView(msgChannel.getView(), true);
     }
 
-    public void updateInitialHosts(List<String> hosts, List<Integer> ports) {
-        msgChannel.updateInitialHosts(hosts, ports);
-    }
-
-    public Set<String> getAvailableHosts() {
-        return msgChannel.getAvailableHosts();
+    public Set<String> getAvailableNodes() {
+        return msgChannel.getAvailableNodes();
     }
 }

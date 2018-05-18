@@ -59,7 +59,9 @@ public interface NodeManagerService {
 
     public boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels, boolean reload) throws IOException;
 
-    public void updateInitialHosts(List<String> hosts, List<Integer> ports);
+    public Set<String> getCoreNodes();
 
-    public Set<String> getAvailableHosts();
+    public boolean isCoreNode(String host);
+
+    public Set<String> getAvailableNodes();
 }

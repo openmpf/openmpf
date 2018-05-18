@@ -316,13 +316,8 @@ public class MasterNode {
     }
 
 
-    public void updateInitialHosts(List<String> hosts, List<Integer> ports) {
-        nodeStateManager.updateInitialHosts(hosts, ports);
-    }
-
-
-    public Set<String> getAvailableHosts() {
-        return nodeStateManager.getAvailableHosts();
+    public Set<String> getAvailableNodes() {
+        return nodeStateManager.getAvailableNodes();
     }
 }
 

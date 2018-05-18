@@ -579,6 +579,10 @@ AppServices.factory('ServerSidePush',
                             }
 
                             break;
+                        case 'SSPC_NODE':
+                            $rootScope.$broadcast('SSPC_NODE', json);
+                            //console.log("SSPC_NODE message received: " + JSON.stringify(json,2,null));
+                            break;
                         case 'SSPC_SERVICE':
                             $rootScope.$broadcast('SSPC_SERVICE', json);
                             //console.log("SSPC_SERVICE message received: " + JSON.stringify(json,2,null));

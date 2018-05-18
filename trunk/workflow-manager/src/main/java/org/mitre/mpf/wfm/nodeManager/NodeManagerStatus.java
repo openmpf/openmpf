@@ -48,7 +48,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -233,23 +232,21 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     }
 
     /** broadcasts service events via Atmosphere */
-    private void broadcast( ServiceDescriptor service, String event )
-    {
+    private void broadcastServiceEvent(ServiceDescriptor service, String event) {
         HashMap<String,Object> datamap = new HashMap<String,Object>();
-        datamap.put( "name", service.getName() );
-        datamap.put( "lastKnownState", service.getLastKnownState() );
-        datamap.put( "host", service.getHost() );
-        datamap.put( "event", event );
-        AtmosphereController.broadcast( AtmosphereChannel.SSPC_SERVICE, event, datamap );
+        datamap.put("name", service.getName());
+        datamap.put("lastKnownState", service.getLastKnownState());
+        datamap.put("host", service.getHost());
+        datamap.put("event", event);
+        AtmosphereController.broadcast(AtmosphereChannel.SSPC_SERVICE, event, datamap);
     }
 
-    /** broadcasts service events via Atmosphere */
-    private void broadcast( String serviceName, String event )
-    {
+    /** broadcasts node events via Atmosphere */
+    private void broadcastNodeEvent(String hostname, String event) {
         HashMap<String,Object> datamap = new HashMap<String,Object>();
-        datamap.put( "name", serviceName );
-        datamap.put( "event", event );
-        AtmosphereController.broadcast( AtmosphereChannel.SSPC_SERVICE, event, datamap );
+        datamap.put("host", hostname);
+        datamap.put("event", event);
+        AtmosphereController.broadcast(AtmosphereChannel.SSPC_NODE, event, datamap);
     }
 
     @Override
@@ -265,31 +262,33 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
         log.debug("{} manager has started.", hostname);
         //go ahead and launch anything that is able to launch (nothing that starts with a state of Delete or InactiveNoStart)
         masterNode.launchAllNodes();
+        broadcastNodeEvent(hostname, "OnNewManager");
     }
 
     @Override
     public void managerDown(String hostname) {
         //log.debug("{} manager down.", hostname);
+        broadcastNodeEvent(hostname, "OnManagerDown");
     }
 
     @Override
     public void newService(ServiceDescriptor service) {
         updateServiceDescriptorEntry(service);
-        broadcast( service, "OnNewService" );
+        broadcastServiceEvent(service, "OnNewService");
         log.info("adding new service: {}", service.getName());
     }
 
     @Override
     public void serviceDown(ServiceDescriptor service) {
         updateServiceDescriptorEntry(service);
-        broadcast( service, "OnServiceDown" );
+        broadcastServiceEvent(service, "OnServiceDown");
         log.info("{} has shut down.", service.getName());
     }
 
     @Override
     public void serviceChange(ServiceDescriptor service) {
         updateServiceDescriptorEntry(service);
-        broadcast( service, "OnServiceChange" );
+        broadcastServiceEvent(service, "OnServiceChange");
         //log.debug("{} has changed.", service.getName());
     }
 
@@ -339,7 +338,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
             //other nodes may continue to keep the desc in their service table or map, but it is not necessary
             //once in this state
             serviceDescriptorMap.remove(serviceDescriptor.getName());
-            broadcast( serviceDescriptor, "OnServiceReadyToRemove" );
+            broadcastServiceEvent(serviceDescriptor, "OnServiceReadyToRemove");
         }
     }
 
@@ -362,11 +361,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     }
 
 
-    public void updateInitialHosts(List<String> hosts, List<Integer> ports) {
-        masterNode.updateInitialHosts(hosts, ports);
-    }
-
-    public Set<String> getAvailableHosts() {
-        return masterNode.getAvailableHosts();
+    public Set<String> getAvailableNodes() {
+        return masterNode.getAvailableNodes();
     }
 }

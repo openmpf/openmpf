@@ -149,21 +149,13 @@ public class NodeController {
 	public Set<String> getAllNodes(
 			@RequestParam(value = "type", required = false, defaultValue="all") String type) {
 
-		Set coreNodes = new HashSet<String>();
-		String allMpfNodesStr = propertiesUtil.getAllMpfNodes();
-		if (!StringUtils.isNullOrEmpty(allMpfNodesStr)) {
-			for (String mpfNode : allMpfNodesStr.split(",")) {
-				// using regex if we change the port from 7800
-				// replace ports 2 to 5 digits long
-				coreNodes.add(mpfNode.replaceFirst("\\[\\d{2,5}\\]", ""));
-			}
-		}
+		Set<String> coreNodes = nodeManagerService.getCoreNodes();
 
 		if (type.equals("core")) {
 			return coreNodes;
 		}
 
-		Set allAvailableNodes = nodeManagerService.getAvailableHosts();
+		Set<String> allAvailableNodes = nodeManagerService.getAvailableNodes();
 
 		Set nodes = new HashSet<String>();
 		if (type.equals("spare")) {

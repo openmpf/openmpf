@@ -43,12 +43,16 @@
                             <span class="accordion-toggle" data-toggle="collapse" data-target="#collapse_host_{{$index}}" ng-click="toggleChevron($event)" aria-expanded="false" aria-controls="collapse_host_{{$index}}" style="cursor: default;">
                             <i class="indicator glyphicon glyphicon-chevron-down"></i>
                                 <span class="node-host">{{host.name}}</span>
+                                <span class="node-host" ng-if="host.core">(Core,</span>
+                                <span class="node-host" ng-if="!host.core">(Spare,</span>
+                                <span class="node-host" ng-if="host.online">Online)</span>
+                                <span class="node-host" ng-if="!host.online">Offline)</span>
                             </span>
                         </h4>
                         <div class="pull-right " style="display:inline-block;">
                             <span class="badge label-frame-danger" ng-if="(counters[host.name].errors > 0 )"><i class="fa fa-warning"></i> {{counters[host.name].count-counters[host.name].stopped}}/{{counters[host.name].count}}</span>
                             <span class="badge label-frame" ng-if="(counters[host.name].errors <= 0 )"> {{counters[host.name].count-counters[host.name].stopped}}/{{counters[host.name].count}}</span>
-                            <div class="btn-group btn-group-sm text-right"  ng-if="isAdmin" role="group" aria-label="..." style="display:inline-block;">
+                            <div class="btn-group btn-group-sm text-right" ng-if="isAdmin" role="group" aria-label="..." style="display:inline-block;">
                                         <button type="button" class="btn btn-default" ng-click="startAllHostServices(host.serviceGroups)" ng-disabled="btns_disabled || counters[host.name].stopped == 0" title="Start"><i class="fa fa-play"></i></button>
                                         <button type="button" class="btn btn-default" ng-click="shutDownAllHostServices(host.serviceGroups)" ng-disabled="btns_disabled || counters[host.name].stopped == counters[host.name].count" title="Stop"><i class="fa fa-stop"></i></button>
                                         <button type="button" class="btn btn-default" ng-click="restartAllHostServices(host.serviceGroups)" ng-disabled="btns_disabled || counters[host.name].stopped == counters[host.name].count" title="Restart"><i class="fa fa-refresh"></i></button>

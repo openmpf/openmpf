@@ -40,8 +40,14 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
     var refresh_counter = 0;
     var default_cursor = document.body.style.cursor;
     var configurations = [];    // the nodes' configurations
+
+    // use a timer to prevent the user from performing any more actions until the current action completes or times out
     var waitTimeout = null;
     var waitTimeoutDelay = 30000; //30 sec
+
+    var statusCheckTimout = null;
+    var statusCheckDelay = 1000; //1 sec
+
     var open_services={};
 
     //// Operations ////
@@ -75,13 +81,14 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
                     for (var i = 0; i < $scope.nodes.length; i++) {
                         var existing_host_data = $scope.nodes[i];
                         if (existing_host_data.name == config.host) {
+                            $scope.nodes[i].online = config.online;
                             $scope.nodes[i].updated = true;
                             found = true;
                         }
                     }
                     //create new node
                     if (!found) {
-                         $scope.nodes.push({name: config.host, serviceGroups: [], updated: true});
+                         $scope.nodes.push({name: config.host, core: config.coreNode, online: config.online, serviceGroups: [], updated: true});
                     }
                 });
 
@@ -203,6 +210,10 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
             });
         });
     };
+
+    //debounce the updateServices() call so that it will only be invoked once after receiving multiple
+    //node and service event broadcasts in a row
+    var lazyUpdateServices = _.debounce(updateServices, 1000);
 
     // Actions
     $scope.nodeServiceInfo = function (nodeServiceList) {
@@ -482,7 +493,13 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
     //on a node service change status, update the model
     $scope.$on('SSPC_SERVICE', function (event, msg) {
         $log.debug("SSPC_SERVICE (in nodes and processes page): " + JSON.stringify(msg));
-        updateServices();
+        lazyUpdateServices();
+    });
+
+    //on a node change status, update the model
+    $scope.$on('SSPC_NODE', function (event, msg) {
+        $log.debug("SSPC_NODE (in nodes and processes page): " + JSON.stringify(msg));
+        lazyUpdateServices();
     });
 
     $scope.$on('$destroy', function () {

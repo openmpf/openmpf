@@ -185,6 +185,7 @@
       pip:
         name: virtualenv
         executable: pip2
+        extra_args: --user
       when: is_python_component
 
 

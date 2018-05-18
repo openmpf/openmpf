@@ -24,19 +24,28 @@
 # limitations under the License.                                            #
 #############################################################################
 
-import sys
-from os.path import expanduser, expandvars
 
-# Try to use version in repo before installed version, so that when run in a development environment the
-# most up to date version of the component api is used. A developer also might run these tests before
-# doing a full build and install.
-# On Jenkins the first path will not exist, but that is okay because Jenkins does a full build and install
-# before running these tests.
-raw_paths = (
-    "~/openmpf-projects/openmpf-python-component-sdk/detection/api",
-    "~/mpf-sdk-install/python/site-packages",
-    "$MPF_SDK_INSTALL_PATH/python/site-packages",
-    "$MPF_HOME/python/site-packages"
-)
+- name: Check if component has wheelhouse directory
+  stat:
+    path: "{{ component_path }}/wheelhouse"
+  register: comp_wheelhouse_dir
 
-sys.path[0:0] = (expanduser(expandvars(p)) for p in raw_paths)
+
+- name: Setup virtualenv for Python setuptools-based component
+  pip:
+    name: "{{ descriptor.batchLibrary | default('') }} {{ descriptor.streamLibrary | default('') }}"
+    virtualenv: "{{ component_path }}/venv"
+    virtualenv_python: python2.7
+    extra_args: --find-links {{comp_wheelhouse_dir.stat.path}} --no-index
+  when:
+    - comp_wheelhouse_dir.stat.exists
+
+
+- name: Setup virtualenv for basic Python component
+  pip:
+    name: mpf_component_api
+    virtualenv: "{{ component_path }}/venv"
+    virtualenv_python: python2.7
+    extra_args: --find-links {{ lookup('env','MPF_HOME') }}/python/wheelhouse
+  when:
+    - not comp_wheelhouse_dir.stat.exists

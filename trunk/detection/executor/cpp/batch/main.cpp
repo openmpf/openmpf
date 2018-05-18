@@ -150,10 +150,10 @@ bool is_python(log4cxx::LoggerPtr &logger, int argc, char* argv[]) {
         std::transform(provided_language.begin(), provided_language.end(), provided_language.begin(),
                        static_cast<int(*)(int)>(std::tolower));
 
-        if (std::string("python") == argv[4]) {
+        if (std::string("python") == provided_language) {
             return true;
         }
-        if (std::string("c++") == argv[4]) {
+        if (std::string("c++") == provided_language) {
             return false;
         }
         LOG4CXX_WARN(logger, "Expected the fifth command line argument to either be \"c++\" or \"python\", but \""

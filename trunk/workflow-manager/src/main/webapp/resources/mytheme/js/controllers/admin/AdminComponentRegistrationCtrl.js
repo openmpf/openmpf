@@ -41,12 +41,8 @@ angular.module('mpf.wfm.controller.AdminComponentRegistrationCtrl', [
 ['$scope', 'Components', 'NotificationSvc', 'NodeService', '$uibModal',
 function ($scope, Components, NotificationSvc, NodeService, $uibModal) {
 
-    NodeService.getAllNodesHostnames("core").then(function (data) {
+    NodeService.getAllNodeHostnames("core").then(function (data) {
         $scope.coreNodes = data;
-    });
-
-    NodeService.getAllNodesHostnames("spare").then(function (data) {
-        $scope.spareNodes = data;
     });
 
 	$scope.components = Components.query();

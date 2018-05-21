@@ -351,13 +351,13 @@ AppServices.service('NodeService', function ($http, $timeout, $log,$filter) {
     };
 
     // http gets the hostnames of all nodes
-    this.getAllNodesHostnames= function (type = "all") {
+    this.getAllNodeHostnames= function (type = "all") {
         var promise = $http.get("nodes/all?type=" + type).then(function (response) {
             var nodesList = [];
             angular.forEach(response.data, function (obj) {
-                // deduplicate entries: ALL_MPF_NODES needs to specify the master node host twice
-                //  because the configure script requires you to enter the hostname for the parent node
-                //  to have a nodemanager.  the following removes the duplicate
+                // deduplicate entries: CORE_MPF_NODES may specify the master node host twice
+                // because the configure script requires you to enter the hostname for the parent node
+                // to have a nodemanager
                 if (nodesList.indexOf(obj) == -1) {
                     nodesList.push(obj);
                 }

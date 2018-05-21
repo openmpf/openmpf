@@ -40,7 +40,6 @@ import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.wfm.enums.EnvVar;
 import org.mitre.mpf.wfm.nodeManager.NodeManagerStatus;
 import org.mitre.mpf.wfm.service.NodeManagerService;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,9 +75,6 @@ public class NodeController {
 	// TODO: should retrieve info for this using mpfService
 	@Autowired
 	private NodeManagerStatus nodeManagerStatus;
-
-	@Autowired
-	private PropertiesUtil propertiesUtil;
 
 	private Map<String, ServiceModel> nodeManagerPaletteMap = null;
 
@@ -135,7 +131,7 @@ public class NodeController {
 	/*
 	 * GET /nodes/all
 	 */
-	// EXTERNAL: Only used by externally by "mpf list-nodes"
+	// EXTERNAL: Only used externally by "mpf list-nodes"
 	@RequestMapping(value = "/rest/nodes/all", method = RequestMethod.GET)
 	@ResponseBody
 	public Set<String> getAllNodesRest(

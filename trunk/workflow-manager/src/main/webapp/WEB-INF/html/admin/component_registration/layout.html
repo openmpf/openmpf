@@ -47,15 +47,6 @@
                             {{ coreNode }}
                         </li>
                     </ul>
-                    <span ng-if="spareNodes.length == 0">The OpenMPF cluster does not currently include any spare nodes.</span>
-                    <div ng-if="spareNodes.length > 0">
-                        <span>Spare nodes will not be affected:</span>
-                        <ul>
-                            <li ng-repeat="spareNode in spareNodes">
-                                {{ spareNode }}
-                            </li>
-                        </ul>
-                    </div>
                 </div>
             </div>
 

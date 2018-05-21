@@ -292,7 +292,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
     };
 
     $scope.addNode = function () {
-        NodeService.getAllNodesHostnames().then(function (data) {
+        NodeService.getAllNodeHostnames().then(function (data) {
             $confirm({hostnames: getConfigurableHostnames(data)}, {templateUrl: 'add-node-dialog.html'})
                 .then(function (selectedHostname) {
                     if (selectedHostname) {

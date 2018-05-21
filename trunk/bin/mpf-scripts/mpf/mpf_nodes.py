@@ -46,16 +46,16 @@ def list_nodes(workflow_manager_url=None):
     if not is_wfm_running(workflow_manager_url):
         print mpf_util.MsgUtil.yellow('Cannot determine live JGroups membership.')
 
-        [mpf_sh_valid, all_mpf_nodes] = check_mpf_sh()
+        [mpf_sh_valid, core_mpf_nodes_str] = check_mpf_sh()
         if not mpf_sh_valid:
-            print mpf_util.MsgUtil.red('Could not find %s.' % MPF_SH_FILE_PATH)
+            print mpf_util.MsgUtil.red('%s is not valid.' % MPF_SH_FILE_PATH)
+            return
 
-        [nodes_list, _] = parse_nodes_list(all_mpf_nodes)
-        if not nodes_list:
+        nodes_set = parse_nodes_str(core_mpf_nodes_str)
+        if not nodes_set:
             print mpf_util.MsgUtil.red('No nodes configured in %s.' % MPF_SH_FILE_PATH)
         else:
-            print 'Nodes configured in ' + MPF_SH_FILE_PATH + ':\n' + '\n'.join(nodes_list)
-
+            print 'Core nodes configured in ' + MPF_SH_FILE_PATH + ':\n' + '\n'.join(nodes_set)
         return
 
     [username, password] = get_username_and_password(False)
@@ -116,31 +116,39 @@ def check_mpf_sh():
         print mpf_util.MsgUtil.red('Error: Could not open ' + MPF_SH_FILE_PATH + '.')
         return [False, None]
 
-    if call(['grep', '-q', MPF_SH_SEARCH_STR, MPF_SH_FILE_PATH]) != 0:
-        print mpf_util.MsgUtil.red('Error: Could not find \"' + MPF_SH_SEARCH_STR + '\" in ' + MPF_SH_FILE_PATH + '.')
-        return [False, None]
+    mpf_sh_search_str = CORE_MPF_NODES_ENV_VAR_SEARCH_STR
+    if call(['grep', '-q', '^' + mpf_sh_search_str, MPF_SH_FILE_PATH]) != 0:
 
-    process = subprocess.Popen(['sed', '-n', 's/^' + MPF_SH_SEARCH_STR + '\\(.*\\)/\\1/p', MPF_SH_FILE_PATH], stdout=subprocess.PIPE)
+        # ALL_MPF_NODES is deprecated. For backwards compatibility with deployments initially installed with < R2.1.0,
+        # use ALL_MPF_NODES if CORE_MPF_NODES is not defined.
+        mpf_sh_search_str = ALL_MPF_NODES_ENV_VAR_SEARCH_STR
+        if call(['grep', '-q', '^' + mpf_sh_search_str, MPF_SH_FILE_PATH]) != 0:
+            print mpf_util.MsgUtil.red('Error: Could not find \"' + CORE_MPF_NODES_ENV_VAR_SEARCH_STR + '\"'
+                                       + ' or \"' + ALL_MPF_NODES_ENV_VAR_SEARCH_STR + '\"'
+                                       + ' in ' + MPF_SH_FILE_PATH + '.')
+            return [False, None]
+
+    process = subprocess.Popen(['sed', '-n', 's/^' + mpf_sh_search_str + '\\(.*\\)/\\1/p', MPF_SH_FILE_PATH], stdout=subprocess.PIPE)
     [out, _] = process.communicate() # blocking
     if process.returncode != 0:
-        print mpf_util.MsgUtil.red('Error: Could not parse \"' + MPF_SH_SEARCH_STR + '\" in ' + MPF_SH_FILE_PATH + '.')
+        print mpf_util.MsgUtil.red('Error: Could not parse \"' + mpf_sh_search_str + '\" in ' + MPF_SH_FILE_PATH + '.')
         return [False, None]
 
     return [True, out.strip()]
 
 
-def parse_nodes_list(all_mpf_nodes):
-    nodes_list = []
-    nodes_with_ports_list = []
-    for known_node_with_port in all_mpf_nodes.split(','):
-        known_node = known_node_with_port.split('[')[0]
+def parse_nodes_str(mpf_nodes):
+    nodes_set = set()
+    for entry in mpf_nodes.split(','):
+        # Each entry in ALL_MPF_NODES is of the form HOST[PORT]. Discard the PORT part.
+        known_node = entry.split('[')[0]
         if known_node:
-            nodes_list.append(known_node)
-            nodes_with_ports_list.append(known_node_with_port)
-    return nodes_list, nodes_with_ports_list
+            nodes_set.add(known_node)
+    return nodes_set
 
 
 MPF_SH_FILE_PATH = '/etc/profile.d/mpf.sh'
-MPF_SH_SEARCH_STR = 'export ALL_MPF_NODES='
+CORE_MPF_NODES_ENV_VAR_SEARCH_STR = 'export CORE_MPF_NODES='
+ALL_MPF_NODES_ENV_VAR_SEARCH_STR = 'export ALL_MPF_NODES='
 
 COMMANDS = [list_nodes]

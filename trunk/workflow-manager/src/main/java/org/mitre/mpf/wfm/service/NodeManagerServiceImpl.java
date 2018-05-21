@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thoughtworks.xstream.XStream;
-import org.h2.util.StringUtils;
 import org.mitre.mpf.nms.xml.EnvironmentVariable;
 import org.mitre.mpf.nms.xml.NodeManager;
 import org.mitre.mpf.nms.xml.NodeManagers;
@@ -46,7 +45,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.WritableResource;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -70,22 +68,6 @@ public class NodeManagerServiceImpl implements NodeManagerService {
     @Autowired
     private ObjectMapper objectMapper;
 
-    // The set of core nodes will not change while the WFM is running.
-    private Set coreNodes;
-
-
-    @PostConstruct
-    public void init() {
-        coreNodes = new HashSet<String>();
-        String allMpfNodesStr = propertiesUtil.getAllMpfNodes();
-        if (!StringUtils.isNullOrEmpty(allMpfNodesStr)) {
-            for (String mpfNode : allMpfNodesStr.split(",")) {
-                // using regex if we change the port from 7800
-                // replace ports 2 to 5 digits long
-                coreNodes.add(mpfNode.replaceFirst("\\[\\d{2,5}\\]", ""));
-            }
-        }
-    }
 
     @Override
     public boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels) throws IOException {
@@ -289,12 +271,12 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
     @Override
     public Set<String> getCoreNodes() {
-        return coreNodes;
+        return propertiesUtil.getCoreMpfNodes();
     }
 
     @Override
     public boolean isCoreNode(String host) {
-        return coreNodes.contains(host);
+        return propertiesUtil.getCoreMpfNodes().contains(host);
     }
 
     @Override

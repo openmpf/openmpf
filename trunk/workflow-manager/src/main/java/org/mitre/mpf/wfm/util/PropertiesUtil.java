@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.util;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.io.IOUtils;
+import org.h2.util.StringUtils;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.PropertyModel;
@@ -77,8 +78,14 @@ public class PropertiesUtil {
 
     private ImmutableConfiguration mpfPropertiesConfig;
 
+    // The set of core nodes will not change while the WFM is running.
+    private Set<String> coreMpfNodes;
+
+
     @PostConstruct
     private void init() throws IOException, WfmProcessingException {
+
+        parseCoreMpfNodes();
 
         mpfPropertiesConfig = mpfPropertiesConfigBuilder.getCompleteConfiguration();
 
@@ -127,7 +134,31 @@ public class PropertiesUtil {
         log.debug("Output Objects Directory = {}", outputObjectsDirectory);
         log.debug("Remote Media Cache Directory = {}", remoteMediaCacheDirectory);
         log.debug("Uploaded Components Directory = {}", uploadedComponentsDirectory);
+    }
 
+    private void parseCoreMpfNodes() {
+        // NOTE: Switched from using ALL_MPF_NODES to CORE_MPF_NODES in R2.1.0. Use CORE_MPF_NODES if possible.
+        String coreMpfNodesStr = System.getenv(EnvVar.CORE_MPF_NODES);
+        if (!StringUtils.isNullOrEmpty(coreMpfNodesStr)) {
+            coreMpfNodes = new HashSet(Arrays.asList(coreMpfNodesStr.split(",")));
+            return;
+        }
+
+        // ALL_MPF_NODES is deprecated. For backwards compatibility with deployments initially installed with < R2.1.0,
+        // use ALL_MPF_NODES if CORE_MPF_NODES is not defined.
+        String allMpfNodesStr = System.getenv(EnvVar.ALL_MPF_NODES);
+        if (!StringUtils.isNullOrEmpty(allMpfNodesStr)) {
+            coreMpfNodes = new HashSet();
+            for (String mpfNode : allMpfNodesStr.split(",")) {
+                // using regex if we change the port from 7800
+                // replace ports 2 to 5 digits long
+                coreMpfNodes.add(mpfNode.replaceFirst("\\[\\d{2,5}\\]", ""));
+            }
+            return;
+        }
+
+        throw new IllegalStateException(EnvVar.CORE_MPF_NODES + " or " + EnvVar.ALL_MPF_NODES
+                + " environment variable must be defined.");
     }
 
     private static File createOrFail(Path parent, String subdirectory, Set<PosixFilePermission> permissions)
@@ -550,8 +581,8 @@ public class PropertiesUtil {
         return System.getenv(EnvVar.THIS_MPF_NODE);
     }
 
-    public String getAllMpfNodes() {
-        return System.getenv(EnvVar.ALL_MPF_NODES);
+    public Set<String> getCoreMpfNodes() {
+        return coreMpfNodes;
     }
 
     //

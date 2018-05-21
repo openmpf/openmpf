@@ -84,3 +84,6 @@
     - libSM
     - libICE
     - qt-x11
+    - python-pip
+    - python-virtualenv
+

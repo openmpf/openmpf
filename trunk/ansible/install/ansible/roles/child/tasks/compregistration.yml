@@ -77,3 +77,21 @@
   when: "not item.register and '{{ item.componentState }}'!= 'REGISTERED' and item.packageFilePath and registration_results.status is not defined"
   run_once: true
   delegate_to: "{{ master_host }}"
+
+
+- name: Load external component descriptor
+  set_fact:
+    ext_component_descriptor: "{{ lookup('file', '{{ plugins_dir }}/{{ item.componentDescriptorPath }}')|from_json }}"
+  when:
+    - item.register
+    - registration_results.status == 200
+
+
+- include: setup_python_component_venv.yml
+  vars:
+    component_path: "{{ plugins_dir }}/{{ item.componentTLD }}"
+    descriptor: "{{ ext_component_descriptor }}"
+  when:
+    - item.register
+    - registration_results.status == 200
+    - ext_component_descriptor.sourceLanguage|default('')|lower == "python"

@@ -144,11 +144,13 @@ public class PropertiesUtil {
             return;
         }
 
+        // if this is a test, an empty set may be sufficient
+        coreMpfNodes = new HashSet();
+
         // ALL_MPF_NODES is deprecated. For backwards compatibility with deployments initially installed with < R2.1.0,
         // use ALL_MPF_NODES if CORE_MPF_NODES is not defined.
         String allMpfNodesStr = System.getenv(EnvVar.ALL_MPF_NODES);
         if (!StringUtils.isNullOrEmpty(allMpfNodesStr)) {
-            coreMpfNodes = new HashSet();
             for (String mpfNode : allMpfNodesStr.split(",")) {
                 // using regex if we change the port from 7800
                 // replace ports 2 to 5 digits long
@@ -157,8 +159,8 @@ public class PropertiesUtil {
             return;
         }
 
-        throw new IllegalStateException(EnvVar.CORE_MPF_NODES + " or " + EnvVar.ALL_MPF_NODES
-                + " environment variable must be defined.");
+        log.warn(EnvVar.CORE_MPF_NODES + " or " + EnvVar.ALL_MPF_NODES
+                + " environment variable should be defined, unless this is a test.");
     }
 
     private static File createOrFail(Path parent, String subdirectory, Set<PosixFilePermission> permissions)

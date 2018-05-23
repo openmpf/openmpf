@@ -46,6 +46,6 @@
     name: mpf_component_api
     virtualenv: "{{ component_path }}/venv"
     virtualenv_python: python2.7
-    extra_args: --find-links {{ mpf_home }}/python/wheelhouse
+    extra_args: --find-links {{ mpf_home }}/python/wheelhouse --no-index
   when:
     - not comp_wheelhouse_dir.stat.exists

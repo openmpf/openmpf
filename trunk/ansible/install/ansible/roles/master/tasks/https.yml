@@ -37,7 +37,7 @@
   lineinfile:
     dest="{{ tomcat_home }}/bin/setenv.sh"
     create=yes
-    line="export CATALINA_OPTS=\"-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.port=7800 -Djava.library.path={{ mpf_home }}/lib -Djgroups.file_ping.location={{ mpf_home }}/share/nodes -Dtransport.guarantee='CONFIDENTIAL' -Dweb.rest.protocol='https'\""
+    line="export CATALINA_OPTS=\"-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.port=7800 -Djava.library.path={{ mpf_home }}/lib -Dtransport.guarantee='CONFIDENTIAL' -Dweb.rest.protocol='https'\""
     state=present
     insertafter=EOF
 

@@ -45,9 +45,6 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
     var waitTimeout = null;
     var waitTimeoutDelay = 30000; //30 sec
 
-    var statusCheckTimout = null;
-    var statusCheckDelay = 1000; //1 sec
-
     var open_services={};
 
     //// Operations ////

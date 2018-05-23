@@ -23,12 +23,12 @@
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
-# This file managed by ansible. Do not edit directly.
+# This file managed by ansible.
 export no_proxy=localhost,{{ repo_host }}
 
 export MPF_USER=mpf
 export MPF_HOME={{ mpf_home }}
-export MPF_LOG_PATH={{ mpf_home }}/share/logs
+export MPF_LOG_PATH=$MPF_HOME/share/logs
 export MASTER_MPF_NODE={{ master_host }}
 export THIS_MPF_NODE={{ inventory_hostname }}
 

@@ -57,6 +57,6 @@ log_success()   { log "$1" "SUCCESS" "$2" "$3"; }
 log_error()     { log "$1" "ERROR"   "$2" "$3"; }
 log_warn()      { log "$1" "WARN"    "$2" "$3"; }
 log_info()      { log "$1" "INFO"    "$2" "$3"; }
-log_info()     { log "$1" "DEBUG"   "$2" "$3"; }
+log_debug()     { log "$1" "DEBUG"   "$2" "$3"; }
 
 

@@ -166,7 +166,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     //prevent having to generate a list each time
     //TODO: could also just return the address as soon as a match to the service descriptor is found to reduce
     //a small amount of processing time
-    public Map<String, Address> getCurrentNodeManagerHostsAddressMap() {
+    private Map<String, Address> getCurrentNodeManagerHostsAddressMap() {
         Map<String, Address> availableNodeManagerHostsAddressMap = new HashMap<String, Address>();
         for (Address addr : masterNode.getCurrentNodeManagerHosts()) {
             //If it's a node manager then track it, it's name contains the machine name upon which it resides

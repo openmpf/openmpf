@@ -149,7 +149,7 @@
    lineinfile:
      dest="{{ tomcat_home }}/bin/setenv.sh"
      create=yes
-     line="export CATALINA_OPTS=\"-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.port=7800 -Djava.library.path={{ mpf_home }}/lib -Djgroups.file_ping.location={{ mpf_home }}/share/nodes -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'\""
+     line="export CATALINA_OPTS=\"-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.port=7800 -Djava.library.path={{ mpf_home }}/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'\""
      state=present
      insertafter=EOF
    when: not deployment_config.https.install

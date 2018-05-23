@@ -25,10 +25,17 @@
 #############################################################################
 # This file managed by ansible. Do not edit directly.
 export no_proxy=localhost,{{ repo_host }}
+
 export MPF_USER=mpf
 export MPF_HOME={{ mpf_home }}
 export MPF_LOG_PATH={{ mpf_home }}/share/logs
-export JAVA_HOME=/usr/java/latest
+export MASTER_MPF_NODE={{ master_host }}
 export THIS_MPF_NODE={{ inventory_hostname }}
-export CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.port=7800 -Djava.library.path={{ mpf_home }}/lib -Djgroups.file_ping.location={{ mpf_home }}/share/nodes"
-export ACTIVE_MQ_HOST="failover://(tcp://{{ master_host }}:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
+
+export JAVA_HOME=/usr/java/latest
+
+export JGROUPS_TCP_ADDRESS=$THIS_MPF_NODE
+export JGROUPS_TCP_PORT=7800
+export JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
+
+export ACTIVE_MQ_HOST="failover://(tcp://$MASTER_MPF_NODE:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"

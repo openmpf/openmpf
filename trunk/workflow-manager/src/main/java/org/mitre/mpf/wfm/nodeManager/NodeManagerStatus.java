@@ -88,8 +88,6 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
             if (masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri())) {
                 if (!reloadConfig && !masterNode.areAllManagersPresent()) {
                     waitForViewUpdate();
-                } else {
-                    log.info("All known node managers are available.");
                 }
                 masterNode.launchAllNodes();
             }

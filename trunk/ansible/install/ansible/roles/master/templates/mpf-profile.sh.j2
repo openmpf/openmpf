@@ -25,14 +25,22 @@
 #############################################################################
 # This file managed by ansible and command line tools. Do not edit directly.
 export no_proxy=localhost,{{ repo_host }}
+
 export MPF_USER=mpf
 export MPF_HOME={{ mpf_home }}
-export MPF_LOG_PATH={{ mpf_home }}/share/logs
-export JAVA_HOME=/usr/java/latest
+export MPF_LOG_PATH=$MPF_HOME/share/logs
+export MASTER_MPF_NODE={{ master_host }}
 export THIS_MPF_NODE={{ inventory_hostname }}
 export CORE_MPF_NODES={{ master_host }},{% if groups['mpf-child'] is defined %}{% for host in groups['mpf-child'] %}{{ host }},{% endfor %}{% endif %}
 
+export JAVA_HOME=/usr/java/latest
+
+export JGROUPS_TCP_ADDRESS=$THIS_MPF_NODE
+export JGROUPS_TCP_PORT=7800
+export JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
+
 # CATALINA_OPTS is set in {{ tomcat_home }}/bin/setenv.sh
 
-export ACTIVE_MQ_HOST="failover://(tcp://{{ master_host }}:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
+export ACTIVE_MQ_HOST="failover://(tcp://$MASTER_MPF_NODE:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
+
 command -v register-python-argcomplete > /dev/null && eval "$(register-python-argcomplete mpf)"

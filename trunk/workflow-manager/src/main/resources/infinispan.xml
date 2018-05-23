@@ -28,15 +28,7 @@
             xsi:schemaLocation="urn:infinispan:config:7.2 http://www.infinispan.org/schemas/infinispan-config-7.2.xsd"
             xmlns="urn:infinispan:config:7.2">
 
-    <!--
-    <jgroups>
-        <stack-file name="openmpf-jgroups" path="jGroupsTCPConfig.xml"/>
-    </jgroups>
-    -->
     <cache-container default-cache="mpfCache">
-        <!-- <transport stack="openmpf-jgroups"/> -->
-        <!-- <transport/> -->
-        <!-- <replicated-cache name="mpfCache" mode="SYNC" remote-timeout="20000"/> -->
         <local-cache name="mpfCache"/>
 
         <!-- Addresses the following exception:

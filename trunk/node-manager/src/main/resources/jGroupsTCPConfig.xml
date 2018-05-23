@@ -27,15 +27,12 @@
 <!--
     TCP based stack, with flow control and message bundling. This is usually used when IP
     multicasting cannot be used in a network, e.g. because it is disabled (routers discard multicast).
-    Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
-    -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]
-    author: Bela Ban
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns="urn:org:jgroups"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
-    <TCP bind_port="${jgroups.tcp.port:7800}"
-         bind_addr="${jgroups.tcp.address:localhost.localdomain}"
+    <TCP bind_port="${JGROUPS_TCP_PORT:7800}"
+         bind_addr="${JGROUPS_TCP_ADDRESS:localhost.localdomain}"
          recv_buf_size="${tcp.recv_buf_size:130K}"
          send_buf_size="${tcp.send_buf_size:130K}"
          max_bundle_size="64K"
@@ -45,7 +42,7 @@
          thread_pool.max_threads="20"
          thread_pool.keep_alive_time="30000"/> <!--thread_pool.enabled="false"-->
 
-    <FILE_PING location="${jgroups.file_ping.location:/tmp/jgroups}"/>
+    <FILE_PING location="${JGROUPS_FILE_PING_LOCATION:/tmp/jgroups}"/>
     <MERGE3  min_interval="10000"
              max_interval="30000"/>
     <FD_SOCK/>

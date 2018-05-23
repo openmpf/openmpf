@@ -47,22 +47,13 @@ fi
 
 javabin=${JAVA_HOME}/bin/java
 
-if [ -n "${THIS_MPF_NODE}" ]; then
-    JGROUPS_FLAGS="-Djgroups.tcp.address=${THIS_MPF_NODE} -Djgroups.tcp.port=7800 -Djgroups.file_ping.location=${MPF_HOME}/share/nodes"
-else
-    log_warn "THIS_MPF_NODE is not set" "${logfile}" false
-fi  
-
-# this should not be set unless running local tests
-#export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:install/lib"
-
-# ideally, daemons should have a wd of / (root), however nodemanager might cwd when it executes a service
+# ideally, daemons should have a wd of / (root), however node-manager might cwd when it executes a service
 cd /
 
 # log_info "Using MPF_HOME=${MPF_HOME}" "${logfile}" false
 
 # jar process will manage its own log; log will be rotated every night at midnight
-nohup  ${javabin} ${JGROUPS_FLAGS} -jar ${jarfile} > /dev/null & #2>&1 #now displaying std err
+nohup  ${javabin} -jar ${jarfile} > /dev/null & #2>&1 #now displaying std err
 
 # pid of the nohup process
 pid=$!

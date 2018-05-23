@@ -713,21 +713,20 @@ sub installProfile {
 	my $mpfUser = ($hostname eq "jenkins-mpf-1.mitre.org") ? "jenkins" : "jenkins-slave";
 	printInfo("Using MFP_USER: $mpfUser\n");
 
-	# NOTE: Single-quoted strings in Perl are not interpolated
-	my $mpfsh = << 'END_MPF_SH';
+	my $mpfsh = << "END_MPF_SH";
 export MPF_USER="$mpfUser"
 export MPF_HOME="$mpfPath/trunk/install"
 export MPF_LOG_PATH="$mpfLogPath"
 export MASTER_MPF_NODE="$hostname"
 export THIS_MPF_NODE="$hostname"
-export CORE_MPF_NODES=$THIS_MPF_NODE
-export JAVA_HOME='/usr/java/latest'
-export JGROUPS_TCP_ADDRESS='$THIS_MPF_NODE'
+export CORE_MPF_NODES="\$THIS_MPF_NODE"
+export JAVA_HOME="/usr/java/latest"
+export JGROUPS_TCP_ADDRESS="\$THIS_MPF_NODE"
 export JGROUPS_TCP_PORT=7800
-export JGROUPS_FILE_PING_LOCATION='$MPF_HOME/share/nodes'
+export JGROUPS_FILE_PING_LOCATION="\$MPF_HOME/share/nodes"
 # CATALINA_OPTS is set in <TOMCAT_HOME>/bin/setenv.sh
-export ACTIVE_MQ_HOST='failover://(tcp://$MASTER_MPF_NODE:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1'
-export LD_LIBRARY_PATH='../lib:/usr/local/lib:/usr/local/Trolltech/Qt-4.8.5/lib:$mpfPath/trunk/install/lib'
+export ACTIVE_MQ_HOST="failover://(tcp://\$MASTER_MPF_NODE:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
+export LD_LIBRARY_PATH="../lib:/usr/local/lib:/usr/local/Trolltech/Qt-4.8.5/lib:\$MPF_HOME/lib"
 END_MPF_SH
 
 	

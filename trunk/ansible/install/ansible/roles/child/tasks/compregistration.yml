@@ -82,6 +82,7 @@
 - name: Load external component descriptor
   set_fact:
     ext_component_descriptor: "{{ lookup('file', '{{ plugins_dir }}/{{ item.componentDescriptorPath }}')|from_json }}"
+    component_full_path: "{{ plugins_dir }}/{{ item.componentTLD }}"
   when:
     - item.register
     - registration_results.status == 200
@@ -89,9 +90,8 @@
 
 - include: setup_python_component_venv.yml
   vars:
-    component_path: "{{ plugins_dir }}/{{ item.componentTLD }}"
+    component_path: "{{ component_full_path }}"
     descriptor: "{{ ext_component_descriptor }}"
   when:
-    - item.register
-    - registration_results.status == 200
+    - ext_component_descriptor is defined
     - ext_component_descriptor.sourceLanguage|default('')|lower == "python"

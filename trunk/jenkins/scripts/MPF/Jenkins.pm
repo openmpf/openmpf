@@ -713,6 +713,13 @@ sub installProfile {
 	my $mpfUser = ($hostname eq "jenkins-mpf-1.mitre.org") ? "jenkins" : "jenkins-slave";
 	printInfo("Using MFP_USER: $mpfUser\n");
 
+    # NOTE: On Jenkins, the mpf.sh file is sourced before running the node-manager process, but not before running maven.
+    # Any environment variables set below should also be set through one of two Jenkins UIs:
+    # - Global env. vars: http://jenkins-mpf-1.mitre.org:8080/configure
+    # - Host-specific env. vars: http://jenkins-mpf-1.mitre.org:8080/computer/(master)/configure,
+    #                            http://jenkins-mpf-1.mitre.org:8080/computer/jenkins-mpf-2.mitre.org/configure,
+    #                            http://jenkins-mpf-1.mitre.org:8080/computer/jenkins-mpf-3.mitre.org/configure, etc.
+
 	my $mpfsh = << "END_MPF_SH";
 export MPF_USER="$mpfUser"
 export MPF_HOME="$mpfPath/trunk/install"

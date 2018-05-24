@@ -92,6 +92,8 @@
   vars:
     component_path: "{{ component_full_path }}"
     descriptor: "{{ ext_component_descriptor }}"
+  become: yes
+  become_user: mpf
   when:
     - ext_component_descriptor is defined
     - ext_component_descriptor.sourceLanguage|default('')|lower == "python"

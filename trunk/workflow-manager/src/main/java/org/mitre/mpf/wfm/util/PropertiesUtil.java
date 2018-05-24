@@ -137,30 +137,12 @@ public class PropertiesUtil {
     }
 
     private void parseCoreMpfNodes() {
-        // NOTE: Switched from using ALL_MPF_NODES to CORE_MPF_NODES in R2.1.0. Use CORE_MPF_NODES if possible.
         String coreMpfNodesStr = System.getenv(EnvVar.CORE_MPF_NODES);
-        if (!StringUtils.isNullOrEmpty(coreMpfNodesStr)) {
-            coreMpfNodes = new HashSet(Arrays.asList(coreMpfNodesStr.split(",")));
-            return;
+        if (StringUtils.isNullOrEmpty(coreMpfNodesStr)) {
+            throw new IllegalStateException(EnvVar.CORE_MPF_NODES + " environment variable must be defined.");
         }
 
-        // if this is a test, an empty set may be sufficient
-        coreMpfNodes = new HashSet();
-
-        // ALL_MPF_NODES is deprecated. For backwards compatibility with deployments initially installed with < R2.1.0,
-        // use ALL_MPF_NODES if CORE_MPF_NODES is not defined.
-        String allMpfNodesStr = System.getenv(EnvVar.ALL_MPF_NODES);
-        if (!StringUtils.isNullOrEmpty(allMpfNodesStr)) {
-            for (String mpfNode : allMpfNodesStr.split(",")) {
-                // using regex if we change the port from 7800
-                // replace ports 2 to 5 digits long
-                coreMpfNodes.add(mpfNode.replaceFirst("\\[\\d{2,5}\\]", ""));
-            }
-            return;
-        }
-
-        log.warn(EnvVar.CORE_MPF_NODES + " or " + EnvVar.ALL_MPF_NODES
-                + " environment variable should be defined, unless this is a test.");
+        coreMpfNodes = new HashSet(Arrays.asList(coreMpfNodesStr.split(",")));
     }
 
     private static File createOrFail(Path parent, String subdirectory, Set<PosixFilePermission> permissions)

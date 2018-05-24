@@ -116,39 +116,25 @@ def check_mpf_sh():
         print mpf_util.MsgUtil.red('Error: Could not open ' + MPF_SH_FILE_PATH + '.')
         return [False, None]
 
-    mpf_sh_search_str = CORE_MPF_NODES_ENV_VAR_SEARCH_STR
-    if call(['grep', '-q', '^' + mpf_sh_search_str, MPF_SH_FILE_PATH]) != 0:
+    if call(['grep', '-q', '^' + CORE_MPF_NODES_ENV_VAR_SEARCH_STR, MPF_SH_FILE_PATH]) != 0:
+        print mpf_util.MsgUtil.red('Error: Could not find \"' + CORE_MPF_NODES_ENV_VAR_SEARCH_STR + '\"'
+                                    + ' in ' + MPF_SH_FILE_PATH + '.')
+        return [False, None]
 
-        # ALL_MPF_NODES is deprecated. For backwards compatibility with deployments initially installed with < R2.1.0,
-        # use ALL_MPF_NODES if CORE_MPF_NODES is not defined.
-        mpf_sh_search_str = ALL_MPF_NODES_ENV_VAR_SEARCH_STR
-        if call(['grep', '-q', '^' + mpf_sh_search_str, MPF_SH_FILE_PATH]) != 0:
-            print mpf_util.MsgUtil.red('Error: Could not find \"' + CORE_MPF_NODES_ENV_VAR_SEARCH_STR + '\"'
-                                       + ' or \"' + ALL_MPF_NODES_ENV_VAR_SEARCH_STR + '\"'
-                                       + ' in ' + MPF_SH_FILE_PATH + '.')
-            return [False, None]
-
-    process = subprocess.Popen(['sed', '-n', 's/^' + mpf_sh_search_str + '\\(.*\\)/\\1/p', MPF_SH_FILE_PATH], stdout=subprocess.PIPE)
+    process = subprocess.Popen(['sed', '-n', 's/^' + CORE_MPF_NODES_ENV_VAR_SEARCH_STR + '\\(.*\\)/\\1/p', MPF_SH_FILE_PATH], stdout=subprocess.PIPE)
     [out, _] = process.communicate() # blocking
     if process.returncode != 0:
-        print mpf_util.MsgUtil.red('Error: Could not parse \"' + mpf_sh_search_str + '\" in ' + MPF_SH_FILE_PATH + '.')
+        print mpf_util.MsgUtil.red('Error: Could not parse \"' + CORE_MPF_NODES_ENV_VAR_SEARCH_STR + '\" in ' + MPF_SH_FILE_PATH + '.')
         return [False, None]
 
     return [True, out.strip()]
 
 
 def parse_nodes_str(mpf_nodes):
-    nodes_set = set()
-    for entry in mpf_nodes.split(','):
-        # Each entry in ALL_MPF_NODES is of the form HOST[PORT]. Discard the PORT part.
-        known_node = entry.split('[')[0]
-        if known_node:
-            nodes_set.add(known_node)
-    return nodes_set
+    return set(mpf_nodes.split(','))
 
 
 MPF_SH_FILE_PATH = '/etc/profile.d/mpf.sh'
 CORE_MPF_NODES_ENV_VAR_SEARCH_STR = 'export CORE_MPF_NODES='
-ALL_MPF_NODES_ENV_VAR_SEARCH_STR = 'export ALL_MPF_NODES='
 
 COMMANDS = [list_nodes]

@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.enums;
 
 public class EnvVar {
     public static final String
-            ALL_MPF_NODES = "ALL_MPF_NODES", // Deprecated. Use CORE_MPF_NODES instead. Left for backwards compatibility.
             CORE_MPF_NODES = "CORE_MPF_NODES",
             THIS_MPF_NODE = "THIS_MPF_NODE",
             HOSTNAME = "HOSTNAME",

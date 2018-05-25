@@ -537,6 +537,9 @@ public class PropertiesUtil {
 
     public int getNumStartUpServices() {
         String key = "startup.num.services.per.component";
+        if (!mpfPropertiesConfig.containsKey(key)) {
+            return 0;
+        }
         try {
             return mpfPropertiesConfig.getInt(key);
         } catch (ConversionException e) {
@@ -550,6 +553,9 @@ public class PropertiesUtil {
 
     public boolean isStartupAutoRegistrationSkipped() {
         String key = "startup.auto.registration.skip.spring";
+        if (!mpfPropertiesConfig.containsKey(key)) {
+            return false;
+        }
         try {
             return mpfPropertiesConfig.getBoolean(key);
         } catch (ConversionException e) {

@@ -57,14 +57,15 @@ if ! rpm -q --quiet createrepo ; then
   PYDEVEL_RPM=$(find $REPO_PATH"/rpms/management/" -type f -name "python-devel*.rpm")
 
   yum -y --nogpgcheck localinstall --disablerepo=* $DLT_RPM $PYDLT_RPM $CR_RPM $PYXML2_RPM $XML2_RPM $LIBSEL_RPM $PYTHON_RPM $PYLIB_RPM $PYDEVEL_RPM
-
-  echo "Completed installing createrepo."
 else
   echo "Createrepo already installed."
 fi
+
 if [ -z $(rpm -qa | grep createrepo) ]; then
   echo "Required package not found: createrepo. Exiting..."
   exit
+else
+  echo "Completed installing createrepo."
 fi
 
 echo -e "Creating local MPF RPM repository...\c"

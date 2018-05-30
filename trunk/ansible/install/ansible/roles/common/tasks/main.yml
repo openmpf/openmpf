@@ -24,14 +24,6 @@
 # limitations under the License.                                            #
 #############################################################################
 ---
-- name: Add custom ldconfig paths
-  template: src=mpf.ld.conf.j2 dest=/etc/ld.so.conf.d/mpf.conf
-  register: ldconfig
-
-- name: Run ldconfig
-  command: ldconfig
-  when: ldconfig.changed
-
 #Configuring yum
 - name: Download mpf-repo.repo
   get_url:

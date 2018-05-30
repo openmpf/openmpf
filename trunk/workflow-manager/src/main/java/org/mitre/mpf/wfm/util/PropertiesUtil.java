@@ -537,11 +537,8 @@ public class PropertiesUtil {
 
     public int getNumStartUpServices() {
         String key = "startup.num.services.per.component";
-        if (!mpfPropertiesConfig.containsKey(key)) {
-            return 0;
-        }
         try {
-            return mpfPropertiesConfig.getInt(key);
+            return mpfPropertiesConfig.getInt(key, 0);
         } catch (ConversionException e) {
             if (mpfPropertiesConfig.getString(key).startsWith("${")) {
                 log.warn("Unable to determine value for \"" + key + "\". It may not have been set via Maven. Using default value of \"0\".");
@@ -553,11 +550,8 @@ public class PropertiesUtil {
 
     public boolean isStartupAutoRegistrationSkipped() {
         String key = "startup.auto.registration.skip.spring";
-        if (!mpfPropertiesConfig.containsKey(key)) {
-            return false;
-        }
         try {
-            return mpfPropertiesConfig.getBoolean(key);
+            return mpfPropertiesConfig.getBoolean(key, false);
         } catch (ConversionException e) {
             if (mpfPropertiesConfig.getString(key).startsWith("${")) {
                 log.warn("Unable to determine value for \"" + key + "\". It may not have been set via Maven. Using default value of \"false\".");

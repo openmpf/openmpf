@@ -533,7 +533,8 @@ sub installNodeManager {
 
 sub getSystemStatus {
 	printInfo("Checking the known environment variables\n");
-	my @vars = ("MPF_HOME", "MPF_USER", "JAVA_HOME", "LD_LIBRARY_PATH", "ACTIVE_MQ_HOST", "MPF_LOG_PATH", "THIS_MPF_NODE");
+	my @vars = ("MPF_USER", "MPF_HOME", "MPF_LOG_PATH", "MASTER_MPF_NODE", "THIS_MPF_NODE", "CORE_MPF_NODES", "JAVA_HOME",
+	    "JGROUPS_TCP_ADDRESS", "JGROUPS_TCP_PORT", "JGROUPS_FILE_PING_LOCATION", "ACTIVE_MQ_HOST", "LD_LIBRARY_PATH");
 	foreach my $var (@vars) {
 		my $varInfo = `echo \$$var`;
 		chomp $varInfo;

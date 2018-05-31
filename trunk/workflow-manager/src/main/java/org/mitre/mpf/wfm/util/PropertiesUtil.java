@@ -522,7 +522,7 @@ public class PropertiesUtil {
     public int getNumStartUpServices() {
         String key = "startup.num.services.per.component";
         try {
-            return mpfPropertiesConfig.getInt(key);
+            return mpfPropertiesConfig.getInt(key, 0);
         } catch (ConversionException e) {
             if (mpfPropertiesConfig.getString(key).startsWith("${")) {
                 log.warn("Unable to determine value for \"" + key + "\". It may not have been set via Maven. Using default value of \"0\".");

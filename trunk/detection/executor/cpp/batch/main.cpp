@@ -65,14 +65,7 @@ string GetFileName(const string& s) {
     return s;
 }
 
-bool is_python(const std::string &lib_path) {
-    static const std::string extension = ".py";
-    if (lib_path.size() < extension.size()) {
-        return false;
-    }
-    size_t start = lib_path.size() - extension.size();
-    return lib_path.find(".py", start) != std::string::npos;
-}
+bool is_python(log4cxx::LoggerPtr &logger, int argc, char* argv[]);
 
 template <typename ComponentHandle>
 int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
@@ -114,9 +107,8 @@ int main(int argc, char* argv[]) {
 
 
     try {
-        if (is_python(lib_path)) {
-            std::string python_component_api_path = app_dir + "/../python/site-packages";
-            PythonComponentHandle component_handle(logger, lib_path, python_component_api_path);
+        if (is_python(logger, argc, argv)) {
+            PythonComponentHandle component_handle(logger, lib_path);
             return run_jobs(logger, broker_uri, request_queue, app_dir, component_handle);
         }
         else {
@@ -137,6 +129,57 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 }
+
+
+std::string get_extension(const std::string &path) {
+    size_t last_slash_pos = path.rfind('/');
+    if (last_slash_pos == std::string::npos) {
+        last_slash_pos = 0;
+    }
+    size_t dot_pos = path.find('.', last_slash_pos);
+    if (dot_pos == std::string::npos) {
+        return "";
+    }
+    return path.substr(dot_pos + 1);
+}
+
+
+bool is_python(log4cxx::LoggerPtr &logger, int argc, char* argv[]) {
+    if (argc > 4) {
+        std::string provided_language = argv[4];
+        std::transform(provided_language.begin(), provided_language.end(), provided_language.begin(),
+                       static_cast<int(*)(int)>(std::tolower));
+
+        if (std::string("python") == provided_language) {
+            return true;
+        }
+        if (std::string("c++") == provided_language) {
+            return false;
+        }
+        LOG4CXX_WARN(logger, "Expected the fifth command line argument to either be \"c++\" or \"python\", but \""
+                << argv[4] << "\" was provided.")
+    }
+    else {
+        LOG4CXX_WARN(logger, "Expected the fifth command line argument to either be \"c++\" or \"python\", "
+                "but no value was provided.");
+    }
+
+    std::string lib_extension = get_extension(argv[2]);
+    std::transform(lib_extension.begin(), lib_extension.end(), lib_extension.begin(),
+                   static_cast<int(*)(int)>(std::tolower));
+
+    if (lib_extension.find("so") == std::string::npos) {
+        LOG4CXX_WARN(logger, "Assuming \"" << argv[2]
+                           << "\" is a Python component because it does not have the .so extension.");
+        return true;
+    }
+    else {
+        LOG4CXX_WARN(logger, "Assuming \"" << argv[2]
+                           << "\" is a C++ component because it has the .so extension.");
+        return false;
+    }
+}
+
 
 
 template <typename ComponentHandle>

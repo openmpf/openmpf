@@ -141,4 +141,4 @@ For more information about OpenMPF, including documentation, guides, and other m
 
 ### Project Workboard
 
-For a latest snapshot of what tasks are being worked on, what's available to pick up, and where the project stands as a whole, check out our   [workboard](https://overv.io/~/openmpf/).
+For a latest snapshot of what tasks are being worked on, what's available to pick up, and where the project stands as a whole, check out our [workboard](https://github.com/orgs/openmpf/projects/3).

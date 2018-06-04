@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.camel.routes;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -74,9 +75,14 @@ public class DlqRouteBuilder extends RouteBuilder {
 			.setExchangePattern(ExchangePattern.InOnly)
 			.multicast()
 				.pipeline()
-					// deserialize protobuf message for readability
-					.unmarshal().protobuf(DetectionProtobuf.DetectionRequest.getDefaultInstance()).convertBodyTo(String.class)
-					.to(exitPoint) // send to the exit point to indicate it has been processed (and for auditing)
+					// TODO: Test me!
+					.doTry()
+						// deserialize protobuf message for readability
+						.unmarshal().protobuf(DetectionProtobuf.DetectionRequest.getDefaultInstance()).convertBodyTo(String.class)
+						.to(exitPoint) // send to the exit point to indicate it has been processed (and for auditing)
+					.doCatch(InvalidProtocolBufferException.class)
+						// handled(true) by default
+						.to("log:" + DlqRouteBuilder.class.getName() + "?level=ERROR&showCaughtException=true&showStackTrace=true")
 				.end()
 				.pipeline()
 					.process(DetectionDeadLetterProcessor.REF) // generate a detection response protobuf message with an error status

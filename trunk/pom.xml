@@ -209,6 +209,26 @@
                             </successCodes>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>python-component-util-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>python</executable>
+                            <arguments>
+                                <argument>
+                                    ${components.build.sdks.python}/detection/component_util/tests/__main__.py
+                                </argument>
+                            </arguments>
+                            <environmentVariables>
+                                <PYTHONPATH>
+                                    ${env.MPF_SDK_INSTALL_PATH}/python/site-packages:${user.home}/mpf-sdk-install/python/site-packages
+                                </PYTHONPATH>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>

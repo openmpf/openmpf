@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.camel.ExchangePattern;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionDeadLetterProcessor;
@@ -45,7 +46,7 @@ public class DlqRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(DlqRouteBuilder.class);
 
 	public static final String ENTRY_POINT = MpfEndpoints.DEAD_LETTER_QUEUE;
-	public static final String EXIT_POINT = MpfEndpoints.PROCESSED_DLQ_MESSAGES_QUEUE;
+	public static final String EXIT_POINT = MpfEndpoints.DLQ_PROCESSED_MESSAGES;
 	public static final String ROUTE_ID = "DLQ Route";
 
 	private static final String TAP_POINT = "direct:dlqTap";
@@ -67,26 +68,38 @@ public class DlqRouteBuilder extends RouteBuilder {
 	public void configure() throws Exception {
 		log.debug("Configuring route '{}'.", routeId);
 
-		// only process detection messages sent to components; otherwise leave messages on the default DLQ (for auditing)
+		// Only process detection messages sent to components; otherwise leave messages on the default DLQ for auditing.
 		String selector = "?selector=" + java.net.URLEncoder.encode(MpfHeaders.JMS_REPLY_TO + "='" + MpfEndpoints.COMPLETED_DETECTIONS_REPLY_TO + "'","UTF-8");
 
 		from(entryPoint + selector)
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
-			.multicast()
-				.pipeline()
-					// TODO: Test me!
-					.doTry()
-						// deserialize protobuf message for readability
-						.unmarshal().protobuf(DetectionProtobuf.DetectionRequest.getDefaultInstance()).convertBodyTo(String.class)
-						.to(exitPoint) // send to the exit point to indicate it has been processed (and for auditing)
-					.doCatch(InvalidProtocolBufferException.class)
-						// handled(true) by default
-						.to("log:" + DlqRouteBuilder.class.getName() + "?level=ERROR&showCaughtException=true&showStackTrace=true")
+
+				// Configure exception handler(s) before behaviors that can cause exceptions.
+				.onException(InvalidProtocolBufferException.class)
+					.log(LoggingLevel.ERROR, DlqRouteBuilder.class.getName(),
+						"Cannot parse message into a DetectionRequest. Cannot mark job ${header." + MpfHeaders.JOB_ID + "} as completed.")
+					// ActiveMQ DefaultErrorHandler will print out message details.
+					.to(MpfEndpoints.DLQ_INVALID_MESSAGES) // send possibly corrupted message to a separate queue for auditing
+					.handled(true) // prevent further camel processing
 				.end()
-				.pipeline()
-					.process(DetectionDeadLetterProcessor.REF) // generate a detection response protobuf message with an error status
-					.to(MpfEndpoints.COMPLETED_DETECTIONS) // send protobuf message to the intended destination to increment the job count
+
+				// Attempt to deserialize the protobuf message now. Failure to deserialize will trigger the exception
+				// handler and prevent further exceptions and redelivery attempts for this message.
+
+				// On at least one occasion, the following exception was observed:
+				//     "com.google.protobuf.InvalidProtocolBufferException: Message missing required fields: data_uri"
+				// Further debugging is necessary to determine the root cause.
+
+				.unmarshal().protobuf(DetectionProtobuf.DetectionRequest.getDefaultInstance()).convertBodyTo(String.class)
+				.multicast()
+					.pipeline()
+						.to(exitPoint) // send deserialized (readable) message to the exit point to indicate it has been processed, and for auditing
+					.end()
+					.pipeline()
+						.process(DetectionDeadLetterProcessor.REF) // generate a detection response protobuf message with an error status
+						.to(MpfEndpoints.COMPLETED_DETECTIONS) // send protobuf message to the intended destination to increment the job count
+					.end()
 				.end()
 			.end();
 	}

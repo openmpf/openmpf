@@ -39,6 +39,6 @@ public class DetectionDeadLetterProcessor extends BaseDetectionStatusProcessor {
 	public static final String REF = "detectionDeadLetterProcessor";
 
 	public void process(Exchange exchange) throws Exception {
-		process(exchange, DetectionProtobuf.DetectionError.DEAD_LETTER);
+		process(exchange, DetectionProtobuf.DetectionError.DEAD_LETTER, true);
 	}
 }

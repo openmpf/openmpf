@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection;
 
+import com.google.protobuf.TextFormat;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -35,13 +36,25 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
  */
 public abstract class BaseDetectionStatusProcessor implements Processor {
 
-	protected void process(Exchange exchange, DetectionProtobuf.DetectionError error) throws Exception {
+	public abstract void process(Exchange exchange) throws Exception;
+
+	protected void process(Exchange exchange, DetectionProtobuf.DetectionError error, boolean isDeserialized) throws Exception {
 		// Copy the headers from the incoming message to the outgoing message.
 		exchange.getOut().getHeaders().putAll(exchange.getIn().getHeaders());
 
-		DetectionProtobuf.DetectionRequest extractionRequest = DetectionProtobuf.DetectionRequest.parseFrom(exchange.getIn().getBody(byte[].class));
+		DetectionProtobuf.DetectionRequest extractionRequest;
+		Object body = exchange.getIn().getBody();
 
-		// Create a simple response based on the request and indicate that the request was cancelled.
+		if (isDeserialized) {
+			// There is no parseFrom(String) method, so we merge the text with a builder.
+			DetectionProtobuf.DetectionRequest.Builder builder = DetectionProtobuf.DetectionRequest.newBuilder();
+			TextFormat.merge((CharSequence)body, builder);
+			extractionRequest = builder.build();
+		} else {
+			extractionRequest = DetectionProtobuf.DetectionRequest.parseFrom((byte[])body);
+		}
+
+		// Create a simple response based on the request and indicate that the request was cancelled or there was an error.
 		exchange.getOut().setBody(
 			DetectionProtobuf.DetectionResponse.newBuilder()
 				.setActionIndex(extractionRequest.getActionIndex())

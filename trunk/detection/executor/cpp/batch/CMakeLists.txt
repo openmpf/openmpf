@@ -98,9 +98,9 @@ install(TARGETS amq_detection_component
 install(FILES Log4cxxConfig.xml DESTINATION config)
 
 if(DEFINED ENV{MPF_SDK_INSTALL_PATH})
-	install(DIRECTORY $ENV{MPF_SDK_INSTALL_PATH}/python/ DESTINATION python)
+	install(DIRECTORY $ENV{MPF_SDK_INSTALL_PATH}/python/wheelhouse/ DESTINATION python/wheelhouse)
 else()
-	install(DIRECTORY $ENV{HOME}/mpf-sdk-install/python/ DESTINATION python)
+	install(DIRECTORY $ENV{HOME}/mpf-sdk-install/python/wheelhouse/ DESTINATION python/wheelhouse)
 endif()
 
 add_subdirectory(test)

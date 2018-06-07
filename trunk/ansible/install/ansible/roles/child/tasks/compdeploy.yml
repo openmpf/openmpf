@@ -168,3 +168,12 @@
     - name: Send the component descriptor path to stdout
       debug:
         msg="COMPONENT_DESCRIPTOR_PATH={{ component_descriptor.files[0].path }}"
+
+    - include: setup_python_component_venv.yml
+      vars:
+        component_path: "{{ plugins_dir }}/{{ component_tld }}"
+        descriptor: "{{ ext_component_descriptor }}"
+      when: ext_component_descriptor.sourceLanguage|default('')|lower == "python"
+
+
+

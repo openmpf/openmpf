@@ -23,59 +23,29 @@
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
----
-#Configuring yum
-- name: Download mpf-repo.repo
-  get_url:
-    url=http://{{ repo_host }}/repo/files/mpf.repo
-    dest=/etc/yum.repos.d/mpf.repo
-    timeout=30
-  environment:
-    no_proxy: "{{ repo_host }}"
 
-- name: Configure mpf-repo.repo
-  lineinfile:
-    dest="/etc/yum.repos.d/mpf.repo"
-    regexp="^baseurl"
-    line="baseurl=http://{{ repo_host }}/repo/rpms/"
-    backrefs=yes
 
-- name: Setup Java
-  include: java.yml --tags=java
+- name: Check if component has wheelhouse directory
+  stat:
+    path: "{{ component_path }}/wheelhouse"
+  register: comp_wheelhouse_dir
 
-- name: Setup ffmpeg
-  include: ffmpeg.yml
 
-- name: Install dependencies
-  yum:
-    name="{{ item }}"
-    state=latest
-    update_cache=yes
-    disablerepo=*
-    enablerepo=mpf-repo
-  environment:
-    no_proxy: "{{ repo_host }}"
-  with_items:
-    - log4cxx
-    - libdc1394
-    - unzip
-    - libjpeg-turbo
-    - libpng
-    - libtiff
-    - jasper-libs
-    - gtk2
-    - atk
-    - pango
-    - gdk-pixbuf2
-    - cairo
-    - fontconfig
-    - gstreamer
-    - gstreamer-plugins-base
-    - libv4l
-    - mesa-libGLU
-    - libSM
-    - libICE
-    - qt-x11
-    - python-pip
-    - python-virtualenv
+- name: Setup virtualenv for Python setuptools-based component
+  pip:
+    name: "{{ descriptor.batchLibrary | default('') }} {{ descriptor.streamLibrary | default('') }}"
+    virtualenv: "{{ component_path }}/venv"
+    virtualenv_python: python2.7
+    extra_args: --find-links {{comp_wheelhouse_dir.stat.path}} --no-index
+  when:
+    - comp_wheelhouse_dir.stat.exists
 
+
+- name: Setup virtualenv for basic Python component
+  pip:
+    name: mpf_component_api
+    virtualenv: "{{ component_path }}/venv"
+    virtualenv_python: python2.7
+    extra_args: --find-links {{ mpf_home }}/python/wheelhouse --no-index
+  when:
+    - not comp_wheelhouse_dir.stat.exists

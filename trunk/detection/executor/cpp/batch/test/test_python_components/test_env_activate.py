@@ -23,59 +23,20 @@
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
----
-#Configuring yum
-- name: Download mpf-repo.repo
-  get_url:
-    url=http://{{ repo_host }}/repo/files/mpf.repo
-    dest=/etc/yum.repos.d/mpf.repo
-    timeout=30
-  environment:
-    no_proxy: "{{ repo_host }}"
 
-- name: Configure mpf-repo.repo
-  lineinfile:
-    dest="/etc/yum.repos.d/mpf.repo"
-    regexp="^baseurl"
-    line="baseurl=http://{{ repo_host }}/repo/rpms/"
-    backrefs=yes
+import sys
+from os.path import expanduser, expandvars
 
-- name: Setup Java
-  include: java.yml --tags=java
+# Try to use version in repo before installed version, so that when run in a development environment the
+# most up to date version of the component api is used. A developer also might run these tests before
+# doing a full build and install.
+# On Jenkins the first path will not exist, but that is okay because Jenkins does a full build and install
+# before running these tests.
+raw_paths = (
+    "~/openmpf-projects/openmpf-python-component-sdk/detection/api",
+    "~/mpf-sdk-install/python/site-packages",
+    "$MPF_SDK_INSTALL_PATH/python/site-packages",
+    "$MPF_HOME/python/site-packages"
+)
 
-- name: Setup ffmpeg
-  include: ffmpeg.yml
-
-- name: Install dependencies
-  yum:
-    name="{{ item }}"
-    state=latest
-    update_cache=yes
-    disablerepo=*
-    enablerepo=mpf-repo
-  environment:
-    no_proxy: "{{ repo_host }}"
-  with_items:
-    - log4cxx
-    - libdc1394
-    - unzip
-    - libjpeg-turbo
-    - libpng
-    - libtiff
-    - jasper-libs
-    - gtk2
-    - atk
-    - pango
-    - gdk-pixbuf2
-    - cairo
-    - fontconfig
-    - gstreamer
-    - gstreamer-plugins-base
-    - libv4l
-    - mesa-libGLU
-    - libSM
-    - libICE
-    - qt-x11
-    - python-pip
-    - python-virtualenv
-
+sys.path[0:0] = (expanduser(expandvars(p)) for p in raw_paths)

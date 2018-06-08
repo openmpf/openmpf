@@ -9,8 +9,10 @@
     "serviceCount":1,
     "serviceLauncher":"generic",
     "serviceDescription":"Draws bounding boxes around successfully detected objects in images and videos.",
-    "environmentVariables":[
-
-    ]
+    "environmentVariables" : [ {
+      "name" : "LD_LIBRARY_PATH",
+      "value" : "${MPF_HOME}/lib:${LD_LIBRARY_PATH}",
+      "sep" : null
+    } ]
   }
 }

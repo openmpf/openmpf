@@ -53,7 +53,7 @@ public class AnsibleDeploymentService implements ComponentDeploymentService {
             "try adding \"mpf.ansible.local-only=true\" to mpf-private.properties";
 
     @Autowired
-    PropertiesUtil propertiesUtil;
+    private PropertiesUtil propertiesUtil;
 
     @Override
     public String deployComponent(String componentPackageFileName) throws DuplicateComponentException {

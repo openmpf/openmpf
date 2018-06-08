@@ -59,5 +59,9 @@
       <outputDirectory>bin</outputDirectory>
       <fileMode>755</fileMode>
     </fileSet>
+    <fileSet>
+      <directory>${basedir}/../install/python</directory>
+      <outputDirectory>python</outputDirectory>
+    </fileSet>
   </fileSets>
 </assembly>

@@ -97,7 +97,7 @@
                                 not the number of chmod processes.
                                 See https://ant.apache.org/manual/Tasks/chmod.html -->
                                 <chmod perm="755" verbose="true" maxparallel="100">
-                                    <fileset dir="${basedir}/../install" includes="**/*"/>
+                                    <fileset dir="${basedir}/../install" excludes="plugins/**"/>
                                 </chmod>
                             </target>
                         </configuration>

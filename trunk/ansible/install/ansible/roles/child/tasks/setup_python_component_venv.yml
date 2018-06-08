@@ -25,25 +25,27 @@
 #############################################################################
 
 
-cmake_minimum_required(VERSION 3.6)
-
-project(batch-executor-tests)
-set(CMAKE_CXX_STANDARD 11)
-
-
-find_package(GTest)
-if (${GTEST_FOUND})
-    enable_testing()
-
-    add_executable(BatchExecutorTest test_batch_executor.cpp $<TARGET_OBJECTS:batch_executor_lib>)
-
-    target_link_libraries(BatchExecutorTest GTest::GTest GTest::Main
-        mpfComponentInterface ${MPF_PROTOBUF_LIB} ${PROTOBUF_LIBRARY}
-        ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES} pybind11::embed
-        )
+- name: Check if component has wheelhouse directory
+  stat:
+    path: "{{ component_path }}/wheelhouse"
+  register: comp_wheelhouse_dir
 
 
-    add_test(NAME BatchExecutorTest COMMAND BatchExecutorTest)
-    file(COPY test_python_components/ DESTINATION test_python_components)
+- name: Setup virtualenv for Python setuptools-based component
+  pip:
+    name: "{{ descriptor.batchLibrary | default('') }} {{ descriptor.streamLibrary | default('') }}"
+    virtualenv: "{{ component_path }}/venv"
+    virtualenv_python: python2.7
+    extra_args: --find-links {{comp_wheelhouse_dir.stat.path}} --no-index
+  when:
+    - comp_wheelhouse_dir.stat.exists
 
-endif()
+
+- name: Setup virtualenv for basic Python component
+  pip:
+    name: mpf_component_api
+    virtualenv: "{{ component_path }}/venv"
+    virtualenv_python: python2.7
+    extra_args: --find-links {{ mpf_home }}/python/wheelhouse --no-index
+  when:
+    - not comp_wheelhouse_dir.stat.exists

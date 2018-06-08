@@ -588,8 +588,8 @@ public class PipelineController {
      * @param name name of the task or pipeline to be validated.
      * @exception WfmProcessingException is thrown if the pipeline, task or action name doesn't validate
      **/
-    private void validatePipelineOrTaskOrActionName(String name) throws WfmProcessingException {
-        if ( !name.matches("([A-Z0-9 _\\-\\(\\)])+") ) {
+    private static void validatePipelineOrTaskOrActionName(String name) throws WfmProcessingException {
+        if ( !name.matches("([A-Z0-9 _\\-()])+") ) {
             throw new WfmProcessingException("Pipeline, task, and action names can only contain uppercase letters, " +
                     "numbers, dashes, hyphens, parentheses, and white space. \"" + name + "\" didn't validate.");
         }

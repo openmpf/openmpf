@@ -49,18 +49,15 @@ public class DlqRouteBuilder extends RouteBuilder {
 	public static final String EXIT_POINT = MpfEndpoints.DLQ_PROCESSED_MESSAGES;
 	public static final String ROUTE_ID = "DLQ Route";
 
-	private static final String TAP_POINT = "direct:dlqTap";
-
-	private final String entryPoint, exitPoint, tapPoint, routeId;
+	private final String entryPoint, exitPoint, routeId;
 
 	public DlqRouteBuilder() {
-		this(ENTRY_POINT, EXIT_POINT, TAP_POINT, ROUTE_ID);
+		this(ENTRY_POINT, EXIT_POINT, ROUTE_ID);
 	}
 
-	public DlqRouteBuilder(String entryPoint, String exitPoint, String tapPoint, String routeId) {
+	public DlqRouteBuilder(String entryPoint, String exitPoint, String routeId) {
 		this.entryPoint = entryPoint;
 		this.exitPoint = exitPoint;
-		this.tapPoint = tapPoint;
 		this.routeId = routeId;
 	}
 

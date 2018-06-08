@@ -36,8 +36,6 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
  */
 public abstract class BaseDetectionStatusProcessor implements Processor {
 
-	public abstract void process(Exchange exchange) throws Exception;
-
 	protected void process(Exchange exchange, DetectionProtobuf.DetectionError error, boolean isDeserialized) throws Exception {
 		// Copy the headers from the incoming message to the outgoing message.
 		exchange.getOut().getHeaders().putAll(exchange.getIn().getHeaders());

@@ -135,13 +135,13 @@
     state=absent
     path="{{ tomcat_home }}/bin/setenv.sh"
 
-- name: Configure tomcat LD_LIBRARY_PATH
-  lineinfile:
-    dest="{{ tomcat_home }}/bin/setenv.sh"
-    create=yes
-    line="export LD_LIBRARY_PATH={{ mpf_home }}/lib"
-    state=present
-    insertafter=EOF
+ - name: Configure tomcat LD_LIBRARY_PATH
+   lineinfile:
+     dest="{{ tomcat_home }}/bin/setenv.sh"
+     create=yes
+     line="export LD_LIBRARY_PATH={{ mpf_home }}/lib"
+     state=present
+     insertafter=EOF
 
  - name: Remove existing tomcat HTTPS configuration from {{ tomcat_home }}/conf/server.xml
    lineinfile:

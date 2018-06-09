@@ -242,7 +242,7 @@ public abstract class BaseServiceLauncher implements Runnable {
                 Thread.currentThread().interrupt();
             }
             if (status) {
-                LOG.info("Service {} shutdown", this.getServiceName());
+                LOG.debug("Service {} shutdown", this.getServiceName());
             } else {
                 LOG.warn("Failed to properly shutdown {} in {} millsec", this.getServiceName(), this.shutdownWaitMillis);
             }

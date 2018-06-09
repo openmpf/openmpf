@@ -120,7 +120,7 @@ public abstract class BaseServiceLauncher implements Runnable {
      * @param desc Service Descriptor to launch
      */
     public BaseServiceLauncher(ServiceDescriptor desc) {
-    	LOG.info("Base Service Launcher '{}' created", desc.getService().getName());
+    	LOG.debug("Base Service Launcher '{}' created", desc.getService().getName());
     	restarts = desc.getRestarts();
     	
         this.mServiceDesc = desc;
@@ -131,7 +131,7 @@ public abstract class BaseServiceLauncher implements Runnable {
 
                 @Override
                 public void receiveOutput(String outputName, String output) {
-                    LOG.info("Node [{}]: {}", mServiceDesc.getService().getName(), output);
+                    LOG.debug("Node [{}]: {}", mServiceDesc.getService().getName(), output);
                 }
 
             };
@@ -140,7 +140,7 @@ public abstract class BaseServiceLauncher implements Runnable {
 
                 @Override
                 public void receiveOutput(String outputName, String output) {
-                    LOG.info("Node Error [{}]: {}", mServiceDesc.getService().getName(), output);
+                    LOG.debug("Node Error [{}]: {}", mServiceDesc.getService().getName(), output);
                 }
 
             };
@@ -356,7 +356,7 @@ public abstract class BaseServiceLauncher implements Runnable {
                 if (s.getWorkingDirectory() != null && !s.getWorkingDirectory().isEmpty()) {
                     File cwd = new File(this.substituteVariables(s.getWorkingDirectory().trim()));
                     if (cwd.isDirectory()) {
-                        LOG.info("Switching to working directory {}", cwd);
+                        LOG.debug("Switching to working directory {}", cwd);
                         pb.directory(cwd);
                     } else {
                         LOG.warn("Unable to switch to working directory {}", cwd);
@@ -374,7 +374,7 @@ public abstract class BaseServiceLauncher implements Runnable {
                     if (null != envVar.getSep() && !envVar.getSep().isEmpty()) {
                         String subst_value = this.substituteVariables(envVar.getValue());
                         envVar.setValue(subst_value);
-                        LOG.info("Appending environment variable {} = {} using {} ", envVar.getKey(), envVar.getValue(), envVar.getSep());
+                        LOG.debug("Appending environment variable {} = {} using {} ", envVar.getKey(), envVar.getValue(), envVar.getSep());
                         if (env.containsKey(envVar.getKey())) {
                             env.put(envVar.getKey(), env.get(envVar.getKey()) + envVar.getSep() + envVar.getValue());
                         } else {
@@ -383,7 +383,7 @@ public abstract class BaseServiceLauncher implements Runnable {
                     } else {
                         String subst_value = this.substituteVariables(envVar.getValue());
                         envVar.setValue(subst_value);
-                        LOG.info("Adding environment variable {} = {}", envVar.getKey(), envVar.getValue());
+                        LOG.debug("Adding environment variable {} = {}", envVar.getKey(), envVar.getValue());
                         env.put(envVar.getKey(), envVar.getValue());
                     }
                 }
@@ -402,14 +402,14 @@ public abstract class BaseServiceLauncher implements Runnable {
                     public void run() {
                         if (child != null) {
                             child.destroy();
-                            LOG.info("Child process shutdown: " + s.getCmdPath());
+                            LOG.debug("Child process shutdown: " + s.getCmdPath());
                         }
                     }
                 });
 
                 //store the time started to check time up when service shuts down with an exit code
                 this.getService().setStartTimeMillis(System.currentTimeMillis());
-                LOG.info("Node service {} started", this.mServiceDesc.getName());
+                LOG.debug("Node service {} started", this.mServiceDesc.getName());
 
                 // capture I/O streams
                 stdOut = child.getInputStream();
@@ -440,7 +440,7 @@ public abstract class BaseServiceLauncher implements Runnable {
                 switch (mExitStatus) {
                     case 0:
                     	normalShutdown = true;
-                        LOG.info("Service {} exited normally", this.mServiceDesc.getName());
+                        LOG.debug("Service {} exited normally", this.mServiceDesc.getName());
                         break;
                     case 143:
                         LOG.warn("Service {} exited with error {} (SIGTERM)", this.mServiceDesc.getName(), mExitStatus);
@@ -498,13 +498,13 @@ public abstract class BaseServiceLauncher implements Runnable {
                 LOG.warn("Failed to start service {}! Check logs", this.mServiceDesc.getName());
             }
         } else {
-            LOG.info("Service {} is now fully terminated", this.mServiceDesc.getName());
+            LOG.debug("Service {} is now fully terminated", this.mServiceDesc.getName());
         }
         child = null;
 
         isRunning = false;
         mRunToCompletion = true;
-        LOG.info("RUN method for service {} ending", this.mServiceDesc.getName());
+        LOG.debug("RUN method for service {} ending", this.mServiceDesc.getName());
     }
 
     public String substituteVariables(String str) {

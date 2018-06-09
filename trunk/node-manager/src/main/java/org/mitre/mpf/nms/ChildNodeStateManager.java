@@ -74,11 +74,11 @@ public class ChildNodeStateManager extends ChannelReceiver {
 	       streamingJobManager.handle((StreamingJobMessage) obj);
         }
         else if (obj instanceof ServiceStatusUpdate) {
-            LOG.info("Received a ServiceStatusUpdate from {}", sender);
+            LOG.debug("Received a ServiceStatusUpdate from {}", sender);
             ServiceStatusUpdate ssu = (ServiceStatusUpdate) obj;
             ServiceDescriptor sd = ssu.getServiceDescriptor();
             String name = ssu.getServiceName();
-            LOG.info("Message received by address: {} for service descriptor with name: {}",
+            LOG.debug("Message received by address: {} for service descriptor with name: {}",
                     getMessageChannel().getAddress(), name);
             //System.err.println("\tReceived  " + sd.getLastKnownState().toString() + " state for " + sd.getName());
 
@@ -105,19 +105,19 @@ public class ChildNodeStateManager extends ChannelReceiver {
                 // one of ours set it up correctly
                 switch (sd.getLastKnownState()) {
                     case Delete:
-                        LOG.info("Processing a shutdown and delete request for {} from {} ", sd.getName(), sender);
+                        LOG.debug("Processing a shutdown and delete request for {} from {} ", sd.getName(), sender);
                         shutdown(sd, true, false);
                         break;
                     case ShuttingDown:
-                        LOG.info("Processing a shutdown request for {} from {} ", sd.getName(), sender);
+                        LOG.debug("Processing a shutdown request for {} from {} ", sd.getName(), sender);
                         shutdown(sd, false, false);
                         break;
                     case ShuttingDownNoRestart:
-                        LOG.info("Processing a shutdown with no restart request for {} from {} ", sd.getName(), sender);
+                        LOG.debug("Processing a shutdown with no restart request for {} from {} ", sd.getName(), sender);
                         shutdown(sd, false, true);
                         break;
                     case Launching:
-                        LOG.info("Processing a launch request for {} from {} ", sd.getName(), sender);
+                        LOG.debug("Processing a launch request for {} from {} ", sd.getName(), sender);
                         launch(sd);
                         break;
                 }
@@ -126,7 +126,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
             //TODO: another node manager may want to remove (nodeTable.remove) a node descriptor from its node table
             //this would be the case if another node was set to delete inactive by the master node in a multi node scenario
             NodeStatusUpdate msu = (NodeStatusUpdate) obj;
-            LOG.info("Received a ManagerStatusUpdate: {} for {} ", msu.getLastKnownState(), msu.getHostName());
+            LOG.debug("Received a ManagerStatusUpdate: {} for {} ", msu.getLastKnownState(), msu.getHostName());
 
             String name = msu.getHostName();
             if(msu.getLastKnownState() == NodeManagerConstants.States.DeleteInactive) {
@@ -194,7 +194,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
                 if (launcher.startup(propertiesUtil.getMinServiceUpTimeMillis())) {
                     launchedAppsMap.put(launcher.getServiceName(), launcher);
                     updateState(desc, NodeManagerConstants.States.Running);
-                    LOG.info("Sending {} state for {}", NodeManagerConstants.States.Running, desc.getName());
+                    LOG.debug("Sending {} state for {}", NodeManagerConstants.States.Running, desc.getName());
                 } else {
                     LOG.error("Could not launch: {} at path: {}", desc.getName(), desc.getService().getCmdPath());
                     error = true;
@@ -232,7 +232,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
                         && sd.doesHostMatch(propertiesUtil.getThisMpfNode())) {
                     // @todo: offline when messages came? If we went away the state of these would be running!
                     // System.err.println("Launching a previously setup node: " + sd.getName());
-                    LOG.info("Launching a previously setup node: " + sd.getName());
+                    LOG.debug("Launching a previously setup node: " + sd.getName());
                     // one of ours set it up correctly
                     launch(sd);
                 }
@@ -259,7 +259,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
                     // If a process we are responsible for is no longer running, notify the world, then mark it for
                     // deletion from our list of managed processes.  Don't delete in mid enumeration.
                     if (n.runToCompletion()) {
-                        LOG.info("{} has gone offline", n.getServiceName());
+                        LOG.debug("{} has gone offline", n.getServiceName());
                         toDelete.add(n.getServiceName());
                         sd.setFatalIssueFlag(n.getFatalProblemFlag());
                         //mark as InactiveNoStart here if the fatal issue flag is set! will prevent that service from
@@ -272,7 +272,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
                         running--;
                         // Otherwise, just keep track of any restarts the process is going through
                     } else if (n.getRestartCount() > sd.getRestarts()) {
-                        LOG.info("{} has a new restart count of {}", n.getServiceName(), n.getRestartCount());
+                        LOG.debug("{} has a new restart count of {}", n.getServiceName(), n.getRestartCount());
                         sd.setRestarts(n.getRestartCount());
                         updateState(sd, sd.getLastKnownState());
                     }

@@ -156,11 +156,11 @@ public class ChannelNode {
      * Shut down the baseNode cleanly
      */
     public void shutdown() {
-        log.info("Shutdown requested.");
+        log.debug("Shutdown requested.");
         channel.disconnect();
         channel.close();
         isConnected = false;
-        log.info("Channel closed.");
+        log.debug("Channel closed.");
     }
 
 

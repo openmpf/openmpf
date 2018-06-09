@@ -135,15 +135,15 @@ public class MasterNode {
         	//IN THIS CASE, there are no NODES left, which means no SERVICES should be left
             synchronized (nodeStateManager.getServiceTable()) {
                 for (ServiceDescriptor service : nodeStateManager.getServiceTable().values()) {
-                    log.info("Service with name '{}' is part of the service table, but no longer part of the node manager config.",
+                    log.debug("Service with name '{}' is part of the service table, but no longer part of the node manager config.",
                             service.getName());
                     if (service.getLastKnownState() == States.InactiveNoStart) {
                         //the service has already been set to Delete and ShutDown - go ahead and change it directly to DeleteInactive
-                        log.info("Updating existing config for {}", service.getName());
+                        log.debug("Updating existing config for {}", service.getName());
                         nodeStateManager.updateState(service, States.DeleteInactive);
                     }
                     else if (service.getLastKnownState() != States.DeleteInactive) {
-                        log.info("Updating existing config for {}", service.getName());
+                        log.debug("Updating existing config for {}", service.getName());
                         nodeStateManager.updateState(service, States.Delete);
                     }
                 }
@@ -201,18 +201,18 @@ public class MasterNode {
                     synchronized (nodeStateManager.getServiceTable()) {
                         ServiceDescriptor serviceTableDescriptor = nodeStateManager.getServiceTable().get(descriptorFromConfig.getName());
                         if (serviceTableDescriptor == null) {
-                        	log.info("Updating config for {}", descriptorFromConfig.getName());
+                        	log.debug("Updating config for {}", descriptorFromConfig.getName());
                             nodeStateManager.updateState(descriptorFromConfig, States.Configured);
                         } else {
                         	//TODO: might want to consider more states here
                         	if(serviceTableDescriptor.getLastKnownState() == NodeManagerConstants.States.InactiveNoStart) {
-                        		log.info("Will not update the existing config for {} because the state is {}", descriptorFromConfig.getName(), serviceTableDescriptor.getLastKnownState());
+                        		log.debug("Will not update the existing config for {} because the state is {}", descriptorFromConfig.getName(), serviceTableDescriptor.getLastKnownState());
                             } else if(serviceTableDescriptor.getLastKnownState() == NodeManagerConstants.States.Running) {
-                            	log.info("Not updating existing config for {} because it is already running", descriptorFromConfig.getName());
+                            	log.debug("Not updating existing config for {} because it is already running", descriptorFromConfig.getName());
                             } else {
                             	//If service was DeleteInactive it should still be set back to configured because the config
                             	//needs to overwrite existing service table information
-                            	log.info("Updating existing config for {}", descriptorFromConfig.getName());
+                            	log.debug("Updating existing config for {}", descriptorFromConfig.getName());
                                 nodeStateManager.updateState(descriptorFromConfig, States.Configured);
                             }
                         }
@@ -228,9 +228,9 @@ public class MasterNode {
             while (nodeIter.hasNext()) {
                 NodeDescriptor node = nodeIter.next();
                 if (!configuredManagerHosts.containsKey(node.getHostname()) && node.getLastKnownState() != States.DeleteInactive) {
-                    log.info("Node with name '{}' is no longer present in the config", node.getHostname());
+                    log.debug("Node with name '{}' is no longer present in the config", node.getHostname());
                     nodeStateManager.updateState(node, States.DeleteInactive);
-                    log.info("removing node with name '{}' from the node table", node.getHostname());
+                    log.debug("removing node with name '{}' from the node table", node.getHostname());
                     nodeIter.remove();
                 }
             }
@@ -245,10 +245,10 @@ public class MasterNode {
                 ServiceDescriptor service = servicesIter.next();
                 if (!serviceNamesFromConfig.contains(service.getName())
                         && service.getLastKnownState() != States.DeleteInactive) {
-                    log.info("Service with name '{}' is part of the service table, but no longer part of the node manager config.",
+                    log.debug("Service with name '{}' is part of the service table, but no longer part of the node manager config.",
                             service.getName());
                     nodeStateManager.updateState(service, States.Delete);
-                    log.info("removing service with name '{}' from the service table", service.getName());
+                    log.debug("removing service with name '{}' from the service table", service.getName());
                     servicesIter.remove();
                 }
             }
@@ -274,7 +274,7 @@ public class MasterNode {
      * NodeManager to launch them.
      */
     public void launchAllNodes() {
-    	log.info("Launch all nodes called");
+    	log.debug("Launch all nodes called");
         nodeStateManager.launchAllNodes();
     }
 

@@ -26,14 +26,14 @@
 
 package org.mitre.mpf.nms;
 
+import org.mitre.mpf.nms.xml.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-
-import org.mitre.mpf.nms.xml.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Generic {@link BaseServiceLauncher} that just sends a newline on STDIN to tell the subprocess to shutdown.
@@ -61,7 +61,7 @@ public class GenericServiceLauncher extends BaseServiceLauncher  {
      */
     @Override
     public void sendShutdownToApp() {
-        LOG.info("Sending down 'q' to {}", this.getServiceName());
+        LOG.debug("Sending down 'q' to {}", this.getServiceName());
         // processbuilder doesn't give us the pid to send a signal and Windows doesn't have signals.
         this.sendLine("q\n");
         

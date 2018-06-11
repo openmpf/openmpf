@@ -26,19 +26,11 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.ResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
-import org.mitre.mpf.wfm.data.entities.transients.Detection;
-import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
@@ -50,6 +42,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 
 /** Processes the responses which have been returned from a detection component. */
 @Component(DetectionResponseProcessor.REF)
@@ -240,7 +237,7 @@ public class DetectionResponseProcessor
 						track.getDetections().add(
 								new Detection(
 										0,
-										1,
+										0,
 										0,
 										0,
 										objectTrack.getConfidence(),
@@ -315,7 +312,7 @@ public class DetectionResponseProcessor
 					track.getDetections().add(
 							new Detection(
 									0,
-									1,
+									0,
 									0,
 									0,
 									objectTrack.getConfidence(),

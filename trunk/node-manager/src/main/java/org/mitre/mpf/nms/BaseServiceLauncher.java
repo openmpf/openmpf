@@ -518,15 +518,10 @@ public abstract class BaseServiceLauncher implements Runnable {
     public String getCommandPath() {
         return EnvironmentVariableExpander.expand(mServiceDesc.getService().getCmdPath());
     }
-    
+
     /**
      * Special configuration for the process environment after BaseNodeLauncher
      * configures the builder.
-     * <br/>
-     * This can be stubbed out if nothing needs to be done. Useful possibilities
-     * include sending something via STDIN to the app to tell it to shutdown
-     * gracefully followed by some sleep if needed. Upon return the caller will
-     * terminate the process.
      *
      * @param pb
      */

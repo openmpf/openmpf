@@ -154,7 +154,7 @@ public class TestPropertiesUtil {
     public void testPropertiesUtilGetters() {
         Assert.assertTrue(propertiesUtil.isAmqBrokerEnabled());
 
-        Assert.assertEquals(1, propertiesUtil.getAmqBrokerPurgeWhiteList().size());
+        Assert.assertEquals(2, propertiesUtil.getAmqBrokerPurgeWhiteList().size());
 
         Assert.assertEquals(ArtifactExtractionPolicy.VISUAL_EXEMPLARS_ONLY, propertiesUtil.getArtifactExtractionPolicy());
 

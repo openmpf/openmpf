@@ -38,7 +38,8 @@ import org.springframework.stereotype.Component;
 public class DetectionCancellationProcessor extends BaseDetectionStatusProcessor {
 	public static final String REF = "detectionCancellationProcessor";
 
+	@Override
 	public void process(Exchange exchange) throws Exception {
-		process(exchange, DetectionProtobuf.DetectionError.REQUEST_CANCELLED);
+		process(exchange, DetectionProtobuf.DetectionError.REQUEST_CANCELLED, false);
 	}
 }

@@ -734,7 +734,7 @@ export JGROUPS_TCP_PORT=7800
 export JGROUPS_FILE_PING_LOCATION="\$MPF_HOME/share/nodes"
 # CATALINA_OPTS is set in <TOMCAT_HOME>/bin/setenv.sh
 export ACTIVE_MQ_HOST="failover://(tcp://\$MASTER_MPF_NODE:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
-export LD_LIBRARY_PATH="../lib:/usr/local/lib:/usr/local/Trolltech/Qt-4.8.5/lib:\$MPF_HOME/lib"
+export LD_LIBRARY_PATH="/usr/local/lib"
 END_MPF_SH
 
 	

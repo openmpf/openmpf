@@ -31,36 +31,13 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.stream.Collectors;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.mitre.mpf.mvc.model.ActionModel;
-import org.mitre.mpf.mvc.model.AddToPipelineModel;
-import org.mitre.mpf.mvc.model.PipelineComponentBasicInfo;
-import org.mitre.mpf.mvc.model.PipelineModel;
-import org.mitre.mpf.mvc.model.PipelinesModel;
-import org.mitre.mpf.mvc.model.TaskModel;
+import org.mitre.mpf.mvc.model.*;
 import org.mitre.mpf.mvc.util.JsonView;
 import org.mitre.mpf.rest.api.PipelinesResponse;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.DuplicateNameWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.NotFoundWfmProcessingException;
-import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.ActionDefinitionRef;
-import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.PipelineDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinitionRef;
-import org.mitre.mpf.wfm.pipeline.xml.TaskDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.TaskDefinitionRef;
+import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
@@ -70,14 +47,13 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Api( value = "Pipelines",
@@ -609,12 +585,13 @@ public class PipelineController {
     /** Only allow pipeline, task or action names that contain uppercase letters, numbers, dash, hyphen or white space.
      * The pipeline, task or action should be rejected if the name doesn't validate.
      * This method assumes the conversion from lower to uppercase has already been done, so there is no need to check for lowercase letters.
-     * @param name name of the task or pipelineto be validated.
+     * @param name name of the task or pipeline to be validated.
      * @exception WfmProcessingException is thrown if the pipeline, task or action name doesn't validate
      **/
-    private void validatePipelineOrTaskOrActionName(String name) throws WfmProcessingException {
-        if ( !name.matches("([A-Z0-9 _-])+") ) {
-            throw new WfmProcessingException("Pipeline, task or action names can only contain uppercase letters, numbers, dash, hyphen or white space. Name " + name + " didn't validate.");
+    private static void validatePipelineOrTaskOrActionName(String name) throws WfmProcessingException {
+        if ( !name.matches("([A-Z0-9 _\\-()])+") ) {
+            throw new WfmProcessingException("Pipeline, task, and action names can only contain uppercase letters, " +
+                    "numbers, dashes, hyphens, parentheses, and white space. \"" + name + "\" didn't validate.");
         }
     }
 }

@@ -35,6 +35,7 @@ import org.springframework.stereotype.Component;
 public class MarkupCancellationProcessor implements Processor {
     public static final String REF = "markupCancellationProcessor";
 
+    @Override
     public void process(Exchange exchange) throws Exception {
         // Copy the headers from the incoming message to the outgoing message.
         exchange.getOut().getHeaders().putAll(exchange.getIn().getHeaders());

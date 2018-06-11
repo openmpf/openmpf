@@ -25,12 +25,15 @@
 #############################################################################
 ---
 #file: roles/cleanup/tasks/mpf-cleanup-sw-files.yml
+
+  # This task is left to support upgrades from R2.0.0 or earlier.
   - name: MPF cleanup, find old mpf.conf file in the /etc/ld.so.conf.d directory
     find:
       paths: "/etc/ld.so.conf.d"
       patterns: "mpf.conf"
     register: oldMpfConf_find
 
+  # This task is left to support upgrades from R2.0.0 or earlier.
   - name: MPF cleanup, remove old mpf.conf file in the /etc/ld.so.conf.d directory
     file:
       path="{{ item.path }}"

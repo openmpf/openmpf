@@ -717,7 +717,7 @@ sub installProfile {
 export MPF_HOME="$mpfPath/trunk/install"
 export MPF_USER="$mpfUser"
 export JAVA_HOME="/usr/java/latest"
-export LD_LIBRARY_PATH="../lib:/usr/local/lib:/usr/local/Trolltech/Qt-4.8.5/lib:$mpfPath/trunk/install/lib"
+export LD_LIBRARY_PATH="/usr/local/lib"
 export ACTIVE_MQ_HOST="failover://(tcp://localhost:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
 export MPF_LOG_PATH="$mpfLogPath"
 export THIS_MPF_NODE="$hostname"

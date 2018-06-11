@@ -211,8 +211,7 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 		log.debug("Whitelist contains {} queues: {}", whitelist.size(), whitelist);
 		for (ObjectName name : mbean.getQueues()) {
 			QueueViewMBean queueMbean = MBeanServerInvocationHandler.newProxyInstance(mBeanServerConnection, name, QueueViewMBean.class, true);
-			if(!whitelist.contains(queueMbean.getName()) &&
-					queueMbean.getName().startsWith("MPF.")) {
+			if(!whitelist.contains(queueMbean.getName()) && queueMbean.getName().startsWith("MPF.")) {
 				log.info("Purging {}", queueMbean.getName());
 				queueMbean.purge();
 			}

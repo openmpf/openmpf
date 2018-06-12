@@ -134,7 +134,7 @@ public class NodeController {
 	// EXTERNAL: Only used externally by "mpf list-nodes"
 	@RequestMapping(value = "/rest/nodes/all", method = RequestMethod.GET)
 	@ResponseBody
-	public Set<String> getAllNodesRest(
+	public ResponseEntity getAllNodesRest(
 			@RequestParam(value = "type", required = false, defaultValue="all") String type) {
 		return getAllNodes(type);
 	}
@@ -142,33 +142,28 @@ public class NodeController {
 	// INTERNAL
 	@RequestMapping(value = "/nodes/all", method = RequestMethod.GET)
 	@ResponseBody
-	public Set<String> getAllNodes(
+	public ResponseEntity getAllNodes(
 			@RequestParam(value = "type", required = false, defaultValue="all") String type) {
 
 		Set<String> coreNodes = nodeManagerService.getCoreNodes();
 
 		if (type.equals("core")) {
-			return coreNodes;
+			return ResponseEntity.ok().body(coreNodes);
 		}
 
-		Set<String> allAvailableNodes = nodeManagerService.getAvailableNodes();
-
-		Set nodes = new HashSet<String>();
+		Set<String> nodes = new HashSet<>(nodeManagerService.getAvailableNodes());
 		if (type.equals("spare")) {
-			nodes.addAll(allAvailableNodes);
 			nodes.removeAll(coreNodes);
-			return nodes;
+			return ResponseEntity.ok().body(nodes);
 		}
-
 		if (type.equals("all")) {
 			nodes.addAll(coreNodes);
-			nodes.addAll(allAvailableNodes);
-			return nodes;
-
+			return ResponseEntity.ok().body(nodes);
 		}
 
-		log.error("Unexpected \"type\" value: \"" + type + "\". Returning null.");
-		return null;
+		String error = "Unexpected \"type\" value: \"" + type + "\".";
+		log.error("Error processing [GET] /nodes/all: " + error);
+		return ResponseEntity.badRequest().body(error);
 	}
 
 	/*

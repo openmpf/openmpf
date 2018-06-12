@@ -40,7 +40,7 @@ def list_nodes(workflow_manager_url='http://localhost:8080/workflow-manager'):
     if not is_wfm_running(workflow_manager_url):
         print mpf_util.MsgUtil.yellow('Cannot determine live JGroups membership.')
 
-        core_mpf_nodes_str = os.environ.get(CORE_MPF_NODES_ENV_VAR).strip(', ')
+        core_mpf_nodes_str = os.environ.get(CORE_MPF_NODES_ENV_VAR, '').strip(', ')
 
         if not core_mpf_nodes_str:
             raise mpf_util.MpfError(CORE_MPF_NODES_ENV_VAR + ' environment variable is not set.')
@@ -52,8 +52,8 @@ def list_nodes(workflow_manager_url='http://localhost:8080/workflow-manager'):
         return
 
     username, password = get_username_and_password()
-    core_nodes_list = get_all_wfm_nodes(workflow_manager_url, username, password, "core")
-    spare_nodes_list = get_all_wfm_nodes(workflow_manager_url, username, password, "spare")
+    core_nodes_list = get_all_wfm_nodes(workflow_manager_url, username, password, 'core')
+    spare_nodes_list = get_all_wfm_nodes(workflow_manager_url, username, password, 'spare')
 
     print 'Core nodes: ' + str(core_nodes_list)
 
@@ -72,7 +72,7 @@ def get_username_and_password():
     return username, password
 
 
-def get_all_wfm_nodes(wfm_manager_url, username, password, node_type = "all"):
+def get_all_wfm_nodes(wfm_manager_url, username, password, node_type = 'all'):
     endpoint_url = wfm_manager_url.rstrip('/') + '/rest/nodes/all?type=' + node_type
     request = urllib2.Request(endpoint_url)
 

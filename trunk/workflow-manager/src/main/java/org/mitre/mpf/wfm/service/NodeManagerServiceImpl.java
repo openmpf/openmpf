@@ -143,9 +143,10 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
 
 
-    private NodeManagerModel convertToModel(NodeManager nodeManager) {
+    private NodeManagerModel convertToModel(NodeManager nodeManager, Set<String> availableNodes) {
         NodeManagerModel model = new NodeManagerModel(nodeManager.getTarget());
         model.setCoreNode(isCoreNode(model.getHost()));
+        model.setOnline(availableNodes.contains(model.getHost()));
         if (nodeManager.getServices() != null) {
             nodeManager.getServices().stream()
                 .map(ServiceModel::new)
@@ -163,14 +164,13 @@ public class NodeManagerServiceImpl implements NodeManagerService {
                 return new ArrayList<>();
             }
 
-            List<NodeManagerModel> nodeManagerModels = managers.managers()
-                    .stream()
-                    .map(this::convertToModel)
-                    .collect(toCollection(ArrayList::new));
-
             // get the current view once, and then update all the models
             Set<String> availableNodes = getAvailableNodes();
-            nodeManagerModels.stream().forEach(m -> m.setOnline(availableNodes.contains(m.getHost())));
+
+            List<NodeManagerModel> nodeManagerModels = managers.managers()
+                    .stream()
+                    .map(m -> convertToModel(m, availableNodes))
+                    .collect(toCollection(ArrayList::new));
 
             return nodeManagerModels;
         }

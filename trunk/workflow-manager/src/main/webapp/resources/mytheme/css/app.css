@@ -176,9 +176,3 @@
 .cursor-normal-arrow {
   cursor: default;
 }
-
-/*----------------------- Help Modal ----------------------------------*/
-
-.page-info-body {
-  text-align: left;
-}

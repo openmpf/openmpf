@@ -27,6 +27,9 @@
 package org.mitre.mpf.wfm.enums;
 
 public class EnvVar {
+
+    private EnvVar() {}
+
     public static final String
             CORE_MPF_NODES = "CORE_MPF_NODES",
             THIS_MPF_NODE = "THIS_MPF_NODE",

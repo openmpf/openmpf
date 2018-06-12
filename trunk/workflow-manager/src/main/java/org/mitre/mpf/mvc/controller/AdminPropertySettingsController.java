@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -82,26 +83,25 @@ public class AdminPropertySettingsController
      */
     @ResponseBody
     @RequestMapping(value = "/properties", method = RequestMethod.GET)
-    public List<PropertyModel> getProperties(@RequestParam(value = "propertySet", required = false, defaultValue="all") String propertySet) throws IOException {
+    public ResponseEntity getProperties(
+            @RequestParam(value = "propertySet", required = false, defaultValue="all") String propertySet) {
 
         if ( propertySet.equalsIgnoreCase("immutable") ) {
-
             // Get an updated list of property models containing only the immutable properties. Each element contains current value.
-            return propertiesUtil.getImmutableCustomProperties();
+            return ResponseEntity.ok().body(propertiesUtil.getImmutableCustomProperties());
 
         } else if ( propertySet.equalsIgnoreCase("mutable") ) {
-
             // Get an updated list of property models containing only the mutable properties. Each element contains current value.
-            return propertiesUtil.getMutableCustomProperties();
+            return ResponseEntity.ok().body(propertiesUtil.getMutableCustomProperties());
 
         } else if ( propertySet.equalsIgnoreCase("all") ) {
             // by default, return all of the system properties - updated to contain current value.
-            return propertiesUtil.getCustomProperties();
-
-        } else {
-            log.error("Unexpected \"propertySet\" value: \"" + propertySet + "\". Returning null.");
-            return null;
+            return ResponseEntity.ok().body(propertiesUtil.getCustomProperties());
         }
+
+        String error = "Unexpected \"propertySet\" value: \"" + propertySet + "\".";
+        log.error("Error processing [GET] /properties: " + error);
+        return ResponseEntity.badRequest().body(error);
     }
 
     @ResponseBody

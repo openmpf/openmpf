@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.util;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.io.IOUtils;
@@ -56,9 +57,8 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.*;
 
 @Component(PropertiesUtil.REF)
 @Monitored
@@ -80,7 +80,7 @@ public class PropertiesUtil {
     private ImmutableConfiguration mpfPropertiesConfig;
 
     // The set of core nodes will not change while the WFM is running.
-    private Set<String> coreMpfNodes;
+    private ImmutableSet<String> coreMpfNodes;
 
 
     @PostConstruct
@@ -145,7 +145,7 @@ public class PropertiesUtil {
         }
 
         coreMpfNodes = Arrays.stream(coreMpfNodesStr.split(",")).map(String::trim)
-                .filter(node -> !node.isEmpty()).collect(Collectors.toSet());
+                .filter(node -> !node.isEmpty()).collect(collectingAndThen(toSet(), ImmutableSet::copyOf));
     }
 
     private static File createOrFail(Path parent, String subdirectory, Set<PosixFilePermission> permissions)

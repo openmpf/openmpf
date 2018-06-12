@@ -27,6 +27,7 @@
 import argh
 import base64
 import getpass
+import json
 import os
 import urllib2
 
@@ -44,7 +45,8 @@ def list_nodes(workflow_manager_url='http://localhost:8080/workflow-manager'):
         if not core_mpf_nodes_str:
             raise mpf_util.MpfError(CORE_MPF_NODES_ENV_VAR + ' environment variable is not set.')
 
-        nodes_set = set(parse_nodes_str(core_mpf_nodes_str))
+        nodes_list = core_mpf_nodes_str.split(',')
+        nodes_set = set(node.strip() for node in nodes_list if node and not node.isspace())
 
         print 'Core nodes listed by ' + CORE_MPF_NODES_ENV_VAR + ' environment variable:\n' + '\n'.join(nodes_set)
         return
@@ -82,9 +84,7 @@ def get_all_wfm_nodes(wfm_manager_url, username, password, node_type = "all"):
     except IOError as err:
         raise mpf_util.MpfError('Problem connecting to ' + endpoint_url + ':\n' + str(err))
 
-    # convert a string of '["X.X.X.X". "X.X.X.X"]' to a Python list
-    nodes_str = response.read()[2:-2].translate(None, '"')
-    return parse_nodes_str(nodes_str)
+    return [str(node) for node in json.load(response)] # remove 'u' prefix on each entry
 
 
 def is_wfm_running(wfm_manager_url):
@@ -97,10 +97,6 @@ def is_wfm_running(wfm_manager_url):
     except urllib2.URLError:
         print mpf_util.MsgUtil.yellow('Detected that the Workflow Manager is not running.')
         return False
-
-
-def parse_nodes_str(nodes_str):
-    return [node.strip() for node in nodes_str.split(',') if node and not node.isspace()]
 
 
 CORE_MPF_NODES_ENV_VAR = 'CORE_MPF_NODES'

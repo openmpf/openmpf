@@ -56,6 +56,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -138,11 +139,13 @@ public class PropertiesUtil {
 
     private void parseCoreMpfNodes() {
         String coreMpfNodesStr = System.getenv(EnvVar.CORE_MPF_NODES);
+
         if (StringUtils.isNullOrEmpty(coreMpfNodesStr)) {
             throw new IllegalStateException(EnvVar.CORE_MPF_NODES + " environment variable must be defined.");
         }
 
-        coreMpfNodes = new HashSet(Arrays.asList(coreMpfNodesStr.split(",")));
+        coreMpfNodes = Arrays.stream(coreMpfNodesStr.split(",")).map(String::trim)
+                .filter(node -> !node.isEmpty()).collect(Collectors.toSet());
     }
 
     private static File createOrFail(Path parent, String subdirectory, Set<PosixFilePermission> permissions)
@@ -703,6 +706,5 @@ public class PropertiesUtil {
             Files.createDirectories(resourceDir);
         }
     }
-
 }
 

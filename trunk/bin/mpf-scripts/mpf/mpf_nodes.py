@@ -26,67 +26,54 @@
 
 import argh
 import base64
-import collections
 import getpass
-import json
 import os
-import string
-import subprocess
 import urllib2
-
-from subprocess import call
 
 import mpf_util
 
-@argh.arg('--workflow-manager-url', default='http://localhost:8080/workflow-manager',
-          help='Url to Workflow Manager')
-def list_nodes(workflow_manager_url=None):
+@argh.arg('-w', '--workflow-manager-url', help='Url to Workflow Manager')
+def list_nodes(workflow_manager_url='http://localhost:8080/workflow-manager'):
     """ List JGroups membership for nodes in the OpenMPF cluster """
 
     if not is_wfm_running(workflow_manager_url):
         print mpf_util.MsgUtil.yellow('Cannot determine live JGroups membership.')
 
-        [mpf_sh_valid, core_mpf_nodes_str] = check_mpf_sh()
-        if not mpf_sh_valid:
-            print mpf_util.MsgUtil.red('%s is not valid.' % MPF_SH_FILE_PATH)
-            return
+        core_mpf_nodes_str = os.environ.get(CORE_MPF_NODES_ENV_VAR).strip(', ')
 
-        nodes_set = parse_nodes_str(core_mpf_nodes_str)
-        if not nodes_set:
-            print mpf_util.MsgUtil.red('No nodes configured in %s.' % MPF_SH_FILE_PATH)
-        else:
-            print 'Core nodes configured in ' + MPF_SH_FILE_PATH + ':\n' + '\n'.join(nodes_set)
+        if not core_mpf_nodes_str:
+            raise mpf_util.MpfError(CORE_MPF_NODES_ENV_VAR + ' environment variable is not set.')
+
+        nodes_set = set(parse_nodes_str(core_mpf_nodes_str))
+
+        print 'Core nodes listed by ' + CORE_MPF_NODES_ENV_VAR + ' environment variable:\n' + '\n'.join(nodes_set)
         return
 
-    [username, password] = get_username_and_password(False)
+    username, password = get_username_and_password()
     core_nodes_list = get_all_wfm_nodes(workflow_manager_url, username, password, "core")
     spare_nodes_list = get_all_wfm_nodes(workflow_manager_url, username, password, "spare")
 
-    print "Core nodes: " + str(core_nodes_list)
+    print 'Core nodes: ' + str(core_nodes_list)
 
     if spare_nodes_list:
-        print "Spare nodes: " + str(spare_nodes_list)
+        print 'Spare nodes: ' + str(spare_nodes_list)
     else:
-        print "No spare nodes"
+        print 'No spare nodes'
 
 
-def get_username_and_password(for_admin):
-    if for_admin:
-        print 'Enter the credentials for a Workflow Manager administrator:'
-    else:
-        print 'Enter the credentials for a Workflow Manager user:'
+def get_username_and_password():
+    print 'Enter the credentials for a Workflow Manager user:'
 
     username = raw_input('Username: ')
     password = getpass.getpass('Password: ')
 
-    return [username, password]
+    return username, password
 
 
-def get_all_wfm_nodes(wfm_manager_url, username, password, type = "all"):
-    endpoint_url = ''.join([string.rstrip(wfm_manager_url,'/'),'/rest/nodes/all?type=' + type])
+def get_all_wfm_nodes(wfm_manager_url, username, password, node_type = "all"):
+    endpoint_url = wfm_manager_url.rstrip('/') + '/rest/nodes/all?type=' + node_type
     request = urllib2.Request(endpoint_url)
 
-    request.get_method = lambda: 'GET'
     base64string = base64.b64encode('%s:%s' % (username, password))
     request.add_header('Authorization', 'Basic %s' % base64string)
 
@@ -96,7 +83,8 @@ def get_all_wfm_nodes(wfm_manager_url, username, password, type = "all"):
         raise mpf_util.MpfError('Problem connecting to ' + endpoint_url + ':\n' + str(err))
 
     # convert a string of '["X.X.X.X". "X.X.X.X"]' to a Python list
-    return response.read()[2:-2].translate(None, '"').split()
+    nodes_str = response.read()[2:-2].translate(None, '"')
+    return parse_nodes_str(nodes_str)
 
 
 def is_wfm_running(wfm_manager_url):
@@ -106,35 +94,15 @@ def is_wfm_running(wfm_manager_url):
         urllib2.urlopen(request)
         print 'Detected that the Workflow Manager is running.'
         return True
-    except:
+    except urllib2.URLError:
         print mpf_util.MsgUtil.yellow('Detected that the Workflow Manager is not running.')
         return False
 
 
-def check_mpf_sh():
-    if not os.path.isfile(MPF_SH_FILE_PATH):
-        print mpf_util.MsgUtil.red('Error: Could not open ' + MPF_SH_FILE_PATH + '.')
-        return [False, None]
-
-    if call(['grep', '-q', '^' + CORE_MPF_NODES_ENV_VAR_SEARCH_STR, MPF_SH_FILE_PATH]) != 0:
-        print mpf_util.MsgUtil.red('Error: Could not find \"' + CORE_MPF_NODES_ENV_VAR_SEARCH_STR + '\"'
-                                    + ' in ' + MPF_SH_FILE_PATH + '.')
-        return [False, None]
-
-    process = subprocess.Popen(['sed', '-n', 's/^' + CORE_MPF_NODES_ENV_VAR_SEARCH_STR + '\\(.*\\)/\\1/p', MPF_SH_FILE_PATH], stdout=subprocess.PIPE)
-    [out, _] = process.communicate() # blocking
-    if process.returncode != 0:
-        print mpf_util.MsgUtil.red('Error: Could not parse \"' + CORE_MPF_NODES_ENV_VAR_SEARCH_STR + '\" in ' + MPF_SH_FILE_PATH + '.')
-        return [False, None]
-
-    return [True, out.strip()]
+def parse_nodes_str(nodes_str):
+    return [node.strip() for node in nodes_str.split(',') if node and not node.isspace()]
 
 
-def parse_nodes_str(mpf_nodes):
-    return set(mpf_nodes.split(','))
-
-
-MPF_SH_FILE_PATH = '/etc/profile.d/mpf.sh'
-CORE_MPF_NODES_ENV_VAR_SEARCH_STR = 'export CORE_MPF_NODES='
+CORE_MPF_NODES_ENV_VAR = 'CORE_MPF_NODES'
 
 COMMANDS = [list_nodes]

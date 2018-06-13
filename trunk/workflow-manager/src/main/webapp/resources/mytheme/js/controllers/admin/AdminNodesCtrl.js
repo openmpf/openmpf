@@ -37,7 +37,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
     $scope.nodes = []; // the existing nodes and services currently running
     $scope.counters = {};
     $scope.btns_disabled = false;
-    var refresh_counter = 0;
+    var service_actions_counter = 0;
     var default_cursor = document.body.style.cursor;
     var configurations = [];    // the nodes' configurations
 
@@ -49,7 +49,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
 
     //// Operations ////
     var init = function () {
-        refresh_counter = 0;
+        service_actions_counter = 0;
         RoleService.getRoleInfo().then(function (roleInfo) {
             $scope.isAdmin = roleInfo.admin;
             $log.debug("$scope.isAdmin=" + $scope.isAdmin);
@@ -189,10 +189,9 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
                         }
                     }
 
-                    //adjust the refresh_counter for waiting on many updates to complete to change the cursor & enable buttons
-                    refresh_counter--;
-                    if (refresh_counter < 0) refresh_counter = 0;
-                    if (refresh_counter <= 0) {
+                    //if we're not waiting for any service actions to complete, then change the cursor & enable buttons
+                    if (service_actions_counter < 0) service_actions_counter = 0;
+                    if (service_actions_counter <= 0) {
                         document.body.style.cursor = default_cursor;
                         $scope.btns_disabled = false;
                     }
@@ -383,7 +382,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
 
     var startAction = function () {
         document.body.style.cursor = 'wait';
-        refresh_counter++;
+        service_actions_counter++;
         $scope.btns_disabled = true;
         restartWaitTimer();
     };
@@ -408,7 +407,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
         $log.debug("restartService", service);
         if (service.isRunning) {
             startAction();
-            refresh_counter++;//need to add another counter for 2nd action
+            service_actions_counter++;//need to add another counter for 2nd action
             NodeService.restartService(service.name);
         }
     };
@@ -481,7 +480,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
 
     var waitTimerExpired = function () {
         $scope.btns_disabled = false;
-        refresh_counter = 0;
+        service_actions_counter = 0;
         document.body.style.cursor = default_cursor;
     };
 
@@ -490,10 +489,11 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
     //on a node service change status, update the model
     $scope.$on('SSPC_SERVICE', function (event, msg) {
         $log.debug("SSPC_SERVICE (in nodes and processes page): " + JSON.stringify(msg));
+        service_actions_counter--;
         lazyUpdateServices();
     });
 
-    //on a node change status, update the model
+    //on a node change status (offline to online, and vice versa), update the model
     $scope.$on('SSPC_NODE', function (event, msg) {
         $log.debug("SSPC_NODE (in nodes and processes page): " + JSON.stringify(msg));
         lazyUpdateServices();

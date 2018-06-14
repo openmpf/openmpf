@@ -67,7 +67,7 @@ public class ChannelNode {
 	        channel.setName(nodeName);
             channel.setReceiver(receiver);
             channel.connect(propertiesUtil.getChannelName());
-            channel.getState(null, 10000);
+            channel.getState(null, 60000);
             isConnected = true;
         } catch (Exception e) {
         	log.error("Exception thrown when trying to create and configure the JGroups channel", e);

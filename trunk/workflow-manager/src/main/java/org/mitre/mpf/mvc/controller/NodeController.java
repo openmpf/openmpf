@@ -37,6 +37,7 @@ import org.mitre.mpf.rest.api.node.DeployedNodeManagerModel;
 import org.mitre.mpf.rest.api.node.DeployedServiceModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
+import org.mitre.mpf.wfm.enums.EnvVar;
 import org.mitre.mpf.wfm.nodeManager.NodeManagerStatus;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.slf4j.Logger;
@@ -56,10 +57,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 // swagger includes
 
@@ -115,7 +113,7 @@ public class NodeController {
 	// EXTERNAL
 	@RequestMapping(value = "/rest/nodes/hosts", method = RequestMethod.GET)
 	@ApiOperation(value = "Returns a collection of key-value pairs <String, Boolean> containing a hostname and its node configuration status. "
-			+ "If the configuration status is 'true' that hostname is configurated to run a node manager.", notes = "The response is a set of JSON key-value pairs, where the key is the hostname and the value is the configuration status.", produces = "application/json")
+			+ "If the configuration status is 'true' that hostname is configured to run a node manager.", notes = "The response is a set of JSON key-value pairs, where the key is the hostname and the value is the configuration status.", produces = "application/json")
 	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successful response"),
 			@ApiResponse(code = 401, message = "Bad credentials") })
 	@ResponseBody
@@ -131,23 +129,41 @@ public class NodeController {
 	}
 
 	/*
-	 * GET /nodes/all-mpf-nodes 
-	 * get all mpf nodes env var
+	 * GET /nodes/all
 	 */
-	// INTERNAL
-	@RequestMapping(value = "/nodes/all-mpf-nodes", method = RequestMethod.GET)
+	// EXTERNAL: Only used externally by "mpf list-nodes"
+	@RequestMapping(value = "/rest/nodes/all", method = RequestMethod.GET)
 	@ResponseBody
-	public List<String> getAllMpfNodes() {
-		final String value = System.getenv("ALL_MPF_NODES");
-		List<String> allMpfNodes = new ArrayList<String>();
-		if (!StringUtils.isNullOrEmpty(value)) {
-			for (String mpfNode : value.split(",")) {
-				// using regex if we change the port from 7800
-				// replace ports 2 to 5 digits long
-				allMpfNodes.add(mpfNode.replaceFirst("\\[\\d{2,5}\\]", ""));
-			}
+	public ResponseEntity getAllNodesRest(
+			@RequestParam(value = "type", required = false, defaultValue="all") String type) {
+		return getAllNodes(type);
+	}
+
+	// INTERNAL
+	@RequestMapping(value = "/nodes/all", method = RequestMethod.GET)
+	@ResponseBody
+	public ResponseEntity getAllNodes(
+			@RequestParam(value = "type", required = false, defaultValue="all") String type) {
+
+		Set<String> coreNodes = nodeManagerService.getCoreNodes();
+
+		if (type.equals("core")) {
+			return ResponseEntity.ok().body(coreNodes);
 		}
-		return allMpfNodes;
+
+		Set<String> nodes = new HashSet<>(nodeManagerService.getAvailableNodes());
+		if (type.equals("spare")) {
+			nodes.removeAll(coreNodes);
+			return ResponseEntity.ok().body(nodes);
+		}
+		if (type.equals("all")) {
+			nodes.addAll(coreNodes);
+			return ResponseEntity.ok().body(nodes);
+		}
+
+		String error = "Unexpected \"type\" value: \"" + type + "\".";
+		log.error("Error processing [GET] /nodes/all: " + error);
+		return ResponseEntity.badRequest().body(error);
 	}
 
 	/*
@@ -160,7 +176,7 @@ public class NodeController {
 	@ResponseBody
 	public String getMasterNode() {
 		String masterNode;
-		masterNode = System.getenv("THIS_MPF_NODE");
+		masterNode = System.getenv(EnvVar.THIS_MPF_NODE);
 		if ( StringUtils.isNullOrEmpty( masterNode ) ) {
 			// apparently, getting the current host is non-trivial, the solution below is
 			//	based on the following articles:
@@ -171,7 +187,7 @@ public class NodeController {
 				InetAddress localhost = InetAddress.getLocalHost();
 				masterNode = localhost.getHostName();
 			} catch (UnknownHostException e) {
-				masterNode = System.getenv("HOSTNAME");
+				masterNode = System.getenv(EnvVar.HOSTNAME);
 				if ( masterNode == null ) {
 					Process p;
 					try {
@@ -238,7 +254,7 @@ public class NodeController {
 		// admin
 		MpfResponse mpfResponse = new MpfResponse(
 				MpfResponse.RESPONSE_CODE_ERROR,
-				"Error while saving the node configuration - please check server logs.");
+				"Error while saving the node configuration. Please check server logs.");
 
 		boolean validAuth = false;
 
@@ -284,7 +300,7 @@ public class NodeController {
 			throws InterruptedException, IOException {
 		MpfResponse mpfResponse = new MpfResponse(
 				MpfResponse.RESPONSE_CODE_ERROR,
-				"Error while saving the node configuration - please check server logs.");
+				"Error while saving the node configuration. Please check server logs.");
 		saveNodeManagerConfig(nodeManagerModels, mpfResponse);
 		return mpfResponse;
 	}
@@ -327,7 +343,7 @@ public class NodeController {
 		// POSTing to this external REST endpoint requires the user to be an
 		// admin
 		MpfResponse mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR,
-		                                          "Error while starting service - please check server logs.");
+		                                          "Error while starting service. Please check server logs.");
 
 		boolean validAuth = startStopNodeService(httpServletRequest, "start", serviceName,
 				mpfResponse);
@@ -351,7 +367,7 @@ public class NodeController {
 		// POSTing to this external REST endpoint requires the user to be an
 		// admin
 		MpfResponse mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR,
-		                                          "Error while stopping service - please check server logs.");
+		                                          "Error while stopping service. Please check server logs.");
 
 		boolean validAuth = startStopNodeService(httpServletRequest, "stop", serviceName,
 				mpfResponse);
@@ -370,7 +386,7 @@ public class NodeController {
 			@PathVariable("serviceName") String serviceName) {
 
 		MpfResponse mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR,
-		                                          "Error while changing service state - please check server logs.");
+		                                          "Error while changing service state. Please check server logs.");
 
 		if (startOrStopStr.equals("start")) {
 			startService(serviceName, mpfResponse);

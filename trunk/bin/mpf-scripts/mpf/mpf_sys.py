@@ -85,7 +85,15 @@ class BaseMpfSystemDependencyManager(object):
             print Messages.running(self.dependency_name())
             return
 
-        self._run_start_command()
+        try:
+            self._run_start_command()
+        except subprocess.CalledProcessError as err:
+            if err.output:
+                raise FailedToStartError(self.dependency_name(),
+                                         self.dependency_name() + ' failed to start:\n' + err.output)
+            else:
+                raise FailedToStartError(self.dependency_name())
+
         time.sleep(.2)
 
         if self.status():
@@ -100,7 +108,15 @@ class BaseMpfSystemDependencyManager(object):
             print Messages.not_running(self.dependency_name())
             return
 
-        self._run_stop_command()
+        try:
+            self._run_stop_command()
+        except subprocess.CalledProcessError as err:
+            if err.output:
+                raise FailedToStopError(self.dependency_name(),
+                                        self.dependency_name() + ' failed to stop:\n' + err.output)
+            else:
+                raise FailedToStopError(self.dependency_name())
+
         time.sleep(.2)
 
         if self.status(is_stopping=True):
@@ -293,7 +309,15 @@ class NodeManagerManager(BaseMpfSystemDependencyManager):
             print Messages.running(self.dependency_name())
             return
 
-        self._run_start_command()
+        try:
+            self._run_start_command()
+        except subprocess.CalledProcessError as err:
+            if err.output:
+                raise FailedToStartError(self.dependency_name(),
+                                         self.dependency_name() + ' failed to start:\n' + err.output)
+            else:
+                raise FailedToStartError(self.dependency_name())
+
         time.sleep(.2)
 
         if all(s for h, s in self._remote_status()):
@@ -365,7 +389,7 @@ class TomcatManager(BaseMpfSystemDependencyManager):
                 return True
             else:
                 raise FailedToStartError(self.dependency_name(),
-                                         'Tomcat is running but the Workflow Manager is not')
+                                         'Tomcat is running but the Workflow Manager is not.')
         except urllib2.URLError as err:
             # ECONNREFUSED occurs when Tomcat isn't running
             # ECONNRESET occurs when Tomcat shuts down
@@ -553,8 +577,11 @@ class FailedToStartError(mpf_util.MpfError):
 
 
 class FailedToStopError(mpf_util.MpfError):
-    def __init__(self, component):
-        super(FailedToStopError, self).__init__('%s failed to stop' % component)
+    def __init__(self, component, message=None):
+        if message:
+            super(FailedToStopError, self).__init__(message)
+        else:
+            super(FailedToStopError, self).__init__('%s failed to stop' % component)
 
 
 class UnableToFindExecutableError(mpf_util.MpfError):

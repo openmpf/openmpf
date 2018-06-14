@@ -26,15 +26,18 @@
 
 package org.mitre.mpf.wfm.util;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.io.IOUtils;
+import org.h2.util.StringUtils;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
+import org.mitre.mpf.wfm.enums.EnvVar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +58,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.*;
 
 @Component(PropertiesUtil.REF)
 @Monitored
@@ -76,8 +79,14 @@ public class PropertiesUtil {
 
     private ImmutableConfiguration mpfPropertiesConfig;
 
+    // The set of core nodes will not change while the WFM is running.
+    private ImmutableSet<String> coreMpfNodes;
+
+
     @PostConstruct
     private void init() throws IOException, WfmProcessingException {
+
+        parseCoreMpfNodes();
 
         mpfPropertiesConfig = mpfPropertiesConfigBuilder.getCompleteConfiguration();
 
@@ -126,7 +135,17 @@ public class PropertiesUtil {
         log.debug("Output Objects Directory = {}", outputObjectsDirectory);
         log.debug("Remote Media Cache Directory = {}", remoteMediaCacheDirectory);
         log.debug("Uploaded Components Directory = {}", uploadedComponentsDirectory);
+    }
 
+    private void parseCoreMpfNodes() {
+        String coreMpfNodesStr = System.getenv(EnvVar.CORE_MPF_NODES);
+
+        if (StringUtils.isNullOrEmpty(coreMpfNodesStr)) {
+            throw new IllegalStateException(EnvVar.CORE_MPF_NODES + " environment variable must be defined.");
+        }
+
+        coreMpfNodes = Arrays.stream(coreMpfNodesStr.split(",")).map(String::trim)
+                .filter(node -> !node.isEmpty()).collect(collectingAndThen(toSet(), ImmutableSet::copyOf));
     }
 
     private static File createOrFail(Path parent, String subdirectory, Set<PosixFilePermission> permissions)
@@ -535,7 +554,7 @@ public class PropertiesUtil {
     public boolean isStartupAutoRegistrationSkipped() {
         String key = "startup.auto.registration.skip.spring";
         try {
-            return mpfPropertiesConfig.getBoolean(key);
+            return mpfPropertiesConfig.getBoolean(key, false);
         } catch (ConversionException e) {
             if (mpfPropertiesConfig.getString(key).startsWith("${")) {
                 log.warn("Unable to determine value for \"" + key + "\". It may not have been set via Maven. Using default value of \"false\".");
@@ -546,7 +565,11 @@ public class PropertiesUtil {
     }
 
     public String getThisMpfNodeHostName() {
-        return System.getenv("THIS_MPF_NODE");
+        return System.getenv(EnvVar.THIS_MPF_NODE);
+    }
+
+    public Set<String> getCoreMpfNodes() {
+        return coreMpfNodes;
     }
 
     //
@@ -683,6 +706,5 @@ public class PropertiesUtil {
             Files.createDirectories(resourceDir);
         }
     }
-
 }
 

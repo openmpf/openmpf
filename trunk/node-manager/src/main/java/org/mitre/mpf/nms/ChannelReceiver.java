@@ -39,11 +39,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.stream.Collectors.joining;
@@ -150,14 +147,14 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
                     String mgrHost = hostNodeTypePair.getLeft();
                     managersInView.put(mgrHost, Boolean.TRUE);
 
-                    // Normally, managers are known in advance by masters after loading an XML configuration file
-                    // It could happen that someone starts up a manager elsewhere on the network that isn't enumerated
-                    // Also, we have to consider that we've got one stopping/restarting over its lifecycle
+                    // Normally, managers are known in advance by masters after loading an XML configuration file.
+                    // It could happen that someone starts up a manager elsewhere on the network that isn't enumerated.
+                    // Also, we have to consider that we've got one stopping/restarting over its lifecycle.
                     NodeDescriptor mgr = nodeTable.get(mgrHost);
                     if (mgr == null) {
                         mgr = new NodeDescriptor(mgrHost);
                         if (!mgr.doesHostMatch(propertiesUtil.getThisMpfNode())) { // don't warn about self
-                            LOG.warn("New node-manager is online that wasn't preconfigured. Rogue?");
+                            LOG.warn("New node-manager is online that wasn't preconfigured. Treating as a spare node.");
                         }
                         // Issue the callback
                         if (notifier != null) {
@@ -204,7 +201,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
                             }
                         }
                     }
-                    LOG.error("Node-manager offline on " + entry.getKey());
+                    LOG.warn("Node-manager offline on " + entry.getKey());
                     if (notifier != null) {
                         notifier.managerDown(entry.getValue().getHostname());
                     }
@@ -238,7 +235,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
     }
 
     public Set<String> getRunningNodes() {
-        // no need to have conncurrent hashmap
+        // no need to have concurrent hashmap
         Set<String> rn = new HashSet<>();
         for (Entry<String, NodeDescriptor> e : this.nodeTable.entrySet()) {
             if (e.getValue().getLastKnownState() == NodeManagerConstants.States.Running) {
@@ -311,5 +308,9 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         msgChannel.connect(fqn, this);
 
         handleView(msgChannel.getView(), true);
+    }
+
+    public Set<String> getAvailableNodes() {
+        return msgChannel.getAvailableNodes();
     }
 }

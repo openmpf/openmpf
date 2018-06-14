@@ -409,7 +409,7 @@ public abstract class BaseServiceLauncher implements Runnable {
 
                 //store the time started to check time up when service shuts down with an exit code
                 this.getService().setStartTimeMillis(System.currentTimeMillis());
-                LOG.debug("Node service {} started", this.mServiceDesc.getName());               
+                LOG.debug("Node service {} started", this.mServiceDesc.getName());
 
                 // capture I/O streams
                 stdOut = child.getInputStream();

@@ -350,28 +350,21 @@ AppServices.service('NodeService', function ($http, $timeout, $log,$filter) {
         return promise;
     };
 
-    /** http gets the hostnames of all nodes
-     * @param refetch - boolean to specify if this should drop the cached value and get the catalog afresh from the server
-     * @param debugging - boolean to specify adding some additional elements for debugging purposes
-     * @returns {*}
-     */
-    this.getAllNodesHostnames= function () {
-        var promise = $http.get("nodes/all-mpf-nodes").then(function (response) {
-                // The then function here is an opportunity to modify the response
-                //$log.debug('using $http to fetch : ', "nodes/all-mpf-nodes");
-                //$log.debug('  returned data=', response.data);
-                var nodesList = [];
-                angular.forEach(response.data, function (obj) {
-                    // deduplicate entries: ALL_MPF_NODES needs to specify the master node host twice
-                    //  because the configure script requires you to enter the hostname for the parent node
-                    //  to have a nodemanager.  the following removes the duplicate
-                    if (nodesList.indexOf(obj) == -1) {
-                        nodesList.push(obj);
-                    }
-                });
+    // http gets the hostnames of all nodes
+    this.getAllNodeHostnames= function (type = "all") {
+        var promise = $http.get("nodes/all?type=" + type).then(function (response) {
+            var nodesList = [];
+            angular.forEach(response.data, function (obj) {
+                // deduplicate entries: CORE_MPF_NODES may specify the master node host twice
+                // because the configure script requires you to enter the hostname for the parent node
+                // to have a nodemanager
+                if (nodesList.indexOf(obj) == -1) {
+                    nodesList.push(obj);
+                }
+            });
 
-                // sort entries
-                nodesList = $filter('orderBy')(nodesList);
+            // sort entries
+            nodesList = $filter('orderBy')(nodesList);
                 return nodesList;
             });
         return promise;
@@ -585,6 +578,10 @@ AppServices.factory('ServerSidePush',
                                 }
                             }
 
+                            break;
+                        case 'SSPC_NODE':
+                            $rootScope.$broadcast('SSPC_NODE', json);
+                            //console.log("SSPC_NODE message received: " + JSON.stringify(json,2,null));
                             break;
                         case 'SSPC_SERVICE':
                             $rootScope.$broadcast('SSPC_SERVICE', json);

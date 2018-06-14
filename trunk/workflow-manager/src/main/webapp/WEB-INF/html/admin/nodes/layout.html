@@ -43,15 +43,19 @@
                             <span class="accordion-toggle" data-toggle="collapse" data-target="#collapse_host_{{$index}}" ng-click="toggleChevron($event)" aria-expanded="false" aria-controls="collapse_host_{{$index}}" style="cursor: default;">
                             <i class="indicator glyphicon glyphicon-chevron-down"></i>
                                 <span class="node-host">{{host.name}}</span>
+                                <span class="node-host" ng-if="host.core">(Core,</span>
+                                <span class="node-host" ng-if="!host.core">(Spare,</span>
+                                <span class="node-host" ng-if="host.online">Online)</span>
+                                <span class="node-host" ng-if="!host.online">Offline)</span>
                             </span>
                         </h4>
                         <div class="pull-right " style="display:inline-block;">
                             <span class="badge label-frame-danger" ng-if="(counters[host.name].errors > 0 )"><i class="fa fa-warning"></i> {{counters[host.name].count-counters[host.name].stopped}}/{{counters[host.name].count}}</span>
                             <span class="badge label-frame" ng-if="(counters[host.name].errors <= 0 )"> {{counters[host.name].count-counters[host.name].stopped}}/{{counters[host.name].count}}</span>
-                            <div class="btn-group btn-group-sm text-right"  ng-if="isAdmin" role="group" aria-label="..." style="display:inline-block;">
-                                        <button type="button" class="btn btn-default" ng-click="startAllHostServices(host.serviceGroups)" ng-disabled="btns_disabled || counters[host.name].stopped == 0" title="Start"><i class="fa fa-play"></i></button>
-                                        <button type="button" class="btn btn-default" ng-click="shutDownAllHostServices(host.serviceGroups)" ng-disabled="btns_disabled || counters[host.name].stopped == counters[host.name].count" title="Stop"><i class="fa fa-stop"></i></button>
-                                        <button type="button" class="btn btn-default" ng-click="restartAllHostServices(host.serviceGroups)" ng-disabled="btns_disabled || counters[host.name].stopped == counters[host.name].count" title="Restart"><i class="fa fa-refresh"></i></button>
+                            <div class="btn-group btn-group-sm text-right" ng-if="isAdmin" role="group" aria-label="..." style="display:inline-block;">
+                                        <button type="button" class="btn btn-default" ng-click="startAllHostServices(host.serviceGroups)" ng-disabled="btns_disabled || !host.online || counters[host.name].stopped == 0" title="Start"><i class="fa fa-play"></i></button>
+                                        <button type="button" class="btn btn-default" ng-click="shutDownAllHostServices(host.serviceGroups)" ng-disabled="btns_disabled || !host.online || counters[host.name].stopped == counters[host.name].count" title="Stop"><i class="fa fa-stop"></i></button>
+                                        <button type="button" class="btn btn-default" ng-click="restartAllHostServices(host.serviceGroups)" ng-disabled="btns_disabled || !host.online || counters[host.name].stopped == counters[host.name].count" title="Restart"><i class="fa fa-refresh"></i></button>
                             </div>
                             <div class="btn-group btn-group-sm" role="group" aria-label="#" ng-if="isAdmin"  style="display:inline-block;">
                                 <button type="button" class="btn btn-default btn-sm" ng-click="removeNode(host.name)" ng-disabled="btns_disabled" title="Remove Node"><i class="fa fa-trash"></i></button>
@@ -73,12 +77,12 @@
                                             </span>
                                             <span class="pull-right" ng-if="isAdmin">
                                                 <div class="btn-group btn-group-sm" role="group" aria-label="#">
-                                                    <button type="button" class="btn btn-default" ng-click="startAllNodeServices(serviceGroup.serviceList)" ng-disabled="btns_disabled || nodeServiceInfo(serviceGroup.serviceList).stopped == 0" title="Start"><i class="fa fa-play"></i></button>
-                                                    <button type="button" class="btn btn-default" ng-click="shutDownAllNodeServices(serviceGroup.serviceList)" ng-disabled="btns_disabled || nodeServiceInfo(serviceGroup.serviceList).stopped == serviceGroup.serviceList.length" title="Stop"><i class="fa fa-stop"></i></button>
-                                                    <button type="button" class="btn btn-default" ng-click="restartAllNodeServices(serviceGroup.serviceList)" ng-disabled="btns_disabled || nodeServiceInfo(serviceGroup.serviceList).stopped == serviceGroup.serviceList.length" title="Restart"><i class="fa fa-refresh"></i></button>
+                                                    <button type="button" class="btn btn-default" ng-click="startAllNodeServices(serviceGroup.serviceList)" ng-disabled="btns_disabled || !host.online || nodeServiceInfo(serviceGroup.serviceList).stopped == 0" title="Start"><i class="fa fa-play"></i></button>
+                                                    <button type="button" class="btn btn-default" ng-click="shutDownAllNodeServices(serviceGroup.serviceList)" ng-disabled="btns_disabled || !host.online || nodeServiceInfo(serviceGroup.serviceList).stopped == serviceGroup.serviceList.length" title="Stop"><i class="fa fa-stop"></i></button>
+                                                    <button type="button" class="btn btn-default" ng-click="restartAllNodeServices(serviceGroup.serviceList)" ng-disabled="btns_disabled || !host.online || nodeServiceInfo(serviceGroup.serviceList).stopped == serviceGroup.serviceList.length" title="Restart"><i class="fa fa-refresh"></i></button>
                                                 </div>
                                                 <div class="btn-group btn-group-sm" role="group" aria-label="#">
-                                                    <button type="button" class="btn btn-default" ng-click="removeAllNodeServices(host.name,serviceGroup.name)" ng-disabled="btns_disabled" title="Remove Services"><i class="fa fa-trash"></i></button>
+                                                    <button type="button" class="btn btn-default" ng-click="removeAllNodeServices(host.name,serviceGroup.name)" ng-disabled="btns_disabled || !host.online" title="Remove Services"><i class="fa fa-trash"></i></button>
                                                 </div>
                                             </span>
                                         </div>
@@ -91,12 +95,12 @@
                                                 <i class="fa fa-circle text-success service-success" ng-show="service.isRunning" title="{{service.lastKnownState}}"></i> Service {{service.id}}
                                                 <div class="pull-right" ng-if="isAdmin">
                                                     <div class="btn-group btn-group-sm" role="group" aria-label="#">
-                                                        <button type="button" class="btn btn-default btn-service-start" ng-click="startService(service)" ng-disabled="service.isRunning || btns_disabled" title="Start"><i class="fa fa-play" ng-disabled="service.isRunning"></i></button>
-                                                        <button type="button" class="btn btn-default btn-service-stop" ng-click="shutDownService(service)" ng-disabled="!service.isRunning || btns_disabled" title="Stop"><i class="fa fa-stop" ng-disabled="!service.isRunning"></i></button>
-                                                        <button type="button" class="btn btn-default btn-service-restart" ng-click="restartService(service)" ng-disabled="!service.isRunning || btns_disabled" title="Restart"><i class="fa fa-refresh" ng-disabled="!service.isRunning"></i></button>
+                                                        <button type="button" class="btn btn-default btn-service-start" ng-click="startService(service)" ng-disabled="service.isRunning || btns_disabled || !host.online" title="Start"><i class="fa fa-play" ng-disabled="service.isRunning"></i></button>
+                                                        <button type="button" class="btn btn-default btn-service-stop" ng-click="shutDownService(service)" ng-disabled="!service.isRunning || btns_disabled || !host.online" title="Stop"><i class="fa fa-stop" ng-disabled="!service.isRunning"></i></button>
+                                                        <button type="button" class="btn btn-default btn-service-restart" ng-click="restartService(service)" ng-disabled="!service.isRunning || btns_disabled || !host.online" title="Restart"><i class="fa fa-refresh" ng-disabled="!service.isRunning"></i></button>
                                                     </div>
                                                     <div class="btn-group btn-group-sm" role="group" aria-label="#">
-                                                        <button type="button" class="btn btn-default" ng-click="removeService(service)" ng-disabled="btns_disabled" title="Remove Service"><i class="fa fa-trash"></i></button>
+                                                        <button type="button" class="btn btn-default" ng-click="removeService(service)" ng-disabled="btns_disabled || !host.online" title="Remove Service"><i class="fa fa-trash"></i></button>
                                                     </div>
                                                 </div>
                                             </li>
@@ -119,8 +123,8 @@
                                     <select class="form-control service-count" style="width:60px;" id="add_service_count_{{$index}}" >
                                         <option value="{{value}}"  ng-repeat="(key,value) in [] | range:1:99">{{value}}</option>
                                     </select>
-                                    <button class="btn btn-success" ng-click="editServices(host.name,$index)" ng-disabled="btns_disabled">Submit</button>
-                                    <p class="text-center"><button class="btn btn-sm btn-default" ng-click="addAllServices(host.name,$index)" ng-disabled="btns_disabled" >Add All Services</button></p>
+                                    <button class="btn btn-success" ng-click="editServices(host.name,$index)" ng-disabled="btns_disabled || !host.online">Submit</button>
+                                    <p class="text-center"><button class="btn btn-sm btn-default" ng-click="addAllServices(host.name,$index)" ng-disabled="btns_disabled || !host.online" >Add All Services</button></p>
                                 </div>
 
                             </div>
@@ -147,15 +151,15 @@
     </div>
 </script>
 
-<!-- Add New Node dialog box -->
-<script type="text/ng-template" id="add-new-node-dialog.html">
-    <div class="modal-header"><h3 class="modal-title">Add New Node</h3></div>
+<!-- Add Node dialog box -->
+<script type="text/ng-template" id="add-node-dialog.html">
+    <div class="modal-header"><h3 class="modal-title">Add Node</h3></div>
     <div class="modal-body">
         <div ng-if="data.hostnames.length === 0">
             All available nodes have already been configured.
         </div>
         <div ng-if="data.hostnames.length > 0">
-            Select the hostname of the new node:
+            Select node:
             <br/>
             <select ng-model="data.selected" ng-init="data.selected=data.hostnames[0]" class="form-control">
                 <option ng-repeat="item in data.hostnames" value="{{item}}"> {{item}}</option>
@@ -163,11 +167,11 @@
             <br/>
             <div class="checkbox">
                 <label>
-                    <input type="checkbox" id="new_node_all_services"> Add all available services?
+                    <input type="checkbox" id="add_node_all_services"> Add all available services?
                 </label>
             </div>
             <br/>
-            <em>Nodes can only be added to the system once they have been configured into the MPF cluster. Please see the MPF Installation guide for instructions.</em>
+            <em>Only nodes that are part of the OpenMPF cluster can be configured. Please see the Install Guide and Admin Guide for instructions.</em>
         </div>
     </div>
     <div class="modal-footer">

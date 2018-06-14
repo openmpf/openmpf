@@ -208,7 +208,7 @@ public class MasterNode {
                         	if(serviceTableDescriptor.getLastKnownState() == NodeManagerConstants.States.InactiveNoStart) {
                         		log.debug("Will not update the existing config for {} because the state is {}", descriptorFromConfig.getName(), serviceTableDescriptor.getLastKnownState());
                             } else if(serviceTableDescriptor.getLastKnownState() == NodeManagerConstants.States.Running) {
-                            	log.debug("Not updating existing config for {} because it is already running", descriptorFromConfig.getName());	
+                            	log.debug("Not updating existing config for {} because it is already running", descriptorFromConfig.getName());
                             } else {
                             	//If service was DeleteInactive it should still be set back to configured because the config
                             	//needs to overwrite existing service table information
@@ -313,6 +313,11 @@ public class MasterNode {
 
     public void stopStreamingJob(StopStreamingJobMessage message) {
         nodeStateManager.stopStreamingJob(message);
+    }
+
+
+    public Set<String> getAvailableNodes() {
+        return nodeStateManager.getAvailableNodes();
     }
 }
 

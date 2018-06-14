@@ -24,35 +24,16 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.util;
+package org.mitre.mpf.wfm.enums;
 
-import org.mitre.mpf.wfm.enums.EnvVar;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
+public class EnvVar {
 
-/**
- * This class loads any JNI libraries needed by the WFM. Classes which rely on these JNI libraries
- * should be marked appropriately using the {@link org.springframework.context.annotation.DependsOn}
- * annotation.
- */
-@Component(JniLoader.REF)
-@Scope("prototype")
-public class JniLoader {
-    public static final String REF = "jniLoader";
-    private static final Logger log = LoggerFactory.getLogger(JniLoader.class);
+    private EnvVar() {}
 
-    static {
-        log.info("Loading JNI libraries...");
-        try {
-            System.loadLibrary("mpfopencvjni");
-        }
-        catch (UnsatisfiedLinkError ex) {
-            log.warn("System.loadLibrary() failed due to: {}", ex.getMessage());
-            String libFullPath = System.getenv(EnvVar.MPF_HOME) + "/lib/libmpfopencvjni.so";
-            log.warn("Trying full path to library: {}", libFullPath);
-            System.load(libFullPath);
-        }
-    }
+    public static final String
+            CORE_MPF_NODES = "CORE_MPF_NODES",
+            THIS_MPF_NODE = "THIS_MPF_NODE",
+            HOSTNAME = "HOSTNAME",
+            MPF_HOME = "MPF_HOME",
+            TOMCAT_BASE_URL = "TOMCAT_BASE_URL";
 }

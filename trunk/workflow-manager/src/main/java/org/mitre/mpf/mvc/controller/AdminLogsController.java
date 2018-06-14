@@ -32,7 +32,6 @@ import org.mitre.mpf.mvc.util.tailer.FilteredMpfLogTailerListener;
 import org.mitre.mpf.mvc.util.tailer.MpfLogLevel;
 import org.mitre.mpf.mvc.util.tailer.MpfLogTailer;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.nodeManager.NodeManagerStatus;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,10 +62,6 @@ public class AdminLogsController
 {
 	private static final Logger log = LoggerFactory.getLogger(AdminLogsController.class);
 
-	public static final String DEFAULT_ERROR_VIEW = "error";
-
-    private static final String thisHost = System.getenv("THIS_MPF_NODE");
-
     private final FilenameFilter filenameFilter = new LogFilenameFilter();
 
     // a map between nodes and the list of log names for that node
@@ -78,10 +73,6 @@ public class AdminLogsController
     @Autowired
     @Qualifier(PropertiesUtil.REF)
     private PropertiesUtil propertiesUtil;
-
-    //TODO: should retrieve info for this using mpfService
-    @Autowired
-    private NodeManagerStatus nodeManagerStatus;
 
 	@RequestMapping(value = "/adminLogs", method = RequestMethod.GET)
 	public ModelAndView adminLogs(HttpServletRequest request) throws WfmProcessingException {

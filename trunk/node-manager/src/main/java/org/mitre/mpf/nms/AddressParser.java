@@ -35,6 +35,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
+// parses JGroups UUID address representation
 public class AddressParser {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AddressParser.class);
@@ -52,7 +53,9 @@ public class AddressParser {
 		Matcher matcher = FQN_PATTERN.matcher(addrString);
 
 		if (!matcher.matches() || matcher.groupCount() < 3) {
-			LOG.warn("Address {} is not well formed.", address);
+			IllegalStateException e = new IllegalStateException("Address " + address
+					+ " is not in the form <node-type>" + FQN_SEP + "<host>" + FQN_SEP + "<description>.");
+			LOG.warn(e.getMessage(), e);
 			return null;
 		}
 
@@ -61,6 +64,7 @@ public class AddressParser {
 			LOG.warn("Unknown Node Type: {}", matcher.group(1));
 			return null;
 		}
+
 		String addrHost = matcher.group(2);
 		return Pair.of(addrHost, nodeType);
 	}

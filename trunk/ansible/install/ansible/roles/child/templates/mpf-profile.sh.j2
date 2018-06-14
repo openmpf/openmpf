@@ -23,15 +23,19 @@
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
-#This file managed by ansible. Do not edit directly
+# This file managed by ansible.
 export no_proxy=localhost,{{ repo_host }}
+
 export MPF_USER=mpf
 export MPF_HOME={{ mpf_home }}
-export MPF_LOG_PATH={{ mpf_home }}/share/logs
-export JAVA_HOME=/usr/java/latest
+export MPF_LOG_PATH=$MPF_HOME/share/logs
+export MASTER_MPF_NODE={{ master_host }}
 export THIS_MPF_NODE={{ inventory_hostname }}
-export ALL_MPF_NODES={{ master_host }}[7800],{% if groups['mpf-child'] is defined %}{% for host in groups['mpf-child'] %}{{ host }}[7800],{% endfor %}{% endif %}
 
-#This line must come after ALL_MPF_NODES
-export CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.port=7800 -Djava.library.path={{ mpf_home }}/lib -Djgroups.tcpping.initial_hosts='$ALL_MPF_NODES'"
-export ACTIVE_MQ_HOST="failover://(tcp://{{ master_host }}:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
+export JAVA_HOME=/usr/java/latest
+
+export JGROUPS_TCP_ADDRESS=$THIS_MPF_NODE
+export JGROUPS_TCP_PORT=7800
+export JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
+
+export ACTIVE_MQ_HOST="failover://(tcp://$MASTER_MPF_NODE:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"

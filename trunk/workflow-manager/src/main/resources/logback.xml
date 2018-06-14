@@ -136,7 +136,7 @@
     <!--<logger name="org.jnbis" level="INFO" additivity="false" />-->
     <!--<logger name="org.mitre.jetitor.util.JetitorUtils" level="INFO" additivity="false" />-->
 
-    <logger name="org.apache.commons.beanutils" level="WARN"/>
+    <logger name="org.apache.commons.beanutils" level="ERROR"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT-INFO"/>

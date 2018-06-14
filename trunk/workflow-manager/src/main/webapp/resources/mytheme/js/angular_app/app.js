@@ -220,7 +220,7 @@ App.run( function( $rootScope, $state, $log, $interval, RoleService, MetadataSer
 		}
 	};
 
-	$rootScope.calNodesWidget = function() {
+	$rootScope.calcNodesWidget = function() {
 		NodeService.getNodeManagerHostnames().then(
 			function(payload) {
 				$rootScope.widgetNodes.hostnames = payload;
@@ -305,15 +305,12 @@ App.run( function( $rootScope, $state, $log, $interval, RoleService, MetadataSer
 	});
 
 	$rootScope.$on('SSPC_NODE', function(event, msg ) {
-		console.log( "SSPC_NODE: " + JSON.stringify(msg) );
-		if ( msg.event==='OnNodeConfigurationChanged' ) {
-			// TODO: P038: this event is not sent from server yet
-			$rootScope.calNodesWidget();
-		}
+		//console.log("SSPC_NODE: " + JSON.stringify(msg));
+		$rootScope.calcNodesWidget();
 	});
 
 	$rootScope.$on('SSPC_SERVICE', function(event, msg ) {
-//		console.log( "SSPC_SERVICE: " + JSON.stringify(msg) );
+		//console.log("SSPC_SERVICE: " + JSON.stringify(msg));
 		// all events affect this services widget
 		$rootScope.calcServicesWidget();
 	});
@@ -335,7 +332,7 @@ App.run( function( $rootScope, $state, $log, $interval, RoleService, MetadataSer
 
 	//init
 	$rootScope.calcSystemHealth();
-	$rootScope.calNodesWidget();
+	$rootScope.calcNodesWidget();
 	$rootScope.calcServicesWidget();
 
 } );

@@ -42,7 +42,7 @@ public class StreamingJobCreationResponse {
 	}
 
 	public StreamingJobCreationResponse(long jobId, String outputObjectDirectory) {
-		this.mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_SUCCESS, "success");
+		this.mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_SUCCESS, null);
 		this.jobId = jobId;
 		this.outputObjectDirectory = outputObjectDirectory;
 	}

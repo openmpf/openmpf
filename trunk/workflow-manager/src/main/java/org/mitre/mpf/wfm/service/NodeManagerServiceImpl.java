@@ -143,9 +143,10 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
 
 
-    private static NodeManagerModel convertToModel(NodeManager nodeManager) {
+    private NodeManagerModel convertToModel(NodeManager nodeManager, Set<String> availableNodes) {
         NodeManagerModel model = new NodeManagerModel(nodeManager.getTarget());
-
+        model.setCoreNode(isCoreNode(model.getHost()));
+        model.setOnline(availableNodes.contains(model.getHost()));
         if (nodeManager.getServices() != null) {
             nodeManager.getServices().stream()
                 .map(ServiceModel::new)
@@ -163,10 +164,15 @@ public class NodeManagerServiceImpl implements NodeManagerService {
                 return new ArrayList<>();
             }
 
-            return managers.managers()
+            // get the current view once, and then update all the models
+            Set<String> availableNodes = getAvailableNodes();
+
+            List<NodeManagerModel> nodeManagerModels = managers.managers()
                     .stream()
-                    .map(NodeManagerServiceImpl::convertToModel)
+                    .map(m -> convertToModel(m, availableNodes))
                     .collect(toCollection(ArrayList::new));
+
+            return nodeManagerModels;
         }
         catch (IOException ex) {
             throw new UncheckedIOException("Unable to load node manager models", ex);
@@ -263,4 +269,18 @@ public class NodeManagerServiceImpl implements NodeManagerService {
         }
     }
 
+    @Override
+    public Set<String> getCoreNodes() {
+        return propertiesUtil.getCoreMpfNodes();
+    }
+
+    @Override
+    public boolean isCoreNode(String host) {
+        return propertiesUtil.getCoreMpfNodes().contains(host);
+    }
+
+    @Override
+    public Set<String> getAvailableNodes() {
+        return nodeManagerStatus.getAvailableNodes();
+    }
 }

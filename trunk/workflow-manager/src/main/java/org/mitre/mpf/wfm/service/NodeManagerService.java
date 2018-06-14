@@ -26,14 +26,15 @@
 
 package org.mitre.mpf.wfm.service;
 
+import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
-import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.wfm.util.Tuple;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @org.springframework.stereotype.Service
 public interface NodeManagerService {
@@ -57,4 +58,10 @@ public interface NodeManagerService {
     public boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels) throws IOException;
 
     public boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels, boolean reload) throws IOException;
+
+    public Set<String> getCoreNodes();
+
+    public boolean isCoreNode(String host);
+
+    public Set<String> getAvailableNodes();
 }

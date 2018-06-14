@@ -26,11 +26,15 @@
 
 package org.mitre.mpf.wfm.ui;
 
-import java.util.List;
-
-import org.openqa.selenium.*;
+import org.mitre.mpf.wfm.enums.EnvVar;
+import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public class Utils {
 	private static final Logger log = LoggerFactory.getLogger(Utils.class);
@@ -43,7 +47,7 @@ public class Utils {
 	//the tests are run here unless environment variable TOMCAT_BASE_URL is set
 	public static String BASE_URL = "http://localhost:8080";
 	static {
-		String base_url = System.getenv("TOMCAT_BASE_URL");
+		String base_url = System.getenv(EnvVar.TOMCAT_BASE_URL);
 		if(base_url != null && base_url.length() > 0){
 			Utils.BASE_URL = base_url;
 			log.info("TOMCAT_BASE_URL Environment Variable and BASE_URL: {}", Utils.BASE_URL);

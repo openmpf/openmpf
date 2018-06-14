@@ -533,7 +533,8 @@ sub installNodeManager {
 
 sub getSystemStatus {
 	printInfo("Checking the known environment variables\n");
-	my @vars = ("MPF_HOME", "MPF_USER", "JAVA_HOME", "LD_LIBRARY_PATH", "ACTIVE_MQ_HOST", "MPF_LOG_PATH", "THIS_MPF_NODE");
+	my @vars = ("MPF_USER", "MPF_HOME", "MPF_LOG_PATH", "MASTER_MPF_NODE", "THIS_MPF_NODE", "CORE_MPF_NODES", "JAVA_HOME",
+	    "JGROUPS_TCP_ADDRESS", "JGROUPS_TCP_PORT", "JGROUPS_FILE_PING_LOCATION", "ACTIVE_MQ_HOST", "LD_LIBRARY_PATH");
 	foreach my $var (@vars) {
 		my $varInfo = `echo \$$var`;
 		chomp $varInfo;
@@ -711,16 +712,29 @@ sub installProfile {
 	chdir "$mpfPath";
 	
 	my $mpfUser = ($hostname eq "jenkins-mpf-1.mitre.org") ? "jenkins" : "jenkins-slave";
-	printInfo("Using MFP_USER: $mpfUser\n");
-	
+	printInfo("Using MPF_USER: $mpfUser\n");
+
+    # NOTE: On Jenkins, the mpf.sh file is sourced before running the node-manager process, but not before running maven.
+    # Any environment variables set below should also be set through one of two Jenkins UIs:
+    # - Global env. vars: http://jenkins-mpf-1.mitre.org:8080/configure
+    # - Host-specific env. vars: http://jenkins-mpf-1.mitre.org:8080/computer/(master)/configure,
+    #                            http://jenkins-mpf-1.mitre.org:8080/computer/jenkins-mpf-2.mitre.org/configure,
+    #                            http://jenkins-mpf-1.mitre.org:8080/computer/jenkins-mpf-3.mitre.org/configure, etc.
+
 	my $mpfsh = << "END_MPF_SH";
-export MPF_HOME="$mpfPath/trunk/install"
 export MPF_USER="$mpfUser"
-export JAVA_HOME="/usr/java/latest"
-export LD_LIBRARY_PATH="/usr/local/lib"
-export ACTIVE_MQ_HOST="failover://(tcp://localhost:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
+export MPF_HOME="$mpfPath/trunk/install"
 export MPF_LOG_PATH="$mpfLogPath"
+export MASTER_MPF_NODE="$hostname"
 export THIS_MPF_NODE="$hostname"
+export CORE_MPF_NODES="\$THIS_MPF_NODE"
+export JAVA_HOME="/usr/java/latest"
+export JGROUPS_TCP_ADDRESS="\$THIS_MPF_NODE"
+export JGROUPS_TCP_PORT=7800
+export JGROUPS_FILE_PING_LOCATION="\$MPF_HOME/share/nodes"
+# CATALINA_OPTS is set in <TOMCAT_HOME>/bin/setenv.sh
+export ACTIVE_MQ_HOST="failover://(tcp://\$MASTER_MPF_NODE:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
+export LD_LIBRARY_PATH="/usr/local/lib"
 END_MPF_SH
 
 	

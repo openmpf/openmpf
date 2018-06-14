@@ -272,4 +272,4 @@ def change_role(username, role, **kwargs):
         print mpf_util.MsgUtil.green('User: %s now has role: %s' % (username, role))
 
 
-COMMANDS = (list_users, add_user, remove_user, change_password, change_role, change_password)
+COMMANDS = (list_users, add_user, remove_user, change_password, change_role)

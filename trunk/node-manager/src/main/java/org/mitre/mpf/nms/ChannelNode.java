@@ -39,6 +39,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Light-weight access class for connecting to a JGroups channel
@@ -63,9 +65,9 @@ public class ChannelNode {
         try {
 	        channel = new JChannel(propertiesUtil.getJGroupsConfig().getURL());
 	        channel.setName(nodeName);
-            channel.connect(propertiesUtil.getChannelName());
             channel.setReceiver(receiver);
-            channel.getState(null, 10000);
+            channel.connect(propertiesUtil.getChannelName());
+            channel.getState(null, 60000);
             isConnected = true;
         } catch (Exception e) {
         	log.error("Exception thrown when trying to create and configure the JGroups channel", e);
@@ -159,5 +161,26 @@ public class ChannelNode {
         channel.close();
         isConnected = false;
         log.debug("Channel closed.");
+    }
+
+
+    public Set<String> getAvailableNodes() {
+
+        View view = channel.getView();
+        if (view == null) {
+            throw new IllegalStateException("Error: JGroups channel has not connected yet. Cannot retrieve JGroups host list.");
+        }
+
+        List<Address> memberAddresses = view.getMembers();
+
+        Set<String> availableNodes = new TreeSet<>(); // ordered
+        for (Address member : memberAddresses) {
+            Pair<String, NodeTypes> pair = AddressParser.parse(member);
+            if (pair != null && pair.getRight() == NodeTypes.NodeManager) {
+                availableNodes.add(pair.getLeft());
+            }
+        }
+
+        return availableNodes;
     }
 }

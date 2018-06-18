@@ -269,6 +269,11 @@ public class PropertiesUtil {
 
     private File artifactsDirectory;
     public File getArtifactsDirectory() { return artifactsDirectory; }
+
+    public File getJobArtifactsDirectory(long jobId) {
+        return new File(artifactsDirectory, String.valueOf(jobId));
+    }
+
     public File createArtifactDirectory(long jobId, long mediaId, int stageIndex) throws IOException {
         Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d", jobId, mediaId, stageIndex)).normalize().toAbsolutePath();
         Files.createDirectories(path);

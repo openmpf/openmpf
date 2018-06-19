@@ -295,10 +295,17 @@ public class JobRequestBoImpl implements JobRequestBo {
         JobRequest jobRequest = jobRequestDao.findById(jobId);
         if (jobRequest == null) {
             throw new WfmProcessingException(String.format("A job with id %d is not known to the system.", priority));
-        } else if (!jobRequest.getStatus().isTerminal()) {
-            throw new WfmProcessingException(String.format("The job with id %d is in the non-terminal state of '%s'. Only jobs in a terminal state may be resubmitted.",
+        }
+        else if (!jobRequest.getStatus().isTerminal()) {
+            throw new WfmProcessingException(String.format(
+                    "The job with id %d is in the non-terminal state of '%s'. Only jobs in a terminal state may be resubmitted.",
                     jobId, jobRequest.getStatus().name()));
-        } else {
+        }
+        else if (pipelineService.getPipeline(jobRequest.getPipeline()) == null) {
+            throw new WfmProcessingException(String.format("The \"%s\" pipeline does not exist.",
+                                                           jobRequest.getPipeline()));
+        }
+        else {
             JsonJobRequest jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
 
             // If the priority should be changed during resubmission, make that change now.

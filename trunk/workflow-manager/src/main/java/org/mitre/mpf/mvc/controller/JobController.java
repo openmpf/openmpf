@@ -26,37 +26,13 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import static java.util.stream.Collectors.joining;
-
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Stream;
+import io.swagger.annotations.*;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.ModelUtils;
-import org.mitre.mpf.rest.api.JobCreationMediaData;
-import org.mitre.mpf.rest.api.JobCreationRequest;
-import org.mitre.mpf.rest.api.JobCreationResponse;
-import org.mitre.mpf.rest.api.JobPageListModel;
-import org.mitre.mpf.rest.api.JobPageModel;
-import org.mitre.mpf.rest.api.MpfResponse;
-import org.mitre.mpf.rest.api.SingleJobInfo;
+import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
@@ -73,14 +49,20 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 // swagger includes
 
@@ -155,7 +137,16 @@ public class JobController {
     @RequestMapping(value = "/jobs", method = RequestMethod.GET)
     @ResponseBody
     public List<SingleJobInfo> getJobStatus(@RequestParam(value = "useSession", required = false) boolean useSession) {
-        return getJobStatusInternal(null, useSession);
+        if (useSession) {
+            return sessionModel.getSessionJobs().stream()
+                    .map(id -> convertJob(mpfService.getJobRequest(id)))
+                    .collect(toList());
+        }
+        else {
+            return mpfService.getAllJobRequests().stream()
+                    .map(this::convertJob)
+                    .collect(toList());
+        }
     }
 
     //INTERNAL
@@ -168,7 +159,7 @@ public class JobController {
                                                  @RequestParam(value = "sort", required = false) String sort) {
         log.debug("Params draw:{} start:{},length:{},search:{},sort:{} ", draw, start, length, search, sort);
 
-        List<SingleJobInfo> jobInfoModels = getJobStatusInternal(null, false);
+        List<SingleJobInfo> jobInfoModels = getJobStatus(false);
         Collections.reverse(jobInfoModels);//newest first
 
         //handle search
@@ -229,13 +220,12 @@ public class JobController {
             @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
     public ResponseEntity<SingleJobInfo> getJobStatusRest(@ApiParam(required = true, value = "Job Id") @PathVariable("id") long jobId) {
-        List<SingleJobInfo> jobInfoModels = getJobStatusInternal(jobId, false);
-        if (jobInfoModels != null && jobInfoModels.size() == 1) {
-            return new ResponseEntity<>(jobInfoModels.get(0), HttpStatus.OK);
-        } else {
+        JobRequest jobRequest = mpfService.getJobRequest(jobId);
+        if (jobRequest == null) {
             log.error("getJobStatusRest: Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
-            return new ResponseEntity<>((SingleJobInfo) null, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
+        return ResponseEntity.ok(convertJob(jobRequest));
     }
 
     //INTERNAL
@@ -243,15 +233,16 @@ public class JobController {
     @ResponseBody
     public SingleJobInfo getJobStatus(@PathVariable("id") long jobId,
                                       @RequestParam(value = "useSession", required = false) boolean useSession) {
-        List<SingleJobInfo> jobInfoModels = getJobStatusInternal(jobId, useSession);
-        if (jobInfoModels != null && jobInfoModels.size() == 1) {
-            return jobInfoModels.get(0);
-        } else {
-            log.error(
-                "getJobStatus: Error retrieving the SingleJobInfo model for the job with id '{}'",
-                jobId);
+        if (useSession && !sessionModel.getSessionJobs().contains(jobId)) {
             return null;
         }
+
+        JobRequest jobRequest = mpfService.getJobRequest(jobId);
+        if (jobRequest == null) {
+            log.error("getJobStatus: Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
+            return null;
+        }
+        return convertJob(jobRequest);
     }
 
     /*
@@ -460,47 +451,14 @@ public class JobController {
         return errBuilder.toString();
     }
 
-    private List<SingleJobInfo> getJobStatusInternal(Long jobId, boolean useSession) {
-        List<SingleJobInfo> jobInfoList = new ArrayList<SingleJobInfo>();
-        try {
-            List<JobRequest> jobs = new ArrayList<JobRequest>();
-            if (jobId != null) {
-                JobRequest job = mpfService.getJobRequest(jobId);
-                if (job != null) {
-                    if (useSession) {
-                        if (sessionModel.getSessionJobs().contains(jobId)) {
-                            jobs.add(job);
-                        }
-                    } else {
-                        jobs.add(job);
-                    }
-                }
-            } else {
-                if (useSession) {
-                    for (Long keyId : sessionModel.getSessionJobs()) {
-                        jobs.add(mpfService.getJobRequest(keyId));
-                    }
-                } else {
-                    //get all of the jobs
-                    jobs = mpfService.getAllJobRequests();
-                }
-            }
 
-            for (JobRequest job : jobs) {
-                long id = job.getId();
-                SingleJobInfo singleJobInfo;
-
-                float jobProgressVal = jobProgress.getJobProgress(id) != null ? jobProgress.getJobProgress(id) : 0.0f;
-                singleJobInfo = ModelUtils.convertJobRequest(job, jobProgressVal);
-
-                jobInfoList.add(singleJobInfo);
-            }
-        } catch (Exception ex) {
-            log.error("exception in get job status with stack trace: {}", ex.getMessage());
-        }
-
-        return jobInfoList;
+    private SingleJobInfo convertJob(JobRequest job) {
+        float jobProgressVal = jobProgress.getJobProgress(job.getId()) != null
+                ? jobProgress.getJobProgress(job.getId())
+                : 0.0f;
+        return ModelUtils.convertJobRequest(job, jobProgressVal);
     }
+
 
     private JobCreationResponse resubmitJobInternal(long jobId, Integer jobPriorityParam) {
         log.debug("Attempting to resubmit job with id: {}.", jobId);

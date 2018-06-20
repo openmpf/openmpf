@@ -296,32 +296,32 @@ public class JobRequestBoImpl implements JobRequestBo {
         if (jobRequest == null) {
             throw new WfmProcessingException(String.format("A job with id %d is not known to the system.", priority));
         }
-        else if (!jobRequest.getStatus().isTerminal()) {
+        if (!jobRequest.getStatus().isTerminal()) {
             throw new WfmProcessingException(String.format(
                     "The job with id %d is in the non-terminal state of '%s'. Only jobs in a terminal state may be resubmitted.",
                     jobId, jobRequest.getStatus().name()));
         }
-        else if (pipelineService.getPipeline(jobRequest.getPipeline()) == null) {
+        if (pipelineService.getPipeline(jobRequest.getPipeline()) == null) {
             throw new WfmProcessingException(String.format("The \"%s\" pipeline does not exist.",
                                                            jobRequest.getPipeline()));
         }
-        else {
-            JsonJobRequest jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
+        JsonJobRequest jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
 
-            // If the priority should be changed during resubmission, make that change now.
-            if (priorityPolicy == PriorityPolicy.PROVIDED) {
-                jsonJobRequest.setPriority(priority);
-            }
-
-            jobRequest = initializeInternal(jobRequest, jsonJobRequest);
-            markupResultDao.deleteByJobId(jobId);
-            FileSystemUtils.deleteRecursively(propertiesUtil.getJobArtifactsDirectory(jobId));
-
-            redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
-            AtmosphereController.broadcast(new JobStatusMessage(jobId, 0, BatchJobStatusType.IN_PROGRESS, null));
-
-            return runInternal(jobRequest, jsonJobRequest, priority);
+        // If the priority should be changed during resubmission, make that change now.
+        if (priorityPolicy == PriorityPolicy.PROVIDED) {
+            jsonJobRequest.setPriority(priority);
         }
+
+        jobRequest = initializeInternal(jobRequest, jsonJobRequest);
+        markupResultDao.deleteByJobId(jobId);
+        FileSystemUtils.deleteRecursively(propertiesUtil.getJobArtifactsDirectory(jobId));
+        FileSystemUtils.deleteRecursively(propertiesUtil.getJobOutputObjectsDirectory(jobId));
+        FileSystemUtils.deleteRecursively(propertiesUtil.getJobMarkupDirectory(jobId));
+
+        redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
+        AtmosphereController.broadcast(new JobStatusMessage(jobId, 0, BatchJobStatusType.IN_PROGRESS, null));
+
+        return runInternal(jobRequest, jsonJobRequest, priority);
     }
 
     /**

@@ -291,6 +291,10 @@ public class PropertiesUtil {
      */
     public File getOutputObjectsDirectory() { return outputObjectsDirectory; }
 
+    public File getJobOutputObjectsDirectory(long jobId) {
+        return new File(outputObjectsDirectory, String.valueOf(jobId));
+    }
+
     /** Create the output objects directory and detection*.json file for batch jobs
      * @param jobId unique id that has been assigned to the batch job
      * @return directory that was created under the output objects directory for storage of detection files from this batch job
@@ -356,6 +360,11 @@ public class PropertiesUtil {
 
     private File markupDirectory;
     public File getMarkupDirectory() { return markupDirectory; }
+
+    public File getJobMarkupDirectory(long jobId) {
+        return new File(markupDirectory, String.valueOf(jobId));
+    }
+
     public Path createMarkupPath(long jobId, long mediaId, String extension) throws IOException {
         Path path = Paths.get(markupDirectory.toURI()).resolve(String.format("%d/%d/%s%s", jobId, mediaId,
                 UUID.randomUUID(), TextUtils.trimToEmpty(extension))).normalize().toAbsolutePath();

@@ -1,49 +1,51 @@
 {
-  "componentName" : "CplusplusHelloWorld",
-  "componentVersion" : "2.0.0",
-  "middlewareVersion" : "2.0.0",
-  "sourceLanguage" : "c++",
-  "batchLibrary" : "${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so",
-  "streamLibrary" : "${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfStreamingCplusplusHelloWorld.so",
-  "environmentVariables" : [{
-      "name":"LD_LIBRARY_PATH",
-      "value":"${MPF_HOME}/plugins/CplusplusHelloWorld/lib:${LD_LIBRARY_PATH}"
-  }],
-  "algorithm" : {
-    "name" : "CplusplusHelloWorld",
-    "description" : "A dummy C++ detection component.",
-    "actionType" : "DETECTION",
-    "requiresCollection" : {
-      "states" : []
+  "componentName": "CplusplusHelloWorld",
+  "componentVersion": "2.1.0",
+  "middlewareVersion": "2.1.0",
+  "sourceLanguage": "c++",
+  "batchLibrary": "${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so",
+  "streamLibrary": "${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfStreamingCplusplusHelloWorld.so",
+  "environmentVariables": [
+    {
+      "name": "LD_LIBRARY_PATH",
+      "value": "${MPF_HOME}/plugins/CplusplusHelloWorld/lib:${LD_LIBRARY_PATH}"
+    }
+  ],
+  "algorithm": {
+    "name": "CplusplusHelloWorld",
+    "description": "A dummy C++ detection component.",
+    "actionType": "DETECTION",
+    "requiresCollection": {
+      "states": []
     },
-    "providesCollection" : {
-      "states" : [
+    "providesCollection": {
+      "states": [
         "state1",
         "state2"
       ],
-      "properties" : [
+      "properties": [
         {
-          "name" : "prop1",
-          "description" : "my prop 1",
-          "type" : "INT",
-          "defaultValue" : "2"
+          "name": "prop1",
+          "description": "my prop 1",
+          "type": "INT",
+          "defaultValue": "2"
         },
         {
-          "name" : "prop2",
-          "description" : "my prop 2",
-          "type" : "BOOLEAN",
-          "defaultValue" : "true"
+          "name": "prop2",
+          "description": "my prop 2",
+          "type": "BOOLEAN",
+          "defaultValue": "true"
         },
         {
-          "name" : "prop3",
-          "description" : "my prop 3",
-          "type" : "STRING",
-          "defaultValue" : "string property"
+          "name": "prop3",
+          "description": "my prop 3",
+          "type": "STRING",
+          "defaultValue": "string property"
         }
       ]
     }
   },
-  "actions" : [
+  "actions": [
     {
       "name": "HELLOWORLD TEST ACTION",
       "description": "HELLOWORLD TEST ACTION",
@@ -60,7 +62,7 @@
       ]
     }
   ],
-  "pipelines":[
+  "pipelines": [
     {
       "name": "HELLOWORLD TEST PIPELINE",
       "description": "HELLOWORLD TEST PIPELINE",
@@ -69,6 +71,5 @@
       ]
     }
   ]
-
 }
 

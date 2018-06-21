@@ -31,7 +31,6 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
-import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -56,8 +55,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import org.springframework.util.FileSystemUtils;
 
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class JobRequestBoImpl implements JobRequestBo {
@@ -292,41 +295,33 @@ public class JobRequestBoImpl implements JobRequestBo {
         JobRequest jobRequest = jobRequestDao.findById(jobId);
         if (jobRequest == null) {
             throw new WfmProcessingException(String.format("A job with id %d is not known to the system.", priority));
-        } else if (!jobRequest.getStatus().isTerminal()) {
-            throw new WfmProcessingException(String.format("The job with id %d is in the non-terminal state of '%s'. Only jobs in a terminal state may be resubmitted.",
-                    jobId, jobRequest.getStatus().name()));
-        } else {
-            JsonJobRequest jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
-
-            // If the priority should be changed during resubmission, make that change now.
-            if (priorityPolicy == PriorityPolicy.PROVIDED) {
-
-                // Create a copy of this job's media in order to add it to the new instance we're about to create.
-                final List<JsonMediaInputObject> originalMedia = new LinkedList<>();
-                for (JsonMediaInputObject media : jsonJobRequest.getMedia()) {
-                    JsonMediaInputObject originalMedium = new JsonMediaInputObject(media.getMediaUri());
-                    originalMedium.getProperties().putAll(media.getProperties());
-                    originalMedia.add(originalMedium);
-                }
-
-                // Attempt to recreate the pipeline because registered components; as well as algorithms, actions, tasks, and pipelines;
-                // may have changed since the first time the job was run.
-                JsonPipeline jsonPipeline = pipelineService.createJsonPipeline(jsonJobRequest.getPipeline().getName());
-
-                jsonJobRequest = new JsonJobRequest(jsonJobRequest.getExternalId(), jsonJobRequest.isOutputObjectEnabled(), jsonPipeline, priority) {{
-                    getMedia().addAll(originalMedia);
-                }};
-
-            }
-
-            jobRequest = initializeInternal(jobRequest, jsonJobRequest);
-            markupResultDao.deleteByJobId(jobId);
-
-            redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
-            AtmosphereController.broadcast(new JobStatusMessage(jobId, 0, BatchJobStatusType.IN_PROGRESS, null));
-
-            return runInternal(jobRequest, jsonJobRequest, priority);
         }
+        if (!jobRequest.getStatus().isTerminal()) {
+            throw new WfmProcessingException(String.format(
+                    "The job with id %d is in the non-terminal state of '%s'. Only jobs in a terminal state may be resubmitted.",
+                    jobId, jobRequest.getStatus().name()));
+        }
+        if (pipelineService.getPipeline(jobRequest.getPipeline()) == null) {
+            throw new WfmProcessingException(String.format("The \"%s\" pipeline does not exist.",
+                                                           jobRequest.getPipeline()));
+        }
+        JsonJobRequest jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
+
+        // If the priority should be changed during resubmission, make that change now.
+        if (priorityPolicy == PriorityPolicy.PROVIDED) {
+            jsonJobRequest.setPriority(priority);
+        }
+
+        jobRequest = initializeInternal(jobRequest, jsonJobRequest);
+        markupResultDao.deleteByJobId(jobId);
+        FileSystemUtils.deleteRecursively(propertiesUtil.getJobArtifactsDirectory(jobId));
+        FileSystemUtils.deleteRecursively(propertiesUtil.getJobOutputObjectsDirectory(jobId));
+        FileSystemUtils.deleteRecursively(propertiesUtil.getJobMarkupDirectory(jobId));
+
+        redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
+        AtmosphereController.broadcast(new JobStatusMessage(jobId, 0, BatchJobStatusType.IN_PROGRESS, null));
+
+        return runInternal(jobRequest, jsonJobRequest, priority);
     }
 
     /**
@@ -353,7 +348,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 
         JobRequest persistedRequest = jobRequestDao.persist(jobRequest);
 
-        AtmosphereController.broadcast(new JobStatusMessage(jobRequest.getId(), 0, BatchJobStatusType.INITIALIZED, null));
+        AtmosphereController.broadcast(new JobStatusMessage(persistedRequest.getId(), 0, BatchJobStatusType.INITIALIZED, null));
 
         return persistedRequest;
 

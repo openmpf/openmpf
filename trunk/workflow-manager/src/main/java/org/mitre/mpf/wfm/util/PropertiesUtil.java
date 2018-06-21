@@ -269,6 +269,11 @@ public class PropertiesUtil {
 
     private File artifactsDirectory;
     public File getArtifactsDirectory() { return artifactsDirectory; }
+
+    public File getJobArtifactsDirectory(long jobId) {
+        return new File(artifactsDirectory, String.valueOf(jobId));
+    }
+
     public File createArtifactDirectory(long jobId, long mediaId, int stageIndex) throws IOException {
         Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d", jobId, mediaId, stageIndex)).normalize().toAbsolutePath();
         Files.createDirectories(path);
@@ -285,6 +290,10 @@ public class PropertiesUtil {
      * @return path to the top level output object directory
      */
     public File getOutputObjectsDirectory() { return outputObjectsDirectory; }
+
+    public File getJobOutputObjectsDirectory(long jobId) {
+        return new File(outputObjectsDirectory, String.valueOf(jobId));
+    }
 
     /** Create the output objects directory and detection*.json file for batch jobs
      * @param jobId unique id that has been assigned to the batch job
@@ -351,6 +360,11 @@ public class PropertiesUtil {
 
     private File markupDirectory;
     public File getMarkupDirectory() { return markupDirectory; }
+
+    public File getJobMarkupDirectory(long jobId) {
+        return new File(markupDirectory, String.valueOf(jobId));
+    }
+
     public Path createMarkupPath(long jobId, long mediaId, String extension) throws IOException {
         Path path = Paths.get(markupDirectory.toURI()).resolve(String.format("%d/%d/%s%s", jobId, mediaId,
                 UUID.randomUUID(), TextUtils.trimToEmpty(extension))).normalize().toAbsolutePath();

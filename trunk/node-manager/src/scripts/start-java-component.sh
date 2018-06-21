@@ -53,6 +53,6 @@ fi
 JAVA_FLAGS="-Djava.library.path=${MPF_HOME}/lib:${MPF_HOME}/jars"
 
 set -x
-exec ${JAVA_HOME}/bin/java ${JAVA_FLAGS} -cp ${MPF_HOME}/jars/mpf-java-component-executor-2.0.0.jar:${MPF_HOME}/plugins/$3/$1 -Dlogback.configurationFile=${MPF_HOME}/plugins/$3/logback.xml ${QUEUE_FLAGS} org.mitre.mpf.component.executor.detection.MPFDetectionMain $2
+exec ${JAVA_HOME}/bin/java ${JAVA_FLAGS} -cp ${MPF_HOME}/jars/mpf-java-component-executor-2.1.0.jar:${MPF_HOME}/plugins/$3/$1 -Dlogback.configurationFile=${MPF_HOME}/plugins/$3/logback.xml ${QUEUE_FLAGS} org.mitre.mpf.component.executor.detection.MPFDetectionMain $2
 set +x
 

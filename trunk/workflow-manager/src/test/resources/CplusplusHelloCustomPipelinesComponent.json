@@ -1,44 +1,46 @@
 {
-  "componentName" : "CplusplusHelloCustomPipelinesComponent",
-  "componentVersion" : "2.0.0",
-  "middlewareVersion" : "2.0.0",
-  "sourceLanguage" : "c++",
-  "batchLibrary" : "${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so",
-  "environmentVariables" : [{
-    "name":"LD_LIBRARY_PATH",
-    "value":"${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib:${LD_LIBRARY_PATH}",
-    "sep": ":"
-  }],
-  "algorithm" : {
-    "name" : "CplusplusCustomPipelinesHelloWorld",
-    "description" : "A dummy C++ detection component.",
-    "actionType" : "DETECTION",
-    "requiresCollection" : {
-      "states" : []
+  "componentName": "CplusplusHelloCustomPipelinesComponent",
+  "componentVersion": "2.1.0",
+  "middlewareVersion": "2.1.0",
+  "sourceLanguage": "c++",
+  "batchLibrary": "${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so",
+  "environmentVariables": [
+    {
+      "name": "LD_LIBRARY_PATH",
+      "value": "${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib:${LD_LIBRARY_PATH}",
+      "sep": ":"
+    }
+  ],
+  "algorithm": {
+    "name": "CplusplusCustomPipelinesHelloWorld",
+    "description": "A dummy C++ detection component.",
+    "actionType": "DETECTION",
+    "requiresCollection": {
+      "states": []
     },
-    "providesCollection" : {
-      "states" : [
+    "providesCollection": {
+      "states": [
         "state1",
         "state2"
       ],
-      "properties" : [
+      "properties": [
         {
-          "description" : "my prop 1",
-          "name" : "prop1",
-          "type" : "INT",
-          "defaultValue" : "2"
+          "description": "my prop 1",
+          "name": "prop1",
+          "type": "INT",
+          "defaultValue": "2"
         },
         {
-          "description" : "my prop 2",
-          "name" : "prop2",
-          "type" : "BOOLEAN",
-          "defaultValue" : "true"
+          "description": "my prop 2",
+          "name": "prop2",
+          "type": "BOOLEAN",
+          "defaultValue": "true"
         },
         {
-          "description" : "my prop 3",
-          "name" : "prop3",
-          "type" : "STRING",
-          "defaultValue" : "string property"
+          "description": "my prop 3",
+          "name": "prop3",
+          "type": "STRING",
+          "defaultValue": "string property"
         }
       ]
     }
@@ -50,12 +52,12 @@
       "algorithm": "CplusplusCustomPipelinesHelloWorld",
       "properties": [
         {
-          "name" : "prop1",
-          "value" : "3"
+          "name": "prop1",
+          "value": "3"
         },
         {
-          "name" : "prop2",
-          "value" : "true"
+          "name": "prop2",
+          "value": "true"
         }
       ]
     },
@@ -63,7 +65,7 @@
       "name": "cplusplushelloworld test action2",
       "description": "this is a test action2",
       "algorithm": "CplusplusCustomPipelinesHelloWorld",
-      "properties" : [ ]
+      "properties": []
     },
     {
       "name": "cplusplushelloworld test action3",
@@ -71,8 +73,8 @@
       "algorithm": "CplusplusCustomPipelinesHelloWorld",
       "properties": [
         {
-          "name" : "prop3",
-          "value" : "string property"
+          "name": "prop3",
+          "value": "string property"
         }
       ]
     }
@@ -81,20 +83,27 @@
     {
       "name": "CplusplusHelloWorld test task",
       "description": "This is a test task",
-      "actions": ["CplusplusHelloWorld test action"]
+      "actions": [
+        "CplusplusHelloWorld test action"
+      ]
     },
     {
       "name": "CplusplusHelloWorld test task2",
       "description": "This is a test task2",
-      "actions": ["cplusplushelloworld test action2", "cplusplushelloworld test action3"]
+      "actions": [
+        "cplusplushelloworld test action2",
+        "cplusplushelloworld test action3"
+      ]
     }
-
   ],
   "pipelines": [
     {
       "name": "CplusplusHelloWorld test pipeline",
       "description": "This is a test pipeline",
-      "tasks": ["CplusplusHelloWorld test task", "CplusplusHelloWorld test task2"]
+      "tasks": [
+        "CplusplusHelloWorld test task",
+        "CplusplusHelloWorld test task2"
+      ]
     }
   ]
 }

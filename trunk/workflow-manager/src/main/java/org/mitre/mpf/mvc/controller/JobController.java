@@ -223,7 +223,7 @@ public class JobController {
         JobRequest jobRequest = mpfService.getJobRequest(jobId);
         if (jobRequest == null) {
             log.error("getJobStatusRest: Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().body(null);
         }
         return ResponseEntity.ok(convertJob(jobRequest));
     }

@@ -88,7 +88,24 @@ public class StreamingProcessFactory {
 		ProcessBuilder processBuilder = new ProcessBuilder(command)
 				.directory(workingDirectory)
 				.redirectErrorStream(true);
-		processBuilder.environment().putAll(EnvironmentVariableExpander.expandValues(environmentVariables));
+
+		String mpfHomeKey = "MPF_HOME";
+		String ldLibPathKey = "LD_LIBRARY_PATH";
+		Map<String, String> env = processBuilder.environment();
+
+		env.putAll(EnvironmentVariableExpander.expandValues(environmentVariables));
+
+		String mpfHomeVal = env.get(mpfHomeKey);
+		if (mpfHomeVal == null) {
+			throw new IllegalStateException("Missing environment variable: " + mpfHomeKey);
+		}
+
+		String ldLibPathVal = env.get(ldLibPathKey);
+		if (ldLibPathVal != null) {
+			env.put(ldLibPathKey, ldLibPathVal + System.getProperty("path.separator") + mpfHomeVal + "/lib");
+		} else {
+			env.put(ldLibPathKey, mpfHomeVal + "/lib");
+		}
 
 		return new StreamingProcess("Component", processBuilder,
 		                            _propertiesUtil.getStreamingProcessMaxRestarts());

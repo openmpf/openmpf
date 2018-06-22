@@ -130,6 +130,10 @@
         backrefs: yes
       when: palette_file_st.stat.exists
 
+    - name: "Update nodeServicesPalette.json with markup LD_LIBRARY_PATH"
+      command: "python \"{{ mpf_home }}/manage/ansible/roles/master/files/set-markup-ld-path.py\" \"{{ mpf_home }}/data/nodeServicesPalette.json\""
+      when: palette_file_st.stat.exists
+
   post_tasks:
     - name: Start ActiveMQ
       service:

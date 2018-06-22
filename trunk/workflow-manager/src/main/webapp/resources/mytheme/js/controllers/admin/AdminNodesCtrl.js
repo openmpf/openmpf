@@ -371,6 +371,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
 
                 if (savedSuccessfully) {
                     $log.debug(' successfully saved: ' + response.status);
+                    service_actions_counter--;
                     updateServices();
                 }
             },

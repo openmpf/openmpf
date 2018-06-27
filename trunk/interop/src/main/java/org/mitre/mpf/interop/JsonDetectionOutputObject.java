@@ -27,7 +27,7 @@
 package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.*;
-import org.apache.commons.lang3.ObjectUtils;
+import org.mitre.mpf.interop.util.CompareUtils;
 
 import java.util.Objects;
 import java.util.SortedMap;
@@ -144,37 +144,10 @@ public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutput
 			|| (result = Integer.compare(y, other.y)) != 0
 			|| (result = Integer.compare(width, other.width)) != 0
 			|| (result = Integer.compare(height, other.height)) != 0
-			|| (result = compareMap(detectionProperties,other.detectionProperties)) != 0) {
+			|| (result = CompareUtils.compareMap(detectionProperties,other.detectionProperties)) != 0) {
 			return result;
 		} else {
 			return 0;
 		}
-	}
-
-	private int compareMap(SortedMap<String, String> map1, SortedMap<String, String> map2) {
-		if (map1 == null && map2 == null) {
-			return 0;
-		} else if (map1 == null) {
-			return -1;
-		} else if (map2 == null) {
-			return 1;
-		} else {
-			int result = 0;
-			if ((result = Integer.compare(map1.size(),map2.size())) != 0) {
-				return result;
-			}
-			StringBuilder map1Str = new StringBuilder();
-			for (String key : map1.keySet()) {
-				map1Str.append(key).append(map1.get(key));
-			}
-			StringBuilder map2Str = new StringBuilder();
-			for (String key : map2.keySet()) {
-				map2Str.append(key).append(map2.get(key));
-			}
-			if ((result = ObjectUtils.compare(map1Str.toString(),map2Str.toString())) != 0) {
-				return result;
-			}
-		}
-		return 0;
 	}
 }

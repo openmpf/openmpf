@@ -27,9 +27,12 @@
 
 package org.mitre.mpf.interop.util;
 
+import org.apache.commons.lang3.ObjectUtils;
+
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.SortedMap;
 
 public class CompareUtils {
 
@@ -58,6 +61,34 @@ public class CompareUtils {
 
 	public static <T extends Comparable<T>> Comparator<T> nullsFirst() {
 		return Comparator.nullsFirst(Comparator.naturalOrder());
+	}
+
+
+	public static int compareMap(SortedMap<String, String> map1, SortedMap<String, String> map2) {
+		if (map1 == null && map2 == null) {
+			return 0;
+		} else if (map1 == null) {
+			return -1;
+		} else if (map2 == null) {
+			return 1;
+		} else {
+			int result = 0;
+			if ((result = Integer.compare(map1.size(),map2.size())) != 0) {
+				return result;
+			}
+			StringBuilder map1Str = new StringBuilder();
+			for (String key : map1.keySet()) {
+				map1Str.append(key).append(map1.get(key));
+			}
+			StringBuilder map2Str = new StringBuilder();
+			for (String key : map2.keySet()) {
+				map2Str.append(key).append(map2.get(key));
+			}
+			if ((result = ObjectUtils.compare(map1Str.toString(),map2Str.toString())) != 0) {
+				return result;
+			}
+		}
+		return 0;
 	}
 
 

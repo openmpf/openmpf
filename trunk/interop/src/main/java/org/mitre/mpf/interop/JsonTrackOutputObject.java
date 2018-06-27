@@ -28,13 +28,16 @@ package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.*;
 import org.apache.commons.lang3.ObjectUtils;
+import org.mitre.mpf.interop.util.CompareUtils;
 
+import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 @JsonTypeName("TrackOutputObject")
 @JsonPropertyOrder({ "id", "startOffsetFrame", "stopOffsetFrame", "startOffsetTime", "stopOffsetTime",
-		"type", "source", "exemplar", "detections", "startOffset", "stopOffset" })
+		"type", "source", "trackProperties", "exemplar", "detections", "startOffset", "stopOffset" })
 public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> {
 
 	@JsonProperty("id")
@@ -84,6 +87,11 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 	private String source;
 	public String getSource() { return source; }
 
+	@JsonProperty("trackProperties")
+	@JsonPropertyDescription("Additional properties set by the track.")
+	private SortedMap<String,String> trackProperties = new TreeMap<>();
+	public SortedMap<String,String> getTrackProperties() { return trackProperties; }
+
 	@JsonProperty("exemplar")
 	@JsonPropertyDescription("The detection which best represents this track.")
 	private JsonDetectionOutputObject exemplar;
@@ -92,7 +100,7 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 
 	@JsonProperty("detections")
 	@JsonPropertyDescription("The collection of detections included in this track.")
-	private SortedSet<JsonDetectionOutputObject> detections;
+	private SortedSet<JsonDetectionOutputObject> detections = new TreeSet<>();
 	public SortedSet<JsonDetectionOutputObject> getDetections() { return detections; }
 
 	public JsonTrackOutputObject(String id, int startOffsetFrame, int stopOffsetFrame, long startOffsetTime, long stopOffsetTime, String type, String source) {
@@ -103,7 +111,6 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 		this.stopOffsetTime = stopOffsetTime;
 		this.type = type;
 		this.source = source;
-		this.detections = new TreeSet<>();
 	}
 
     public JsonTrackOutputObject(){}
@@ -116,9 +123,13 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 												@JsonProperty("stopOffsetTime") long stopOffsetTime,
 	                                            @JsonProperty("type") String type,
 	                                            @JsonProperty("source") String source,
+												@JsonProperty("trackProperties") SortedMap<String, String> trackProperties,
 	                                            @JsonProperty("exemplar") JsonDetectionOutputObject exemplar,
 	                                            @JsonProperty("detections") SortedSet<JsonDetectionOutputObject> detections) {
 		JsonTrackOutputObject trackOutputObject = new JsonTrackOutputObject(id, startOffsetFrame, stopOffsetFrame, startOffsetTime, stopOffsetTime, type, source);
+		if (trackProperties != null) {
+			trackProperties.putAll(trackProperties);
+		}
 		trackOutputObject.exemplar = exemplar;
 		if(detections != null) {
 			trackOutputObject.detections.addAll(detections);
@@ -144,14 +155,15 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 		int result = 0;
 		if(other == null) {
 			return 0;
-		} else if((result = Integer.compare(startOffsetFrame, other.startOffsetFrame)) != 0
+		} else if((result = ObjectUtils.compare(id, other.id, false)) != 0
+				|| (result = Integer.compare(startOffsetFrame, other.startOffsetFrame)) != 0
 				|| (result = Integer.compare(stopOffsetFrame, other.stopOffsetFrame)) != 0
 				|| (result = Long.compare(startOffsetTime, other.startOffsetTime)) != 0
 				|| (result = Long.compare(stopOffsetTime, other.stopOffsetTime)) != 0
 				|| (result = ObjectUtils.compare(type, other.type, false)) != 0
 			    || (result = ObjectUtils.compare(source, other.source, false)) != 0
 				|| (result = ObjectUtils.compare(exemplar, other.getExemplar(), false)) != 0
-				|| (result = ObjectUtils.compare(id, other.id, false)) != 0) {
+				|| (result = CompareUtils.compareMap(trackProperties,other.trackProperties)) != 0) {
 			return result;
 		} else {
 			return 0;

@@ -26,29 +26,11 @@
 
 package org.mitre.mpf.wfm.data;
 
-import java.io.File;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.util.JsonUtils;
@@ -61,6 +43,12 @@ import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import java.io.File;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
 
 @Component(RedisImpl.REF)
 public class RedisImpl implements Redis {
@@ -69,11 +57,9 @@ public class RedisImpl implements Redis {
     private static final Logger log = LoggerFactory.getLogger(RedisImpl.class);
 
     @Autowired
-    @SuppressWarnings("unused")
     private RedisTemplate redisTemplate;
 
     @Autowired
-    @SuppressWarnings("unused")
     private JsonUtils jsonUtils;
 
     @PostConstruct
@@ -239,6 +225,7 @@ public class RedisImpl implements Redis {
     /** Removes everything in the Redis datastore. */
     @Override
     public void clear() {
+        log.info("Flushing Redis.");
         redisTemplate.execute(new RedisCallback() {
             @Override
             public Object doInRedis(RedisConnection redisConnection) throws DataAccessException {
@@ -256,6 +243,7 @@ public class RedisImpl implements Redis {
     @Override
     @SuppressWarnings("unchecked")
     public synchronized void clearJob(long jobId) throws WfmProcessingException {
+        log.info("Deleting job {} from Redis.", jobId);
         if ( isJobTypeBatch(jobId) ) {
             // confirmed that this is a batch job that was requested to be cleared
             TransientJob transientJob = getJob(jobId);

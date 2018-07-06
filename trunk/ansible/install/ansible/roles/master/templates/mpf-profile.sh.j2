@@ -26,6 +26,9 @@
 # This file managed by ansible.
 export no_proxy=localhost,{{ repo_host }}
 
+export AMQ_HOST=localhost
+export MYSQL_HOST=localhost
+export REDIS_HOST=localhost
 export MPF_USER=mpf
 export MPF_HOME={{ mpf_home }}
 export MPF_LOG_PATH=$MPF_HOME/share/logs

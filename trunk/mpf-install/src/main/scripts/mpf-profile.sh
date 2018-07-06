@@ -38,6 +38,9 @@
 # values for the given runtime environment.  Then copy this file to /etc/profile.d/mpf.sh
 export no_proxy=localhost
 
+export AMQ_HOST=localhost
+export MYSQL_HOST=localhost
+export REDIS_HOST=localhost
 export MPF_USER=mpf
 export MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 export MPF_LOG_PATH=$MPF_HOME/logs
@@ -58,4 +61,3 @@ export ACTIVE_MQ_HOST="failover://(tcp://$MASTER_MPF_NODE:61616)?jms.prefetchPol
 
 # enable tab completion for mpf script
 command -v register-python-argcomplete > /dev/null && eval "$(register-python-argcomplete mpf)"
-

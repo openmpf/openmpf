@@ -30,13 +30,7 @@ project(MFP_PROTOBUF)
 ## Find ProtoBufs
 find_package(Protobuf REQUIRED)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
-
-# Install Protobuf
 get_filename_component(PROTOBUF_LIBDIR ${PROTOBUF_LIBRARY} DIRECTORY)
-file(GLOB MATCHING_FILES ${PROTOBUF_LIBDIR}/libprotobuf${CMAKE_SHARED_LIBRARY_SUFFIX}* )
-install(FILES ${MATCHING_FILES} DESTINATION lib)
-file(GLOB MATCHING_FILES ${PROTOBUF_LIBDIR}/libprotoc${CMAKE_SHARED_LIBRARY_SUFFIX}* )
-install(FILES ${MATCHING_FILES} DESTINATION lib)
 
 file(GLOB PROTO_FILES "${CMAKE_SOURCE_DIR}/protobuf/src/main/proto/*.proto")
 
@@ -44,21 +38,12 @@ file(GLOB PROTO_FILES "${CMAKE_SOURCE_DIR}/protobuf/src/main/proto/*.proto")
 # this puts the generated files under build/protobufs
 PROTOBUF_GENERATE_CPP(MPF_PROTO_SRCS MPF_PROTO_HEADERS ${PROTO_FILES})
 
+# Tell cmake these will exist at build time
+set_source_files_properties(${MPF_PROTO_HEADERS} PROPERTIES GENERATED TRUE)
+
 add_library(mpfProtobufs STATIC ${MPF_PROTO_SRCS})
-target_link_libraries(mpfProtobufs ${Protobuf_LIBRARY})
+target_link_libraries(mpfProtobufs ${PROTOBUF_LIBDIR}/libprotobuf.a)
 
 # include ourselves for building
 target_include_directories(mpfProtobufs PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
-# pass our path up to the parent
-set(MPF_PROTO_PATH ${CMAKE_CURRENT_BINARY_DIR} PARENT_SCOPE )
-
-# pass these back up to the parent so we can tell it that these get built
-set(MPF_PROTO_HEADERS ${MPF_PROTO_HEADERS} PARENT_SCOPE)
-
-install(TARGETS mpfProtobufs
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
-
-set(MPF_PROTOBUF_LIB mpfProtobufs PARENT_SCOPE)

@@ -64,9 +64,6 @@ find_package(JNI)
 # Build ProtoBufs
 add_subdirectory(protobuf)
 
-# Tell cmake these will exist at build time
-set_source_files_properties(${MPF_PROTO_HEADERS} PROPERTIES GENERATED TRUE)
-
 
 # The qmake program needs to be on the path in order for find_package to work for
 # the Qt package.

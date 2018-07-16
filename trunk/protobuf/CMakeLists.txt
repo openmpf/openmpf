@@ -28,9 +28,9 @@ cmake_minimum_required(VERSION 3.6)
 project(MFP_PROTOBUF)
 
 ## Find ProtoBufs
+set(Protobuf_INCLUDE_DIR /apps/install/include)
+set(Protobuf_LIBRARY /apps/install/lib/libprotobuf.a)
 find_package(Protobuf REQUIRED)
-include_directories(${PROTOBUF_INCLUDE_DIRS})
-get_filename_component(PROTOBUF_LIBDIR ${PROTOBUF_LIBRARY} DIRECTORY)
 
 file(GLOB PROTO_FILES "${CMAKE_SOURCE_DIR}/protobuf/src/main/proto/*.proto")
 
@@ -42,7 +42,7 @@ PROTOBUF_GENERATE_CPP(MPF_PROTO_SRCS MPF_PROTO_HEADERS ${PROTO_FILES})
 set_source_files_properties(${MPF_PROTO_HEADERS} PROPERTIES GENERATED TRUE)
 
 add_library(mpfProtobufs STATIC ${MPF_PROTO_SRCS})
-target_link_libraries(mpfProtobufs ${PROTOBUF_LIBDIR}/libprotobuf.a)
+target_link_libraries(mpfProtobufs ${Protobuf_LIBRARY})
 
 # include ourselves for building
 target_include_directories(mpfProtobufs PUBLIC ${CMAKE_CURRENT_BINARY_DIR})

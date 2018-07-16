@@ -31,10 +31,6 @@ cmake_policy(SET CMP0015 NEW)
 #add_definitions(-Wno-cpp)
 ADD_DEFINITIONS("-std=c++0x")
 
-set(Protobuf_INCLUDE_DIR /apps/install/include)
-set(Protobuf_LIBRARY /apps/install/lib/libprotobuf.so)
-
-
 set(FIND_LIBRARY_USE_LIB64_PATHS true)
 
 MESSAGE("CURRENT CMAKE CXX vars")

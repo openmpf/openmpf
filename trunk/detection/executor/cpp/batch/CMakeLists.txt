@@ -31,10 +31,6 @@ project(amq_detection_common)
 include(${QT_USE_FILE})
 add_definitions(${QT_DEFINITIONS})
 
-## Find ProtoBufs
-include_directories(${PROTOBUF_INCLUDE_DIRS})
-include_directories(${MPF_PROTO_PATH})
-
 ## Find and install activemq-cpp
 find_package(PkgConfig)
 set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:/usr/local/lib/pkgconfig")
@@ -53,8 +49,6 @@ include_directories(${APR_INCLUDEDIR})
 ## Install Apache Portable Runtime
 file(GLOB MATCHING_FILES ${APR_LIBDIR}/libapr*.so* )
 install(FILES ${MATCHING_FILES} DESTINATION lib)
-
-include_directories(${MPF_PROTO_PATH})
 
 set(PYBIND11_CPP_STANDARD -std=c++11)
 set(PYBIND11_PYTHON_VERSION 2.7)
@@ -81,12 +75,13 @@ add_library(batch_executor_lib OBJECT ${batch_executor_lib_files} ${MSG_UTILS_FI
 target_include_directories(batch_executor_lib PUBLIC
 	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:pybind11::embed,INTERFACE_INCLUDE_DIRECTORIES>
+	$<TARGET_PROPERTY:mpfProtobufs,INTERFACE_INCLUDE_DIRECTORIES>
 	)
 
 
 add_executable(amq_detection_component main.cpp $<TARGET_OBJECTS:batch_executor_lib>)
 
-target_link_libraries(amq_detection_component mpfComponentInterface ${MPF_PROTOBUF_LIB} ${PROTOBUF_LIBRARY}
+target_link_libraries(amq_detection_component mpfComponentInterface mpfProtobufs
 	${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES} pybind11::embed)
 
 

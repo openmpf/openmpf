@@ -228,7 +228,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 		return new TrackMergingPlan(samplingInterval, mergeTracks, minGapBetweenTracks, minTrackLength, minTrackOverlap);
 	}
 
-	private Set<Track> combine(Set<Track> sourceTracks, TrackMergingPlan plan) {
+	private static Set<Track> combine(Set<Track> sourceTracks, TrackMergingPlan plan) {
 		// Do not attempt to merge an empty or null set.
 		if (CollectionUtils.isEmpty(sourceTracks)) {
 			return sourceTracks;
@@ -248,7 +248,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 
 			for (Track candidate : tracks) {
 				// Iterate through the remaining tracks until a track is found which is within the frame gap and has sufficient region overlap.
-				if (isWithinGap(merged, candidate, plan.getMinGapBetweenTracks()) && intersects(merged, candidate, plan.getMinTrackOverlap())) {
+				if (canMerge(merged, candidate, plan)) {
 					// If one is found, merge them and then push this track back to the beginning of the collection.
 					tracks.add(0, merge(merged, candidate));
 					performedMerge = true;
@@ -273,7 +273,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 	}
 
 	/** Combines two tracks. This is a destructive method. The contents of track1 reflect the merged track. */
-	private Track merge(Track track1, Track track2){
+	private static Track merge(Track track1, Track track2){
 		Track merged = new Track(track1.getJobId(), track1.getMediaId(), track1.getStageIndex(), track1.getActionIndex(),
 				track1.getStartOffsetFrameInclusive(), track2.getEndOffsetFrameInclusive(),
 				track1.getStartOffsetTimeInclusive(), track2.getEndOffsetTimeInclusive(), track1.getType());
@@ -293,7 +293,39 @@ public class TrackMergingProcessor extends WfmProcessor {
 		return merged;
 	}
 
-	private boolean isWithinGap(Track track1, Track track2, double minGapBetweenTracks) {
+
+	private static boolean canMerge(Track track1, Track track2, TrackMergingPlan plan) {
+		return StringUtils.equalsIgnoreCase(track1.getType(), track2.getType())
+				&& runTypeSpecificCheck(track1, track2)
+				&& isWithinGap(track1, track2, plan.getMinGapBetweenTracks())
+				&& intersects(track1, track2, plan.getMinTrackOverlap());
+	}
+
+
+	private static boolean runTypeSpecificCheck(Track track1, Track track2) {
+		switch (track1.getType().toUpperCase()) {
+			case "SPEECH":
+			case "SCENE":
+				return false;
+			case "CLASS":
+				return classificationMatches(track1, track2);
+			default:
+				return true;
+		}
+	}
+
+
+	private static boolean classificationMatches(Track track1, Track track2) {
+		if (track1.getDetections().isEmpty() || track2.getDetections().isEmpty()) {
+			return false;
+		}
+		String class1 = track1.getDetections().last().getDetectionProperties().get("CLASSIFICATION");
+		String class2 = track2.getDetections().first().getDetectionProperties().get("CLASSIFICATION");
+		return StringUtils.equalsIgnoreCase(class1, class2);
+	}
+
+
+	private static boolean isWithinGap(Track track1, Track track2, double minGapBetweenTracks) {
 		if (track1.getEndOffsetFrameInclusive() + 1 == track2.getStartOffsetFrameInclusive()) {
 			return true; // tracks are adjacent
 		}
@@ -301,23 +333,10 @@ public class TrackMergingProcessor extends WfmProcessor {
 				(minGapBetweenTracks - 1 >= track2.getStartOffsetFrameInclusive() - track1.getEndOffsetFrameInclusive());
 	}
 
-	private boolean intersects(Track track1, Track track2, double minTrackOverlap) {
-		if (!StringUtils.equalsIgnoreCase(track1.getType(), track2.getType())) {
-			// Tracks of different types should not be candidates for merger. Ex: It would make no sense to merge a motion and speech track.
-			return false;
-		} else if (StringUtils.equalsIgnoreCase(track1.getType(), "SPEECH")) {
-			// Speech tracks should not be candidates for merger.
-			return false;
-		}
 
+	private static boolean intersects(Track track1, Track track2, double minTrackOverlap) {
 		Detection track1End = track1.getDetections().last();
 		Detection track2Start = track2.getDetections().first();
-
-		if (StringUtils.equalsIgnoreCase(track1.getType(), "CLASS")
-				&& !Objects.equals(track1End.getDetectionProperties().get("CLASSIFICATION"),
-				                   track2Start.getDetectionProperties().get("CLASSIFICATION"))) {
-			return false;
-		}
 
 		Rectangle rectangle1 = new Rectangle(track1End.getX(), track1End.getY(), track1End.getWidth(), track1End.getHeight());
 		Rectangle rectangle2 = new Rectangle(track2Start.getX(), track2Start.getY(), track2Start.getWidth(), track2Start.getHeight());

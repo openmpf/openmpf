@@ -33,7 +33,7 @@ import java.util.*;
 
 @JsonTypeName("TrackOutputObject")
 @JsonPropertyOrder({ "id", "startOffsetFrame", "stopOffsetFrame", "startOffsetTime", "stopOffsetTime",
-		"type", "source", "trackProperties", "exemplar", "detections", "startOffset", "stopOffset" })
+		"type", "source", "confidence", "trackProperties", "exemplar", "detections", "startOffset", "stopOffset" })
 public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> {
 
 	@JsonProperty("id")

@@ -26,7 +26,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# The arguments passed into this script should be 
+# The arguments passed into this script should be
 # 1. The component jar filename
 # 2. The activemq queue name
 # 3. The service name
@@ -37,11 +37,11 @@
 # don't source mpf.sh - if under /etc/profile.d we got it
 
 # Do an environment variable and Java property
-if [ -n "${ACTIVE_MQ_HOST}" ]; then
-    QUEUE_FLAGS="-DACTIVE_MQ_HOST=${ACTIVE_MQ_HOST}"
+if [ -n "${ACTIVE_MQ_BROKER_URI}" ]; then
+    QUEUE_FLAGS="-DACTIVE_MQ_BROKER_URI=${ACTIVE_MQ_BROKER_URI}"
 else
-    QUEUE_FLAGS="-DACTIVE_MQ_HOST=tcp://localhost:61616"
-    log_warn "ACTIVE_MQ_HOST unset or empty, using tcp://localhost:61616"
+    QUEUE_FLAGS="-DACTIVE_MQ_BROKER_URI=tcp://localhost:61616"
+    log_warn "ACTIVE_MQ_BROKER_URI unset or empty, using tcp://localhost:61616"
 fi
 
 
@@ -55,4 +55,3 @@ JAVA_FLAGS="-Djava.library.path=${MPF_HOME}/lib:${MPF_HOME}/jars"
 set -x
 exec ${JAVA_HOME}/bin/java ${JAVA_FLAGS} -cp ${MPF_HOME}/jars/mpf-java-component-executor-2.1.0.jar:${MPF_HOME}/plugins/$3/$1 -Dlogback.configurationFile=${MPF_HOME}/plugins/$3/logback.xml ${QUEUE_FLAGS} org.mitre.mpf.component.executor.detection.MPFDetectionMain $2
 set +x
-

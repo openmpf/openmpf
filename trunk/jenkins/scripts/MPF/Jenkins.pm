@@ -534,8 +534,8 @@ sub installNodeManager {
 sub getSystemStatus {
 	printInfo("Checking the known environment variables\n");
 	my @vars = ("MPF_USER", "MPF_HOME", "MPF_LOG_PATH", "MASTER_MPF_NODE", "THIS_MPF_NODE", "CORE_MPF_NODES", "JAVA_HOME",
-	    "JGROUPS_TCP_ADDRESS", "JGROUPS_TCP_PORT", "JGROUPS_FILE_PING_LOCATION", "ACTIVE_MQ_HOST", "LD_LIBRARY_PATH",
-			 "AMQ_HOST", "MYSQL_HOST", "REDIS_HOST");
+	    "JGROUPS_TCP_ADDRESS", "JGROUPS_TCP_PORT", "JGROUPS_FILE_PING_LOCATION", "ACTIVE_MQ_BROKER_URI", "LD_LIBRARY_PATH",
+			 "ACTIVE_MQ_HOST", "MYSQL_HOST", "REDIS_HOST");
 	foreach my $var (@vars) {
 		my $varInfo = `echo \$$var`;
 		chomp $varInfo;
@@ -723,7 +723,7 @@ sub installProfile {
     #                            http://jenkins-mpf-1.mitre.org:8080/computer/jenkins-mpf-3.mitre.org/configure, etc.
 
 	my $mpfsh = << "END_MPF_SH";
-export AMQ_HOST=localhost
+export ACTIVE_MQ_HOST=localhost
 export MYSQL_HOST=localhost
 export REDIS_HOST=localhost
 export MPF_USER="$mpfUser"
@@ -737,7 +737,7 @@ export JGROUPS_TCP_ADDRESS="\$THIS_MPF_NODE"
 export JGROUPS_TCP_PORT=7800
 export JGROUPS_FILE_PING_LOCATION="\$MPF_HOME/share/nodes"
 # CATALINA_OPTS is set in <TOMCAT_HOME>/bin/setenv.sh
-export ACTIVE_MQ_HOST="failover://(tcp://\$MASTER_MPF_NODE:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
+export ACTIVE_MQ_BROKER_URI="failover://(tcp://\$MASTER_MPF_NODE:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
 export LD_LIBRARY_PATH="/usr/local/lib"
 END_MPF_SH
 

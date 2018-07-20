@@ -60,6 +60,7 @@
                 "stopOffsetTime": 0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
+                "confidence": 59.0,
                 "exemplar": {
                   "x": 211,
                   "y": 84,

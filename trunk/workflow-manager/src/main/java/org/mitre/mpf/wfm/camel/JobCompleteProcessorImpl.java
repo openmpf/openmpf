@@ -70,6 +70,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+import static java.util.stream.Collectors.toList;
+
 @Component(JobCompleteProcessorImpl.REF)
 public class JobCompleteProcessorImpl extends WfmProcessor implements JobCompleteProcessor {
 	private static final Logger log = LoggerFactory.getLogger(JobCompleteProcessor.class);
@@ -266,20 +268,55 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 							}
 						} else {
 							for (Track track : tracks) {
+								JsonDetectionOutputObject exemplar = new JsonDetectionOutputObject(
+										track.getExemplar().getX(),
+										track.getExemplar().getY(),
+										track.getExemplar().getWidth(),
+										track.getExemplar().getHeight(),
+										track.getExemplar().getConfidence(),
+										track.getExemplar().getDetectionProperties(),
+										track.getExemplar().getMediaOffsetFrame(),
+										track.getExemplar().getMediaOffsetTime(),
+										track.getExemplar().getArtifactExtractionStatus().name(),
+										track.getExemplar().getArtifactPath());
+
+								List<JsonDetectionOutputObject> detections = track.getDetections().stream()
+										.map(d -> new JsonDetectionOutputObject(
+												d.getX(),
+												d.getY(),
+												d.getWidth(),
+												d.getHeight(),
+												d.getConfidence(),
+												d.getDetectionProperties(),
+												d.getMediaOffsetFrame(),
+												d.getMediaOffsetTime(),
+												d.getArtifactExtractionStatus().name(),
+												d.getArtifactPath()))
+										.collect(toList());
+
 								JsonTrackOutputObject jsonTrackOutputObject = new JsonTrackOutputObject(
-										TextUtils.getTrackUuid(transientMedia.getSha256(), track.getExemplar().getMediaOffsetFrame(), track.getExemplar().getX(), track.getExemplar().getY(), track.getExemplar().getWidth(), track.getExemplar().getHeight(), track.getType()),
-										track.getStartOffsetFrameInclusive(), track.getEndOffsetFrameInclusive(),
-										track.getStartOffsetTimeInclusive(), track.getEndOffsetTimeInclusive(), track.getType(), stateKey);
+										TextUtils.getTrackUuid(transientMedia.getSha256(),
+										                       track.getExemplar().getMediaOffsetFrame(),
+										                       track.getExemplar().getX(),
+										                       track.getExemplar().getY(),
+										                       track.getExemplar().getWidth(),
+										                       track.getExemplar().getHeight(),
+										                       track.getType()),
+										track.getStartOffsetFrameInclusive(),
+										track.getEndOffsetFrameInclusive(),
+										track.getStartOffsetTimeInclusive(),
+										track.getEndOffsetTimeInclusive(),
+										track.getType(),
+										stateKey,
+										track.getConfidence(),
+										track.getTrackProperties(),
+										exemplar,
+                                        detections);
 
-
-								jsonTrackOutputObject.setExemplar(new JsonDetectionOutputObject(track.getExemplar().getX(), track.getExemplar().getY(), track.getExemplar().getWidth(), track.getExemplar().getHeight(), track.getExemplar().getConfidence(), track.getExemplar().getDetectionProperties(), track.getExemplar().getMediaOffsetFrame(), track.getExemplar().getMediaOffsetTime(), track.getExemplar().getArtifactExtractionStatus().name(), track.getExemplar().getArtifactPath()));
-								for (Detection detection : track.getDetections()) {
-									jsonTrackOutputObject.getDetections().add(new JsonDetectionOutputObject(detection.getX(), detection.getY(), detection.getWidth(), detection.getHeight(), detection.getConfidence(), detection.getDetectionProperties(), detection.getMediaOffsetFrame(), detection.getMediaOffsetTime(), detection.getArtifactExtractionStatus().name(), detection.getArtifactPath()));
-								}
 
 								String type = jsonTrackOutputObject.getType();
 								if (!mediaOutputObject.getTypes().containsKey(type)) {
-									mediaOutputObject.getTypes().put(type, new TreeSet<JsonActionOutputObject>());
+									mediaOutputObject.getTypes().put(type, new TreeSet<>());
 								}
 
 								SortedSet<JsonActionOutputObject> actionSet = mediaOutputObject.getTypes().get(type);

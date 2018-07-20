@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.data.entities.transients;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.mitre.mpf.interop.util.CompareUtils;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.util.TextUtils;
 
@@ -114,27 +115,6 @@ public class Detection implements Comparable<Detection> {
 	}
 
 
-
-	private static final Comparator<Map.Entry<String, String>> MAP_ENTRY_COMPARATOR =
-			Map.Entry.<String, String>comparingByKey()
-					.thenComparing(Map.Entry.comparingByValue());
-
-	private static final Comparator<Map<String, String>> MAP_COMPARATOR = Comparator
-		.nullsFirst(Comparator
-			.<Map<String, String>>comparingInt(Map::size)
-			.thenComparing((m1, m2) -> {
-
-				Iterator<Map.Entry<String, String>> iter1 = m1.entrySet().iterator();
-				Iterator<Map.Entry<String, String>> iter2 = m2.entrySet().iterator();
-				while (iter1.hasNext()) {
-					int entryCompare = MAP_ENTRY_COMPARATOR.compare(iter1.next(), iter2.next());
-					if (entryCompare != 0) {
-						return entryCompare;
-					}
-				}
-				return 0;
-			}));
-
 	private static final Comparator<Detection> DEFAULT_COMPARATOR = Comparator
 		.nullsFirst(Comparator
 			.comparingInt(Detection::getMediaOffsetFrame)
@@ -145,7 +125,7 @@ public class Detection implements Comparable<Detection> {
 			.thenComparingInt(Detection::getHeight)
 			.thenComparingDouble(Detection::getConfidence)
 			.thenComparing(Detection::getArtifactPath, TextUtils::nullSafeCompare)
-			.thenComparing(Detection::getDetectionProperties, MAP_COMPARATOR));
+			.thenComparing(Detection::getDetectionProperties, CompareUtils.MAP_COMPARATOR));
 
 	/**
 	 * Define natural order Comparable for Detections to be sorted by (1) ascending media frame offset, (2) ascending

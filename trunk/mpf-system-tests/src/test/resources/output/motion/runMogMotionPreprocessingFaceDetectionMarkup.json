@@ -95,6 +95,7 @@
                 "stopOffsetTime": 4238,
                 "type": "FACE",
                 "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION",
+                "confidence": -1.0,
                 "exemplar": {
                   "x": 483,
                   "y": 80,
@@ -927,6 +928,7 @@
                 "stopOffsetTime": 4004,
                 "type": "FACE",
                 "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION",
+                "confidence": -1.0,
                 "exemplar": {
                   "x": 574,
                   "y": 51,
@@ -1187,6 +1189,7 @@
                 "stopOffsetTime": 14848,
                 "type": "FACE",
                 "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION",
+                "confidence": -1.0,
                 "exemplar": {
                   "x": 477,
                   "y": 78,
@@ -1694,6 +1697,7 @@
                 "stopOffsetTime": 15482,
                 "type": "FACE",
                 "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION",
+                "confidence": -1.0,
                 "exemplar": {
                   "x": 274,
                   "y": 68,
@@ -2026,6 +2030,7 @@
                 "stopOffsetTime": 17351,
                 "type": "MOTION",
                 "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION",
+                "confidence": -1.0,
                 "exemplar": {
                   "x": 0,
                   "y": 0,

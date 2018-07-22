@@ -26,14 +26,6 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.trackmerging;
 
-import java.awt.Rectangle;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import org.apache.camel.Exchange;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -41,13 +33,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
-import org.mitre.mpf.wfm.data.entities.transients.Detection;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.slf4j.Logger;
@@ -55,6 +41,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+
+import java.awt.*;
+import java.util.*;
+import java.util.List;
 
 /**
  * Merges tracks in a video.
@@ -238,7 +228,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 		return new TrackMergingPlan(samplingInterval, mergeTracks, minGapBetweenTracks, minTrackLength, minTrackOverlap);
 	}
 
-	private Set<Track> combine(Set<Track> sourceTracks, TrackMergingPlan plan) {
+	private static Set<Track> combine(Set<Track> sourceTracks, TrackMergingPlan plan) {
 		// Do not attempt to merge an empty or null set.
 		if (CollectionUtils.isEmpty(sourceTracks)) {
 			return sourceTracks;
@@ -258,7 +248,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 
 			for (Track candidate : tracks) {
 				// Iterate through the remaining tracks until a track is found which is within the frame gap and has sufficient region overlap.
-				if (isWithinGap(merged, candidate, plan.getMinGapBetweenTracks()) && intersects(merged, candidate, plan.getMinTrackOverlap())) {
+				if (canMerge(merged, candidate, plan)) {
 					// If one is found, merge them and then push this track back to the beginning of the collection.
 					tracks.add(0, merge(merged, candidate));
 					performedMerge = true;
@@ -283,7 +273,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 	}
 
 	/** Combines two tracks. This is a destructive method. The contents of track1 reflect the merged track. */
-	private Track merge(Track track1, Track track2){
+	private static Track merge(Track track1, Track track2){
 		Track merged = new Track(track1.getJobId(), track1.getMediaId(), track1.getStageIndex(), track1.getActionIndex(),
 				track1.getStartOffsetFrameInclusive(), track2.getEndOffsetFrameInclusive(),
 				track1.getStartOffsetTimeInclusive(), track2.getEndOffsetTimeInclusive(), track1.getType());
@@ -303,7 +293,39 @@ public class TrackMergingProcessor extends WfmProcessor {
 		return merged;
 	}
 
-	private boolean isWithinGap(Track track1, Track track2, double minGapBetweenTracks) {
+
+	private static boolean canMerge(Track track1, Track track2, TrackMergingPlan plan) {
+		return StringUtils.equalsIgnoreCase(track1.getType(), track2.getType())
+				&& runTypeSpecificCheck(track1, track2)
+				&& isWithinGap(track1, track2, plan.getMinGapBetweenTracks())
+				&& intersects(track1, track2, plan.getMinTrackOverlap());
+	}
+
+
+	private static boolean runTypeSpecificCheck(Track track1, Track track2) {
+		switch (track1.getType().toUpperCase()) {
+			case "SPEECH":
+			case "SCENE":
+				return false;
+			case "CLASS":
+				return classificationMatches(track1, track2);
+			default:
+				return true;
+		}
+	}
+
+
+	private static boolean classificationMatches(Track track1, Track track2) {
+		if (track1.getDetections().isEmpty() || track2.getDetections().isEmpty()) {
+			return false;
+		}
+		String class1 = track1.getDetections().last().getDetectionProperties().get("CLASSIFICATION");
+		String class2 = track2.getDetections().first().getDetectionProperties().get("CLASSIFICATION");
+		return StringUtils.equalsIgnoreCase(class1, class2);
+	}
+
+
+	private static boolean isWithinGap(Track track1, Track track2, double minGapBetweenTracks) {
 		if (track1.getEndOffsetFrameInclusive() + 1 == track2.getStartOffsetFrameInclusive()) {
 			return true; // tracks are adjacent
 		}
@@ -311,15 +333,8 @@ public class TrackMergingProcessor extends WfmProcessor {
 				(minGapBetweenTracks - 1 >= track2.getStartOffsetFrameInclusive() - track1.getEndOffsetFrameInclusive());
 	}
 
-	private boolean intersects(Track track1, Track track2, double minTrackOverlap) {
-		if (!StringUtils.equalsIgnoreCase(track1.getType(), track2.getType())) {
-			// Tracks of different types should not be candidates for merger. Ex: It would make no sense to merge a motion and speech track.
-			return false;
-		} else if (StringUtils.equalsIgnoreCase(track1.getType(), "SPEECH")) {
-			// Speech tracks should not be candidates for merger.
-			return false;
-		}
 
+	private static boolean intersects(Track track1, Track track2, double minTrackOverlap) {
 		Detection track1End = track1.getDetections().last();
 		Detection track2Start = track2.getDetections().first();
 

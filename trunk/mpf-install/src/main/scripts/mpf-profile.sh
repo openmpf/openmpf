@@ -38,9 +38,6 @@
 # values for the given runtime environment.  Then copy this file to /etc/profile.d/mpf.sh
 export no_proxy=localhost
 
-export ACTIVE_MQ_HOST=localhost
-export MYSQL_HOST=localhost
-export REDIS_HOST=localhost
 export MPF_USER=mpf
 export MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 export MPF_LOG_PATH=$MPF_HOME/logs
@@ -56,6 +53,10 @@ export JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
 
 # although CATALINA_OPTS is set in /opt/apache-tomcat/bin/setenv.sh, it's necessary to also set it here for the tomcat7-maven-plugin
 export CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djava.library.path=$MPF_HOME/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
+
+export ACTIVE_MQ_HOST=$MASTER_MPF_NODE
+export MYSQL_HOST=$MASTER_MPF_NODE
+export REDIS_HOST=$MASTER_MPF_NODE
 
 export ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
 

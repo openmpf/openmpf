@@ -103,33 +103,33 @@ public class MasterNode {
      * on that machine) to instruct to create nodes.
      *
      * @param masterConfigFile
-     * @param activeMqHostname
-     * @return false if the file if xml parsing returns null or there are no nodes present 
+     * @param activeMqBrokerUri
+     * @return false if the file if xml parsing returns null or there are no nodes present
      */
-    public final boolean loadConfigFile(InputStream masterConfigFile, String activeMqHostname) {
+    public final boolean loadConfigFile(InputStream masterConfigFile, String activeMqBrokerUri) {
         // Don't let the config file have multiple node-managers with the same hostname/IP
         // This is only used in this code area to prevent collisions due to bad XMl configs
         configuredManagerHosts = new HashMap<>();
-    	
-        log.info("Loading node manager config");        
-    	NodeManagers managers = NodeManagers.fromXml(masterConfigFile);
-        
+
+        log.info("Loading node manager config");
+        NodeManagers managers = NodeManagers.fromXml(masterConfigFile);
+
         boolean failedToGetNodes = true;
         if(managers == null) {
         	log.error("Failed to read the node manager config from xml");
         } else if(CollectionUtils.isEmpty(managers.managers())) {
         	log.warn("No nodes present in the latest node manager config");
         } else {
-        	failedToGetNodes = false;        			
+        	failedToGetNodes = false;
         }
-        
+
         //go ahead and shut down all of the nodes
         if(failedToGetNodes) {
             //Setting nodes directly to DeleteInactive - also shutting down all node services currently in the
             //service table, should remove DeleteInactive items from the node table on master node shutdown
         	nodeStateManager.getNodeTable().values()
                     .forEach(nd -> nodeStateManager.updateState(nd, States.DeleteInactive));
-        	
+
             //if the service table is not empty - go through it and check to make sure
             //any updates to the node manager config are reflected in the service table
         	//IN THIS CASE, there are no NODES left, which means no SERVICES should be left
@@ -153,7 +153,7 @@ public class MasterNode {
 
         //creating a unique list of service descriptor names to compare to the service table
         List<String> serviceNamesFromConfig = new ArrayList<>();
-        
+
         // Iterate through node manager servers
         for (NodeManager manager : managers.managers()) {
             if (manager.getTarget() == null) {
@@ -170,12 +170,12 @@ public class MasterNode {
             // If it already exists, the master must be restarting, don't recreate it.
             synchronized (nodeStateManager.getNodeTable()) {
                 NodeDescriptor mgr = nodeStateManager.getNodeTable().get(manager.getTarget()); // see if it exists already
-                if (mgr == null) {                	 
+                if (mgr == null) {
                     mgr = new NodeDescriptor(manager.getTarget());
                     nodeStateManager.getNodeTable().put(manager.getTarget(), mgr);
                     nodeStateManager.updateState(mgr, States.Configured);
                     log.info("Node descriptor created for expected (not yet discovered) NodeManager: " + mgr.getHostname());
-                } else if(!mgr.isAlive()){                	
+                } else if(!mgr.isAlive()){
                     nodeStateManager.updateState(mgr, States.Configured);
                     log.info("An existing node descriptor running at '{}' will be updated. It is part of the config and was not running.", mgr.getHostname());
                 }
@@ -183,18 +183,18 @@ public class MasterNode {
 
             // Note that we've seen this node-manager host from the current config file
             configuredManagerHosts.put(manager.getTarget(), Boolean.TRUE);
-            
+
             if(CollectionUtils.isEmpty(manager.getServices())) {
             	log.warn("no services present in the node at target {}", manager.getTarget());
             	continue;
             }
-            
+
             // Configure the nodes under this node-manager
             for (Service serviceFromConfig : manager.getServices()) {
                 for (int rank = 1; rank <= serviceFromConfig.getCount(); ++rank) {
                     ServiceDescriptor descriptorFromConfig = new ServiceDescriptor(serviceFromConfig, manager.getTarget(), rank);
-                    descriptorFromConfig.setActiveMqHost(activeMqHostname);
-                    
+                    descriptorFromConfig.setActiveMqHost(activeMqBrokerUri);
+
                     serviceNamesFromConfig.add(descriptorFromConfig.getName());
 
                     // We note it immediately and then tell the world
@@ -219,8 +219,8 @@ public class MasterNode {
                     }
                 }
             }
-        } //end of for (NodeManager manager : managers.managers())        
-        
+        } //end of for (NodeManager manager : managers.managers())
+
         //if the node table is not empty - go through it and check to make sure
         //any updates to the node manager config are reflected in the node table
         synchronized (nodeStateManager.getNodeTable()) {
@@ -235,7 +235,7 @@ public class MasterNode {
                 }
             }
         }
-        
+
 
         //if the service table is not empty - go through it and check to make sure
         //any updates to the node manager config are reflected in the service table
@@ -253,7 +253,7 @@ public class MasterNode {
                 }
             }
         }
-        
+
 
         // Give time for things to propagate
         SleepUtil.interruptableSleep(3000);
@@ -261,13 +261,13 @@ public class MasterNode {
         return true;
     }
 
- 
+
 
     public void shutdown() {
         nodeStateManager.shutdownAllServices();
         nodeStateManager.shutdown();
     }
-   
+
 
     /**
      * Go through each node (in hashed order) and tell the responsible
@@ -320,4 +320,3 @@ public class MasterNode {
         return nodeStateManager.getAvailableNodes();
     }
 }
-

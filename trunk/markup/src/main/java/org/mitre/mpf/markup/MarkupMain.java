@@ -50,10 +50,10 @@ public class MarkupMain {
 
         if (args.length > 0) {
             ACTIVEMQHOST = args[0];
-        } else if (System.getenv("ACTIVE_MQ_HOST") != null && !System.getenv("ACTIVE_MQ_HOST").isEmpty()) {
-            ACTIVEMQHOST = System.getenv("ACTIVE_MQ_HOST");
+        } else if (System.getenv("ACTIVE_MQ_BROKER_URI") != null && !System.getenv("ACTIVE_MQ_BROKER_URI").isEmpty()) {
+            ACTIVEMQHOST = System.getenv("ACTIVE_MQ_BROKER_URI");
         }
-        LOG.trace("ACTIVE_MQ_HOST=" + ACTIVEMQHOST);
+        LOG.trace("ACTIVE_MQ_BROKER_URI=" + ACTIVEMQHOST);
 
         try (ClassPathXmlApplicationContext context
                      = new ClassPathXmlApplicationContext("classpath:appConfig.xml")) {

@@ -401,8 +401,8 @@ public abstract class BaseServiceLauncher implements Runnable {
                     @Override
                     public void run() {
                         if (child != null) {
-                            child.destroyForcibly();
-                            LOG.info("Shutdown hook has shutdown child process: " + s.getCmdPath());
+                            child.destroy();
+                            LOG.debug("Child process shutdown: " + s.getCmdPath());
                         }
                     }
                 });

@@ -50,7 +50,7 @@ public class CompareUtils {
 					entrySet2.addAll(m2.entrySet());
 
 					Iterator<Map.Entry<String, String>> iter1 = entrySet1.iterator();
-					Iterator<Map.Entry<String, String>> iter2 =  entrySet2.iterator();
+					Iterator<Map.Entry<String, String>> iter2 = entrySet2.iterator();
 					while (iter1.hasNext()) {
 						int entryCompare = MAP_ENTRY_COMPARATOR.compare(iter1.next(), iter2.next());
 						if (entryCompare != 0) {

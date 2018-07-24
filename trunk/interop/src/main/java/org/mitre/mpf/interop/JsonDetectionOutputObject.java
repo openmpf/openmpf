@@ -37,6 +37,7 @@ import java.util.TreeMap;
 @JsonTypeName("DetectionOutputObject")
 @JsonPropertyOrder({ "offsetFrame", "offsetTime", "x", "y", "width", "height",
         "confidence", "detectionProperties", "artifactExtractionStatus", "artifactPath", "offset" })
+@JsonIgnoreProperties("offset")
 public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutputObject> {
 
 	@JsonProperty("x")
@@ -68,11 +69,6 @@ public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutput
 	@JsonPropertyDescription("Additional properties set by the detection.")
 	private final SortedMap<String,String> detectionProperties = new TreeMap<>();
 	public SortedMap<String,String> getDetectionProperties() { return detectionProperties; }
-
-	// MPF R0.6.0 backwards compatibility with MPF R0.5.0 (upgrade path)
-	@JsonProperty(value = "offset", access = JsonProperty.Access.READ_ONLY)
-    @JsonPropertyDescription("Deprecated. Use offsetFrame instead. Left for backwards compatibility.")
-	public int getOffset() { return offsetFrame; }
 
 	@JsonProperty("offsetFrame")
 	@JsonPropertyDescription("The offset frame of this detection in the parent medium. For images and audio, this value is not meaningful. For videos, this value indicates a zero-based frame index.")
@@ -121,11 +117,13 @@ public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutput
 		}
 	}
 
+	@Override
 	public int hashCode() {
 		return Objects.hash(x, y, width, height, confidence, offsetTime, offsetFrame, artifactPath,
 		                    detectionProperties);
 	}
 
+	@Override
 	public boolean equals(Object other) {
 	    return this == other
 			    || (other instanceof JsonDetectionOutputObject

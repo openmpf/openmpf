@@ -309,7 +309,6 @@ public class DetectionResponseProcessor
 						objectTrack.getConfidence());
 
 				SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
-
 				track.getTrackProperties().putAll(properties);
 
 				if (objectTrack.getConfidence() >= confidenceThreshold) {

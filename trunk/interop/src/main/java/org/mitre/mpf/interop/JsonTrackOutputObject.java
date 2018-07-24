@@ -34,6 +34,7 @@ import java.util.*;
 @JsonTypeName("TrackOutputObject")
 @JsonPropertyOrder({ "id", "startOffsetFrame", "stopOffsetFrame", "startOffsetTime", "stopOffsetTime",
 		"type", "source", "confidence", "trackProperties", "exemplar", "detections", "startOffset", "stopOffset" })
+@JsonIgnoreProperties({ "startOffset", "stopOffset" })
 public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> {
 
 	@JsonProperty("id")
@@ -41,20 +42,10 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 	private final String id;
 	public String getId() { return id; }
 
-	// MPF R0.6.0 backwards compatibility with MPF R0.5.0 (upgrade path)
-	@JsonProperty(value = "startOffset", access = JsonProperty.Access.READ_ONLY)
-    @JsonPropertyDescription("Deprecated. Use startOffsetFrame instead. Left for backwards compatibility.")
-	public int getStartOffset() { return startOffsetFrame; }
-
 	@JsonProperty("startOffsetFrame")
 	@JsonPropertyDescription("The offset in the medium where the track starts.")
 	private final int startOffsetFrame;
 	public int getStartOffsetFrame() { return startOffsetFrame; }
-
-	// MPF R0.6.0 backwards compatibility with MPF R0.5.0 (upgrade path)
-	@JsonProperty(value = "stopOffset", access = JsonProperty.Access.READ_ONLY)
-    @JsonPropertyDescription("Deprecated. Use stopOffsetFrame instead. Left for backwards compatibility.")
-	public int getStopOffset() { return stopOffsetFrame; }
 
 	@JsonProperty("stopOffsetFrame")
 	@JsonPropertyDescription("The offset in the medium where the track ends.")
@@ -133,11 +124,13 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 		}
 	}
 
+	@Override
 	public int hashCode() {
 		return Objects.hash(id, startOffsetFrame, stopOffsetFrame, startOffsetTime, stopOffsetTime, type, source,
 		                    confidence, trackProperties, exemplar);
 	}
 
+	@Override
 	public boolean equals(Object other) {
 		return this == other
 				|| (other instanceof JsonTrackOutputObject

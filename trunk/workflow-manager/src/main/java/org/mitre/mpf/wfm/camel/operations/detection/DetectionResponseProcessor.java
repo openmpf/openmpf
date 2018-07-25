@@ -275,6 +275,7 @@ public class DetectionResponseProcessor
 							1,
 							imageResponse.getDetectionType(),
 							location.getConfidence());
+
 					track.getTrackProperties().putAll(toMap(location.getDetectionPropertiesList()));
 
 					track.getDetections().add(

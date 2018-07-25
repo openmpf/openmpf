@@ -34,6 +34,7 @@ import java.util.*;
 @JsonTypeName("TrackOutputObject")
 @JsonPropertyOrder({ "id", "startOffsetFrame", "stopOffsetFrame", "startOffsetTime", "stopOffsetTime",
 		"type", "source", "confidence", "trackProperties", "exemplar", "detections", "startOffset", "stopOffset" })
+//Deprecated. Use startOffsetFrame and stopOffsetFrame instead, respectively. Left for backwards compatibility.
 @JsonIgnoreProperties({ "startOffset", "stopOffset" })
 public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> {
 

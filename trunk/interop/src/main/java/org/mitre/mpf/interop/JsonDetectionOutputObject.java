@@ -37,6 +37,7 @@ import java.util.TreeMap;
 @JsonTypeName("DetectionOutputObject")
 @JsonPropertyOrder({ "offsetFrame", "offsetTime", "x", "y", "width", "height",
         "confidence", "detectionProperties", "artifactExtractionStatus", "artifactPath", "offset" })
+// Deprecated. Use offsetFrame instead. Left for backwards compatibility.
 @JsonIgnoreProperties("offset")
 public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutputObject> {
 

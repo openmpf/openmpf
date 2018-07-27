@@ -55,8 +55,8 @@ export JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
 export CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djava.library.path=$MPF_HOME/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 
 export ACTIVE_MQ_HOST=$MASTER_MPF_NODE
-export MYSQL_HOST=$MASTER_MPF_NODE
-export REDIS_HOST=$MASTER_MPF_NODE
+export MYSQL_HOST=localhost
+export REDIS_HOST=localhost
 
 export ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
 

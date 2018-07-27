@@ -38,4 +38,6 @@ export JGROUPS_TCP_ADDRESS=$THIS_MPF_NODE
 export JGROUPS_TCP_PORT=7800
 export JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
 
+export ACTIVE_MQ_HOST=$MASTER_MPF_NODE
+
 export ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"

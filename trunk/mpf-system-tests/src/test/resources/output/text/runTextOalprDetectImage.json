@@ -55,6 +55,10 @@
                 "stopOffsetFrame": 1,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
+                "confidence": 89.49258,
+                "trackProperties": {
+                  "TEXT": "LV42DY"
+                },
                 "type": "TEXT",
                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "exemplar": {
@@ -120,6 +124,10 @@
                 "stopOffsetFrame": 1,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
+                "confidence": 87.40117,
+                "trackProperties": {
+                  "TEXT": "0116G"
+                },
                 "type": "TEXT",
                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "exemplar": {
@@ -189,6 +197,10 @@
                 "stopOffsetFrame": 1,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
+                "confidence": 90.93294,
+                "trackProperties": {
+                  "TEXT": "6EMZ948"
+                },
                 "type": "TEXT",
                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "exemplar": {

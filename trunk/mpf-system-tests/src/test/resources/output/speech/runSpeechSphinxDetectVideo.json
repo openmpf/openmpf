@@ -55,8 +55,12 @@
                 "stopOffsetFrame": 61,
                 "startOffsetTime": 833,
                 "stopOffsetTime": 2542,
+                "confidence": -1.0,
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "trackProperties": {
+                  "TRANSCRIPTION": "what zero zero zero one"
+                },
                 "exemplar": {
                   "x": 0,
                   "y": 0,
@@ -98,8 +102,12 @@
                 "stopOffsetFrame": 118,
                 "startOffsetTime": 2667,
                 "stopOffsetTime": 4917,
+                "confidence": -1.0,
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "trackProperties": {
+                  "TRANSCRIPTION": "nine oh two one oh"
+                },
                 "exemplar": {
                   "x": 0,
                   "y": 0,
@@ -141,8 +149,12 @@
                 "stopOffsetFrame": 184,
                 "startOffsetTime": 6250,
                 "stopOffsetTime": 7667,
+                "confidence": -1.0,
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "trackProperties": {
+                  "TRANSCRIPTION": "cyril one eight sir oath"
+                },
                 "exemplar": {
                   "x": 0,
                   "y": 0,
@@ -210,8 +222,12 @@
                 "stopOffsetFrame": 37,
                 "startOffsetTime": 250,
                 "stopOffsetTime": 1542,
+                "confidence": -1.0,
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "trackProperties": {
+                  "TRANSCRIPTION": "the green one right in the middle"
+                },
                 "exemplar": {
                   "x": 0,
                   "y": 0,
@@ -279,8 +295,12 @@
                 "stopOffsetFrame": 107,
                 "startOffsetTime": 1042,
                 "stopOffsetTime": 4458,
+                "confidence": -1.0,
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "trackProperties": {
+                  "TRANSCRIPTION": "this three left on the left side of the one closest to us"
+                },
                 "exemplar": {
                   "x": 0,
                   "y": 0,

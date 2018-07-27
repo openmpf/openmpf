@@ -59,6 +59,7 @@
                 "stopOffsetFrame": 112,
                 "startOffsetTime": 3670,
                 "stopOffsetTime": 3737,
+                "confidence": -1.0,
                 "type": "FACE",
                 "source": "+#TEST OCV FACE WITH ROI ACTION",
                 "exemplar": {
@@ -124,6 +125,7 @@
                 "stopOffsetFrame": 251,
                 "startOffsetTime": 8108,
                 "stopOffsetTime": 8375,
+                "confidence": -1.0,
                 "type": "FACE",
                 "source": "+#TEST OCV FACE WITH ROI ACTION",
                 "exemplar": {

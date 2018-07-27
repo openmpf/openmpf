@@ -155,7 +155,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 	    Set<Integer> keyFrames = ImmutableSet.of(0, 30, 60);
 
 	    assertTrue("Found detection in non-keyframe", detections.stream()
-			               .allMatch(o -> keyFrames.contains(o.getOffset())));
+			               .allMatch(o -> keyFrames.contains(o.getOffsetFrame())));
     }
 
 
@@ -408,8 +408,8 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 			JsonTrackOutputObject t1 = it1.next();
 			JsonTrackOutputObject t2 = it2.next();
 
-			assertEquals(t1.getStartOffset(), t2.getStartOffset());
-			assertEquals(t1.getStopOffset(), t2.getStopOffset());
+			assertEquals(t1.getStartOffsetFrame(), t2.getStartOffsetFrame());
+			assertEquals(t1.getStopOffsetFrame(), t2.getStopOffsetFrame());
 			assertDetectionsMatch(t1.getDetections(), t2.getDetections());
 		}
 	}

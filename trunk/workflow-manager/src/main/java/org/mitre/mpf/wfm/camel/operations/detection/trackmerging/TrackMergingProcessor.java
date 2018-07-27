@@ -276,7 +276,8 @@ public class TrackMergingProcessor extends WfmProcessor {
 	private static Track merge(Track track1, Track track2){
 		Track merged = new Track(track1.getJobId(), track1.getMediaId(), track1.getStageIndex(), track1.getActionIndex(),
 				track1.getStartOffsetFrameInclusive(), track2.getEndOffsetFrameInclusive(),
-				track1.getStartOffsetTimeInclusive(), track2.getEndOffsetTimeInclusive(), track1.getType());
+				track1.getStartOffsetTimeInclusive(), track2.getEndOffsetTimeInclusive(), track1.getType(),
+                 Math.max(track1.getConfidence(), track2.getConfidence()));
 
 		merged.getDetections().addAll(track1.getDetections());
 		merged.getDetections().addAll(track2.getDetections());

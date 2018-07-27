@@ -155,13 +155,13 @@ public class TestAudioMediaSegmenter {
 	private static Set<Track> createTestTracks() {
 		Detection detection1 = createDetection(5, 5);
 		Track track1 = new Track(1, 1, 0, 0, 0,
-		                         -1, 5, 10, "");
+		                         -1, 5, 10, "", 5);
 		track1.setExemplar(detection1);
 		track1.getDetections().add(detection1);
 
 		Detection detection2 = createDetection(15, 15);
 		Track track2 = new Track(1, 1, 0, 0, 0,
-		                         -1, 15, 30, "");
+		                         -1, 15, 30, "", 15);
 		track2.setExemplar(detection2);
 		track2.getDetections().add(detection2);
 

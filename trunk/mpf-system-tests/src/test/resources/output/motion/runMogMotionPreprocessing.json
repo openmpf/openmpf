@@ -59,6 +59,7 @@
                 "stopOffsetTime": 4571,
                 "type": "MOTION",
                 "source": "+#TEST PREPROCESSOR MOTION ACTION",
+                "confidence": -1.0,
                 "exemplar": {
                   "x": 0,
                   "y": 0,
@@ -1892,6 +1893,7 @@
                 "stopOffsetTime": 6640,
                 "type": "MOTION",
                 "source": "+#TEST PREPROCESSOR MOTION ACTION",
+                "confidence": -1.0,
                 "exemplar": {
                   "x": 0,
                   "y": 0,
@@ -4505,6 +4507,7 @@
                 "stopOffsetTime": 13313,
                 "type": "MOTION",
                 "source": "+#TEST PREPROCESSOR MOTION ACTION",
+                "confidence": -1.0,
                 "exemplar": {
                   "x": 0,
                   "y": 0,
@@ -7131,6 +7134,7 @@
                 "stopOffsetTime": 17351,
                 "type": "MOTION",
                 "source": "+#TEST PREPROCESSOR MOTION ACTION",
+                "confidence": -1.0,
                 "exemplar": {
                   "x": 0,
                   "y": 0,

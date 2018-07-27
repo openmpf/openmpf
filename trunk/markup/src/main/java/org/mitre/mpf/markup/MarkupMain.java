@@ -29,6 +29,7 @@ package org.mitre.mpf.markup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.jms.connection.CachingConnectionFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -58,14 +59,22 @@ public class MarkupMain {
                      = new ClassPathXmlApplicationContext("classpath:appConfig.xml")) {
 
             context.registerShutdownHook();
+            CachingConnectionFactory connection = context.getBean("jmsFactory", CachingConnectionFactory.class);
 
             System.out.println("Enter 'q' to quit:");
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             try {
-                while (reader.readLine().compareTo("q") != 0) ;
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    LOG.info("Received input on stdin: \"{}\"", line);
+                    if (line.startsWith("q")) {
+                        break;
+                    }
+                }
             } catch (IOException e) {
                 LOG.error(e.getMessage(), e);
             }
+            connection.destroy();
         }
     }
 }

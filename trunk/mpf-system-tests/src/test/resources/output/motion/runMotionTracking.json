@@ -59,6 +59,7 @@
                 "stopOffsetTime": 4351,
                 "type": "MOTION",
                 "source": "+#MOG MOTION DETECTION (WITH TRACKING) ACTION",
+                "confidence": -1.0,
                 "exemplar": {
                   "x": 0,
                   "y": 240,
@@ -566,6 +567,7 @@
                 "stopOffsetTime": 7278,
                 "type": "MOTION",
                 "source": "+#MOG MOTION DETECTION (WITH TRACKING) ACTION",
+                "confidence": -1.0,
                 "exemplar": {
                   "x": 304,
                   "y": 208,

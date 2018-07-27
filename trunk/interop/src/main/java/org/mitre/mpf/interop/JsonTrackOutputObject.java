@@ -27,75 +27,87 @@
 package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.*;
-import org.apache.commons.lang3.ObjectUtils;
+import org.mitre.mpf.interop.util.CompareUtils;
 
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 @JsonTypeName("TrackOutputObject")
 @JsonPropertyOrder({ "id", "startOffsetFrame", "stopOffsetFrame", "startOffsetTime", "stopOffsetTime",
-		"type", "source", "exemplar", "detections", "startOffset", "stopOffset" })
+		"type", "source", "confidence", "trackProperties", "exemplar", "detections", "startOffset", "stopOffset" })
+//Deprecated. Use startOffsetFrame and stopOffsetFrame instead, respectively. Left for backwards compatibility.
+@JsonIgnoreProperties({ "startOffset", "stopOffset" })
 public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> {
 
 	@JsonProperty("id")
 	@JsonPropertyDescription("The unique identifier for this track.")
-	private String id;
+	private final String id;
 	public String getId() { return id; }
-
-	// MPF R0.6.0 backwards compatibility with MPF R0.5.0 (upgrade path)
-	@JsonProperty("startOffset")
-    @JsonPropertyDescription("Deprecated. Use startOffsetFrame instead. Left for backwards compatibility.")
-	public void setStartOffset(int startOffset) { startOffsetFrame = startOffset; }
-	public int getStartOffset() { return startOffsetFrame; }
 
 	@JsonProperty("startOffsetFrame")
 	@JsonPropertyDescription("The offset in the medium where the track starts.")
-	private int startOffsetFrame;
+	private final int startOffsetFrame;
 	public int getStartOffsetFrame() { return startOffsetFrame; }
-
-	// MPF R0.6.0 backwards compatibility with MPF R0.5.0 (upgrade path)
-	@JsonProperty("stopOffset")
-    @JsonPropertyDescription("Deprecated. Use stopOffsetFrame instead. Left for backwards compatibility.")
-	public void setStopOffset(int stopOffset) { stopOffsetFrame = stopOffset; }
-	public int getStopOffset() { return stopOffsetFrame; }
 
 	@JsonProperty("stopOffsetFrame")
 	@JsonPropertyDescription("The offset in the medium where the track ends.")
-	private int stopOffsetFrame;
+	private final int stopOffsetFrame;
 	public int getStopOffsetFrame() { return stopOffsetFrame; }
 
 	@JsonProperty("startOffsetTime")
 	@JsonPropertyDescription("The offset in the medium where the track starts, in milliseconds.")
-	private long startOffsetTime;
+	private final long startOffsetTime;
 	public long getStartOffsetTime() { return startOffsetTime; }
 
 	@JsonProperty("stopOffsetTime")
 	@JsonPropertyDescription("The offset in the medium where the track ends, in milliseconds.")
-	private long stopOffsetTime;
+	private final long stopOffsetTime;
 	public long getStopOffsetTime() { return stopOffsetTime; }
 
 	@JsonProperty("type")
 	@JsonPropertyDescription("The type of object associated with this track.")
-	private String type;
+	private final String type;
 	public String getType() { return type; }
 
 	@JsonProperty("source")
 	@JsonPropertyDescription("The set of pipeline actions which produced this track.")
-	private String source;
+	private final String source;
 	public String getSource() { return source; }
+
+	@JsonProperty("confidence")
+	@JsonPropertyDescription("The confidence score associated with this track. " +
+							 " Higher scores indicate more confidence in the track.")
+	private final float confidence;
+	public float getConfidence() { return confidence; }
+
+	@JsonProperty("trackProperties")
+	@JsonPropertyDescription("Additional properties set by the track.")
+	private final SortedMap<String, String> trackProperties = new TreeMap<>();
+	public SortedMap<String, String> getTrackProperties() { return trackProperties; }
 
 	@JsonProperty("exemplar")
 	@JsonPropertyDescription("The detection which best represents this track.")
-	private JsonDetectionOutputObject exemplar;
+	private final JsonDetectionOutputObject exemplar;
 	public JsonDetectionOutputObject getExemplar() { return exemplar; }
-	public void setExemplar(JsonDetectionOutputObject exemplar) { this.exemplar = exemplar; }
 
 	@JsonProperty("detections")
 	@JsonPropertyDescription("The collection of detections included in this track.")
-	private SortedSet<JsonDetectionOutputObject> detections;
+	private final SortedSet<JsonDetectionOutputObject> detections = new TreeSet<>();
 	public SortedSet<JsonDetectionOutputObject> getDetections() { return detections; }
 
-	public JsonTrackOutputObject(String id, int startOffsetFrame, int stopOffsetFrame, long startOffsetTime, long stopOffsetTime, String type, String source) {
+
+	@JsonCreator
+	public JsonTrackOutputObject(
+			@JsonProperty("id") String id,
+			@JsonProperty("startOffsetFrame") int startOffsetFrame,
+			@JsonProperty("stopOffsetFrame") int stopOffsetFrame,
+			@JsonProperty("startOffsetTime") long startOffsetTime,
+			@JsonProperty("stopOffsetTime") long stopOffsetTime,
+			@JsonProperty("type") String type,
+			@JsonProperty("source") String source,
+			@JsonProperty("confidence") float confidence,
+			@JsonProperty("trackProperties") Map<String, String> trackProperties,
+			@JsonProperty("exemplar") JsonDetectionOutputObject exemplar,
+			@JsonProperty("detections") Collection<JsonDetectionOutputObject> detections) {
 		this.id = id;
 		this.startOffsetFrame = startOffsetFrame;
 		this.stopOffsetFrame = stopOffsetFrame;
@@ -103,58 +115,46 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 		this.stopOffsetTime = stopOffsetTime;
 		this.type = type;
 		this.source = source;
-		this.detections = new TreeSet<>();
-	}
-
-    public JsonTrackOutputObject(){}
-
-	@JsonCreator
-	public static JsonTrackOutputObject factory(@JsonProperty("id") String id,
-	                                            @JsonProperty("startOffsetFrame") int startOffsetFrame,
-	                                            @JsonProperty("stopOffsetFrame") int stopOffsetFrame,
-												@JsonProperty("startOffsetTime") long startOffsetTime,
-												@JsonProperty("stopOffsetTime") long stopOffsetTime,
-	                                            @JsonProperty("type") String type,
-	                                            @JsonProperty("source") String source,
-	                                            @JsonProperty("exemplar") JsonDetectionOutputObject exemplar,
-	                                            @JsonProperty("detections") SortedSet<JsonDetectionOutputObject> detections) {
-		JsonTrackOutputObject trackOutputObject = new JsonTrackOutputObject(id, startOffsetFrame, stopOffsetFrame, startOffsetTime, stopOffsetTime, type, source);
-		trackOutputObject.exemplar = exemplar;
-		if(detections != null) {
-			trackOutputObject.detections.addAll(detections);
+		this.confidence = confidence;
+		if (trackProperties != null) {
+			this.trackProperties.putAll(trackProperties);
 		}
-		return trackOutputObject;
-	}
-
-	public int hashCode() {
-		return id.hashCode();
-	}
-
-	public boolean equals(Object other) {
-		if(other == null || !(other instanceof JsonTrackOutputObject)) {
-			return false;
-		} else {
-			JsonTrackOutputObject casted = (JsonTrackOutputObject)other;
-			return compareTo(casted) == 0;
+		this.exemplar = exemplar;
+		if (detections != null) {
+			this.detections.addAll(detections);
 		}
 	}
 
 	@Override
+	public int hashCode() {
+		return Objects.hash(id, startOffsetFrame, stopOffsetFrame, startOffsetTime, stopOffsetTime, type, source,
+		                    confidence, trackProperties, exemplar);
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		return this == other
+				|| (other instanceof JsonTrackOutputObject
+						&& compareTo((JsonTrackOutputObject) other) == 0);
+	}
+
+
+	private static final Comparator<JsonTrackOutputObject> DEFAULT_COMPARATOR = Comparator
+			.nullsFirst(Comparator
+                .comparingInt(JsonTrackOutputObject::getStartOffsetFrame)
+                .thenComparingInt(JsonTrackOutputObject::getStopOffsetFrame)
+                .thenComparingLong(JsonTrackOutputObject::getStartOffsetTime)
+                .thenComparingLong(JsonTrackOutputObject::getStopOffsetTime)
+                .thenComparing(JsonTrackOutputObject::getType)
+                .thenComparing(JsonTrackOutputObject::getSource)
+                .thenComparing(JsonTrackOutputObject::getExemplar)
+                .thenComparing(JsonTrackOutputObject::getId)
+                .thenComparingDouble(JsonTrackOutputObject::getConfidence)
+                .thenComparing(JsonTrackOutputObject::getTrackProperties, CompareUtils.MAP_COMPARATOR)
+			);
+
+	@Override
 	public int compareTo(JsonTrackOutputObject other) {
-		int result = 0;
-		if(other == null) {
-			return 0;
-		} else if((result = Integer.compare(startOffsetFrame, other.startOffsetFrame)) != 0
-				|| (result = Integer.compare(stopOffsetFrame, other.stopOffsetFrame)) != 0
-				|| (result = Long.compare(startOffsetTime, other.startOffsetTime)) != 0
-				|| (result = Long.compare(stopOffsetTime, other.stopOffsetTime)) != 0
-				|| (result = ObjectUtils.compare(type, other.type, false)) != 0
-			    || (result = ObjectUtils.compare(source, other.source, false)) != 0
-				|| (result = ObjectUtils.compare(exemplar, other.getExemplar(), false)) != 0
-				|| (result = ObjectUtils.compare(id, other.id, false)) != 0) {
-			return result;
-		} else {
-			return 0;
-		}
+	    return DEFAULT_COMPARATOR.compare(this, other);
 	}
 }

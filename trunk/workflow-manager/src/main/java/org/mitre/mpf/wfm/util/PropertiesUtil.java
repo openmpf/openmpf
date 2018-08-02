@@ -645,7 +645,7 @@ public class PropertiesUtil {
     }
 
     public String getAmqUri() {
-        return mpfPropertiesConfig.getString("mpf.output.objects.activemq.hostname");
+        return mpfPropertiesConfig.getString("mpf.output.objects.amq.broker.uri");
     }
 
     //

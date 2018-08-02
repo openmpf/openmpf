@@ -172,27 +172,27 @@ public class TestTrackMergingProcessor {
         * Create overlapping tracks for testing
         */
         SortedSet<Track> tracks = new TreeSet<Track>();
-        Track track1 = new Track(jobId, mediaId, 0, 0, 0, 199, "VIDEO");
+        Track track1 = new Track(jobId, mediaId, 0, 0, 0, 199, "VIDEO", 18f);
         Detection detection1a = new Detection(10,10,52,60,18f,0,0,null);
         Detection detection1b = new Detection(10,10,52,60,18f,199,0,null);
         track1.getDetections().add(detection1a);
         track1.getDetections().add(detection1b);
-        Track track2 = new Track(jobId, mediaId, 0, 0, 200, 399, "VIDEO");
+        Track track2 = new Track(jobId, mediaId, 0, 0, 200, 399, "VIDEO", 18f);
         Detection detection2a = new Detection(10,10,52,60,18f,200,0,null);
         Detection detection2b = new Detection(10,10,52,60,18f,399,0,null);
         track2.getDetections().add(detection2a);
         track2.getDetections().add(detection2b);
-        Track track3 = new Track(jobId, mediaId, 0, 0, 470, 477, "VIDEO");
+        Track track3 = new Track(jobId, mediaId, 0, 0, 470, 477, "VIDEO", 18f);
         Detection detection3a = new Detection(10,10,52,60,18f,420,0,null);
         Detection detection3b = new Detection(10,10,52,60,18f,599,0,null);
         track3.getDetections().add(detection3a);
         track3.getDetections().add(detection3b);
-        Track track4 = new Track(jobId, mediaId, 0, 0, 480, 599, "VIDEO");
+        Track track4 = new Track(jobId, mediaId, 0, 0, 480, 599, "VIDEO", 18f);
         Detection detection4a = new Detection(10,10,52,60,18f,480,0,null);
         Detection detection4b = new Detection(10,10,52,60,18f,599,0,null);
         track4.getDetections().add(detection4a);
         track4.getDetections().add(detection4b);
-        Track track5 = new Track(jobId, mediaId, 0, 0, 600, 610, "VIDEO");
+        Track track5 = new Track(jobId, mediaId, 0, 0, 600, 610, "VIDEO", 18f);
         Detection detection5a = new Detection(10,10,89,300,18f,600,0,null);
         Detection detection5b = new Detection(10,10,84,291,18f,610,0,null);
         track5.getDetections().add(detection5a);

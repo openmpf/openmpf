@@ -62,10 +62,10 @@ public class MPFDetectionMain {
             }
             if (args.length > 1) {
                 ACTIVEMQHOST = args[1];
-            } else if (System.getenv("ACTIVE_MQ_HOST") != null && !System.getenv("ACTIVE_MQ_HOST").isEmpty()) {
-                ACTIVEMQHOST = System.getenv("ACTIVE_MQ_HOST");
+            } else if (System.getenv("ACTIVE_MQ_BROKER_URI") != null && !System.getenv("ACTIVE_MQ_BROKER_URI").isEmpty()) {
+                ACTIVEMQHOST = System.getenv("ACTIVE_MQ_BROKER_URI");
             }
-            LOG.info("ACTIVE_MQ_HOST = " + ACTIVEMQHOST);
+            LOG.info("ACTIVE_MQ_BROKER_URI = " + ACTIVEMQHOST);
 
             LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
 

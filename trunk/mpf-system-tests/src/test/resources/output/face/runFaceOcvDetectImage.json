@@ -53,6 +53,7 @@
                 "stopOffsetTime": 0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
+                "confidence": 57.0,
                 "exemplar": {
                   "x": 83,
                   "y": 210,
@@ -114,6 +115,7 @@
                 "stopOffsetTime": 0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
+                "confidence": 69.0,
                 "exemplar": {
                   "x": 81,
                   "y": 131,
@@ -175,6 +177,7 @@
                 "stopOffsetTime": 0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
+                "confidence": 64.0,
                 "exemplar": {
                   "x": 92,
                   "y": 163,

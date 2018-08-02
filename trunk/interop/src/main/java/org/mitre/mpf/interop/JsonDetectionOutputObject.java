@@ -27,8 +27,9 @@
 package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.*;
-import org.apache.commons.lang3.ObjectUtils;
+import org.mitre.mpf.interop.util.CompareUtils;
 
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -36,65 +37,60 @@ import java.util.TreeMap;
 @JsonTypeName("DetectionOutputObject")
 @JsonPropertyOrder({ "offsetFrame", "offsetTime", "x", "y", "width", "height",
         "confidence", "detectionProperties", "artifactExtractionStatus", "artifactPath", "offset" })
+// Deprecated. Use offsetFrame instead. Left for backwards compatibility.
+@JsonIgnoreProperties("offset")
 public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutputObject> {
 
 	@JsonProperty("x")
 	@JsonPropertyDescription("The x-coordinate of the top-left corner of the detected object's bounding box in the artifact.")
-	private int x;
+	private final int x;
 	public int getX() { return x; }
 
 	@JsonProperty("y")
 	@JsonPropertyDescription("The y-coordinate of the top-left corner of the detected object's bounding box in the artifact.")
-	private int y;
+	private final int y;
 	public int getY() { return y; }
 
 	@JsonProperty("width")
 	@JsonPropertyDescription("The width of the detected object's bounding box in the artifact.")
-	private int width;
+	private final int width;
 	public int getWidth() { return width; }
 
 	@JsonProperty("height")
 	@JsonPropertyDescription("The height of the detected object's bounding box in the artifact.")
-	private int height;
+	private final int height;
 	public int getHeight() { return height; }
 
 	@JsonProperty("confidence")
 	@JsonPropertyDescription("The confidence score associated with this detection. Higher scores indicate more confidence in the detection.")
-	private float confidence;
+	private final float confidence;
 	public float getConfidence() { return confidence; }
 
 	@JsonProperty("detectionProperties")
 	@JsonPropertyDescription("Additional properties set by the detection.")
-	private SortedMap<String,String> detectionProperties = new TreeMap<>();
+	private final SortedMap<String,String> detectionProperties = new TreeMap<>();
 	public SortedMap<String,String> getDetectionProperties() { return detectionProperties; }
-
-	// MPF R0.6.0 backwards compatibility with MPF R0.5.0 (upgrade path)
-	@JsonProperty("offset")
-    @JsonPropertyDescription("Deprecated. Use offsetFrame instead. Left for backwards compatibility.")
-	public void setOffset(int offset) { offsetFrame = offset; }
-	public int getOffset() { return offsetFrame; }
 
 	@JsonProperty("offsetFrame")
 	@JsonPropertyDescription("The offset frame of this detection in the parent medium. For images and audio, this value is not meaningful. For videos, this value indicates a zero-based frame index.")
-	private int offsetFrame;
+	private final int offsetFrame;
 	public int getOffsetFrame() { return offsetFrame; }
 
 	@JsonProperty("offsetTime")
 	@JsonPropertyDescription("The offset time of this detection in the parent medium. For images, this value is not meaningful. For audio and video files, this value refers to a temporal index measured in milliseconds.")
-	private long offsetTime;
+	private final long offsetTime;
 	public long getOffsetTime() { return offsetTime; }
 
 	@JsonProperty("artifactPath")
 	@JsonPropertyDescription("The path to the artifact containing the best representation of this detection.")
-	private String artifactPath;
+	private final String artifactPath;
 	public String getArtifactPath() { return artifactPath; }
 
 	@JsonProperty("artifactExtractionStatus")
 	@JsonPropertyDescription("A status code indicating if an artifact was created for this detection.")
-	private String artifactExtractionStatus;
+	private final String artifactExtractionStatus;
 	public String getArtifactExtractionStatus() { return artifactExtractionStatus; }
 
-    public JsonDetectionOutputObject(){}
 
 	@JsonCreator
 	public JsonDetectionOutputObject(@JsonProperty("x") int x,
@@ -122,59 +118,33 @@ public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutput
 		}
 	}
 
+	@Override
 	public int hashCode() {
-		return Objects.hash(x,y,width,height,confidence,offsetTime,offsetFrame,artifactPath,detectionProperties);
+		return Objects.hash(x, y, width, height, confidence, offsetTime, offsetFrame, artifactPath,
+		                    detectionProperties);
 	}
 
+	@Override
 	public boolean equals(Object other) {
-		if(other == null || !(other instanceof JsonDetectionOutputObject)) {
-			return false;
-		} else {
-			JsonDetectionOutputObject casted = (JsonDetectionOutputObject)other;
-			return compareTo(casted) == 0;
-		}
-	}
-	public int compareTo(JsonDetectionOutputObject other) {
-		int result = 0;
-		if(other == null) {
-			return 1;
-		} else if((result = Integer.compare(offsetFrame, other.offsetFrame)) != 0
-			||( result = Long.compare(offsetTime, other.offsetTime)) != 0
-			|| (result = Integer.compare(x, other.x)) != 0
-			|| (result = Integer.compare(y, other.y)) != 0
-			|| (result = Integer.compare(width, other.width)) != 0
-			|| (result = Integer.compare(height, other.height)) != 0
-			|| (result = compareMap(detectionProperties,other.detectionProperties)) != 0) {
-			return result;
-		} else {
-			return 0;
-		}
+	    return this == other
+			    || (other instanceof JsonDetectionOutputObject
+	                    && compareTo((JsonDetectionOutputObject) other) == 0);
 	}
 
-	private int compareMap(SortedMap<String, String> map1, SortedMap<String, String> map2) {
-		if (map1 == null && map2 == null) {
-			return 0;
-		} else if (map1 == null) {
-			return -1;
-		} else if (map2 == null) {
-			return 1;
-		} else {
-			int result = 0;
-			if ((result = Integer.compare(map1.size(),map2.size())) != 0) {
-				return result;
-			}
-			StringBuilder map1Str = new StringBuilder();
-			for (String key : map1.keySet()) {
-				map1Str.append(key).append(map1.get(key));
-			}
-			StringBuilder map2Str = new StringBuilder();
-			for (String key : map2.keySet()) {
-				map2Str.append(key).append(map2.get(key));
-			}
-			if ((result = ObjectUtils.compare(map1Str.toString(),map2Str.toString())) != 0) {
-				return result;
-			}
-		}
-		return 0;
+
+	private static final Comparator<JsonDetectionOutputObject> DEFAULT_COMPARATOR = Comparator
+			.nullsFirst(Comparator
+                .comparingInt(JsonDetectionOutputObject::getOffsetFrame)
+                .thenComparingLong(JsonDetectionOutputObject::getOffsetTime)
+                .thenComparingInt(JsonDetectionOutputObject::getX)
+                .thenComparingInt(JsonDetectionOutputObject::getY)
+                .thenComparingInt(JsonDetectionOutputObject::getWidth)
+                .thenComparingInt(JsonDetectionOutputObject::getHeight)
+                .thenComparing(JsonDetectionOutputObject::getDetectionProperties, CompareUtils.MAP_COMPARATOR)
+			);
+
+	@Override
+	public int compareTo(JsonDetectionOutputObject other) {
+	    return DEFAULT_COMPARATOR.compare(this, other);
 	}
 }

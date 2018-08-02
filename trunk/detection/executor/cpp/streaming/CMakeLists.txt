@@ -45,8 +45,6 @@ include_directories(${APR_INCLUDEDIR})
 file(GLOB MATCHING_FILES ${APR_LIBDIR}/libapr*.so* )
 install(FILES ${MATCHING_FILES} DESTINATION lib)
 
-include_directories(${MPF_PROTO_PATH})
-
 find_package(OpenCV 3.3 EXACT REQUIRED PATHS /opt/opencv-3.3.0
     COMPONENTS opencv_core opencv_imgcodecs opencv_imgproc opencv_videoio)
 
@@ -76,11 +74,13 @@ set(streaming_component_executor_files
 	ExecutorUtils.cpp ExecutorUtils.h)
 
 add_library(streaming_executor_lib OBJECT ${streaming_component_executor_files})
-target_include_directories(streaming_executor_lib PUBLIC $<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
+target_include_directories(streaming_executor_lib PUBLIC
+	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>
+	$<TARGET_PROPERTY:mpfProtobufs,INTERFACE_INCLUDE_DIRECTORIES>)
 
 add_executable(streaming_component_executor main.cpp $<TARGET_OBJECTS:streaming_executor_lib> ${MSG_UTILS_FILE})
 target_link_libraries(streaming_component_executor mpfDetectionComponentApi mpfComponentInterface
-	dl ${LOG4CXX_LIBRARIES} ${OpenCV_LIBS} ${PROTOBUF_LIBRARY} ${MPF_PROTOBUF_LIB} ${ACTIVEMQ-CPP_LIBRARIES})
+	dl ${LOG4CXX_LIBRARIES} ${OpenCV_LIBS} mpfProtobufs ${ACTIVEMQ-CPP_LIBRARIES})
 
 install(TARGETS streaming_component_executor
 	RUNTIME DESTINATION bin

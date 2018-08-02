@@ -49,7 +49,7 @@ my $FATAL	= 6;
 my $OFF		= 7;
 my $loggingLevel = $ALL;
 
-#	Globals	
+#	Globals
 my $nodeManagerName = "\"mpf-nodemanager-.*\.jar\"";
 
 
@@ -66,9 +66,9 @@ sub stopActiveMQ {
 	}
 	my $amqPath = $_[0];
 	my @ActiveMQList = ();
-	
+
 	printInfo("Checking for current instances of ActiveMQ...\n");
-	
+
 	#	If AcqiveMQ is running tell it to shut down.
 	@ActiveMQList = `ps ax | grep \"activemq\" | grep -v \"grep\" | grep -v \"perl\"`;
 	if((@ActiveMQList) > 0) {
@@ -76,7 +76,7 @@ sub stopActiveMQ {
 		system "sudo $amqPath/bin/activemq stop";
 	}
 	sleep(2);
-	
+
 	#	If ActiveMQ is still running, use the kill command to terminate it.\n";
 	@ActiveMQList = `ps ax | grep \"activemq\" | grep -v \"grep\" | grep -v \"perl\"`;
 	foreach my $item (@ActiveMQList) {
@@ -93,7 +93,7 @@ sub stopActiveMQ {
 			system "sudo kill -9 $pid";
 		}
 	}
-	
+
 	#	If ActiveMQ is still running, then somethine went wrong.  Exit.
 	@ActiveMQList = `ps ax | grep \"activemq\" | grep -v \"grep\" | grep -v \"perl\"`;
 	if((@ActiveMQList) > 0) {
@@ -111,7 +111,7 @@ sub cleanActiveMQ {
 		fatalExit();
 	}
 	my $amqPath = $_[0];
-	
+
 	printInfo("Cleaning out ActiveMQ KahaDB information.\n");
 	stopActiveMQ($amqPath);
 	system "sudo rm -rf $amqPath/data/kahadb";
@@ -125,11 +125,11 @@ sub runActiveMQ {
 	}
 	my $amqPath = $_[0];
 	my @ActiveMQList = ();
-	
+
 	printInfo("Starting ActiveMQ...\n"	);
 	system "sudo $amqPath/bin/activemq start > /dev/null";
 	sleep(5);
-	
+
 	#	Verify that AcqiveMQ is running...
 	@ActiveMQList = `ps ax | grep \"activemq\" | grep -v \"grep\" | grep -v \"perl\"`;
 	if((@ActiveMQList) == 0) {
@@ -157,16 +157,16 @@ sub runActiveMQ {
 ##########################################################################################
 sub stopMySQL {
 	my @MySQLList = ();
-	
+
 	printInfo("Checking for current instances of MySQL...\n");
-	
+
 	#	If MySQL is running tell it to shut down.
 	@MySQLList = `ps ax | grep \"mysql\" | grep -v \"grep\"`;
 	if((@MySQLList) > 0) {
 		printInfo("MySQL is currently running.  Shutting it down.\n");
 		system "sudo systemctl stop mysql > /dev/null";
 	}
-	
+
 	#	If MySQL is still running, use the kill command to terminate it.\n";
 	@MySQLList = `ps ax | grep \"mysql\" | grep -v \"grep\"`;
 	if((@MySQLList) > 0) {
@@ -179,7 +179,7 @@ sub stopMySQL {
 			system "sudo kill -9 $pid";
 		}
 	}
-	
+
 	#	If MySQL is still running, then somethine went wrong.  Exit.
 	@MySQLList = `ps ax | grep \"mysql\" | grep -v \"grep\"`;
 	if((@MySQLList) > 0) {
@@ -193,11 +193,11 @@ sub stopMySQL {
 
 sub runMySQL {
 	my @MySQLList = ();
-	
+
 	printInfo("Starting MySQL...\n"	);
 	system "sudo systemctl start mysql > /dev/null";
 	sleep(2);
-	
+
 	#	Verify that MySQL is running...
 	@MySQLList = `ps ax | grep \"mysql\" | grep -v \"grep\" | grep -v \"safe\"`;
 	if((@MySQLList) == 0) {
@@ -231,16 +231,16 @@ sub cleanMySQL {
 ##########################################################################################
 sub stopRedis {
 	my @RedisList = ();
-	
+
 	printInfo("Checking for current instances of Redis...\n");
-	
+
 	#	If Redis is running tell it to shut down.
 	@RedisList = `ps ax | grep \"redis-server\" | grep -v \"grep\"`;
 	if((@RedisList) > 0) {
 		printInfo("Redis is currently running.  Shutting it down.\n");
 		system "redis-cli shutdown > /dev/null";
 	}
-	
+
 	#	If Redis is still running, use the kill command to terminate it.\n";
 	@RedisList = `ps ax | grep \"redis-server\" | grep -v \"grep\"`;
 	if((@RedisList) > 0) {
@@ -253,7 +253,7 @@ sub stopRedis {
 			system "sudo kill -9 $pid";
 		}
 	}
-	
+
 	#	If Redis is still running, then somethine went wrong.  Exit.
 	@RedisList = `ps ax | grep \"redis-server\" | grep -v \"grep\"`;
 	if((@RedisList) > 0) {
@@ -267,7 +267,7 @@ sub stopRedis {
 
 sub runRedis {
 	my @RedisList = ();
-	
+
 	printInfo("Starting Redis...\n"	);
 	system "sudo redis-server /etc/redis.conf > /dev/null";
 	sleep(5);
@@ -311,23 +311,23 @@ sub cleanMaven {
 		fatalExit();
 	}
 	my $mpfPath = $_[0];
-	
+
 	my $pwd = `pwd`;
-	
+
 	printInfo("Cleaning MPF...\n");
 	printWarn("\t\tThis may take a few minutes.\n");
 	printWarn("\t\tTake a stretch break.\n");
-	
+
 	chdir "$mpfPath";
 	open PIPE, "mvn clean -Pjenkins |";
 	while(<PIPE>) {
 		printMaven($_);
 	}
 	close PIPE;
-	
+
 	printInfo("\t\tRemoving the install directory\n");
 	system "sudo rm -rf $mpfPath/trunk/install";
-	
+
 	printInfo("\t\tCleaning completed.\n");
 	chdir $pwd;
 }
@@ -407,7 +407,7 @@ sub mavenRPM {
 	close PIPE;
 
 	printInfo("Packaging completed.\n");
-	
+
 	chdir $pwd;
 }
 
@@ -420,7 +420,7 @@ sub mavenRPM {
 ##########################################################################################
 sub stopNodeManager {
 	my @NodeManagerList = ();
-	
+
 	printInfo("Checking for current instances of any node manager...\n");
 	@NodeManagerList = `ps ax | grep $nodeManagerName | grep -v \"grep\"`;
 	if((@NodeManagerList) > 0) {
@@ -428,7 +428,7 @@ sub stopNodeManager {
 		system "sudo systemctl stop node-manager";
 	}
 	sleep(2);
-	
+
 	#	If Node manager is still running, use the kill command to terminate it.\n";
 	@NodeManagerList = `ps ax | grep $nodeManagerName | grep -v \"grep\"`;
 	if((@NodeManagerList) > 0) {
@@ -442,7 +442,7 @@ sub stopNodeManager {
 			system "sudo kill -9 $pid";
 		}
 	}
-	
+
 	#	If Node manager is still running, then somethine went wrong.  Exit.
 	@NodeManagerList = `ps ax | grep $nodeManagerName | grep -v \"grep\"`;
 	if((@NodeManagerList) > 0) {
@@ -494,17 +494,17 @@ sub installNodeManager {
 	my $mpfPath = $_[0];
 	my $pwd = `pwd`;
 	chdir "$mpfPath";
-	
+
 	printInfo("Changing the permissions on the $mpfPath/trunk/install directory\n");
 	system "sudo chmod -R 777 $mpfPath/trunk/install";
-	
+
 	if (-f "/etc/init.d/node-manager") {
 		printInfo("Removing the old node manager installed in /etc/init.d\n");
 		system "sudo rm /etc/init.d/node-manager";
 	} else {
 		printInfo("No old node-manager to remove.\n");
 	}
-	
+
 	if (-f "$mpfPath/trunk/install/libexec/node-manager") {
 		printInfo("Copying the node-manager script into /etc/init.d\n");
 		system "sudo cp $mpfPath/trunk/install/libexec/node-manager /etc/init.d/";
@@ -512,12 +512,12 @@ sub installNodeManager {
 		printFatal("Node manager not in install/libexec.  Exiting\n");
 		fatalExit();
 	}
-	
+
 	if (!(-f "/etc/init.d/node-manager")) {
 		printFatal("Node manager was not able to be copied to /etc/init.d\n");
 		fatalExit();
 	}
-	
+
 	chdir $pwd;
 }
 
@@ -534,13 +534,14 @@ sub installNodeManager {
 sub getSystemStatus {
 	printInfo("Checking the known environment variables\n");
 	my @vars = ("MPF_USER", "MPF_HOME", "MPF_LOG_PATH", "MASTER_MPF_NODE", "THIS_MPF_NODE", "CORE_MPF_NODES", "JAVA_HOME",
-	    "JGROUPS_TCP_ADDRESS", "JGROUPS_TCP_PORT", "JGROUPS_FILE_PING_LOCATION", "ACTIVE_MQ_HOST", "LD_LIBRARY_PATH");
+	    "JGROUPS_TCP_ADDRESS", "JGROUPS_TCP_PORT", "JGROUPS_FILE_PING_LOCATION", "ACTIVE_MQ_BROKER_URI", "LD_LIBRARY_PATH",
+			 "ACTIVE_MQ_HOST", "MYSQL_HOST", "REDIS_HOST");
 	foreach my $var (@vars) {
 		my $varInfo = `echo \$$var`;
 		chomp $varInfo;
 		printInfo("\t\t$var:\t$varInfo\n");
 	}
-		
+
 	my @ActiveMQList = `ps ax | grep \"activemq\" | grep -v \"grep\" | grep -v \"perl\"`;
 	if((@ActiveMQList) == 0) {
 		printWarn("ActiveMQ is not currently running.\n");
@@ -549,7 +550,7 @@ sub getSystemStatus {
 	} else {
 		printError("ActiveMQ is currently running ".(@ActiveMQList)." instances.\n");
 	}
-	
+
 	my @MySQLList = `ps ax | grep \"mysql_safe\" | grep -v \"grep\" | grep -v \"perl\"`;
 	if((@MySQLList) == 0) {
 		printWarn("MySQL is not currently running.\n");
@@ -558,7 +559,7 @@ sub getSystemStatus {
 	} else {
 		printError("MySQL is currently running ".(@MySQLList)." instances.\n");
 	}
-	
+
 	my @RedisList = `ps ax | grep \"redis-server\" | grep -v \"grep\"`;
 	if((@RedisList) == 0) {
 		printWarn("Redis is not currently running.\n");
@@ -576,7 +577,7 @@ sub getSystemStatus {
 	} else {
 		printError("Node Manager is currently running ".(@NodeManagerList)." instances.\n");
 	}
-	
+
 	my @nodesToCheck = ("amq_detection_component", "mpf-speech-detection");
 	foreach my $nodeToCheck (@nodesToCheck) {
 		my @NodesList = `ps ax | grep \"$nodeToCheck\" | grep -v \"grep\" | grep -v \"perl\"`;
@@ -584,7 +585,7 @@ sub getSystemStatus {
 			printWarn("Node $nodeToCheck is not currently running.\n");
 		} else {
 			printInfo("Node $nodeToCheck is currently running ".(@NodesList)." instances.\n");
-		}	
+		}
 	}
 }
 
@@ -612,31 +613,31 @@ sub cleanTmp {
 	}
 	my $mpfLogPath = $_[0];
 	my @files = ();
-	
+
 	printInfo("Removing UUID-based files...\n");
 	@files = </tmp/*-*-*-*-*.*>;
 	foreach my $file (@files) {
 		system "sudo rm -rf $file";
 	}
-	
+
 	printInfo("Removing XML files...\n");
 	@files = </tmp/*.xml>;
 	foreach my $file (@files) {
 		system "sudo rm $file";
 	}
-	
+
 	printInfo("Removing video files...\n");
 	@files = </tmp/*.avi>;
 	foreach my $file (@files) {
 		system "sudo rm $file";
 	}
-	
+
 	printInfo("Removing image files...\n");
 	@files = </tmp/*.png>;
 	foreach my $file (@files) {
 		system "sudo rm $file";
 	}
-	
+
 	printInfo("Removing log files...\n");
 	@files = <$mpfLogPath/trunk/install/log/*>;
 	foreach my $file (@files) {
@@ -688,14 +689,14 @@ sub runGTests {
 #	if (!(-f "$mpfPath/mpf_components/CPP/detection/target/site/cobertura/coverage.xml")) {
 #		printError("The cobertura file ($mpfPath/mpf_components/CPP/detection/target/site/cobertura/coverage.xml) was not successfully created.\n");
 #	}
-	
+
 	if ($rc != 0) {
 		printError("GTESTS TESTS FAILED!");
-		printError("----\t\tThis will mark the build as UNSTABLE.\t\t----\n");	
+		printError("----\t\tThis will mark the build as UNSTABLE.\t\t----\n");
 	} else {
 		printDebug("GTests run successfully.\n");
 	}
-	
+
 	chdir $pwd;
 }
 
@@ -710,7 +711,7 @@ sub installProfile {
 	my $hostname	= $_[2];
 	my $pwd = `pwd`;
 	chdir "$mpfPath";
-	
+
 	my $mpfUser = ($hostname eq "jenkins-mpf-1.mitre.org") ? "jenkins" : "jenkins-slave";
 	printInfo("Using MPF_USER: $mpfUser\n");
 
@@ -733,37 +734,40 @@ export JGROUPS_TCP_ADDRESS="\$THIS_MPF_NODE"
 export JGROUPS_TCP_PORT=7800
 export JGROUPS_FILE_PING_LOCATION="\$MPF_HOME/share/nodes"
 # CATALINA_OPTS is set in <TOMCAT_HOME>/bin/setenv.sh
-export ACTIVE_MQ_HOST="failover://(tcp://\$MASTER_MPF_NODE:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
+export ACTIVE_MQ_HOST="\$MASTER_MPF_NODE"
+export MYSQL_HOST="localhost"
+export REDIS_HOST="localhost"
+export ACTIVE_MQ_BROKER_URI="failover://(tcp://\$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
 export LD_LIBRARY_PATH="/usr/local/lib"
 END_MPF_SH
 
-	
+
 	if (-f "/etc/profile.d/mpf.sh") {
 		printInfo("Removing the old profile installed in /etc/profile.d\n");
 		system "sudo rm /etc/profile.d/mpf.sh";
 	} else {
 		printInfo("No old profile to remove.\n");
 	}
-	
+
 	if (-f "/etc/profile.d/mpf.sh") {
 		printFatal("Failed to remove the old profile installed in /etc/profile.d\n");
 		fatalExit();
 	}
-	
+
 	system "sudo touch /etc/profile.d/mpf.sh";
 	system "sudo chmod 777 /etc/profile.d/mpf.sh";
-	
+
 	open FILE, ">", "/etc/profile.d/mpf.sh";
 	print FILE $mpfsh;
 	close FILE;
-	
+
 	if (!(-f "/etc/profile.d/mpf.sh")) {
 		printFatal("Profile was not able to be copied to /etc/profile.d\n");
 		fatalExit();
 	} else {
 		printInfo("Profile successfully copied to /etc/profile.d\n");
 	}
-	
+
 	chdir $pwd;
 }
 

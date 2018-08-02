@@ -32,11 +32,11 @@
 # don't source mpf.sh - if under /etc/profile.d we got it
 
 # Do an environment variable and Java property
-if [ -n "${ACTIVE_MQ_HOST}" ]; then
-    QUEUE_FLAGS="-DACTIVE_MQ_HOST=${ACTIVE_MQ_HOST}"
+if [ -n "${ACTIVE_MQ_BROKER_URI}" ]; then
+    QUEUE_FLAGS="-DACTIVE_MQ_BROKER_URI=${ACTIVE_MQ_BROKER_URI}"
 else
-    QUEUE_FLAGS="-DACTIVE_MQ_HOST=tcp://localhost:61616"
-    log_warn "ACTIVE_MQ_HOST unset or empty, using tcp://localhost:61616"
+    QUEUE_FLAGS="-DACTIVE_MQ_BROKER_URI=tcp://localhost:61616"
+    log_warn "ACTIVE_MQ_BROKER_URI unset or empty, using tcp://localhost:61616"
 fi
 
 

@@ -43,10 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
+import java.util.*;
 
 /** Processes the responses which have been returned from a detection component. */
 @Component(DetectionResponseProcessor.REF)
@@ -187,7 +184,11 @@ public class DetectionResponseProcessor
 						objectTrack.getStopFrame(),
 						startOffsetTime,
 						stopOffsetTime,
-						videoResponse.getDetectionType());
+						videoResponse.getDetectionType(),
+						objectTrack.getConfidence());
+
+				track.getTrackProperties().putAll(toMap(objectTrack.getDetectionPropertiesList()));
+
 
 				// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
 				for (DetectionProtobuf.VideoTrack.FrameLocationMap locationMap : objectTrack.getFrameLocationsList()) {
@@ -227,24 +228,24 @@ public class DetectionResponseProcessor
 						0,
 						objectTrack.getStartTime(),
 						objectTrack.getStopTime(),
-						audioResponse.getDetectionType());
+						audioResponse.getDetectionType(),
+						objectTrack.getConfidence());
 
-					if (objectTrack.getConfidence() >= confidenceThreshold) {
-						TreeMap<String, String> detectionProperties = new TreeMap<>();
-						for (DetectionProtobuf.PropertyMap item : objectTrack.getDetectionPropertiesList()) {
-							detectionProperties.put(item.getKey(), item.getValue());
-						}
-						track.getDetections().add(
-								new Detection(
-										0,
-										0,
-										0,
-										0,
-										objectTrack.getConfidence(),
-										0,
-										objectTrack.getStartTime(),
-										detectionProperties));
-					}
+				SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
+				track.getTrackProperties().putAll(properties);
+
+                if (objectTrack.getConfidence() >= confidenceThreshold) {
+                    track.getDetections().add(
+                            new Detection(
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    objectTrack.getConfidence(),
+                                    0,
+                                    objectTrack.getStartTime(),
+                                    properties));
+                }
 
 				if (!track.getDetections().isEmpty()) {
 					track.setExemplar(findExemplar(track));
@@ -272,7 +273,10 @@ public class DetectionResponseProcessor
 							detectionResponse.getActionIndex(),
 							0,
 							1,
-							imageResponse.getDetectionType());
+							imageResponse.getDetectionType(),
+							location.getConfidence());
+
+					track.getTrackProperties().putAll(toMap(location.getDetectionPropertiesList()));
 
 					track.getDetections().add(
 							generateTrack(location, 0, 0));
@@ -302,13 +306,13 @@ public class DetectionResponseProcessor
 						0,
 						0,
 						0,
-						genericResponse.getDetectionType());
+						genericResponse.getDetectionType(),
+						objectTrack.getConfidence());
+
+				SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
+				track.getTrackProperties().putAll(properties);
 
 				if (objectTrack.getConfidence() >= confidenceThreshold) {
-					TreeMap<String, String> detectionProperties = new TreeMap<>();
-					for (DetectionProtobuf.PropertyMap item : objectTrack.getDetectionPropertiesList()) {
-						detectionProperties.put(item.getKey(), item.getValue());
-					}
 					track.getDetections().add(
 							new Detection(
 									0,
@@ -318,7 +322,7 @@ public class DetectionResponseProcessor
 									objectTrack.getConfidence(),
 									0,
 									0,
-									detectionProperties));
+									properties));
 				}
 
 				if (!track.getDetections().isEmpty()) {
@@ -331,7 +335,7 @@ public class DetectionResponseProcessor
 		}
 	}
 
-	private Detection findExemplar(Track track) {
+	private static Detection findExemplar(Track track) {
 		// Iterate through all of the detections in the track. Find the index of the one that has the greatest confidence.
 		Detection exemplar = null;
 
@@ -345,11 +349,8 @@ public class DetectionResponseProcessor
 		return exemplar;
 	}
 
-	private Detection generateTrack(DetectionProtobuf.ImageLocation location, int frameNumber, int time) {
-		TreeMap<String, String> detectionProperties = new TreeMap<>();
-		for (DetectionProtobuf.PropertyMap item : location.getDetectionPropertiesList()) {
-			detectionProperties.put(item.getKey(), item.getValue());
-		}
+	private static Detection generateTrack(DetectionProtobuf.ImageLocation location, int frameNumber, int time) {
+		SortedMap<String, String> detectionProperties = toMap(location.getDetectionPropertiesList());
 		return new Detection(
 				location.getXLeftUpper(),
 				location.getYLeftUpper(),
@@ -359,5 +360,14 @@ public class DetectionResponseProcessor
 				frameNumber,
 				time,
 				detectionProperties);
+	}
+
+
+	private static SortedMap<String, String> toMap(Collection<DetectionProtobuf.PropertyMap> properties) {
+	    SortedMap<String, String> result = new TreeMap<>();
+	    for (DetectionProtobuf.PropertyMap property : properties) {
+	    	result.put(property.getKey(), property.getValue());
+	    }
+	    return result;
 	}
 }

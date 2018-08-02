@@ -58,6 +58,7 @@
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "FACE",
+                "confidence": 2.383536,
                 "source": "+#DLIB FACE DETECTION ACTION",
                 "exemplar": {
                   "x": 114,
@@ -103,6 +104,7 @@
                 "stopOffsetTime": 0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
+                "confidence": 57.0,
                 "exemplar": {
                   "x": 83,
                   "y": 210,
@@ -164,6 +166,7 @@
                 "stopOffsetTime": 0,
                 "type": "FACE",
                 "source": "+#DLIB FACE DETECTION ACTION",
+                "confidence": 2.2896564,
                 "exemplar": {
                   "x": 90,
                   "y": 139,
@@ -208,6 +211,7 @@
                 "stopOffsetTime": 0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
+                "confidence": 69.0,
                 "exemplar": {
                   "x": 81,
                   "y": 131,
@@ -269,6 +273,7 @@
                 "stopOffsetTime": 0,
                 "type": "FACE",
                 "source": "+#DLIB FACE DETECTION ACTION",
+                "confidence": 1.9680384,
                 "exemplar": {
                   "x": 107,
                   "y": 197,
@@ -313,6 +318,7 @@
                 "stopOffsetTime": 0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
+                "confidence": 64.0,
                 "exemplar": {
                   "x": 92,
                   "y": 163,

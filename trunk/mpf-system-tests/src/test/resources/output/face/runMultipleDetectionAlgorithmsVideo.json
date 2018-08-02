@@ -67,6 +67,7 @@
                 "stopOffsetFrame": 126,
                 "startOffsetTime": 801,
                 "stopOffsetTime": 4204,
+                "confidence": -1.0,
                 "type": "FACE",
                 "source": "+#DLIB FACE DETECTION ACTION",
                 "exemplar": {
@@ -1432,6 +1433,7 @@
                 "stopOffsetFrame": 117,
                 "startOffsetTime": 2936,
                 "stopOffsetTime": 3904,
+                "confidence": -1.0,
                 "type": "FACE",
                 "source": "+#DLIB FACE DETECTION ACTION",
                 "exemplar": {
@@ -1848,6 +1850,7 @@
                 "stopOffsetFrame": 453,
                 "startOffsetTime": 13847,
                 "stopOffsetTime": 15115,
+                "confidence": -1.0,
                 "type": "FACE",
                 "source": "+#DLIB FACE DETECTION ACTION",
                 "exemplar": {
@@ -2386,6 +2389,7 @@
                 "stopOffsetFrame": 127,
                 "startOffsetTime": 2202,
                 "stopOffsetTime": 4238,
+                "confidence": -1.0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "exemplar": {
@@ -3218,6 +3222,7 @@
                 "stopOffsetFrame": 120,
                 "startOffsetTime": 3437,
                 "stopOffsetTime": 4004,
+                "confidence": -1.0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "exemplar": {
@@ -3478,6 +3483,7 @@
                 "stopOffsetFrame": 445,
                 "startOffsetTime": 13647,
                 "stopOffsetTime": 14848,
+                "confidence": -1.0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "exemplar": {
@@ -3985,6 +3991,7 @@
                 "stopOffsetFrame": 464,
                 "startOffsetTime": 14748,
                 "stopOffsetTime": 15482,
+                "confidence": -1.0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "exemplar": {
@@ -4317,6 +4324,7 @@
                 "stopOffsetFrame": 122,
                 "startOffsetTime": 133,
                 "stopOffsetTime": 4071,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -5890,6 +5898,7 @@
                 "stopOffsetFrame": 199,
                 "startOffsetTime": 133,
                 "stopOffsetTime": 6640,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -8464,6 +8473,7 @@
                 "stopOffsetFrame": 143,
                 "startOffsetTime": 501,
                 "stopOffsetTime": 4771,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -10167,6 +10177,7 @@
                 "stopOffsetFrame": 139,
                 "startOffsetTime": 1201,
                 "stopOffsetTime": 4638,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -11545,6 +11556,7 @@
                 "stopOffsetFrame": 91,
                 "startOffsetTime": 1301,
                 "stopOffsetTime": 3036,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -12260,6 +12272,7 @@
                 "stopOffsetFrame": 199,
                 "startOffsetTime": 1435,
                 "stopOffsetTime": 6640,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -14327,6 +14340,7 @@
                 "stopOffsetFrame": 154,
                 "startOffsetTime": 2503,
                 "stopOffsetTime": 5138,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -15393,6 +15407,7 @@
                 "stopOffsetFrame": 199,
                 "startOffsetTime": 2703,
                 "stopOffsetTime": 6640,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -16966,6 +16981,7 @@
                 "stopOffsetFrame": 135,
                 "startOffsetTime": 2903,
                 "stopOffsetTime": 4505,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -17629,6 +17645,7 @@
                 "stopOffsetFrame": 199,
                 "startOffsetTime": 2903,
                 "stopOffsetTime": 6640,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -19124,6 +19141,7 @@
                 "stopOffsetFrame": 199,
                 "startOffsetTime": 3437,
                 "stopOffsetTime": 6640,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -20411,6 +20429,7 @@
                 "stopOffsetFrame": 199,
                 "startOffsetTime": 3871,
                 "stopOffsetTime": 6640,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -21529,6 +21548,7 @@
                 "stopOffsetFrame": 199,
                 "startOffsetTime": 6540,
                 "stopOffsetTime": 6640,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -21607,6 +21627,7 @@
                 "stopOffsetFrame": 308,
                 "startOffsetTime": 6807,
                 "stopOffsetTime": 10277,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -22998,6 +23019,7 @@
                 "stopOffsetFrame": 399,
                 "startOffsetTime": 6807,
                 "stopOffsetTime": 13313,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -25572,6 +25594,7 @@
                 "stopOffsetFrame": 227,
                 "startOffsetTime": 6840,
                 "stopOffsetTime": 7574,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -25897,6 +25920,7 @@
                 "stopOffsetFrame": 335,
                 "startOffsetTime": 9576,
                 "stopOffsetTime": 11178,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -26560,6 +26584,7 @@
                 "stopOffsetFrame": 399,
                 "startOffsetTime": 12446,
                 "stopOffsetTime": 13313,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {
@@ -26937,6 +26962,7 @@
                 "stopOffsetFrame": 399,
                 "startOffsetTime": 12679,
                 "stopOffsetTime": 13313,
+                "confidence": -1.0,
                 "type": "PERSON",
                 "source": "+#OCV PERSON DETECTION ACTION",
                 "exemplar": {

@@ -182,6 +182,12 @@ public class OutputChecker {
             //log.info("expObjLocations size is {}", expObjLocations.size());
             //log.info("actObjLocations size is {}", actObjLocations.size());
 
+            _errorCollector.checkThat("Track Confidence", (double) actExtrResult.getConfidence(),
+                                      closeTo(expExtrResult.getConfidence(), 0.01));
+
+            _errorCollector.checkThat("TrackProperties", actExtrResult.getTrackProperties(),
+                                      is(expExtrResult.getTrackProperties()));
+
             // Check now to avoid NoSuchElementException during iteration
             _errorCollector.checkNowThat("ObjectLocations size", actObjLocations.size(), is(expObjLocations.size()));
 

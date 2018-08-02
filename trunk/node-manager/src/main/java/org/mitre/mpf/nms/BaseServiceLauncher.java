@@ -42,7 +42,7 @@ import java.util.Map;
  * <br/>
  * Environmental Variables Set:
  * <pre>
- * ACTIVE_MQ_HOST given by ServiceDescriptor
+ * ACTIVE_MQ_BROKER_URI given by ServiceDescriptor
  * SERVICE_NAME given by ServiceDescriptor (FQN)
  * </pre> Also processes any given in by the {
  *
@@ -367,7 +367,7 @@ public abstract class BaseServiceLauncher implements Runnable {
 
                 // add base env var
                 Map<String, String> env = pb.environment();
-                env.put("ACTIVE_MQ_HOST", this.mServiceDesc.getActiveMqHost());
+                env.put("ACTIVE_MQ_BROKER_URI", this.mServiceDesc.getActiveMqHost());
                 env.put("SERVICE_NAME", this.mServiceDesc.getName());
                 // add any given by the service
                 for (EnvironmentVariable envVar : s.getEnvVars()) {

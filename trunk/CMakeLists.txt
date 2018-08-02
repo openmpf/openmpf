@@ -31,10 +31,6 @@ cmake_policy(SET CMP0015 NEW)
 #add_definitions(-Wno-cpp)
 ADD_DEFINITIONS("-std=c++0x")
 
-set(Protobuf_INCLUDE_DIR /apps/install/include)
-set(Protobuf_LIBRARY /apps/install/lib/libprotobuf.so)
-
-
 set(FIND_LIBRARY_USE_LIB64_PATHS true)
 
 MESSAGE("CURRENT CMAKE CXX vars")
@@ -63,9 +59,6 @@ find_package(JNI)
 
 # Build ProtoBufs
 add_subdirectory(protobuf)
-
-# Tell cmake these will exist at build time
-set_source_files_properties(${MPF_PROTO_HEADERS} PROPERTIES GENERATED TRUE)
 
 
 # The qmake program needs to be on the path in order for find_package to work for

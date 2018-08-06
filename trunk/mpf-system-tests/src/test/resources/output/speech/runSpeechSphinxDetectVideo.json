@@ -66,7 +66,7 @@
                   "y": 0,
                   "width": 0,
                   "height": 0,
-                  "confidence": 1.0,
+                  "confidence": -1.0,
                   "detectionProperties": {
                     "TRANSCRIPTION": "what zero zero zero one"
                   },
@@ -82,7 +82,7 @@
                     "y": 0,
                     "width": 0,
                     "height": 0,
-                    "confidence": 1.0,
+                    "confidence": -1.0,
                     "detectionProperties": {
                       "TRANSCRIPTION": "what zero zero zero one"
                     },
@@ -113,7 +113,7 @@
                   "y": 0,
                   "width": 0,
                   "height": 0,
-                  "confidence": 1.0,
+                  "confidence": -1.0,
                   "detectionProperties": {
                     "TRANSCRIPTION": "nine oh two one oh"
                   },
@@ -129,7 +129,7 @@
                     "y": 0,
                     "width": 0,
                     "height": 0,
-                    "confidence": 1.0,
+                    "confidence": -1.0,
                     "detectionProperties": {
                       "TRANSCRIPTION": "nine oh two one oh"
                     },
@@ -160,7 +160,7 @@
                   "y": 0,
                   "width": 0,
                   "height": 0,
-                  "confidence": 1.0,
+                  "confidence": -1.0,
                   "detectionProperties": {
                     "TRANSCRIPTION": "cyril one eight sir oath"
                   },
@@ -176,7 +176,7 @@
                     "y": 0,
                     "width": 0,
                     "height": 0,
-                    "confidence": 1.0,
+                    "confidence": -1.0,
                     "detectionProperties": {
                       "TRANSCRIPTION": "cyril one eight sir oath"
                     },
@@ -233,7 +233,7 @@
                   "y": 0,
                   "width": 0,
                   "height": 0,
-                  "confidence": 1.0,
+                  "confidence": -1.0,
                   "detectionProperties": {
                     "TRANSCRIPTION": "the green one right in the middle"
                   },
@@ -249,7 +249,7 @@
                     "y": 0,
                     "width": 0,
                     "height": 0,
-                    "confidence": 1.0,
+                    "confidence": -1.0,
                     "detectionProperties": {
                       "TRANSCRIPTION": "the green one right in the middle"
                     },
@@ -306,7 +306,7 @@
                   "y": 0,
                   "width": 0,
                   "height": 0,
-                  "confidence": 1.0,
+                  "confidence": -1.0,
                   "detectionProperties": {
                     "TRANSCRIPTION": "this three left on the left side of the one closest to us"
                   },
@@ -322,7 +322,7 @@
                     "y": 0,
                     "width": 0,
                     "height": 0,
-                    "confidence": 1.0,
+                    "confidence": -1.0,
                     "detectionProperties": {
                       "TRANSCRIPTION": "this three left on the left side of the one closest to us"
                     },

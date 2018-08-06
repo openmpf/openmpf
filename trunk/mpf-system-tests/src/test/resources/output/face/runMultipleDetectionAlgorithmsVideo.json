@@ -67,7 +67,7 @@
                 "stopOffsetFrame": 126,
                 "startOffsetTime": 801,
                 "stopOffsetTime": 4204,
-                "confidence": -1.0,
+                "confidence": 1.7441,
                 "type": "FACE",
                 "source": "+#DLIB FACE DETECTION ACTION",
                 "exemplar": {
@@ -1433,7 +1433,7 @@
                 "stopOffsetFrame": 117,
                 "startOffsetTime": 2936,
                 "stopOffsetTime": 3904,
-                "confidence": -1.0,
+                "confidence": 0.84135944,
                 "type": "FACE",
                 "source": "+#DLIB FACE DETECTION ACTION",
                 "exemplar": {
@@ -1850,7 +1850,7 @@
                 "stopOffsetFrame": 453,
                 "startOffsetTime": 13847,
                 "stopOffsetTime": 15115,
-                "confidence": -1.0,
+                "confidence": 0.42823368,
                 "type": "FACE",
                 "source": "+#DLIB FACE DETECTION ACTION",
                 "exemplar": {
@@ -2389,7 +2389,7 @@
                 "stopOffsetFrame": 127,
                 "startOffsetTime": 2202,
                 "stopOffsetTime": 4238,
-                "confidence": -1.0,
+                "confidence": 50.0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "exemplar": {
@@ -3222,7 +3222,7 @@
                 "stopOffsetFrame": 120,
                 "startOffsetTime": 3437,
                 "stopOffsetTime": 4004,
-                "confidence": -1.0,
+                "confidence": 31.0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "exemplar": {
@@ -3483,7 +3483,7 @@
                 "stopOffsetFrame": 445,
                 "startOffsetTime": 13647,
                 "stopOffsetTime": 14848,
-                "confidence": -1.0,
+                "confidence": 28.0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "exemplar": {
@@ -3991,7 +3991,7 @@
                 "stopOffsetFrame": 464,
                 "startOffsetTime": 14748,
                 "stopOffsetTime": 15482,
-                "confidence": -1.0,
+                "confidence": 15.0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "exemplar": {

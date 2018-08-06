@@ -47,6 +47,10 @@
         {
             "name": "CaffeDetection",
             "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/CaffeDetection"
+        },
+        {
+            "name": "DarknetDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/DarknetDetection"
         }
     ]
 }

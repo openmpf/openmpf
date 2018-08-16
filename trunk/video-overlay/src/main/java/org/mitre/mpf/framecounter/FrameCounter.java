@@ -26,32 +26,22 @@
 
 package org.mitre.mpf.framecounter;
 
-import org.mitre.mpf.framecounter.FrameCounterJniException;
-
-import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 
 public class FrameCounter {
-    private File file;
-    public File getFile() { return file; }
-    public void setFile(File file) { this.file = file; }
+    private URL url;
+    public URL getUrl() { return url; }
+    public void setUrl(URL url) { this.url = url; }
 
-    public FrameCounter(File file) { this.file = file; }
+    public FrameCounter(URL url) { this.url = url; }
 
     public int count(boolean bruteForce) throws IOException {
-        if(file == null) {
-            throw new IllegalArgumentException("File must not be null.");
+        if(url == null) {
+            throw new IllegalArgumentException("URL must not be null.");
         }
 
-        if(!file.exists()) {
-            throw new IllegalArgumentException(String.format("The file '%s' does not exist.", file));
-        }
-
-        if(!file.canRead()) {
-            throw new IOException(String.format("Cannot read file '%s'.", file));
-        }
-
-        int returnCode = countNative(file.getAbsolutePath(), bruteForce);
+        int returnCode = countNative(url.getPath(), bruteForce);
         if(returnCode < 0) {
             throw new FrameCounterJniException(returnCode);
         } else {
@@ -59,5 +49,5 @@ public class FrameCounter {
         }
     }
 
-    private native int countNative(String absolutePath, boolean bruteForce);
+    private native int countNative(String path, boolean bruteForce);
 }

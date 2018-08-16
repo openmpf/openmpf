@@ -56,6 +56,7 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.servlet.ServletContext;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -137,7 +138,7 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 		}
 	}
 
-	private void startFileIndexing(ApplicationContext appContext)  {
+	private void startFileIndexing(ApplicationContext appContext) {
 		if (appContext instanceof WebApplicationContext) {
 			WebApplicationContext webContext = (WebApplicationContext) appContext;
 			ServletContext servletContext = webContext.getServletContext();

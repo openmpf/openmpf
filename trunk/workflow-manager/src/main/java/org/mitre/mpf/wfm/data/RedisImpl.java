@@ -44,7 +44,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.io.File;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -260,21 +259,6 @@ public class RedisImpl implements Redis {
                         for ( int actionIndex = 0; actionIndex < transientJob.getPipeline().getStages().get(taskIndex).getActions().size(); actionIndex++ ) {
                             redisTemplate.delete(key(BATCH_JOB, jobId, MEDIA, transientMedia.getId(), ERRORS, taskIndex, actionIndex));
                             redisTemplate.delete(key(BATCH_JOB, jobId, MEDIA, transientMedia.getId(), TRACK, taskIndex, actionIndex));
-                        }
-                    }
-                }
-
-                if ( transientMedia.getUriScheme().isRemote() ) {
-                    if ( transientMedia.getLocalPath() != null ) {
-                        try {
-                            File file = new File(transientMedia.getLocalPath());
-                            if ( file.exists() ) {
-                                if ( !file.delete() ) {
-                                    log.warn("Failed to delete the file '{}'. It has been leaked and must be removed manually.", file);
-                                }
-                            }
-                        } catch ( Exception exception ) {
-                            log.warn("Failed to delete the local file '{}' which was created retrieved from a remote location - it must be manually deleted.", transientMedia.getLocalPath(), exception);
                         }
                     }
                 }

@@ -27,11 +27,6 @@
 package org.mitre.mpf.wfm.camel.operations.mediainspection;
 
 import com.google.common.base.Preconditions;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import org.apache.camel.Exchange;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.tika.exception.TikaException;
@@ -58,6 +53,11 @@ import org.springframework.stereotype.Component;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
+
 /** This processor extracts metadata about the input medium. */
 @Component(MediaInspectionProcessor.REF)
 public class MediaInspectionProcessor extends WfmProcessor {
@@ -80,14 +80,10 @@ public class MediaInspectionProcessor extends WfmProcessor {
 		log.debug("Inspecting Media {}.", transientMedia.getId());
 
 		if(!transientMedia.isFailed()) {
-			// Any request to pull a remote file should have already populated the local uri.
-			assert transientMedia.getLocalPath() != null : "Media being processed by the MediaInspectionProcessor must have a local URI associated with them.";
-
 			try {
-				File localFile = new File(transientMedia.getLocalPath());
-
-				try (InputStream inputStream = new FileInputStream(localFile)) {
-					log.debug("Calculating hash for '{}'.", localFile);
+				URL url = URI.create(transientMedia.getUri()).toURL();
+				try (InputStream inputStream = url.openStream()) {
+					log.debug("Calculating hash for '{}'.", url);
 					transientMedia.setSha256(DigestUtils.sha256Hex(inputStream));
 				} catch(IOException ioe) {
 					transientMedia.setFailed(true);
@@ -97,26 +93,26 @@ public class MediaInspectionProcessor extends WfmProcessor {
 				}
 
 				try {
-					String type = (ioUtils.getMimeType(localFile));
+					String type = (ioUtils.getMimeType(url));
 					transientMedia.setType(type);
-				} catch(IOException ioe) {
+				} catch(Exception ioe) {
 					transientMedia.setFailed(true);
-					String errorMessage = "Could not determine the MIME type for the media due to IOException.";
+					String errorMessage = "Could not determine the MIME type: " + ioe.getMessage();
 					transientMedia.setMessage(errorMessage);
                     log.error(errorMessage, ioe);
 				}
 
 				switch(transientMedia.getMediaType()) {
 					case AUDIO:
-						inspectAudio(localFile, transientMedia);
+						inspectAudio(url, transientMedia);
 						break;
 
 					case VIDEO:
-						inspectVideo(localFile, transientMedia);
+						inspectVideo(url, transientMedia);
 						break;
 
 					case IMAGE:
-						inspectImage(localFile, transientMedia);
+						inspectImage(url, transientMedia);
 						break;
 
 					default:
@@ -127,7 +123,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 						break;
 				}
 			} catch (Exception exception) {
-				log.error("[Job {}|*|*] Failed to inspect {} due to an exception.", exchange.getIn().getHeader(MpfHeaders.JOB_ID), transientMedia.getLocalPath(), exception);
+				log.error("[Job {}|*|*] Failed to inspect {} due to an exception.", exchange.getIn().getHeader(MpfHeaders.JOB_ID), transientMedia.getUri(), exception);
 				transientMedia.setFailed(true);
 				if (exception instanceof TikaException) {
 					transientMedia.setMessage("Tika media inspection error: " + exception.getMessage());
@@ -151,9 +147,9 @@ public class MediaInspectionProcessor extends WfmProcessor {
         redis.persistMedia(exchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class), transientMedia);
 	}
 
-	private void inspectAudio(File localFile, TransientMedia transientMedia) throws IOException, TikaException, SAXException {
+	private void inspectAudio(URL url, TransientMedia transientMedia) throws IOException, TikaException, SAXException {
 		// We do not fetch the length of audio files.
-		Metadata audioMetadata = generateFFMPEGMetadata(localFile);
+		Metadata audioMetadata = generateFFMPEGMetadata(url);
 		int audioMilliseconds = calculateDurationMilliseconds(audioMetadata.get("xmpDM:duration"));
 		if (audioMilliseconds >= 0) {
 			transientMedia.addMetadata("DURATION", Integer.toString(audioMilliseconds));
@@ -163,16 +159,16 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
 	// inspectVideo may add the following properties to the transientMedias metadata: FRAME_COUNT, FPS, DURATION, ROTATION.
     // The TransientMedias length will be set to FRAME_COUNT.
-	private void inspectVideo(File localFile, TransientMedia transientMedia) throws IOException, TikaException, SAXException {
+	private void inspectVideo(URL url, TransientMedia transientMedia) throws IOException, TikaException, SAXException {
 		// FRAME_COUNT
 
 		// Use the frame counter native library to calculate the length of videos.
-		log.debug("Counting frames in '{}'.", localFile);
+		log.debug("Counting frames in '{}'.", url);
 
 		// We can't get the frame count directly from a gif,
 		// so iterate over the frames and count them one by one
 		boolean isGif = transientMedia.getType().equals("image/gif");
-		int retval = new FrameCounter(localFile).count(isGif);
+		int retval = new FrameCounter(url).count(isGif);
 
 		if (retval <= 0) {
 			transientMedia.setFailed(true);
@@ -186,7 +182,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
 		// FPS
 
-		Metadata videoMetadata = generateFFMPEGMetadata(localFile);
+		Metadata videoMetadata = generateFFMPEGMetadata(url);
 		String fpsStr = videoMetadata.get("xmpDM:videoFrameRate");
 		double fps = 0;
 		if (fpsStr != null) {
@@ -212,8 +208,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
 		}
 	}
 
-	private void inspectImage(File localFile, TransientMedia transientMedia) throws IOException, TikaException, SAXException {
-		Metadata imageMetadata = generateExifMetadata(localFile);
+	private void inspectImage(URL url, TransientMedia transientMedia) throws IOException, TikaException, SAXException {
+		Metadata imageMetadata = generateExifMetadata(url);
 		if (imageMetadata.get("tiff:Orientation") != null) {
 			transientMedia.addMetadata("EXIF_ORIENTATION", imageMetadata.get("tiff:Orientation"));
 			int orientation = Integer.valueOf(imageMetadata.get("tiff:Orientation"));
@@ -256,22 +252,20 @@ public class MediaInspectionProcessor extends WfmProcessor {
 		transientMedia.setLength(1);
 	}
 
-	private Metadata generateFFMPEGMetadata(File file) throws IOException, TikaException, SAXException {
+	private Metadata generateFFMPEGMetadata(URL mediaUrl) throws IOException, TikaException, SAXException {
 		Metadata metadata = new Metadata();
-		try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(file.toPath()),
-				"Cannot open file '%s'", file)) {
-			metadata.set(Metadata.CONTENT_TYPE, ioUtils.getMimeType(file));
-			URL url = this.getClass().getClassLoader().getResource("tika-external-parsers.xml");
-			Parser parser = ExternalParsersConfigReader.read(url.openStream()).get(0);
+		try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(mediaUrl), "Cannot open file '%s'", mediaUrl)) {
+			metadata.set(Metadata.CONTENT_TYPE, ioUtils.getMimeType(mediaUrl));
+			URL parsersUrl = this.getClass().getClassLoader().getResource("tika-external-parsers.xml");
+			Parser parser = ExternalParsersConfigReader.read(parsersUrl.openStream()).get(0);
 			parser.parse(stream, new DefaultHandler(), metadata, new ParseContext());
 		}
 		return metadata;
 	}
 
-	private Metadata generateExifMetadata(File file) throws IOException, TikaException, SAXException {
+	private Metadata generateExifMetadata(URL mediaUrl) throws IOException, TikaException, SAXException {
 		Metadata metadata = new Metadata();
-		try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(file.toPath()),
-				"Cannot open file '%s'", file)) {
+		try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(mediaUrl), "Cannot open file '%s'", mediaUrl)) {
 			metadata.set(Metadata.CONTENT_TYPE, ioUtils.getMimeType(stream));
 			Parser parser = new AutoDetectParser();
 			parser.parse(stream, new DefaultHandler(), metadata, new ParseContext());

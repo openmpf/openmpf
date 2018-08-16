@@ -46,15 +46,11 @@ public class TransientMedia {
 
 	private MediaResource mediaResource = null;
 	public String getUri() { return mediaResource.getUri(); }
+	public void setUri(String uri) { mediaResource.setUri(uri); }
 
 	/** The URI scheme (protocol) associated with the input URI, as obtained from the media resource. */
 	@JsonIgnore
 	public UriScheme getUriScheme() { return mediaResource == null ? UriScheme.UNDEFINED : mediaResource.getUriScheme(); }
-
-	/** The local file path of the file once it has been retrieved. May be null if the media is not a file, or the file path has not been externally set. */
-	public String getLocalPath() { return mediaResource.getLocalFilePath(); }
-	// Note: need to support the setLocalPath method for RemoteMediaSplitter
-	public void setLocalPath(String localPath) { mediaResource.setLocalFilePath(localPath); }
 
 	/** A flag indicating if the medium has encountered an error during processing. Will be false if no error occurred. */
 	private boolean failed = false;
@@ -124,12 +120,11 @@ public class TransientMedia {
     }
 
 	public String toString() {
-		return String.format("%s#<id=%d, uri='%s', uriScheme='%s', localPath='%s', failed=%s, message='%s', type='%s', length=%d, sha256='%s'>",
+		return String.format("%s#<id=%d, uri='%s', uriScheme='%s', failed=%s, message='%s', type='%s', length=%d, sha256='%s'>",
 				this.getClass().getSimpleName(),
 				id,
 				mediaResource.getUri(),
 				mediaResource.getUriScheme(),
-				mediaResource.getLocalFilePath(),
 				Boolean.toString(failed),
 				message,
 				type,

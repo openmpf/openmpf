@@ -58,14 +58,14 @@ public class StageArtifactExtractionPlan {
 	 * Adds a new offset for extraction to this instance.
 	 *
 	 * @param mediaId The id of the media containing the mediaOffset to extract.
-	 * @param mediaPath The local path to the media.
+	 * @param mediaUri The media URI.
 	 * @param mediaType The type associated with this media.
 	 * @param actionIndex The action index (in this stage) which contains a track that requires this offset's extraction.
 	 * @param mediaOffset The offset in the media to extract.
 	 */
-	public void addIndexToMediaExtractionPlan(long mediaId, String mediaPath, MediaType mediaType, int actionIndex, int mediaOffset) {
+	public void addIndexToMediaExtractionPlan(long mediaId, String mediaUri, MediaType mediaType, int actionIndex, int mediaOffset) {
 		if(!mediaIdToArtifactExtractionPlanMap.containsKey(mediaId)) {
-			mediaIdToArtifactExtractionPlanMap.put(mediaId, new ArtifactExtractionPlan(mediaPath, mediaType));
+			mediaIdToArtifactExtractionPlanMap.put(mediaId, new ArtifactExtractionPlan(mediaUri, mediaType));
 		}
 		mediaIdToArtifactExtractionPlanMap.get(mediaId).add(actionIndex, mediaOffset);
 	}

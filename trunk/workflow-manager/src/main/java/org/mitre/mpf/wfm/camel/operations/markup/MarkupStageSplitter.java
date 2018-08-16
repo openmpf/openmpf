@@ -51,7 +51,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.awt.*;
-import java.io.File;
 import java.util.*;
 import java.util.List;
 import java.util.stream.DoubleStream;
@@ -173,7 +172,7 @@ public class MarkupStageSplitter implements StageSplitter {
 			for (int mediaIndex = 0; mediaIndex < transientJob.getMedia().size(); mediaIndex++) {
 				TransientMedia transientMedia = transientJob.getMedia().get(mediaIndex);
 				if (transientMedia.isFailed()) {
-					log.debug("Skipping '{}' - it is in an error state.", transientMedia.getId(), transientMedia.getLocalPath());
+					log.debug("Skipping '{}' - it is in an error state.", transientMedia.getId(), transientMedia.getUri());
 				} else if(!StringUtils.startsWith(transientMedia.getType(), "image") && !StringUtils.startsWith(transientMedia.getType(), "video")) {
 					log.debug("Skipping Media {} - only image and video files are eligible for markup.", transientMedia.getId());
 				} else {
@@ -185,7 +184,7 @@ public class MarkupStageSplitter implements StageSplitter {
 							.setMediaId(transientMedia.getId())
 							.setMediaType(Markup.MediaType.valueOf(transientMedia.getMediaType().toString().toUpperCase()))
 							.setRequestId(redis.getNextSequenceValue())
-							.setSourceUri(new File(transientMedia.getLocalPath()).getAbsoluteFile().toPath().toUri().toString())
+							.setSourceUri(transientMedia.getUri())
 							.setDestinationUri(boundingBoxMapEntryList.size() > 0 ?
 									propertiesUtil.createMarkupPath(transientJob.getId(), transientMedia.getId(), getMarkedUpMediaExtensionForMediaType(transientMedia.getMediaType())).toUri().toString() :
 									propertiesUtil.createMarkupPath(transientJob.getId(), transientMedia.getId(), getFileExtension(transientMedia.getType())).toUri().toString())

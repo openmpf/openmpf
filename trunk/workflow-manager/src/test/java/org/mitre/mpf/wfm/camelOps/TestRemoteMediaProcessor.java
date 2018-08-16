@@ -66,9 +66,6 @@ public class TestRemoteMediaProcessor {
 
 
 	@Autowired
-	private ApplicationContext context;
-
-	@Autowired
 	private CamelContext camelContext;
 
 	@Autowired
@@ -141,7 +138,7 @@ public class TestRemoteMediaProcessor {
 		log.info("Starting valid image retrieval request.");
 
 		TransientMedia transientMedia = new TransientMedia(next(), EXT_IMG);
-		transientMedia.setLocalPath(ioUtils.createTemporaryFile().getAbsolutePath());
+		transientMedia.setUri(ioUtils.createTemporaryFile().getAbsoluteFile().toURI().toString());
 
 		Exchange exchange = new DefaultExchange(camelContext);
 		exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
@@ -168,7 +165,7 @@ public class TestRemoteMediaProcessor {
 		log.info("Starting invalid image retrieval request.");
 
 		TransientMedia transientMedia = new TransientMedia(next(), "https://www.mitre.org/"+UUID.randomUUID().toString());
-		transientMedia.setLocalPath(ioUtils.createTemporaryFile().getAbsolutePath());
+		transientMedia.setUri(ioUtils.createTemporaryFile().getAbsoluteFile().toURI().toString());
 
 		Exchange exchange = new DefaultExchange(camelContext);
 		exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
@@ -207,7 +204,7 @@ public class TestRemoteMediaProcessor {
 		Assert.assertTrue("The request body for the message must be a byte[].", messageBody instanceof byte[]);
 
 		TransientMedia transientMedia = jsonUtils.deserialize((byte[])(messageBody), TransientMedia.class);
-		Assert.assertTrue("The local path must not begin with 'file:'.", !transientMedia.getLocalPath().startsWith("file:"));
+		Assert.assertTrue("The local URI must begin with 'file:'.", transientMedia.getUri().startsWith("file:"));
 		Assert.assertTrue("The transient file must not be marked as failed.", !transientMedia.isFailed());
 	}
 }

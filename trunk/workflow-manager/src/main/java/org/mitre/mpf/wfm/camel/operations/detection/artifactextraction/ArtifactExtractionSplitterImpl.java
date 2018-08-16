@@ -144,14 +144,14 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 							}
 
 							if (transientMedia.getMediaType() == MediaType.IMAGE) {
-								plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath(), transientMedia.getMediaType(), actionIndex, 0);
+								plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getUri(), transientMedia.getMediaType(), actionIndex, 0);
 							} else if (transientMedia.getMediaType() == MediaType.VIDEO) {
 								if (artifactExtractionPolicy == ArtifactExtractionPolicy.ALL_VISUAL_DETECTIONS || artifactExtractionPolicy == ArtifactExtractionPolicy.ALL_DETECTIONS) {
 									for (Detection detection : track.getDetections()) {
-										plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath(), transientMedia.getMediaType(), actionIndex, detection.getMediaOffsetFrame());
+										plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getUri(), transientMedia.getMediaType(), actionIndex, detection.getMediaOffsetFrame());
 									}
 								} else {
-									plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath(), transientMedia.getMediaType(), actionIndex, track.getExemplar().getMediaOffsetFrame());
+									plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getUri(), transientMedia.getMediaType(), actionIndex, track.getExemplar().getMediaOffsetFrame());
 								}
 							} else {
 								log.warn("Media {} with type {} was not expected at this time. None of the detections in this track will be extracted.", transientMedia.getId(), transientMedia.getType());

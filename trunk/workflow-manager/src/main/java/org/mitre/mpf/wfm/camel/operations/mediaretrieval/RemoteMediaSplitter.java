@@ -28,12 +28,8 @@ package org.mitre.mpf.wfm.camel.operations.mediaretrieval;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultMessage;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -41,10 +37,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /** Retrieves a remote HTTP or HTTPS media file. */
 @Component(RemoteMediaSplitter.REF)
@@ -72,6 +66,9 @@ public class RemoteMediaSplitter extends WfmSplitter {
 		// Initialize a collection of work units produced by the splitter.
 		List<Message> messages = new ArrayList<Message>();
 
+		// TODO: Remove this class?
+
+		/*
 		if(!transientJob.isCancelled()) {
 			// If the job has not been cancelled, iterate through the collection of media associated with the job. If the
 			// media's original URI looks like an HTTP or HTTPS URL, create a work unit for that URI.
@@ -85,10 +82,12 @@ public class RemoteMediaSplitter extends WfmSplitter {
 		} else {
 			log.warn("[Job {}|*|*] Remote media inspection will not be performed because this job has been cancelled.", transientJob.getId());
 		}
+		*/
 
 		return messages;
 	}
 
+	/*
 	private Message createMessage(TransientMedia sourceMessage) throws WfmProcessingException {
 		String localFilePath = new File(propertiesUtil.getRemoteMediaCacheDirectory(), UUID.randomUUID().toString()).getAbsolutePath();
 		log.debug("The remote file '{}' will be downloaded and stored to '{}'.", sourceMessage.getUri(), localFilePath);
@@ -98,4 +97,5 @@ public class RemoteMediaSplitter extends WfmSplitter {
 		message.setBody(jsonUtils.serialize(sourceMessage));
 		return message;
 	}
+	*/
 }

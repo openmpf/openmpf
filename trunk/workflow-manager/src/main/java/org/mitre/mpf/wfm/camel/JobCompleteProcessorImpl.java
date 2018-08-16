@@ -65,8 +65,6 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -368,16 +366,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 	private JmsUtils jmsUtils;
 
 	private void destroy(long jobId) throws WfmProcessingException {
-		TransientJob transientJob = redis.getJob(jobId);
-		for(TransientMedia transientMedia : transientJob.getMedia()) {
-			if(transientMedia.getUriScheme().isRemote() && transientMedia.getLocalPath() != null) {
-				try {
-					Files.deleteIfExists(Paths.get(transientMedia.getLocalPath()));
-				} catch(Exception exception) {
-					log.warn("[{}|*|*] Failed to delete locally cached file '{}' due to an exception. This file must be manually deleted.", transientJob.getId(), transientMedia.getLocalPath());
-				}
-			}
-		}
 		redis.clearJob(jobId);
 	}
 

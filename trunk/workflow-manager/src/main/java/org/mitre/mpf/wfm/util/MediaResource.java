@@ -26,14 +26,15 @@
 
 package org.mitre.mpf.wfm.util;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mitre.mpf.wfm.enums.ListFilterType;
 import org.mitre.mpf.wfm.enums.UriScheme;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Contains properties used to identify a piece of media.  The media may or may not have a local file path associated with it.
@@ -53,25 +54,14 @@ public class MediaResource {
 
     private MediaResourceContainer mediaResourceContainer = null;
 
-    // Local file path (i.e. absolute file path) being kept as a separate property, allowing for overriding file info in mediaResourceContainer.
-    // Support for this is required by RemoteMediaSplitter//TransientMedia
-    private String localFilePath = null;
-
-    /** The local file path of this piece of media, if this is file media, null otherwise.
-     * @return If this is file media, returns the absolute path to the local file for this piece of media, null otherwise.
-     */
-    public String getLocalFilePath() { return localFilePath; }
-
-    // Note: need to support this method for use by RemoteMediaSplitter//TransientMedia.  Usage of this method will override
-    // local file path as obtained from mediaResourceContainer
-    public void setLocalFilePath (String localFilePath) { this.localFilePath = localFilePath; }
-
     private String resourceStatusMessage = null;
 
     /** The URI associated with this piece of media.
      * @return The URI associated with this piece of media.
      */
     public String getUri() { return mediaResourceContainer.getUri(); }
+
+    public void setUri(String uri) { mediaResourceContainer.setUri(uri); }
 
     /** The URI scheme (protocol) associated with this media resource. Note that OpenMPF supports only HTTPS, HTTP and FILE protocols for media.
      * @return The URI scheme (protocol) associated with this media resource.
@@ -86,11 +76,6 @@ public class MediaResource {
      * @return true if this is existing, readable file media, false otherwise.
      */
     public boolean isExistingReadableFileMedia() { return mediaResourceContainer.isFileResourceReadable(); }
-
-    /** Check to see if this is a correctly defined media resource.
-     * @return true if the URI scheme of this media resource is correctly constructed, false otherwise.
-     */
-    public boolean isDefinedUriScheme() { return mediaResourceContainer.isResourceOfDefinedUriScheme(); }
 
      /** Get the status message associated with this media resource.
       * @return Status message associated with this media resource.
@@ -119,17 +104,11 @@ public class MediaResource {
         } else if ( mediaResourceContainer.isFileResource() && !mediaResourceContainer.isFileResourceExisting() ) {
             // set resource status to error - that file doesn't exist
             resourceStatusMessage = LOCAL_FILE_DOES_NOT_EXIST;
-            // even though the file does not exist, set the localPathFile variable to avoid potential for NullPointerExceptions.
-            localFilePath = mediaResourceContainer.getResourceFile().getAbsolutePath();
         } else if ( mediaResourceContainer.isFileResource() && !mediaResourceContainer.isFileResourceReadable() ) {
             // set resource status to error - that file exists but it isn't readable
             resourceStatusMessage = LOCAL_FILE_NOT_READABLE;
-            // even though the file isn't readable, set the localPathFile variable to avoid potential for NullPointerExceptions.
-            localFilePath = mediaResourceContainer.getResourceFile().getAbsolutePath();
         } else if ( mediaResourceContainer.isFileResource() ) {
             resourceStatusMessage = NO_ERROR;
-            // localFilePath maintained separately allows for override of file path in mediaResourceContainer via method setLocalFilePath
-            localFilePath = mediaResourceContainer.getResourceFile().getAbsolutePath();
         } else {
             resourceStatusMessage = NO_ERROR;
         }

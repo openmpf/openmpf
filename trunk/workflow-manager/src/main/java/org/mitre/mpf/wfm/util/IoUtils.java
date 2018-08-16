@@ -92,15 +92,6 @@ public class IoUtils {
     }
 
     /**
-     * Gets the MIME type associated with the file.
-     * @param file
-     * @return
-     */
-    public String getMimeType(File file) throws IOException {
-        return tikaInstance.detect(file);
-    }
-
-    /**
      * Gets the MIME type associated with the inputstream
      * @param inputStream
      * @return

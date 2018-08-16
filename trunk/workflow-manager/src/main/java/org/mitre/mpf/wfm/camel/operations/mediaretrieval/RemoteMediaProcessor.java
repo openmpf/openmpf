@@ -27,7 +27,6 @@
 package org.mitre.mpf.wfm.camel.operations.mediaretrieval;
 
 import org.apache.camel.Exchange;
-import org.apache.commons.io.FileUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.Redis;
@@ -39,9 +38,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-
-import java.io.File;
-import java.net.URL;
 
 /** This processor downloads a file from a remote URI to the local filesystem. */
 @Component(RemoteMediaProcessor.REF)
@@ -59,14 +55,13 @@ public class RemoteMediaProcessor extends WfmProcessor {
 		assert exchange.getIn().getBody(byte[].class) != null : "The body must be convertible to String.";
 
 		TransientMedia transientMedia = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TransientMedia.class);
-		log.debug("Retrieving Media {} and storing it at '{}'.", transientMedia.getId(), transientMedia.getLocalPath());
+		// log.debug("Retrieving Media {} and storing it at '{}'.", transientMedia.getId(), transientMedia.getLocalPath());
 
 		switch(transientMedia.getUriScheme()) {
 			case FILE:
-				// Do nothing.
-				break;
 			case HTTP:
 			case HTTPS:
+				/*
 				File localFile = null;
 				try {
 					localFile = new File(transientMedia.getLocalPath());
@@ -81,6 +76,8 @@ public class RemoteMediaProcessor extends WfmProcessor {
 					// Try to delete the local file, but do not throw an exception if this operation fails.
 					deleteOrLeakFile(localFile);
 				}
+				*/
+				// Do nothing.
 				break;
 			default:
 				log.warn("The UriScheme '{}' was not expected at this time.");
@@ -97,6 +94,7 @@ public class RemoteMediaProcessor extends WfmProcessor {
 		exchange.getOut().setBody(jsonUtils.serialize(transientMedia));
 	}
 
+	/*
 	private void deleteOrLeakFile(File file) {
 		try {
 			if(file != null) {
@@ -106,4 +104,5 @@ public class RemoteMediaProcessor extends WfmProcessor {
 			log.warn("Failed to delete the local file '{}'. If it exists, it must be deleted manually.", file);
 		}
 	}
+	*/
 }

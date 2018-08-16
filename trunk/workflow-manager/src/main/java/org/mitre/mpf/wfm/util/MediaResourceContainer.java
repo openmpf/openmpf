@@ -26,16 +26,17 @@
 
 package org.mitre.mpf.wfm.util;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.mitre.mpf.wfm.enums.ListFilterType;
+import org.mitre.mpf.wfm.enums.UriScheme;
+
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Paths;
 import java.util.List;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.mitre.mpf.wfm.enums.ListFilterType;
-import org.mitre.mpf.wfm.enums.UriScheme;
 
 /**
  * Container for information about a media resource.
@@ -45,6 +46,7 @@ public class MediaResourceContainer {
 
     private String resourceUri = null;
     public String getUri() { return resourceUri; }
+    public void setUri(String uri) { resourceUri = uri; }
 
     private UriScheme resourceUriScheme = null;
     public UriScheme getUriScheme() { return resourceUriScheme; }

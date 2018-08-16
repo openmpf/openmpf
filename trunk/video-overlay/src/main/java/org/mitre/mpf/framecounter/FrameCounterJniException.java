@@ -35,7 +35,7 @@ public class FrameCounterJniException extends IOException {
 
     public FrameCounterJniException() { super(); }
     public FrameCounterJniException(int errorCode) {
-        this();
+        this("errorCode: " + errorCode);
         this.errorCode = errorCode;
     }
 

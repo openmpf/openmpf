@@ -30,7 +30,6 @@ package org.mitre.mpf.mst;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgroups.Address;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.mpf.interop.*;
@@ -196,17 +195,14 @@ public class TestStreamingJobStartStop {
 				.getResource("output/object/runDarknetDetectVideo.json");
 		JsonOutputObject expectedOutputJson = new ObjectMapper().readValue(expectedOutputPath, JsonOutputObject.class);
 
-		List<JsonTrackOutputObject> expectedTracks = expectedOutputJson.getMedia()
+		boolean allExpectedTracksFound = expectedOutputJson.getMedia()
 				.stream()
 				.flatMap(m -> m.getTypes().values().stream())
 				.flatMap(Collection::stream)
 				.flatMap(a -> a.getTracks().stream())
 				.filter(t -> t.getStopOffsetFrame() < segmentSize)
-				.collect(toList());
-
-		for (JsonTrackOutputObject expectedTrack : expectedTracks) {
-			assertContainsMatchingTrack(expectedTrack, actualTracks);
-		}
+				.allMatch(t -> containsMatchingTrack(t, actualTracks));
+		assertTrue(allExpectedTracksFound);
 	}
 
 
@@ -230,20 +226,19 @@ public class TestStreamingJobStartStop {
 	}
 
 
-	private static void assertContainsMatchingTrack(JsonTrackOutputObject expectedTrack,
-	                                                List<JsonStreamingTrackOutputObject> actualTracks) {
-	    for (JsonStreamingTrackOutputObject track : actualTracks) {
-	        boolean matches = track.getStartOffsetFrame() == expectedTrack.getStartOffsetFrame()
-			        && track.getStopOffsetFrame() == expectedTrack.getStopOffsetFrame()
-			        && Math.abs(track.getConfidence() - expectedTrack.getConfidence()) < 0.01
-			        && track.getTrackProperties().get("CLASSIFICATION")
-                        .equals(expectedTrack.getTrackProperties().get("CLASSIFICATION"))
-			        && exemplarsMatch(expectedTrack, track);
-	        if (matches) {
-	            return;
-	        }
-	    }
-		Assert.fail("Expected track missing.");
+	private static boolean containsMatchingTrack(JsonTrackOutputObject expectedTrack,
+	                                             Collection<JsonStreamingTrackOutputObject> actualTracks) {
+		return actualTracks.stream()
+				.anyMatch(actual -> tracksMatch(expectedTrack, actual));
+	}
+
+	private static boolean tracksMatch(JsonTrackOutputObject expectedTrack,
+	                                   JsonStreamingTrackOutputObject actualTrack) {
+		return actualTrack.getStartOffsetFrame() == expectedTrack.getStartOffsetFrame()
+				&& actualTrack.getStopOffsetFrame() == expectedTrack.getStopOffsetFrame()
+				&& Math.abs(actualTrack.getConfidence() - expectedTrack.getConfidence()) < 0.01
+				&& actualTrack.getTrackProperties().equals(expectedTrack.getTrackProperties())
+				&& exemplarsMatch(expectedTrack, actualTrack);
 	}
 
 	private static boolean exemplarsMatch(JsonTrackOutputObject expectedTrack,

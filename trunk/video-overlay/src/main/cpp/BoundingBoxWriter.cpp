@@ -494,9 +494,15 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
         if (inChars != NULL) {
 
             try {
-                Mat image = imread(inChars, CV_LOAD_IMAGE_IGNORE_ORIENTATION + CV_LOAD_IMAGE_COLOR);
+                VideoCapture src(inChars);
+                if (!src.isOpened()) {
+                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
 
-                if (image.empty()) {
+                    return 8700;
+                }
+
+                Mat image;
+                if (!src.read(image) || image.empty()) {
                     // Cleanup...
                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
 

@@ -55,7 +55,7 @@
                 "stopOffsetFrame": 1,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
-                "confidence": 89.49258,
+                "confidence": 87.26358032226562,
                 "trackProperties": {
                   "TEXT": "LV42DY"
                 },
@@ -64,9 +64,9 @@
                 "exemplar": {
                   "x": 358,
                   "y": 419,
-                  "width": 106,
+                  "width": 110,
                   "height": 57,
-                  "confidence": 89.49258,
+                  "confidence": 87.26358032226562,
                   "detectionProperties": {
                     "TEXT": "LV42DY"
                   },
@@ -80,9 +80,9 @@
                   {
                     "x": 358,
                     "y": 419,
-                    "width": 106,
+                    "width": 110,
                     "height": 57,
-                    "confidence": 89.49258,
+                    "confidence": 87.26358032226562,
                     "detectionProperties": {
                       "TEXT": "LV42DY"
                     },
@@ -124,7 +124,7 @@
                 "stopOffsetFrame": 1,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
-                "confidence": 87.40117,
+                "confidence": 86.75150299072266,
                 "trackProperties": {
                   "TEXT": "0116G"
                 },
@@ -135,7 +135,7 @@
                   "y": 1317,
                   "width": 238,
                   "height": 117,
-                  "confidence": 87.40117,
+                  "confidence": 86.75150299072266,
                   "detectionProperties": {
                     "TEXT": "0116G"
                   },
@@ -151,7 +151,7 @@
                     "y": 1317,
                     "width": 238,
                     "height": 117,
-                    "confidence": 87.40117,
+                    "confidence": 86.75150299072266,
                     "detectionProperties": {
                       "TEXT": "0116G"
                     },
@@ -173,16 +173,13 @@
     },
     {
       "mediaId": 25,
-      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/text/lp-trailer.jpg",
-      "mimeType": "image/jpeg",
+      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/text/lp-trailer.png",
+      "mimeType": "image/png",
       "length": 1,
       "sha256": "1fa8ede23ac49360fde6d3a063b3a4035ebfe450ed95e1d82ea108bc8e7accab",
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
-        "EXIF_ORIENTATION": "1",
-        "HORIZONTAL_FLIP": "FALSE",
-        "ROTATION": "0"
       },
       "mediaProperties": {},
       "markupResult": null,

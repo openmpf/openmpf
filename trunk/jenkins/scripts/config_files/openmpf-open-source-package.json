@@ -51,6 +51,18 @@
         {
             "name": "DarknetDetection",
             "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/DarknetDetection"
+        },
+        {
+            "name": "SceneChangeDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/SceneChangeDetection"
+        },
+        {
+            "name": "TesseractOCRTextDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/TesseractOCRTextDetection"
+        },
+        {
+            "name": "TikaTextDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/java/TikaTextDetection"
         }
     ]
 }

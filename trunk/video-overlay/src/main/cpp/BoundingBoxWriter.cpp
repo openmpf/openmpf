@@ -503,7 +503,6 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupIm
 
                 Mat image;
                 if (!src.read(image) || image.empty()) {
-                    // Cleanup...
                     env->ReleaseStringUTFChars(sourceVideoPath, inChars);
 
                     return 8700;

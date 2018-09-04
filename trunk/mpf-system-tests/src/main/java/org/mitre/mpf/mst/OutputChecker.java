@@ -136,6 +136,7 @@ public class OutputChecker {
     private void compareJsonTrackOutputObjects(SortedSet<JsonTrackOutputObject> expectedTracksSet,
                                                SortedSet<JsonTrackOutputObject> actualTracksSet,
                                                String pipeline){
+        _errorCollector.checkNowThat("Track Count:", actualTracksSet.size(), is(expectedTracksSet.size()));
         Iterator<JsonTrackOutputObject> expIter = expectedTracksSet.iterator();
         Iterator<JsonTrackOutputObject> actIter = actualTracksSet.iterator();
 

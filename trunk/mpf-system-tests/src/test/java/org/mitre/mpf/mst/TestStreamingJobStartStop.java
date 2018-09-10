@@ -184,11 +184,9 @@ public class TestStreamingJobStartStop {
 				.flatMap(Collection::stream)
 				.collect(toList());
 
-		Set<String> objectClassifications = actualTracks.stream()
+		assertTrue(actualTracks.stream()
 				.map(t -> t.getTrackProperties().get("CLASSIFICATION"))
-				.collect(toSet());
-
-		assertTrue(objectClassifications.containsAll(Arrays.asList("person", "tie", "sports ball")));
+				.anyMatch("person"::equalsIgnoreCase));
 
 
 		URL expectedOutputPath = getClass().getClassLoader()

@@ -29,10 +29,14 @@ package org.mitre.mpf.wfm.camel;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
-import org.javasimon.aop.Monitored;
+import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +51,12 @@ import java.util.UUID;
  * </ul>
  */
 public abstract class WfmSplitter implements WfmSplitterInterface {
+
 	private static final Logger log = LoggerFactory.getLogger(WfmSplitter.class);
+
+	@Autowired
+	@Qualifier(RedisImpl.REF)
+	private Redis redis;
 
 	/**
 	 * In an implementing class, returns the list of work units which are to be performed.
@@ -76,9 +85,11 @@ public abstract class WfmSplitter implements WfmSplitterInterface {
 
 		try {
 			messages = wfmSplit(exchange);
-		} catch(Exception exception) {
+		} catch (Exception exception) {
 			// The split operation failed. The job cannot continue.
+			// Print out the stack trace since no details will be reported in the JSON output.
 			log.error("Failed to complete the split operation for Job {} due to an exception.", jobId, exception);
+			redis.setJobStatus(jobId, BatchJobStatusType.ERROR);
 			failed = true;
 		}
 
@@ -88,16 +99,15 @@ public abstract class WfmSplitter implements WfmSplitterInterface {
 		// Were any messages produced from the split?
 		boolean emptySplit = messages.size() == 0;
 
-		if(messages.size() == 0) {
+		if (emptySplit) {
 			// No messages were produced. Unless a dummy message is produced, the workflow will hang.
 			Message defaultMessage = new DefaultMessage();
 			defaultMessage.getHeaders().put(MpfHeaders.EMPTY_SPLIT, Boolean.TRUE);
-			defaultMessage.getHeaders().put(MpfHeaders.SPLITTING_ERROR, failed);
 			defaultMessage.getHeaders().put(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
 			messages.add(defaultMessage);
 		}
 
-		for(Message message : messages) {
+		for (Message message : messages) {
 			message.getHeaders().put(MpfHeaders.SPLIT_SIZE, messages.size());
 			message.getHeaders().put(MpfHeaders.JOB_ID, jobId);
 			message.getHeaders().put(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));

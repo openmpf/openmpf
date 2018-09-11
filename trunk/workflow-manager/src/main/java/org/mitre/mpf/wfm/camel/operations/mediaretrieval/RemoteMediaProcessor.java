@@ -33,6 +33,7 @@ import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +77,9 @@ public class RemoteMediaProcessor extends WfmProcessor {
 				} catch (Exception exception) {
 					log.warn("Failed to retrieve Media {}.", transientMedia.getId());
 					transientMedia.setFailed(true);
-					transientMedia.setMessage("Error writing media to temp file - " + exception.toString());
+					transientMedia.setMessage("Error writing media to temp file: " + exception.toString());
+
+					redis.setJobStatus(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class), BatchJobStatusType.IN_PROGRESS_ERRORS);
 
 					// Try to delete the local file, but do not throw an exception if this operation fails.
 					deleteOrLeakFile(localFile);

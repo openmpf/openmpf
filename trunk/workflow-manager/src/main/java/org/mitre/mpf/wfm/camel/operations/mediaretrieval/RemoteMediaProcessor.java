@@ -35,6 +35,7 @@ import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +43,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 
 /** This processor downloads a file from a remote URI to the local filesystem. */
@@ -54,13 +56,17 @@ public class RemoteMediaProcessor extends WfmProcessor {
 	@Qualifier(RedisImpl.REF)
 	private Redis redis;
 
+	@Autowired
+	@Qualifier(PropertiesUtil.REF)
+	protected PropertiesUtil propertiesUtil;
+
 	@Override
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
 		assert exchange.getIn().getBody() != null : "The body must not be null.";
 		assert exchange.getIn().getBody(byte[].class) != null : "The body must be convertible to String.";
 
 		TransientMedia transientMedia = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TransientMedia.class);
-		log.debug("Retrieving Media {} and storing it at '{}'.", transientMedia.getId(), transientMedia.getLocalPath());
+		log.debug("Retrieving {} and saving it to `{}`.", transientMedia.getUri(), transientMedia.getLocalPath());
 
 		switch(transientMedia.getUriScheme()) {
 			case FILE:
@@ -69,21 +75,39 @@ public class RemoteMediaProcessor extends WfmProcessor {
 			case HTTP:
 			case HTTPS:
 				File localFile = null;
-				try {
-					localFile = new File(transientMedia.getLocalPath());
-					FileUtils.copyURLToFile(new URL(transientMedia.getUri()), localFile);
-					log.debug("Successfully retrieved Media {} and saved it to '{}'.", transientMedia.getId(), transientMedia.getLocalPath());
-					transientMedia.setFailed(false);
-				} catch (Exception exception) {
-					log.warn("Failed to retrieve Media {}.", transientMedia.getId());
-					transientMedia.setFailed(true);
-					transientMedia.setMessage("Error writing media to temp file: " + exception.toString());
+				String errorMessage = null;
 
-					redis.setJobStatus(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class), BatchJobStatusType.IN_PROGRESS_ERRORS);
+				for (int i = 0; i <= propertiesUtil.getRemoteMediaDownloadRetries(); i++) {
+					try {
+						localFile = new File(transientMedia.getLocalPath());
+						FileUtils.copyURLToFile(new URL(transientMedia.getUri()), localFile);
+						log.debug("Successfully retrieved {} and saved it to '{}'.", transientMedia.getUri(), transientMedia.getLocalPath());
+						transientMedia.setFailed(false);
+						break;
+					} catch (IOException ioe) { // "javax.net.ssl.SSLException: SSL peer shut down incorrectly" has been observed
+						log.warn("Failed to retrieve {}.", transientMedia.getUri(), ioe);
+						// Try to delete the local file, but do not throw an exception if this operation fails.
+						deleteOrLeakFile(localFile);
+						errorMessage = ioe.toString();
+					}
 
-					// Try to delete the local file, but do not throw an exception if this operation fails.
-					deleteOrLeakFile(localFile);
+					if (i < propertiesUtil.getRemoteMediaDownloadRetries()) {
+						try {
+							int sleepMillisec = propertiesUtil.getRemoteMediaDownloadSleep() * (i + 1);
+							log.warn("Sleeping for {} ms before trying to retrieve {} again.", sleepMillisec, transientMedia.getUri());
+							Thread.sleep(sleepMillisec);
+						} catch (InterruptedException e) {
+							log.warn("Sleep interrupted.");
+							Thread.currentThread().interrupt();
+							break; // abort download attempt
+						}
+					} else {
+						transientMedia.setFailed(true);
+						transientMedia.setMessage("Error retrieving media and saving it to temp file: " + errorMessage);
+						redis.setJobStatus(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class), BatchJobStatusType.IN_PROGRESS_ERRORS);
+					}
 				}
+
 				break;
 			default:
 				log.warn("The UriScheme '{}' was not expected at this time.");

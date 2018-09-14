@@ -103,6 +103,7 @@ public abstract class WfmSplitter implements WfmSplitterInterface {
 			// No messages were produced. Unless a dummy message is produced, the workflow will hang.
 			Message defaultMessage = new DefaultMessage();
 			defaultMessage.getHeaders().put(MpfHeaders.EMPTY_SPLIT, Boolean.TRUE);
+			defaultMessage.getHeaders().put(MpfHeaders.SPLITTING_ERROR, failed);
 			defaultMessage.getHeaders().put(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
 			messages.add(defaultMessage);
 		}

@@ -116,8 +116,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			String statusString = exchange.getIn().getHeader(MpfHeaders.JOB_STATUS, String.class);
 			Mutable<BatchJobStatusType> jobStatus = new MutableObject<>(BatchJobStatusType.parse(statusString, BatchJobStatusType.UNKNOWN));
 
-			markJobStatus(jobId, jobStatus.getValue());
-
 			try {
 				markJobStatus(jobId, BatchJobStatusType.BUILDING_OUTPUT_OBJECT);
 

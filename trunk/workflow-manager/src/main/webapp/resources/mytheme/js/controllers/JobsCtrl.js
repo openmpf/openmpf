@@ -96,11 +96,11 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                         data: "jobStatus",
                         render: function (data, atype, job) {
                             var type = "label-default";
-                            if (job.jobStatus.toLowerCase().indexOf("error") > 0) {
+                            if (job.jobStatus.toLowerCase().indexOf("error") >= 0) {
                                 type = "label-danger";
-                            } else if (job.jobStatus.toLowerCase().indexOf("warnings") > 0) {
+                            } else if (job.jobStatus.toLowerCase().indexOf("warning") >= 0) {
                                 type = "label-warning";
-                            } else if (job.jobStatus.toLowerCase().indexOf("unknown") > 0) {
+                            } else if (job.jobStatus.toLowerCase().indexOf("unknown") >= 0) {
                                 type = "label-primary";
                             }
                             var hideProgress = 'style="display:none;"';
@@ -177,11 +177,13 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
             $("#jobStatusCell" + job.id).html(job.jobStatus);
 
             //keep the job progress val at 99% until it is complete or cancelled
-            if (progress > 99 && !(job.jobStatus.startsWith('COMPLETE') || job.jobStatus.startsWith('CANCELLED'))) {
-                progress = 99;
-            } else if (job.jobStatus.startsWith('COMPLETE') || job.jobStatus.startsWith('CANCELLED')) {
+            if (job.jobStatus.startsWith('COMPLETE') || job.jobStatus.startsWith('CANCELLED') 
+			|| job.jobStatus.startsWith('ERROR') || job.jobStatus.startsWith('UNKNOWN')) {
                 jobTable.ajax.reload(null, false);
+            } else if (progress > 99) {
+                progress = 99;
             }
+
             if (progress < 100) {
                 $("#jobProgress" + job.id).parent().show();
                 $("#jobProgress" + job.id).html(progress + "%");

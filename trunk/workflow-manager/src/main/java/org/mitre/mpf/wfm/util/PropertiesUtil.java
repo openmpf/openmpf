@@ -688,6 +688,18 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getBoolean("mpf.ansible.local-only", false);
     }
 
+    //
+    // Remote media settings
+    //
+
+    public int getRemoteMediaDownloadRetries() {
+        return mpfPropertiesConfig.getInt("remote.media.download.retries");
+    }
+
+    public int getRemoteMediaDownloadSleep() {
+        return mpfPropertiesConfig.getInt("remote.media.download.sleep");
+    }
+
 
     // Helper methods
 

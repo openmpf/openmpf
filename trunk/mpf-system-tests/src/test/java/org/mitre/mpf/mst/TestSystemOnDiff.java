@@ -744,7 +744,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         runSystemTest(pipelineName, "output/text/runTextOalprDetectImage.json",
                 "/samples/text/lp-bmw.jpg",
                 "/samples/text/lp-police-car.jpg",
-                "/samples/text/lp-trailer.jpg");
+                "/samples/text/lp-trailer.png");
     }
 
     @Test(timeout = 10 * MINUTES)

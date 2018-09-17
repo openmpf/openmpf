@@ -94,7 +94,6 @@ public class RedisImpl implements Redis {
     private static final String
             DETECTION_SYSTEM_PROPERTIES_SNAPSHOT = "DETECTION_SYSTEM_PROPERTIES_SNAPSHOT",
             CANCELLED = "CANCELLED",
-            DETAIL = "DETAIL",
             ERRORS = "ERRORS",
             EXTERNAL_ID = "EXTERNAL_ID",
             BATCH_JOB = "BATCH_JOB",

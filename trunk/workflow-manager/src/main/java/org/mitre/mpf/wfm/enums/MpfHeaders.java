@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.enums;
 
 public class MpfHeaders {
 	public static final String
-		ACTION_INDEX = "ActionIndex",
 		AGGREGATED_COUNT = "AggregatedCount",
 
 		CORRELATION_ID = "CorrelationId",
@@ -44,15 +43,12 @@ public class MpfHeaders {
 		JOB_ID = "JobId",
 		JOB_STATUS = "JobStatus",
 
-		MERGE_TRACKS = "MergeTracks",
-
 		RECIPIENT_QUEUE = "QueueName",
 
 		SEND_OUTPUT_OBJECT = "SendOutputObject",
 		SPLIT_COMPLETED = "SplitCompleted",
 		SPLIT_SIZE = "SplitSize",
 		SPLITTING_ERROR = "JobSplitError",
-		STAGE_INDEX = "StageIndex",
 		SUPPRESS_BROADCAST = "SuppressBroadcast",
 
 		UNSOLICITED = "Unsolicited";

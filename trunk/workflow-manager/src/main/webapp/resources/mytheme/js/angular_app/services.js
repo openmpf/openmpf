@@ -557,7 +557,9 @@ AppServices.factory('ServerSidePush',
                                     // if in terminal state
                                     if (msg.jobStatus == 'COMPLETE' ||
                                         msg.jobStatus == 'COMPLETE_WITH_ERRORS' ||
-                                        msg.jobStatus == 'COMPLETE_WITH_WARNINGS') {
+                                        msg.jobStatus == 'COMPLETE_WITH_WARNINGS' ||
+                                        msg.jobStatus == 'ERROR' ||
+                                        msg.jobStatus == 'UNKNOWN') {
 
                                         // ensure job is part of session to avoid flooding the UI with notifications
                                         JobsService.getJob(msg.id, true).then(function (job) {
@@ -567,10 +569,16 @@ AppServices.factory('ServerSidePush',
                                                     NotificationSvc.success('Job ' + msg.id + ' is now complete!');
                                                 } else if (msg.jobStatus == 'COMPLETE_WITH_ERRORS') {
                                                     console.log('job complete (with errors) for id: ' + msg.id);
-                                                    NotificationSvc.success('Job ' + msg.id + ' is now complete (with errors).');
+                                                    NotificationSvc.error('Job ' + msg.id + ' is now complete (with errors).');
                                                 } else if (msg.jobStatus == 'COMPLETE_WITH_WARNINGS') {
                                                     console.log('job complete (with warnings) for id: ' + msg.id);
-                                                    NotificationSvc.success('Job ' + msg.id + ' is now complete (with warnings).');
+                                                    NotificationSvc.warning('Job ' + msg.id + ' is now complete (with warnings).');
+                                                } else if (msg.jobStatus == 'ERROR') {
+                                                    console.log('job ' + msg.id + ' terminated due to an error');
+                                                    NotificationSvc.error('Job ' + msg.id + ' terminated due to an error. Check the Workflow Manager log for details.');
+                                                } else if (msg.jobStatus == 'UNKNOWN') {
+                                                    console.log('job ' + msg.id + ' is in an unknown state');
+                                                    NotificationSvc.info('Job ' + msg.id + ' is in an unknown state. Check the Workflow Manager log for details.');
                                                 }
                                             }
                                         });
@@ -866,6 +874,9 @@ AppServices.factory('NotificationSvc', [
         return {
             error: function (message, layout) {
                 generateNotyAlert("error", message, layout);
+            },
+            warning: function (message, layout) {
+                generateNotyAlert("warning", message, layout);
             },
             success: function (message, layout) {
                 generateNotyAlert("success", message, layout);

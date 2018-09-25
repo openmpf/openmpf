@@ -141,11 +141,11 @@ public class PropertiesUtil {
         String coreMpfNodesStr = System.getenv(EnvVar.CORE_MPF_NODES);
 
         if (StringUtils.isNullOrEmpty(coreMpfNodesStr)) {
-            throw new IllegalStateException(EnvVar.CORE_MPF_NODES + " environment variable must be defined.");
+            coreMpfNodes = ImmutableSet.of(); // empty set
+        } else {
+            coreMpfNodes = Arrays.stream(coreMpfNodesStr.split(",")).map(String::trim)
+                    .filter(node -> !node.isEmpty()).collect(collectingAndThen(toSet(), ImmutableSet::copyOf));
         }
-
-        coreMpfNodes = Arrays.stream(coreMpfNodesStr.split(",")).map(String::trim)
-                .filter(node -> !node.isEmpty()).collect(collectingAndThen(toSet(), ImmutableSet::copyOf));
     }
 
     private static File createOrFail(Path parent, String subdirectory, Set<PosixFilePermission> permissions)

@@ -64,4 +64,8 @@ public interface NodeManagerService {
     public boolean isCoreNode(String host);
 
     public Set<String> getAvailableNodes();
+
+    public void configureNewNode(String host) throws IOException;
+
+    public void unconfigureNode(String host) throws IOException;
 }

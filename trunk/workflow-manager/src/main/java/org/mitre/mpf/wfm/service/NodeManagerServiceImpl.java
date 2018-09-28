@@ -75,7 +75,7 @@ public class NodeManagerServiceImpl implements NodeManagerService {
     }
 
     @Override
-    public boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels, boolean reload) throws IOException {
+    public synchronized boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels, boolean reload) throws IOException {
 
         NodeManagers managers = convertFromModels(nodeManagerModels);
 
@@ -86,7 +86,7 @@ public class NodeManagerServiceImpl implements NodeManagerService {
         xStream.processAnnotations(Service.class);
         xStream.processAnnotations(EnvironmentVariable.class);
 
-        try (OutputStream outputStream = propertiesUtil.getNodeManagerConfigResource().getOutputStream()) {
+        try (OutputStream outputStream = propertiesUtil.getNodeManagerConfigResource(false).getOutputStream()) {
             xStream.toXML(managers, outputStream);
         }
 
@@ -157,8 +157,8 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
 
     @Override
-    public List<NodeManagerModel> getNodeManagerModels() {
-        try (InputStream inputStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
+    public synchronized List<NodeManagerModel> getNodeManagerModels() {
+        try (InputStream inputStream = propertiesUtil.getNodeManagerConfigResource(false).getInputStream()) {
             NodeManagers managers = NodeManagers.fromXml(inputStream);
             if (managers.managers() == null) {
                 return new ArrayList<>();
@@ -282,5 +282,23 @@ public class NodeManagerServiceImpl implements NodeManagerService {
     @Override
     public Set<String> getAvailableNodes() {
         return nodeManagerStatus.getAvailableNodes();
+    }
+
+    @Override
+    public void configureNewNode(String host) throws IOException {
+        // Add all services to the new node
+        NodeManagerModel newNode = new NodeManagerModel();
+        newNode.setHost(host);
+        newNode.setServices(new ArrayList(getServiceModels().values()));
+        List<NodeManagerModel> nodeManagerModelList = getNodeManagerModels();
+        nodeManagerModelList.add(newNode);
+        saveNodeManagerConfig(nodeManagerModelList);
+    }
+
+    @Override
+    public void unconfigureNode(String host) throws IOException {
+        List<NodeManagerModel> nodeManagerModelList = getNodeManagerModels();
+        nodeManagerModelList.removeIf(node -> node.getHost().equals(host));
+        saveNodeManagerConfig(nodeManagerModelList);
     }
 }

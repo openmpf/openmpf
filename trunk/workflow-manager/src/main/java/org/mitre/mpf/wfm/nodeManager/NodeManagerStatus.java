@@ -38,6 +38,7 @@ import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
+import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +70,9 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     @Autowired
     private StreamingJobRequestBo streamingJobRequestBo;
 
+    @Autowired
+    private NodeManagerService nodeManagerService;
+
     // flag that indicates if at least one view update was initiated by JGroups
     private boolean viewUpdated = false;
 
@@ -84,7 +88,9 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
             isRunning = true;
         }
 
-        try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
+        // Discard previous configuration if node autounconfiguration is enabled.
+        try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource(
+                propertiesUtil.isNodeAutoUnconfigEnabled()).getInputStream()) {
             if (masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri())) {
                 if (!reloadConfig && !masterNode.areAllManagersPresent()) {
                     waitForViewUpdate();
@@ -255,9 +261,18 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
         }
     }
 
+    // NOTE: This is called when a configured node manager becomes available, and also when a spare node is detected.
     @Override
     public void newManager(String hostname) {
         log.debug("{} manager has started.", hostname);
+        if (propertiesUtil.isNodeAutoConfigEnabled() &&
+                !masterNode.getConfiguredManagerHosts().containsKey(hostname)) {
+            try {
+                nodeManagerService.configureNewNode(hostname);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
         //go ahead and launch anything that is able to launch (nothing that starts with a state of Delete or InactiveNoStart)
         masterNode.launchAllNodes();
         broadcastNodeEvent(hostname, "OnNewManager");
@@ -266,6 +281,13 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     @Override
     public void managerDown(String hostname) {
         //log.debug("{} manager down.", hostname);
+        if (propertiesUtil.isNodeAutoUnconfigEnabled()) {
+            try {
+                nodeManagerService.unconfigureNode(hostname);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
         broadcastNodeEvent(hostname, "OnManagerDown");
     }
 

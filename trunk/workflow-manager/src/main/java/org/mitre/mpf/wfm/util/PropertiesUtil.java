@@ -185,10 +185,8 @@ public class PropertiesUtil {
      * @return Updated list of property models for the set of immutable properties.
      */
     public List<PropertyModel> getImmutableCustomProperties() {
-        // Get an updated list of property models. Each element contains current value. Return only the immutable system properties by
-        // filtering out the mutable detection properties from the list.
         return getCustomProperties().stream()
-                .filter(pm -> !isDetectionProperty(pm.getKey()))
+                .filter(pm -> !mpfPropertiesConfigBuilder.isMutableProperty(pm.getKey()))
                 .collect(toList());
     }
 
@@ -198,21 +196,15 @@ public class PropertiesUtil {
      * @return Updated list of property models for the set of mutable properties.
      */
     public List<PropertyModel> getMutableCustomProperties() {
-        // Get an updated list of property models. Each element contains current value. Return only the mutable system properties by
-        // filtering out the immutable detection properties from the list.
         return getCustomProperties().stream()
-                .filter(pm -> isDetectionProperty(pm.getKey()))
+                .filter(pm -> mpfPropertiesConfigBuilder.isMutableProperty(pm.getKey()))
                 .collect(toList());
-    }
-
-    private static boolean isDetectionProperty(String key) {
-        return key.startsWith(MpfPropertiesConfigurationBuilder.DETECTION_KEY_PREFIX);
     }
 
     public TransientDetectionSystemProperties createDetectionSystemPropertiesSnapshot() {
         Map<String, String> detMap = new HashMap();
         mpfPropertiesConfig.getKeys().forEachRemaining(key -> {
-            if (isDetectionProperty(key)) {
+            if (mpfPropertiesConfigBuilder.isDetectionProperty(key)) {
                 detMap.put(key, mpfPropertiesConfig.getString(key)); // resolve final value
             }
         } );
@@ -500,8 +492,8 @@ public class PropertiesUtil {
         return appContext.getResource(mpfPropertiesConfig.getString("data.nodemanagerconfig.template"));
     }
 
-    public WritableResource getNodeManagerConfigResource() {
-        return getDataResource(getNodeManagerConfigData(), getNodeManagerConfigTemplate());
+    public WritableResource getNodeManagerConfigResource(boolean useTemplate) {
+        return getDataResource(getNodeManagerConfigData(), getNodeManagerConfigTemplate(), useTemplate);
     }
 
 
@@ -700,16 +692,34 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getInt("remote.media.download.sleep");
     }
 
+    //
+    // Node management settings
+    //
+
+    public boolean isNodeAutoConfigEnabled() {
+        return mpfPropertiesConfig.getBoolean("node.auto.config.enabled");
+    }
+
+    public boolean isNodeAutoUnconfigEnabled() {
+        return mpfPropertiesConfig.getBoolean("node.auto.unconfig.enabled");
+    }
 
     // Helper methods
 
     private static WritableResource getDataResource(WritableResource dataResource, InputStreamSource templateResource) {
-        if (dataResource.exists()) {
-            return dataResource;
-        }
+        return getDataResource(dataResource, templateResource, false);
+    }
 
+    private static WritableResource getDataResource(WritableResource dataResource, InputStreamSource templateResource,
+                                                    boolean useTemplate) {
         try {
-            log.info("{} doesn't exist. Copying from {}", dataResource, templateResource);
+            if (dataResource.exists()) {
+                if (!useTemplate) {
+                    return dataResource;
+                }
+                dataResource.getFile().delete();
+            }
+            log.info("{} removed or doesn't exist. Copying from {}", dataResource, templateResource);
             copyResource(dataResource, templateResource);
             return dataResource;
         } catch ( IOException e ) {

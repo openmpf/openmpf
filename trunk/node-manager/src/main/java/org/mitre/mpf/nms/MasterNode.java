@@ -104,7 +104,7 @@ public class MasterNode {
      *
      * @param masterConfigFile
      * @param activeMqBrokerUri
-     * @return false if the file if xml parsing returns null or there are no nodes present
+     * @return false if the file xml parsing returns null or there are no nodes present
      */
     public final boolean loadConfigFile(InputStream masterConfigFile, String activeMqBrokerUri) {
         // Don't let the config file have multiple node-managers with the same hostname/IP

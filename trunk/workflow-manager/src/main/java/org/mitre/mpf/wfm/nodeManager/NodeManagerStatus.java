@@ -82,23 +82,28 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 
 
     public void init(boolean reloadConfig) {
+        boolean configFileLoaded = false;
+
+        // Discard previous configuration if node auto-unconfiguration is enabled.
+        try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource(
+                propertiesUtil.isNodeAutoUnconfigEnabled()).getInputStream()) {
+            configFileLoaded = masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        // Start the master node if the WFM is starting for the first time
         if (!reloadConfig) {
             masterNode.setCallback(this);
             masterNode.run();
             isRunning = true;
-        }
 
-        // Discard previous configuration if node autounconfiguration is enabled.
-        try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource(
-                propertiesUtil.isNodeAutoUnconfigEnabled()).getInputStream()) {
-            if (masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri())) {
-                if (!reloadConfig && !masterNode.areAllManagersPresent()) {
+            if (configFileLoaded) {
+                if (!masterNode.areAllManagersPresent()) {
                     waitForViewUpdate();
                 }
                 masterNode.launchAllNodes();
             }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
 
         updateServiceDescriptors();

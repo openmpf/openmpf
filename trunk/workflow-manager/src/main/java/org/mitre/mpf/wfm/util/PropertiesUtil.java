@@ -141,11 +141,11 @@ public class PropertiesUtil {
         String coreMpfNodesStr = System.getenv(EnvVar.CORE_MPF_NODES);
 
         if (StringUtils.isNullOrEmpty(coreMpfNodesStr)) {
-            throw new IllegalStateException(EnvVar.CORE_MPF_NODES + " environment variable must be defined.");
+            coreMpfNodes = ImmutableSet.of(); // empty set
+        } else {
+            coreMpfNodes = Arrays.stream(coreMpfNodesStr.split(",")).map(String::trim)
+                    .filter(node -> !node.isEmpty()).collect(collectingAndThen(toSet(), ImmutableSet::copyOf));
         }
-
-        coreMpfNodes = Arrays.stream(coreMpfNodesStr.split(",")).map(String::trim)
-                .filter(node -> !node.isEmpty()).collect(collectingAndThen(toSet(), ImmutableSet::copyOf));
     }
 
     private static File createOrFail(Path parent, String subdirectory, Set<PosixFilePermission> permissions)
@@ -686,6 +686,18 @@ public class PropertiesUtil {
 
     public boolean isAnsibleLocalOnly() {
         return mpfPropertiesConfig.getBoolean("mpf.ansible.local-only", false);
+    }
+
+    //
+    // Remote media settings
+    //
+
+    public int getRemoteMediaDownloadRetries() {
+        return mpfPropertiesConfig.getInt("remote.media.download.retries");
+    }
+
+    public int getRemoteMediaDownloadSleep() {
+        return mpfPropertiesConfig.getInt("remote.media.download.sleep");
     }
 
 

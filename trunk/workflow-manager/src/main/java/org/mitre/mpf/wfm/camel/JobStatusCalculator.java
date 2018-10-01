@@ -71,15 +71,25 @@ public class JobStatusCalculator {
 
         BatchJobStatusType statusFromRedis = redis.getBatchJobStatus(job.getId());
 
+        if (statusFromRedis.equals(BatchJobStatusType.ERROR) ||
+                statusFromRedis.equals(BatchJobStatusType.UNKNOWN) ||
+                statusFromRedis.equals(BatchJobStatusType.COMPLETE_WITH_ERRORS) ||
+                statusFromRedis.equals(BatchJobStatusType.COMPLETE_WITH_WARNINGS)) {
+            return statusFromRedis;
+        }
+
         if (statusFromRedis.equals(BatchJobStatusType.IN_PROGRESS_WARNINGS)) {
             redis.setJobStatus(job.getId(), BatchJobStatusType.COMPLETE_WITH_WARNINGS);
             return BatchJobStatusType.COMPLETE_WITH_WARNINGS;
-        } else if (statusFromRedis.equals(BatchJobStatusType.IN_PROGRESS_ERRORS)) {
+        }
+
+        if (statusFromRedis.equals(BatchJobStatusType.IN_PROGRESS_ERRORS)) {
             redis.setJobStatus(job.getId(), BatchJobStatusType.COMPLETE_WITH_ERRORS);
             return BatchJobStatusType.COMPLETE_WITH_ERRORS;
-        } else {
-            redis.setJobStatus(job.getId(), BatchJobStatusType.COMPLETE);
-            return BatchJobStatusType.COMPLETE;
         }
+
+        // default
+        redis.setJobStatus(job.getId(), BatchJobStatusType.COMPLETE);
+        return BatchJobStatusType.COMPLETE;
     }
 }

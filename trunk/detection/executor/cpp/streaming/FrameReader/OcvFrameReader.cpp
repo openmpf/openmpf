@@ -35,9 +35,14 @@ using namespace COMPONENT;
 using std::string;
 using namespace cv;
 
-MPFFrameReaderError OcvFrameReader::AttachToStream(
-    const MPFFrameReaderJob &job,
-    Properties &stream_properties) {
+OcvFrameReader::OcvFrameReader(const MPFFrameReaderJob &job, log4cxx::LoggerPtr &logger) 
+        : job_name_(job.job_name)
+        , logger_(logger)
+        , frame_store_(job.job_properties) {}
+
+
+MPFFrameReaderError OcvFrameReader::AttachToStream(const MPFFrameReaderJob &job,
+                                                   Properties &stream_properties) {
 
     bool success;
     string stream_uri = DetectionComponentUtils::GetProperty<string>(job.job_properties,

@@ -24,14 +24,16 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-//TODO: The MPFFrameStore class is for future use and is untested.
-// Not used in single process, single pipeline stage, architecture
-
 
 #ifndef MPF_FRAME_STORE_H_
 #define MPF_FRAME_STORE_H_
 
 #include <string>
+#include <memory>
+#include <hiredis.h>
+#include <opencv2/opencv.hpp>
+
+#include "MPFDetectionObjects.h"
 
 namespace MPF {
 
@@ -39,44 +41,27 @@ class MPFFrameStore {
 
  public:
 
-    MPFFrameStore() = default;
-    ~MPFFrameStore() { std::string err; Close(err); };
+    explicit MPFFrameStore(const MPF::COMPONENT::Properties &properties);
+    ~MPFFrameStore() = default;
 
-    // Creates and attaches to the storage for frame data.
-    // This method must only be used by a single process of the group
-    // that will share the frame storage. This is typically the
-    // frame producer. Its return value is 0 if the method is
-    // successful. If an error occurs, it returns a non-zero value and
-    // the error_string parameter will contain an explanation of the
-    // error.
-    int Create(const std::string &frame_store_name,
-               const size_t buffer_size,
-               std::string &error_string);
-    // Attaches to the storage for frame data. All other processes
-    // that will share the frame storage must use this method. This is
-    // typically the consumers of the frame data. Its return value is
-    // 0 if the method is successful. If an error occurs, it returns a
-    // non-zero value and the error_string parameter will contain an
-    // explanation of the error.
-    int Attach(const std::string &frame_store_name,
-               const size_t buffer_size,
-               std::string &error_string);
-    int Close(std::string &error_string);
+    // Takes frame data from an OpenCV Mat and stores it
+    void StoreFrame(const cv::Mat &frame, const size_t frame_index);
 
-    // The frame byte size is supplied along with the offset so that
-    // the FrameStore can check that the address computed plus the
-    // size does not overflow the buffer. If it does, the returned
-    // address will be null, and the error_string will be set.
-    uint8_t* GetFrameAddress(size_t offset,
-                             size_t frame_byte_size,
-                             std::string &error_string);
+    // Copies frame data from storage into an OpenCV Mat.
+    void GetFrame(cv::Mat &frame, const size_t frame_index);
+
+    // Deletes the copy of the frame data this frame index.
+    void DeleteFrame(const size_t frame_index);
 
   private:
-    bool initialized_ = false;
-    std::string buffer_name_;
-    int storage_handle_;
-    uint8_t* start_addr_;
-    size_t buffer_byte_size_;
+    size_t frame_byte_size_;
+    using redis_context_ptr = std::unique_ptr<redisContext, decltype(&redisFree)>;
+    using redis_reply_ptr = std::unique_ptr<redisReply, decltype(&freeReplyObject)>;
+    redis_context_ptr context_;
+    std::string key_prefix_;
+    std::string CreateKey(const size_t index);
+    void CheckReply(const redis_reply_ptr &reply, const std::string &redis_cmd);
+
 };
 
 } // namespace MPF

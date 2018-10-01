@@ -60,7 +60,7 @@ find_package(mpfDetectionComponentApi REQUIRED)
 #include_directories(MessageUtils)
 #add_subdirectory(MessageUtils)
 
-#include_directories(FrameStore)
+include_directories(FrameStore)
 #add_subdirectory(FrameReader)
 
 set(streaming_component_executor_files

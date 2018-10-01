@@ -45,8 +45,7 @@ enum MPFFrameReaderError {
     FRAME_READER_COULD_NOT_CLOSE_STREAM,
     FRAME_READER_COULD_NOT_READ_STREAM,
     FRAME_READER_BAD_FRAME_SIZE,
-    FRAME_READER_BAD_OFFSET,
-    FRAME_READER_INVALID_FRAME_INTERVAL,
+FRAME_READER_INVALID_FRAME_INTERVAL,
     FRAME_READER_MISSING_PROPERTY,
     FRAME_READER_INVALID_PROPERTY,
     FRAME_READER_PROPERTY_IS_NOT_INT,
@@ -68,23 +67,15 @@ struct MPFFrameReaderJob : MPFJob {
 class MPFFrameReader {
 
   public:
-
-    virtual ~MPFFrameReader() { }
-    virtual MPFFrameReaderError AttachToStream(
-                                           const MPFFrameReaderJob &job,
-                                           Properties &stream_properties) = 0;
-    virtual MPFFrameReaderError OpenFrameStore(MPFFrameReaderJob &job,
+    virtual ~MPFFrameReader() = default;
+    virtual MPFFrameReaderError AttachToStream(const MPFFrameReaderJob &job,
                                                Properties &stream_properties) = 0;
-
-    virtual MPFFrameReaderError CloseFrameStore() = 0;
-    virtual MPFFrameReaderError ReadAndStoreFrame(MPFFrameReaderJob &job,
-                                                  const size_t offset) = 0;
-
-
+    virtual MPFFrameReaderError CloseStream(const MPFFrameReaderJob &job,
+                                            Properties &stream_properties) = 0;
+    virtual MPFFrameReaderError ReadAndStoreFrame(const size_t index) = 0;
   protected:
 
     MPFFrameReader() = default;
-    MPFFrameStore frame_store_;
 
     int current_segment_num_;
     int current_frame_index_;

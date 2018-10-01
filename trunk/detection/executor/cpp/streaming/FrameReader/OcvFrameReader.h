@@ -48,32 +48,26 @@ namespace MPF { namespace COMPONENT {
 class OcvFrameReader : public MPFFrameReader {
 
   public:
-    OcvFrameReader(log4cxx::LoggerPtr &logger) : logger_(logger) {}
-    ~OcvFrameReader() {
-        CloseFrameStore();
-    }
+    OcvFrameReader(const MPFFrameReaderJob &job, log4cxx::LoggerPtr &logger)
+    ~OcvFrameReader() = default;
 
     virtual MPFFrameReaderError AttachToStream(
-                              const MPFFrameReaderJob &job,
-                              Properties &stream_properties) override;
-    virtual MPFFrameReaderError OpenFrameStore(
-                              MPFFrameReaderJob &job,
-                              Properties &stream_properties) override;
-    virtual MPFFrameReaderError CloseFrameStore() override;
-    virtual MPFFrameReaderError ReadAndStoreFrame(MPFFrameReaderJob &job,
-                                                  const size_t offset) override;
+                                     const MPFFrameReaderJob &job,
+                                     Properties &stream_properties) override;
+    virtual MPFFrameReaderError CloseStream(
+                                     const MPFFrameReaderJob &job,
+                                     Properties &stream_properties) override;
+    MPFFrameReaderError ReadAndStoreFrame(const size_t offset);
 
 
   private:
-    cv::VideoCapture video_capture_;
+    std::string job_name_;
     log4cxx::LoggerPtr logger_;
+    MPFFrameStore frame_store_;
+    cv::VideoCapture video_capture_;
+
     int segment_length_;        // number of frames per processing
                                 // segment.
-    int num_segments_;          // This together with segment_length
-                                // determines the total frame capacity
-                                // of the frame storage buffer.
-    uint8_t *frame_buffer_start_addr_;  // virtual address of the
-                                        // start of the frame buffer.
     int frame_buffer_segment_capacity_; // how many segments can be
                                         // stored in the frame buffer
                                         // before we need to start
@@ -82,10 +76,6 @@ class OcvFrameReader : public MPFFrameReader {
     int frame_num_cols_;
     int frame_type_; // Corresponds to the OpenCV type, e.g., CV_8UC3
     size_t frame_byte_size_;     // Size of each frame in bytes
-    size_t frame_buffer_byte_size_;  // Total size of the frame store;
-                                     // needed for mapping the shared
-                                     // storage file into memory.
-    int frame_buffer_file_descriptor_;
 };
 }}
 

@@ -102,10 +102,7 @@ struct MPFJobStatusMessage : MPFMessage {
     ~MPFJobStatusMessage() = default;
 };
 
-/****************************************************************/
-//TODO: For future use. Untested.
-// Not used in single process, single pipeline stage, architecture
-#if 0
+
 struct MPFSegmentReadyMessage : MPFMessage {
 
     uint32_t segment_number_;
@@ -117,14 +114,13 @@ struct MPFSegmentReadyMessage : MPFMessage {
     ~MPFSegmentReadyMessage() = default;
 };
 
-//TODO: For future use. Untested.
-// Not used in single process, single pipeline stage, architecture
+
 struct MPFFrameReadyMessage : MPFMessage {
 
     uint32_t segment_number_;
     uint32_t frame_index_;
-    uint64_t frame_offset_bytes_;
-    MPFFrameReadyMessage() : segment_number_(0), frame_index_(0), frame_offset_bytes_(0) {}
+    uint64_t frame_offset_;
+    MPFFrameReadyMessage() : segment_number_(0), frame_index_(0), frame_offset_(0) {}
     MPFFrameReadyMessage(const std::string &job_name,
                          const uint32_t job_number,
                          const uint32_t seg_num,
@@ -133,23 +129,26 @@ struct MPFFrameReadyMessage : MPFMessage {
             : MPFMessage(job_name, job_number),
               segment_number_(seg_num),
               frame_index_(index),
-              frame_offset_bytes_(offset) {}
+              frame_offset_(offset) {}
     ~MPFFrameReadyMessage() = default;
 };  
 
-//TODO: For future use. Untested.
-// Not used in single process, single pipeline stage, architecture
+
 struct MPFReleaseFrameMessage : MPFMessage {
 
-    uint64_t frame_offset_bytes_;
+    uint64_t frame_index_;
+    uint64_t frame_offset_;
     MPFReleaseFrameMessage(const std::string &job_name,
                            const uint32_t job_number,
+                           const uint64_t frame_index,
                            const uint64_t offset)
-            : MPFMessage(job_name, job_number),
-              frame_offset_bytes_(offset) {}
+            : MPFMessage(job_name, job_number)
+            , frame_index_(frame_index)
+            , frame_offset_(offset) {}
     ~MPFReleaseFrameMessage() = default;
 };
 
+#if 0
 //TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture
 struct MPFVideoWrittenMessage : MPFMessage {

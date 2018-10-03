@@ -53,9 +53,14 @@ namespace MPF { namespace COMPONENT {
         const std::string component_name;
         const std::string component_lib_path;
         const std::string message_broker_uri;
+        const std::string frame_store_server_hostname;
+        const int frame_store_server_portnum;
         const std::string job_status_queue;
         const std::string activity_alert_queue;
         const std::string summary_report_queue;
+        const std::string segment_ready_queue;
+        const std::string frame_ready_queue;
+        const std::string release_frame_queue;
 
         const std::map<std::string, std::string> job_properties;
         const std::map<std::string, std::string> media_properties;

@@ -24,9 +24,6 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-//TODO: This file contains simple test code for testing the ActiveMQ
-// messaging. The frame reader component itself is not used in single
-// process, single pipeline stage, architecture.
 
 
 #include <chrono>
@@ -61,24 +58,6 @@ using std::vector;
 
 using namespace MPF;
 using namespace COMPONENT;
-namespace pt = boost::property_tree;
-
-template<typename T>
-void getArg(pt::ptree &Ptree,
-            const string &prop_tree_path,
-            const T &defaultValue,
-            T &arg);
-
-template<typename T>
-int getArg(pt::ptree &Ptree,
-           const string &prop_tree_path,
-           T &arg);
-
-//*******TODO**********
-// This program does not yet implement any of the frame reader
-// functionality. It currently only executes a very simple test of the
-// JobStatusMessenger methods.
-//*******TODO**********
 
 /**
  * This is the main program for the Streaming Video Frame Reader.
@@ -106,54 +85,32 @@ int main(int argc, char* argv[]) {
     int job_id;
     string job_name;
     string broker_uri;
-    pt::ptree jobArgs;
 
     string config_file(argv[1]);
     std::cout << "config file = " << config_file << std::endl;
-    try {
-        pt::ini_parser::read_ini(config_file, jobArgs);
-    } catch (const pt::ini_parser::ini_parser_error &e) {
-        std::cout << "Unable to parse config file named " << config_file << ": " <<e.what() << std::endl;
-        LOG4CXX_ERROR(logger, "Unable to parse config file named " << config_file << ": " <<e.what());
-        return 5; // EIO = I/O error
-    }
+    JobSettings settings = JobSettings::FromIniFile(config_file);
 
-    int rc = getArg<int>(jobArgs, "job_id", job_id);
-    if (rc) {
-        std::cout << "couldn't read property" << job_id << std::endl;
-        return rc;
-    }
 
-    job_name = "Job " + std::to_string(job_id);
+    job_name = "Job " + std::to_string(settings.job_id);
     LOG4CXX_INFO(logger, "JOB NAME = " << job_name);
     
     Properties job_properties;
 
     job_properties["JOB_NAME"] = job_name;
 
-    const string default_broker_uri = "failover://(tcp://localhost:61616?jms.prefetchPolicy.all=1)?startupMaxReconnectAttempts=1";
-    getArg<string>(jobArgs, "broker_uri", default_broker_uri, broker_uri);
-    LOG4CXX_DEBUG(logger, "BROKER = " << broker_uri);
-
-    //    OcvFrameReader Freader(logger);
+    LOG4CXX_DEBUG(logger, "BROKER = " << settings.message_broker_uri);
 
     // Create the messenger object
 
-    std::shared_ptr<AMQMessagingManager> msg_mgr(new AMQMessagingManager(logger));
     try {
-        msg_mgr->Connect(broker_uri, job_properties);
-    }
-    catch (MPFMessageException &e) {
-        LOG4CXX_ERROR(logger, job_name <<  ": Failed to connect to the activemq broker");
-        return EXIT_FAILURE;
-    }
+        std::shared_ptr<AMQMessagingManager> msg_mgr(new AMQMessagingManager(settings));
 
-    JobStatusMessenger messenger(msg_mgr, logger);
+        JobStatusMessenger messenger(msg_mgr, logger);
 
-    string queue_name;
-    rc = getArg<string>(jobArgs, "queue_name", queue_name);
-    if (rc) return rc;
-    LOG4CXX_INFO(logger, "QUEUE NAME = " << queue_name);
+        string queue_name;
+        rc = getArg<string>(jobArgs, "queue_name", queue_name);
+        if (rc) return rc;
+        LOG4CXX_INFO(logger, "QUEUE NAME = " << queue_name);
 
     Properties queue_props;
     try {
@@ -250,40 +207,4 @@ int main(int argc, char* argv[]) {
     log4cxx::LogManager::shutdown();
     return EXIT_SUCCESS;
 }
-    
-
-
-
-// This version does not allow a default value and returns an error if
-// the property is not found
-template<typename T>
-int getArg(pt::ptree &Ptree,
-           const string &prop_tree_path,
-            T &arg) {
-
-    try {
-        arg = Ptree.get<T>(prop_tree_path);
-    } catch (const pt::ptree_error &e) {
-        std::cout << "Could not read configuration property\""
-                      << prop_tree_path
-                      << "\" : " << e.what();
-        return 22; // EINVAL = invalid argument
-    }
-    return 0;
-}
-
-
-template<typename T>
-void getArg(pt::ptree &Ptree,
-            const string &prop_tree_path,
-            const T &defaultValue,
-            T &arg) {
-
-    try {
-        arg = Ptree.get<T>(prop_tree_path);
-    } catch (const pt::ptree_error &e) {
-        arg = defaultValue;
-    }
-}
-
 

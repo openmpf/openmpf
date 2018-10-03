@@ -24,8 +24,6 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include <cassert>
-
 #include <activemq/library/ActiveMQCPP.h>
 #include <activemq/core/ActiveMQConnectionFactory.h>
 
@@ -38,105 +36,34 @@ using activemq::core::ActiveMQConnectionFactory;
 using namespace MPF;
 using namespace COMPONENT;
 
-#undef NDEBUG
-//TODO: For future use.
+AMQMessagingConnection::AMQMessagingConnection(const JobSettings &job_settings) 
+        : connection_(Connect(job_settings.message_broker_uri)) {
 
-void AMQMessagingManager::Connect(const string &broker_name,
-                                  const Properties &properties) {
+    connection_->start();
+}
 
-    if (!connected_) {
-        try {
-            // This call will generate a runtime error if it fails
-            ActiveMQCPP::initializeLibrary();
+std::unique_ptr<cms::Connection> AMQMessagingconnection::Connect(const string &broker_uri) {
 
-            // Create an ActiveMQ ConnectionFactory
-            unique_ptr<ActiveMQConnectionFactory> factory(new ActiveMQConnectionFactory(broker_name));
+    ActiveMQCPP::initializeLibrary();
 
-            // Create an ActiveMQ Connection
-            connection_.reset(factory->createConnection());
-            assert(NULL != connection_.get());
-            if (!properties.empty()) {
-                // At this point, we should apply any properties that may
-                // have been passed in, to modify how the connection
-                // operates.
-                LOG4CXX_WARN(logger_, __FUNCTION__ << ": Note: Connection properties not yet used, but the properties map was non-empty.");
-            }
-            connected_ = true;
+    unique_ptr<ActiveMQConnectionFactory> factory(new ActiveMQConnectionFactory(broker_uri));
+    connection_factory.setUseAsyncSend(true);
 
-        } catch (CMSException& e) {
-            string msg = "CMSException caught in AMQMessagingManager::Connect: " + e.getMessage() + "\n" + e.getStackTraceString();
-            MPFMessageError err = MPFMessageError::MESSENGER_CONNECTION_FAILURE;
-            MPFMessageException exc(msg.c_str(), err);
-            throw(exc);
-        } catch (std::exception& e) {
-            string msg = "std::exception caught in AMQMessagingManager::Connect: " + string(e.what());
-            MPFMessageError err = MPFMessageError::MESSENGER_CONNECTION_FAILURE;
-            MPFMessageException exc(msg.c_str(), err);
-            throw(exc);
-        }
+    return std::unique_ptr<cms::Connection>(factory->createConnection());
+}
+
+AMQMessagingConnection::~AMQMessagingConnection() {
+    try {
+        connection_->stop();
+        connection_->close();
+        ActiveMQCPP::shutdownLibrary();
+    }
+    catch (const CMSException &e) {
+        e.printStackTrace();
     }
 }
 
 
-void AMQMessagingManager::Start() {
-
-    if (connected_ && !started_) {
-        assert(NULL != connection_.get());
-        try {
-            connection_->start();
-            started_ = true;
-        } catch (CMSException& e) {
-            string msg = "CMSException caught in AMQMessagingManager::Start: " + e.getMessage() + "\n" + e.getStackTraceString();
-            MPFMessageError err = MESSENGER_START_FAILURE;
-            MPFMessageException exc(msg.c_str(), err);
-            throw(exc);
-        } catch (std::exception& e) {
-            string msg = "std::exception caught in AMQMessagingManager::Start: " + string(e.what());
-            MPFMessageError err = MPFMessageError::MESSENGER_START_FAILURE;
-            MPFMessageException exc(msg.c_str(), err);
-            throw(exc);
-        }
-    }
-}
-
-
-void AMQMessagingManager::Stop() {
-
-    if (connected_ && started_) {
-        try {
-            connection_->stop();
-            started_ = false;
-        } catch (CMSException& e) {
-            string msg = "CMSException caught in AMQMessagingManager::Stop: " + e.getMessage() + "\n" + e.getStackTraceString();
-            MPFMessageError err = MESSENGER_STOP_FAILURE;
-            MPFMessageException exc(msg.c_str(), err);
-            throw(exc);
-        }
-    }
-}
-
-
-void AMQMessagingManager::Shutdown() {
-    if (connected_) {
-        try {
-            if (started_) {
-                Stop();
-            }
-            if (connection_ != NULL) {
-                connection_->close();
-                connection_.release();
-            }
-            connected_ = false;
-            // Shut down ActiveMQ library
-            ActiveMQCPP::shutdownLibrary();
-        } catch (CMSException& e) {
-            string msg = "CMSException caught in AMQMessagingManager::Shutdown: " + e.getMessage() + "\n" + e.getStackTraceString();
-            MPFMessageError err = MESSENGER_START_FAILURE;
-            MPFMessageException exc(msg.c_str(), err);
-            throw(exc);
-        }
-    }
-}
 
 
 

@@ -211,94 +211,68 @@ class AMQJobStatusConverter : public AMQMessageConverter<MPFJobStatusMessage> {
     }
 };
 
-#if 0 //TODO: For future use. Untested.
-// Not used in single process, single pipeline stage, architecture
-class AMQSegmentReadyMessage : AMQMessage, MPFSegmentReadyMessage {
 
-    AMQSegmentReadyMessage() = default;
-    AMQSegmentReadyMessage(const std::string &job_name,
-                           const uint32_t job_number,
-                           const uint32_t seg_num)
-            : MPFSegmentReadyMessage(job_name, job_number, seg_num) {}
-
-    void InitMessage(cms::Session *session) {
-        msg_.reset(session->createMessage());
-        if (NULL != msg_) {
-            msg_->setStringProperty("JOB_NAME", job_name_);
-            msg_->setIntProperty("JOB_NUMBER", job_number_);
-            msg_->setIntProperty("SEGMENT_NUMBER", segment_number_);
-        }
+class AMQSegmentReadyMessage : public AMQMessageConverter<MPFSegmentReadyMessage> {
+  public:
+    MPFSegmentReadyMessage fromCMSMessage(const cms::Message &msg) override {
+        return MPFSegmentReadyMessage(
+                msg.getStringProperty("JOB_NAME"),
+                msg.getIntProperty("JOB_ID"),
+                msg.getIntProperty("SEGMENT_NUMBER"));
     }
 
-    virtual void ReceiveMessageContent() {
-        job_name_ = msg_->getStringProperty("JOB_NAME");
-        job_number_ = msg_->getIntProperty("JOB_NUMBER");
-        segment_number_ = msg_->getIntProperty("SEGMENT_NUMBER");
+    void toCMSMessage(const MPFSegmentReadyMessage &segment_msg, cms::Message &msg) override {
+        msg.setStringProperty("JOB_NAME", segment_msg.job_name_);
+        msg.setIntProperty("JOB_ID", segment_msg.job_number_);
+        msg.setIntProperty("SEGMENT_NUMBER", segment_msg.segment_number_);
     }
+
 };
 
-//TODO: For future use. Untested.
-// Not used in single process, single pipeline stage, architecture
-class AMQFrameReadyMessage : AMQMessage, MPFFrameReadyMessage {
 
-    AMQFrameReadyMessage() {};
-    AMQFrameReadyMessage(const std::string &job_name,
-                         const uint32_t job_number,
-                         const uint32_t seg_num,
-                         const uint32_t index,
-                         const uint64_t offset)
-            : MPFFrameReadyMessage(job_name, job_number, seg_num, index, offset) {}
-
-    void InitMessage(cms::Session *session) {
-        msg_.reset(session->createMessage());
-        if (NULL != msg_) {
-            msg_->setStringProperty("JOB_NAME", job_name_);
-            msg_->setIntProperty("JOB_NUMBER", job_number_);
-            msg_->setIntProperty("SEGMENT_NUMBER", segment_number_);
-            msg_->setIntProperty("FRAME_INDEX", frame_index_);
-            msg_->setLongProperty("FRAME_STORE_OFFSET", frame_offset_bytes_);
-        }
+class AMQFrameReadyMessage : AMQMessageConverter<MPFFrameReadyMessage> {
+  public:
+    MPFFrameReadyMessage fromCMSMessage(const cms::Message &msg) override {
+        return MPFFrameReadyMessage(
+                msg.getStringProperty("JOB_NAME"),
+                msg.getIntProperty("JOB_ID"),
+                msg.getIntProperty("SEGMENT_NUMBER"),
+                msg.getIntProperty("FRAME_INDEX"),
+                msg.getIntProperty("FRAME_OFFSET"));
     }
 
-    virtual void ReceiveMessageContent() {
-        std::vector<std::string> prop_names = msg_->getPropertyNames();
-        job_name_ = msg_->getStringProperty("JOB_NAME");
-        job_number_ = msg_->getIntProperty("JOB_NUMBER");
-        segment_number_ = msg_->getIntProperty("SEGMENT_NUMBER");
-        frame_index_ = msg_->getIntProperty("FRAME_INDEX");
-        frame_offset_bytes_ = msg_->getLongProperty("FRAME_STORE_OFFSET");
+    void toCMSMessage(const MPFFrameReadyMessage &frame_msg, cms::Message &msg) override {
+        msg.setStringProperty("JOB_NAME", frame_msg.job_name_);
+        msg.setIntProperty("JOB_ID", frame_msg.job_number_);
+        msg.setIntProperty("SEGMENT_NUMBER", frame_msg.segment_number_);
+        msg.setIntProperty("FRAME_INDEX", frame_msg.frame_index_);
+        msg.setIntProperty("FRAME_OFFSET", frame_msg.frame_offset_);
     }
 
 };  
 
-//TODO: For future use. Untested.
-// Not used in single process, single pipeline stage, architecture
-class AMQReleaseFrameMessage : AMQMessage, MPFReleaseFrameMessage {
 
-    AMQReleaseFrameMessage(const std::string &job_name,
-                           const uint32_t job_number,
-                           const uint64_t offset)
-            : MPFReleaseFrameMessage(job_name, job_number, offset) {}
-
-
-    void InitMessage(cms::Session *session) {
-        msg_.reset(session->createMessage());
-        if (NULL != msg_) {
-            msg_->setStringProperty("JOB_NAME", job_name_);
-            msg_->setIntProperty("JOB_NUMBER", job_number_);
-            msg_->setLongProperty("FRAME_STORE_OFFSET", frame_offset_bytes_);
-        }
+class AMQReleaseFrameMessage : AMQMessageConverter<MPFReleaseFrameMessage> {
+  public:
+    MPFReleaseFrameMessage fromCMSMessage(const cms::Message &msg) override {
+        return MPFReleaseFrameMessage(
+                msg.getStringProperty("JOB_NAME"),
+                msg.getIntProperty("JOB_ID"),
+                msg.getIntProperty("FRAME_INDEX"),
+                msg.getIntProperty("FRAME_OFFSET"));
     }
 
-    virtual void ReceiveMessageContent() {
-        job_name_ = msg_->getStringProperty("JOB_NAME");
-        job_number_ = msg_->getIntProperty("JOB_NUMBER");
-        frame_offset_bytes_ = msg_->getLongProperty("FRAME_STORE_OFFSET");
+    void toCMSMessage(const MPFReleaseFrameMessage &frame_msg, cms::Message &msg) override {
+        msg.setStringProperty("JOB_NAME", frame_msg.job_name_);
+        msg.setIntProperty("JOB_ID", frame_msg.job_number_);
+        msg.setIntProperty("FRAME_INDEX", frame_msg.frame_index_);
+        msg.setIntProperty("FRAME_OFFSET", frame_msg.frame_offset_);
     }
 
 };
 
 
+#if 0
 //TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture
 class AMQVideoWrittenMessage : AMQMessage, MPFVideoWrittenMessage {

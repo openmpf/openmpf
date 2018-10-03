@@ -83,10 +83,10 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 
     public void init(boolean reloadConfig) {
         boolean configFileLoaded = false;
+        boolean useTemplate = !reloadConfig && propertiesUtil.isNodeAutoUnconfigEnabled();
 
         // Discard previous configuration if node auto-unconfiguration is enabled.
-        try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource(
-                propertiesUtil.isNodeAutoUnconfigEnabled()).getInputStream()) {
+        try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource(useTemplate).getInputStream()) {
             configFileLoaded = masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri());
         } catch (IOException e) {
             throw new UncheckedIOException(e);

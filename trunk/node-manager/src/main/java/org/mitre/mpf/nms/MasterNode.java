@@ -48,7 +48,7 @@ public class MasterNode {
 
     private static final Logger log = LoggerFactory.getLogger(MasterNode.class);
 
-    private Map<String, Boolean> configuredManagerHosts;
+    private Map<String, Boolean> configuredManagerHosts = new HashMap<>();
 
     private final MasterNodeStateManager nodeStateManager;
 
@@ -109,7 +109,7 @@ public class MasterNode {
     public final boolean loadConfigFile(InputStream masterConfigFile, String activeMqBrokerUri) {
         // Don't let the config file have multiple node-managers with the same hostname/IP
         // This is only used in this code area to prevent collisions due to bad XMl configs
-        configuredManagerHosts = new HashMap<>();
+        configuredManagerHosts.clear();
 
         log.info("Loading node manager config");
         NodeManagers managers = NodeManagers.fromXml(masterConfigFile);

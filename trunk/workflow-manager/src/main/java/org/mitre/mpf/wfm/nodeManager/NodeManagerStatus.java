@@ -81,32 +81,51 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     private Map<String, ServiceDescriptor> serviceDescriptorMap = new ConcurrentHashMap<>();
 
 
-    public void init(boolean reloadConfig) {
-        boolean configFileLoaded = false;
-        boolean useTemplate = !reloadConfig && propertiesUtil.isNodeAutoUnconfigEnabled();
+    public synchronized void init(boolean reloadConfig) {
 
-        // Start the master node if the WFM is starting for the first time
-        if (!reloadConfig) {
+        // If reloading due to a node configuration change ...
+        if (reloadConfig) {
+            try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource(false).getInputStream()) {
+                masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri());
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            masterNode.launchAllNodes();
+            updateServiceDescriptors();
+            return;
+        }
+
+        // Else if the WFM is starting for the first time and auto-unconfiguration is enabled ...
+        if (propertiesUtil.isNodeAutoUnconfigEnabled()) {
+            // Clear the config file (use template) before the master node connects to JGroups.
+            // This will not update the node or service state.
+            try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource(true).getInputStream()) {
+                masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri());
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            // Starting the master node may trigger auto-configuration if it's enabled and child nodes are already available.
             masterNode.setCallback(this);
             masterNode.run();
             isRunning = true;
+            return;
         }
 
-        // Discard previous configuration if node auto-unconfiguration is enabled.
-        try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource(useTemplate).getInputStream()) {
-            configFileLoaded = masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri());
+        // Else if the WFM is starting for the first time and auto-unconfiguration is disabled ...
+        masterNode.setCallback(this);
+        masterNode.run();
+        isRunning = true;
+        // Load the config file after the master node connects to JGroups.
+        // If a config file exists, this may result in updating node or service state.
+        try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource(true).getInputStream()) {
+            masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-
-        // Wait for configured nodes if the WFM is starting for the first time
-        if (configFileLoaded) {
-            if (!reloadConfig && !masterNode.areAllManagersPresent()) {
-                waitForViewUpdate();
-            }
-            masterNode.launchAllNodes();
+        if (!masterNode.areAllManagersPresent()) {
+            waitForViewUpdate();
         }
-
+        masterNode.launchAllNodes();
         updateServiceDescriptors();
     }
 

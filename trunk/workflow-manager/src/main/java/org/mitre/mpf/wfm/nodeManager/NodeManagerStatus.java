@@ -85,6 +85,13 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
         boolean configFileLoaded = false;
         boolean useTemplate = !reloadConfig && propertiesUtil.isNodeAutoUnconfigEnabled();
 
+        // Start the master node if the WFM is starting for the first time
+        if (!reloadConfig) {
+            masterNode.setCallback(this);
+            masterNode.run();
+            isRunning = true;
+        }
+
         // Discard previous configuration if node auto-unconfiguration is enabled.
         try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource(useTemplate).getInputStream()) {
             configFileLoaded = masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri());
@@ -92,18 +99,12 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
             throw new UncheckedIOException(e);
         }
 
-        // Start the master node if the WFM is starting for the first time
-        if (!reloadConfig) {
-            masterNode.setCallback(this);
-            masterNode.run();
-            isRunning = true;
-
-            if (configFileLoaded) {
-                if (!masterNode.areAllManagersPresent()) {
-                    waitForViewUpdate();
-                }
-                masterNode.launchAllNodes();
+        // Wait for configured nodes if the WFM is starting for the first time
+        if (configFileLoaded) {
+            if (!reloadConfig && !masterNode.areAllManagersPresent()) {
+                waitForViewUpdate();
             }
+            masterNode.launchAllNodes();
         }
 
         updateServiceDescriptors();

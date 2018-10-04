@@ -160,14 +160,11 @@ public class NodeManagerServiceImpl implements NodeManagerService {
     public synchronized List<NodeManagerModel> getNodeManagerModels() {
         try (InputStream inputStream = propertiesUtil.getNodeManagerConfigResource(false).getInputStream()) {
             NodeManagers managers = NodeManagers.fromXml(inputStream);
-            if (managers.managers() == null) {
-                return new ArrayList<>();
-            }
 
             // get the current view once, and then update all the models
             Set<String> availableNodes = getAvailableNodes();
 
-            List<NodeManagerModel> nodeManagerModels = managers.managers()
+            List<NodeManagerModel> nodeManagerModels = managers.getAll()
                     .stream()
                     .map(m -> convertToModel(m, availableNodes))
                     .collect(toCollection(ArrayList::new));
@@ -298,7 +295,8 @@ public class NodeManagerServiceImpl implements NodeManagerService {
     @Override
     public void unconfigureNode(String host) throws IOException {
         List<NodeManagerModel> nodeManagerModelList = getNodeManagerModels();
-        nodeManagerModelList.removeIf(node -> node.getHost().equals(host));
-        saveNodeManagerConfig(nodeManagerModelList);
+        if (nodeManagerModelList.removeIf(node -> node.getHost().equals(host))) {
+            saveNodeManagerConfig(nodeManagerModelList);
+        }
     }
 }

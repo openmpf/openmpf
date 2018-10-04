@@ -114,48 +114,11 @@ public class MasterNode {
         log.info("Loading node manager config");
         NodeManagers managers = NodeManagers.fromXml(masterConfigFile);
 
-        boolean failedToGetNodes = true;
-        if(managers == null) {
-        	log.error("Failed to read the node manager config from xml");
-        } else if(CollectionUtils.isEmpty(managers.managers())) {
-        	log.warn("No nodes present in the latest node manager config");
-        } else {
-        	failedToGetNodes = false;
-        }
-
-        //go ahead and shut down all of the nodes
-        if(failedToGetNodes) {
-            //Setting nodes directly to DeleteInactive - also shutting down all node services currently in the
-            //service table, should remove DeleteInactive items from the node table on master node shutdown
-        	nodeStateManager.getNodeTable().values()
-                    .forEach(nd -> nodeStateManager.updateState(nd, States.DeleteInactive));
-
-            //if the service table is not empty - go through it and check to make sure
-            //any updates to the node manager config are reflected in the service table
-        	//IN THIS CASE, there are no NODES left, which means no SERVICES should be left
-            synchronized (nodeStateManager.getServiceTable()) {
-                for (ServiceDescriptor service : nodeStateManager.getServiceTable().values()) {
-                    log.debug("Service with name '{}' is part of the service table, but no longer part of the node manager config.",
-                            service.getName());
-                    if (service.getLastKnownState() == States.InactiveNoStart) {
-                        //the service has already been set to Delete and ShutDown - go ahead and change it directly to DeleteInactive
-                        log.debug("Updating existing config for {}", service.getName());
-                        nodeStateManager.updateState(service, States.DeleteInactive);
-                    }
-                    else if (service.getLastKnownState() != States.DeleteInactive) {
-                        log.debug("Updating existing config for {}", service.getName());
-                        nodeStateManager.updateState(service, States.Delete);
-                    }
-                }
-            }
-        	return false;
-        }
-
         //creating a unique list of service descriptor names to compare to the service table
         List<String> serviceNamesFromConfig = new ArrayList<>();
 
         // Iterate through node manager servers
-        for (NodeManager manager : managers.managers()) {
+        for (NodeManager manager : managers.getAll()) {
             if (manager.getTarget() == null) {
                 log.error("The <nodeManager> tag did not contain a target attribute describing the server to use");
                 continue;
@@ -219,7 +182,7 @@ public class MasterNode {
                     }
                 }
             }
-        } //end of for (NodeManager manager : managers.managers())
+        } //end of for (NodeManager manager : managers.getAll())
 
         //if the node table is not empty - go through it and check to make sure
         //any updates to the node manager config are reflected in the node table

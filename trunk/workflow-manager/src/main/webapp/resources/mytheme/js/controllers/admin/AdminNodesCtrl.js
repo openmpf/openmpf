@@ -72,6 +72,9 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
         NodeService.getNodeConfigs().then(function (configs) {
             NodeService.getServices().then(function (data) {
 
+                // update stored configurations
+                configurations = configs;
+
                 //there may be some hosts with 0 services, need to add those hosts
                 angular.forEach(configs, function (config) {
                     var found = false;

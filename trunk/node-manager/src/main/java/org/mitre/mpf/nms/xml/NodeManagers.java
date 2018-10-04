@@ -37,7 +37,7 @@ import java.util.List;
 
 @XStreamAlias("nodeManagers")
 public class NodeManagers {
-    
+
     @XStreamImplicit(itemFieldName="nodeManager")
     private List<NodeManager> nodeManagers = new ArrayList<NodeManager>();
 
@@ -48,14 +48,24 @@ public class NodeManagers {
         XStream xstream = new XStream(driver);
         xstream.autodetectAnnotations(true);
         xstream.processAnnotations(NodeManagers.class);
-        return (NodeManagers) xstream.fromXML(xml);  
-    }
-    
-    public void add(NodeManager node) {
-        nodeManagers.add(node);
+        NodeManagers retval = (NodeManagers) xstream.fromXML(xml);
+
+        // Stax parser will set the collection to null if the XML has no entries; instead use an empty collection
+        if (retval.getAll() == null) {
+            retval.setAll(new ArrayList<>());
+        }
+        return retval;
     }
 
-    public List<NodeManager> managers() {
+    public List<NodeManager> getAll() {
         return nodeManagers;
+    }
+
+    public void setAll(List<NodeManager> nodeManagers) {
+        this.nodeManagers = nodeManagers;
+    }
+
+    public void add(NodeManager node) {
+        nodeManagers.add(node);
     }
 }

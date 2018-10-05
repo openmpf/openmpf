@@ -97,25 +97,20 @@ public class MasterNode {
     }
 
     /**
-     * Given a properties file with a run configuration, process the contents of
-     * this config file and instantiate NodeDescriptors for each node. Also,
-     * track the hostnames of machines we'll need to contact (via a NodeManager
-     * on that machine) to instruct to create nodes.
+     * Parse the node manager configuration file and determine the hostnames of machines we'll need to contact
+     * (via a node manager process on that machine) to send instructions for managing services.
+     * This doesn't apply the configuration.
      *
      * @param masterConfigFile
-     * @param activeMqBrokerUri
-     * @return false if the file xml parsing returns null or there are no nodes present
+     * @return List<NodeManager>
      */
-    public final boolean loadConfigFile(InputStream masterConfigFile, String activeMqBrokerUri) {
+    public List<NodeManager> loadConfigFile(InputStream masterConfigFile) {
         // Don't let the config file have multiple node-managers with the same hostname/IP
         // This is only used in this code area to prevent collisions due to bad XMl configs
         configuredManagerHosts.clear();
 
         log.info("Loading node manager config");
         NodeManagers managers = NodeManagers.fromXml(masterConfigFile);
-
-        //creating a unique list of service descriptor names to compare to the service table
-        List<String> serviceNamesFromConfig = new ArrayList<>();
 
         // Iterate through node manager servers
         for (NodeManager manager : managers.getAll()) {
@@ -124,10 +119,31 @@ public class MasterNode {
                 continue;
             }
             // If user misconfigures the xml config by putting in duplicate hostnames, complain and continue
-            if (configuredManagerHosts.get(manager.getTarget()) != null) {
+            if (configuredManagerHosts.containsKey(manager.getTarget())) {
                 log.error("Duplicate node-manager specified in config file. Don't repeat node manager hosts: " + manager.getTarget());
                 continue;
             }
+
+            // Note that we've seen this node-manager host from the current config file
+            configuredManagerHosts.put(manager.getTarget(), false); // configuration not applied yet
+        }
+
+        return managers.getAll();
+    }
+
+    /**
+     * Apply the configuration captured in the state of the provided node manager list. Instantiate a NodeDescriptor
+     * for each node and ServiceDescriptor for each service. This may send updates to node manager processes.
+     *
+     * @param managers
+     * @param activeMqBrokerUri
+     */
+    public void configureNodes(List<NodeManager> managers, String activeMqBrokerUri) {
+        //creating a unique list of service descriptor names to compare to the service table
+        List<String> serviceNamesFromConfig = new ArrayList<>();
+
+        // Iterate through node manager servers
+        for (NodeManager manager : managers) {
 
             // Tell the world about this manager we have configured (until we hear from it, designate it CONFIGURED)
             // If it already exists, the master must be restarting, don't recreate it.
@@ -145,11 +161,11 @@ public class MasterNode {
             }
 
             // Note that we've seen this node-manager host from the current config file
-            configuredManagerHosts.put(manager.getTarget(), Boolean.TRUE);
+            configuredManagerHosts.put(manager.getTarget(), true);
 
             if(CollectionUtils.isEmpty(manager.getServices())) {
-            	log.warn("no services present in the node at target {}", manager.getTarget());
-            	continue;
+                log.warn("no services present in the node at target {}", manager.getTarget());
+                continue;
             }
 
             // Configure the nodes under this node-manager
@@ -164,18 +180,18 @@ public class MasterNode {
                     synchronized (nodeStateManager.getServiceTable()) {
                         ServiceDescriptor serviceTableDescriptor = nodeStateManager.getServiceTable().get(descriptorFromConfig.getName());
                         if (serviceTableDescriptor == null) {
-                        	log.debug("Updating config for {}", descriptorFromConfig.getName());
+                            log.debug("Updating config for {}", descriptorFromConfig.getName());
                             nodeStateManager.updateState(descriptorFromConfig, States.Configured);
                         } else {
-                        	//TODO: might want to consider more states here
-                        	if(serviceTableDescriptor.getLastKnownState() == NodeManagerConstants.States.InactiveNoStart) {
-                        		log.debug("Will not update the existing config for {} because the state is {}", descriptorFromConfig.getName(), serviceTableDescriptor.getLastKnownState());
+                            //TODO: might want to consider more states here
+                            if(serviceTableDescriptor.getLastKnownState() == NodeManagerConstants.States.InactiveNoStart) {
+                                log.debug("Will not update the existing config for {} because the state is {}", descriptorFromConfig.getName(), serviceTableDescriptor.getLastKnownState());
                             } else if(serviceTableDescriptor.getLastKnownState() == NodeManagerConstants.States.Running) {
-                            	log.debug("Not updating existing config for {} because it is already running", descriptorFromConfig.getName());
+                                log.debug("Not updating existing config for {} because it is already running", descriptorFromConfig.getName());
                             } else {
-                            	//If service was DeleteInactive it should still be set back to configured because the config
-                            	//needs to overwrite existing service table information
-                            	log.debug("Updating existing config for {}", descriptorFromConfig.getName());
+                                //If service was DeleteInactive it should still be set back to configured because the config
+                                //needs to overwrite existing service table information
+                                log.debug("Updating existing config for {}", descriptorFromConfig.getName());
                                 nodeStateManager.updateState(descriptorFromConfig, States.Configured);
                             }
                         }
@@ -199,7 +215,6 @@ public class MasterNode {
             }
         }
 
-
         //if the service table is not empty - go through it and check to make sure
         //any updates to the node manager config are reflected in the service table
         synchronized (nodeStateManager.getServiceTable()) {
@@ -217,14 +232,9 @@ public class MasterNode {
             }
         }
 
-
         // Give time for things to propagate
         SleepUtil.interruptableSleep(3000);
-
-        return true;
     }
-
-
 
     public void shutdown() {
         nodeStateManager.shutdownAllServices();
@@ -245,7 +255,7 @@ public class MasterNode {
     /**
      * Get a map containing the current hosts configured
      */
-    public Map<String,Boolean> getConfiguredManagerHosts() {
+    public Map<String, Boolean> getConfiguredManagerHosts() {
     	return this.configuredManagerHosts;
     }
 
@@ -281,5 +291,9 @@ public class MasterNode {
 
     public Set<String> getAvailableNodes() {
         return nodeStateManager.getAvailableNodes();
+    }
+
+    public boolean isConnected() {
+        return  nodeStateManager.isConnected();
     }
 }

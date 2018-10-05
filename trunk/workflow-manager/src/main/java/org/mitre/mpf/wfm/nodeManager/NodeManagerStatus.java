@@ -35,6 +35,7 @@ import org.mitre.mpf.mvc.model.AtmosphereChannel;
 import org.mitre.mpf.nms.*;
 import org.mitre.mpf.nms.NodeManagerConstants.States;
 import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
+import org.mitre.mpf.nms.xml.NodeManager;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
@@ -49,6 +50,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -76,57 +78,52 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     // flag that indicates if at least one view update was initiated by JGroups
     private boolean viewUpdated = false;
 
-    private volatile boolean isRunning = false;
+    private volatile boolean isInitialized = false;
 
     private Map<String, ServiceDescriptor> serviceDescriptorMap = new ConcurrentHashMap<>();
 
+    // NOTE: Synchronize this method to prevent race conditions due to auto-configuration and auto-unconfiguration.
+    public synchronized void init(boolean isStartup) {
 
-    public synchronized void init(boolean reloadConfig) {
+        List<NodeManager> managers;
 
-        // If reloading due to a node configuration change ...
-        if (reloadConfig) {
-            try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource(false).getInputStream()) {
-                masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri());
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-            masterNode.launchAllNodes();
-            updateServiceDescriptors();
-            return;
-        }
+        // Clear the config file when starting the WFM and auto-unconfiguration is enabled.
+        boolean useConfigTemplate = isStartup && propertiesUtil.isNodeAutoUnconfigEnabled();
 
-        // Else if the WFM is starting for the first time and auto-unconfiguration is enabled ...
-        if (propertiesUtil.isNodeAutoUnconfigEnabled()) {
-            // Clear the config file (use template) before the master node connects to JGroups.
-            // This will not update the node or service state.
-            try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource(true).getInputStream()) {
-                masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri());
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-            // Starting the master node may trigger auto-configuration if it's enabled and child nodes are already available.
-            masterNode.setCallback(this);
-            masterNode.run();
-            isRunning = true;
-            return;
-        }
-
-        // Else if the WFM is starting for the first time and auto-unconfiguration is disabled ...
-        masterNode.setCallback(this);
-        masterNode.run();
-        isRunning = true;
-        // Load the config file after the master node connects to JGroups.
-        // If a config file exists, this may result in updating node or service state.
-        try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource(true).getInputStream()) {
-            masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri());
+        try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource(useConfigTemplate).getInputStream()) {
+            managers = masterNode.loadConfigFile(inStream);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        if (!masterNode.areAllManagersPresent()) {
+
+        // Connect the master node to JGroups if it's not already connected.
+        if (!masterNode.isConnected()) {
+            masterNode.setCallback(this);
+            // NOTE: The following will result in retrieving and handling a JGroups view, which may result in
+            // auto-configuration, if it's enabled and a child node is available. That involves updating and reloading
+            // the config file, and thereby another call to this init() method in the same thread.
+            masterNode.run();
+        }
+
+        // NOTE: Abort the startup procedure if preempted by auto-configuration.
+        if (isStartup && isInitialized) {
+            String baseMsg = "Auto-configuration completed before the default master node manager startup procedure.";
+            if (propertiesUtil.isNodeAutoConfigEnabled()) {
+                log.info(baseMsg + " Aborting the normal procedure.");
+                return;
+            }
+            log.error(baseMsg + " This is unexpected since auto-configuration is not enabled. Continuing anyway.");
+        }
+
+        masterNode.configureNodes(managers, propertiesUtil.getAmqUri());
+        if (!isInitialized && !masterNode.areAllManagersPresent()) {
             waitForViewUpdate();
         }
+
         masterNode.launchAllNodes();
         updateServiceDescriptors();
+
+        isInitialized = true;
     }
 
     private void waitForViewUpdate() {
@@ -163,15 +160,15 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     public void stop() {
         try {
             masterNode.shutdown();
-            isRunning = false;
+            isInitialized = false;
         }
         catch(Exception e) {
             log.error(e.getMessage(), e);
         }
     }
 
-    public boolean isRunning() {
-        return isRunning;
+    public boolean isInitialized() {
+        return isInitialized;
     }
 
     private void updateServiceDescriptors() {
@@ -372,7 +369,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     public void reloadNodeManagerConfig() {
         log.info("Reloading the node manager config");
         Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.NodeManagerStatus.reloadNodeManagerConfig").start();
-        init(true);
+        init(false);
         split.stop();
     }
 

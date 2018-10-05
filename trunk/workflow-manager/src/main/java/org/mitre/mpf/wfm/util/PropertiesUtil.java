@@ -38,6 +38,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.EnvVar;
+import org.mitre.mpf.wfm.service.StorageBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -725,6 +727,27 @@ public class PropertiesUtil {
             log.info("Directory {} doesn't exist. Creating it now.", resourceDir);
             Files.createDirectories(resourceDir);
         }
+    }
+
+    public StorageBackend.Type getHttpObjectStorageType() {
+        return mpfPropertiesConfig.get(StorageBackend.Type.class, "http.object.storage.type",
+                                       StorageBackend.Type.NONE);
+    }
+
+    public URI getHttpStorageServiceUri() {
+        return mpfPropertiesConfig.get(URI.class, "http.object.storage.service_uri");
+    }
+
+    public int getHttpStorageUploadThreadCount() {
+        return mpfPropertiesConfig.getInt("http.object.storage.upload.thread.count", 3);
+    }
+
+    public int getHttpStorageUploadSegmentSize() {
+        return mpfPropertiesConfig.getInt("http.object.storage.upload.segment.size", 8 * 1024 * 1024);
+    }
+
+    public int getHttpStorageUploadRetryCount() {
+        return mpfPropertiesConfig.getInt("http.object.storage.upload.retry.count", 3);
     }
 }
 

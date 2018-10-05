@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -241,5 +242,17 @@ public class IoUtils {
      */
     public boolean isApprovedContentType(String contentType) {
         return mediaTypeUtils.parse(contentType) != null;
+    }
+
+
+    public static void closeQuietly(Closeable closeable) {
+        if (closeable == null) {
+            return;
+        }
+        try {
+            closeable.close();
+        }
+        catch (IOException ignored) {
+        }
     }
 }

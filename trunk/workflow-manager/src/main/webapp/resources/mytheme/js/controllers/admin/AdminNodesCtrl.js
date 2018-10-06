@@ -88,7 +88,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
                     }
                     //create new node
                     if (!found) {
-                         $scope.nodes.push({name: config.host, core: config.coreNode, online: config.online, serviceGroups: [], updated: true});
+                         $scope.nodes.push({name: config.host, core: config.coreNode, online: config.online, autoConfigured: config.autoConfigured, serviceGroups: [], updated: true});
                     }
                 });
 

@@ -45,6 +45,7 @@
                                 <span class="node-host">{{host.name}}</span>
                                 <span class="node-host" ng-if="host.core">(Core,</span>
                                 <span class="node-host" ng-if="!host.core">(Spare,</span>
+                                <span class="node-host" ng-if="host.autoConfigured">Auto,</span>
                                 <span class="node-host" ng-if="host.online">Online)</span>
                                 <span class="node-host" ng-if="!host.online">Offline)</span>
                             </span>

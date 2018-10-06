@@ -110,6 +110,7 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
     private static NodeManager convertFromModel(NodeManagerModel model) {
         NodeManager manager = new NodeManager(model.getHost());
+        manager.setAutoConfigured(model.isAutoConfigured());
         model.getServices().stream()
                 .map(NodeManagerServiceImpl::convertFromModel)
                 .forEach(manager::add);
@@ -147,6 +148,7 @@ public class NodeManagerServiceImpl implements NodeManagerService {
         NodeManagerModel model = new NodeManagerModel(nodeManager.getTarget());
         model.setCoreNode(isCoreNode(model.getHost()));
         model.setOnline(availableNodes.contains(model.getHost()));
+        model.setAutoConfigured(nodeManager.isAutoConfigured());
         if (nodeManager.getServices() != null) {
             nodeManager.getServices().stream()
                 .map(ServiceModel::new)
@@ -286,6 +288,7 @@ public class NodeManagerServiceImpl implements NodeManagerService {
         // Add all services to the new node
         NodeManagerModel newNode = new NodeManagerModel();
         newNode.setHost(host);
+        newNode.setAutoConfigured(true);
         newNode.setServices(new ArrayList(getServiceModels().values()));
         List<NodeManagerModel> nodeManagerModelList = getNodeManagerModels();
         nodeManagerModelList.add(newNode);

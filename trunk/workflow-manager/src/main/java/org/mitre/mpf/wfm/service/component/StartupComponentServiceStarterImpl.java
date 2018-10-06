@@ -38,6 +38,7 @@ import javax.inject.Named;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -84,8 +85,14 @@ public class StartupComponentServiceStarterImpl implements StartupComponentServi
 		_nodeManagerService.setServiceModels(allServiceModels);
 
 		List<NodeManagerModel> allNodes = new ArrayList<>(_nodeManagerService.getNodeManagerModels());
-		NodeManagerModel thisNode = getThisNodeModel(allNodes);
-		addServicesToNode(thisNode, servicesToStart);
+
+		Set<NodeManagerModel> autoConfiguredNodes = getAutoConfiguredNodeModels(allNodes);
+		// autoConfiguredNodes.add(getThisNodeModel(allNodes)); // DEBUG
+
+		for (NodeManagerModel node : autoConfiguredNodes) {
+			addServicesToNode(node, servicesToStart);
+		}
+
 		try {
 			_nodeManagerService.saveNodeManagerConfig(allNodes);
 		}
@@ -103,11 +110,14 @@ public class StartupComponentServiceStarterImpl implements StartupComponentServi
 		if (thisNodeModel.isPresent()) {
 			return thisNodeModel.get();
 		}
-		else {
-			NodeManagerModel thisNode = new NodeManagerModel(_thisMpfNodeHostName);
-			nodes.add(thisNode);
-			return thisNode;
-		}
+
+		NodeManagerModel thisNode = new NodeManagerModel(_thisMpfNodeHostName);
+		nodes.add(thisNode);
+		return thisNode;
+	}
+
+	private Set<NodeManagerModel> getAutoConfiguredNodeModels(Collection<NodeManagerModel> nodes) {
+		return nodes.stream().filter(NodeManagerModel::isAutoConfigured).collect(Collectors.toSet());
 	}
 
 	private static final List<String> SERVICES_TO_ALWAYS_START = Collections.singletonList("Markup");

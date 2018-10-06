@@ -83,7 +83,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     private Map<String, ServiceDescriptor> serviceDescriptorMap = new ConcurrentHashMap<>();
 
     // NOTE: Synchronize this method to prevent race conditions due to auto-configuration and auto-unconfiguration.
-    public synchronized void init(boolean isStartup) {
+    private synchronized void init(boolean isStartup) {
 
         List<NodeManager> managers;
 
@@ -157,14 +157,13 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
         }
     }
 
+    public void start() {
+        init(true);
+    }
+
     public void stop() {
-        try {
-            masterNode.shutdown();
-            isInitialized = false;
-        }
-        catch(Exception e) {
-            log.error(e.getMessage(), e);
-        }
+        masterNode.shutdown();
+        isInitialized = false;
     }
 
     public boolean isInitialized() {

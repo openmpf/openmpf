@@ -37,7 +37,10 @@ public class NodeManager {
     
     @XStreamAsAttribute()
     private String target;
-    
+
+    @XStreamAsAttribute()
+    private Boolean autoConfigured;
+
     @XStreamImplicit(itemFieldName="service") 
     private List<Service> services = new ArrayList<Service>();
 
@@ -46,15 +49,23 @@ public class NodeManager {
      * @param target JGroup NodeManager Name
      */
     public NodeManager(String target) {
-        this.target=target;
+         this.target = target;
     }
 
     public void setTarget(String target) {
-         this.target=target;
+         this.target = target;
     }
 
     public String getTarget() {
         return this.target;
+    }
+
+    public void setAutoConfigured(boolean autoConfigured) {
+        this.autoConfigured = autoConfigured;
+    }
+
+    public boolean isAutoConfigured() {
+        return this.autoConfigured;
     }
 
     public void add(Service node) {

@@ -33,6 +33,7 @@ public class NodeManagerModel {
 	private String host;
 	private boolean core; // spare if false
 	private boolean online; // offline if false
+	private boolean autoConfigured;
 	private List<ServiceModel> services = new ArrayList<ServiceModel>();
 	
 	public NodeManagerModel() { }
@@ -61,11 +62,27 @@ public class NodeManagerModel {
 	public void setCoreNode(boolean core) {
 		this.core = core;
 	}
+
+	public boolean isAutoConfigured() {
+		return autoConfigured;
+	}
+	public void setAutoConfigured(boolean autoConfigured) {
+		this.autoConfigured = autoConfigured;
+	}
 	
 	public List<ServiceModel> getServices() {
 		return services;
 	}
 	public void setServices(List<ServiceModel> services) {
 		this.services = services;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof NodeManagerModel)) {
+			return false;
+		}
+		NodeManagerModel casted = (NodeManagerModel) obj;
+		return host.equals(casted.host);
 	}
 }

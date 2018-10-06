@@ -311,6 +311,11 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
     }
 
     public Set<String> getAvailableNodes() {
+        /*
+        if (!isConnected()) {
+            return Collections.emptySet();
+        }
+        */
         return msgChannel.getAvailableNodes();
     }
 }

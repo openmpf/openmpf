@@ -544,19 +544,6 @@ public class PropertiesUtil {
         return new File(mpfPropertiesConfig.getString("mpf.plugins.path"));
     }
 
-    public int getNumStartUpServices() {
-        String key = "startup.num.services.per.component";
-        try {
-            return mpfPropertiesConfig.getInt(key, 0);
-        } catch (ConversionException e) {
-            if (mpfPropertiesConfig.getString(key).startsWith("${")) {
-                log.warn("Unable to determine value for \"" + key + "\". It may not have been set via Maven. Using default value of \"0\".");
-                return 0;
-            }
-            throw e;
-        }
-    }
-
     public boolean isStartupAutoRegistrationSkipped() {
         String key = "startup.auto.registration.skip.spring";
         try {
@@ -702,6 +689,19 @@ public class PropertiesUtil {
 
     public boolean isNodeAutoUnconfigEnabled() {
         return mpfPropertiesConfig.getBoolean("node.auto.unconfig.enabled");
+    }
+
+    public int getNodeAutoConfigNumServices() {
+        String key = "node.auto.config.num.services.per.component";
+        try {
+            return mpfPropertiesConfig.getInt(key, 0);
+        } catch (ConversionException e) {
+            if (mpfPropertiesConfig.getString(key).startsWith("${")) {
+                log.warn("Unable to determine value for \"" + key + "\". It may not have been set via Maven. Using default value of \"0\".");
+                return 0;
+            }
+            throw e;
+        }
     }
 
     // Helper methods

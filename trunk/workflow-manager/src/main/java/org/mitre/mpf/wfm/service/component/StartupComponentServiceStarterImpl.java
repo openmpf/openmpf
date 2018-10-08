@@ -38,7 +38,6 @@ import javax.inject.Named;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -47,9 +46,9 @@ import static java.util.stream.Collectors.toMap;
 @Named
 public class StartupComponentServiceStarterImpl implements StartupComponentServiceStarter {
 
-	private final int _numStartUpServices;
+	private final boolean _isNodeAutoConfigEnabled;
 
-	private final String _thisMpfNodeHostName;
+	private final int _nodeAutoConfigNumServices;
 
 	private final NodeManagerService _nodeManagerService;
 
@@ -58,15 +57,15 @@ public class StartupComponentServiceStarterImpl implements StartupComponentServi
 	public StartupComponentServiceStarterImpl(
 			PropertiesUtil propertiesUtil,
 			NodeManagerService nodeManagerService) {
-		_numStartUpServices = propertiesUtil.getNumStartUpServices();
-		_thisMpfNodeHostName = propertiesUtil.getThisMpfNodeHostName();
+		_isNodeAutoConfigEnabled = propertiesUtil.isNodeAutoConfigEnabled();
+		_nodeAutoConfigNumServices = propertiesUtil.getNodeAutoConfigNumServices();
 		_nodeManagerService = nodeManagerService;
 	}
 
 
 	@Override
 	public void startServicesForComponents(List<RegisterComponentModel> components) {
-		if (_numStartUpServices <= 0 || _thisMpfNodeHostName == null) {
+		if (!_isNodeAutoConfigEnabled || _nodeAutoConfigNumServices <= 0) {
 			return;
 		}
 
@@ -76,48 +75,19 @@ public class StartupComponentServiceStarterImpl implements StartupComponentServi
 			return;
 		}
 
-		for (ServiceModel service : servicesToStart) {
-			if (service.getServiceCount() < _numStartUpServices) {
-				service.setServiceCount(_numStartUpServices);
-			}
-		}
+		servicesToStart.stream().forEach(n -> n.setServiceCount(_nodeAutoConfigNumServices));
 
-		_nodeManagerService.setServiceModels(allServiceModels);
+		List<NodeManagerModel> autoConfiguredNodes =_nodeManagerService.getNodeManagerModels().stream()
+				.filter(NodeManagerModel::isAutoConfigured).collect(toList());
 
-		List<NodeManagerModel> allNodes = new ArrayList<>(_nodeManagerService.getNodeManagerModels());
-
-		Set<NodeManagerModel> autoConfiguredNodes = getAutoConfiguredNodeModels(allNodes);
-		// autoConfiguredNodes.add(getThisNodeModel(allNodes)); // DEBUG
-
-		for (NodeManagerModel node : autoConfiguredNodes) {
-			addServicesToNode(node, servicesToStart);
-		}
+		autoConfiguredNodes.stream().forEach(n -> addServicesToNode(n, servicesToStart));
 
 		try {
-			_nodeManagerService.saveNodeManagerConfig(allNodes);
+			_nodeManagerService.saveNodeManagerConfig(autoConfiguredNodes);
 		}
 		catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
-	}
-
-
-	private NodeManagerModel getThisNodeModel(Collection<NodeManagerModel> nodes) {
-		Optional<NodeManagerModel> thisNodeModel = nodes.stream()
-				.filter(n -> _thisMpfNodeHostName.equals(n.getHost()))
-				.findAny();
-
-		if (thisNodeModel.isPresent()) {
-			return thisNodeModel.get();
-		}
-
-		NodeManagerModel thisNode = new NodeManagerModel(_thisMpfNodeHostName);
-		nodes.add(thisNode);
-		return thisNode;
-	}
-
-	private Set<NodeManagerModel> getAutoConfiguredNodeModels(Collection<NodeManagerModel> nodes) {
-		return nodes.stream().filter(NodeManagerModel::isAutoConfigured).collect(Collectors.toSet());
 	}
 
 	private static final List<String> SERVICES_TO_ALWAYS_START = Collections.singletonList("Markup");

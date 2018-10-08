@@ -289,7 +289,11 @@ public class NodeManagerServiceImpl implements NodeManagerService {
         NodeManagerModel newNode = new NodeManagerModel();
         newNode.setHost(host);
         newNode.setAutoConfigured(true);
-        newNode.setServices(new ArrayList(getServiceModels().values()));
+
+        List<ServiceModel> serviceModels = new ArrayList(getServiceModels().values());
+        serviceModels.stream().forEach(n -> n.setServiceCount(propertiesUtil.getNodeAutoConfigNumServices()));
+        newNode.setServices(serviceModels);
+
         List<NodeManagerModel> nodeManagerModelList = getNodeManagerModels();
         nodeManagerModelList.add(newNode);
         saveNodeManagerConfig(nodeManagerModelList);

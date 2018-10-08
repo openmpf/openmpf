@@ -61,7 +61,7 @@ public class TestStartupComponentServiceStarter {
 
 	private void initTest(int numStartUpSvcs, boolean setThisMpfNode) {
 		_mockPropsUtils = mock(PropertiesUtil.class);
-		when(_mockPropsUtils.getNumStartUpServices())
+		when(_mockPropsUtils.getNodeAutoConfigNumServices())
 				.thenReturn(numStartUpSvcs);
 
 		if (setThisMpfNode) {

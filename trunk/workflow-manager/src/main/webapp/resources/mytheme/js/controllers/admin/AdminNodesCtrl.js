@@ -82,6 +82,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
                         var existing_host_data = $scope.nodes[i];
                         if (existing_host_data.name == config.host) {
                             $scope.nodes[i].online = config.online;
+                            $scope.nodes[i].autoConfigured = config.autoConfigured;
                             $scope.nodes[i].updated = true;
                             found = true;
                         }
@@ -239,6 +240,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
                     var host_service = config_host.services[i];
                     if (host_service.serviceName == service) {
                         configurations[j].services[i].serviceCount = parseInt(count);
+                        configurations[j].autoConfigured = false;
                         found = true;
                         break;
                     }
@@ -247,6 +249,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
                     var services = $filter('filter')($scope.serviceCatalog, {serviceName: service});
                     services[0].serviceCount = parseInt(count);
                     $.merge(config_host.services, services);
+                    config_host.autoConfigured = false;
                 }
             }
         }
@@ -262,6 +265,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
                     var host_service = config_host.services[i];
                     if (host_service.serviceName == nodename) {
                         configurations[j].services[i].serviceCount = 0;
+                        configurations[j].autoConfigured = false;
                         break;
                     }
                 }
@@ -282,6 +286,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
                     var host_service = config_host.services[i];
                     if (host_service.serviceName == service_name) {
                         configurations[j].services[i].serviceCount--;
+                        configurations[j].autoConfigured = false;
                         break;
                     }
                 }
@@ -317,6 +322,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
                 host.services.push(service);
             }
         });
+        host.autoConfigured = false;
         $log.debug("configurations", configurations);
         saveConfigs();
     };

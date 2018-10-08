@@ -65,7 +65,7 @@ public interface NodeManagerService {
 
     public Set<String> getAvailableNodes();
 
-    public void configureNewNode(String host) throws IOException;
+    public void autoConfigureNewNode(String host) throws IOException;
 
-    public void unconfigureNode(String host) throws IOException;
+    public void unconfigureIfAutoConfiguredNode(String host) throws IOException;
 }

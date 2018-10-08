@@ -47,7 +47,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.List;
@@ -87,14 +86,9 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 
         List<NodeManager> managers;
 
-        // Clear the config file when starting the WFM and auto-unconfiguration is enabled.
-        boolean useConfigTemplate = isStartup && propertiesUtil.isNodeAutoUnconfigEnabled();
-
-        try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource(useConfigTemplate).getInputStream()) {
-            managers = masterNode.loadConfigFile(inStream);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        // Clear auto-configured nodes from the config file when starting the WFM and auto-unconfiguration is enabled.
+        boolean autoUnconfigNodes = isStartup && propertiesUtil.isNodeAutoUnconfigEnabled();
+        managers = masterNode.loadConfigFile(propertiesUtil.getNodeManagerConfigResource(), autoUnconfigNodes);
 
         // Connect the master node to JGroups if it's not already connected.
         if (!masterNode.isConnected()) {
@@ -107,7 +101,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 
         // NOTE: Abort the startup procedure if preempted by auto-configuration.
         if (isStartup && isInitialized) {
-            String baseMsg = "Auto-configuration completed before the default master node manager startup procedure.";
+            String baseMsg = "Node auto-configuration completed before the default master node manager startup procedure.";
             if (propertiesUtil.isNodeAutoConfigEnabled()) {
                 log.info(baseMsg + " Aborting the normal procedure.");
                 return;
@@ -289,7 +283,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
         if (propertiesUtil.isNodeAutoConfigEnabled() &&
                 !masterNode.getConfiguredManagerHosts().containsKey(hostname)) {
             try {
-                nodeManagerService.configureNewNode(hostname);
+                nodeManagerService.autoConfigureNewNode(hostname);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -304,7 +298,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
         //log.debug("{} manager down.", hostname);
         if (propertiesUtil.isNodeAutoUnconfigEnabled()) {
             try {
-                nodeManagerService.unconfigureNode(hostname);
+                nodeManagerService.unconfigureIfAutoConfiguredNode(hostname);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

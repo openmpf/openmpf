@@ -31,6 +31,7 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
 import com.thoughtworks.xstream.io.xml.StaxDriver;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,20 +42,31 @@ public class NodeManagers {
     @XStreamImplicit(itemFieldName="nodeManager")
     private List<NodeManager> nodeManagers = new ArrayList<NodeManager>();
 
-    public static NodeManagers fromXml(InputStream xml) {
+    public static NodeManagers fromXml(InputStream inputStream) {
         // Create Stax parser with default namespace
         StaxDriver driver = new StaxDriver();
         driver.getQnameMap().setDefaultNamespace("launch.xml.nms.mitre.org");
         XStream xstream = new XStream(driver);
         xstream.autodetectAnnotations(true);
         xstream.processAnnotations(NodeManagers.class);
-        NodeManagers retval = (NodeManagers) xstream.fromXML(xml);
+        NodeManagers retval = (NodeManagers) xstream.fromXML(inputStream);
 
         // Stax parser will set the collection to null if the XML has no entries; instead use an empty collection
         if (retval.getAll() == null) {
             retval.setAll(new ArrayList<>());
         }
         return retval;
+    }
+
+    public static void toXml(NodeManagers managers, OutputStream outputStream) {
+        XStream xStream = new XStream();
+        //just adding all of them from the start - do not see a disadvantage from doing this
+        xStream.processAnnotations(NodeManagers.class);
+        xStream.processAnnotations(NodeManager.class);
+        xStream.processAnnotations(Service.class);
+        xStream.processAnnotations(EnvironmentVariable.class);
+
+        xStream.toXML(managers, outputStream);
     }
 
     public List<NodeManager> getAll() {

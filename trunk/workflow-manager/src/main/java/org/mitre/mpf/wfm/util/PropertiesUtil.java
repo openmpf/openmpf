@@ -492,8 +492,8 @@ public class PropertiesUtil {
         return appContext.getResource(mpfPropertiesConfig.getString("data.nodemanagerconfig.template"));
     }
 
-    public WritableResource getNodeManagerConfigResource(boolean useTemplate) {
-        return getDataResource(getNodeManagerConfigData(), getNodeManagerConfigTemplate(), useTemplate);
+    public WritableResource getNodeManagerConfigResource() {
+        return getDataResource(getNodeManagerConfigData(), getNodeManagerConfigTemplate());
     }
 
 
@@ -692,34 +692,18 @@ public class PropertiesUtil {
     }
 
     public int getNodeAutoConfigNumServices() {
-        String key = "node.auto.config.num.services.per.component";
-        try {
-            return mpfPropertiesConfig.getInt(key, 0);
-        } catch (ConversionException e) {
-            if (mpfPropertiesConfig.getString(key).startsWith("${")) {
-                log.warn("Unable to determine value for \"" + key + "\". It may not have been set via Maven. Using default value of \"0\".");
-                return 0;
-            }
-            throw e;
-        }
+        return mpfPropertiesConfig.getInt("node.auto.config.num.services.per.component");
     }
 
     // Helper methods
 
     private static WritableResource getDataResource(WritableResource dataResource, InputStreamSource templateResource) {
-        return getDataResource(dataResource, templateResource, false);
-    }
+        if (dataResource.exists()) {
+            return dataResource;
+        }
 
-    private static WritableResource getDataResource(WritableResource dataResource, InputStreamSource templateResource,
-                                                    boolean useTemplate) {
         try {
-            if (dataResource.exists()) {
-                if (!useTemplate) {
-                    return dataResource;
-                }
-                dataResource.getFile().delete();
-            }
-            log.info("{} removed or doesn't exist. Copying from {}", dataResource, templateResource);
+            log.info("{} doesn't exist. Copying from {}", dataResource, templateResource);
             copyResource(dataResource, templateResource);
             return dataResource;
         } catch ( IOException e ) {

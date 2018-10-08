@@ -37,10 +37,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.util.*;
 
 @Component
@@ -101,31 +105,53 @@ public class MasterNode {
      * (via a node manager process on that machine) to send instructions for managing services.
      * This doesn't apply the configuration.
      *
-     * @param masterConfigFile
+     * @param nodeManagerConfig
+     * @param autoUnconfigNodes
      * @return List<NodeManager>
      */
-    public List<NodeManager> loadConfigFile(InputStream masterConfigFile) {
+    public synchronized List<NodeManager> loadConfigFile(WritableResource nodeManagerConfig, boolean autoUnconfigNodes) {
         // Don't let the config file have multiple node-managers with the same hostname/IP
         // This is only used in this code area to prevent collisions due to bad XMl configs
         configuredManagerHosts.clear();
 
-        log.info("Loading node manager config");
-        NodeManagers managers = NodeManagers.fromXml(masterConfigFile);
+        NodeManagers managers;
+        try (InputStream inputStream = nodeManagerConfig.getInputStream()){
+            log.info("Loading node manager config.");
+            managers = NodeManagers.fromXml(inputStream);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
 
-        // Iterate through node manager servers
+        // Iterate through node manager servers, dropping those that are invalid
         for (NodeManager manager : managers.getAll()) {
             if (manager.getTarget() == null) {
-                log.error("The <nodeManager> tag did not contain a target attribute describing the server to use");
+                log.error("The <nodeManager> tag did not contain a target attribute describing the server to use.");
                 continue;
             }
             // If user misconfigures the xml config by putting in duplicate hostnames, complain and continue
             if (configuredManagerHosts.containsKey(manager.getTarget())) {
-                log.error("Duplicate node-manager specified in config file. Don't repeat node manager hosts: " + manager.getTarget());
+                log.error("Duplicate node-manager specified in config file. Dropping repeated node manager host: " + manager.getTarget());
+                continue;
+            }
+            if (autoUnconfigNodes && manager.isAutoConfigured()) {
+                log.info("Node auto-unconfiguration is enabled. Dropping auto-configured node manager host: " + manager.getTarget());
                 continue;
             }
 
-            // Note that we've seen this node-manager host from the current config file
+            // Note that we've seen this node manager host from the current config file
             configuredManagerHosts.put(manager.getTarget(), false); // configuration not applied yet
+        }
+
+        boolean updated = managers.getAll().removeIf(node -> !configuredManagerHosts.containsKey(node.getTarget()));
+
+        // Save the configuration if node manager servers have been dropped
+        if (updated) {
+            try (OutputStream outputStream = nodeManagerConfig.getOutputStream()){
+                log.info("Saving updated node manager config.");
+                NodeManagers.toXml(managers, outputStream);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
 
         return managers.getAll();

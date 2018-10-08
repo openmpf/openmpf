@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.thoughtworks.xstream.XStream;
 import org.mitre.mpf.nms.xml.EnvironmentVariable;
 import org.mitre.mpf.nms.xml.NodeManager;
 import org.mitre.mpf.nms.xml.NodeManagers;
@@ -79,15 +78,8 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
         NodeManagers managers = convertFromModels(nodeManagerModels);
 
-        XStream xStream = new XStream();
-        //just adding all of them from the start - do not see a disadvantage from doing this
-        xStream.processAnnotations(NodeManagers.class);
-        xStream.processAnnotations(NodeManager.class);
-        xStream.processAnnotations(Service.class);
-        xStream.processAnnotations(EnvironmentVariable.class);
-
-        try (OutputStream outputStream = propertiesUtil.getNodeManagerConfigResource(false).getOutputStream()) {
-            xStream.toXML(managers, outputStream);
+        try (OutputStream outputStream = propertiesUtil.getNodeManagerConfigResource().getOutputStream()) {
+            NodeManagers.toXml(managers, outputStream);
         }
 
         if (reload) {
@@ -160,7 +152,7 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
     @Override
     public synchronized List<NodeManagerModel> getNodeManagerModels() {
-        try (InputStream inputStream = propertiesUtil.getNodeManagerConfigResource(false).getInputStream()) {
+        try (InputStream inputStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
             NodeManagers managers = NodeManagers.fromXml(inputStream);
 
             // get the current view once, and then update all the models
@@ -284,7 +276,7 @@ public class NodeManagerServiceImpl implements NodeManagerService {
     }
 
     @Override
-    public void configureNewNode(String host) throws IOException {
+    public void autoConfigureNewNode(String host) throws IOException {
         // Add all services to the new node
         NodeManagerModel newNode = new NodeManagerModel();
         newNode.setHost(host);
@@ -300,9 +292,9 @@ public class NodeManagerServiceImpl implements NodeManagerService {
     }
 
     @Override
-    public void unconfigureNode(String host) throws IOException {
+    public void unconfigureIfAutoConfiguredNode(String host) throws IOException {
         List<NodeManagerModel> nodeManagerModelList = getNodeManagerModels();
-        if (nodeManagerModelList.removeIf(node -> node.getHost().equals(host))) {
+        if (nodeManagerModelList.removeIf(node -> (node.getHost().equals(host) && node.isAutoConfigured()))) {
             saveNodeManagerConfig(nodeManagerModelList);
         }
     }

@@ -77,13 +77,12 @@ public class StartupComponentServiceStarterImpl implements StartupComponentServi
 
 		servicesToStart.stream().forEach(n -> n.setServiceCount(_nodeAutoConfigNumServices));
 
-		List<NodeManagerModel> autoConfiguredNodes =_nodeManagerService.getNodeManagerModels().stream()
-				.filter(NodeManagerModel::isAutoConfigured).collect(toList());
-
-		autoConfiguredNodes.stream().forEach(n -> addServicesToNode(n, servicesToStart));
+		List<NodeManagerModel> allConfiguredNodes = _nodeManagerService.getNodeManagerModels();
+		allConfiguredNodes.stream().filter(NodeManagerModel::isAutoConfigured)
+				.forEach(n -> addServicesToNode(n, servicesToStart));
 
 		try {
-			_nodeManagerService.saveNodeManagerConfig(autoConfiguredNodes);
+			_nodeManagerService.saveNodeManagerConfig(allConfiguredNodes);
 		}
 		catch (IOException e) {
 			throw new UncheckedIOException(e);

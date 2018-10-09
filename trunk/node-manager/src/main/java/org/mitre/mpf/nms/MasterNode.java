@@ -224,7 +224,7 @@ public class MasterNode {
                     }
                 }
             }
-        } //end of for (NodeManager manager : managers.getAll())
+        } //end of for (NodeManager manager : managers)
 
         //if the node table is not empty - go through it and check to make sure
         //any updates to the node manager config are reflected in the node table

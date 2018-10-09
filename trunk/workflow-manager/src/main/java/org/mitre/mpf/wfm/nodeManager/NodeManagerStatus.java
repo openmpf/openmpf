@@ -90,8 +90,8 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
         boolean autoUnconfigNodes = isStartup && propertiesUtil.isNodeAutoUnconfigEnabled();
         managers = masterNode.loadConfigFile(propertiesUtil.getNodeManagerConfigResource(), autoUnconfigNodes);
 
-        // Connect the master node to JGroups if it's not already connected.
-        if (!masterNode.isConnected()) {
+        // Connect the master node to JGroups if the WFM is starting up.
+        if (isStartup) {
             masterNode.setCallback(this);
             // NOTE: The following will result in retrieving and handling a JGroups view, which may result in
             // auto-configuration, if it's enabled and a child node is available. That involves updating and reloading

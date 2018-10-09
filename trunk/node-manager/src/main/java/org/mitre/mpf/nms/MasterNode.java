@@ -318,8 +318,4 @@ public class MasterNode {
     public Set<String> getAvailableNodes() {
         return nodeStateManager.getAvailableNodes();
     }
-
-    public boolean isConnected() {
-        return  nodeStateManager.isConnected();
-    }
 }

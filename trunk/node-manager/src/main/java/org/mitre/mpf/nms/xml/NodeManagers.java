@@ -66,6 +66,12 @@ public class NodeManagers {
         xStream.processAnnotations(Service.class);
         xStream.processAnnotations(EnvironmentVariable.class);
 
+        // Prevent using references. For example, when two NodeManager objects reference the same Service object:
+        // <nodeManager target="somehost2">
+        //    <service reference="../../nodeManager/service"/>
+        //  </nodeManager>
+        xStream.setMode(XStream.NO_REFERENCES);
+
         xStream.toXML(managers, outputStream);
     }
 

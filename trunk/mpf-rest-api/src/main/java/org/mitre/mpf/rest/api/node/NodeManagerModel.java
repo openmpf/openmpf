@@ -28,6 +28,7 @@ package org.mitre.mpf.rest.api.node;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class NodeManagerModel {
 	private String host;
@@ -83,6 +84,6 @@ public class NodeManagerModel {
 			return false;
 		}
 		NodeManagerModel casted = (NodeManagerModel) obj;
-		return host.equals(casted.host);
+		return Objects.equals(host, casted.host);
 	}
 }

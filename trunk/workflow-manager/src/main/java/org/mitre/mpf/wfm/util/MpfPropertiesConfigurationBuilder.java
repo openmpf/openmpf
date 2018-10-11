@@ -43,7 +43,9 @@ import java.util.*;
 @Component
 public class MpfPropertiesConfigurationBuilder {
 
-    public static final String DETECTION_KEY_PREFIX = "detection.";
+    private static final String DETECTION_KEY_PREFIX = "detection.";
+    private static final String REMOTE_MEDIA_DOWNLOAD_KEY_PREFIX = "remote.media.download.";
+    private static final String NODE_AUTO_CONFIG_KEY_PREFIX = "node.auto.";
 
     @javax.annotation.Resource(name="customPropFile")
     private FileSystemResource customPropFile;
@@ -95,8 +97,8 @@ public class MpfPropertiesConfigurationBuilder {
             // update all properties that will be written to disk
             tmpMpfCustomPropertiesConfig.setProperty(key, value);
 
-            // update only the detection.* values in the composite config used by the WFM
-            if (key.startsWith(DETECTION_KEY_PREFIX)) {
+            // update only the mutable properties in the composite config used by the WFM
+            if (isMutableProperty(key)) {
                 mpfCustomPropertiesConfig.setProperty(key, value);
             }
         }
@@ -218,5 +220,21 @@ public class MpfPropertiesConfigurationBuilder {
         ConfigurationUtils.copy(mpfCompositeConfig, tmpConfig);
 
         mpfConfigSnapshot = tmpConfig;
+    }
+
+    public static boolean isMutableProperty(String key) {
+        return isDetectionProperty(key) || isRemoteMediaDownloadProperty(key) || isNodeAutoConfigProperty(key);
+    }
+
+    public static boolean isDetectionProperty(String key) {
+        return key.startsWith(MpfPropertiesConfigurationBuilder.DETECTION_KEY_PREFIX);
+    }
+
+    public static boolean isRemoteMediaDownloadProperty(String key) {
+        return key.startsWith(MpfPropertiesConfigurationBuilder.REMOTE_MEDIA_DOWNLOAD_KEY_PREFIX);
+    }
+
+    public static boolean isNodeAutoConfigProperty(String key) {
+        return key.startsWith(MpfPropertiesConfigurationBuilder.NODE_AUTO_CONFIG_KEY_PREFIX);
     }
 }

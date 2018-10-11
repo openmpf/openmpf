@@ -185,10 +185,8 @@ public class PropertiesUtil {
      * @return Updated list of property models for the set of immutable properties.
      */
     public List<PropertyModel> getImmutableCustomProperties() {
-        // Get an updated list of property models. Each element contains current value. Return only the immutable system properties by
-        // filtering out the mutable detection properties from the list.
         return getCustomProperties().stream()
-                .filter(pm -> !isDetectionProperty(pm.getKey()))
+                .filter(pm -> !MpfPropertiesConfigurationBuilder.isMutableProperty(pm.getKey()))
                 .collect(toList());
     }
 
@@ -198,21 +196,15 @@ public class PropertiesUtil {
      * @return Updated list of property models for the set of mutable properties.
      */
     public List<PropertyModel> getMutableCustomProperties() {
-        // Get an updated list of property models. Each element contains current value. Return only the mutable system properties by
-        // filtering out the immutable detection properties from the list.
         return getCustomProperties().stream()
-                .filter(pm -> isDetectionProperty(pm.getKey()))
+                .filter(pm -> MpfPropertiesConfigurationBuilder.isMutableProperty(pm.getKey()))
                 .collect(toList());
     }
 
-    private static boolean isDetectionProperty(String key) {
-        return key.startsWith(MpfPropertiesConfigurationBuilder.DETECTION_KEY_PREFIX);
-    }
-
     public TransientDetectionSystemProperties createDetectionSystemPropertiesSnapshot() {
-        Map<String, String> detMap = new HashMap();
+        Map<String, String> detMap = new HashMap<>();
         mpfPropertiesConfig.getKeys().forEachRemaining(key -> {
-            if (isDetectionProperty(key)) {
+            if (MpfPropertiesConfigurationBuilder.isDetectionProperty(key)) {
                 detMap.put(key, mpfPropertiesConfig.getString(key)); // resolve final value
             }
         } );
@@ -552,19 +544,6 @@ public class PropertiesUtil {
         return new File(mpfPropertiesConfig.getString("mpf.plugins.path"));
     }
 
-    public int getNumStartUpServices() {
-        String key = "startup.num.services.per.component";
-        try {
-            return mpfPropertiesConfig.getInt(key, 0);
-        } catch (ConversionException e) {
-            if (mpfPropertiesConfig.getString(key).startsWith("${")) {
-                log.warn("Unable to determine value for \"" + key + "\". It may not have been set via Maven. Using default value of \"0\".");
-                return 0;
-            }
-            throw e;
-        }
-    }
-
     public boolean isStartupAutoRegistrationSkipped() {
         String key = "startup.auto.registration.skip.spring";
         try {
@@ -700,6 +679,21 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getInt("remote.media.download.sleep");
     }
 
+    //
+    // Node management settings
+    //
+
+    public boolean isNodeAutoConfigEnabled() {
+        return mpfPropertiesConfig.getBoolean("node.auto.config.enabled");
+    }
+
+    public boolean isNodeAutoUnconfigEnabled() {
+        return mpfPropertiesConfig.getBoolean("node.auto.unconfig.enabled");
+    }
+
+    public int getNodeAutoConfigNumServices() {
+        return mpfPropertiesConfig.getInt("node.auto.config.num.services.per.component");
+    }
 
     // Helper methods
 

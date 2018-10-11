@@ -158,7 +158,7 @@ public class ComponentReRegisterServiceImpl implements ComponentReRegisterServic
 			}
 		}
 		try {
-			_nodeManagerService.saveNodeManagerConfig(nodes);
+			_nodeManagerService.saveAndReloadNodeManagerConfig(nodes);
 		}
 		catch (IOException e) {
 			throw new UncheckedIOException(e);

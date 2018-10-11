@@ -291,7 +291,7 @@ public class TestComponentReRegisterService {
 
 	private void assertServicesNotUpdated() throws IOException {
 		verify(_mockNodeManagerService, never())
-				.saveNodeManagerConfig(any());
+				.saveAndReloadNodeManagerConfig(any());
 		verify(_mockNodeManagerService, never())
 				.setServiceModels(any());
 	}
@@ -304,7 +304,7 @@ public class TestComponentReRegisterService {
 
 	private void assertServiceAddedToNode(String nodeHost, String serviceName, int serviceCount) throws IOException {
 		verify(_mockNodeManagerService)
-				.saveNodeManagerConfig(collectionContaining(
+				.saveAndReloadNodeManagerConfig(collectionContaining(
 						n -> n.getHost().equals(nodeHost) && nodeHasService(n, serviceName, serviceCount)));
 	}
 

@@ -52,7 +52,7 @@ public class MasterNode {
 
     private static final Logger log = LoggerFactory.getLogger(MasterNode.class);
 
-    private Map<String, Boolean> configuredManagerHosts = new HashMap<>();
+    private final Map<String, Boolean> configuredManagerHosts = new HashMap<>();
 
     private final MasterNodeStateManager nodeStateManager;
 

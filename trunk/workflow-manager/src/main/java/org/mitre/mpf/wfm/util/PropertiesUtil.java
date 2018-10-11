@@ -186,7 +186,7 @@ public class PropertiesUtil {
      */
     public List<PropertyModel> getImmutableCustomProperties() {
         return getCustomProperties().stream()
-                .filter(pm -> !mpfPropertiesConfigBuilder.isMutableProperty(pm.getKey()))
+                .filter(pm -> !MpfPropertiesConfigurationBuilder.isMutableProperty(pm.getKey()))
                 .collect(toList());
     }
 
@@ -197,14 +197,14 @@ public class PropertiesUtil {
      */
     public List<PropertyModel> getMutableCustomProperties() {
         return getCustomProperties().stream()
-                .filter(pm -> mpfPropertiesConfigBuilder.isMutableProperty(pm.getKey()))
+                .filter(pm -> MpfPropertiesConfigurationBuilder.isMutableProperty(pm.getKey()))
                 .collect(toList());
     }
 
     public TransientDetectionSystemProperties createDetectionSystemPropertiesSnapshot() {
-        Map<String, String> detMap = new HashMap();
+        Map<String, String> detMap = new HashMap<>();
         mpfPropertiesConfig.getKeys().forEachRemaining(key -> {
-            if (mpfPropertiesConfigBuilder.isDetectionProperty(key)) {
+            if (MpfPropertiesConfigurationBuilder.isDetectionProperty(key)) {
                 detMap.put(key, mpfPropertiesConfig.getString(key)); // resolve final value
             }
         } );

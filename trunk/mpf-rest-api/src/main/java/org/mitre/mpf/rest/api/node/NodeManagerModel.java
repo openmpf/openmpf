@@ -28,7 +28,6 @@ package org.mitre.mpf.rest.api.node;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class NodeManagerModel {
 	private String host;
@@ -76,14 +75,5 @@ public class NodeManagerModel {
 	}
 	public void setServices(List<ServiceModel> services) {
 		this.services = services;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (!(obj instanceof NodeManagerModel)) {
-			return false;
-		}
-		NodeManagerModel casted = (NodeManagerModel) obj;
-		return Objects.equals(host, casted.host);
 	}
 }

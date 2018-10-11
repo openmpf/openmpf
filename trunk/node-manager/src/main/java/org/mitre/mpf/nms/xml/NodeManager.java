@@ -39,7 +39,7 @@ public class NodeManager {
     private String target;
 
     @XStreamAsAttribute()
-    private Boolean autoConfigured;
+    private boolean autoConfigured;
 
     @XStreamImplicit(itemFieldName="service") 
     private List<Service> services = new ArrayList<Service>();

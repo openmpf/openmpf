@@ -54,6 +54,12 @@ public class TestStartupComponentServiceStarter {
 
 
 	private void initTest(int numStartUpSvcs) {
+		initTest(numStartUpSvcs, Arrays.asList(createAutoConfiguredNodeManagerModel("fakehost1"),
+						                       createAutoConfiguredNodeManagerModel("fakehost2"),
+						                       createAutoConfiguredNodeManagerModel(_testMpfNodeHostName)));
+	}
+
+	private void initTest(int numStartUpSvcs, List<NodeManagerModel> nodeManagerModels) {
 		_mockPropsUtils = mock(PropertiesUtil.class);
 		when(_mockPropsUtils.isNodeAutoConfigEnabled())
 				.thenReturn(true);
@@ -62,14 +68,12 @@ public class TestStartupComponentServiceStarter {
 
 		_mockNodeManagerSvc = mock(NodeManagerService.class);
 		when(_mockNodeManagerSvc.getNodeManagerModels())
-				.thenReturn(Arrays.asList(createAutoConfiguredNodeManagerModel("fakehost1"),
-						                  createAutoConfiguredNodeManagerModel("fakehost2"),
-						                  createAutoConfiguredNodeManagerModel(_testMpfNodeHostName)));
+				.thenReturn(nodeManagerModels);
 
 		_serviceStarter = new StartupComponentServiceStarterImpl(_mockPropsUtils, _mockNodeManagerSvc);
 	}
 
-	private NodeManagerModel createAutoConfiguredNodeManagerModel(String hostname) {
+	private static NodeManagerModel createAutoConfiguredNodeManagerModel(String hostname) {
 		NodeManagerModel nodeManagerModel = new NodeManagerModel(hostname);
 		nodeManagerModel.setAutoConfigured(true);
 		return  nodeManagerModel;
@@ -116,8 +120,9 @@ public class TestStartupComponentServiceStarter {
 		assertServiceStarted("Markup", 2);
 
 		verify(_mockNodeManagerSvc)
-				.saveNodeManagerConfig(collectionContaining(
-						nm -> nm.getServices().size() == 1 && containsSvc("Markup", 2, nm)));
+				.saveAndReloadNodeManagerConfig(collectionContaining(
+						nm -> nm.getHost().equals(_testMpfNodeHostName)
+								&& nm.getServices().size() == 1 && containsSvc("Markup", 2, nm)));
 	}
 
 
@@ -134,36 +139,59 @@ public class TestStartupComponentServiceStarter {
 
 		assertServiceStarted(componentName1, 2);
 		assertServiceStarted(componentName2, 2);
-		assertServiceNotStarted(existingComponentName, 0);
+		assertServiceNotStarted(existingComponentName);
 	}
 
 
 	@Test
-	public void modifySvcCount() {
-		initTest(5);
-		ServiceModel startMe = new ServiceModel();
-		startMe.setServiceName("StartMe");
-		ServiceModel startMeToo = new ServiceModel();
-		startMeToo.setServiceName("StartMe2");
-		startMeToo.setServiceCount(3);
-		ServiceModel hasEnoughInstances = new ServiceModel();
-		hasEnoughInstances.setServiceName("AlreadyHasEnough");
-		hasEnoughInstances.setServiceCount(10);
+	public void modifySvcCountForAutoConfiguredNodes() {
+		ServiceModel serviceModel1 = new ServiceModel();
+		serviceModel1.setServiceName("StartMe1");
 
-		List<RegisterComponentModel> components = createRegistrationModels(startMe.getServiceName(),
-		                                                                   startMeToo.getServiceName(),
-		                                                                   hasEnoughInstances.getServiceName());
+		ServiceModel serviceModel2 = new ServiceModel();
+		serviceModel2.setServiceName("StartMe2");
+		serviceModel2.setServiceCount(3);
+
+		ServiceModel serviceModel3 = new ServiceModel();
+		serviceModel3.setServiceName("StartMe3");
+		serviceModel3.setServiceCount(10);
+
+		NodeManagerModel nodeManagerModel1 = createAutoConfiguredNodeManagerModel("fakehost1");
+
+		NodeManagerModel nodeManagerModel2 = createAutoConfiguredNodeManagerModel("fakehost2");
+		nodeManagerModel2.getServices().add(serviceModel1);
+		nodeManagerModel2.getServices().add(serviceModel2);
+		nodeManagerModel2.getServices().add(serviceModel3);
+
+		NodeManagerModel nodeManagerModel3 = new NodeManagerModel(_testMpfNodeHostName);
+		nodeManagerModel3.getServices().add(serviceModel1);
+		nodeManagerModel3.getServices().add(serviceModel2);
+		nodeManagerModel3.getServices().add(serviceModel3);
+
+		initTest(5, Arrays.asList(nodeManagerModel1, nodeManagerModel2, nodeManagerModel3));
+
+		List<RegisterComponentModel> components = createRegistrationModels(serviceModel1.getServiceName(),
+				                                                           serviceModel2.getServiceName(),
+				                                                           serviceModel3.getServiceName());
 
 		when(_mockNodeManagerSvc.getServiceModels())
-				.thenReturn(ImmutableMap.of(startMe.getServiceName(), startMe,
-				                            startMeToo.getServiceName(), startMeToo,
-				                            hasEnoughInstances.getServiceName(), hasEnoughInstances));
+				.thenReturn(ImmutableMap.of(serviceModel1.getServiceName(), serviceModel1,
+						                    serviceModel2.getServiceName(), serviceModel2,
+						                    serviceModel3.getServiceName(), serviceModel3));
 
 		_serviceStarter.startServicesForComponents(components);
 
-		assertServiceStarted(startMe.getServiceName(), 5);
-		assertServiceStarted(startMeToo.getServiceName(), 5);
-		assertServiceStarted(hasEnoughInstances.getServiceName(), 5);
+		assertServiceStarted(nodeManagerModel1.getHost(), serviceModel1.getServiceName(), 5);
+		assertServiceStarted(nodeManagerModel1.getHost(), serviceModel2.getServiceName(), 5);
+		assertServiceStarted(nodeManagerModel1.getHost(), serviceModel3.getServiceName(), 5);
+
+		assertServiceStarted(nodeManagerModel2.getHost(), serviceModel1.getServiceName(), 5);
+		assertServiceStarted(nodeManagerModel2.getHost(), serviceModel2.getServiceName(), 5);
+		assertServiceStarted(nodeManagerModel2.getHost(), serviceModel3.getServiceName(), 5);
+
+		assertServiceStarted(nodeManagerModel3.getHost(), serviceModel1.getServiceName(), serviceModel1.getServiceCount());
+		assertServiceStarted(nodeManagerModel3.getHost(), serviceModel2.getServiceName(), serviceModel2.getServiceCount());
+		assertServiceStarted(nodeManagerModel3.getHost(), serviceModel3.getServiceName(), serviceModel3.getServiceCount());
 	}
 
 	@Test
@@ -191,7 +219,7 @@ public class TestStartupComponentServiceStarter {
 		int numDuplicateServices = 1;
 		int expectedNumServices = initialNumServices + numComponentsToStart - numDuplicateServices;
 		verify(_mockNodeManagerSvc)
-				.saveNodeManagerConfig(collectionContaining(
+				.saveAndReloadNodeManagerConfig(collectionContaining(
 						n -> n.getHost().equals(_testMpfNodeHostName)
 								&& n.getServices().size() == expectedNumServices));
 	}
@@ -203,10 +231,10 @@ public class TestStartupComponentServiceStarter {
 					.setServiceModels(any());
 
 			verify(_mockNodeManagerSvc, never())
-					.saveNodeManagerConfig(any());
+					.saveAndReloadNodeManagerConfig(any());
 
 			verify(_mockNodeManagerSvc, never())
-					.saveNodeManagerConfig(any(), anyBoolean());
+					.saveAndReloadNodeManagerConfig(any());
 		}
 		catch (IOException ex) {
 			throw new UncheckedIOException(ex);
@@ -215,20 +243,26 @@ public class TestStartupComponentServiceStarter {
 
 
 	private void assertServiceStarted(String svcName, int numInstances) {
+		assertServiceStarted(_testMpfNodeHostName, svcName, numInstances);
+	}
+
+	private void assertServiceStarted(String hostname, String svcName, int numInstances) {
 		try {
 			verify(_mockNodeManagerSvc)
-					.saveNodeManagerConfig(collectionContaining(
-							nm -> nm.getHost().equals(_testMpfNodeHostName) && containsSvc(svcName, numInstances, nm)));
+					.saveAndReloadNodeManagerConfig(collectionContaining(
+							nm -> nm.getHost().equals(hostname) && containsSvc(svcName, numInstances, nm)));
 		}
 		catch (IOException ex) {
 			throw new UncheckedIOException(ex);
 		}
 	}
 
-	private void assertServiceNotStarted(String svcName, int numInstances) {
+
+	private void assertServiceNotStarted(String svcName) {
 		try {
 			verify(_mockNodeManagerSvc, never())
-					.saveNodeManagerConfig(collectionContaining(nm -> containsSvc(svcName, numInstances, nm)));
+					.saveAndReloadNodeManagerConfig(collectionContaining(
+							nm -> nm.getHost().equals(_testMpfNodeHostName) && containsSvc(svcName, nm)));
 		}
 		catch (IOException e) {
 			throw new UncheckedIOException(e);
@@ -242,10 +276,13 @@ public class TestStartupComponentServiceStarter {
 	}
 
 
+	private static boolean containsSvc(String svcName, NodeManagerModel nm) {
+		return nm.getServices().stream().anyMatch(sm -> sm.getServiceName().equals(svcName));
+	}
+
 	private static boolean containsSvc(String svcName, int numInstances, NodeManagerModel nm) {
-		return nm.getHost().equals(_testMpfNodeHostName)
-				&& nm.getServices().stream().anyMatch(
-						sm -> sm.getServiceName().equals(svcName) && sm.getServiceCount() == numInstances);
+		return nm.getServices().stream().anyMatch(
+				sm -> sm.getServiceName().equals(svcName) && sm.getServiceCount() == numInstances);
 	}
 
 

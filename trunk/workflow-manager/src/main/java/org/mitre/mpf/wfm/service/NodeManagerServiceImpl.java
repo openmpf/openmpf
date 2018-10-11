@@ -69,23 +69,15 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
 
     @Override
-    public boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels) throws IOException {
-        return saveNodeManagerConfig(nodeManagerModels, true);
-    }
-
-    @Override
-    public synchronized boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels, boolean reload) throws IOException {
-
+    public boolean saveAndReloadNodeManagerConfig(List<NodeManagerModel> nodeManagerModels) throws IOException {
         NodeManagers managers = convertFromModels(nodeManagerModels);
 
         try (OutputStream outputStream = propertiesUtil.getNodeManagerConfigResource().getOutputStream()) {
             NodeManagers.toXml(managers, outputStream);
         }
 
-        if (reload) {
-            //could produce an InterruptedException from Thread.sleep - will be caught by the ErrorController super class
-            nodeManagerStatus.reloadNodeManagerConfig();
-        }
+        //could produce an InterruptedException from Thread.sleep - will be caught by the ErrorController super class
+        nodeManagerStatus.reloadNodeManagerConfig();
 
         return true;
     }
@@ -276,26 +268,26 @@ public class NodeManagerServiceImpl implements NodeManagerService {
     }
 
     @Override
-    public void autoConfigureNewNode(String host) throws IOException {
+    public synchronized void autoConfigureNewNode(String host) throws IOException {
         // Add all services to the new node
         NodeManagerModel newNode = new NodeManagerModel();
         newNode.setHost(host);
         newNode.setAutoConfigured(true);
 
-        List<ServiceModel> serviceModels = new ArrayList(getServiceModels().values());
-        serviceModels.stream().forEach(n -> n.setServiceCount(propertiesUtil.getNodeAutoConfigNumServices()));
+        List<ServiceModel> serviceModels = new ArrayList<>(getServiceModels().values());
+        serviceModels.forEach(n -> n.setServiceCount(propertiesUtil.getNodeAutoConfigNumServices()));
         newNode.setServices(serviceModels);
 
         List<NodeManagerModel> nodeManagerModelList = getNodeManagerModels();
         nodeManagerModelList.add(newNode);
-        saveNodeManagerConfig(nodeManagerModelList);
+        saveAndReloadNodeManagerConfig(nodeManagerModelList);
     }
 
     @Override
-    public void unconfigureIfAutoConfiguredNode(String host) throws IOException {
+    public synchronized void unconfigureIfAutoConfiguredNode(String host) throws IOException {
         List<NodeManagerModel> nodeManagerModelList = getNodeManagerModels();
         if (nodeManagerModelList.removeIf(node -> (node.getHost().equals(host) && node.isAutoConfigured()))) {
-            saveNodeManagerConfig(nodeManagerModelList);
+            saveAndReloadNodeManagerConfig(nodeManagerModelList);
         }
     }
 }

@@ -43,9 +43,9 @@ import java.util.*;
 @Component
 public class MpfPropertiesConfigurationBuilder {
 
-    public static final String DETECTION_KEY_PREFIX = "detection.";
-    public static final String REMOTE_MEDIA_DOWNLOAD_KEY_PREFIX = "remote.media.download.";
-    public static final String NODE_AUTO_CONFIG_KEY_PREFIX = "node.auto.";
+    private static final String DETECTION_KEY_PREFIX = "detection.";
+    private static final String REMOTE_MEDIA_DOWNLOAD_KEY_PREFIX = "remote.media.download.";
+    private static final String NODE_AUTO_CONFIG_KEY_PREFIX = "node.auto.";
 
     @javax.annotation.Resource(name="customPropFile")
     private FileSystemResource customPropFile;

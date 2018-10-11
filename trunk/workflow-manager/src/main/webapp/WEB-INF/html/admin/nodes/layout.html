@@ -122,10 +122,10 @@
                                     <div style="margin-top:5px;">
                                         <p>Edit the number of services:</p>
                                         <div>
-                                            <select class="form-control add-service"  style="max-width:60%; margin:2px;" id="add_service_{{$index}}" ng-change="addServiceBtnChange(host.name,$index)" ng-model="addServiceSelected" ng-options="option.serviceName for option in serviceCatalog track by option.serviceName">
+                                            <select class="form-control-no-display add-service"  style="max-width:60%; margin:2px;" id="add_service_{{$index}}" ng-change="addServiceBtnChange(host.name,$index)" ng-model="addServiceSelected" ng-options="option.serviceName for option in serviceCatalog track by option.serviceName">
                                                 <option value="" selected hidden />
                                             </select>
-                                            <select class="form-control service-count" style="width:70px; margin:2px;" id="add_service_count_{{$index}}" >
+                                            <select class="form-control-no-display service-count" style="width:70px; margin:2px;" id="add_service_count_{{$index}}" >
                                                 <option value="{{value}}"  ng-repeat="(key,value) in [] | range:1:99">{{value}}</option>
                                             </select>
                                             <button class="btn btn-success" style="width:70px; margin:2px;" ng-click="editServices(host.name,$index)" ng-disabled="btns_disabled || !host.online">Update</button>

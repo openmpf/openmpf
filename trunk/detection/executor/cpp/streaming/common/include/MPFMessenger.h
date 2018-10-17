@@ -24,63 +24,73 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#ifndef MPF_MESSENGER_H_
+#define MPF_MESSENGER_H_
 
-//TODO: All code in this file is for future use and is untested.
-// Not used in single process, single pipeline stage, architecture
+#include <string>
+#include <stdexcept>
 
+#include "MPFMessage.h"
 
-#ifndef OPENMPF_FRAME_READER_H
-#define OPENMPF_FRAME_READER_H
-
-#include "MPFDetectionObjects.h"  // for definition of Properties
-
+//TODO: For future use.
 namespace MPF {
 
-enum MPFFrameReaderError {
-    FRAME_READER_SUCCESS = 0,
-    FRAME_READER_NOT_INITIALIZED,
-    FRAME_READER_INVALID_VIDEO_URI,
-    FRAME_READER_COULD_NOT_OPEN_STREAM,
-    FRAME_READER_COULD_NOT_CLOSE_STREAM,
-    FRAME_READER_COULD_NOT_READ_STREAM,
-    FRAME_READER_BAD_FRAME_SIZE,
-    FRAME_READER_INVALID_FRAME_INTERVAL,
-    FRAME_READER_MISSING_PROPERTY,
-    FRAME_READER_INVALID_PROPERTY,
-    FRAME_READER_PROPERTY_IS_NOT_INT,
-    FRAME_READER_PROPERTY_IS_NOT_FLOAT,
-    FRAME_READER_MEMORY_ALLOCATION_FAILED,
-    FRAME_READER_MEMORY_MAPPING_FAILED,
-    FRAME_READER_OTHER_ERROR
+enum MPFMessageError {
+    MESSENGER_UNRECOGNIZED_ERROR,
+    MESSENGER_UNSPECIFIED_ERROR,
+    MESSENGER_NOT_INITIALIZED,
+    MESSENGER_MISSING_PROPERTY,
+    MESSENGER_INVALID_PROPERTY,
+    MESSENGER_CONNECTION_FAILURE,
+    MESSENGER_START_FAILURE,
+    MESSENGER_STOP_FAILURE,
+    MESSENGER_SHUTDOWN_FAILURE,
+    MESSENGER_NOT_CONNECTED,
+    MESSENGER_QUEUE_NOT_INITIALIZED,
+    MESSENGER_INIT_QUEUE_FAILURE,
+    MESSENGER_CREATE_CONSUMER_FAILURE,
+    MESSENGER_CREATE_PRODUCER_FAILURE,
+    MESSENGER_GET_MESSAGE_FAILURE,
+    MESSENGER_PUT_MESSAGE_FAILURE,
+    MESSENGER_CLOSE_FAILURE
 };
 
-struct MPFFrameReaderJob {
-    std::string job_name;
-    std::string stream_uri;
-    std::string config_pathname;
-    MPF::COMPONENT::Properties job_properties;
-    MPF::COMPONENT::Properties media_properties;
-    MPFFrameReaderJob(const std::string &job_name,
-                      const std::string &stream_uri,
-                      const MPF::COMPONENT::Properties &job_properties,
-                      const MPF::COMPONENT::Properties &media_properties)
-            : job_name(job_name)
-            , stream_uri(stream_uri)
-            , job_properties(job_properties)
-            , media_properties(media_properties) {}
-};
-
-class MPFFrameReader {
-
+// This exception is thrown when a system or other library exception
+// is caught, to capture an error type that can be returned the the
+// MPF system in the job status message.
+class MPFMessageException : public std::runtime_error {
   public:
-    virtual ~MPFFrameReader() = default;
-    virtual MPFFrameReaderError ReadAndStoreFrame(const size_t index) = 0;
+
+    virtual ~MPFMessageException() = default;
+
+    explicit MPFMessageException(const char *msg, MPFMessageError e) 
+            : std::runtime_error(msg), error_type_(e) {}
+    explicit MPFMessageException(const std::string &msg, MPFMessageError e) 
+            : std::runtime_error(msg), error_type_(e) {}
+
+    MPFMessageError getErrorType() {
+        return error_type_;
+    }
+
   protected:
-
-    MPFFrameReader() = default;
-
+    MPFMessageError error_type_;
 };
-}
 
+class MPFMessagingManager {
+  public: 
+    virtual ~MPFMessagingManager() = default;
 
-#endif //OPENMPF_FRAME_READER_H
+    // Connect to the message passing system
+    virtual void Connect(const std::string &broker_name,
+                         const MPF::COMPONENT::Properties &properties) = 0;
+    virtual void Start() = 0;
+    virtual void Stop() = 0;
+    virtual void Shutdown() = 0;
+
+  protected:
+    MPFMessagingManager() = default;
+};
+
+} // namespace MPF
+
+#endif // MPF_MESSENGER_H_

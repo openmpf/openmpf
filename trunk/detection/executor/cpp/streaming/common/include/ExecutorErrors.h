@@ -25,62 +25,61 @@
  ******************************************************************************/
 
 
-//TODO: All code in this file is for future use and is untested.
-// Not used in single process, single pipeline stage, architecture
+#ifndef MPF_EXECUTORERRORS_H
+#define MPF_EXECUTORERRORS_H
+
+#include <stdexcept>
+
+namespace MPF { namespace COMPONENT {
+
+    enum class ExitCode {
+        // Standard exit codes
+        SUCCESS = 0,
+        UNEXPECTED_ERROR = 1,
+        INVALID_COMMAND_LINE_ARGUMENTS = 2,
+
+        // Custom exit codes
+        // http://tldp.org/LDP/abs/html/exitcodes.html recommends using exit codes between range 64 - 113
+        INVALID_INI_FILE = 65,
+        UNABLE_TO_READ_FROM_STANDARD_IN = 66,
+        MESSAGE_BROKER_ERROR = 69,
+        INTERNAL_COMPONENT_ERROR = 70,
+        COMPONENT_LOAD_ERROR = 71,
+
+        UNABLE_TO_CONNECT_TO_STREAM = 75,
+        STREAM_STALLED = 76,
+    };
 
 
-#ifndef OPENMPF_FRAME_READER_H
-#define OPENMPF_FRAME_READER_H
 
-#include "MPFDetectionObjects.h"  // for definition of Properties
+    class FatalError : public std::runtime_error {
+    public:
+        FatalError(ExitCode exit_code, const std::string &cause);
 
-namespace MPF {
+        ExitCode GetExitCode() const;
 
-enum MPFFrameReaderError {
-    FRAME_READER_SUCCESS = 0,
-    FRAME_READER_NOT_INITIALIZED,
-    FRAME_READER_INVALID_VIDEO_URI,
-    FRAME_READER_COULD_NOT_OPEN_STREAM,
-    FRAME_READER_COULD_NOT_CLOSE_STREAM,
-    FRAME_READER_COULD_NOT_READ_STREAM,
-    FRAME_READER_BAD_FRAME_SIZE,
-    FRAME_READER_INVALID_FRAME_INTERVAL,
-    FRAME_READER_MISSING_PROPERTY,
-    FRAME_READER_INVALID_PROPERTY,
-    FRAME_READER_PROPERTY_IS_NOT_INT,
-    FRAME_READER_PROPERTY_IS_NOT_FLOAT,
-    FRAME_READER_MEMORY_ALLOCATION_FAILED,
-    FRAME_READER_MEMORY_MAPPING_FAILED,
-    FRAME_READER_OTHER_ERROR
-};
-
-struct MPFFrameReaderJob {
-    std::string job_name;
-    std::string stream_uri;
-    std::string config_pathname;
-    MPF::COMPONENT::Properties job_properties;
-    MPF::COMPONENT::Properties media_properties;
-    MPFFrameReaderJob(const std::string &job_name,
-                      const std::string &stream_uri,
-                      const MPF::COMPONENT::Properties &job_properties,
-                      const MPF::COMPONENT::Properties &media_properties)
-            : job_name(job_name)
-            , stream_uri(stream_uri)
-            , job_properties(job_properties)
-            , media_properties(media_properties) {}
-};
-
-class MPFFrameReader {
-
-  public:
-    virtual ~MPFFrameReader() = default;
-    virtual MPFFrameReaderError ReadAndStoreFrame(const size_t index) = 0;
-  protected:
-
-    MPFFrameReader() = default;
-
-};
-}
+    private:
+        const ExitCode exit_code_;
+    };
 
 
-#endif //OPENMPF_FRAME_READER_H
+
+    class InternalComponentError : public FatalError {
+    public:
+        InternalComponentError(const std::string &method_name, const std::string &cause);
+
+        explicit InternalComponentError(const std::string &method_name);
+    };
+
+
+    class InterruptedException : public std::runtime_error {
+    public:
+        explicit InterruptedException(const std::string &cause)
+                : runtime_error(cause) {
+
+        }
+    };
+}}
+
+
+#endif //MPF_EXECUTORERRORS_H

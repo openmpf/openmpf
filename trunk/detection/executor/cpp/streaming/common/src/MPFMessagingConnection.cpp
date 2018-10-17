@@ -24,63 +24,49 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include <activemq/library/ActiveMQCPP.h>
+#include <activemq/core/ActiveMQConnectionFactory.h>
 
-//TODO: All code in this file is for future use and is untested.
-// Not used in single process, single pipeline stage, architecture
+#include "MPFMessagingConnection.h"
 
+using namespace std;
+using namespace cms;
+using activemq::library::ActiveMQCPP;
+using activemq::core::ActiveMQConnectionFactory;
 
-#ifndef OPENMPF_FRAME_READER_H
-#define OPENMPF_FRAME_READER_H
+using namespace MPF;
 
-#include "MPFDetectionObjects.h"  // for definition of Properties
+MPFMessagingConnection::MPFMessagingConnection(const MPF::COMPONENT::JobSettings &job_settings) 
+        : connection_(Connect(job_settings.message_broker_uri)) {
 
-namespace MPF {
+    connection_->start();
+}
 
-enum MPFFrameReaderError {
-    FRAME_READER_SUCCESS = 0,
-    FRAME_READER_NOT_INITIALIZED,
-    FRAME_READER_INVALID_VIDEO_URI,
-    FRAME_READER_COULD_NOT_OPEN_STREAM,
-    FRAME_READER_COULD_NOT_CLOSE_STREAM,
-    FRAME_READER_COULD_NOT_READ_STREAM,
-    FRAME_READER_BAD_FRAME_SIZE,
-    FRAME_READER_INVALID_FRAME_INTERVAL,
-    FRAME_READER_MISSING_PROPERTY,
-    FRAME_READER_INVALID_PROPERTY,
-    FRAME_READER_PROPERTY_IS_NOT_INT,
-    FRAME_READER_PROPERTY_IS_NOT_FLOAT,
-    FRAME_READER_MEMORY_ALLOCATION_FAILED,
-    FRAME_READER_MEMORY_MAPPING_FAILED,
-    FRAME_READER_OTHER_ERROR
-};
+shared_ptr<cms::Connection> MPFMessagingConnection::Connect(const string &broker_uri) {
 
-struct MPFFrameReaderJob {
-    std::string job_name;
-    std::string stream_uri;
-    std::string config_pathname;
-    MPF::COMPONENT::Properties job_properties;
-    MPF::COMPONENT::Properties media_properties;
-    MPFFrameReaderJob(const std::string &job_name,
-                      const std::string &stream_uri,
-                      const MPF::COMPONENT::Properties &job_properties,
-                      const MPF::COMPONENT::Properties &media_properties)
-            : job_name(job_name)
-            , stream_uri(stream_uri)
-            , job_properties(job_properties)
-            , media_properties(media_properties) {}
-};
+    ActiveMQCPP::initializeLibrary();
 
-class MPFFrameReader {
+    unique_ptr<ActiveMQConnectionFactory> factory(new ActiveMQConnectionFactory(broker_uri));
+    factory->setUseAsyncSend(true);
 
-  public:
-    virtual ~MPFFrameReader() = default;
-    virtual MPFFrameReaderError ReadAndStoreFrame(const size_t index) = 0;
-  protected:
+    return shared_ptr<cms::Connection>(factory->createConnection());
+}
 
-    MPFFrameReader() = default;
-
-};
+MPFMessagingConnection::~MPFMessagingConnection() {
+    try {
+        // This call to stop() will prevent any further events from occurring.
+        connection_->stop();
+        // This call to close() will close any sessions created from
+        // this connection, as well as those sessions' consumers and producers.
+        connection_->close();
+        ActiveMQCPP::shutdownLibrary();
+    }
+    catch (const CMSException &e) {
+        e.printStackTrace();
+    }
 }
 
 
-#endif //OPENMPF_FRAME_READER_H
+
+
+

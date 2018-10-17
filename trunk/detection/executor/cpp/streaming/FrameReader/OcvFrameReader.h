@@ -29,8 +29,8 @@
 // Not used in single process, single pipeline stage, architecture
 
 
-#ifndef OPENMPF_OCVFRAMEREADER_H
-#define OPENMPF_OCVFRAMEREADER_H
+#ifndef OPENMPF_OCV_FRAME_READER_H
+#define OPENMPF_OCV_FRAME_READER_H
 
 #include <map>
 #include <string>
@@ -41,9 +41,11 @@
 
 #include <log4cxx/logger.h>
 
+#include "ExecutorErrors.h"
 #include "MPFFrameReader.h"
+#include "StreamingVideoCapture.h"
 
-namespace MPF { namespace COMPONENT {
+namespace MPF {
 
 class OcvFrameReader : public MPFFrameReader {
 
@@ -51,20 +53,14 @@ class OcvFrameReader : public MPFFrameReader {
     OcvFrameReader(const MPFFrameReaderJob &job, log4cxx::LoggerPtr &logger)
     ~OcvFrameReader() = default;
 
-    virtual MPFFrameReaderError AttachToStream(
-                                     const MPFFrameReaderJob &job,
-                                     Properties &stream_properties) override;
-    virtual MPFFrameReaderError CloseStream(
-                                     const MPFFrameReaderJob &job,
-                                     Properties &stream_properties) override;
-    MPFFrameReaderError ReadAndStoreFrame(const size_t offset);
+    ExitCode RunJob(const std::string &ini_path);
 
 
   private:
     std::string job_name_;
     log4cxx::LoggerPtr logger_;
     MPFFrameStore frame_store_;
-    cv::VideoCapture video_capture_;
+    MPF::StreamingVideoCapture video_capture_;
 
     int segment_length_;        // number of frames per processing
                                 // segment.
@@ -76,7 +72,19 @@ class OcvFrameReader : public MPFFrameReader {
     int frame_num_cols_;
     int frame_type_; // Corresponds to the OpenCV type, e.g., CV_8UC3
     size_t frame_byte_size_;     // Size of each frame in bytes
+    long current_segment_num_;
+    long current_frame_index_;
+
+    bool IsBeginningOfSegment(int frame_number) const;
+
+    template <RetryStrategy RETRY_STRATEGY>
+    void Run();
+
+    template <RetryStrategy RETRY_STRATEGY>
+    void ReadFrame(cv::Mat &frame);
+
+
 };
 }}
 
-#endif //OPENMPF_OCVFRAMEREADER_H
+#endif //OPENMPF_OCV_FRAME_READER_H

@@ -25,62 +25,53 @@
  ******************************************************************************/
 
 
-//TODO: All code in this file is for future use and is untested.
-// Not used in single process, single pipeline stage, architecture
+#ifndef MPF_JOBSETTINGS_H
+#define MPF_JOBSETTINGS_H
+
+#include <map>
+#include <string>
+#include <chrono>
+
+namespace MPF { namespace COMPONENT {
+
+    enum class RetryStrategy {
+        NEVER_RETRY,
+        NO_ALERT_NO_TIMEOUT,
+        NO_ALERT_WITH_TIMEOUT,
+        ALERT_NO_TIMEOUT,
+        ALERT_WITH_TIMEOUT
+    };
 
 
-#ifndef OPENMPF_FRAME_READER_H
-#define OPENMPF_FRAME_READER_H
+    struct JobSettings {
+        const int job_id;
+        const std::string stream_uri;
+        const int segment_size;
+        const RetryStrategy retry_strategy;
+        const std::chrono::milliseconds stall_timeout;
+        const std::chrono::milliseconds stall_alert_threshold;
+        const std::string component_name;
+        const std::string component_lib_path;
+        const std::string message_broker_uri;
+        const std::string frame_store_server_hostname;
+        const int frame_store_server_portnum;
+        const int frame_store_capacity;
+        const std::string job_status_queue;
+        const std::string activity_alert_queue;
+        const std::string summary_report_queue;
+        const std::string segment_ready_queue;
+        const std::string frame_ready_queue;
+        const std::string release_frame_queue;
 
-#include "MPFDetectionObjects.h"  // for definition of Properties
+        const std::map<std::string, std::string> job_properties;
+        const std::map<std::string, std::string> media_properties;
 
-namespace MPF {
+        static JobSettings FromIniFile(const std::string &ini_path);
 
-enum MPFFrameReaderError {
-    FRAME_READER_SUCCESS = 0,
-    FRAME_READER_NOT_INITIALIZED,
-    FRAME_READER_INVALID_VIDEO_URI,
-    FRAME_READER_COULD_NOT_OPEN_STREAM,
-    FRAME_READER_COULD_NOT_CLOSE_STREAM,
-    FRAME_READER_COULD_NOT_READ_STREAM,
-    FRAME_READER_BAD_FRAME_SIZE,
-    FRAME_READER_INVALID_FRAME_INTERVAL,
-    FRAME_READER_MISSING_PROPERTY,
-    FRAME_READER_INVALID_PROPERTY,
-    FRAME_READER_PROPERTY_IS_NOT_INT,
-    FRAME_READER_PROPERTY_IS_NOT_FLOAT,
-    FRAME_READER_MEMORY_ALLOCATION_FAILED,
-    FRAME_READER_MEMORY_MAPPING_FAILED,
-    FRAME_READER_OTHER_ERROR
-};
+        static RetryStrategy GetRetryStrategy(std::chrono::milliseconds &stall_timeout,
+                                              const std::chrono::milliseconds &alert_threshold);
+    };
+    
+}}
 
-struct MPFFrameReaderJob {
-    std::string job_name;
-    std::string stream_uri;
-    std::string config_pathname;
-    MPF::COMPONENT::Properties job_properties;
-    MPF::COMPONENT::Properties media_properties;
-    MPFFrameReaderJob(const std::string &job_name,
-                      const std::string &stream_uri,
-                      const MPF::COMPONENT::Properties &job_properties,
-                      const MPF::COMPONENT::Properties &media_properties)
-            : job_name(job_name)
-            , stream_uri(stream_uri)
-            , job_properties(job_properties)
-            , media_properties(media_properties) {}
-};
-
-class MPFFrameReader {
-
-  public:
-    virtual ~MPFFrameReader() = default;
-    virtual MPFFrameReaderError ReadAndStoreFrame(const size_t index) = 0;
-  protected:
-
-    MPFFrameReader() = default;
-
-};
-}
-
-
-#endif //OPENMPF_FRAME_READER_H
+#endif //MPF_JOBSETTINGS_H

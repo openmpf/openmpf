@@ -24,63 +24,69 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include "StreamingComponentHandle.h"
+#include "ExecutorErrors.h"
 
-//TODO: All code in this file is for future use and is untested.
-// Not used in single process, single pipeline stage, architecture
+namespace MPF { namespace COMPONENT {
 
-
-#ifndef OPENMPF_FRAME_READER_H
-#define OPENMPF_FRAME_READER_H
-
-#include "MPFDetectionObjects.h"  // for definition of Properties
-
-namespace MPF {
-
-enum MPFFrameReaderError {
-    FRAME_READER_SUCCESS = 0,
-    FRAME_READER_NOT_INITIALIZED,
-    FRAME_READER_INVALID_VIDEO_URI,
-    FRAME_READER_COULD_NOT_OPEN_STREAM,
-    FRAME_READER_COULD_NOT_CLOSE_STREAM,
-    FRAME_READER_COULD_NOT_READ_STREAM,
-    FRAME_READER_BAD_FRAME_SIZE,
-    FRAME_READER_INVALID_FRAME_INTERVAL,
-    FRAME_READER_MISSING_PROPERTY,
-    FRAME_READER_INVALID_PROPERTY,
-    FRAME_READER_PROPERTY_IS_NOT_INT,
-    FRAME_READER_PROPERTY_IS_NOT_FLOAT,
-    FRAME_READER_MEMORY_ALLOCATION_FAILED,
-    FRAME_READER_MEMORY_MAPPING_FAILED,
-    FRAME_READER_OTHER_ERROR
-};
-
-struct MPFFrameReaderJob {
-    std::string job_name;
-    std::string stream_uri;
-    std::string config_pathname;
-    MPF::COMPONENT::Properties job_properties;
-    MPF::COMPONENT::Properties media_properties;
-    MPFFrameReaderJob(const std::string &job_name,
-                      const std::string &stream_uri,
-                      const MPF::COMPONENT::Properties &job_properties,
-                      const MPF::COMPONENT::Properties &media_properties)
-            : job_name(job_name)
-            , stream_uri(stream_uri)
-            , job_properties(job_properties)
-            , media_properties(media_properties) {}
-};
-
-class MPFFrameReader {
-
-  public:
-    virtual ~MPFFrameReader() = default;
-    virtual MPFFrameReaderError ReadAndStoreFrame(const size_t index) = 0;
-  protected:
-
-    MPFFrameReader() = default;
-
-};
-}
+    StreamingComponentHandle::StreamingComponentHandle(const std::string &lib_path,
+                                                       const MPFStreamingVideoJob &job)
+    try : component_(lib_path, "streaming_component_creator", "streaming_component_deleter", &job)
+    {
+    }
+    catch (const std::exception &ex) {
+        throw FatalError(ExitCode::COMPONENT_LOAD_ERROR, ex.what());
+    }
 
 
-#endif //OPENMPF_FRAME_READER_H
+
+    std::string StreamingComponentHandle::GetDetectionType() {
+        try {
+            return component_->GetDetectionType();
+        }
+        catch (...) {
+            WrapComponentException("GetDetectionType");
+        }
+    }
+
+
+    void StreamingComponentHandle::BeginSegment(const VideoSegmentInfo &segment_info) {
+        try {
+            component_->BeginSegment(segment_info);
+        }
+        catch (...) {
+            WrapComponentException("BeginSegment");
+        }
+    }
+
+    bool StreamingComponentHandle::ProcessFrame(const cv::Mat &frame, int frame_number) {
+        try {
+            return component_->ProcessFrame(frame, frame_number);
+        }
+        catch (...) {
+            WrapComponentException("ProcessFrame");
+        }
+    }
+
+    std::vector<MPFVideoTrack> StreamingComponentHandle::EndSegment() {
+        try {
+            return component_->EndSegment();
+        }
+        catch (...) {
+            WrapComponentException("EndSegment");
+        }
+    }
+
+
+    void StreamingComponentHandle::WrapComponentException(const std::string &component_method) {
+        try {
+            throw;
+        }
+        catch (const std::exception &ex) {
+            throw InternalComponentError(component_method, ex.what());
+        }
+        catch (...) {
+            throw InternalComponentError(component_method);
+        }
+    }
+}}

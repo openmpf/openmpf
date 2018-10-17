@@ -25,62 +25,63 @@
  ******************************************************************************/
 
 
-//TODO: All code in this file is for future use and is untested.
-// Not used in single process, single pipeline stage, architecture
+#ifndef MPF_FRAME_READER_EXECUTOR_H
+#define MPF_FRAME_READER_EXECUTOR_H
+
+#include <string>
+#include <log4cxx/logger.h>
+
+#include "ExecutorErrors.h"
+#include "MPFAMQMessenger.h"
 
 
-#ifndef OPENMPF_FRAME_READER_H
-#define OPENMPF_FRAME_READER_H
+namespace MPF { namespace COMPONENT {
 
-#include "MPFDetectionObjects.h"  // for definition of Properties
+    class FrameReaderExecutor {
 
-namespace MPF {
-
-enum MPFFrameReaderError {
-    FRAME_READER_SUCCESS = 0,
-    FRAME_READER_NOT_INITIALIZED,
-    FRAME_READER_INVALID_VIDEO_URI,
-    FRAME_READER_COULD_NOT_OPEN_STREAM,
-    FRAME_READER_COULD_NOT_CLOSE_STREAM,
-    FRAME_READER_COULD_NOT_READ_STREAM,
-    FRAME_READER_BAD_FRAME_SIZE,
-    FRAME_READER_INVALID_FRAME_INTERVAL,
-    FRAME_READER_MISSING_PROPERTY,
-    FRAME_READER_INVALID_PROPERTY,
-    FRAME_READER_PROPERTY_IS_NOT_INT,
-    FRAME_READER_PROPERTY_IS_NOT_FLOAT,
-    FRAME_READER_MEMORY_ALLOCATION_FAILED,
-    FRAME_READER_MEMORY_MAPPING_FAILED,
-    FRAME_READER_OTHER_ERROR
-};
-
-struct MPFFrameReaderJob {
-    std::string job_name;
-    std::string stream_uri;
-    std::string config_pathname;
-    MPF::COMPONENT::Properties job_properties;
-    MPF::COMPONENT::Properties media_properties;
-    MPFFrameReaderJob(const std::string &job_name,
-                      const std::string &stream_uri,
-                      const MPF::COMPONENT::Properties &job_properties,
-                      const MPF::COMPONENT::Properties &media_properties)
-            : job_name(job_name)
-            , stream_uri(stream_uri)
-            , job_properties(job_properties)
-            , media_properties(media_properties) {}
-};
-
-class MPFFrameReader {
-
-  public:
-    virtual ~MPFFrameReader() = default;
-    virtual MPFFrameReaderError ReadAndStoreFrame(const size_t index) = 0;
-  protected:
-
-    MPFFrameReader() = default;
-
-};
-}
+    public:
+        ExitCode RunJob(const std::string &ini_path);
 
 
-#endif //OPENMPF_FRAME_READER_H
+    private:
+        log4cxx::LoggerPtr logger_;
+
+        const std::string log_prefix_;
+
+        JobSettings settings_;
+
+        ReleaseFrameMessageReader release_frame_reader_;
+        SegmentReadyMessageSender segment_ready_sender_;
+        FrameReadyMessageSender frame_ready_sender_;
+        MPFStreamingVideoJob job_;
+        MPFFrameStore frame_store_;
+
+        FrameReaderExecutor(
+                const log4cxx::LoggerPtr &logger,
+                const std::string &log_prefix,
+                MPFMessagingConnection &connection,
+                JobSettings &&settings,
+                MPFStreamingVideoJob &&job);
+
+
+
+        template <RetryStrategy RETRY_STRATEGY>
+        void Run();
+
+        template <RetryStrategy RETRY_STRATEGY>
+        void ReadFrame(cv::Mat &frame);
+
+        bool IsBeginningOfSegment(int frame_number) const;
+
+        static uint64_t GetTimestampMillis();
+
+        static std::string GetAppDir();
+
+        static log4cxx::LoggerPtr GetLogger(const std::string &app_dir);
+    };
+
+}}
+
+
+
+#endif //MPF_SINGLE_STAGE_COMPONENTEXECUTOR_H

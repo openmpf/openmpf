@@ -25,62 +25,64 @@
  ******************************************************************************/
 
 
-//TODO: All code in this file is for future use and is untested.
-// Not used in single process, single pipeline stage, architecture
+#ifndef MPF_STREAMINGVIDEOCAPTURE_H
+#define MPF_STREAMINGVIDEOCAPTURE_H
 
 
-#ifndef OPENMPF_FRAME_READER_H
-#define OPENMPF_FRAME_READER_H
+#include <chrono>
+#include <string>
+#include <vector>
 
-#include "MPFDetectionObjects.h"  // for definition of Properties
+#include <opencv2/opencv.hpp>
 
-namespace MPF {
+#include <MPFStreamingDetectionComponent.h>
+#include <frame_transformers/IFrameTransformer.h>
 
-enum MPFFrameReaderError {
-    FRAME_READER_SUCCESS = 0,
-    FRAME_READER_NOT_INITIALIZED,
-    FRAME_READER_INVALID_VIDEO_URI,
-    FRAME_READER_COULD_NOT_OPEN_STREAM,
-    FRAME_READER_COULD_NOT_CLOSE_STREAM,
-    FRAME_READER_COULD_NOT_READ_STREAM,
-    FRAME_READER_BAD_FRAME_SIZE,
-    FRAME_READER_INVALID_FRAME_INTERVAL,
-    FRAME_READER_MISSING_PROPERTY,
-    FRAME_READER_INVALID_PROPERTY,
-    FRAME_READER_PROPERTY_IS_NOT_INT,
-    FRAME_READER_PROPERTY_IS_NOT_FLOAT,
-    FRAME_READER_MEMORY_ALLOCATION_FAILED,
-    FRAME_READER_MEMORY_MAPPING_FAILED,
-    FRAME_READER_OTHER_ERROR
-};
+#include "ExecutorUtils.h"
 
-struct MPFFrameReaderJob {
-    std::string job_name;
-    std::string stream_uri;
-    std::string config_pathname;
-    MPF::COMPONENT::Properties job_properties;
-    MPF::COMPONENT::Properties media_properties;
-    MPFFrameReaderJob(const std::string &job_name,
-                      const std::string &stream_uri,
-                      const MPF::COMPONENT::Properties &job_properties,
-                      const MPF::COMPONENT::Properties &media_properties)
-            : job_name(job_name)
-            , stream_uri(stream_uri)
-            , job_properties(job_properties)
-            , media_properties(media_properties) {}
-};
-
-class MPFFrameReader {
-
-  public:
-    virtual ~MPFFrameReader() = default;
-    virtual MPFFrameReaderError ReadAndStoreFrame(const size_t index) = 0;
-  protected:
-
-    MPFFrameReader() = default;
-
-};
-}
+namespace MPF { namespace COMPONENT {
 
 
-#endif //OPENMPF_FRAME_READER_H
+    class StreamingVideoCapture {
+    public:
+        StreamingVideoCapture(const log4cxx::LoggerPtr &logger,
+                              const std::string video_uri,
+                              const MPFStreamingVideoJob &job);
+
+        bool Read(cv::Mat &frame);
+
+        void ReadWithRetry(cv::Mat &frame);
+
+        bool ReadWithRetry(cv::Mat &frame, const std::chrono::milliseconds &timeout);
+
+        void ReverseTransform(std::vector<MPFVideoTrack> &track) const;
+
+
+    private:
+        log4cxx::LoggerPtr logger_;
+
+        const MPFStreamingVideoJob job_;
+
+        std::string video_uri_;
+
+        cv::VideoCapture cv_video_capture_;
+
+        // Points to ReadAndInitialize until the first frame is read. Then, it will point to DefaultRead
+        bool (StreamingVideoCapture::*current_read_impl_)(cv::Mat &frame) = &StreamingVideoCapture::ReadAndInitialize;
+
+        IFrameTransformer::Ptr frame_transformer_;
+
+        bool ReadAndInitialize(cv::Mat &frame);
+
+        bool DefaultRead(cv::Mat &frame);
+
+        bool DoReadRetry(cv::Mat &frame);
+
+        void BetweenRetrySleep(const ExecutorUtils::sleep_duration_t &duration) const;
+    };
+
+}}
+
+
+
+#endif //MPF_STREAMINGVIDEOCAPTURE_H

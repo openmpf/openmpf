@@ -24,16 +24,83 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include <iostream>
+
+#ifndef MPF_SINGLE_STAGE_COMPONENTEXECUTOR_H
+#define MPF_SINGLE_STAGE_COMPONENTEXECUTOR_H
+
+#include <string>
+#include <log4cxx/logger.h>
 
 #include "ExecutorErrors.h"
-#include "FrameReaderExecutor.h"
+#include "StreamingComponentHandle.h"
+#include "MPFAMQMessenger.h"
 
 
-int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <ini_path>" << std::endl;
-        return static_cast<int>(MPF::COMPONENT::ExitCode::INVALID_COMMAND_LINE_ARGUMENTS);
-    }
-    return static_cast<int>(MPF::COMPONENT::FrameReaderExecutor::RunJob(argv[1]));
-}
+namespace MPF { namespace COMPONENT {
+
+    class SingleStageComponentExecutor {
+
+    public:
+        ExitCode RunJob(const std::string &ini_path);
+
+
+    private:
+        log4cxx::LoggerPtr logger_;
+
+        const std::string log_prefix_;
+
+        JobSettings settings_;
+
+        SegmentReadyMessageReader segment_ready_reader_;
+        FrameReadyMessageReader frame_ready_reader_;
+
+        ActivityAlertMessageSender activity_alert_sender_;
+        SegmentSummaryMessageSender segment_summary_sender_;
+        ReleaseFrameMessageSender release_frame_sender_;
+
+
+        MPFStreamingVideoJob job_;
+
+        StreamingComponentHandle component_;
+
+        const std::string detection_type_;
+
+        const double confidence_threshold_;
+
+
+        SingleStageComponentExecutor(
+                const log4cxx::LoggerPtr &logger,
+                const std::string &log_prefix,
+                MPFMessagingConnection &connection,
+                JobSettings &&settings,
+                MPFStreamingVideoJob &&job,
+                StreamingComponentHandle &&component,
+                const std::string &detection_type);
+
+
+
+        template <RetryStrategy RETRY_STRATEGY>
+        void Run();
+
+        template <RetryStrategy RETRY_STRATEGY>
+        void ReadFrame(cv::Mat &frame);
+
+        void FixTracks(const VideoSegmentInfo &segment_info,
+                       std::vector<MPFVideoTrack> &tracks);
+
+        bool IsBeginningOfSegment(int frame_number) const;
+
+        std::vector<MPFVideoTrack> TryGetRemainingTracks();
+
+        static uint64_t GetTimestampMillis();
+
+        static std::string GetAppDir();
+
+        static log4cxx::LoggerPtr GetLogger(const std::string &app_dir);
+    };
+
+}}
+
+
+
+#endif //MPF_SINGLE_STAGE_COMPONENTEXECUTOR_H

@@ -25,62 +25,54 @@
  ******************************************************************************/
 
 
-//TODO: All code in this file is for future use and is untested.
-// Not used in single process, single pipeline stage, architecture
+#ifndef MPF_BASICAMQMESSAGEREADER_H
+#define MPF_BASICAMQMESSAGEREADER_H
 
+#include <memory>
+#include <string>
+#include <unordered_map>
 
-#ifndef OPENMPF_FRAME_READER_H
-#define OPENMPF_FRAME_READER_H
+#include <cms/Connection.h>
+#include <cms/Session.h>
+#include <cms/MessageProducer.h>
 
-#include "MPFDetectionObjects.h"  // for definition of Properties
+#include "MPFMessage.h"
+
+#include "JobSettings.h"
+
 
 namespace MPF {
 
-enum MPFFrameReaderError {
-    FRAME_READER_SUCCESS = 0,
-    FRAME_READER_NOT_INITIALIZED,
-    FRAME_READER_INVALID_VIDEO_URI,
-    FRAME_READER_COULD_NOT_OPEN_STREAM,
-    FRAME_READER_COULD_NOT_CLOSE_STREAM,
-    FRAME_READER_COULD_NOT_READ_STREAM,
-    FRAME_READER_BAD_FRAME_SIZE,
-    FRAME_READER_INVALID_FRAME_INTERVAL,
-    FRAME_READER_MISSING_PROPERTY,
-    FRAME_READER_INVALID_PROPERTY,
-    FRAME_READER_PROPERTY_IS_NOT_INT,
-    FRAME_READER_PROPERTY_IS_NOT_FLOAT,
-    FRAME_READER_MEMORY_ALLOCATION_FAILED,
-    FRAME_READER_MEMORY_MAPPING_FAILED,
-    FRAME_READER_OTHER_ERROR
-};
+    // TODO: Combine with AMQMessenger when adding support for multistage pipelines.
+    class BasicAmqMessageReader {
 
-struct MPFFrameReaderJob {
-    std::string job_name;
-    std::string stream_uri;
-    std::string config_pathname;
-    MPF::COMPONENT::Properties job_properties;
-    MPF::COMPONENT::Properties media_properties;
-    MPFFrameReaderJob(const std::string &job_name,
-                      const std::string &stream_uri,
-                      const MPF::COMPONENT::Properties &job_properties,
-                      const MPF::COMPONENT::Properties &media_properties)
-            : job_name(job_name)
-            , stream_uri(stream_uri)
-            , job_properties(job_properties)
-            , media_properties(media_properties) {}
-};
+    public:
+        BasicAmqMessageReader(const MPF::COMPONENT::JobSettings &job_settings,
+                              std::shared_ptr<cms::Connection> connection_ptr);
 
-class MPFFrameReader {
+        BasicAmqMessageReader &CreateFrameReadyConsumer(const long segment_number);
+        MPFSegmentReadyMessage GetSegmentReadyMsg();
+        MPFFrameReadyMessage GetFrameReadyMsg();
+        MPFReleaseFrameMessage GetReleaseFrameMsg();
 
-  public:
-    virtual ~MPFFrameReader() = default;
-    virtual MPFFrameReaderError ReadAndStoreFrame(const size_t index) = 0;
-  protected:
+    private:
+        const long job_id_;
+        const int segment_size_;
 
-    MPFFrameReader() = default;
+        std::shared_ptr<cms::Connection> connection_;
+        std::unique_ptr<cms::Session> session_;
+        // We need to create a new consumer for each segment, but the
+        // queue can be created ahead of time.
+        std::unique_ptr<cms::Queue> frame_ready_queue_;
 
-};
+        std::unique_ptr<cms::MessageConsumer> segment_ready_consumer_;
+        std::unique_ptr<cms::MessageConsumer> frame_ready_consumer_;
+        std::unique_ptr<cms::MessageConsumer> release_frame_consumer_;
+
+        std::unique_ptr<cms::MessageConsumer>
+        CreateConsumer(const std::string &queue_name, cms::Session &session);
+
+    };
 }
 
-
-#endif //OPENMPF_FRAME_READER_H
+#endif //MPF_BASICAMQMESSAGESENDER_H

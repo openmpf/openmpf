@@ -23,26 +23,28 @@
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
-cmake_minimum_required(VERSION 3.6)
 
-#if(DEFINED ENV{MPF_SDK_INSTALL_PATH})
-#	list(APPEND CMAKE_PREFIX_PATH $ENV{MPF_SDK_INSTALL_PATH}/lib/cmake)
-#endif()
-#list(APPEND CMAKE_PREFIX_PATH $ENV{HOME}/mpf-sdk-install/lib/cmake)
-#find_package(mpfComponentInterface REQUIRED)
-#find_package(mpfDetectionComponentApi REQUIRED)
 message(STATUS "COMMON_SOURCE_DIR = ${COMMON_SOURCE_DIR}")
 include_directories( ${COMMON_SOURCE_DIR}/include )
+set(single_stage_component_executor_files
+  StreamingComponentHandle.cpp StreamingComponentHandle.h
+  SingleStageComponentExecutor.cpp SingleStageComponentExecutor.h)
 
-#include_directories($<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
-#include_directories(${MSG_UTILS_DIR})
 
-add_executable(frame_reader_component main )
-target_link_libraries(frame_reader_component mpfStreamMsg ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES})
+add_library(single_stage_executor_lib OBJECT ${single_stage_component_executor_files})
+target_include_directories(single_stage_executor_lib PUBLIC
+	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>
+	$<TARGET_PROPERTY:mpfProtobufs,INTERFACE_INCLUDE_DIRECTORIES>)
 
-install(TARGETS frame_reader_component
-                RUNTIME DESTINATION bin
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib)
+add_executable(single_stage_component_executor main.cpp $<TARGET_OBJECTS:single_stage_executor_lib> $<TARGET_OBJECTS:common> $<TARGET_OBJECTS:mpfStreamMsg>)
+target_link_libraries(single_stage_component_executor mpfDetectionComponentApi mpfComponentInterface
+        dl ${LOG4CXX_LIBRARIES} ${OpenCV_LIBS} mpfProtobufs ${ACTIVEMQ-CPP_LIBRARIES})
 
-install(FILES Log4cxx-framereader-Config.xml framereader.ini DESTINATION config)
+install(TARGETS single_stage_component_executor
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib)
+
+install(FILES SingleStageExecutorLog4cxxConfig.xml DESTINATION config)
+
+#add_subdirectory(test)

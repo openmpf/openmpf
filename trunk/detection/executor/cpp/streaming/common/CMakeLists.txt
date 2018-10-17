@@ -23,26 +23,21 @@
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
-cmake_minimum_required(VERSION 3.6)
 
-#if(DEFINED ENV{MPF_SDK_INSTALL_PATH})
-#	list(APPEND CMAKE_PREFIX_PATH $ENV{MPF_SDK_INSTALL_PATH}/lib/cmake)
-#endif()
-#list(APPEND CMAKE_PREFIX_PATH $ENV{HOME}/mpf-sdk-install/lib/cmake)
-#find_package(mpfComponentInterface REQUIRED)
-#find_package(mpfDetectionComponentApi REQUIRED)
-message(STATUS "COMMON_SOURCE_DIR = ${COMMON_SOURCE_DIR}")
-include_directories( ${COMMON_SOURCE_DIR}/include )
+project(COMMON)
+include_directories(include)
 
-#include_directories($<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
-#include_directories(${MSG_UTILS_DIR})
+set(SRCS src/BasicAmqMessageReader.cpp
+         src/BasicAmqMessageSender.cpp
+         src/ExecutorErrors.cpp
+	 src/ExecutorUtils.cpp
+	 src/JobSettings.cpp
+	 src/MPFFrameStore.cpp
+	 src/MPFMessagingConnection.cpp
+	 src/StandardInWatcher.cpp
+	 src/StreamingVideoCapture.cpp)
 
-add_executable(frame_reader_component main )
-target_link_libraries(frame_reader_component mpfStreamMsg ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES})
-
-install(TARGETS frame_reader_component
-                RUNTIME DESTINATION bin
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib)
-
-install(FILES Log4cxx-framereader-Config.xml framereader.ini DESTINATION config)
+add_library(common OBJECT ${SRCS})
+target_include_directories(common PUBLIC
+	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>
+        $<TARGET_PROPERTY:mpfProtobufs,INTERFACE_INCLUDE_DIRECTORIES>)

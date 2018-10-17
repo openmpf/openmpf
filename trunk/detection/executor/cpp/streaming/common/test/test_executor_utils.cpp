@@ -33,8 +33,8 @@
 #include <MPFStreamingDetectionComponent.h>
 #include <log4cxx/basicconfigurator.h>
 
-#include "../ExecutorUtils.h"
-#include "../JobSettings.h"
+#include "ExecutorUtils.h"
+#include "JobSettings.h"
 
 
 using namespace MPF::COMPONENT;

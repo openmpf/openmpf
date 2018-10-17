@@ -27,19 +27,25 @@
 
 cmake_minimum_required(VERSION 3.6)
 
-project(streaming-executor-tests)
+project(executor-utils-tests)
 set(CMAKE_CXX_STANDARD 11)
+
+set(ExecutorUtilsSrcs ${COMMON_SOURCE_DIR}/src/ExecutorUtils.cpp
+                      ${COMMON_SOURCE_DIR}/src/ExecutorErrors.cpp
+                      ${COMMON_SOURCE_DIR}/src/JobSettings.cpp)
 
 
 find_package(GTest)
 if (${GTEST_FOUND})
     enable_testing()
 
-    add_executable(StreamingExecutorTest test_streaming_executor.cpp $<TARGET_OBJECTS:streaming_executor_lib>)
+    add_executable(StreamingExecutorUtilsTest test_executor_utils.cpp ${ExecutorUtilsSrcs})
 
-    target_link_libraries(StreamingExecutorTest GTest::GTest GTest::Main
-        $<TARGET_PROPERTY:streaming_component_executor,LINK_LIBRARIES>)
+    target_include_directories(StreamingExecutorUtilsTest PUBLIC
+	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
 
-    add_test(NAME StreamingExecutorTest COMMAND StreamingExecutorTest)
+    target_link_libraries(StreamingExecutorUtilsTest GTest::GTest GTest::Main ${LOG4CXX_LIBRARIES})
+
+    add_test(NAME StreamingExecutorUtilsTest COMMAND StreamingExecutorUtilsTest)
 
 endif()

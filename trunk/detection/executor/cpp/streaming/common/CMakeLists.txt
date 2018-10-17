@@ -41,3 +41,5 @@ add_library(common OBJECT ${SRCS})
 target_include_directories(common PUBLIC
 	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>
         $<TARGET_PROPERTY:mpfProtobufs,INTERFACE_INCLUDE_DIRECTORIES>)
+
+add_subdirectory(test)

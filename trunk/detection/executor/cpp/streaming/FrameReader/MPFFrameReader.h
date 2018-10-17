@@ -25,10 +25,6 @@
  ******************************************************************************/
 
 
-//TODO: All code in this file is for future use and is untested.
-// Not used in single process, single pipeline stage, architecture
-
-
 #ifndef OPENMPF_FRAME_READER_H
 #define OPENMPF_FRAME_READER_H
 
@@ -70,16 +66,7 @@ struct MPFFrameReaderJob {
             , media_properties(media_properties) {}
 };
 
-class MPFFrameReader {
 
-  public:
-    virtual ~MPFFrameReader() = default;
-    virtual MPFFrameReaderError ReadAndStoreFrame(const size_t index) = 0;
-  protected:
-
-    MPFFrameReader() = default;
-
-};
 }
 
 

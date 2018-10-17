@@ -25,9 +25,13 @@
  ******************************************************************************/
 
 #include <iostream>
+#include <log4cxx/basicconfigurator.h>
+#include <log4cxx/xml/domconfigurator.h>
 
 #include "ExecutorErrors.h"
-#include "FrameReaderExecutor.h"
+#include "ExecutorUtils.h"
+#include "JobSettings.h"
+#include "OcvFrameReader.h"
 
 
 int main(int argc, char* argv[]) {
@@ -35,5 +39,52 @@ int main(int argc, char* argv[]) {
         std::cerr << "Usage: " << argv[0] << " <ini_path>" << std::endl;
         return static_cast<int>(MPF::COMPONENT::ExitCode::INVALID_COMMAND_LINE_ARGUMENTS);
     }
-    return static_cast<int>(MPF::COMPONENT::FrameReaderExecutor::RunJob(argv[1]));
+
+    // Set up the logging
+    std::string app_dir = MPF::COMPONENT::ExecutorUtils::GetAppDir();
+    std::string config_file = app_dir + "/../config/Log4cxx-framereader-Config.xml";
+    log4cxx::xml::DOMConfigurator::configure(config_file);
+    log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("org.mitre.mpf.framereader");
+    if (logger->getAllAppenders().empty()) {
+        log4cxx::BasicConfigurator::configure();
+        LOG4CXX_WARN(logger, "Unable to load log configuration file at "
+                     << config_file << ". Logging to standard out instead.");
+    }
+
+    // Read the settings and create the streaming video job
+    LOG4CXX_INFO(logger, "Loading job settings from: " << argv[1]);
+
+    try {
+        MPF::COMPONENT::JobSettings settings = MPF::COMPONENT::JobSettings::FromIniFile(argv[1]);
+
+        std::string job_name = "Streaming Job #" + std::to_string(settings.job_id);
+        LOG4CXX_INFO(logger, "Initializing " << job_name);
+
+        std::string log_prefix = "[" + job_name + "] ";
+        MPF::COMPONENT::MPFStreamingVideoJob job(job_name, app_dir, 
+                                                 settings.job_properties,
+                                                 settings.media_properties);
+
+        // Establish the messaging connection
+        MPF::MPFMessagingConnection connection(settings);
+
+        MPF::COMPONENT::OcvFrameReader frame_reader(logger, log_prefix, connection, job, std::move(settings));
+        return static_cast<int>(frame_reader.RunJob());
+    }
+    catch (const cms::CMSException &ex) {
+        LOG4CXX_ERROR(logger, "Exiting due to message broker error: " << ex.what());
+        return static_cast<int>(MPF::COMPONENT::ExitCode::MESSAGE_BROKER_ERROR);
+    }
+    catch (const MPF::COMPONENT::FatalError &ex) {
+        LOG4CXX_ERROR(logger, "Exiting due to error: " << ex.what());
+        return static_cast<int>(ex.GetExitCode());
+    }
+    catch (const std::exception &ex) {
+        LOG4CXX_ERROR(logger, "Exiting due to error: " << ex.what());
+        return static_cast<int>(MPF::COMPONENT::ExitCode::UNEXPECTED_ERROR);
+    }
+    catch (...) {
+        LOG4CXX_ERROR(logger, "Exiting due to error.");
+        return static_cast<int>(MPF::COMPONENT::ExitCode::UNEXPECTED_ERROR);
+    }
 }

@@ -30,148 +30,137 @@
 #include "OcvFrameReader.h"
 #include "JobSettings.h"
 #include "detectionComponentUtils.h"
+#include "StandardInWatcher.h"
 
-using namespace MPF;
-using namespace COMPONENT;
 using std::string;
 using namespace cv;
+using MPF::COMPONENT::ExitCode;
+using MPF::COMPONENT::FatalError;
+using MPF::COMPONENT::RetryStrategy;
 
-OcvFrameReader::OcvFrameReader(const MPFFrameReaderJob &job, log4cxx::LoggerPtr &logger) 
-        : job_name_(job.job_name)
-        , logger_(logger)
-        , frame_store_(job.job_properties)
-        , video_capture_(logger, job) {}
+namespace MPF {
+namespace COMPONENT {
+
+OcvFrameReader::OcvFrameReader(const log4cxx::LoggerPtr &logger,
+                               const std::string &log_prefix,
+                               MPF::MPFMessagingConnection &connection,
+                               const MPF::COMPONENT::MPFStreamingVideoJob &job,
+                               MPF::COMPONENT::JobSettings &&settings) 
+        : logger_(logger)
+        , log_prefix_(log_prefix)
+        , settings_(std::move(settings))
+        , msg_reader_(settings_, connection.Get())
+        , msg_sender_(settings_, connection.Get())
+        , frame_store_(settings_)
+        , video_capture_(logger_, settings_.stream_uri, job) {}
 
 
 
-ExitCode OcvFrameReader::RunJob(const std::string &ini_path) {
-    std::string app_dir = ExecutorUtils::GetAppDir();
-    std::string config_file = app_dir + "/../config/Log4cxx-framereader-Config.xml";
-    log4cxx::xml::DOMConfigurator::configure(config_file);
-    log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("org.mitre.mpf.framereader");
-    if (logger->getAllAppenders().empty()) {
-        log4cxx::BasicConfigurator::configure();
-        LOG4CXX_WARN(logger, "Unable to load log configuration file at "
-                     << config_file << ". Logging to standard out instead.");
-    }
-
-    std::string log_prefix;
+ExitCode OcvFrameReader::RunJob() {
     try {
-        LOG4CXX_INFO(logger, "Loading job settings from: " << ini_path);
 
-        JobSettings settings = JobSettings::FromIniFile(ini_path);
-        std::string job_name = "Streaming Job #" + std::to_string(settings.job_id);
-        LOG4CXX_INFO(logger, "Initializing " << job_name);
-
-        log_prefix = "[" + job_name + "] ";
-        MPFFrameReaderJob job(job_name, settings.stream_uri, 
-                              settings.job_properties,
-                              settings.media_properties);
-
-        RetryStrategy retry_config = settings.retry_strategy;
-        OcvFrameReader frame_reader(job, logger);
+        RetryStrategy retry_config = settings_.retry_strategy;
 
         switch (retry_config) {
             case RetryStrategy::NEVER_RETRY:
-                executor.Run<RetryStrategy::NEVER_RETRY>();
+                Run<RetryStrategy::NEVER_RETRY>();
                 break;
             case RetryStrategy::NO_ALERT_NO_TIMEOUT:
-                executor.Run<RetryStrategy::NO_ALERT_NO_TIMEOUT>();
+                Run<RetryStrategy::NO_ALERT_NO_TIMEOUT>();
                 break;
             case RetryStrategy::NO_ALERT_WITH_TIMEOUT:
-                executor.Run<RetryStrategy::NO_ALERT_WITH_TIMEOUT>();
+                Run<RetryStrategy::NO_ALERT_WITH_TIMEOUT>();
                 break;
             case RetryStrategy::ALERT_NO_TIMEOUT:
-                executor.Run<RetryStrategy::ALERT_NO_TIMEOUT>();
+                Run<RetryStrategy::ALERT_NO_TIMEOUT>();
                 break;
             case RetryStrategy::ALERT_WITH_TIMEOUT:
-                executor.Run<RetryStrategy::ALERT_WITH_TIMEOUT>();
+                Run<RetryStrategy::ALERT_WITH_TIMEOUT>();
                 break;
         }
-        LOG4CXX_INFO(logger, log_prefix << "Job has successfully completed because the quit command was received.");
 
+        LOG4CXX_INFO(logger_, log_prefix_ << "Job has successfully completed because the quit command was received.");
         return ExitCode::SUCCESS;
     }
     catch (const cms::CMSException &ex) {
-        LOG4CXX_ERROR(logger, log_prefix << "Exiting due to message broker error: " << ex.what());
+        LOG4CXX_ERROR(logger_, log_prefix_ << "Exiting due to message broker error: " << ex.what());
         return ExitCode::MESSAGE_BROKER_ERROR;
     }
     catch (const FatalError &ex) {
-        LOG4CXX_ERROR(logger, log_prefix << "Exiting due to error: " << ex.what());
+        LOG4CXX_ERROR(logger_, log_prefix_ << "Exiting due to error: " << ex.what());
         return ex.GetExitCode();
     }
     catch (const std::exception &ex) {
-        LOG4CXX_ERROR(logger, log_prefix << "Exiting due to error: " << ex.what());
+        LOG4CXX_ERROR(logger_, log_prefix_ << "Exiting due to error: " << ex.what());
         return ExitCode::UNEXPECTED_ERROR;
     }
     catch (...) {
-        LOG4CXX_ERROR(logger, log_prefix << "Exiting due to error.");
+        LOG4CXX_ERROR(logger_, log_prefix_ << "Exiting due to error.");
         return ExitCode::UNEXPECTED_ERROR;
     }
 }
 
+
 template <RetryStrategy RETRY_STRATEGY>
 void OcvFrameReader::Run() {
-    int frame_number = -1;
-    std::unordered_map<int, long> frame_timestamps;
+    int frame_index = -1;
+    int segment_number = -1;
+    long frame_byte_size = 0;
 
-    try {
-        LOG4CXX_INFO(logger_, log_prefix_ << "Connecting to stream at: " << settings_.stream_uri);
-        sender_.SendInProgressNotification(GetTimestampMillis());
+    LOG4CXX_INFO(logger_, log_prefix_ << "Connecting to stream at: " << settings_.stream_uri);
+    msg_sender_.SendInProgressNotification(GetTimestampMillis());
 
-        StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
+    StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
 
-        int frame_interval = std::max(1, DetectionComponentUtils::GetProperty(job_.job_properties, "FRAME_INTERVAL", 1));
+        // int frame_interval = std::max(1, DetectionComponentUtils::GetProperty(job_.job_properties,
+        //                                                                       "FRAME_INTERVAL", 1));
 
-        while (!std_in_watcher->QuitReceived()) {
-            cv::Mat frame;
-            try {
-                ReadFrame<RETRY_STRATEGY>(frame);
-            }
-            catch (const InterruptedException &ex) {
-                // Quit was received while trying to read frame.
-                break;
-            }
-            if (frame_number < 0) {
-                //Set a bunch of member variables based on the 
-            frame_number++;
-            frame_timestamps[frame_number] = GetTimestampMillis();
+    while (!std_in_watcher->QuitReceived()) {
 
-            if (IsBeginningOfSegment(frame_number)) {
-                int segment_number = frame_number / settings_.segment_size;
-            }
-
-    }
-    catch (const FatalError &ex) {
-        // Send error report before actually handling exception.
-        frame_timestamps.emplace(frame_number, GetTimestampMillis()); // Only inserts if key not already present.
-        std::vector<MPFVideoTrack> tracks;
-        if (begin_segment_called) {
-            tracks = TryGetRemainingTracks();
-            FixTracks(segment_info, tracks);
+        cv::Mat frame;
+        try {
+            ReadFrame<RETRY_STRATEGY>(frame);
         }
-        sender_.SendSummaryReport(frame_number, detection_type_, tracks, frame_timestamps, ex.what());
-        throw;
+        catch (const InterruptedException &ex) {
+            // Quit was received while trying to read frame.
+            break;
+        }
+
+        frame_byte_size = frame.rows * frame.cols * frame.elemSize();
+        frame_index++;
+        if (frame_index % settings_.segment_size == 0) {
+            // Increment the segment number and send the segment ready message.
+            segment_number++;
+            msg_sender_.SendSegmentReady(segment_number, frame.cols, frame.rows,
+                                         frame.type(), frame_byte_size);
+        }
+
+        // Put the frame into the frame store.
+        frame_store_.StoreFrame(frame, frame_index);
+
+        // Send the frame ready message.
+        msg_sender_.SendFrameReady(segment_number, frame_index, GetTimestampMillis());
     }
+
 }
 
 
 
 template<>
-void OcvFrameReader::ReadFrame<RetryStrategy::NEVER_RETRY>(cv::Mat &frame) {
+void OcvFrameReader::ReadFrame<MPF::COMPONENT::RetryStrategy::NEVER_RETRY>(cv::Mat &frame) {
     if (!video_capture_.Read(frame)) {
         throw FatalError(ExitCode::STREAM_STALLED, "It is no longer possible to read frames.");
     }
 }
 
 template<>
-void OcvFrameReader::ReadFrame<RetryStrategy::NO_ALERT_NO_TIMEOUT>(cv::Mat &frame) {
+void OcvFrameReader::ReadFrame<MPF::COMPONENT::RetryStrategy::NO_ALERT_NO_TIMEOUT>(cv::Mat &frame) {
     video_capture_.ReadWithRetry(frame);
 }
 
 
 template<>
-void OcvFrameReader::ReadFrame<RetryStrategy::NO_ALERT_WITH_TIMEOUT>(cv::Mat &frame) {
+void OcvFrameReader::ReadFrame<MPF::COMPONENT::RetryStrategy::NO_ALERT_WITH_TIMEOUT>(cv::Mat &frame) {
     if (!video_capture_.ReadWithRetry(frame, settings_.stall_timeout)) {
         throw FatalError(ExitCode::STREAM_STALLED, "It is no longer possible to read frames.");
     }
@@ -179,33 +168,37 @@ void OcvFrameReader::ReadFrame<RetryStrategy::NO_ALERT_WITH_TIMEOUT>(cv::Mat &fr
 
 
 template<>
-void OcvFrameReader::ReadFrame<RetryStrategy::ALERT_NO_TIMEOUT>(cv::Mat &frame) {
+void OcvFrameReader::ReadFrame<MPF::COMPONENT::RetryStrategy::ALERT_NO_TIMEOUT>(cv::Mat &frame) {
     if (video_capture_.ReadWithRetry(frame, settings_.stall_alert_threshold)) {
         return;
     }
-    sender_.SendStallAlert(GetTimestampMillis());
+    msg_sender_.SendStallAlert(GetTimestampMillis());
 
     video_capture_.ReadWithRetry(frame);
-    sender_.SendInProgressNotification(GetTimestampMillis());
+    msg_sender_.SendInProgressNotification(GetTimestampMillis());
 
 }
 
 template<>
-void OcvFrameReader::ReadFrame<RetryStrategy::ALERT_WITH_TIMEOUT>(cv::Mat &frame) {
+void OcvFrameReader::ReadFrame<MPF::COMPONENT::RetryStrategy::ALERT_WITH_TIMEOUT>(cv::Mat &frame) {
     if (video_capture_.ReadWithRetry(frame, settings_.stall_alert_threshold)) {
         return;
     }
-    sender_.SendStallAlert(GetTimestampMillis());
+    msg_sender_.SendStallAlert(GetTimestampMillis());
 
     if (video_capture_.ReadWithRetry(frame, settings_.stall_timeout)) {
-        sender_.SendInProgressNotification(GetTimestampMillis());
+        msg_sender_.SendInProgressNotification(GetTimestampMillis());
         return;
     }
     throw FatalError(ExitCode::STREAM_STALLED, "It is no longer possible to read frames.");
 }
 
 
+long OcvFrameReader::GetTimestampMillis() {
+    using namespace std::chrono;
+    auto time_since_epoch = system_clock::now().time_since_epoch();
+    return duration_cast<milliseconds>(time_since_epoch).count();
+}
 
-    bool OcvFrameReader::IsBeginningOfSegment(int frame_number) const {
-        return frame_number % settings_.segment_size == 0;
-    }
+}}
+

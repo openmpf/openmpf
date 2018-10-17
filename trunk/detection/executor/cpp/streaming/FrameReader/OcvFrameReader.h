@@ -24,11 +24,6 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
-//TODO: All functions in this file are for future use and are untested.
-// Not used in single process, single pipeline stage, architecture
-
-
 #ifndef OPENMPF_OCV_FRAME_READER_H
 #define OPENMPF_OCV_FRAME_READER_H
 
@@ -41,50 +36,52 @@
 
 #include <log4cxx/logger.h>
 
+#include <MPFStreamingDetectionComponent.h>
 #include "ExecutorErrors.h"
-#include "MPFFrameReader.h"
+#include "JobSettings.h"
 #include "StreamingVideoCapture.h"
+#include "MPFMessagingConnection.h"
+#include "BasicAmqMessageReader.h"
+#include "BasicAmqMessageSender.h"
+#include "MPFFrameStore.h"
 
 namespace MPF {
+namespace COMPONENT {
 
-class OcvFrameReader : public MPFFrameReader {
+class OcvFrameReader {
 
   public:
-    OcvFrameReader(const MPFFrameReaderJob &job, log4cxx::LoggerPtr &logger)
+    OcvFrameReader(const log4cxx::LoggerPtr &logger,
+                   const std::string &log_prefix,
+                   MPF::MPFMessagingConnection &connection,
+                   const MPF::COMPONENT::MPFStreamingVideoJob &job,
+                   MPF::COMPONENT::JobSettings &&settings);
+
     ~OcvFrameReader() = default;
 
-    ExitCode RunJob(const std::string &ini_path);
+    MPF::COMPONENT::ExitCode RunJob();
 
 
   private:
-    std::string job_name_;
+
     log4cxx::LoggerPtr logger_;
-    MPFFrameStore frame_store_;
-    MPF::StreamingVideoCapture video_capture_;
+    std::string log_prefix_;
+    MPF::COMPONENT::JobSettings settings_;
+    MPF::BasicAmqMessageReader msg_reader_;
+    MPF::BasicAmqMessageSender msg_sender_;
+    MPF::MPFFrameStore frame_store_;
+    MPF::COMPONENT::StreamingVideoCapture video_capture_;
 
-    int segment_length_;        // number of frames per processing
-                                // segment.
-    int frame_buffer_segment_capacity_; // how many segments can be
-                                        // stored in the frame buffer
-                                        // before we need to start
-                                        // reusing storage.
-    int frame_num_rows_;
-    int frame_num_cols_;
-    int frame_type_; // Corresponds to the OpenCV type, e.g., CV_8UC3
-    size_t frame_byte_size_;     // Size of each frame in bytes
-    long current_segment_num_;
-    long current_frame_index_;
-
-    bool IsBeginningOfSegment(int frame_number) const;
-
-    template <RetryStrategy RETRY_STRATEGY>
+    template <MPF::COMPONENT::RetryStrategy RETRY_STRATEGY>
     void Run();
 
-    template <RetryStrategy RETRY_STRATEGY>
+    template <MPF::COMPONENT::RetryStrategy RETRY_STRATEGY>
     void ReadFrame(cv::Mat &frame);
 
+    long GetTimestampMillis();
 
 };
 }}
+
 
 #endif //OPENMPF_OCV_FRAME_READER_H

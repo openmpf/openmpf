@@ -25,20 +25,14 @@
 #############################################################################
 cmake_minimum_required(VERSION 3.6)
 
-#if(DEFINED ENV{MPF_SDK_INSTALL_PATH})
-#	list(APPEND CMAKE_PREFIX_PATH $ENV{MPF_SDK_INSTALL_PATH}/lib/cmake)
-#endif()
-#list(APPEND CMAKE_PREFIX_PATH $ENV{HOME}/mpf-sdk-install/lib/cmake)
-#find_package(mpfComponentInterface REQUIRED)
-#find_package(mpfDetectionComponentApi REQUIRED)
-message(STATUS "COMMON_SOURCE_DIR = ${COMMON_SOURCE_DIR}")
-include_directories( ${COMMON_SOURCE_DIR}/include )
+set(frame_reader_executor_files main.cpp
+    OcvFrameReader.h OcvFrameReader.cpp)
 
-#include_directories($<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
-#include_directories(${MSG_UTILS_DIR})
-
-add_executable(frame_reader_component main )
-target_link_libraries(frame_reader_component mpfStreamMsg ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES})
+add_executable(frame_reader_component ${frame_reader_executor_files} $<TARGET_OBJECTS:common>)
+target_include_directories(frame_reader_component PUBLIC
+	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
+target_link_libraries(frame_reader_component mpfDetectionComponentApi mpfProtobufs
+        ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${HIREDIS_LIB})
 
 install(TARGETS frame_reader_component
                 RUNTIME DESTINATION bin

@@ -23,6 +23,8 @@
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
+
+project(STREAMING_VIDEO)
 cmake_minimum_required(VERSION 3.6)
 set(CMAKE_CXX_STANDARD 11)
 
@@ -56,37 +58,16 @@ list(APPEND CMAKE_PREFIX_PATH $ENV{HOME}/mpf-sdk-install/lib/cmake)
 find_package(mpfComponentInterface REQUIRED)
 find_package(mpfDetectionComponentApi REQUIRED)
 
-#include_directories(${MSG_UTILS_DIR})
-#include_directories(MessageUtils)
-#add_subdirectory(MessageUtils)
 
-include_directories(FrameStore)
-#add_subdirectory(FrameReader)
+include_directories(/apps/install/include/hiredis)
+set(HIREDIS_LIB /apps/install/lib/libhiredis.so)
 
-set(streaming_component_executor_files
-	StreamingComponentExecutor.cpp StreamingComponentExecutor.h
-    StandardInWatcher.cpp StandardInWatcher.h
-    JobSettings.h JobSettings.cpp
-	StreamingComponentHandle.cpp StreamingComponentHandle.h
-    BasicAmqMessageSender.cpp BasicAmqMessageSender.h
-	StreamingVideoCapture.cpp StreamingVideoCapture.h
-	ExecutorErrors.cpp ExecutorErrors.h
-	ExecutorUtils.cpp ExecutorUtils.h)
 
-add_library(streaming_executor_lib OBJECT ${streaming_component_executor_files})
-target_include_directories(streaming_executor_lib PUBLIC
-	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>
-	$<TARGET_PROPERTY:mpfProtobufs,INTERFACE_INCLUDE_DIRECTORIES>)
+include_directories(common/include)
 
-add_executable(streaming_component_executor main.cpp $<TARGET_OBJECTS:streaming_executor_lib> ${MSG_UTILS_FILE})
-target_link_libraries(streaming_component_executor mpfDetectionComponentApi mpfComponentInterface
-	dl ${LOG4CXX_LIBRARIES} ${OpenCV_LIBS} mpfProtobufs ${ACTIVEMQ-CPP_LIBRARIES})
+add_subdirectory(common)
+add_subdirectory(FrameReader)
+add_subdirectory(SingleStageComponentExecutor)
 
-install(TARGETS streaming_component_executor
-	RUNTIME DESTINATION bin
-	LIBRARY DESTINATION lib
-	ARCHIVE DESTINATION lib)
 
-install(FILES StreamingExecutorLog4cxxConfig.xml DESTINATION config)
-
-add_subdirectory(test)
+#add_subdirectory(test)

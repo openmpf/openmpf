@@ -24,21 +24,21 @@
 # limitations under the License.                                            #
 #############################################################################
 
-message(STATUS "COMMON_SOURCE_DIR = ${COMMON_SOURCE_DIR}")
 include_directories( ${COMMON_SOURCE_DIR}/include )
-set(single_stage_component_executor_files
+set(single_stage_component_executor_files main.cpp
   StreamingComponentHandle.cpp StreamingComponentHandle.h
   SingleStageComponentExecutor.cpp SingleStageComponentExecutor.h)
 
 
-add_library(single_stage_executor_lib OBJECT ${single_stage_component_executor_files})
-target_include_directories(single_stage_executor_lib PUBLIC
-	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>
-	$<TARGET_PROPERTY:mpfProtobufs,INTERFACE_INCLUDE_DIRECTORIES>)
+add_executable(single_stage_component_executor
+        ${single_stage_component_executor_files}
+        $<TARGET_OBJECTS:common>)
 
-add_executable(single_stage_component_executor main.cpp $<TARGET_OBJECTS:single_stage_executor_lib> $<TARGET_OBJECTS:common> $<TARGET_OBJECTS:mpfStreamMsg>)
-target_link_libraries(single_stage_component_executor mpfDetectionComponentApi mpfComponentInterface
-        dl ${LOG4CXX_LIBRARIES} ${OpenCV_LIBS} mpfProtobufs ${ACTIVEMQ-CPP_LIBRARIES})
+target_include_directories(single_stage_component_executor PUBLIC
+	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
+
+target_link_libraries(single_stage_component_executor mpfDetectionComponentApi
+         mpfComponentInterface mpfProtobufs dl ${LOG4CXX_LIBRARIES} ${OpenCV_LIBS} ${ACTIVEMQ-CPP_LIBRARIES} ${HIREDIS_LIB})
 
 install(TARGETS single_stage_component_executor
 	RUNTIME DESTINATION bin

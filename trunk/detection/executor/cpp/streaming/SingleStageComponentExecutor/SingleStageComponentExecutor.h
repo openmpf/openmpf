@@ -33,7 +33,10 @@
 
 #include "ExecutorErrors.h"
 #include "StreamingComponentHandle.h"
-#include "MPFAMQMessenger.h"
+#include "BasicAmqMessageReader.h"
+#include "BasicAmqMessageSender.h"
+#include "MPFMessagingConnection.h"
+#include "MPFFrameStore.h"
 
 
 namespace MPF { namespace COMPONENT {
@@ -41,7 +44,7 @@ namespace MPF { namespace COMPONENT {
     class SingleStageComponentExecutor {
 
     public:
-        ExitCode RunJob(const std::string &ini_path);
+        static ExitCode RunJob(const std::string &ini_path);
 
 
     private:
@@ -49,19 +52,15 @@ namespace MPF { namespace COMPONENT {
 
         const std::string log_prefix_;
 
-        JobSettings settings_;
+        MPF::COMPONENT::JobSettings settings_;
+        MPF::MPFFrameStore frame_store_;
 
-        SegmentReadyMessageReader segment_ready_reader_;
-        FrameReadyMessageReader frame_ready_reader_;
+        MPF::BasicAmqMessageReader msg_reader_;
+        MPF::BasicAmqMessageSender msg_sender_;
 
-        ActivityAlertMessageSender activity_alert_sender_;
-        SegmentSummaryMessageSender segment_summary_sender_;
-        ReleaseFrameMessageSender release_frame_sender_;
+        MPF::COMPONENT::MPFStreamingVideoJob job_;
 
-
-        MPFStreamingVideoJob job_;
-
-        StreamingComponentHandle component_;
+        MPF::COMPONENT::StreamingComponentHandle component_;
 
         const std::string detection_type_;
 
@@ -71,10 +70,10 @@ namespace MPF { namespace COMPONENT {
         SingleStageComponentExecutor(
                 const log4cxx::LoggerPtr &logger,
                 const std::string &log_prefix,
-                MPFMessagingConnection &connection,
-                JobSettings &&settings,
-                MPFStreamingVideoJob &&job,
-                StreamingComponentHandle &&component,
+                MPF::MPFMessagingConnection &connection,
+                MPF::COMPONENT::JobSettings &&settings,
+                MPF::COMPONENT::MPFStreamingVideoJob &&job,
+                MPF::COMPONENT::StreamingComponentHandle &&component,
                 const std::string &detection_type);
 
 
@@ -88,13 +87,9 @@ namespace MPF { namespace COMPONENT {
         void FixTracks(const VideoSegmentInfo &segment_info,
                        std::vector<MPFVideoTrack> &tracks);
 
-        bool IsBeginningOfSegment(int frame_number) const;
+        // bool IsBeginningOfSegment(int frame_number) const;
 
         std::vector<MPFVideoTrack> TryGetRemainingTracks();
-
-        static uint64_t GetTimestampMillis();
-
-        static std::string GetAppDir();
 
         static log4cxx::LoggerPtr GetLogger(const std::string &app_dir);
     };

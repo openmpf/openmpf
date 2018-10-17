@@ -441,7 +441,7 @@ public class NodeController {
 	private void saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels,
 			final MpfResponse mpfResponse) throws IOException, InterruptedException {
 
-		if (nodeManagerService.saveNodeManagerConfig(nodeManagerModels)) {
+		if (nodeManagerService.saveAndReloadNodeManagerConfig(nodeManagerModels)) {
 			log.info("Successfully updated the node config");
 			mpfResponse.setResponseCode(MpfResponse.RESPONSE_CODE_SUCCESS);
 		} else {

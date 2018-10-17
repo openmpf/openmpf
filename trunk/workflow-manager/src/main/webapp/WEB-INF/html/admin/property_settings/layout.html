@@ -26,7 +26,7 @@
 
 <div class="page-header text-center">
     <h3>Edit OpenMPF Properties</h3>
-    <page-info ng-show="isAdmin">This view allows an admin user to modify OpenMPF properties. Updating the General System Properties requires an administrator to restart the server for the changes to take effect. Updating the Default Detection Properties does not. The new Default Detection Properties values will be used for all new jobs, however new Actions / Pipelines may need to be created if property override is of concern. Currently running jobs will not be affected. Use the buttons at the bottom of the page to save and reset all properties.</page-info>
+    <page-info ng-show="isAdmin">This view allows an admin user to modify OpenMPF properties. Updating the Static System Properties requires an administrator to restart the server for the changes to take effect. Updating the Dynamic System Properties does not. The new Dynamic System Properties values will be used for all new jobs, however new Actions / Pipelines may need to be created if property override is of concern. Currently running jobs will not be affected. Use the buttons at the bottom of the page to save and reset all properties.</page-info>
     <page-info ng-show="!isAdmin">This view shows the values of OpenMPF properties.</page-info>
     <div class="text-left">
         <p>In the table below, the properties can take on several states:
@@ -51,7 +51,7 @@
         <div style="overflow: auto; padding-top: 10px;">
 
             <!-- mutable system properties are loaded once using the GET /properties endpoint when mutableProperties is referenced in the statement below -->
-            <h4>Default Detection Properties</h4>
+            <h4>Dynamic System Properties</h4>
             <table id="mpfMutablePropertiesTable" class="table-hover admin-properties-table">
                 <col class="labelCol">
                 <col class="valueCol">
@@ -101,7 +101,7 @@
           <br/>
 
           <!-- immutable system properties are loaded once using the GET /properties endpoint when imutableProperties is referenced in the statement below -->
-          <h4>General System Properties</h4>
+          <h4>Static System Properties</h4>
           <table id="mpfImmutablePropertiesTable" class="table-hover admin-properties-table">
             <col class="labelCol">
             <col class="valueCol">

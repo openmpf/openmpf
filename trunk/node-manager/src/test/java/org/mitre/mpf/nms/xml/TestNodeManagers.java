@@ -24,53 +24,46 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.nodeManager;
+package org.mitre.mpf.nms.xml;
 
-import org.javasimon.SimonManager;
-import org.javasimon.Split;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.SmartLifecycle;
-import org.springframework.stereotype.Service;
+import org.junit.Assert;
+import org.junit.Test;
 
-@Service
-public class StartUp implements SmartLifecycle {
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
-	@Autowired
-	private NodeManagerStatus nodeManagerStatus;
+public class TestNodeManagers {
 
-	@Override
-	public boolean isAutoStartup() {
-		return true;
-	}
+    private final String SERVICE_REFERENCE = "service reference=";
 
-	@Override
-	public void start() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.start();
-		split.stop();
-	}
+    @Test
+    public void testToXml() throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-	@Override
-	public void stop() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.stop").start();
-		nodeManagerStatus.stop();
-		split.stop();
-	}
+        Service testService = new Service("SomeTestService", "SomeTestPath");
+        testService.setLauncher("simple");
+        List<String> argsList = Arrays.asList("SomeTestArg", "MPF.DETECTION_TEST_REQUEST");
+        testService.setArgs(argsList);
 
-	@Override
-	public boolean isRunning() {
-		return nodeManagerStatus.isInitialized();
-	}
+        NodeManager testNode1 = new NodeManager("somehost1");
+        testNode1.add(testService);
 
-	@Override
-	public void stop(Runnable r) {
-		this.stop();
-		r.run();
-	}
+        NodeManager testNode2 = new NodeManager("somehost2");
+        testNode2.add(testService);
 
-	@Override
-	public int getPhase() {
-		return -1;
-	}
+        NodeManagers nodeManagers = new NodeManagers();
+        nodeManagers.add(testNode1);
+        nodeManagers.add(testNode2);
+
+        NodeManagers.toXml(nodeManagers, outputStream);
+        String content = outputStream.toString();
+
+        Assert.assertFalse("XML should not be empty.", content.isEmpty());
+        Assert.assertFalse("XML should not contain \"" + SERVICE_REFERENCE + "\".",
+                content.contains(SERVICE_REFERENCE));
+
+        outputStream.close();
+    }
 }
-

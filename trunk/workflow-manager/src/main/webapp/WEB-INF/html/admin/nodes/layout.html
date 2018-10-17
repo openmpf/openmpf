@@ -45,6 +45,7 @@
                                 <span class="node-host">{{host.name}}</span>
                                 <span class="node-host" ng-if="host.core">(Core,</span>
                                 <span class="node-host" ng-if="!host.core">(Spare,</span>
+                                <span class="node-host" ng-if="host.autoConfigured">Auto,</span>
                                 <span class="node-host" ng-if="host.online">Online)</span>
                                 <span class="node-host" ng-if="!host.online">Offline)</span>
                             </span>
@@ -111,20 +112,28 @@
                         </div>
                     </div>
                     <div class="panel-footer">
-                        <div class="btn-group btn-group-sm" role="group" aria-label="#" ng-if="isAdmin">
-                            <a class="btn btn-default btn-sm" role="button" data-toggle="collapse" href="adminNodes/#collapse_{{$index}}_footer" ng-click="addServiceBtnClick(host.name,$index)"aria-expanded="false" aria-controls="collapse_{{$index}}_footer" title="Edit Number of Services">
-                                <i class="fa fa-pencil"></i></a>
+                        <div class="btn-group btn-group-sm" style="width:100%" role="group" aria-label="#" ng-if="isAdmin">
+                            <div>
+                                <a class="btn btn-default btn-xs" role="button" data-toggle="collapse" href="adminNodes/#collapse_{{$index}}_footer" ng-click="addServiceBtnClick(host.name,$index)"aria-expanded="false" aria-controls="collapse_{{$index}}_footer" title="Edit Number of Services">
+                                    <i class="fa fa-pencil"></i></a>
+                            </div>
                             <div class="collapse" id="collapse_{{$index}}_footer">
-                                <div class="well form-inline">
-                                    <p>Edit the number of services</p>
-                                    <select class="form-control add-service"  style="width:50%;" id="add_service_{{$index}}" ng-change="addServiceBtnChange(host.name,$index)" ng-model="addServiceSelected" ng-options="option.serviceName for option in serviceCatalog track by option.serviceName">
-                                        <option value="" selected hidden />
-                                    </select>
-                                    <select class="form-control service-count" style="width:60px;" id="add_service_count_{{$index}}" >
-                                        <option value="{{value}}"  ng-repeat="(key,value) in [] | range:1:99">{{value}}</option>
-                                    </select>
-                                    <button class="btn btn-success" ng-click="editServices(host.name,$index)" ng-disabled="btns_disabled || !host.online">Submit</button>
-                                    <p class="text-center"><button class="btn btn-sm btn-default" ng-click="addAllServices(host.name,$index)" ng-disabled="btns_disabled || !host.online" >Add All Services</button></p>
+                                <div class="well well-sm form-inline">
+                                    <div style="margin-top:5px;">
+                                        <p>Edit the number of services:</p>
+                                        <div>
+                                            <select class="form-control add-service"  style="max-width:60%; margin:2px;" id="add_service_{{$index}}" ng-change="addServiceBtnChange(host.name,$index)" ng-model="addServiceSelected" ng-options="option.serviceName for option in serviceCatalog track by option.serviceName">
+                                                <option value="" selected hidden />
+                                            </select>
+                                            <select class="form-control service-count" style="width:70px; margin:2px;" id="add_service_count_{{$index}}" >
+                                                <option value="{{value}}"  ng-repeat="(key,value) in [] | range:1:99">{{value}}</option>
+                                            </select>
+                                            <button class="btn btn-success" style="width:70px; margin:2px;" ng-click="editServices(host.name,$index)" ng-disabled="btns_disabled || !host.online">Update</button>
+                                        </div>
+                                    </div>
+                                    <p style="padding-top:15px;">or
+                                        <button class="btn btn-sm btn-default" ng-click="addAllServices(host.name,$index)" ng-disabled="btns_disabled || !host.online" >+1 All Services</button>
+                                    </p>
                                 </div>
 
                             </div>

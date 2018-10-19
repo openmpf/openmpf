@@ -63,7 +63,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -151,11 +153,10 @@ public class CustomNginxStorageBackend implements StorageBackend {
                 futures.add(ThreadUtil.callAsync(() -> worker(dispatcher, uploadSegmentSize)));
             }
 
-            List<FilePartETag> eTags = futures.stream()
+            return futures.stream()
                     .flatMap(CompletableFuture::join)
                     .sorted(Comparator.comparingInt(f -> f.PartNumber))
                     .collect(toList());
-            return eTags;
         }
         catch (CompletionException e) {
             unwrapAndThrow(e, "An error occurred while sending content for upload id: " + uploadId);

@@ -28,10 +28,14 @@
 package org.mitre.mpf.wfm.service;
 
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 
 import java.io.IOException;
+import java.util.Map;
 
 public interface StorageService {
 
     public String store(JsonOutputObject outputObject) throws IOException;
+
+    Map<Integer, String> storeArtifacts(ArtifactExtractionRequest request);
 }

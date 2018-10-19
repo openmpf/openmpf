@@ -26,17 +26,8 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
-import org.mitre.mpf.frameextractor.FrameExtractor;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
-
-import java.util.Map;
 
 public interface ArtifactExtractionProcessorInterface extends WfmProcessorInterface {
 
-	public Map<Integer, String> processUnsupportedMediaType(ArtifactExtractionRequest request) throws WfmProcessingException;
-
-	public String processImageRequest(ArtifactExtractionRequest request);
-
-	public Map<Integer, String> processVideoRequest(ArtifactExtractionRequest request, FrameExtractor extractor) throws WfmProcessingException;
 }

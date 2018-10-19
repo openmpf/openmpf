@@ -43,16 +43,28 @@ public class JniLoader {
     public static final String REF = "jniLoader";
     private static final Logger log = LoggerFactory.getLogger(JniLoader.class);
 
+    private static boolean _isLoaded;
+
     static {
         log.info("Loading JNI libraries...");
         try {
             System.loadLibrary("mpfopencvjni");
+            _isLoaded = true;
         }
         catch (UnsatisfiedLinkError ex) {
             log.warn("System.loadLibrary() failed due to: {}", ex.getMessage());
             String libFullPath = System.getenv(EnvVar.MPF_HOME) + "/lib/libmpfopencvjni.so";
             log.warn("Trying full path to library: {}", libFullPath);
             System.load(libFullPath);
+            _isLoaded = true;
         }
+    }
+
+    /**
+     * This method exists to force the static initializer run when running unit tests. This should always return true.
+     * @return true
+     */
+    public static boolean isLoaded() {
+        return _isLoaded;
     }
 }

@@ -27,15 +27,15 @@
 package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
 import org.apache.camel.Exchange;
-import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
+import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,12 +43,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.Map;
+import java.util.Objects;
+import java.util.SortedSet;
 
 /**
  * Extracts artifacts from a media file based on the contents of the {@link org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest}
@@ -70,6 +67,9 @@ public class ArtifactExtractionProcessorImpl extends WfmProcessor implements Art
 	@Autowired
 	private PropertiesUtil propertiesUtil;
 
+	@Autowired
+	private StorageService storageService;
+
 	@Override
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
 		assert exchange.getIn().getBody() != null : "The body must not be null.";
@@ -77,19 +77,7 @@ public class ArtifactExtractionProcessorImpl extends WfmProcessor implements Art
 
 		// Deserialize the contents of the message body.
 		ArtifactExtractionRequest request = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), ArtifactExtractionRequest.class);
-		Map<Integer, String> results = new HashMap<>();
-		switch(request.getMediaType()) {
-			case IMAGE:
-				results.put(0, processImageRequest(request));
-				break;
-			case VIDEO:
-				results.putAll(processVideoRequest(request, null));
-				break;
-			case AUDIO:
-			default:
-				results.putAll(processUnsupportedMediaType(request));
-				break;
-		}
+		Map<Integer, String> results = storageService.storeArtifacts(request);
 
 		for(int actionIndex : request.getActionIndexToMediaIndexes().keySet()) {
 			// The results map now has a mapping of media offsets to artifacts. In simpler terms for images and
@@ -141,79 +129,5 @@ public class ArtifactExtractionProcessorImpl extends WfmProcessor implements Art
 
 		exchange.getOut().getHeaders().put(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
 		exchange.getOut().getHeaders().put(MpfHeaders.SPLIT_SIZE, exchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE));
-	}
-
-	public Map<Integer, String> processUnsupportedMediaType(ArtifactExtractionRequest request) throws WfmProcessingException {
-		log.warn("[Job {}:{}:ARTIFACT_EXTRACTION] Media #{} reports media type {} which is not supported by artifact extraction.",
-				request.getJobId(), request.getStageIndex(), request.getMediaId(), request.getMediaType());
-		Map<Integer, String> results = new HashMap<>();
-		for(Collection<Integer> values : request.getActionIndexToMediaIndexes().values()) {
-			for(Integer value : values) {
-				results.put(value, UNSUPPORTED_PATH);
-			}
-		}
-		return results;
-	}
-
-	public String processImageRequest(ArtifactExtractionRequest request) {
-		try {
-			File file = propertiesUtil.createArtifactFile(request.getJobId(), request.getMediaId(), request.getStageIndex(), new File(request.getPath()).getName());
-			return Files.copy(Paths.get(request.getPath()), Paths.get(file.getAbsoluteFile().toURI()), StandardCopyOption.REPLACE_EXISTING).toFile().getAbsolutePath();
-		} catch(IOException | RuntimeException exception) {
-			log.warn("[{}|{}|ARTIFACT_EXTRACTION] Failed to copy the image Media #{} to the artifacts directory due to an exception." +
-					" All detections (including exemplars) produced in this stage for this medium will NOT have an associated artifact.",
-					request.getJobId(), request.getStageIndex(), request.getMediaId(), exception);
-			return ERROR_PATH;
-		}
-	}
-
-	public Map<Integer, String> processVideoRequest(ArtifactExtractionRequest request, FrameExtractor extractor) throws WfmProcessingException {
-		// In the context of videos, artifacts are equivalent to frames. We previously built a mapping of
-		// action indexes (within a single stage) to a set of frames to extract which are somehow associated
-		// with tracks produced in that action. In reality, it doesn't matter which action index a frame is
-		// associated with, so we simply create one set containing the union of all frames in the map.
-
-		Map<Integer, String> results = new HashMap<>();
-
-		Set<Integer> unionSet = new HashSet<Integer>();
-
-		for (Collection<Integer> integerCollection : request.getActionIndexToMediaIndexes().values()) {
-			unionSet.addAll(integerCollection);
-		}
-
-		try {
-			FrameExtractor frameExtractor = extractor;
-			if (frameExtractor == null) {
-				frameExtractor = new FrameExtractor(
-						new File(request.getPath()).toURI(),
-						propertiesUtil.createArtifactDirectory(request.getJobId(), request.getMediaId(), request.getStageIndex()).toURI());
-			}
-
-			frameExtractor.getFrames().addAll(unionSet);
-			log.info("[{}|{}|ARTIFACT_EXTRACTION] Need to extract {} artifacts for Media #{}.",
-					request.getJobId(), request.getStageIndex(), unionSet.size(), request.getMediaId());
-			results.putAll(frameExtractor.execute());
-
-			for (Integer offset : unionSet) {
-				if (!results.containsKey(offset)) {
-					log.warn("[Job {}|{}|ARTIFACT_EXTRACTION] Failed to extract artifact from Media #{} at frame {}.",
-							request.getJobId(), request.getStageIndex(), request.getMediaId(), offset);
-					results.put(offset, ERROR_PATH); // mark individual extractions as failed
-				}
-			}
-		} catch (IOException | RuntimeException exception) {
-			// In the event of an exception, all of the tracks (and associated detections) created for this medium in this
-			// stage (regardless of the action which produced them) will not have artifacts associated with them.
-			log.warn("[Job {}|{}|ARTIFACT_EXTRACTION] Failed to extract the artifacts from Media #{} due to an exception." +
-							" All detections (including exemplars) produced in this stage for this medium will NOT have an associated artifact.",
-					request.getJobId(), request.getStageIndex(), request.getMediaId(), exception);
-
-			results.clear();
-			for (Integer failedOffset : unionSet) {
-				results.put(failedOffset, ERROR_PATH);
-			}
-		} finally {
-			return results;
-		}
 	}
 }

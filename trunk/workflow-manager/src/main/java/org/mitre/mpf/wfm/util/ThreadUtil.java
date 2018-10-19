@@ -45,18 +45,23 @@ public class ThreadUtil {
         });
     }
 
+
     public static <T> CustomCompletableFuture<T> callAsync(Callable<T> task) {
-        CustomCompletableFuture<T> future = new CustomCompletableFuture<>(THREAD_POOL);
-        THREAD_POOL.submit(() -> {
+        CompletableFuture<T> completableFuture = new CompletableFuture<>();
+        Future<T> cancellableFuture = THREAD_POOL.submit(() -> {
             try {
-                future.complete(task.call());
+                T result = task.call();
+                completableFuture.complete(result);
+                return result;
             }
-            catch (Exception e) {
-                future.completeExceptionally(e);
+            catch (Throwable e) {
+                completableFuture.completeExceptionally(e);
+                throw e;
             }
         });
-        return future;
+        return new CustomCompletableFuture<>(completableFuture, cancellableFuture, THREAD_POOL);
     }
+
 
 
     @FunctionalInterface
@@ -65,15 +70,39 @@ public class ThreadUtil {
     }
 
 
+    public static void shutdown() {
+        try {
+            THREAD_POOL.shutdown();
+            THREAD_POOL.awaitTermination(1, TimeUnit.SECONDS);
+        }
+        catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+            // No need to do anything, already about to exit.
+        }
+        finally {
+            THREAD_POOL.shutdownNow();
+        }
+    }
+
+
+
     // Regular CompletableFuture runs tasks on ForkJoinPool.commonPool() by default.
+    // ForkJoinPool.commonPool() is for non-blocking CPU bound tasks.
     // This version runs tasks on ThreadUtil.THREAD_POOL by default.
     public static class CustomCompletableFuture<T> extends CompletableFuture<T> {
         private final CompletableFuture<T> _inner;
+        private final Future<?> _cancellableFuture;
         private final Executor _defaultExecutor;
 
-        public CustomCompletableFuture(CompletableFuture<T> inner, Executor defaultExecutor) {
+        public CustomCompletableFuture(CompletableFuture<T> inner, Future<?> cancellableFuture,
+                                       Executor defaultExecutor) {
             _inner = inner;
+            _cancellableFuture = cancellableFuture;
             _defaultExecutor = defaultExecutor;
+        }
+
+        public CustomCompletableFuture(CompletableFuture<T> inner, Executor defaultExecutor) {
+            this(inner, null, defaultExecutor);
         }
 
         public CustomCompletableFuture(CompletableFuture<T> inner) {
@@ -90,10 +119,6 @@ public class ThreadUtil {
 
         private static Executor getDefaultExecutor() {
             return THREAD_POOL;
-        }
-
-        private <U> CustomCompletableFuture<U> wrap(CompletableFuture<U> future) {
-            return new CustomCompletableFuture<>(future, _defaultExecutor);
         }
 
         public static <U> CustomCompletableFuture<U> supplyAsync(Supplier<U> supplier) {
@@ -114,6 +139,10 @@ public class ThreadUtil {
 
         public static <U> CustomCompletableFuture<U> completedFuture(U value) {
             return new CustomCompletableFuture<>(CompletableFuture.completedFuture(value));
+        }
+
+        private <U> CustomCompletableFuture<U> wrap(CompletableFuture<U> future) {
+            return new CustomCompletableFuture<>(future, _cancellableFuture, _defaultExecutor);
         }
 
         @Override
@@ -370,6 +399,9 @@ public class ThreadUtil {
 
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
+            if (_cancellableFuture != null) {
+                _cancellableFuture.cancel(mayInterruptIfRunning);
+            }
             return _inner.cancel(mayInterruptIfRunning);
         }
 

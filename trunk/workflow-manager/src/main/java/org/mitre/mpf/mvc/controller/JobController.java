@@ -40,6 +40,7 @@ import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.exceptions.InvalidPipelineObjectWfmProcessingException;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,8 +57,6 @@ import org.springframework.web.servlet.ModelAndView;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -202,27 +201,15 @@ public class JobController {
             List<MarkupResult> markupResults = mpfService.getMarkupResultsForJob(job.getJobId());
             job_model.setMarkupCount(markupResults.size());
             if(job_model.getOutputObjectPath() != null) {
-                job_model.outputFileExists = outputFileExists(job_model.getOutputObjectPath());
+                job_model.outputFileExists
+                        = IoUtils.toLocalPath(job_model.getOutputObjectPath())
+                            .map(Files::exists)
+                            .orElse(true);
             }
             model.addData(job_model);
         }
 
         return model;
-    }
-
-    private static boolean outputFileExists(String outputPath) {
-        if (outputPath.startsWith("http:/") || outputPath.startsWith("https:/")) {
-            return true;
-        }
-        try {
-            if (outputPath.startsWith("file:/") && Files.exists(Paths.get(new URI(outputPath)))) {
-                return true;
-            }
-        }
-        catch (URISyntaxException ignored) {
-            // Must be a local file
-        }
-        return Files.exists(Paths.get(outputPath));
     }
 
 

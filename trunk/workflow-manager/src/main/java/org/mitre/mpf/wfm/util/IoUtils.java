@@ -40,9 +40,13 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
 
 @Component(IoUtils.REF)
 public class IoUtils {
@@ -253,6 +257,46 @@ public class IoUtils {
             closeable.close();
         }
         catch (IOException ignored) {
+        }
+    }
+
+
+    public static Optional<Path> toLocalPath(String pathOrUri) {
+        if (pathOrUri == null) {
+            return Optional.empty();
+        }
+        try {
+            URI uri = new URI(pathOrUri);
+            String scheme = uri.getScheme();
+            if (scheme == null) {
+                return Optional.of(Paths.get(pathOrUri));
+            }
+            if ("file".equalsIgnoreCase(scheme)) {
+                return Optional.of(Paths.get(uri));
+            }
+            return Optional.empty();
+        }
+        catch (URISyntaxException ignored) {
+            return Optional.of(Paths.get(pathOrUri));
+        }
+    }
+
+
+    public static URL toUrl(String pathOrUri) {
+        MalformedURLException suppressed;
+        try {
+            return new URL(pathOrUri);
+        }
+        catch (MalformedURLException e) {
+            suppressed = e;
+        }
+
+        try {
+            return Paths.get(pathOrUri).toUri().toURL();
+        }
+        catch (MalformedURLException e) {
+            e.addSuppressed(suppressed);
+            throw new IllegalArgumentException("pathOrUri", e);
         }
     }
 }

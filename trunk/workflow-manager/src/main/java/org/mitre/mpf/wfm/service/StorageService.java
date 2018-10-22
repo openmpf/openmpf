@@ -37,5 +37,7 @@ public interface StorageService {
 
     public String store(JsonOutputObject outputObject) throws IOException;
 
-    Map<Integer, String> storeArtifacts(ArtifactExtractionRequest request);
+    public Map<Integer, String> storeArtifacts(ArtifactExtractionRequest request);
+
+    public String storeMarkup(String markupUri);
 }

@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -48,6 +49,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -317,5 +319,63 @@ public class TestStorageService {
             assertEquals(expectedPath.toUri().toString(), results.get(frameNumber));
             assertTrue(Files.size(expectedPath) > 0);
         }
+    }
+
+
+    @Test
+    public void canStoreMarkupRemotely() throws IOException, StorageException {
+        setStorageType(StorageBackend.Type.CUSTOM_NGINX);
+
+        String expectedMarkupContent = "This is fake markup.";
+        Path fakeMarkup = _tempFolder.newFile("fake_markup").toPath();
+        Files.write(fakeMarkup, Collections.singletonList(expectedMarkupContent));
+
+        String expectedUploadUri = "http://somehost:1234/markup/0";
+        MutableObject<String> actualMarkupContent = new MutableObject<>();
+        when(_mockStorageBackend.store(any()))
+                .thenAnswer(invocation -> {
+                    try (InputStream is = invocation.getArgumentAt(0, InputStream.class)) {
+                        actualMarkupContent.setValue(IOUtils.toString(is, StandardCharsets.UTF_8));
+                    }
+                    return expectedUploadUri;
+                });
+
+        String actualUploadUri = _storageService.storeMarkup(fakeMarkup.toUri().toString());
+
+        assertEquals(expectedMarkupContent + '\n', actualMarkupContent.getValue());
+        assertEquals(expectedUploadUri, actualUploadUri);
+        assertFalse(Files.exists(fakeMarkup));
+    }
+
+
+    @Test
+    public void canStoreMarkupLocally() throws IOException, StorageException {
+        setStorageType(StorageBackend.Type.NONE);
+        verifyMarkupStoredLocally();
+        verify(_mockStorageBackend, never())
+                .store(any());
+    }
+
+    @Test
+    public void markupStoredLocallyWhenBackendException() throws StorageException, IOException {
+        setStorageType(StorageBackend.Type.CUSTOM_NGINX);
+        doThrow(StorageException.class)
+                .when(_mockStorageBackend).store(any());
+        verifyMarkupStoredLocally();
+    }
+
+
+    private void verifyMarkupStoredLocally() throws IOException {
+        String expectedMarkupContent = "This is fake markup.";
+        Path fakeMarkup = _tempFolder.newFile("fake_markup").toPath();
+        Files.write(fakeMarkup, Collections.singletonList(expectedMarkupContent));
+
+        String storedLocation = _storageService.storeMarkup(fakeMarkup.toUri().toString());
+
+        assertEquals(fakeMarkup.toUri().toString(), storedLocation);
+
+        String actualContent = String.join("", Files.readAllLines(fakeMarkup));
+        assertEquals(expectedMarkupContent, actualContent);
+
     }
 }

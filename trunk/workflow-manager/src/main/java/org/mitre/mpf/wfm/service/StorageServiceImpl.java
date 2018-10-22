@@ -48,7 +48,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.SynchronousQueue;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toCollection;
@@ -118,6 +119,30 @@ public class StorageServiceImpl implements StorageService {
         File outputFile = _propertiesUtil.createDetectionOutputObjectFile(outputObject.getJobId());
         _objectMapper.writeValue(outputFile, outputObject);
         return outputFile.getAbsoluteFile().toURI().toString();
+    }
+
+
+    @Override
+    public String storeMarkup(String markupUri) {
+        StorageBackend storageBackend = getStorageBackend();
+        if (storageBackend == null) {
+            return markupUri;
+        }
+
+        Path markupPath = Paths.get(URI.create(markupUri));
+        try {
+            String newLocation;
+            try (InputStream is = Files.newInputStream(markupPath)) {
+                newLocation = storageBackend.store(is);
+            }
+            Files.delete(markupPath);
+            return newLocation;
+        }
+        catch (IOException | StorageException e)  {
+            log.warn(String.format("Failed to upload markup at \"%s\". It will remain stored locally.", markupUri),
+                     e);
+            return markupUri;
+        }
     }
 
 

@@ -41,5 +41,4 @@ public interface StorageBackend {
         NONE,
         CUSTOM_NGINX
     }
-
 }

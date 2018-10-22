@@ -165,10 +165,10 @@ public class CustomNginxStorageBackend implements StorageBackend {
         }
     }
 
-    private static void unwrapAndThrow(CompletionException executionException, String message) throws StorageException {
-        Throwable uploadError = executionException.getCause();
+    private static void unwrapAndThrow(CompletionException completionException, String message) throws StorageException {
+        Throwable uploadError = completionException.getCause();
         if (uploadError == null) {
-            throw new RuntimeException(message, executionException);
+            throw new RuntimeException(message, completionException);
         }
 
         try {
@@ -192,11 +192,10 @@ public class CustomNginxStorageBackend implements StorageBackend {
         HttpEntity fileUploadEntity = MultipartEntityBuilder.create()
                 .addBinaryBody("file", content, ContentType.DEFAULT_BINARY, "part_" + partNumber)
                 .build();
-
         HttpPost post = new HttpPost(getSendPartUri(uploadId, partNumber));
         post.setEntity(fileUploadEntity);
-        try (HttpResponseWrapper response = client.execute(post)) {
 
+        try (HttpResponseWrapper response = client.execute(post)) {
             Header eTagHeader = response.getFirstHeader("ETag");
             if (eTagHeader == null) {
                 throw new StorageException(String.format(
@@ -423,7 +422,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
         private HttpResponseWrapper tryExecute(HttpUriRequest request) throws IOException {
             HttpResponseWrapper response = new HttpResponseWrapper(_client.execute(request));
             StatusLine status = response.getStatusLine();
-            if (status.getStatusCode() > 199 && status.getStatusCode() < 299) {
+            if (status.getStatusCode() > 199 && status.getStatusCode() < 300) {
                 return response;
             }
             response.close();
@@ -457,7 +456,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
                 IoUtils.closeQuietly(entity.getContent());
             }
             catch (UnsupportedOperationException ignored) {
-                // Can be thrown be entity.getContent(
+                // Can be thrown by entity.getContent()
             }
             catch (IOException e) {
                 log.warn("Ignored an error occurred while trying to close an HTTP response.", e);

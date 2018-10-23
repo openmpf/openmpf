@@ -175,7 +175,12 @@ public class IoUtils {
                 if (url != null) {
                     return url.toURI();
                 } else {
-                    throw new WfmProcessingException(String.format("Resource not found when converting %s to URI", path));
+                    file = new File("/opt/mpf/share" + path);
+                    if (file.exists()) {
+                        return file.getAbsoluteFile().toURI();
+                    } else {
+                      throw new WfmProcessingException(String.format("Resource not found when converting %s to URI", path));
+                    }
                 }
             } catch (URISyntaxException use) {
                 throw new WfmProcessingException

@@ -353,6 +353,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			String outputLocation = storageService.store(jsonOutputObject);
 			jobRequest.setOutputObjectPath(outputLocation);
 			jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
+			checkErrorMessages(jsonOutputObject, jobStatus);
 			jobRequestDao.persist(jobRequest);
 		} catch(IOException | WfmProcessingException wpe) {
 			log.error("Failed to create the JSON detection output object for '{}' due to an exception.", jobId, wpe);
@@ -362,6 +363,19 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			jmsUtils.destroyCancellationRoutes(jobId);
 		} catch (Exception exception) {
 			log.warn("Failed to destroy the cancellation routes associated with {}. If this job is resubmitted, it will likely not complete again!", jobId, exception);
+		}
+	}
+
+	private static void checkErrorMessages(JsonOutputObject outputObject, Mutable<BatchJobStatusType> jobStatus) {
+	    if (jobStatus.getValue() == BatchJobStatusType.COMPLETE_WITH_ERRORS) {
+	    	return;
+	    }
+		if (!outputObject.getJobErrors().isEmpty()) {
+			jobStatus.setValue(BatchJobStatusType.COMPLETE_WITH_ERRORS);
+			return;
+		}
+		if (!outputObject.getJobWarnings().isEmpty()) {
+			jobStatus.setValue(BatchJobStatusType.COMPLETE_WITH_WARNINGS);
 		}
 	}
 

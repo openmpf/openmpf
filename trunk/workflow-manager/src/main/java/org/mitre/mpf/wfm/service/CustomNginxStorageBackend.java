@@ -124,7 +124,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
             return uploadId;
         }
         catch (IOException e) {
-            throw new StorageException("Upload init HTTP request failed.", e);
+            throw new StorageException("Upload init HTTP request failed due to: " + e, e);
         }
     }
 
@@ -135,7 +135,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
                     .build();
         }
         catch (URISyntaxException e) {
-            throw new StorageException("An error occurred while trying to build the init upload URI.", e);
+            throw new StorageException("An error occurred while trying to build the init upload URI: " + e, e);
         }
     }
 
@@ -159,29 +159,31 @@ public class CustomNginxStorageBackend implements StorageBackend {
                     .collect(toList());
         }
         catch (CompletionException e) {
-            unwrapAndThrow(e, "An error occurred while sending content for upload id: " + uploadId);
+            unwrapAndThrow(e, String.format("An error occurred while sending content for upload id \"%s\": ",
+                                            uploadId));
             // Unreachable
             return null;
         }
     }
 
-    private static void unwrapAndThrow(CompletionException completionException, String message) throws StorageException {
+    private static void unwrapAndThrow(CompletionException completionException, String message)
+            throws StorageException {
         Throwable uploadError = completionException.getCause();
         if (uploadError == null) {
-            throw new RuntimeException(message, completionException);
+            throw new RuntimeException(message + completionException, completionException);
         }
 
         try {
             throw uploadError;
         }
         catch (IOException | IllegalStateException e) {
-            throw new StorageException(message, e);
+            throw new StorageException(message + e, e);
         }
         catch (StorageException | Error | RuntimeException e) {
             throw e;
         }
         catch (Throwable e) {
-            throw new RuntimeException(message, e);
+            throw new RuntimeException(message + e, e);
         }
     }
 
@@ -206,8 +208,8 @@ public class CustomNginxStorageBackend implements StorageBackend {
         }
         catch (IOException e) {
             throw new StorageException(String.format(
-                    "An error occurred while trying to upload part number %s for upload id \"%s\"",
-                    partNumber, uploadId), e);
+                    "An error occurred while trying to upload part number %s for upload id \"%s\": %s",
+                    partNumber, uploadId, e), e);
         }
     }
 
@@ -221,8 +223,8 @@ public class CustomNginxStorageBackend implements StorageBackend {
         }
         catch (URISyntaxException e) {
             throw new StorageException(String.format(
-                    "An error occurred while trying to build the URI to send part number %s for upload id \"%s\"",
-                    partNumber, uploadId), e);
+                    "An error occurred while trying to build the URI to send part number %s for upload id \"%s\": %s",
+                    partNumber, uploadId, e), e);
         }
     }
 
@@ -247,13 +249,14 @@ public class CustomNginxStorageBackend implements StorageBackend {
                     .build();
         }
         catch (IOException e) {
-            throw new StorageException(
-                    "An error occurred while trying to send the complete upload HTTP request for upload id: "
-                            + uploadId, e);
+            throw new StorageException(String.format(
+                    "An error occurred while trying to send the complete upload HTTP request for upload id \"%s\": %s",
+                    uploadId, e), e);
         }
         catch (URISyntaxException e) {
-            throw new StorageException(
-                    "An error occurred while trying to build the retrieval URI for upload id: " + uploadId, e);
+            throw new StorageException(String.format(
+                    "An error occurred while trying to build the retrieval URI for upload id \"%s\": %s",
+                    uploadId, e), e);
         }
     }
 
@@ -285,10 +288,9 @@ public class CustomNginxStorageBackend implements StorageBackend {
                     .build();
         }
         catch (URISyntaxException e) {
-            throw new StorageException(
-                    "An error occurred while trying to create the complete upload URI for upload id: " + uploadId,
-                    e);
-
+            throw new StorageException(String.format(
+                    "An error occurred while trying to create the complete upload URI for upload id \"%s\": %s",
+                    uploadId, e), e);
         }
     }
 
@@ -306,7 +308,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
             return new PipeStream(16384, out -> _objectMapper.writeValue(out, object));
         }
         catch (IOException e) {
-            throw new StorageException("An error occurred while trying to convert object to JSON.", e);
+            throw new StorageException("An error occurred while trying to convert object to JSON: " + e, e);
         }
     }
 
@@ -332,8 +334,8 @@ public class CustomNginxStorageBackend implements StorageBackend {
             }
             catch (IOException e) {
                 throw new StorageException(String.format(
-                        "An error occurred while trying to get the data to upload for part number %s for upload id \"%s\"",
-                        _partCount, _uploadId), e);
+                        "An error occurred while trying to get the data to upload for part number %s for upload id \"%s\": %s",
+                        _partCount, _uploadId, e), e);
             }
 
             if (numRead < 1) {

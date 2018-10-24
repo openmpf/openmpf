@@ -100,18 +100,31 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public String store(JsonOutputObject outputObject) throws IOException {
-        StorageBackend storageBackend = getStorageBackend();
-        if (storageBackend != null) {
-            try {
-                return storageBackend.storeAsJson(outputObject);
-            }
-            catch (StorageException e) {
-                log.warn(String.format(
-                        "Failed to store output object for job id %s. It will be stored locally instead.",
-                        outputObject.getJobId()), e);
-            }
+        StorageBackend.Type httpStorageType = _propertiesUtil.getHttpObjectStorageType();
+        if (httpStorageType == StorageBackend.Type.NONE) {
+            return storeLocally(outputObject);
         }
-        return storeLocally(outputObject);
+
+        StorageBackend storageBackend = _backends.get(httpStorageType);
+        if (storageBackend == null) {
+            log.warn("Unknown storage type: {}. Objects will be stored locally.", httpStorageType);
+            outputObject.getJobWarnings().add(
+                    "This output object was stored locally because no storage backend was configured for storage type: "
+                            + httpStorageType);
+            return storeLocally(outputObject);
+        }
+
+        try {
+            return storageBackend.storeAsJson(outputObject);
+        }
+        catch (StorageException e) {
+            log.warn(String.format(
+                    "Failed to store output object for job id %s. It will be stored locally instead.",
+                    outputObject.getJobId()), e);
+            outputObject.getJobWarnings().add(
+                    "This output object was stored locally because storing it remotely failed due to: " + e);
+            return storeLocally(outputObject);
+        }
     }
 
 

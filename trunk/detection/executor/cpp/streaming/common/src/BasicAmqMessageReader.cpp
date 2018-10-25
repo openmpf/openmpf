@@ -46,7 +46,6 @@ BasicAmqMessageReader::BasicAmqMessageReader(const JobSettings &job_settings,
         , session_(connection_->createSession())
         , frame_ready_queue_(session_->createQueue(job_settings.frame_ready_queue))
         , segment_ready_consumer_(CreateConsumer(job_settings.segment_ready_queue, *session_))
-        // , frame_ready_consumer_(CreateConsumer(job_settings.frame_ready_queue, *session_))
         , release_frame_consumer_(CreateConsumer(job_settings.release_frame_queue, *session_)) {
 
     connection_->start();
@@ -87,10 +86,26 @@ MPFFrameReadyMessage BasicAmqMessageReader::GetFrameReadyMsg() {
 
 
 MPFReleaseFrameMessage BasicAmqMessageReader::GetReleaseFrameMsg() {
-    std::unique_ptr<cms::Message> msg(frame_ready_consumer_->receive());
+    std::unique_ptr<cms::Message> msg(release_frame_consumer_->receive());
     return MPFReleaseFrameMessage(
         msg->getStringProperty("JOB_NAME"),
         msg->getIntProperty("JOB_ID"),
         msg->getIntProperty("FRAME_INDEX"),
         msg->getIntProperty("FRAME_OFFSET"));
+}
+
+
+MPFReleaseFrameMessage BasicAmqMessageReader::GetReleaseFrameMsgNoWait() {
+    std::unique_ptr<cms::Message> msg(release_frame_consumer_->receiveNoWait());
+    if (msg.get() != NULL) {
+        return MPFReleaseFrameMessage(
+            msg->getStringProperty("JOB_NAME"),
+            msg->getIntProperty("JOB_ID"),
+            msg->getIntProperty("FRAME_INDEX"),
+            msg->getIntProperty("FRAME_OFFSET"));
+    }
+    else {
+        std::string err_str = "No Release Frame Message available";
+        throw std::runtime_error(err_str);
+    }
 }

@@ -140,6 +140,20 @@ void OcvFrameReader::Run() {
 
         // Send the frame ready message.
         msg_sender_.SendFrameReady(segment_number, frame_index, GetTimestampMillis());
+
+        // If we have reached capacity in the frame store, then we
+        // need to start deleting frames from the frame store.
+        if (frame_store_.AtCapacity()) {
+            MPFReleaseFrameMessage release_frame_msg;
+            bool got_msg;
+            while ((!std_in_watcher->QuitReceived()) &&
+                   (!got_msg = msg_reader_.GetReleaseFrameMsgNoWait(release_frame_msg))) {
+                continue;
+            }
+            if (got_msg) {
+                frame_store_.DeleteFrame(release_frame_msg.frame_index);
+            }
+        }
     }
 
 }

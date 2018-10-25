@@ -43,36 +43,38 @@
 
 namespace MPF {
 
-    // TODO: Combine with AMQMessenger when adding support for multistage pipelines.
-    class BasicAmqMessageReader {
+class BasicAmqMessageReader {
 
-    public:
-        BasicAmqMessageReader(const MPF::COMPONENT::JobSettings &job_settings,
-                              std::shared_ptr<cms::Connection> connection_ptr);
+  public:
 
-        BasicAmqMessageReader &CreateFrameReadyConsumer(const long segment_number);
-        MPFSegmentReadyMessage GetSegmentReadyMsg();
-        MPFFrameReadyMessage GetFrameReadyMsg();
-        MPFReleaseFrameMessage GetReleaseFrameMsg();
+    BasicAmqMessageReader(const MPF::COMPONENT::JobSettings &job_settings,
+                          std::shared_ptr<cms::Connection> connection_ptr);
 
-    private:
-        const long job_id_;
-        const int segment_size_;
+    BasicAmqMessageReader &CreateFrameReadyConsumer(const long segment_number);
+    MPFSegmentReadyMessage GetSegmentReadyMsg();
+    MPFFrameReadyMessage GetFrameReadyMsg();
+    MPFReleaseFrameMessage GetReleaseFrameMsg();
+    bool GetReleaseFrameMsgNoWait(MPFReleaseFrameMessage &msg);
 
-        std::shared_ptr<cms::Connection> connection_;
-        std::unique_ptr<cms::Session> session_;
-        // We need to create a new consumer for each segment, but the
-        // queue can be created ahead of time.
-        std::unique_ptr<cms::Queue> frame_ready_queue_;
+  private:
 
-        std::unique_ptr<cms::MessageConsumer> segment_ready_consumer_;
-        std::unique_ptr<cms::MessageConsumer> frame_ready_consumer_;
-        std::unique_ptr<cms::MessageConsumer> release_frame_consumer_;
+    const long job_id_;
+    const int segment_size_;
 
-        std::unique_ptr<cms::MessageConsumer>
-        CreateConsumer(const std::string &queue_name, cms::Session &session);
+    std::shared_ptr<cms::Connection> connection_;
+    std::unique_ptr<cms::Session> session_;
+    // We need to create a new consumer for each segment, but the
+    // queue can be created ahead of time.
+    std::unique_ptr<cms::Queue> frame_ready_queue_;
 
-    };
+    std::unique_ptr<cms::MessageConsumer> segment_ready_consumer_;
+    std::unique_ptr<cms::MessageConsumer> frame_ready_consumer_;
+    std::unique_ptr<cms::MessageConsumer> release_frame_consumer_;
+
+    std::unique_ptr<cms::MessageConsumer>
+    CreateConsumer(const std::string &queue_name, cms::Session &session);
+
+};
 }
 
 #endif //MPF_BASICAMQMESSAGESENDER_H

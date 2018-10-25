@@ -55,6 +55,8 @@ class MPF::FrameStoreImpl {
 
 MPFFrameStore::MPFFrameStore(const JobSettings &settings)
         : frame_byte_size_(0)
+        , capacity_(settings.frame_store_capacity)
+        , frames_in_store_(0)
         , impl_ptr_(new FrameStoreImpl(settings))
         , key_prefix_("job" + std::to_string(settings.job_id) + ":frame:") {}
 
@@ -68,6 +70,7 @@ void MPFFrameStore::StoreFrame(const cv::Mat &frame, const size_t frame_index) {
     std::string frame_key = CreateKey(frame_index);
     redis_reply_ptr reply{static_cast<redisReply *>(redisCommand(impl_ptr_->Get(), "SET key:%s %b", frame_key.c_str(), frame.data, frame_byte_size_)), freeReplyObject};
     impl_ptr_->CheckReply(reply, std::string("SET key:" + frame_key));
+    ++frames_in_store_;
 }
 
 
@@ -105,6 +108,7 @@ void MPFFrameStore::DeleteFrame(const size_t frame_index) {
     redis_reply_ptr reply{static_cast<redisReply *>(redisCommand(impl_ptr_->Get(), "DEL %s", frame_key.c_str())), freeReplyObject};
     // Check for errors
     impl_ptr_->CheckReply(reply, std::string("DEL key:" + frame_key));
+    --frames_in_store_;
 
 }
 

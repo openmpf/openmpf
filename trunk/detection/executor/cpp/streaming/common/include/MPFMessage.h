@@ -149,6 +149,10 @@ struct MPFReleaseFrameMessage : MPFMessage {
 
     long frame_index;
     long frame_offset;
+    MPFReleaseFrameMessage() : MPFMessage(0, 0)
+                             , frame_index(0)
+                             , frame_offset(0) {}
+
     MPFReleaseFrameMessage(const std::string &job_name,
                            const int job_number,
                            const long frame_index,
@@ -156,6 +160,7 @@ struct MPFReleaseFrameMessage : MPFMessage {
             : MPFMessage(job_name, job_number)
             , frame_index(frame_index)
             , frame_offset(offset) {}
+
     ~MPFReleaseFrameMessage() = default;
 };
 

@@ -54,9 +54,12 @@ class MPFFrameStore {
     // Deletes the copy of the frame data this frame index.
     void DeleteFrame(const size_t frame_index);
 
+    bool AtCapacity() { return frames_in_store_ >= capacity_; }
+
   private:
     size_t frame_byte_size_;
-
+    int capacity_;
+    int frames_in_store_;
     MPF::FrameStoreImpl *impl_ptr_;
     std::string key_prefix_;
     std::string CreateKey(const size_t index);

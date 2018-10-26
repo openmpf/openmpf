@@ -33,8 +33,6 @@
 #include "ExecutorErrors.h"
 
 
-//using org::mitre::mpf::wfm::buffers::StreamingDetectionResponse;
-
 using namespace MPF;
 using namespace COMPONENT;
 
@@ -67,20 +65,21 @@ BasicAmqMessageReader &BasicAmqMessageReader::CreateFrameReadyConsumer(const lon
 MPFSegmentReadyMessage BasicAmqMessageReader::GetSegmentReadyMsg() {
     std::unique_ptr<cms::Message> msg(segment_ready_consumer_->receive());
     return MPFSegmentReadyMessage(
-        msg->getStringProperty("JOB_NAME"),
         msg->getIntProperty("JOB_ID"),
-        msg->getIntProperty("SEGMENT_NUMBER"));
+        msg->getIntProperty("SEGMENT_NUMBER"),
+        msg->getIntProperty("FRAME_WIDTH"),
+        msg->getIntProperty("FRAME_HEIGHT"),
+        msg->getIntProperty("FRAME_DATA_TYPE"),
+        msg->getIntProperty("FRAME_BYTES_PER_PIXEL"));
 }
 
 
 MPFFrameReadyMessage BasicAmqMessageReader::GetFrameReadyMsg() {
     std::unique_ptr<cms::Message> msg(frame_ready_consumer_->receive());
     return MPFFrameReadyMessage(
-        msg->getStringProperty("JOB_NAME"),
         msg->getIntProperty("JOB_ID"),
         msg->getIntProperty("SEGMENT_NUMBER"),
         msg->getIntProperty("FRAME_INDEX"),
-        msg->getLongProperty("FRAME_OFFSET"),
         msg->getLongProperty("FRAME_TIMESTAMP"));
 }
 
@@ -88,24 +87,19 @@ MPFFrameReadyMessage BasicAmqMessageReader::GetFrameReadyMsg() {
 MPFReleaseFrameMessage BasicAmqMessageReader::GetReleaseFrameMsg() {
     std::unique_ptr<cms::Message> msg(release_frame_consumer_->receive());
     return MPFReleaseFrameMessage(
-        msg->getStringProperty("JOB_NAME"),
         msg->getIntProperty("JOB_ID"),
-        msg->getIntProperty("FRAME_INDEX"),
-        msg->getIntProperty("FRAME_OFFSET"));
+        msg->getIntProperty("FRAME_INDEX"));
 }
 
 
-MPFReleaseFrameMessage BasicAmqMessageReader::GetReleaseFrameMsgNoWait() {
-    std::unique_ptr<cms::Message> msg(release_frame_consumer_->receiveNoWait());
-    if (msg.get() != NULL) {
-        return MPFReleaseFrameMessage(
-            msg->getStringProperty("JOB_NAME"),
-            msg->getIntProperty("JOB_ID"),
-            msg->getIntProperty("FRAME_INDEX"),
-            msg->getIntProperty("FRAME_OFFSET"));
+bool BasicAmqMessageReader::GetReleaseFrameMsgNoWait(MPFReleaseFrameMessage &msg) {
+    std::unique_ptr<cms::Message> tmp_msg(release_frame_consumer_->receiveNoWait());
+    if (tmp_msg.get() != NULL) {
+        msg.job_id = tmp_msg->getIntProperty("JOB_ID");
+        msg.frame_index = tmp_msg->getIntProperty("FRAME_INDEX");
+        return true;
     }
     else {
-        std::string err_str = "No Release Frame Message available";
-        throw std::runtime_error(err_str);
+        return false;
     }
 }

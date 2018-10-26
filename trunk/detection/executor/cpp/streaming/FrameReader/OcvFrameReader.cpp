@@ -147,7 +147,7 @@ void OcvFrameReader::Run() {
             MPFReleaseFrameMessage release_frame_msg;
             bool got_msg;
             while ((!std_in_watcher->QuitReceived()) &&
-                   (!got_msg = msg_reader_.GetReleaseFrameMsgNoWait(release_frame_msg))) {
+                   (!(got_msg = msg_reader_.GetReleaseFrameMsgNoWait(release_frame_msg)))) {
                 continue;
             }
             if (got_msg) {

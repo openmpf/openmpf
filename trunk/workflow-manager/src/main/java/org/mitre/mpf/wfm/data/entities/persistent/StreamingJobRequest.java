@@ -95,7 +95,7 @@ public class StreamingJobRequest {
 	public byte[] getInputObject() { return inputObject; }
 	public void setInputObject(byte[] inputObject) { this.inputObject = inputObject; }
 
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String outputObjectDirectory;
 	public String getOutputObjectDirectory() { return outputObjectDirectory; }
 	public void setOutputObjectDirectory(String outputObjectDirectory) { this.outputObjectDirectory = outputObjectDirectory; }
@@ -110,17 +110,17 @@ public class StreamingJobRequest {
 	public String getExternalId() { return externalId; }
 	public void setExternalId(String externalId) { this.externalId = externalId; }
 
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String streamUri;
 	public String getStreamUri() { return streamUri; }
 	public void setStreamUri(String streamUri) { this.streamUri = streamUri; }
 
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String healthReportCallbackUri;
 	public String getHealthReportCallbackUri() { return healthReportCallbackUri; }
 	public void setHealthReportCallbackUri(String healthReportCallbackUri) { this.healthReportCallbackUri = healthReportCallbackUri; }
 
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String summaryReportCallbackUri;
 	public String getSummaryReportCallbackUri() { return summaryReportCallbackUri; }
 	public void setSummaryReportCallbackUri(String summaryReportCallbackUri) { this.summaryReportCallbackUri = summaryReportCallbackUri; }

@@ -74,21 +74,26 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
 		MarkupResult markupResult = new MarkupResult();
 		markupResult.setTaskIndex(markupResponse.getTaskIndex());
 		markupResult.setActionIndex(markupResponse.getActionIndex());
-		markupResult.setMediaId((int)(markupResponse.getMediaId()));
+		markupResult.setMediaId(markupResponse.getMediaId());
 		markupResult.setMediaIndex(markupResponse.getMediaIndex());
 		markupResult.setJobId(jobId);
 		markupResult.setMarkupStatus(markupResponse.getHasError() ? MarkupStatus.FAILED : MarkupStatus.COMPLETE);
-		markupResult.setMarkupUri(storageService.storeMarkup(markupResponse.getOutputFileUri()));
+		markupResult.setMarkupUri(markupResponse.getOutputFileUri());
 		markupResult.setMessage(markupResponse.hasErrorMessage() ? markupResponse.getErrorMessage() : null);
 
 		TransientJob transientJob = redis.getJob(jobId);
-		TransientMedia transientMedia = transientJob.getMedia().get((int)(markupResponse.getMediaIndex()));
+		TransientMedia transientMedia = transientJob.getMedia().get(markupResponse.getMediaIndex());
 		markupResult.setPipeline(transientJob.getPipeline().getName());
 		markupResult.setSourceUri(transientMedia.getUri());
+
+		storageService.storeMarkup(markupResult);
 		markupResultDao.persist(markupResult);
 
-		if (markupResponse.getHasError()) {
+		if (markupResult.getMarkupStatus() == MarkupStatus.FAILED) {
 			redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+		}
+		if (markupResult.getMarkupStatus() == MarkupStatus.COMPLETE_WITH_WARNING) {
+			redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_WARNINGS);
 		}
 		return null;
 	}

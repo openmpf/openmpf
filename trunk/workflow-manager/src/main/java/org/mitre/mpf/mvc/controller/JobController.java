@@ -55,15 +55,14 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
 
@@ -266,30 +265,19 @@ public class JobController {
     @ResponseBody
     public ResponseEntity<?> getSerializedDetectionOutputRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) throws IOException {
         //return 200 for successful GET and object; 404 for bad id
-        try {
-            return getJobOutputObjectAsStream(jobId)
-                    .map(InputStreamResource::new)
-                    .map(ResponseEntity::ok)
-                    .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
-        }
-        catch (NoSuchFileException e) {
-            return new ResponseEntity<>(String.format("The output object for job %s does not exist", jobId),
-                                        HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    private Optional<InputStream> getJobOutputObjectAsStream(long jobId) throws IOException {
         JobRequest jobRequest = mpfService.getJobRequest(jobId);
         if (jobRequest == null) {
-            return Optional.empty();
+            return ResponseEntity.notFound().build();
         }
         try {
-            return Optional.of(new URL(jobRequest.getOutputObjectPath()).openStream());
+            InputStreamResource inputStreamResource
+                    = new InputStreamResource(IoUtils.openStream(jobRequest.getOutputObjectPath()));
+            return ResponseEntity.ok(inputStreamResource);
         }
-        catch (MalformedURLException ignored) {
-            // Must be a local file
+        catch (NoSuchFileException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(String.format("The output object for job %s does not exist", jobId));
         }
-        return Optional.of(Files.newInputStream(Paths.get(jobRequest.getOutputObjectPath())));
     }
 
 

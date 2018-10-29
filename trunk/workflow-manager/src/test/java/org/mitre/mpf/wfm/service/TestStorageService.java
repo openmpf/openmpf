@@ -40,6 +40,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.JniLoader;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -340,10 +342,14 @@ public class TestStorageService {
                     return expectedUploadUri;
                 });
 
-        String actualUploadUri = _storageService.storeMarkup(fakeMarkup.toUri().toString());
+        MarkupResult markupResult = new MarkupResult();
+        markupResult.setMarkupStatus(MarkupStatus.COMPLETE);
+        markupResult.setMarkupUri(fakeMarkup.toUri().toString());
+
+        _storageService.storeMarkup(markupResult);
 
         assertEquals(expectedMarkupContent + '\n', actualMarkupContent.getValue());
-        assertEquals(expectedUploadUri, actualUploadUri);
+        assertEquals(expectedUploadUri, markupResult.getMarkupUri());
         assertFalse(Files.exists(fakeMarkup));
     }
 
@@ -351,31 +357,42 @@ public class TestStorageService {
     @Test
     public void canStoreMarkupLocally() throws IOException, StorageException {
         setStorageType(StorageBackend.Type.NONE);
-        verifyMarkupStoredLocally();
+        MarkupResult markupResult = verifyMarkupStoredLocally();
         verify(_mockStorageBackend, never())
                 .store(any());
+        assertEquals(MarkupStatus.COMPLETE, markupResult.getMarkupStatus());
+        assertTrue(markupResult.getMessage() == null || markupResult.getMessage().isEmpty());
     }
+
 
     @Test
     public void markupStoredLocallyWhenBackendException() throws StorageException, IOException {
         setStorageType(StorageBackend.Type.CUSTOM_NGINX);
         doThrow(StorageException.class)
                 .when(_mockStorageBackend).store(any());
-        verifyMarkupStoredLocally();
+        MarkupResult markupResult = verifyMarkupStoredLocally();
+        assertEquals(MarkupStatus.COMPLETE_WITH_WARNING, markupResult.getMarkupStatus());
+        assertTrue(markupResult.getMessage() != null && !markupResult.getMessage().isEmpty());
     }
 
 
-    private void verifyMarkupStoredLocally() throws IOException {
+    private MarkupResult verifyMarkupStoredLocally() throws IOException {
         String expectedMarkupContent = "This is fake markup.";
         Path fakeMarkup = _tempFolder.newFile("fake_markup").toPath();
         Files.write(fakeMarkup, Collections.singletonList(expectedMarkupContent));
 
-        String storedLocation = _storageService.storeMarkup(fakeMarkup.toUri().toString());
+        MarkupResult markupResult = new MarkupResult();
+        markupResult.setMarkupStatus(MarkupStatus.COMPLETE);
+        markupResult.setMarkupUri(fakeMarkup.toUri().toString());
 
-        assertEquals(fakeMarkup.toUri().toString(), storedLocation);
+        _storageService.storeMarkup(markupResult);
+
+        assertEquals(fakeMarkup.toUri().toString(), markupResult.getMarkupUri());
 
         String actualContent = String.join("", Files.readAllLines(fakeMarkup));
         assertEquals(expectedMarkupContent, actualContent);
+        assertTrue(Files.exists(fakeMarkup));
 
+        return markupResult;
     }
 }

@@ -44,6 +44,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -298,5 +299,13 @@ public class IoUtils {
             e.addSuppressed(suppressed);
             throw new IllegalArgumentException("pathOrUri", e);
         }
+    }
+
+    public static InputStream openStream(String pathOrUri) throws IOException {
+        Optional<Path> localPath = toLocalPath(pathOrUri);
+        if (localPath.isPresent()) {
+            return Files.newInputStream(localPath.get());
+        }
+        return new URL(pathOrUri).openStream();
     }
 }

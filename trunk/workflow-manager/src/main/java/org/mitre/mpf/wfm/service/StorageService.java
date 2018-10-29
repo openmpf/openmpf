@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.service;
 
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 
 import java.io.IOException;
 import java.util.Map;
@@ -39,5 +40,5 @@ public interface StorageService {
 
     public Map<Integer, String> storeArtifacts(ArtifactExtractionRequest request);
 
-    public String storeMarkup(String markupUri);
+    public void storeMarkup(MarkupResult markupResult);
 }

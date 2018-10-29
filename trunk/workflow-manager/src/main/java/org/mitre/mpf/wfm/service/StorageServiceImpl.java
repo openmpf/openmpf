@@ -32,6 +32,9 @@ import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessorImpl;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.enums.MarkupStatus;
+import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
@@ -43,6 +46,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -109,8 +113,8 @@ public class StorageServiceImpl implements StorageService {
         if (storageBackend == null) {
             log.warn("Unknown storage type: {}. Objects will be stored locally.", httpStorageType);
             outputObject.getJobWarnings().add(
-                    "This output object was stored locally because no storage backend was configured for storage type: "
-                            + httpStorageType);
+                "This output object was stored locally because no storage backend was configured for storage type: "
+                        + httpStorageType);
             return storeLocally(outputObject);
         }
 
@@ -119,7 +123,7 @@ public class StorageServiceImpl implements StorageService {
         }
         catch (StorageException e) {
             log.warn(String.format(
-                    "Failed to store output object for job id %s. It will be stored locally instead.",
+                    "Failed to remotely store output object for job id %s. It will be stored locally instead.",
                     outputObject.getJobId()), e);
             outputObject.getJobWarnings().add(
                     "This output object was stored locally because storing it remotely failed due to: " + e);
@@ -136,26 +140,58 @@ public class StorageServiceImpl implements StorageService {
 
 
     @Override
-    public String storeMarkup(String markupUri) {
-        StorageBackend storageBackend = getStorageBackend();
-        if (storageBackend == null) {
-            return markupUri;
+    public void storeMarkup(MarkupResult markupResult) {
+        if (markupResult.getMarkupStatus() != MarkupStatus.COMPLETE) {
+            return;
         }
 
-        Path markupPath = Paths.get(URI.create(markupUri));
+        StorageBackend.Type httpStorageType = _propertiesUtil.getHttpObjectStorageType();
+        if (httpStorageType == StorageBackend.Type.NONE) {
+            return;
+        }
+
+        StorageBackend storageBackend = _backends.get(httpStorageType);
+        if (storageBackend == null) {
+            log.warn("Unknown storage type: {}. Objects will be stored locally.", httpStorageType);
+            addWarning(markupResult,
+                       "Markup was stored locally because no storage backend was configured for storage type: "
+                               + httpStorageType);
+            return;
+        }
+
         try {
-            String newLocation;
-            try (InputStream is = Files.newInputStream(markupPath)) {
-                newLocation = storageBackend.store(is);
+            Path localPath = IoUtils.toLocalPath(markupResult.getMarkupUri())
+                    .orElse(null);
+
+            URL markupUrl = localPath == null
+                    ? new URL(markupResult.getMarkupUri())
+                    : localPath.toUri().toURL();
+
+            try (InputStream is = markupUrl.openStream()) {
+                String newLocation = storageBackend.store(is);
+                markupResult.setMarkupUri(newLocation);
             }
-            Files.delete(markupPath);
-            return newLocation;
+            if (localPath != null) {
+                Files.delete(localPath);
+            }
         }
-        catch (IOException | StorageException e)  {
-            log.warn(String.format("Failed to upload markup at \"%s\". It will remain stored locally.", markupUri),
-                     e);
-            return markupUri;
+        catch (IOException | StorageException e) {
+            log.warn(String.format(
+                    "Failed to remotely store markup for job id %s. It will be stored locally instead.",
+                    markupResult.getJobId()), e);
+            addWarning(markupResult,
+                       "Markup was stored locally because storing it remotely failed due to: " + e);
         }
+    }
+
+
+    private static void addWarning(MarkupResult markupResult, String message) {
+        String existingMessage = markupResult.getMessage();
+        if (existingMessage != null && !existingMessage.isEmpty()) {
+            message = existingMessage + "; " + message;
+        }
+        markupResult.setMessage(message);
+        markupResult.setMarkupStatus(MarkupStatus.COMPLETE_WITH_WARNING);
     }
 
 

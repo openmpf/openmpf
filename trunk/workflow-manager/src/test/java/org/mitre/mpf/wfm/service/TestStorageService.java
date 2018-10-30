@@ -40,6 +40,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
+import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -59,11 +60,14 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
+import static org.mitre.mpf.test.TestUtil.anyNonNull;
 import static org.mockito.Mockito.*;
 
 public class TestStorageService {
 
     private final PropertiesUtil _mockPropertiesUtil = mock(PropertiesUtil.class);
+
+    private final Redis _mockRedis = mock(Redis.class);
 
     private final ObjectMapper _mockObjectMapper = mock(ObjectMapper.class);
 
@@ -85,7 +89,7 @@ public class TestStorageService {
         when(_mockStorageBackend.getType())
                 .thenReturn(StorageBackend.Type.CUSTOM_NGINX);
 
-        _storageService = new StorageServiceImpl(_mockPropertiesUtil, _mockObjectMapper,
+        _storageService = new StorageServiceImpl(_mockPropertiesUtil, _mockRedis, _mockObjectMapper,
                                                  Collections.singletonList(_mockStorageBackend));
     }
 
@@ -94,6 +98,24 @@ public class TestStorageService {
                 .thenReturn(storageType);
     }
 
+
+    @Test(expected = IllegalStateException.class)
+    @SuppressWarnings("ResultOfObjectAllocationIgnored")
+    public void throwsExceptionWhenNotAllStorageTypesConfigured() {
+        new StorageServiceImpl(_mockPropertiesUtil, _mockRedis, _mockObjectMapper, Collections.emptyList());
+    }
+
+
+    @Test(expected = IllegalStateException.class)
+    @SuppressWarnings("ResultOfObjectAllocationIgnored")
+    public void throwsExceptionWhenDuplicateStorageBackends() {
+        StorageBackend mockBadBackend = mock(StorageBackend.class);
+        when(mockBadBackend.getType())
+                .thenReturn(StorageBackend.Type.CUSTOM_NGINX);
+
+        new StorageServiceImpl(_mockPropertiesUtil, _mockRedis, _mockObjectMapper,
+                               Arrays.asList(_mockStorageBackend, mockBadBackend));
+    }
 
     @Test
     public void canStoreOutputObjectRemotely() throws IOException, StorageException {
@@ -110,6 +132,7 @@ public class TestStorageService {
                 .writeValue(any(File.class), any());
 
         assertEquals(expectedUrl, actualUrl);
+        verifyNoRedisWarning();
     }
 
 
@@ -119,6 +142,7 @@ public class TestStorageService {
         verifyOutputObjectStoredLocally();
         verify(_mockStorageBackend, never())
                 .storeAsJson(any());
+        verifyNoRedisWarning();
     }
 
 
@@ -128,6 +152,7 @@ public class TestStorageService {
         doThrow(StorageException.class)
                 .when(_mockStorageBackend).storeAsJson(any());
         verifyOutputObjectStoredLocally();
+        verifyNoRedisWarning();
     }
 
 
@@ -180,6 +205,7 @@ public class TestStorageService {
             expectedSha = DigestUtils.sha256(is);
         }
         assertArrayEquals(expectedSha, actualSha.getValue());
+        verifyNoRedisWarning();
     }
 
 
@@ -189,6 +215,7 @@ public class TestStorageService {
         verifyImageArtifactStoredLocally();
         verify(_mockStorageBackend, never())
                 .store(any());
+        verifyNoRedisWarning();
     }
 
 
@@ -198,6 +225,7 @@ public class TestStorageService {
         doThrow(StorageException.class)
                 .when(_mockStorageBackend).store(any());
         verifyImageArtifactStoredLocally();
+        verifyRedisWarning(434);
     }
 
 
@@ -257,6 +285,8 @@ public class TestStorageService {
         assertArrayEquals(expectedHashes.get(0), actualHashes.get(0));
         assertArrayEquals(expectedHashes.get(5), actualHashes.get(1));
         assertArrayEquals(expectedHashes.get(9), actualHashes.get(2));
+
+        verifyNoRedisWarning();
     }
 
 
@@ -286,6 +316,7 @@ public class TestStorageService {
         verifyVideoArtifactsStoredLocally();
         verify(_mockStorageBackend, never())
                 .store(any());
+        verifyNoRedisWarning();
     }
 
 
@@ -295,6 +326,7 @@ public class TestStorageService {
         doThrow(StorageException.class)
                 .when(_mockStorageBackend).store(any());
         verifyVideoArtifactsStoredLocally();
+        verifyRedisWarning(436);
     }
 
 
@@ -351,6 +383,8 @@ public class TestStorageService {
         assertEquals(expectedMarkupContent + '\n', actualMarkupContent.getValue());
         assertEquals(expectedUploadUri, markupResult.getMarkupUri());
         assertFalse(Files.exists(fakeMarkup));
+
+        verifyNoRedisWarning();
     }
 
 
@@ -358,10 +392,14 @@ public class TestStorageService {
     public void canStoreMarkupLocally() throws IOException, StorageException {
         setStorageType(StorageBackend.Type.NONE);
         MarkupResult markupResult = verifyMarkupStoredLocally();
+
         verify(_mockStorageBackend, never())
                 .store(any());
+
         assertEquals(MarkupStatus.COMPLETE, markupResult.getMarkupStatus());
         assertTrue(markupResult.getMessage() == null || markupResult.getMessage().isEmpty());
+
+        verifyNoRedisWarning();
     }
 
 
@@ -371,8 +409,11 @@ public class TestStorageService {
         doThrow(StorageException.class)
                 .when(_mockStorageBackend).store(any());
         MarkupResult markupResult = verifyMarkupStoredLocally();
+
         assertEquals(MarkupStatus.COMPLETE_WITH_WARNING, markupResult.getMarkupStatus());
         assertTrue(markupResult.getMessage() != null && !markupResult.getMessage().isEmpty());
+
+        verifyRedisWarning(1337);
     }
 
 
@@ -382,6 +423,7 @@ public class TestStorageService {
         Files.write(fakeMarkup, Collections.singletonList(expectedMarkupContent));
 
         MarkupResult markupResult = new MarkupResult();
+        markupResult.setJobId(1337);
         markupResult.setMarkupStatus(MarkupStatus.COMPLETE);
         markupResult.setMarkupUri(fakeMarkup.toUri().toString());
 
@@ -394,5 +436,15 @@ public class TestStorageService {
         assertTrue(Files.exists(fakeMarkup));
 
         return markupResult;
+    }
+
+    private void verifyNoRedisWarning() {
+        verify(_mockRedis, never())
+                .addJobWarning(anyLong(), any());
+    }
+
+    private void verifyRedisWarning(long jobId) {
+        verify(_mockRedis)
+                .addJobWarning(eq(jobId), anyNonNull());
     }
 }

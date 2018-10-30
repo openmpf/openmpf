@@ -213,6 +213,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		if (transientJob.getOverriddenAlgorithmProperties() != null) {
 			jsonOutputObject.getAlgorithmProperties().putAll(transientJob.getOverriddenAlgorithmProperties());
 		}
+		jsonOutputObject.getJobWarnings().addAll(redis.getJobWarnings(jobId));
+		jsonOutputObject.getJobErrors().addAll(redis.getJobErrors(jobId));
 
 		int mediaIndex = 0;
 		for(TransientMedia transientMedia : transientJob.getMedia()) {

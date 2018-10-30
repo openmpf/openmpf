@@ -32,6 +32,7 @@ import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessorImpl;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
+import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.util.IoUtils;
@@ -67,6 +68,8 @@ public class StorageServiceImpl implements StorageService {
 
     private final PropertiesUtil _propertiesUtil;
 
+    private final Redis _redis;
+
     private final ObjectMapper _objectMapper;
 
     private final Map<StorageBackend.Type, StorageBackend> _backends;
@@ -75,9 +78,11 @@ public class StorageServiceImpl implements StorageService {
     @Inject
     StorageServiceImpl(
             PropertiesUtil propertiesUtil,
+            Redis redis,
             ObjectMapper objectMapper,
             Collection<StorageBackend> storageBackends) {
         _propertiesUtil = propertiesUtil;
+        _redis = redis;
         _objectMapper = objectMapper;
 
         _backends = new EnumMap<>(StorageBackend.Type.class);
@@ -88,6 +93,14 @@ public class StorageServiceImpl implements StorageService {
                         "Both %s and %s claim to be the storage service for %s.",
                         prevBackend.getClass(), backend.getClass(), backend.getType()));
             }
+        }
+
+        EnumSet<StorageBackend.Type> unconfiguredBackends = EnumSet.allOf(StorageBackend.Type.class);
+        unconfiguredBackends.remove(StorageBackend.Type.NONE);
+        unconfiguredBackends.removeAll(_backends.keySet());
+        if (!unconfiguredBackends.isEmpty()) {
+            throw new IllegalStateException("The following storage backends were not configured: "
+                                                    + unconfiguredBackends);
         }
     }
 
@@ -104,17 +117,8 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public String store(JsonOutputObject outputObject) throws IOException {
-        StorageBackend.Type httpStorageType = _propertiesUtil.getHttpObjectStorageType();
-        if (httpStorageType == StorageBackend.Type.NONE) {
-            return storeLocally(outputObject);
-        }
-
-        StorageBackend storageBackend = _backends.get(httpStorageType);
+        StorageBackend storageBackend = getStorageBackend();
         if (storageBackend == null) {
-            log.warn("Unknown storage type: {}. Objects will be stored locally.", httpStorageType);
-            outputObject.getJobWarnings().add(
-                "This output object was stored locally because no storage backend was configured for storage type: "
-                        + httpStorageType);
             return storeLocally(outputObject);
         }
 
@@ -144,18 +148,8 @@ public class StorageServiceImpl implements StorageService {
         if (markupResult.getMarkupStatus() != MarkupStatus.COMPLETE) {
             return;
         }
-
-        StorageBackend.Type httpStorageType = _propertiesUtil.getHttpObjectStorageType();
-        if (httpStorageType == StorageBackend.Type.NONE) {
-            return;
-        }
-
-        StorageBackend storageBackend = _backends.get(httpStorageType);
+        StorageBackend storageBackend = getStorageBackend();
         if (storageBackend == null) {
-            log.warn("Unknown storage type: {}. Objects will be stored locally.", httpStorageType);
-            addWarning(markupResult,
-                       "Markup was stored locally because no storage backend was configured for storage type: "
-                               + httpStorageType);
             return;
         }
 
@@ -185,13 +179,14 @@ public class StorageServiceImpl implements StorageService {
     }
 
 
-    private static void addWarning(MarkupResult markupResult, String message) {
+    private void addWarning(MarkupResult markupResult, String message) {
         String existingMessage = markupResult.getMessage();
         if (existingMessage != null && !existingMessage.isEmpty()) {
             message = existingMessage + "; " + message;
         }
         markupResult.setMessage(message);
         markupResult.setMarkupStatus(MarkupStatus.COMPLETE_WITH_WARNING);
+        _redis.addJobWarning(markupResult.getJobId(), message);
     }
 
 
@@ -216,8 +211,10 @@ public class StorageServiceImpl implements StorageService {
                 return storageBackend.store(inputStream);
             }
             catch (StorageException | IOException e) {
-                log.warn(String.format("Failed to store artifact for job id %s. It will be stored locally instead.",
-                                       request.getJobId()), e);
+                log.warn(String.format(
+                        "Failed to remotely store artifact for job id %s. It will be stored locally instead.",
+                        request.getJobId()), e);
+                addArtifactStoredLocallyWarning(request.getJobId(), e);
             }
         }
 
@@ -238,6 +235,12 @@ public class StorageServiceImpl implements StorageService {
         }
     }
 
+    private void addArtifactStoredLocallyWarning(long jobId, Exception ex) {
+        _redis.addJobWarning(
+                jobId,
+                "Artifacts were stored locally because storing them remotely failed due to: " + ex);
+    }
+
 
     private Map<Integer, String> processVideoArtifact(ArtifactExtractionRequest request) {
         SortedSet<Integer> frameNumbers = request.getActionIndexToMediaIndexes()
@@ -254,6 +257,7 @@ public class StorageServiceImpl implements StorageService {
             catch (StorageException | IOException e) {
                 log.warn(String.format("Failed to store artifact for job id %s. It will be stored locally instead.",
                                        request.getJobId()), e);
+                addArtifactStoredLocallyWarning(request.getJobId(), e);
             }
         }
 

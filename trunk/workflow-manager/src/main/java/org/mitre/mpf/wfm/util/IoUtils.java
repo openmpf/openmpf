@@ -51,6 +51,9 @@ public class IoUtils {
     @Autowired
     private MediaTypeUtils mediaTypeUtils;
 
+    @Autowired
+    private PropertiesUtil propertiesUtil;
+
     // Detect is thread safe, so only one instance is needed.
     // See: {@link http://grokbase.com/t/tika/user/114qab9908/is-the-method-detect-of-instance-org-apache-tika-tika-thread-safe}
     private final Tika tikaInstance = new Tika();
@@ -175,7 +178,7 @@ public class IoUtils {
                 if (url != null) {
                     return url.toURI();
                 } else {
-                    file = new File("/opt/mpf/share" + path);
+                    file = new File(propertiesUtil.getSharePath() + path);
                     if (file.exists()) {
                         return file.getAbsoluteFile().toURI();
                     } else {

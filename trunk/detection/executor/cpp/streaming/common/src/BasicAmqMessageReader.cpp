@@ -44,10 +44,7 @@ BasicAmqMessageReader::BasicAmqMessageReader(const JobSettings &job_settings,
         , session_(connection_->createSession())
         , frame_ready_queue_(session_->createQueue(job_settings.frame_ready_queue))
         , segment_ready_consumer_(CreateConsumer(job_settings.segment_ready_queue, *session_))
-        , release_frame_consumer_(CreateConsumer(job_settings.release_frame_queue, *session_)) {
-
-    connection_->start();
-}
+        , release_frame_consumer_(CreateConsumer(job_settings.release_frame_queue, *session_)) {}
 
 
 std::unique_ptr<cms::MessageConsumer> BasicAmqMessageReader::CreateConsumer(const std::string &queue_name,
@@ -56,16 +53,18 @@ std::unique_ptr<cms::MessageConsumer> BasicAmqMessageReader::CreateConsumer(cons
     return std::unique_ptr<cms::MessageConsumer>(session.createConsumer(queue.get()));
 }
 
+
 BasicAmqMessageReader &BasicAmqMessageReader::CreateFrameReadyConsumer(const long segment_number) {
     std::string msg_selector = "SEGMENT_NUMBER = " + std::to_string(segment_number);
     frame_ready_consumer_.reset(session_->createConsumer(frame_ready_queue_.get(), msg_selector));
     return *this;
 }
 
+
 MPFSegmentReadyMessage BasicAmqMessageReader::GetSegmentReadyMsg() {
     std::unique_ptr<cms::Message> msg(segment_ready_consumer_->receive());
     return MPFSegmentReadyMessage(
-        msg->getIntProperty("JOB_ID"),
+        msg->getLongProperty("JOB_ID"),
         msg->getIntProperty("SEGMENT_NUMBER"),
         msg->getIntProperty("FRAME_WIDTH"),
         msg->getIntProperty("FRAME_HEIGHT"),
@@ -77,17 +76,17 @@ MPFSegmentReadyMessage BasicAmqMessageReader::GetSegmentReadyMsg() {
 MPFFrameReadyMessage BasicAmqMessageReader::GetFrameReadyMsg() {
     std::unique_ptr<cms::Message> msg(frame_ready_consumer_->receive());
     return MPFFrameReadyMessage(
-        msg->getIntProperty("JOB_ID"),
+        msg->getLongProperty("JOB_ID"),
         msg->getIntProperty("SEGMENT_NUMBER"),
         msg->getIntProperty("FRAME_INDEX"),
-        msg->getLongProperty("FRAME_TIMESTAMP"));
+        msg->getLongProperty("FRAME_READ_TIMESTAMP"));
 }
 
 
 MPFReleaseFrameMessage BasicAmqMessageReader::GetReleaseFrameMsg() {
     std::unique_ptr<cms::Message> msg(release_frame_consumer_->receive());
     return MPFReleaseFrameMessage(
-        msg->getIntProperty("JOB_ID"),
+        msg->getLongProperty("JOB_ID"),
         msg->getIntProperty("FRAME_INDEX"));
 }
 
@@ -95,7 +94,7 @@ MPFReleaseFrameMessage BasicAmqMessageReader::GetReleaseFrameMsg() {
 bool BasicAmqMessageReader::GetReleaseFrameMsgNoWait(MPFReleaseFrameMessage &msg) {
     std::unique_ptr<cms::Message> tmp_msg(release_frame_consumer_->receiveNoWait());
     if (tmp_msg.get() != NULL) {
-        msg.job_id = tmp_msg->getIntProperty("JOB_ID");
+        msg.job_id = tmp_msg->getLongProperty("JOB_ID");
         msg.frame_index = tmp_msg->getIntProperty("FRAME_INDEX");
         return true;
     }

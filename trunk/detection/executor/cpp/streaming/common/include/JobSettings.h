@@ -44,7 +44,7 @@ namespace MPF { namespace COMPONENT {
 
 
     struct JobSettings {
-        const int job_id;
+        const long job_id;
         const std::string stream_uri;
         const int segment_size;
         const RetryStrategy retry_strategy;

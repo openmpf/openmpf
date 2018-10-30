@@ -51,43 +51,40 @@ BasicAmqMessageSender::BasicAmqMessageSender(const JobSettings &job_settings,
         , job_status_producer_(CreateProducer(job_settings.job_status_queue, *session_))
         , activity_alert_producer_(CreateProducer(job_settings.activity_alert_queue, *session_))
         , summary_report_producer_(CreateProducer(job_settings.summary_report_queue, *session_))
-        , release_frame_producer_(CreateProducer(job_settings.release_frame_queue, *session_)) {
-
-    connection_->start();
-}
+        , release_frame_producer_(CreateProducer(job_settings.release_frame_queue, *session_)) {}
 
 
-std::unique_ptr<cms::MessageProducer> BasicAmqMessageSender::CreateProducer(const std::string &queue_name,
-                                                                            cms::Session &session) {
-    std::unique_ptr<cms::Queue> queue(session.createQueue(queue_name));
-    return std::unique_ptr<cms::MessageProducer>(session.createProducer(queue.get()));
-}
+ std::unique_ptr<cms::MessageProducer> BasicAmqMessageSender::CreateProducer(const std::string &queue_name,
+                                                                             cms::Session &session) {
+     std::unique_ptr<cms::Queue> queue(session.createQueue(queue_name));
+     return std::unique_ptr<cms::MessageProducer>(session.createProducer(queue.get()));
+ }
 
 
-void BasicAmqMessageSender::SendSegmentReady(const int segment_number,
-                                             const int frame_width,
-                                             const int frame_height,
-                                             const int cvType,
-                                             const int bytes_per_pixel) {
-        std::unique_ptr<cms::Message> message(session_->createMessage());
-        message->setLongProperty("JOB_ID", job_id_);
-        message->setIntProperty("SEGMENT_NUMBER", segment_number);
-        message->setIntProperty("FRAME_WIDTH", frame_width);
-        message->setIntProperty("FRAME_HEIGHT", frame_height);
-        message->setIntProperty("FRAME_DATA_TYPE", cvType);
-        message->setIntProperty("FRAME_BYTES_PER_PIXEL", bytes_per_pixel);
-        segment_ready_producer_->send(message.get());
-}
+ void BasicAmqMessageSender::SendSegmentReady(const int segment_number,
+                                              const int frame_width,
+                                              const int frame_height,
+                                              const int cvType,
+                                              const int bytes_per_pixel) {
+     std::unique_ptr<cms::Message> message(session_->createMessage());
+     message->setLongProperty("JOB_ID", job_id_);
+     message->setIntProperty("SEGMENT_NUMBER", segment_number);
+     message->setIntProperty("FRAME_WIDTH", frame_width);
+     message->setIntProperty("FRAME_HEIGHT", frame_height);
+     message->setIntProperty("FRAME_DATA_TYPE", cvType);
+     message->setIntProperty("FRAME_BYTES_PER_PIXEL", bytes_per_pixel);
+     segment_ready_producer_->send(message.get());
+ }
 
-void BasicAmqMessageSender::SendFrameReady(const int segment_number,
-                    const int frame_index,
-                    const long frame_timestamp) {
-    std::unique_ptr<cms::Message> message(session_->createMessage());
-    message->setLongProperty("JOB_ID", job_id_);
-    message->setIntProperty("SEGMENT_NUMBER", segment_number);
-    message->setIntProperty("FRAME_INDEX", frame_index);
-    message->setLongProperty("FRAME_READ_TIMESTAMP", frame_timestamp);
-    frame_ready_producer_->send(message.get());
+ void BasicAmqMessageSender::SendFrameReady(const int segment_number,
+                     const int frame_index,
+                     const long frame_timestamp) {
+     std::unique_ptr<cms::Message> message(session_->createMessage());
+     message->setLongProperty("JOB_ID", job_id_);
+     message->setIntProperty("SEGMENT_NUMBER", segment_number);
+     message->setIntProperty("FRAME_INDEX", frame_index);
+     message->setLongProperty("FRAME_READ_TIMESTAMP", frame_timestamp);
+     frame_ready_producer_->send(message.get());
 }
 
 void BasicAmqMessageSender::SendReleaseFrame(const int frame_index) {
@@ -117,26 +114,26 @@ void BasicAmqMessageSender::SendInProgressNotification(long timestamp) {
 }
 
 
-void BasicAmqMessageSender::SendActivityAlert(int frame_number, long timestamp) {
+void BasicAmqMessageSender::SendActivityAlert(int frame_index, long timestamp) {
     std::unique_ptr<cms::Message> message(session_->createMessage());
     message->setLongProperty("JOB_ID", job_id_);
-    message->setIntProperty("FRAME_NUMBER", frame_number);
+    message->setIntProperty("FRAME_INDEX", frame_index);
     message->setLongProperty("ACTIVITY_DETECTION_TIMESTAMP", timestamp);
     activity_alert_producer_->send(message.get());
 }
 
 
-void BasicAmqMessageSender::SendSummaryReport(int frame_number,
+void BasicAmqMessageSender::SendSummaryReport(const int frame_index,
+                                              const int segment_number,
                                               const std::string &detection_type,
                                               const std::vector<MPFVideoTrack> &tracks,
                                               const std::unordered_map<int, long> &frame_timestamps,
                                               const std::string &error_message) {
     StreamingDetectionResponse protobuf_response;
 
-    int segment_number = frame_number / segment_size_;
     protobuf_response.set_segment_number(segment_number);
     protobuf_response.set_segment_start_frame(segment_size_ * segment_number);
-    protobuf_response.set_segment_stop_frame(frame_number);
+    protobuf_response.set_segment_stop_frame(frame_index);
     protobuf_response.set_detection_type(detection_type);
     if (!error_message.empty())  {
         protobuf_response.set_error(error_message);

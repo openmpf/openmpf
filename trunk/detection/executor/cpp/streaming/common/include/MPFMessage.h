@@ -35,17 +35,18 @@
 
 namespace MPF {
 
+
 struct MPFSegmentSummaryMessage {
-    int job_id;
+    long job_id;
     int segment_number;
-    long segment_start_frame;
-    long segment_stop_frame;
+    int segment_start_frame;
+    int segment_stop_frame;
     std::string detection_type;  // such as: "FACE", "PERSON", "MOTION"
     std::string segment_error;
     std::vector<MPF::COMPONENT::MPFVideoTrack> tracks;
     std::unordered_map<int, long> timestamps;
     MPFSegmentSummaryMessage() = default;
-    MPFSegmentSummaryMessage(const int job_id,
+    MPFSegmentSummaryMessage(const long job_id,
                              const int seg_num,
                              const int start_frame,
                              const int stop_frame,
@@ -65,28 +66,25 @@ struct MPFSegmentSummaryMessage {
 };
 
 struct MPFActivityAlertMessage {
-    int job_id;
-    int segment_number;
+    long job_id;
     int frame_index;
     long activity_time;
     MPFActivityAlertMessage() = default;
-    MPFActivityAlertMessage(const int job_id,
-                            const int seg_num,
+    MPFActivityAlertMessage(const long job_id,
                             const int frame_num,
                             const long time)
             : job_id(job_id)
-            , segment_number(seg_num)
             , frame_index(frame_num)
             , activity_time(time) {}
     ~MPFActivityAlertMessage() = default;
 };
 
 struct MPFJobStatusMessage {
-    int job_id;
+    long job_id;
     std::string status_message;
     long status_change_time;
     MPFJobStatusMessage() = default;
-    MPFJobStatusMessage(const int job_id,
+    MPFJobStatusMessage(const long job_id,
                         const std::string &msg,
                         long status_change_time)
             : job_id(job_id)
@@ -97,7 +95,7 @@ struct MPFJobStatusMessage {
 
 
 struct MPFSegmentReadyMessage {
-    int job_id;
+    long job_id;
     int segment_number;
     int frame_width;
     int frame_height;
@@ -105,7 +103,7 @@ struct MPFSegmentReadyMessage {
                  // CV_32F = 5, etc.
     int bytes_per_pixel;
     MPFSegmentReadyMessage() = default;
-    MPFSegmentReadyMessage(const int job_id,
+    MPFSegmentReadyMessage(const long job_id,
                            const int seg_num,
                            const int width,
                            const int height,
@@ -122,12 +120,12 @@ struct MPFSegmentReadyMessage {
 
 
 struct MPFFrameReadyMessage {
-    int job_id;
+    long job_id;
     int segment_number;
     int frame_index;
     long frame_timestamp;
     MPFFrameReadyMessage() = default;
-    MPFFrameReadyMessage(const int job_id,
+    MPFFrameReadyMessage(const long job_id,
                          const int seg_num,
                          const int index,
                          const long timestamp)
@@ -140,10 +138,10 @@ struct MPFFrameReadyMessage {
 
 
 struct MPFReleaseFrameMessage {
-    int job_id;
+    long job_id;
     int frame_index;
     MPFReleaseFrameMessage() = default;
-    MPFReleaseFrameMessage(const int job_id,
+    MPFReleaseFrameMessage(const long job_id,
                            const int index)
             : job_id(job_id)
             , frame_index(index) {}
@@ -155,11 +153,11 @@ struct MPFReleaseFrameMessage {
 //TODO: For future use. Untested.
 // Not used in single process, single pipeline stage, architecture
 struct MPFVideoWrittenMessage {
-    int job_id;
+    long job_id;
     int segment_number;
     std::string video_output_pathname;
     MPFVideoWrittenMessage() = default;
-    MPFVideoWrittenMessage(const int job_id,
+    MPFVideoWrittenMessage(const long job_id,
                            const int seg_num,
                            const std::string &path)
             : job_id(job_id)

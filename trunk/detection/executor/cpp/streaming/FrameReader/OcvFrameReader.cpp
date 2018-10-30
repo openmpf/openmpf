@@ -107,7 +107,6 @@ void OcvFrameReader::Run() {
     int segment_number = -1;
     long frame_byte_size = 0;
 
-    LOG4CXX_INFO(logger_, log_prefix_ << "Connecting to stream at: " << settings_.stream_uri);
     msg_sender_.SendInProgressNotification(GetTimestampMillis());
 
     StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();

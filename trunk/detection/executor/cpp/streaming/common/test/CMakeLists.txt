@@ -27,17 +27,17 @@
 
 cmake_minimum_required(VERSION 3.6)
 
-project(executor-utils-tests)
 set(CMAKE_CXX_STANDARD 11)
-
-set(ExecutorUtilsSrcs ${COMMON_SOURCE_DIR}/src/ExecutorUtils.cpp
-                      ${COMMON_SOURCE_DIR}/src/ExecutorErrors.cpp
-                      ${COMMON_SOURCE_DIR}/src/JobSettings.cpp)
 
 
 find_package(GTest)
 if (${GTEST_FOUND})
     enable_testing()
+
+# Build the ExecutorUtils tests
+    set(ExecutorUtilsSrcs ${COMMON_SOURCE_DIR}/src/ExecutorUtils.cpp
+                          ${COMMON_SOURCE_DIR}/src/ExecutorErrors.cpp
+                          ${COMMON_SOURCE_DIR}/src/JobSettings.cpp)
 
     add_executable(StreamingExecutorUtilsTest test_executor_utils.cpp ${ExecutorUtilsSrcs})
 
@@ -47,5 +47,24 @@ if (${GTEST_FOUND})
     target_link_libraries(StreamingExecutorUtilsTest GTest::GTest GTest::Main ${LOG4CXX_LIBRARIES})
 
     add_test(NAME StreamingExecutorUtilsTest COMMAND StreamingExecutorUtilsTest)
+
+# Build the Messaging tests
+    set(MessagingTestSrcs ${COMMON_SOURCE_DIR}/src/ExecutorUtils.cpp
+                          ${COMMON_SOURCE_DIR}/src/ExecutorErrors.cpp
+                          ${COMMON_SOURCE_DIR}/src/JobSettings.cpp
+                          ${COMMON_SOURCE_DIR}/src/MPFMessagingConnection.cpp
+                          ${COMMON_SOURCE_DIR}/src/BasicAmqMessageSender.cpp
+                          ${COMMON_SOURCE_DIR}/src/BasicAmqMessageReader.cpp)
+    add_executable(StreamingMessagingTest test_messaging.cpp ${MessagingTestSrcs})
+
+    target_include_directories(StreamingMessagingTest PUBLIC
+      $<TARGET_PROPERTY:mpfProtobufs,INTERFACE_INCLUDE_DIRECTORIES>
+	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
+
+    target_link_libraries(StreamingMessagingTest GTest::GTest GTest::Main mpfProtobufs
+        ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES})
+
+    add_test(NAME StreamingMessagingTest COMMAND StreamingMessagingTest)
+    file(COPY test.ini DESTINATION data)
 
 endif()

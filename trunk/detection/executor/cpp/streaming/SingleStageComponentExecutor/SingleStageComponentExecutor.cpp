@@ -89,8 +89,6 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
             SingleStageComponentExecutor executor(logger, log_prefix, connection,
                                                   std::move(settings), std::move(job),
                                                   std::move(component), detection_type);
-            // SingleStageComponentExecutor executor = Create(logger, log_prefix, connection,
-            //                                                std::move(settings), std::move(job));
 
             switch (retry_config) {
                 case RetryStrategy::NEVER_RETRY:
@@ -132,44 +130,15 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
     }
 
 
-    // SingleStageComponentExecutor SingleStageComponentExecutor::Create(
-    //         const log4cxx::LoggerPtr &logger, const std::string &log_prefix,
-    //         const MPFMessagingConnection &connection,
-    //         JobSettings &&settings, MPFStreamingVideoJob &&job) {
-
-    //     std::string detection_type;
-    //     try {
-    //         LOG4CXX_INFO(logger, log_prefix << "Loading component from: " << settings.component_lib_path);
-    //         StreamingComponentHandle component(settings.component_lib_path, job);
-    //         detection_type = component.GetDetectionType();
-
-    //         return SingleStageComponentExecutor(
-    //                 logger,
-    //                 log_prefix,
-    //                 connection,
-    //                 std::move(settings),
-    //                 std::move(job),
-    //                 std::move(component),
-    //                 detection_type);
-    //     }
-    //     catch (const FatalError &ex) {
-    //         sender.SendSummaryReport(0, detection_type, {}, {}, ex.what());
-    //         throw;
-    //     }
-
-    // }
-
-
     template <RetryStrategy RETRY_STRATEGY>
     void SingleStageComponentExecutor::Run() {
         std::unordered_map<int, long> frame_timestamps;
         bool begin_segment_called = false;
         int frame_count = 0;
+        int segment_number = 0;
         VideoSegmentInfo segment_info(0, 0, 0, 0, 0);
         MPFFrameReadyMessage frame_msg;
         try {
-            // LOG4CXX_INFO(logger_, log_prefix_ << "Connecting to stream at: " << settings_.stream_uri)
-            // sender_.SendInProgressNotification(GetTimestampMillis());
 
             StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
 
@@ -181,15 +150,17 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
 
             while (!std_in_watcher->QuitReceived()) {
                 MPFSegmentReadyMessage seg_msg = msg_reader_.GetSegmentReadyMsg();
+                segment_number = seg_msg.segment_number;
                 
-                frame_msg = msg_reader_.CreateFrameReadyConsumer(seg_msg.segment_number).GetFrameReadyMsg();
+                frame_msg = msg_reader_.CreateFrameReadyConsumer(segment_number).GetFrameReadyMsg();
+
                 // Check that the segment number in the frame
                 // ready message is the same as the segment number we
                 // just received.
                 assert (frame_msg.segment_number == seg_msg.segment_number);
 
                 int segment_end_frame = frame_msg.frame_index + settings_.segment_size - 1;
-                segment_info = {seg_msg.segment_number,
+                segment_info = {segment_number,
                                 frame_msg.frame_index,
                                 segment_end_frame,
                                 seg_msg.frame_width,
@@ -226,7 +197,8 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
                     std::vector<MPFVideoTrack> tracks = component_.EndSegment();
                     FixTracks(segment_info, tracks);
                     LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending segment summary for " << tracks.size() << " tracks.")
-                    msg_sender_.SendSummaryReport(frame_msg.frame_index, detection_type_,
+                    msg_sender_.SendSummaryReport(frame_msg.frame_index,
+                                                  segment_number, detection_type_,
                                                   tracks, frame_timestamps);
                     frame_timestamps.clear();
                 }
@@ -236,7 +208,8 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
                 std::vector<MPFVideoTrack> tracks = component_.EndSegment();
                 LOG4CXX_INFO(logger_, log_prefix_ << "Send segment summary for final segment.")
                 FixTracks(segment_info, tracks);
-                msg_sender_.SendSummaryReport(frame_msg.frame_index, detection_type_, tracks, frame_timestamps);
+                msg_sender_.SendSummaryReport(frame_msg.frame_index, segment_number,
+                                              detection_type_, tracks, frame_timestamps);
             }
         }
         catch (const FatalError &ex) {
@@ -247,8 +220,8 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
                 tracks = TryGetRemainingTracks();
                 FixTracks(segment_info, tracks);
             }
-            msg_sender_.SendSummaryReport(frame_msg.frame_index, detection_type_,
-                                          tracks, frame_timestamps, ex.what());
+            msg_sender_.SendSummaryReport(frame_msg.frame_index, segment_number,
+                                          detection_type_,tracks, frame_timestamps, ex.what());
             throw;
         }
     }
@@ -260,11 +233,6 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
         ExecutorUtils::DropLowConfidenceDetections(confidence_threshold_, tracks);
         // video_capture_.ReverseTransform(tracks);
     }
-
-
-    // bool SingleStageComponentExecutor::IsBeginningOfSegment(int frame_number) const {
-    //     return frame_number % settings_.segment_size == 0;
-    // }
 
 
     std::vector<MPFVideoTrack> SingleStageComponentExecutor::TryGetRemainingTracks() {

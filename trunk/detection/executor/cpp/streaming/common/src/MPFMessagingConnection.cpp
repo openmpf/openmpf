@@ -24,6 +24,8 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include <iostream>
+
 #include <activemq/library/ActiveMQCPP.h>
 #include <activemq/core/ActiveMQConnectionFactory.h>
 
@@ -59,7 +61,6 @@ MPFMessagingConnection::~MPFMessagingConnection() {
         // This call to close() will close any sessions created from
         // this connection, as well as those sessions' consumers and producers.
         connection_->close();
-        ActiveMQCPP::shutdownLibrary();
     }
     catch (const CMSException &e) {
         e.printStackTrace();

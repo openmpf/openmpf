@@ -216,6 +216,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		jsonOutputObject.getJobWarnings().addAll(redis.getJobWarnings(jobId));
 		jsonOutputObject.getJobErrors().addAll(redis.getJobErrors(jobId));
 
+		IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
+
 		int mediaIndex = 0;
 		for(TransientMedia transientMedia : transientJob.getMedia()) {
 			StringBuilder stateKeyBuilder = new StringBuilder("+");

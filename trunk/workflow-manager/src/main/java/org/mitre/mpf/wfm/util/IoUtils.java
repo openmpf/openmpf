@@ -44,10 +44,11 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 @Component(IoUtils.REF)
 public class IoUtils {
@@ -307,5 +308,44 @@ public class IoUtils {
             return Files.newInputStream(localPath.get());
         }
         return new URL(pathOrUri).openStream();
+    }
+
+
+    public static void deleteEmptyDirectoriesRecursively(Path startDir) {
+        if (!Files.exists(startDir)) {
+            return;
+        }
+        try {
+            Files.walkFileTree(startDir, new SimpleFileVisitor<Path>() {
+
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    return allChildren(dir, Files::isDirectory)
+                            ? FileVisitResult.CONTINUE
+                            : FileVisitResult.SKIP_SUBTREE;
+                }
+
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    if (isEmpty(dir)) {
+                        Files.delete(dir);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
+        catch (IOException e) {
+            log.warn("IOException while deleting " + startDir, e);
+        }
+    }
+
+    private static boolean allChildren(Path parent, Predicate<Path> pred) throws IOException {
+        try (Stream<Path> paths = Files.list(parent)) {
+            return paths.allMatch(pred);
+        }
+    }
+
+    private static boolean isEmpty(Path dir) throws IOException {
+        try (Stream<Path> paths = Files.list(dir)) {
+            return !paths.findAny().isPresent();
+        }
     }
 }

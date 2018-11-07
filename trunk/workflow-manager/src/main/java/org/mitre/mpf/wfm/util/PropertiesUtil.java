@@ -247,14 +247,6 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getBoolean("mpf.output.objects.enabled");
     }
 
-    public boolean isOutputQueueEnabled() {
-        return mpfPropertiesConfig.getBoolean("mpf.output.objects.queue.enabled");
-    }
-
-    public String getOutputQueueName() {
-        return mpfPropertiesConfig.getString("mpf.output.objects.queue.name");
-    }
-
     public String getSharePath() {
         return mpfPropertiesConfig.getString("mpf.share.path");
     }

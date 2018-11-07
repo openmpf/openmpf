@@ -46,15 +46,14 @@ public class MPFMessageMetadata {
 	private Map<String, String> algorithmProperties;
 	private Map<String, String> mediaProperties;
 	private long requestId;
-
+	private String correlationId;
+	private String breadcrumbId;
+	private int splitSize;
+	private long jobId;
 	private String jobName;
 
 	public String getDataUri() {
 		return dataUri;
-	}
-
-	public void setDataUri(String dataUri) {
-		this.dataUri = dataUri;
 	}
 
 	public MPFDataType getDataType() {
@@ -65,65 +64,48 @@ public class MPFMessageMetadata {
 		return mediaId;
 	}
 
-	public void setMediaId(long mediaId) {
-		this.mediaId = mediaId;
-	}
-
 	public String getStageName() {
 		return stageName;
-	}
-
-	public void setStageName(String stageName) {
-		this.stageName = stageName;
 	}
 
 	public int getStageIndex() {
 		return stageIndex;
 	}
 
-	public void setStageIndex(int stageIndex) {
-		this.stageIndex = stageIndex;
-	}
-
 	public String getActionName() {
 		return actionName;
-	}
-
-	public void setActionName(String actionName) {
-		this.actionName = actionName;
 	}
 
 	public int getActionIndex() {
 		return actionIndex;
 	}
 
-	public void setActionIndex(int actionIndex) {
-		this.actionIndex = actionIndex;
-	}
-
 	public Map<String, String> getAlgorithmProperties() {
 		return algorithmProperties;
 	}
 
-	public void setAlgorithmProperties(Map<String, String> algorithmProperties) {
-		this.algorithmProperties = algorithmProperties;
-	}
-
-
 	public Map<String, String> getMediaProperties() {
 		return mediaProperties;
-	}
-
-	public void setMediaProperties(Map<String, String> mediaProperties) {
-		this.mediaProperties = mediaProperties;
 	}
 
 	public long getRequestId() {
 		return requestId;
 	}
 
-	public void setRequestId(long requestId) {
-		this.requestId = requestId;
+	public String getCorrelationId() {
+		return correlationId;
+	}
+
+	public String getBreadcrumbId() {
+		return breadcrumbId;
+	}
+
+	public int getSplitSize() {
+		return splitSize;
+	}
+
+	public long getJobId() {
+		return jobId;
 	}
 
 	public String getJobName() {
@@ -144,22 +126,32 @@ public class MPFMessageMetadata {
         String actionName,
         int actionIndex,
         Map<String, String> algorithmProperties,
-		Map<String, String> mediaProperties,
+        Map<String, String> mediaProperties,
         long requestId,
-		String jobName
+        String correlationId,
+        String breadcrumbId,
+        int splitSize,
+        long jobId,
+        String jobName
     ) {
         this.dataUri = dataUri;
         this.dataType = dataType;
         this.requestId = requestId;
 
-	    this.mediaId = mediaId;
+        this.mediaId = mediaId;
 
-	    this.stageName = stageName;
-	    this.stageIndex = stageIndex;
+        this.stageName = stageName;
+        this.stageIndex = stageIndex;
 
-	    this.actionName = actionName;
-	    this.actionIndex = actionIndex;
-		this.jobName = jobName;
+        this.actionName = actionName;
+        this.actionIndex = actionIndex;
+
+        this.correlationId = correlationId;
+        this.breadcrumbId = breadcrumbId;
+        this.splitSize = splitSize;
+        this.jobId = jobId;
+
+        this.jobName = jobName;
 
         //TODO:  may need to deep copy map depending on the types of properties it contains
 	    if(algorithmProperties == null) {

@@ -45,7 +45,6 @@ public class MpfHeaders {
 
 		RECIPIENT_QUEUE = "QueueName",
 
-		SEND_OUTPUT_OBJECT = "SendOutputObject",
 		SPLIT_COMPLETED = "SplitCompleted",
 		SPLIT_SIZE = "SplitSize",
 		SPLITTING_ERROR = "JobSplitError",

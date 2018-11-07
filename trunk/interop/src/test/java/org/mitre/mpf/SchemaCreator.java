@@ -46,7 +46,6 @@ public class SchemaCreator {
                 // JsonMarkupOutputObject.class,
                 // JsonMediaOutputObject.class,
                 JsonOutputObject.class,
-                JsonOutputObjectSummary.class,
                 // JsonPipeline.class,
                 // JsonStage.class,
                 // JsonTrackOutputObject.class

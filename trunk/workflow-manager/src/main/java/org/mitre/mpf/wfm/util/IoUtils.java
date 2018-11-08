@@ -45,9 +45,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 @Component(IoUtils.REF)
@@ -318,12 +316,6 @@ public class IoUtils {
         try {
             Files.walkFileTree(startDir, new SimpleFileVisitor<Path>() {
 
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                    return allChildren(dir, Files::isDirectory)
-                            ? FileVisitResult.CONTINUE
-                            : FileVisitResult.SKIP_SUBTREE;
-                }
-
                 public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
                     if (isEmpty(dir)) {
                         Files.delete(dir);
@@ -334,12 +326,6 @@ public class IoUtils {
         }
         catch (IOException e) {
             log.warn("IOException while deleting " + startDir, e);
-        }
-    }
-
-    private static boolean allChildren(Path parent, Predicate<Path> pred) throws IOException {
-        try (Stream<Path> paths = Files.list(parent)) {
-            return paths.allMatch(pred);
         }
     }
 

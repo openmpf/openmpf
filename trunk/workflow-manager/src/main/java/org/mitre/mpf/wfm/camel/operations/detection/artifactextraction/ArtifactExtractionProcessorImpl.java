@@ -77,7 +77,7 @@ public class ArtifactExtractionProcessorImpl extends WfmProcessor implements Art
 
 		// Deserialize the contents of the message body.
 		ArtifactExtractionRequest request = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), ArtifactExtractionRequest.class);
-		Map<Integer, String> results = storageService.storeArtifacts(request);
+		Map<Integer, String> results = storageService.store(request);
 
 		for(int actionIndex : request.getActionIndexToMediaIndexes().keySet()) {
 			// The results map now has a mapping of media offsets to artifacts. In simpler terms for images and

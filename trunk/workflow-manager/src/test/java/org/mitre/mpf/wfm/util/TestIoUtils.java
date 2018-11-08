@@ -25,20 +25,60 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.service;
+package org.mitre.mpf.wfm.util;
 
-import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
-import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-public interface StorageService {
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-    public String store(JsonOutputObject outputObject) throws IOException;
+public class TestIoUtils {
 
-    public Map<Integer, String> store(ArtifactExtractionRequest request);
+    @Rule
+    public TemporaryFolder _tempFolder = new TemporaryFolder();
 
-    public void store(MarkupResult markupResult);
+    private Path _tempRoot;
+
+    @Before
+    public void init() {
+        _tempRoot = _tempFolder.getRoot().toPath();
+    }
+
+
+    @Test
+    public void canRecursivelyDeleteEmptyDirectoryTree() throws IOException {
+        _tempFolder.newFolder("level_1_dir_1", "level_2_dir_1", "level_3_dir_1");
+        _tempFolder.newFolder("level_1_dir_1", "level_2_dir_1", "level_3_dir_2");
+        _tempFolder.newFolder("level_1_dir_1", "level_2_dir_2");
+        _tempFolder.newFolder("level_1_dir_2");
+
+        IoUtils.deleteEmptyDirectoriesRecursively(_tempRoot);
+        assertFalse(Files.exists(_tempRoot));
+    }
+
+
+    @Test
+    public void doesNotDeleteFilesWhenDeletingEmptyDirs() throws IOException {
+        Path emptyDir1 = _tempFolder.newFolder("level_1_dir_1", "level_2_dir_1", "level_3_dir_1").toPath();
+        Path emptyDir2 = _tempFolder.newFolder("level_1_dir_1", "level_2_dir_1", "level_3_dir_2", "level_4_dir_1").toPath();
+        _tempFolder.newFolder("level_1_dir_1", "level_2_dir_2");
+        Path emptyDir3 = _tempFolder.newFolder("level_1_dir_2").toPath();
+        Path file1 = _tempFolder.newFile("level_1_dir_1/level_2_dir_1/level_3_dir_2/file1").toPath();
+        Path file2 = _tempFolder.newFile("level_1_dir_1/level_2_dir_2/file2").toPath();
+
+        IoUtils.deleteEmptyDirectoriesRecursively(_tempRoot);
+        assertTrue(Files.exists(file1));
+        assertTrue(Files.exists(file2));
+
+        assertFalse(Files.exists(emptyDir1));
+        assertFalse(Files.exists(emptyDir2));
+        assertFalse(Files.exists(emptyDir3));
+    }
 }

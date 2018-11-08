@@ -196,7 +196,7 @@ public class TestStorageService {
         ArtifactExtractionRequest request = new ArtifactExtractionRequest(434, 0, imgPath,
                                                                           MediaType.IMAGE, 0);
 
-        Map<Integer, String> storeResult = _storageService.storeArtifacts(request);
+        Map<Integer, String> storeResult = _storageService.store(request);
         assertEquals(1, storeResult.size());
         assertEquals(expectedUrl, storeResult.get(0));
 
@@ -240,7 +240,7 @@ public class TestStorageService {
         ArtifactExtractionRequest request = new ArtifactExtractionRequest(434, 0, imgPath,
                                                                           MediaType.IMAGE, 0);
 
-        Map<Integer, String> storeResult = _storageService.storeArtifacts(request);
+        Map<Integer, String> storeResult = _storageService.store(request);
 
         assertTrue(FileUtils.contentEquals(resource.getFile(), outputFile));
         assertEquals(1, storeResult.size());
@@ -275,7 +275,7 @@ public class TestStorageService {
                     return baseUrl + count.getAndIncrement();
                 });
 
-        Map<Integer, String> results = _storageService.storeArtifacts(request);
+        Map<Integer, String> results = _storageService.store(request);
         assertEquals(3, results.size());
         assertEquals(baseUrl + 0, results.get(0));
         assertEquals(baseUrl + 1, results.get(5));
@@ -297,7 +297,7 @@ public class TestStorageService {
                                                          request.getStageIndex()))
                 .thenReturn(_tempFolder.newFolder());
 
-        Map<Integer, String> paths = _storageService.storeArtifacts(request);
+        Map<Integer, String> paths = _storageService.store(request);
         Map<Integer, byte[]> hashes = new HashMap<>();
 
         for (Map.Entry<Integer, String> pathEntry : paths.entrySet()) {
@@ -344,7 +344,7 @@ public class TestStorageService {
         request.getActionIndexToMediaIndexes().put(0, Sets.newHashSet(0, 5));
         request.getActionIndexToMediaIndexes().put(1, Sets.newHashSet(5, 9));
 
-        Map<Integer, String> results = _storageService.storeArtifacts(request);
+        Map<Integer, String> results = _storageService.store(request);
         assertEquals(3, results.size());
 
         for (int frameNumber : new int[]{0, 5, 9}) {
@@ -378,7 +378,7 @@ public class TestStorageService {
         markupResult.setMarkupStatus(MarkupStatus.COMPLETE);
         markupResult.setMarkupUri(fakeMarkup.toUri().toString());
 
-        _storageService.storeMarkup(markupResult);
+        _storageService.store(markupResult);
 
         assertEquals(expectedMarkupContent + '\n', actualMarkupContent.getValue());
         assertEquals(expectedUploadUri, markupResult.getMarkupUri());
@@ -427,7 +427,7 @@ public class TestStorageService {
         markupResult.setMarkupStatus(MarkupStatus.COMPLETE);
         markupResult.setMarkupUri(fakeMarkup.toUri().toString());
 
-        _storageService.storeMarkup(markupResult);
+        _storageService.store(markupResult);
 
         assertEquals(fakeMarkup.toUri().toString(), markupResult.getMarkupUri());
 

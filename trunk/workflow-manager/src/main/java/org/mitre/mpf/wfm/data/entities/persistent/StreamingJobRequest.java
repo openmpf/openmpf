@@ -84,7 +84,7 @@ public class StreamingJobRequest {
         setStatusDetail(statusDetail);
     }
 
-    @Column
+    @Column(columnDefinition = "TEXT")
     private String statusDetail = null;
     public String getStatusDetail() { return statusDetail; }
     public void setStatusDetail(String statusDetail) { this.statusDetail = statusDetail; }

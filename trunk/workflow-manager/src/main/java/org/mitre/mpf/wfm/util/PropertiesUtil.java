@@ -722,8 +722,7 @@ public class PropertiesUtil {
     }
 
     public StorageBackend.Type getHttpObjectStorageType() {
-        return mpfPropertiesConfig.get(StorageBackend.Type.class, "http.object.storage.type",
-                                       StorageBackend.Type.NONE);
+        return mpfPropertiesConfig.get(StorageBackend.Type.class, "http.object.storage.type");
     }
 
     public URI getHttpStorageServiceUri() {
@@ -731,15 +730,15 @@ public class PropertiesUtil {
     }
 
     public int getHttpStorageUploadThreadCount() {
-        return mpfPropertiesConfig.getInt("http.object.storage.upload.thread.count", 3);
+        return mpfPropertiesConfig.getInt("http.object.storage.upload.thread.count");
     }
 
     public int getHttpStorageUploadSegmentSize() {
-        return mpfPropertiesConfig.getInt("http.object.storage.upload.segment.size", 8 * 1024 * 1024);
+        return mpfPropertiesConfig.getInt("http.object.storage.upload.segment.size");
     }
 
     public int getHttpStorageUploadRetryCount() {
-        return mpfPropertiesConfig.getInt("http.object.storage.upload.retry.count", 3);
+        return mpfPropertiesConfig.getInt("http.object.storage.upload.retry.count");
     }
 }
 

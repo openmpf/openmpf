@@ -86,7 +86,7 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
 		markupResult.setPipeline(transientJob.getPipeline().getName());
 		markupResult.setSourceUri(transientMedia.getUri());
 
-		storageService.storeMarkup(markupResult);
+		storageService.store(markupResult);
 		markupResultDao.persist(markupResult);
 
 		if (markupResult.getMarkupStatus() == MarkupStatus.FAILED) {

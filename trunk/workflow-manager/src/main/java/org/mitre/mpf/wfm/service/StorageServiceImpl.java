@@ -144,7 +144,7 @@ public class StorageServiceImpl implements StorageService {
 
 
     @Override
-    public void storeMarkup(MarkupResult markupResult) {
+    public void store(MarkupResult markupResult) {
         if (markupResult.getMarkupStatus() != MarkupStatus.COMPLETE) {
             return;
         }
@@ -173,13 +173,13 @@ public class StorageServiceImpl implements StorageService {
             log.warn(String.format(
                     "Failed to remotely store markup for job id %s. It will be stored locally instead.",
                     markupResult.getJobId()), e);
-            addWarning(markupResult,
-                       "Markup was stored locally because storing it remotely failed due to: " + e);
+            addMarkupWarning(markupResult,
+                             "Markup was stored locally because storing it remotely failed due to: " + e);
         }
     }
 
 
-    private void addWarning(MarkupResult markupResult, String message) {
+    private void addMarkupWarning(MarkupResult markupResult, String message) {
         String existingMessage = markupResult.getMessage();
         if (existingMessage != null && !existingMessage.isEmpty()) {
             message = existingMessage + "; " + message;
@@ -191,7 +191,7 @@ public class StorageServiceImpl implements StorageService {
 
 
     @Override
-    public Map<Integer, String> storeArtifacts(ArtifactExtractionRequest request) {
+    public Map<Integer, String> store(ArtifactExtractionRequest request) {
         switch (request.getMediaType()) {
             case IMAGE:
                 return Collections.singletonMap(0, processImageArtifact(request));

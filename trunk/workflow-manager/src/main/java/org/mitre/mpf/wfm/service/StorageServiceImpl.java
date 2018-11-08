@@ -34,6 +34,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactE
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -95,21 +96,19 @@ public class StorageServiceImpl implements StorageService {
             }
         }
 
-        EnumSet<StorageBackend.Type> unconfiguredBackends = EnumSet.allOf(StorageBackend.Type.class);
-        unconfiguredBackends.remove(StorageBackend.Type.NONE);
-        unconfiguredBackends.removeAll(_backends.keySet());
-        if (!unconfiguredBackends.isEmpty()) {
-            throw new IllegalStateException("The following storage backends were not configured: "
-                                                    + unconfiguredBackends);
+        EnumSet<StorageBackend.Type> missingBackends = EnumSet.allOf(StorageBackend.Type.class);
+        missingBackends.remove(StorageBackend.Type.NONE);
+        missingBackends.removeAll(_backends.keySet());
+        if (!missingBackends.isEmpty()) {
+            throw new IllegalStateException("The following storage backends are missing: " + missingBackends);
         }
     }
 
 
-    private StorageBackend getStorageBackend() {
-        StorageBackend.Type httpStorageType = _propertiesUtil.getHttpObjectStorageType();
-        StorageBackend storageBackend = _backends.get(httpStorageType);
-        if (storageBackend == null && httpStorageType != StorageBackend.Type.NONE) {
-            log.warn("Unknown storage type: {}. Objects will be stored locally.", httpStorageType);
+    private StorageBackend getStorageBackend(StorageBackend.Type backendType) {
+        StorageBackend storageBackend = _backends.get(backendType);
+        if (storageBackend == null && backendType != StorageBackend.Type.NONE) {
+            log.warn("Unknown storage type: {}. Objects will be stored locally.", backendType);
         }
         return storageBackend;
     }
@@ -117,13 +116,14 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public String store(JsonOutputObject outputObject) throws IOException {
-        StorageBackend storageBackend = getStorageBackend();
+        TransientDetectionSystemProperties propertiesSnapshot = _redis.getPropertiesSnapshot(outputObject.getJobId());
+        StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
         if (storageBackend == null) {
             return storeLocally(outputObject);
         }
 
         try {
-            return storageBackend.storeAsJson(outputObject);
+            return storageBackend.storeAsJson(propertiesSnapshot.getHttpStorageServiceUri(), outputObject);
         }
         catch (StorageException e) {
             log.warn(String.format(
@@ -148,7 +148,8 @@ public class StorageServiceImpl implements StorageService {
         if (markupResult.getMarkupStatus() != MarkupStatus.COMPLETE) {
             return;
         }
-        StorageBackend storageBackend = getStorageBackend();
+        TransientDetectionSystemProperties propertiesSnapshot = _redis.getPropertiesSnapshot(markupResult.getJobId());
+        StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
         if (storageBackend == null) {
             return;
         }
@@ -162,7 +163,7 @@ public class StorageServiceImpl implements StorageService {
                     : localPath.toUri().toURL();
 
             try (InputStream is = markupUrl.openStream()) {
-                String newLocation = storageBackend.store(is);
+                String newLocation = storageBackend.store(propertiesSnapshot.getHttpStorageServiceUri(), is);
                 markupResult.setMarkupUri(newLocation);
             }
             if (localPath != null) {
@@ -204,11 +205,13 @@ public class StorageServiceImpl implements StorageService {
 
 
     private String processImageArtifact(ArtifactExtractionRequest request) {
+        TransientDetectionSystemProperties propertiesSnapshot = _redis.getPropertiesSnapshot(request.getJobId());
+        StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
+
         Path inputMediaPath = Paths.get(request.getPath());
-        StorageBackend storageBackend = getStorageBackend();
         if (storageBackend != null) {
             try (InputStream inputStream = Files.newInputStream(inputMediaPath)) {
-                return storageBackend.store(inputStream);
+                return storageBackend.store(propertiesSnapshot.getHttpStorageServiceUri(), inputStream);
             }
             catch (StorageException | IOException e) {
                 log.warn(String.format(
@@ -249,10 +252,12 @@ public class StorageServiceImpl implements StorageService {
                 .flatMap(Collection::stream)
                 .collect(toCollection(TreeSet::new));
 
-        StorageBackend storageBackend = getStorageBackend();
+        TransientDetectionSystemProperties propertiesSnapshot = _redis.getPropertiesSnapshot(request.getJobId());
+        StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
         if (storageBackend != null) {
             try {
-                return storeVideoArtifactRemotely(storageBackend, request, frameNumbers);
+                return storeVideoArtifactRemotely(storageBackend, propertiesSnapshot.getHttpStorageServiceUri(),
+                                                  request, frameNumbers);
             }
             catch (StorageException | IOException e) {
                 log.warn(String.format("Failed to store artifact for job id %s. It will be stored locally instead.",
@@ -281,6 +286,7 @@ public class StorageServiceImpl implements StorageService {
 
     private static Map<Integer, String> storeVideoArtifactRemotely(
             StorageBackend storageBackend,
+            URI serviceUri,
             ArtifactExtractionRequest request,
             Collection<Integer> frameNumbers) throws IOException, StorageException {
 
@@ -311,7 +317,7 @@ public class StorageServiceImpl implements StorageService {
             int frameNumber;
             while ((frameNumber = queue.take()) >= 0) {
                 try (InputStream is = Files.newInputStream(pipePath)) {
-                    String location = storageBackend.store(is);
+                    String location = storageBackend.store(serviceUri, is);
                     paths.put(frameNumber, location);
                 }
 

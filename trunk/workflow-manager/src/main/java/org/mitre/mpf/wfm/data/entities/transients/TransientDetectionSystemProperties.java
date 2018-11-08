@@ -30,9 +30,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
+import org.mitre.mpf.wfm.service.StorageBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.util.Map;
 
 // Wrapper class for the detection.* system property values that should have been captured in a
@@ -114,6 +116,16 @@ public class TransientDetectionSystemProperties {
     @JsonIgnore
     public double getTrackOverlapThreshold() {
         return Double.valueOf(detectionSystemPropertiesSnapshot.get("detection.track.overlap.threshold"));
+    }
+
+    @JsonIgnore
+    public StorageBackend.Type getHttpObjectStorageType() {
+        return StorageBackend.Type.valueOf(detectionSystemPropertiesSnapshot.get("http.object.storage.type"));
+    }
+
+    @JsonIgnore
+    public URI getHttpStorageServiceUri() {
+        return URI.create(detectionSystemPropertiesSnapshot.get("http.object.storage.service_uri"));
     }
 
     public String lookup(String propertyName) {

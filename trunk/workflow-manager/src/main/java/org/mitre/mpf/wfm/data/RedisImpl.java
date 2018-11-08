@@ -1345,4 +1345,12 @@ public class RedisImpl implements Redis {
                 .collect(toSet());
 
     }
+
+
+    @Override
+    public TransientDetectionSystemProperties getPropertiesSnapshot(long jobId) {
+        byte[] snapshotBytes = (byte[]) redisTemplate.boundHashOps(key(BATCH_JOB, jobId))
+                .get(DETECTION_SYSTEM_PROPERTIES_SNAPSHOT);
+        return jsonUtils.deserialize(snapshotBytes, TransientDetectionSystemProperties.class);
+    }
 }

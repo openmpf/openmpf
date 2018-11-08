@@ -206,7 +206,7 @@ public class PropertiesUtil {
     public TransientDetectionSystemProperties createDetectionSystemPropertiesSnapshot() {
         Map<String, String> detMap = new HashMap<>();
         mpfPropertiesConfig.getKeys().forEachRemaining(key -> {
-            if (MpfPropertiesConfigurationBuilder.isDetectionProperty(key)) {
+            if (MpfPropertiesConfigurationBuilder.propertyRequiresSnapshot(key)) {
                 detMap.put(key, mpfPropertiesConfig.getString(key)); // resolve final value
             }
         } );

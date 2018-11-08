@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.util;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.configuration2.*;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
@@ -46,6 +47,10 @@ public class MpfPropertiesConfigurationBuilder {
     private static final String DETECTION_KEY_PREFIX = "detection.";
     private static final String REMOTE_MEDIA_DOWNLOAD_KEY_PREFIX = "remote.media.download.";
     private static final String NODE_AUTO_CONFIG_KEY_PREFIX = "node.auto.";
+    private static final String OBJECT_STORAGE_KEY_PREFIX = "http.object.storage.";
+
+    private static final Set<String> SNAPSHOT_PROPERTIES = ImmutableSet.of("http.object.storage.type",
+                                                                           "http.object.storage.service_uri");
 
     @javax.annotation.Resource(name="customPropFile")
     private FileSystemResource customPropFile;
@@ -222,19 +227,29 @@ public class MpfPropertiesConfigurationBuilder {
         mpfConfigSnapshot = tmpConfig;
     }
 
+    public static boolean propertyRequiresSnapshot(String key) {
+        return isDetectionProperty(key) || SNAPSHOT_PROPERTIES.contains(key);
+    }
+
+
     public static boolean isMutableProperty(String key) {
-        return isDetectionProperty(key) || isRemoteMediaDownloadProperty(key) || isNodeAutoConfigProperty(key);
+        return isDetectionProperty(key) || isRemoteMediaDownloadProperty(key) || isNodeAutoConfigProperty(key)
+                || isObjectStorageConfigProperty(key);
     }
 
-    public static boolean isDetectionProperty(String key) {
-        return key.startsWith(MpfPropertiesConfigurationBuilder.DETECTION_KEY_PREFIX);
+    private static boolean isDetectionProperty(String key) {
+        return key.startsWith(DETECTION_KEY_PREFIX);
     }
 
-    public static boolean isRemoteMediaDownloadProperty(String key) {
-        return key.startsWith(MpfPropertiesConfigurationBuilder.REMOTE_MEDIA_DOWNLOAD_KEY_PREFIX);
+    private static boolean isRemoteMediaDownloadProperty(String key) {
+        return key.startsWith(REMOTE_MEDIA_DOWNLOAD_KEY_PREFIX);
     }
 
-    public static boolean isNodeAutoConfigProperty(String key) {
-        return key.startsWith(MpfPropertiesConfigurationBuilder.NODE_AUTO_CONFIG_KEY_PREFIX);
+    private static boolean isNodeAutoConfigProperty(String key) {
+        return key.startsWith(NODE_AUTO_CONFIG_KEY_PREFIX);
+    }
+
+    private static boolean isObjectStorageConfigProperty(String key) {
+        return key.startsWith(OBJECT_STORAGE_KEY_PREFIX);
     }
 }

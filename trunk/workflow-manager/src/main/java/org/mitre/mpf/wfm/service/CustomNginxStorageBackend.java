@@ -95,26 +95,26 @@ public class CustomNginxStorageBackend implements StorageBackend {
     }
 
     @Override
-    public String storeAsJson(Object content) throws StorageException {
+    public String storeAsJson(URI serviceUri, Object content) throws StorageException {
         try (PipeStream inputStream = createJsonInputStream(content)) {
-            return store(inputStream);
+            return store(serviceUri, inputStream);
         }
     }
 
 
     @Override
-    public String store(InputStream content) throws StorageException {
+    public String store(URI serviceUri, InputStream content) throws StorageException {
         try (RetryingHttpClient client = new RetryingHttpClient(_propertiesUtil)) {
-            String uploadId = initUpload(client);
-            List<FilePartETag> filePartETags = sendContent(client, uploadId, content);
-            URI storedLocation = completeUpload(client, uploadId, filePartETags);
+            String uploadId = initUpload(client, serviceUri);
+            List<FilePartETag> filePartETags = sendContent(client, serviceUri, uploadId, content);
+            URI storedLocation = completeUpload(client, serviceUri, uploadId, filePartETags);
             return storedLocation.toString();
         }
     }
 
 
-    private String initUpload(RetryingHttpClient client) throws StorageException {
-        try (HttpResponseWrapper response = client.execute(new HttpPost(getInitUri()))) {
+    private String initUpload(RetryingHttpClient client, URI serviceUri) throws StorageException {
+        try (HttpResponseWrapper response = client.execute(new HttpPost(getInitUri(serviceUri)))) {
             JsonNode jsonNode = _objectMapper.readTree(response.getEntity().getContent());
             String uploadId = jsonNode.path("upload_id").asText(null);
             if (uploadId == null) {
@@ -128,9 +128,9 @@ public class CustomNginxStorageBackend implements StorageBackend {
         }
     }
 
-    private URI getInitUri() throws StorageException {
+    private static URI getInitUri(URI serviceUri) throws StorageException {
         try {
-            return buildUploadUri()
+            return buildUploadUri(serviceUri)
                     .addParameter("init", null)
                     .build();
         }
@@ -140,13 +140,13 @@ public class CustomNginxStorageBackend implements StorageBackend {
     }
 
 
-    private List<FilePartETag> sendContent(RetryingHttpClient client, String uploadId, InputStream content)
-            throws StorageException {
+    private List<FilePartETag> sendContent(RetryingHttpClient client, URI serviceUri, String uploadId,
+                                           InputStream content) throws StorageException {
         try {
             int uploadThreadCount = _propertiesUtil.getHttpStorageUploadThreadCount();
             int uploadSegmentSize = _propertiesUtil.getHttpStorageUploadSegmentSize();
 
-            Dispatcher dispatcher = new Dispatcher(client, uploadId, content);
+            Dispatcher dispatcher = new Dispatcher(client, serviceUri, uploadId, content);
 
             List<CompletableFuture<Stream<FilePartETag>>> futures = new ArrayList<>(uploadThreadCount);
             for (int i = 0; i < uploadThreadCount; i++) {
@@ -188,13 +188,13 @@ public class CustomNginxStorageBackend implements StorageBackend {
     }
 
 
-    private FilePartETag sendPart(RetryingHttpClient client, String uploadId, int partNumber,
+    private static FilePartETag sendPart(RetryingHttpClient client, URI serviceUri, String uploadId, int partNumber,
                                   byte[] content) throws StorageException {
 
         HttpEntity fileUploadEntity = MultipartEntityBuilder.create()
                 .addBinaryBody("file", content, ContentType.DEFAULT_BINARY, "part_" + partNumber)
                 .build();
-        HttpPost post = new HttpPost(getSendPartUri(uploadId, partNumber));
+        HttpPost post = new HttpPost(getSendPartUri(serviceUri, uploadId, partNumber));
         post.setEntity(fileUploadEntity);
 
         try (HttpResponseWrapper response = client.execute(post)) {
@@ -214,9 +214,9 @@ public class CustomNginxStorageBackend implements StorageBackend {
     }
 
 
-    private URI getSendPartUri(String uploadId, int partNumber) throws StorageException {
+    private static URI getSendPartUri(URI serviceUri, String uploadId, int partNumber) throws StorageException {
         try {
-            return buildUploadUri()
+            return buildUploadUri(serviceUri)
                     .addParameter("uploadID", uploadId)
                     .addParameter("partNumber", String.valueOf(partNumber))
                     .build();
@@ -229,9 +229,9 @@ public class CustomNginxStorageBackend implements StorageBackend {
     }
 
 
-    private URI completeUpload(RetryingHttpClient client, String uploadId, List<FilePartETag> eTags)
+    private URI completeUpload(RetryingHttpClient client, URI serviceUri, String uploadId, List<FilePartETag> eTags)
             throws StorageException {
-        HttpPost post = new HttpPost(getCompleteUploadUri(uploadId));
+        HttpPost post = new HttpPost(getCompleteUploadUri(serviceUri, uploadId));
         post.setEntity(createCompleteUploadJson(eTags));
 
         try (HttpResponseWrapper response = client.execute(post)) {
@@ -244,7 +244,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
                                                    + pathToRelativeUrl);
             }
 
-            return new URIBuilder(_propertiesUtil.getHttpStorageServiceUri())
+            return new URIBuilder(serviceUri)
                     .setPath(relativeUrl)
                     .build();
         }
@@ -281,9 +281,9 @@ public class CustomNginxStorageBackend implements StorageBackend {
     }
 
 
-    private URI getCompleteUploadUri(String uploadId) throws StorageException {
+    private static URI getCompleteUploadUri(URI serviceUri, String uploadId) throws StorageException {
         try {
-            return buildUploadUri()
+            return buildUploadUri(serviceUri)
                     .addParameter("uploadID", uploadId)
                     .build();
         }
@@ -295,8 +295,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
     }
 
 
-    private URIBuilder buildUploadUri() {
-        URI serviceUri = _propertiesUtil.getHttpStorageServiceUri();
+    private static URIBuilder buildUploadUri(URI serviceUri) {
         URIBuilder builder = new URIBuilder(serviceUri);
         builder.setPath(builder.getPath() + "/api/uploadS3.php");
         return builder;
@@ -313,17 +312,19 @@ public class CustomNginxStorageBackend implements StorageBackend {
     }
 
 
-    private class Dispatcher {
+    private static class Dispatcher {
         private final RetryingHttpClient _client;
+        private final URI _serviceUri;
         private final String _uploadId;
         private final InputStream _content;
 
         private int _partCount = -1;
 
-        public Dispatcher(RetryingHttpClient client, String uploadId, InputStream content) {
+        public Dispatcher(RetryingHttpClient client, URI serviceUri, String uploadId, InputStream content) {
             _client = client;
             _uploadId = uploadId;
             _content = content;
+            _serviceUri = serviceUri;
         }
 
         public synchronized Callable<FilePartETag> getWork(byte[] buffer) throws StorageException {
@@ -346,7 +347,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
                     : Arrays.copyOf(buffer, numRead); // Copy can only occur on final part.
             log.debug("Started sending part number: {}", _partCount);
             final int partCount = _partCount;
-            return () -> sendPart(_client, _uploadId, partCount, sendBuffer);
+            return () -> sendPart(_client, _serviceUri, _uploadId, partCount, sendBuffer);
         }
     }
 

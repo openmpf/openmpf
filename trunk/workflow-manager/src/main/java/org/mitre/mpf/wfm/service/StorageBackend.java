@@ -28,12 +28,13 @@
 package org.mitre.mpf.wfm.service;
 
 import java.io.InputStream;
+import java.net.URI;
 
 public interface StorageBackend {
 
-    public String store(InputStream content) throws StorageException;
+    public String store(URI serviceUri, InputStream content) throws StorageException;
 
-    public String storeAsJson(Object content) throws StorageException;
+    public String storeAsJson(URI serviceUri, Object content) throws StorageException;
 
     public Type getType();
 

@@ -65,6 +65,8 @@ import static org.mockito.Mockito.when;
 
 public class TestCustomNginxStorageBackend {
 
+    private static final URI SERVICE_URI = URI.create("http://127.0.0.1:5000");
+
     private final PropertiesUtil _mockPropertiesUtil = mock(PropertiesUtil.class);
 
     private static final ObjectMapper _objectMapper = new ObjectMapper();
@@ -110,10 +112,8 @@ public class TestCustomNginxStorageBackend {
 
     @Test
     public void throwsExceptionWhenConnectionRefused() {
-        when(_mockPropertiesUtil.getHttpStorageServiceUri())
-                .thenReturn(URI.create("http://127.0.0.1:12345"));
         try {
-            _nginxStorageService.storeAsJson(getSampleData());
+            _nginxStorageService.storeAsJson(URI.create("http://127.0.0.1:12345"), getSampleData());
             fail("Expected exception not thrown");
         }
         catch (StorageException e) {
@@ -124,11 +124,8 @@ public class TestCustomNginxStorageBackend {
 
     @Test
     public void throwsExceptionWhenBadStatus() {
-        when(_mockPropertiesUtil.getHttpStorageServiceUri())
-                .thenReturn(URI.create("http://127.0.0.1:5000/badpath"));
-
         try {
-            _nginxStorageService.storeAsJson(getSampleData());
+            _nginxStorageService.storeAsJson(URI.create("http://127.0.0.1:5000/badpath"), getSampleData());
             fail("Expected exception");
         }
         catch (StorageException e) {
@@ -139,7 +136,7 @@ public class TestCustomNginxStorageBackend {
 
     @Test
     public void canUploadContent() throws StorageException {
-        String location = _nginxStorageService.storeAsJson(getSampleData());
+        String location = _nginxStorageService.storeAsJson(SERVICE_URI, getSampleData());
         assertEquals(
                 "http://127.0.0.1:5000/fs/d0d8582bd03ef1efd8ad2891c132f84a095fe167c50e3c503eebee0548f02016",
                 location);
@@ -152,8 +149,7 @@ public class TestCustomNginxStorageBackend {
         when(_mockPropertiesUtil.getHttpStorageUploadThreadCount())
                 .thenReturn(1);
         try {
-            _nginxStorageService.storeAsJson(new Object() {
-            });
+            _nginxStorageService.storeAsJson(SERVICE_URI, new Object() { });
             fail("Expected exception not thrown.");
         }
         catch (StorageException e) {
@@ -172,7 +168,7 @@ public class TestCustomNginxStorageBackend {
         CAUSE_INIT_FAILURE = true;
         CAUSE_SEGMENT_FAILURE = true;
         CAUSE_UPLOAD_COMPLETE_FAILURE = true;
-        String location = _nginxStorageService.storeAsJson(getSampleData());
+        String location = _nginxStorageService.storeAsJson(SERVICE_URI, getSampleData());
         assertEquals(
                 "http://127.0.0.1:5000/fs/d0d8582bd03ef1efd8ad2891c132f84a095fe167c50e3c503eebee0548f02016",
                 location);

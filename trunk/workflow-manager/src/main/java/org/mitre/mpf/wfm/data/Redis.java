@@ -343,4 +343,6 @@ public interface Redis {
     void addJobError(long jobId, String message);
 
     Set<String> getJobErrors(long jobId);
+
+    TransientDetectionSystemProperties getPropertiesSnapshot(long jobId);
 }

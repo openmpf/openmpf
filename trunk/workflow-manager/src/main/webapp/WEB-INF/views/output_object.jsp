@@ -48,8 +48,9 @@
                         return;
                     }
                     var alertMsg = 'An error occurred while trying to get the output object for job ' + jobId;
-                    if (evt.responseText) {
-                        alertMsg += ': ' + evt.responseText;
+                    var responseMsg = (evt.responseJSON && evt.responseJSON.message) || evt.responseText;
+                    if (responseMsg) {
+                        alertMsg += ': ' + responseMsg;
                     }
                     alert(alertMsg);
                 });

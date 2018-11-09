@@ -276,7 +276,7 @@ public class JobController {
         }
         catch (NoSuchFileException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(String.format("The output object for job %s does not exist", jobId));
+                    .body(String.format("The output object for job %s does not exist.", jobId));
         }
     }
 

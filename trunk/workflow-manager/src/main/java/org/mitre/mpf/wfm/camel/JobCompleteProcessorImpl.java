@@ -218,6 +218,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 		IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
 
+		boolean hasDetectionProcessingError = false;
+
 		int mediaIndex = 0;
 		for(TransientMedia transientMedia : transientJob.getMedia()) {
 			StringBuilder stateKeyBuilder = new StringBuilder("+");
@@ -242,6 +244,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 						String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), transientAction.getName());
 
 						for (DetectionProcessingError detectionProcessingError : redis.getDetectionProcessingErrors(jobId, transientMedia.getId(), stageIndex, actionIndex)) {
+							hasDetectionProcessingError = true;
 							JsonDetectionProcessingError jsonDetectionProcessingError = new JsonDetectionProcessingError(detectionProcessingError.getStartOffset(), detectionProcessingError.getEndOffset(), detectionProcessingError.getError());
 							if (!mediaOutputObject.getDetectionProcessingErrors().containsKey(stateKey)) {
 								mediaOutputObject.getDetectionProcessingErrors().put(stateKey, new TreeSet<>());
@@ -353,6 +356,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			mediaIndex++;
 		}
 
+		if (hasDetectionProcessingError) {
+			jsonOutputObject.getJobErrors()
+					.add("See the detectionProcessingErrors fields for additional errors.");
+		}
+
 		try {
 			String outputLocation = storageService.store(jsonOutputObject);
 			jobRequest.setOutputObjectPath(outputLocation);
@@ -371,7 +379,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 	}
 
 	private static void checkErrorMessages(JsonOutputObject outputObject, Mutable<BatchJobStatusType> jobStatus) {
-	    if (jobStatus.getValue() == BatchJobStatusType.COMPLETE_WITH_ERRORS) {
+		if (jobStatus.getValue() == BatchJobStatusType.COMPLETE_WITH_ERRORS) {
 	    	return;
 	    }
 		if (!outputObject.getJobErrors().isEmpty()) {

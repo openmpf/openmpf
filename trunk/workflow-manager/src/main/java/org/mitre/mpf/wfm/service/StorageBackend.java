@@ -27,14 +27,31 @@
 
 package org.mitre.mpf.wfm.service;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public interface StorageBackend {
 
     public String store(URI serviceUri, InputStream content) throws StorageException;
 
     public String storeAsJson(URI serviceUri, Object content) throws StorageException;
+
+    public default String store(URI serviceUri, Path path) throws IOException, StorageException {
+        try (InputStream is = Files.newInputStream(path)) {
+            return store(serviceUri, is);
+        }
+    }
+
+    public default String store(URI serviceUri, URL content) throws IOException, StorageException {
+        try (InputStream is = content.openStream()) {
+            return store(serviceUri, is);
+        }
+    }
+
 
     public Type getType();
 

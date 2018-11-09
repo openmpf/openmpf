@@ -46,7 +46,6 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
@@ -117,13 +116,11 @@ public class StorageServiceImpl implements StorageService {
     @Override
     public String store(JsonOutputObject outputObject) throws IOException {
         TransientDetectionSystemProperties propertiesSnapshot = _redis.getPropertiesSnapshot(outputObject.getJobId());
-        StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
-        if (storageBackend == null) {
-            return storeLocally(outputObject);
-        }
-
         try {
-            return storageBackend.storeAsJson(propertiesSnapshot.getHttpStorageServiceUri(), outputObject);
+            StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
+            if (storageBackend != null) {
+                return storageBackend.storeAsJson(propertiesSnapshot.getHttpStorageServiceUri(), outputObject);
+            }
         }
         catch (StorageException e) {
             log.warn(String.format(
@@ -131,8 +128,8 @@ public class StorageServiceImpl implements StorageService {
                     outputObject.getJobId()), e);
             outputObject.getJobWarnings().add(
                     "This output object was stored locally because storing it remotely failed due to: " + e);
-            return storeLocally(outputObject);
         }
+        return storeLocally(outputObject);
     }
 
 
@@ -148,13 +145,14 @@ public class StorageServiceImpl implements StorageService {
         if (markupResult.getMarkupStatus() != MarkupStatus.COMPLETE) {
             return;
         }
-        TransientDetectionSystemProperties propertiesSnapshot = _redis.getPropertiesSnapshot(markupResult.getJobId());
-        StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
-        if (storageBackend == null) {
-            return;
-        }
 
+        TransientDetectionSystemProperties propertiesSnapshot = _redis.getPropertiesSnapshot(markupResult.getJobId());
         try {
+            StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
+            if (storageBackend == null) {
+                return;
+            }
+
             Path localPath = IoUtils.toLocalPath(markupResult.getMarkupUri())
                     .orElse(null);
 
@@ -162,10 +160,8 @@ public class StorageServiceImpl implements StorageService {
                     ? new URL(markupResult.getMarkupUri())
                     : localPath.toUri().toURL();
 
-            try (InputStream is = markupUrl.openStream()) {
-                String newLocation = storageBackend.store(propertiesSnapshot.getHttpStorageServiceUri(), is);
-                markupResult.setMarkupUri(newLocation);
-            }
+            String newLocation = storageBackend.store(propertiesSnapshot.getHttpStorageServiceUri(), markupUrl);
+            markupResult.setMarkupUri(newLocation);
             if (localPath != null) {
                 Files.delete(localPath);
             }
@@ -205,20 +201,19 @@ public class StorageServiceImpl implements StorageService {
 
 
     private String processImageArtifact(ArtifactExtractionRequest request) {
-        TransientDetectionSystemProperties propertiesSnapshot = _redis.getPropertiesSnapshot(request.getJobId());
-        StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
-
         Path inputMediaPath = Paths.get(request.getPath());
-        if (storageBackend != null) {
-            try (InputStream inputStream = Files.newInputStream(inputMediaPath)) {
-                return storageBackend.store(propertiesSnapshot.getHttpStorageServiceUri(), inputStream);
+        TransientDetectionSystemProperties propertiesSnapshot = _redis.getPropertiesSnapshot(request.getJobId());
+        try {
+            StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
+            if (storageBackend != null) {
+                return storageBackend.store(propertiesSnapshot.getHttpStorageServiceUri(), inputMediaPath);
             }
-            catch (StorageException | IOException e) {
-                log.warn(String.format(
-                        "Failed to remotely store artifact for job id %s. It will be stored locally instead.",
-                        request.getJobId()), e);
-                addArtifactStoredLocallyWarning(request.getJobId(), e);
-            }
+        }
+        catch (StorageException | IOException e) {
+            log.warn(String.format(
+                    "Failed to remotely store artifact for job id %s. It will be stored locally instead.",
+                    request.getJobId()), e);
+            addArtifactStoredLocallyWarning(request.getJobId(), e);
         }
 
         try {
@@ -253,17 +248,17 @@ public class StorageServiceImpl implements StorageService {
                 .collect(toCollection(TreeSet::new));
 
         TransientDetectionSystemProperties propertiesSnapshot = _redis.getPropertiesSnapshot(request.getJobId());
-        StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
-        if (storageBackend != null) {
-            try {
+        try {
+            StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
+            if (storageBackend != null) {
                 return storeVideoArtifactRemotely(storageBackend, propertiesSnapshot.getHttpStorageServiceUri(),
                                                   request, frameNumbers);
             }
-            catch (StorageException | IOException e) {
-                log.warn(String.format("Failed to store artifact for job id %s. It will be stored locally instead.",
-                                       request.getJobId()), e);
-                addArtifactStoredLocallyWarning(request.getJobId(), e);
-            }
+        }
+        catch (StorageException | IOException e) {
+            log.warn(String.format("Failed to store artifact for job id %s. It will be stored locally instead.",
+                                   request.getJobId()), e);
+            addArtifactStoredLocallyWarning(request.getJobId(), e);
         }
 
         try {
@@ -316,11 +311,8 @@ public class StorageServiceImpl implements StorageService {
             Map<Integer, String> paths = new HashMap<>();
             int frameNumber;
             while ((frameNumber = queue.take()) >= 0) {
-                try (InputStream is = Files.newInputStream(pipePath)) {
-                    String location = storageBackend.store(serviceUri, is);
-                    paths.put(frameNumber, location);
-                }
-
+                String location = storageBackend.store(serviceUri, pipePath);
+                paths.put(frameNumber, location);
             }
             addMissingKeys(frameNumbers, paths, request);
             return paths;

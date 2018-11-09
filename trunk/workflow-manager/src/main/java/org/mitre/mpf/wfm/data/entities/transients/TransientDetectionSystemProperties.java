@@ -31,6 +31,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.service.StorageBackend;
+import org.mitre.mpf.wfm.service.StorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,8 +120,14 @@ public class TransientDetectionSystemProperties {
     }
 
     @JsonIgnore
-    public StorageBackend.Type getHttpObjectStorageType() {
-        return StorageBackend.Type.valueOf(detectionSystemPropertiesSnapshot.get("http.object.storage.type"));
+    public StorageBackend.Type getHttpObjectStorageType() throws StorageException {
+        String storageType = detectionSystemPropertiesSnapshot.get("http.object.storage.type");
+        try {
+            return StorageBackend.Type.valueOf(storageType);
+        }
+        catch (IllegalArgumentException e) {
+            throw new StorageException("Invalid storage type: " + storageType, e);
+        }
     }
 
     @JsonIgnore

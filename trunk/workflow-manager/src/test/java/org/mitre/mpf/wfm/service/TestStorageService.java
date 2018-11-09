@@ -53,7 +53,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -167,6 +167,20 @@ public class TestStorageService {
     }
 
 
+    @Test
+    public void outputObjectGetsStoredLocallyWhenBadBackendType() throws IOException {
+        Map<String, String> propertiesMap = new HashMap<>();
+        propertiesMap.put("http.object.storage.type", "BAD_TYPE");
+        propertiesMap.put("http.object.storage.service_uri", SERVICE_URI.toString());
+        TransientDetectionSystemProperties propertiesSnapshot = new TransientDetectionSystemProperties(propertiesMap);
+        when(_mockRedis.getPropertiesSnapshot(471))
+                .thenReturn(propertiesSnapshot);
+
+        verifyOutputObjectStoredLocally();
+        verifyNoRedisWarning();
+    }
+
+
     private void verifyOutputObjectStoredLocally() throws IOException {
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
         when(outputObject.getJobId())
@@ -196,9 +210,10 @@ public class TestStorageService {
         String expectedUrl = "http://somehost:1234";
         MutableObject<byte[]> actualSha = new MutableObject<>();
 
-        when(_mockStorageBackend.store(any(), any()))
+        when(_mockStorageBackend.store(any(), any(Path.class)))
                 .thenAnswer(invocation -> {
-                    try (InputStream is = invocation.getArgumentAt(1, InputStream.class)) {
+                    Path path = invocation.getArgumentAt(1, Path.class);
+                    try (InputStream is = Files.newInputStream(path)) {
                         actualSha.setValue(DigestUtils.sha256(is));
                     }
                     return expectedUrl;
@@ -225,7 +240,7 @@ public class TestStorageService {
         setStorageType(434, StorageBackend.Type.NONE);
         verifyImageArtifactStoredLocally();
         verify(_mockStorageBackend, never())
-                .store(any(), any());
+                .store(any(), any(InputStream.class));
         verifyNoRedisWarning();
     }
 
@@ -234,7 +249,7 @@ public class TestStorageService {
     public void imageArtifactGetStoredLocallyWhenBackendException() throws IOException, StorageException {
         setStorageType(434, StorageBackend.Type.CUSTOM_NGINX);
         doThrow(StorageException.class)
-                .when(_mockStorageBackend).store(any(), any());
+                .when(_mockStorageBackend).store(any(), any(Path.class));
         verifyImageArtifactStoredLocally();
         verifyRedisWarning(434);
     }
@@ -278,9 +293,10 @@ public class TestStorageService {
 
         String baseUrl = "http://somhost:4321/";
         AtomicInteger count = new AtomicInteger();
-        when(_mockStorageBackend.store(any(), notNull(InputStream.class)))
+        when(_mockStorageBackend.store(any(), notNull(Path.class)))
                 .thenAnswer(invocation -> {
-                    try (InputStream is = invocation.getArgumentAt(1, InputStream.class)) {
+                    Path path = invocation.getArgumentAt(1, Path.class);
+                    try (InputStream is = Files.newInputStream(path)) {
                         actualHashes.add(DigestUtils.sha256(is));
                     }
                     return baseUrl + count.getAndIncrement();
@@ -326,7 +342,7 @@ public class TestStorageService {
         setStorageType(436, StorageBackend.Type.NONE);
         verifyVideoArtifactsStoredLocally();
         verify(_mockStorageBackend, never())
-                .store(any(), any());
+                .store(any(), any(InputStream.class));
         verifyNoRedisWarning();
     }
 
@@ -335,7 +351,7 @@ public class TestStorageService {
     public void videoArtifactsGetStoredLocallyWhenBackendException() throws IOException, StorageException {
         setStorageType(436, StorageBackend.Type.CUSTOM_NGINX);
         doThrow(StorageException.class)
-                .when(_mockStorageBackend).store(any(), any());
+                .when(_mockStorageBackend).store(any(), any(Path.class));
         verifyVideoArtifactsStoredLocally();
         verifyRedisWarning(436);
     }
@@ -378,11 +394,10 @@ public class TestStorageService {
 
         String expectedUploadUri = "http://somehost:1234/markup/0";
         MutableObject<String> actualMarkupContent = new MutableObject<>();
-        when(_mockStorageBackend.store(any(), any()))
+        when(_mockStorageBackend.store(any(), any(URL.class)))
                 .thenAnswer(invocation -> {
-                    try (InputStream is = invocation.getArgumentAt(1, InputStream.class)) {
-                        actualMarkupContent.setValue(IOUtils.toString(is, StandardCharsets.UTF_8));
-                    }
+                    URL url = invocation.getArgumentAt(1, URL.class);
+                    actualMarkupContent.setValue(IOUtils.toString(url));
                     return expectedUploadUri;
                 });
 
@@ -407,7 +422,7 @@ public class TestStorageService {
         MarkupResult markupResult = verifyMarkupStoredLocally();
 
         verify(_mockStorageBackend, never())
-                .store(any(), any());
+                .store(any(), any(InputStream.class));
 
         assertEquals(MarkupStatus.COMPLETE, markupResult.getMarkupStatus());
         assertTrue(markupResult.getMessage() == null || markupResult.getMessage().isEmpty());
@@ -420,7 +435,7 @@ public class TestStorageService {
     public void markupStoredLocallyWhenBackendException() throws StorageException, IOException {
         setStorageType(1337, StorageBackend.Type.CUSTOM_NGINX);
         doThrow(StorageException.class)
-                .when(_mockStorageBackend).store(any(), any());
+                .when(_mockStorageBackend).store(any(), any(URL.class));
         MarkupResult markupResult = verifyMarkupStoredLocally();
 
         assertEquals(MarkupStatus.COMPLETE_WITH_WARNING, markupResult.getMarkupStatus());

@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.wfm.util;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.configuration2.*;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
@@ -49,8 +49,8 @@ public class MpfPropertiesConfigurationBuilder {
     private static final String NODE_AUTO_CONFIG_KEY_PREFIX = "node.auto.";
     private static final String OBJECT_STORAGE_KEY_PREFIX = "http.object.storage.";
 
-    private static final Set<String> SNAPSHOT_PROPERTIES = ImmutableSet.of("http.object.storage.type",
-                                                                           "http.object.storage.service_uri");
+    private static final Collection<String> SNAPSHOT_PREFIXES
+            = ImmutableList.of(DETECTION_KEY_PREFIX, "http.object.storage.type", "http.object.storage.service_uri");
 
     @javax.annotation.Resource(name="customPropFile")
     private FileSystemResource customPropFile;
@@ -228,7 +228,7 @@ public class MpfPropertiesConfigurationBuilder {
     }
 
     public static boolean propertyRequiresSnapshot(String key) {
-        return isDetectionProperty(key) || SNAPSHOT_PROPERTIES.contains(key);
+        return SNAPSHOT_PREFIXES.stream().anyMatch(key::startsWith);
     }
 
 

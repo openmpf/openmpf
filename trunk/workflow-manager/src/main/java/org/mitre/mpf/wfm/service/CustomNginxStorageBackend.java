@@ -48,6 +48,7 @@ import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
@@ -302,9 +303,11 @@ public class CustomNginxStorageBackend implements StorageBackend {
     }
 
 
+    private static final int JSON_PIPE_STREAM_BUFFER_SIZE = 16384;
+
     private PipeStream createJsonInputStream(Object object) throws StorageException {
         try {
-            return new PipeStream(16384, out -> _objectMapper.writeValue(out, object));
+            return new PipeStream(JSON_PIPE_STREAM_BUFFER_SIZE, out -> _objectMapper.writeValue(out, object));
         }
         catch (IOException e) {
             throw new StorageException("An error occurred while trying to convert object to JSON: " + e, e);
@@ -344,7 +347,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
             }
             final byte[] sendBuffer = numRead == buffer.length
                     ? buffer
-                    : Arrays.copyOf(buffer, numRead); // Copy can only occur on final part.
+                    : Arrays.copyOf(buffer, numRead);
             log.debug("Started sending part number: {}", _partCount);
             final int partCount = _partCount;
             return () -> sendPart(_client, _serviceUri, _uploadId, partCount, sendBuffer);
@@ -424,8 +427,9 @@ public class CustomNginxStorageBackend implements StorageBackend {
 
         private HttpResponseWrapper tryExecute(HttpUriRequest request) throws IOException {
             HttpResponseWrapper response = new HttpResponseWrapper(_client.execute(request));
+
             StatusLine status = response.getStatusLine();
-            if (status.getStatusCode() > 199 && status.getStatusCode() < 300) {
+            if (HttpStatus.valueOf(status.getStatusCode()).is2xxSuccessful()) {
                 return response;
             }
             response.close();

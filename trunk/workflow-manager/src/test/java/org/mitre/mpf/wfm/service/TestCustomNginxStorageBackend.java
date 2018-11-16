@@ -57,6 +57,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
@@ -75,7 +77,7 @@ public class TestCustomNginxStorageBackend {
     private final CustomNginxStorageBackend _nginxStorageService
             = new CustomNginxStorageBackend(_mockPropertiesUtil, _objectMapper);
 
-    private static int BAD_PATH_POST_COUNT;
+    private static final AtomicInteger BAD_PATH_POST_COUNT = new AtomicInteger();
 
     @BeforeClass
     public static void initClass() {
@@ -105,7 +107,7 @@ public class TestCustomNginxStorageBackend {
                 .thenReturn(3);
 
 
-        BAD_PATH_POST_COUNT = 0;
+        BAD_PATH_POST_COUNT.set(0);
     }
 
 
@@ -129,7 +131,7 @@ public class TestCustomNginxStorageBackend {
             fail("Expected exception");
         }
         catch (StorageException e) {
-            assertEquals(3, BAD_PATH_POST_COUNT);
+            assertEquals(3, BAD_PATH_POST_COUNT.intValue());
         }
     }
 
@@ -159,15 +161,15 @@ public class TestCustomNginxStorageBackend {
     }
 
 
-    private static boolean CAUSE_INIT_FAILURE;
-    private static boolean CAUSE_SEGMENT_FAILURE;
-    private static boolean CAUSE_UPLOAD_COMPLETE_FAILURE;
+    private static final AtomicBoolean CAUSE_INIT_FAILURE = new AtomicBoolean();
+    private static final AtomicBoolean CAUSE_SEGMENT_FAILURE = new AtomicBoolean();
+    private static final AtomicBoolean CAUSE_UPLOAD_COMPLETE_FAILURE = new AtomicBoolean();
 
     @Test
     public void testRetry() throws StorageException {
-        CAUSE_INIT_FAILURE = true;
-        CAUSE_SEGMENT_FAILURE = true;
-        CAUSE_UPLOAD_COMPLETE_FAILURE = true;
+        CAUSE_INIT_FAILURE.set(true);
+        CAUSE_SEGMENT_FAILURE.set(true);
+        CAUSE_UPLOAD_COMPLETE_FAILURE.set(true);
         String location = _nginxStorageService.storeAsJson(SERVICE_URI, getSampleData());
         assertEquals(
                 "http://127.0.0.1:5000/fs/d0d8582bd03ef1efd8ad2891c132f84a095fe167c50e3c503eebee0548f02016",
@@ -185,7 +187,7 @@ public class TestCustomNginxStorageBackend {
         Spark.port(5000);
 
         Spark.post("/badpath/*", (req, resp) -> {
-            BAD_PATH_POST_COUNT += 1;
+            BAD_PATH_POST_COUNT.incrementAndGet();
             Spark.halt(500);
             return "";
         });
@@ -206,8 +208,7 @@ public class TestCustomNginxStorageBackend {
         @Override
         public Object handle(Request req, Response resp) throws IOException, ServletException, NoSuchAlgorithmException {
             if (req.queryParams().contains("init")) {
-                if (CAUSE_INIT_FAILURE) {
-                    CAUSE_INIT_FAILURE = false;
+                if (CAUSE_INIT_FAILURE.getAndSet(false)) {
                     Spark.halt(500, "Init failure requested.");
                 }
                 String uploadId = UUID.randomUUID().toString();
@@ -219,8 +220,7 @@ public class TestCustomNginxStorageBackend {
 
             String partNumber = req.queryParams("partNumber");
             if (partNumber != null) {
-                if (CAUSE_SEGMENT_FAILURE) {
-                    CAUSE_SEGMENT_FAILURE = false;
+                if (CAUSE_SEGMENT_FAILURE.getAndSet(false)) {
                     Spark.halt(500, "Segment failure requested.");
                 }
                 return handlePartUpload(req, resp, Integer.valueOf(partNumber));
@@ -228,8 +228,7 @@ public class TestCustomNginxStorageBackend {
 
             String uploadId = req.queryParams("uploadID");
             if (uploadId != null) {
-                if (CAUSE_UPLOAD_COMPLETE_FAILURE) {
-                    CAUSE_UPLOAD_COMPLETE_FAILURE = false;
+                if (CAUSE_UPLOAD_COMPLETE_FAILURE.getAndSet(false)) {
                     Spark.halt(500, "Complete upload failure requested.");
                 }
                 return handleUploadComplete(req, uploadId);
@@ -239,7 +238,7 @@ public class TestCustomNginxStorageBackend {
             return "";
         }
 
-        private String handlePartUpload(Request req, Response resp, int partNumber) throws IOException, ServletException {
+        private synchronized String handlePartUpload(Request req, Response resp, int partNumber) throws IOException, ServletException {
             req.attribute("org.eclipse.jetty.multipartConfig",
                           new MultipartConfigElement("/opt/tmp", -1, -1, Integer.MAX_VALUE));
 

@@ -36,7 +36,6 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.StorageService;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,7 +51,7 @@ import java.util.SortedSet;
  * contained in the incoming message body.
  */
 @Component(ArtifactExtractionProcessorImpl.REF)
-public class ArtifactExtractionProcessorImpl extends WfmProcessor implements ArtifactExtractionProcessorInterface {
+public class ArtifactExtractionProcessorImpl extends WfmProcessor {
 
 	public static final String REF = "trackDetectionExtractionProcessor";
 	public static final String ERROR_PATH = "#ERROR_PATH#";
@@ -63,9 +62,6 @@ public class ArtifactExtractionProcessorImpl extends WfmProcessor implements Art
 	@Autowired
 	@Qualifier(RedisImpl.REF)
 	private Redis redis;
-
-	@Autowired
-	private PropertiesUtil propertiesUtil;
 
 	@Autowired
 	private StorageService storageService;

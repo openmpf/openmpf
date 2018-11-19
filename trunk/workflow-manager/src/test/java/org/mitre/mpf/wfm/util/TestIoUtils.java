@@ -24,47 +24,61 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+
 package org.mitre.mpf.wfm.util;
 
-import org.mitre.mpf.wfm.enums.EnvVar;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-/**
- * This class loads any JNI libraries needed by the WFM. Classes which rely on these JNI libraries
- * should be marked appropriately using the {@link org.springframework.context.annotation.DependsOn}
- * annotation.
- */
-@Component(JniLoader.REF)
-@Scope("prototype")
-public class JniLoader {
-    public static final String REF = "jniLoader";
-    private static final Logger log = LoggerFactory.getLogger(JniLoader.class);
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-    private static boolean _isLoaded;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-    static {
-        log.info("Loading JNI libraries...");
-        try {
-            System.loadLibrary("mpfopencvjni");
-            _isLoaded = true;
-        }
-        catch (UnsatisfiedLinkError ex) {
-            log.warn("System.loadLibrary() failed due to: {}", ex.getMessage());
-            String libFullPath = System.getenv(EnvVar.MPF_HOME) + "/lib/libmpfopencvjni.so";
-            log.warn("Trying full path to library: {}", libFullPath);
-            System.load(libFullPath);
-            _isLoaded = true;
-        }
+public class TestIoUtils {
+
+    @Rule
+    public TemporaryFolder _tempFolder = new TemporaryFolder();
+
+    private Path _tempRoot;
+
+    @Before
+    public void init() {
+        _tempRoot = _tempFolder.getRoot().toPath();
     }
 
-    /**
-     * This method exists to force the static initializer run when running unit tests. This should always return true.
-     * @return true
-     */
-    public static boolean isLoaded() {
-        return _isLoaded;
+
+    @Test
+    public void canRecursivelyDeleteEmptyDirectoryTree() throws IOException {
+        _tempFolder.newFolder("level_1_dir_1", "level_2_dir_1", "level_3_dir_1");
+        _tempFolder.newFolder("level_1_dir_1", "level_2_dir_1", "level_3_dir_2");
+        _tempFolder.newFolder("level_1_dir_1", "level_2_dir_2");
+        _tempFolder.newFolder("level_1_dir_2");
+
+        IoUtils.deleteEmptyDirectoriesRecursively(_tempRoot);
+        assertFalse(Files.exists(_tempRoot));
+    }
+
+
+    @Test
+    public void doesNotDeleteFilesWhenDeletingEmptyDirs() throws IOException {
+        Path emptyDir1 = _tempFolder.newFolder("level_1_dir_1", "level_2_dir_1", "level_3_dir_1").toPath();
+        Path emptyDir2 = _tempFolder.newFolder("level_1_dir_1", "level_2_dir_1", "level_3_dir_2", "level_4_dir_1").toPath();
+        _tempFolder.newFolder("level_1_dir_1", "level_2_dir_2");
+        Path emptyDir3 = _tempFolder.newFolder("level_1_dir_2").toPath();
+        Path file1 = _tempFolder.newFile("level_1_dir_1/level_2_dir_1/level_3_dir_2/file1").toPath();
+        Path file2 = _tempFolder.newFile("level_1_dir_1/level_2_dir_2/file2").toPath();
+
+        IoUtils.deleteEmptyDirectoriesRecursively(_tempRoot);
+        assertTrue(Files.exists(file1));
+        assertTrue(Files.exists(file2));
+
+        assertFalse(Files.exists(emptyDir1));
+        assertFalse(Files.exists(emptyDir2));
+        assertFalse(Files.exists(emptyDir3));
     }
 }

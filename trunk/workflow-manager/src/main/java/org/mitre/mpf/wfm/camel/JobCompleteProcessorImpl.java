@@ -358,7 +358,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 		if (hasDetectionProcessingError) {
 			jsonOutputObject.getJobErrors()
-					.add("Some components had errors for some media. Refer to the detectionErrors fields.");
+					.add("Some components had errors for some media. Refer to the detectionProcessingErrors fields.");
 		}
 
 		try {

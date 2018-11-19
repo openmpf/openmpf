@@ -50,14 +50,14 @@ import java.util.SortedSet;
  * Extracts artifacts from a media file based on the contents of the {@link org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest}
  * contained in the incoming message body.
  */
-@Component(ArtifactExtractionProcessorImpl.REF)
-public class ArtifactExtractionProcessorImpl extends WfmProcessor {
+@Component(ArtifactExtractionProcessor.REF)
+public class ArtifactExtractionProcessor extends WfmProcessor {
 
 	public static final String REF = "trackDetectionExtractionProcessor";
 	public static final String ERROR_PATH = "#ERROR_PATH#";
 	public static final String UNSUPPORTED_PATH = "#UNSUPPORTED_PATH";
 
-	private static final Logger log = LoggerFactory.getLogger(ArtifactExtractionProcessorImpl.class);
+	private static final Logger log = LoggerFactory.getLogger(ArtifactExtractionProcessor.class);
 
 	@Autowired
 	@Qualifier(RedisImpl.REF)

@@ -30,7 +30,7 @@ package org.mitre.mpf.wfm.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessorImpl;
+import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
@@ -229,7 +229,7 @@ public class StorageServiceImpl implements StorageService {
                              "due to an exception. All detections (including exemplars) produced in this stage " +
                              "for this medium will NOT have an associated artifact.",
                      request.getJobId(), request.getStageIndex(), request.getMediaId(), e);
-            return ArtifactExtractionProcessorImpl.ERROR_PATH;
+            return ArtifactExtractionProcessor.ERROR_PATH;
         }
     }
 
@@ -274,7 +274,7 @@ public class StorageServiceImpl implements StorageService {
                      request.getJobId(), request.getStageIndex(), request.getMediaId(), e);
 
             return frameNumbers.stream()
-                    .collect(toMap(Function.identity(), x -> ArtifactExtractionProcessorImpl.ERROR_PATH));
+                    .collect(toMap(Function.identity(), x -> ArtifactExtractionProcessor.ERROR_PATH));
         }
     }
 
@@ -360,7 +360,7 @@ public class StorageServiceImpl implements StorageService {
     private static void addMissingKeys(Iterable<Integer> expectedKeys, Map<Integer, String> map,
                                        ArtifactExtractionRequest request) {
         for (int key : expectedKeys) {
-            String previousValue = map.putIfAbsent(key, ArtifactExtractionProcessorImpl.ERROR_PATH);
+            String previousValue = map.putIfAbsent(key, ArtifactExtractionProcessor.ERROR_PATH);
             if (previousValue == null) {
                 log.warn("[Job {}|{}|ARTIFACT_EXTRACTION] Failed to extract artifact from Media #{} at frame {}.",
                          request.getJobId(), request.getStageIndex(), request.getMediaId(), key);
@@ -392,6 +392,6 @@ public class StorageServiceImpl implements StorageService {
                 .values()
                 .stream()
                 .flatMap(Collection::stream)
-                .collect(toMap(Function.identity(), v -> ArtifactExtractionProcessorImpl.UNSUPPORTED_PATH));
+                .collect(toMap(Function.identity(), v -> ArtifactExtractionProcessor.UNSUPPORTED_PATH));
     }
 }

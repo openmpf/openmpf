@@ -412,9 +412,9 @@ public class CustomNginxStorageBackend implements StorageBackend {
             backOffPolicy.setInitialInterval(500);
             backOffPolicy.setMultiplier(2);
 
-            int retryCount = Math.max(1, propertiesUtil.getHttpStorageUploadRetryCount());
+            int retryCount = Math.max(0, propertiesUtil.getHttpStorageUploadRetryCount());
             SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
-            retryPolicy.setMaxAttempts(retryCount);
+            retryPolicy.setMaxAttempts(1 + retryCount);
 
             _retryTemplate = new RetryTemplate();
             _retryTemplate.setRetryPolicy(retryPolicy);

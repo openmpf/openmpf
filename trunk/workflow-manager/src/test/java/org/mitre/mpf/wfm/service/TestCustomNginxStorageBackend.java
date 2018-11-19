@@ -104,7 +104,7 @@ public class TestCustomNginxStorageBackend {
                 .thenReturn(2 * 1024 * 1024);
 
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
-                .thenReturn(3);
+                .thenReturn(2);
 
 
         BAD_PATH_POST_COUNT.set(0);
@@ -147,7 +147,7 @@ public class TestCustomNginxStorageBackend {
     @Test
     public void testInvalidJson() {
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
-                .thenReturn(1);
+                .thenReturn(0);
         when(_mockPropertiesUtil.getHttpStorageUploadThreadCount())
                 .thenReturn(1);
         try {

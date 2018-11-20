@@ -24,25 +24,39 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.interop;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+package org.mitre.mpf.wfm.service;
 
-@JsonTypeName("OutputObjectSummary")
-public class JsonOutputObjectSummary {
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-	@JsonProperty("detectionOutputObjectPath")
-	@JsonPropertyDescription("The path to the detection output object for this job.")
-	private String detectionOutputObjectPath;
-	public String getDetectionOutputObjectPath() { return detectionOutputObjectPath; }
+public interface StorageBackend {
+
+    public String store(URI serviceUri, InputStream content) throws StorageException;
+
+    public String storeAsJson(URI serviceUri, Object content) throws StorageException;
+
+    public default String store(URI serviceUri, Path path) throws IOException, StorageException {
+        try (InputStream is = Files.newInputStream(path)) {
+            return store(serviceUri, is);
+        }
+    }
+
+    public default String store(URI serviceUri, URL content) throws IOException, StorageException {
+        try (InputStream is = content.openStream()) {
+            return store(serviceUri, is);
+        }
+    }
 
 
+    public Type getType();
 
-	@JsonCreator
-	public JsonOutputObjectSummary(@JsonProperty("detectionOutputObjectPath") String detectionOutputObjectPath) {
-		this.detectionOutputObjectPath = detectionOutputObjectPath;
-	}
+    public enum Type {
+        NONE,
+        CUSTOM_NGINX
+    }
 }

@@ -38,6 +38,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.EnvVar;
+import org.mitre.mpf.wfm.service.StorageBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -204,7 +206,7 @@ public class PropertiesUtil {
     public TransientDetectionSystemProperties createDetectionSystemPropertiesSnapshot() {
         Map<String, String> detMap = new HashMap<>();
         mpfPropertiesConfig.getKeys().forEachRemaining(key -> {
-            if (MpfPropertiesConfigurationBuilder.isDetectionProperty(key)) {
+            if (MpfPropertiesConfigurationBuilder.propertyRequiresSnapshot(key)) {
                 detMap.put(key, mpfPropertiesConfig.getString(key)); // resolve final value
             }
         } );
@@ -245,14 +247,6 @@ public class PropertiesUtil {
 
     public boolean isOutputObjectsEnabled() {
         return mpfPropertiesConfig.getBoolean("mpf.output.objects.enabled");
-    }
-
-    public boolean isOutputQueueEnabled() {
-        return mpfPropertiesConfig.getBoolean("mpf.output.objects.queue.enabled");
-    }
-
-    public String getOutputQueueName() {
-        return mpfPropertiesConfig.getString("mpf.output.objects.queue.name");
     }
 
     public String getSharePath() {
@@ -725,6 +719,26 @@ public class PropertiesUtil {
             log.info("Directory {} doesn't exist. Creating it now.", resourceDir);
             Files.createDirectories(resourceDir);
         }
+    }
+
+    public StorageBackend.Type getHttpObjectStorageType() {
+        return mpfPropertiesConfig.get(StorageBackend.Type.class, "http.object.storage.type");
+    }
+
+    public URI getHttpStorageServiceUri() {
+        return mpfPropertiesConfig.get(URI.class, "http.object.storage.service_uri");
+    }
+
+    public int getHttpStorageUploadThreadCount() {
+        return mpfPropertiesConfig.getInt("http.object.storage.upload.thread.count");
+    }
+
+    public int getHttpStorageUploadSegmentSize() {
+        return mpfPropertiesConfig.getInt("http.object.storage.upload.segment.size");
+    }
+
+    public int getHttpStorageUploadRetryCount() {
+        return mpfPropertiesConfig.getInt("http.object.storage.upload.retry.count");
     }
 }
 

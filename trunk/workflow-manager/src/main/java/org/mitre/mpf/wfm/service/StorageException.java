@@ -24,19 +24,16 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
-import org.mitre.mpf.frameextractor.FrameExtractor;
-import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
+package org.mitre.mpf.wfm.service;
 
-import java.util.Map;
+public class StorageException extends Exception {
 
-public interface ArtifactExtractionProcessorInterface extends WfmProcessorInterface {
+    public StorageException(String message) {
+        super(message);
+    }
 
-	public Map<Integer, String> processUnsupportedMediaType(ArtifactExtractionRequest request) throws WfmProcessingException;
-
-	public String processImageRequest(ArtifactExtractionRequest request);
-
-	public Map<Integer, String> processVideoRequest(ArtifactExtractionRequest request, FrameExtractor extractor) throws WfmProcessingException;
+    public StorageException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

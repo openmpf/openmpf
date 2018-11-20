@@ -26,10 +26,7 @@
 
 package org.mitre.mpf.interop;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +34,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 @JsonTypeName("OutputObject")
+@JsonPropertyOrder({"jobId", "jobErrors", "jobWarnings"})
 public class JsonOutputObject {
 
 	@JsonProperty("jobId")
@@ -100,9 +98,18 @@ public class JsonOutputObject {
 	private SortedSet<JsonMediaOutputObject> media;
 	public SortedSet<JsonMediaOutputObject> getMedia() { return media; }
 
+	@JsonProperty("jobErrors")
+	private SortedSet<String> jobErrors;
+	public SortedSet<String> getJobErrors() { return jobErrors; }
+
+	@JsonProperty("jobWarnings")
+	private SortedSet<String> jobWarnings;
+	public SortedSet<String> getJobWarnings() { return jobWarnings; }
+
     public JsonOutputObject(){}
 
-	public JsonOutputObject(long jobId, String objectId, JsonPipeline pipeline, int priority, String siteId, String externalJobId, String timeStart, String timeStop, String status) {
+	public JsonOutputObject(long jobId, String objectId, JsonPipeline pipeline, int priority, String siteId,
+	                        String externalJobId, String timeStart, String timeStop, String status) {
 		this.jobId = jobId;
 		this.objectId = objectId;
 		this.pipeline = pipeline;
@@ -113,24 +120,31 @@ public class JsonOutputObject {
 		this.timeStop = timeStop;
 		this.status = status;
 		this.media = new TreeSet<>();
-		this.jobProperties = new HashMap<String, String>();
-		this.algorithmProperties = new HashMap<String, Map>();
+		this.jobProperties = new HashMap<>();
+		this.algorithmProperties = new HashMap<>();
+		this.jobErrors = new TreeSet<>();
+		this.jobWarnings = new TreeSet<>();
 	}
 
 	@JsonCreator
-	public static JsonOutputObject factory(@JsonProperty("jobId") long jobId,
-	                                       @JsonProperty("objectId") String objectId,
-	                                       @JsonProperty("pipeline") JsonPipeline pipeline,
-	                                       @JsonProperty("priority") int priority,
-	                                       @JsonProperty("siteId") String siteId,
-	                                       @JsonProperty("externalJobId") String externalJobId,
-	                                       @JsonProperty("timeStart") String timeStart,
-	                                       @JsonProperty("timeStop") String timeStop,
-	                                       @JsonProperty("status") String status,
-										   @JsonProperty("algorithmProperties") Map<String, Map> algorithmProperties,
-										   @JsonProperty("jobProperties") Map<String, String> jobProperties,
-	                                       @JsonProperty("media") SortedSet<JsonMediaOutputObject> media) {
-		JsonOutputObject outputObject = new JsonOutputObject(jobId, objectId, pipeline, priority, siteId, externalJobId, timeStart, timeStop, status);
+	public static JsonOutputObject factory(
+                @JsonProperty("jobId") long jobId,
+                @JsonProperty("objectId") String objectId,
+                @JsonProperty("pipeline") JsonPipeline pipeline,
+                @JsonProperty("priority") int priority,
+                @JsonProperty("siteId") String siteId,
+                @JsonProperty("externalJobId") String externalJobId,
+                @JsonProperty("timeStart") String timeStart,
+                @JsonProperty("timeStop") String timeStop,
+                @JsonProperty("status") String status,
+                @JsonProperty("algorithmProperties") Map<String, Map> algorithmProperties,
+                @JsonProperty("jobProperties") Map<String, String> jobProperties,
+                @JsonProperty("media") SortedSet<JsonMediaOutputObject> media,
+                @JsonProperty("jobErrors") SortedSet<String> jobErrors,
+                @JsonProperty("jobWarnings") SortedSet<String> jobWarnings) {
+
+		JsonOutputObject outputObject = new JsonOutputObject(jobId, objectId, pipeline, priority, siteId,
+		                                                     externalJobId, timeStart, timeStop, status);
 		if(media != null) {
 			outputObject.media.addAll(media);
 		}
@@ -139,6 +153,12 @@ public class JsonOutputObject {
 		}
 		if (jobProperties != null) {
 			outputObject.jobProperties.putAll(jobProperties);
+		}
+		if (jobErrors != null) {
+			outputObject.jobErrors.addAll(jobErrors);
+		}
+		if (jobWarnings != null) {
+			outputObject.jobWarnings.addAll(jobWarnings);
 		}
 		return outputObject;
 	}

@@ -26,18 +26,10 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
-import java.util.Date;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Lob;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+
+import javax.persistence.*;
+import java.util.Date;
 
 /**
  * This class includes the essential information which describes a batch job. Instances of this class are stored in a
@@ -89,7 +81,7 @@ public class JobRequest {
 	public byte[] getInputObject() { return inputObject; }
 	public void setInputObject(byte[] inputObject) { this.inputObject = inputObject; }
 
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String outputObjectPath;
 	public String getOutputObjectPath() { return outputObjectPath; }
 	public void setOutputObjectPath(String outputObjectPath) { this.outputObjectPath = outputObjectPath; }

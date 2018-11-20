@@ -24,9 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-//TODO: All functions in this file are for future use and are untested.
-// Not used in single process, single pipeline stage, architecture
-
+#include <iostream>
 #include "OcvFrameReader.h"
 #include "JobSettings.h"
 #include "detectionComponentUtils.h"
@@ -110,9 +108,7 @@ void OcvFrameReader::Run() {
     msg_sender_.SendInProgressNotification(GetTimestampMillis());
 
     StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
-
-        // int frame_interval = std::max(1, DetectionComponentUtils::GetProperty(job_.job_properties,
-        //                                                                       "FRAME_INTERVAL", 1));
+    std::chrono::milliseconds timeout_msec = settings_.message_receive_retry_interval;
 
     while (!std_in_watcher->QuitReceived()) {
 
@@ -124,6 +120,7 @@ void OcvFrameReader::Run() {
             // Quit was received while trying to read frame.
             break;
         }
+        long timestamp = GetTimestampMillis();
 
         frame_byte_size = frame.rows * frame.cols * frame.elemSize();
         frame_index++;
@@ -135,22 +132,24 @@ void OcvFrameReader::Run() {
         }
 
         // Put the frame into the frame store.
+        LOG4CXX_DEBUG(logger_, "Storing frame number " << frame_index);
         frame_store_.StoreFrame(frame, frame_index);
 
         // Send the frame ready message.
-        msg_sender_.SendFrameReady(segment_number, frame_index, GetTimestampMillis());
+        msg_sender_.SendFrameReady(segment_number, frame_index, timestamp);
 
         // If we have reached capacity in the frame store, then we
         // need to start deleting frames from the frame store.
         if (frame_store_.AtCapacity()) {
             MPFReleaseFrameMessage release_frame_msg;
-            bool got_msg;
-            while ((!std_in_watcher->QuitReceived()) &&
-                   (!(got_msg = msg_reader_.GetReleaseFrameMsgNoWait(release_frame_msg)))) {
-                continue;
-            }
-            if (got_msg) {
-                frame_store_.DeleteFrame(release_frame_msg.frame_index);
+            bool got_msg = false;
+            while (true) {
+                got_msg = msg_reader_.GetReleaseFrameMsgNoWait(release_frame_msg);
+                if (got_msg) {
+                    frame_store_.DeleteFrame(release_frame_msg.frame_index);
+                    break;
+                }
+                std_in_watcher->InterruptibleSleep(timeout_msec);
             }
         }
     }

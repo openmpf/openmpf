@@ -60,7 +60,7 @@ BasicAmqMessageReader &BasicAmqMessageReader::CreateFrameReadyConsumer(const lon
     return *this;
 }
 
-
+// blocking version
 MPFSegmentReadyMessage BasicAmqMessageReader::GetSegmentReadyMsg() {
     std::unique_ptr<cms::Message> msg(segment_ready_consumer_->receive());
     return MPFSegmentReadyMessage(
@@ -72,7 +72,24 @@ MPFSegmentReadyMessage BasicAmqMessageReader::GetSegmentReadyMsg() {
         msg->getIntProperty("FRAME_BYTES_PER_PIXEL"));
 }
 
+// non-blocking version
+bool BasicAmqMessageReader::GetSegmentReadyMsgNoWait(MPFSegmentReadyMessage &msg) {
+    std::unique_ptr<cms::Message> tmp_msg(segment_ready_consumer_->receiveNoWait());
+    if (NULL != tmp_msg.get()) {
+        msg.job_id = tmp_msg->getLongProperty("JOB_ID");
+        msg.segment_number = tmp_msg->getIntProperty("SEGMENT_NUMBER");
+        msg.frame_width = tmp_msg->getIntProperty("FRAME_WIDTH");
+        msg.frame_height = tmp_msg->getIntProperty("FRAME_HEIGHT");
+        msg.cvType = tmp_msg->getIntProperty("FRAME_DATA_TYPE");
+        msg.bytes_per_pixel = tmp_msg->getIntProperty("FRAME_BYTES_PER_PIXEL");
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 
+// blocking version
 MPFFrameReadyMessage BasicAmqMessageReader::GetFrameReadyMsg() {
     std::unique_ptr<cms::Message> msg(frame_ready_consumer_->receive());
     return MPFFrameReadyMessage(
@@ -82,7 +99,22 @@ MPFFrameReadyMessage BasicAmqMessageReader::GetFrameReadyMsg() {
         msg->getLongProperty("FRAME_READ_TIMESTAMP"));
 }
 
+// non-blocking version
+bool BasicAmqMessageReader::GetFrameReadyMsgNoWait(MPFFrameReadyMessage &msg) {
+    std::unique_ptr<cms::Message> tmp_msg(frame_ready_consumer_->receiveNoWait());
+    if (NULL != tmp_msg.get()) {
+        msg.job_id = tmp_msg->getLongProperty("JOB_ID");
+        msg.segment_number = tmp_msg->getIntProperty("SEGMENT_NUMBER");
+        msg.frame_index = tmp_msg->getIntProperty("FRAME_INDEX");
+        msg.frame_timestamp = tmp_msg->getLongProperty("FRAME_READ_TIMESTAMP");
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 
+// blocking version
 MPFReleaseFrameMessage BasicAmqMessageReader::GetReleaseFrameMsg() {
     std::unique_ptr<cms::Message> msg(release_frame_consumer_->receive());
     return MPFReleaseFrameMessage(
@@ -90,10 +122,10 @@ MPFReleaseFrameMessage BasicAmqMessageReader::GetReleaseFrameMsg() {
         msg->getIntProperty("FRAME_INDEX"));
 }
 
-
+// non-blocking version
 bool BasicAmqMessageReader::GetReleaseFrameMsgNoWait(MPFReleaseFrameMessage &msg) {
     std::unique_ptr<cms::Message> tmp_msg(release_frame_consumer_->receiveNoWait());
-    if (tmp_msg.get() != NULL) {
+    if (NULL != tmp_msg.get()) {
         msg.job_id = tmp_msg->getLongProperty("JOB_ID");
         msg.frame_index = tmp_msg->getIntProperty("FRAME_INDEX");
         return true;

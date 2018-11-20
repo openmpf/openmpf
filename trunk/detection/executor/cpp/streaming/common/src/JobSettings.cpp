@@ -60,6 +60,7 @@ namespace MPF { namespace COMPONENT {
             milliseconds stall_timeout(job_config.get<long>("stallTimeout"));
             milliseconds stall_alert_threshold(job_config.get<long>("stallAlertThreshold"));
             RetryStrategy retry_strategy = GetRetryStrategy(stall_timeout, stall_alert_threshold);
+            milliseconds receive_timeout(job_config.get<long>("messageReceiveRetryIntervalMsec"));
 
             return {
                         .job_id = job_config.get<long>("jobId"),
@@ -68,12 +69,12 @@ namespace MPF { namespace COMPONENT {
                         .retry_strategy = retry_strategy,
                         .stall_timeout = stall_timeout,
                         .stall_alert_threshold = stall_alert_threshold,
-                        .component_name = job_config.get<std::string>("componentName", ""),
+                        .message_receive_retry_interval = receive_timeout,
                         .component_lib_path = job_config.get<std::string>("componentLibraryPath", ""),
                         .message_broker_uri = job_config.get<std::string>("messageBrokerUri"),
                         .frame_store_server_hostname = job_config.get<std::string>("frameStoreServerHostname", "localhost"),
                         .frame_store_server_portnum = job_config.get<int>("frameStoreServerPortnum", 6379),
-                        .frame_store_capacity = job_config.get<int>("frameStoreCapacity", 100),
+                        .frame_store_capacity = job_config.get<int>("frameStoreCapacity"),
                         .job_status_queue = job_config.get<std::string>("jobStatusQueue"),
                         .activity_alert_queue = job_config.get<std::string>("activityAlertQueue"),
                         .summary_report_queue = job_config.get<std::string>("summaryReportQueue"),

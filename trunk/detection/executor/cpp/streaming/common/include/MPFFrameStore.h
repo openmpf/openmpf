@@ -51,10 +51,10 @@ class MPFFrameStore {
     // Copies frame data from storage into an OpenCV Mat.
     void GetFrame(cv::Mat &frame, const size_t frame_index);
 
-    // Deletes the copy of the frame data this frame index.
+    // Deletes the copy of the frame data for this frame index.
     void DeleteFrame(const size_t frame_index);
 
-    bool AtCapacity() { return frames_in_store_ >= capacity_; }
+    bool AtCapacity() { return (frames_in_store_ >= capacity_); }
 
   private:
     size_t frame_byte_size_;

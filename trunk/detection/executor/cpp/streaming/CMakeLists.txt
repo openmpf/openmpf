@@ -69,5 +69,4 @@ add_subdirectory(common)
 add_subdirectory(FrameReader)
 add_subdirectory(SingleStageComponentExecutor)
 
-
-#add_subdirectory(test)
+install(FILES config/streaming_job.ini DESTINATION config)

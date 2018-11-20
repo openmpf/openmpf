@@ -76,18 +76,10 @@ namespace MPF { namespace COMPONENT {
                 MPF::COMPONENT::StreamingComponentHandle &&component,
                 const std::string &detection_type);
 
-
-
-        template <RetryStrategy RETRY_STRATEGY>
         void Run();
-
-        template <RetryStrategy RETRY_STRATEGY>
-        void ReadFrame(cv::Mat &frame);
 
         void FixTracks(const VideoSegmentInfo &segment_info,
                        std::vector<MPFVideoTrack> &tracks);
-
-        // bool IsBeginningOfSegment(int frame_number) const;
 
         std::vector<MPFVideoTrack> TryGetRemainingTracks();
 

@@ -50,7 +50,7 @@ namespace MPF { namespace COMPONENT {
         const RetryStrategy retry_strategy;
         const std::chrono::milliseconds stall_timeout;
         const std::chrono::milliseconds stall_alert_threshold;
-        const std::string component_name;
+        const std::chrono::milliseconds message_receive_retry_interval;
         const std::string component_lib_path;
         const std::string message_broker_uri;
         const std::string frame_store_server_hostname;

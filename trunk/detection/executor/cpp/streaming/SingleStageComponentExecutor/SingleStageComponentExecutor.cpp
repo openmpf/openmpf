@@ -24,6 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include <assert.h>
 
 #include <libgen.h>
 #include <log4cxx/basicconfigurator.h>
@@ -76,8 +77,6 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
             MPFStreamingVideoJob job(job_name, app_dir + "/../plugins/", settings.job_properties,
                                      settings.media_properties);
 
-            RetryStrategy retry_config = settings.retry_strategy;
-
             std::string detection_type;
 
             LOG4CXX_INFO(logger, log_prefix << "Loading component from: " << settings.component_lib_path);
@@ -90,24 +89,7 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
                                                   std::move(settings), std::move(job),
                                                   std::move(component), detection_type);
 
-            switch (retry_config) {
-                case RetryStrategy::NEVER_RETRY:
-                    executor.Run<RetryStrategy::NEVER_RETRY>();
-                    break;
-                case RetryStrategy::NO_ALERT_NO_TIMEOUT:
-                    executor.Run<RetryStrategy::NO_ALERT_NO_TIMEOUT>();
-                    break;
-                case RetryStrategy::NO_ALERT_WITH_TIMEOUT:
-                    executor.Run<RetryStrategy::NO_ALERT_WITH_TIMEOUT>();
-                    break;
-                case RetryStrategy::ALERT_NO_TIMEOUT:
-                    executor.Run<RetryStrategy::ALERT_NO_TIMEOUT>();
-                    break;
-                case RetryStrategy::ALERT_WITH_TIMEOUT:
-                    executor.Run<RetryStrategy::ALERT_WITH_TIMEOUT>();
-                    break;
-            }
-            LOG4CXX_INFO(logger, log_prefix << "Job has successfully completed because the quit command was received.");
+            executor.Run();
 
             return ExitCode::SUCCESS;
         }
@@ -130,7 +112,6 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
     }
 
 
-    template <RetryStrategy RETRY_STRATEGY>
     void SingleStageComponentExecutor::Run() {
         std::unordered_map<int, long> frame_timestamps;
         bool begin_segment_called = false;
@@ -138,6 +119,7 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
         int segment_number = 0;
         VideoSegmentInfo segment_info(0, 0, 0, 0, 0);
         MPFFrameReadyMessage frame_msg;
+
         try {
 
             StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
@@ -147,10 +129,19 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
             //                                                                       1));
             bool begin_segment_called = false;
             bool segment_activity_alert_sent = false;
+            std::chrono::milliseconds timeout_msec = settings_.message_receive_retry_interval;
 
             while (!std_in_watcher->QuitReceived()) {
-                MPFSegmentReadyMessage seg_msg = msg_reader_.GetSegmentReadyMsg();
+
+                MPFSegmentReadyMessage seg_msg;
+                while (true) {
+                    bool got_msg = msg_reader_.GetSegmentReadyMsgNoWait(seg_msg);
+                    if (got_msg) break;
+                    std_in_watcher->InterruptibleSleep(timeout_msec);
+                }
+
                 segment_number = seg_msg.segment_number;
+                LOG4CXX_DEBUG(logger_, "segment_number = " << segment_number);
                 
                 frame_msg = msg_reader_.CreateFrameReadyConsumer(segment_number).GetFrameReadyMsg();
 
@@ -160,6 +151,11 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
                 assert (frame_msg.segment_number == seg_msg.segment_number);
 
                 int segment_end_frame = frame_msg.frame_index + settings_.segment_size - 1;
+                LOG4CXX_DEBUG(logger_, "segment_number = " << segment_number);
+                LOG4CXX_DEBUG(logger_, "frame_number = " << frame_msg.frame_index);
+                LOG4CXX_DEBUG(logger_, "end_frame = " << segment_end_frame);
+                LOG4CXX_DEBUG(logger_, "frame width = " << seg_msg.frame_width);
+                LOG4CXX_DEBUG(logger_, "frame height = " << seg_msg.frame_height);
                 segment_info = {segment_number,
                                 frame_msg.frame_index,
                                 segment_end_frame,
@@ -172,14 +168,20 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
                 begin_segment_called = true;
                 segment_activity_alert_sent = false;
 
+                LOG4CXX_DEBUG(logger_, "timestamp for frame "
+                              << frame_msg.frame_index << " = "
+                              << frame_msg.frame_timestamp);
                 frame_timestamps[frame_msg.frame_index] = frame_msg.frame_timestamp;
 
-                frame_count = 0;
+                frame_count = 1;
                 while (!std_in_watcher->QuitReceived() && (frame_count < settings_.segment_size)) {
                     frame_count++;
                     // Read the frame out of the frame store
-                    cv::Mat frame;
+                    cv::Mat frame(seg_msg.frame_height,
+                                  seg_msg.frame_width,
+                                  seg_msg.cvType);
                     frame_store_.GetFrame(frame, frame_msg.frame_index);
+
                     bool activity_found = component_.ProcessFrame(frame, frame_msg.frame_index);
                     if (activity_found && !segment_activity_alert_sent) {
                         LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending new activity alert for frame: " << frame_msg.frame_index);
@@ -187,10 +189,16 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
                                                       frame_timestamps.at(frame_msg.frame_index));
                         segment_activity_alert_sent = true;
                     }
+
                     // Send release frame message
                     msg_sender_.SendReleaseFrame(frame_msg.frame_index);
                     // Read the next frame
-                    frame_msg = msg_reader_.GetFrameReadyMsg();
+                    while (true) {
+                        bool got_msg = msg_reader_.GetFrameReadyMsgNoWait(frame_msg);
+                        if (got_msg) break;
+                        std_in_watcher->InterruptibleSleep(timeout_msec);
+                    }
+                    frame_timestamps[frame_msg.frame_index] = frame_msg.frame_timestamp;
                 }
 
                 if (frame_count == settings_.segment_size) {
@@ -203,6 +211,7 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
                     frame_timestamps.clear();
                 }
             }
+
             if (frame_count != settings_.segment_size && begin_segment_called) {
                 // send the summary report if we've started, but have not completed, the next segment
                 std::vector<MPFVideoTrack> tracks = component_.EndSegment();
@@ -215,6 +224,7 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
         catch (const FatalError &ex) {
             // Send error report before actually handling exception.
             frame_timestamps.emplace(frame_msg.frame_index, frame_msg.frame_timestamp); // Only inserts if key not already present.
+
             std::vector<MPFVideoTrack> tracks;
             if (begin_segment_called) {
                 tracks = TryGetRemainingTracks();
@@ -246,7 +256,7 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
 
 
     log4cxx::LoggerPtr SingleStageComponentExecutor::GetLogger(const std::string &app_dir) {
-        std::string log_config_file = app_dir + "/../config/StreamingExecutorLog4cxxConfig.xml";
+        std::string log_config_file = app_dir + "/../config/Log4cxx-streaming_executor-Config.xml";
         log4cxx::xml::DOMConfigurator::configure(log_config_file);
         log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("org.mitre.mpf.detection.streaming");
         if (logger->getAllAppenders().empty()) {

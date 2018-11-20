@@ -39,4 +39,4 @@ install(TARGETS frame_reader_component
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib)
 
-install(FILES Log4cxx-framereader-Config.xml framereader.ini DESTINATION config)
+install(FILES Log4cxx-framereader-Config.xml DESTINATION config)

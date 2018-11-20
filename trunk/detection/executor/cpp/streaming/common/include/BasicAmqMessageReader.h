@@ -51,9 +51,15 @@ class BasicAmqMessageReader {
                           std::shared_ptr<cms::Connection> connection_ptr);
 
     BasicAmqMessageReader &CreateFrameReadyConsumer(const long segment_number);
+
+    // Blocking versions of message receive functions.
     MPFSegmentReadyMessage GetSegmentReadyMsg();
     MPFFrameReadyMessage GetFrameReadyMsg();
     MPFReleaseFrameMessage GetReleaseFrameMsg();
+
+    // Non-blocking versions of message receive functions.
+    bool GetSegmentReadyMsgNoWait(MPFSegmentReadyMessage &msg);
+    bool GetFrameReadyMsgNoWait(MPFFrameReadyMessage &msg);
     bool GetReleaseFrameMsgNoWait(MPFReleaseFrameMessage &msg);
 
   private:

@@ -45,6 +45,5 @@ install(TARGETS single_stage_component_executor
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib)
 
-install(FILES SingleStageExecutorLog4cxxConfig.xml DESTINATION config)
+install(FILES Log4cxx-streaming_executor-Config.xml DESTINATION config)
 
-#add_subdirectory(test)

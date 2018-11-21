@@ -26,18 +26,7 @@
 
 package org.mitre.mpf.wfm;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.File;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import javax.annotation.PostConstruct;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
@@ -69,6 +58,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import javax.annotation.PostConstruct;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
@@ -208,9 +203,12 @@ public class TestWfmEndToEnd {
 
 		Assert.assertTrue(jobRequest.getStatus() == BatchJobStatusType.COMPLETE);
 		Assert.assertTrue(jobRequest.getOutputObjectPath() != null);
-		Assert.assertTrue(new File(jobRequest.getOutputObjectPath()).exists());
 
-		JsonOutputObject jsonOutputObject = objectMapper.readValue(new File(jobRequest.getOutputObjectPath()), JsonOutputObject.class);
+		Path outputObjectPath = IoUtils.toLocalPath(jobRequest.getOutputObjectPath()).orElse(null);
+		Assert.assertNotNull(outputObjectPath);
+		Assert.assertTrue(Files.exists(outputObjectPath));
+
+		JsonOutputObject jsonOutputObject = objectMapper.readValue(outputObjectPath.toFile(), JsonOutputObject.class);
 		Assert.assertEquals(jsonOutputObject.getJobId(), jobId);
 		String start = jsonOutputObject.getTimeStart(),
 				stop = jsonOutputObject.getTimeStop();
@@ -227,9 +225,12 @@ public class TestWfmEndToEnd {
 
 		Assert.assertTrue(jobRequest.getStatus() == BatchJobStatusType.COMPLETE);
 		Assert.assertTrue(jobRequest.getOutputObjectPath() != null);
-		Assert.assertTrue(new File(jobRequest.getOutputObjectPath()).exists());
 
-		jsonOutputObject = objectMapper.readValue(new File(jobRequest.getOutputObjectPath()), JsonOutputObject.class);
+		outputObjectPath = IoUtils.toLocalPath(jobRequest.getOutputObjectPath()).orElse(null);
+		Assert.assertNotNull(outputObjectPath);
+		Assert.assertTrue(Files.exists(outputObjectPath));
+
+		jsonOutputObject = objectMapper.readValue(outputObjectPath.toFile(), JsonOutputObject.class);
 		Assert.assertEquals(jsonOutputObject.getJobId(), jobId);
 		Assert.assertNotEquals(jsonOutputObject.getTimeStart(), start);
 		Assert.assertNotEquals(jsonOutputObject.getTimeStop(), stop);

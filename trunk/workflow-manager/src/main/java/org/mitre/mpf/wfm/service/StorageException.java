@@ -24,47 +24,16 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.util;
 
-import org.mitre.mpf.wfm.enums.EnvVar;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
+package org.mitre.mpf.wfm.service;
 
-/**
- * This class loads any JNI libraries needed by the WFM. Classes which rely on these JNI libraries
- * should be marked appropriately using the {@link org.springframework.context.annotation.DependsOn}
- * annotation.
- */
-@Component(JniLoader.REF)
-@Scope("prototype")
-public class JniLoader {
-    public static final String REF = "jniLoader";
-    private static final Logger log = LoggerFactory.getLogger(JniLoader.class);
+public class StorageException extends Exception {
 
-    private static boolean _isLoaded;
-
-    static {
-        log.info("Loading JNI libraries...");
-        try {
-            System.loadLibrary("mpfopencvjni");
-            _isLoaded = true;
-        }
-        catch (UnsatisfiedLinkError ex) {
-            log.warn("System.loadLibrary() failed due to: {}", ex.getMessage());
-            String libFullPath = System.getenv(EnvVar.MPF_HOME) + "/lib/libmpfopencvjni.so";
-            log.warn("Trying full path to library: {}", libFullPath);
-            System.load(libFullPath);
-            _isLoaded = true;
-        }
+    public StorageException(String message) {
+        super(message);
     }
 
-    /**
-     * This method exists to force the static initializer run when running unit tests. This should always return true.
-     * @return true
-     */
-    public static boolean isLoaded() {
-        return _isLoaded;
+    public StorageException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

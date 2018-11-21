@@ -37,6 +37,7 @@ import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.service.component.StartupComponentRegistrationService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,7 +61,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -92,8 +92,6 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	// used to prevent the initialization behaviors from being executed more than once
 	private static boolean applicationRefreshed = false;
 	public boolean isApplicationRefreshed() { return  applicationRefreshed; }
-
-	private ExecutorService fileIndexExecutorService = null;
 
 	private ScheduledExecutorService healthReportExecutorService = null;
 
@@ -132,8 +130,8 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 				applicationRefreshed = true;
 			}
 		} else if (event instanceof ContextClosedEvent) {
-			stopFileIndexing();
 			stopHealthReporting();
+			ThreadUtil.shutdown();
 		}
 	}
 
@@ -141,17 +139,12 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 		if (appContext instanceof WebApplicationContext) {
 			WebApplicationContext webContext = (WebApplicationContext) appContext;
 			ServletContext servletContext = webContext.getServletContext();
-			fileIndexExecutorService = Executors.newSingleThreadExecutor();
-			fileIndexExecutorService.execute(() -> serverMediaService.getFiles(propertiesUtil.getServerMediaTreeRoot(), servletContext, true, true));
-			fileIndexExecutorService.shutdown(); // will run all tasks before shutdown
+			ThreadUtil.runAsync(
+					() -> serverMediaService.getFiles(propertiesUtil.getServerMediaTreeRoot(), servletContext,
+					                                  true, true));
 		}
 	}
 
-	private void stopFileIndexing() {
-		if (fileIndexExecutorService != null) {
-			fileIndexExecutorService.shutdownNow();
-		}
-	}
 
 	// startHealthReporting uses a scheduled executor.
 	private void startHealthReporting() {

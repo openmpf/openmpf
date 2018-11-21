@@ -40,28 +40,30 @@ import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.exceptions.InvalidPipelineObjectWfmProcessingException;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.NoSuchFileException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
-import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 // swagger includes
@@ -198,14 +200,17 @@ public class JobController {
             List<MarkupResult> markupResults = mpfService.getMarkupResultsForJob(job.getJobId());
             job_model.setMarkupCount(markupResults.size());
             if(job_model.getOutputObjectPath() != null) {
-                File f = new File(job_model.getOutputObjectPath());
-                job_model.outputFileExists = (f != null && f.exists());
+                job_model.outputFileExists
+                        = IoUtils.toLocalPath(job_model.getOutputObjectPath())
+                            .map(Files::exists)
+                            .orElse(true);
             }
             model.addData(job_model);
         }
 
         return model;
     }
+
 
     /*
      * GET /jobs/{id}
@@ -249,7 +254,8 @@ public class JobController {
      * GET /jobs/{id}/output/detection
      */
     //EXTERNAL
-    @RequestMapping(value = "/rest/jobs/{id}/output/detection", method = RequestMethod.GET)
+    @RequestMapping(value = { "/rest/jobs/{id}/output/detection", "/jobs/{id}/output/detection"},
+                    method = RequestMethod.GET)
     @ApiOperation(value = "Gets the JSON detection output object of a specific job using the job id as a required path variable.",
             produces = "application/json", response = JsonOutputObject.class)
     @ApiResponses({
@@ -259,28 +265,28 @@ public class JobController {
     @ResponseBody
     public ResponseEntity<?> getSerializedDetectionOutputRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) throws IOException {
         //return 200 for successful GET and object; 404 for bad id
-        return getJobOutputObjectAsString(jobId)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+        JobRequest jobRequest = mpfService.getJobRequest(jobId);
+        if (jobRequest == null) {
+            return ResponseEntity.notFound().build();
+        }
+        try {
+            InputStreamResource inputStreamResource
+                    = new InputStreamResource(IoUtils.openStream(jobRequest.getOutputObjectPath()));
+            return ResponseEntity.ok(inputStreamResource);
+        }
+        catch (NoSuchFileException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(String.format("The output object for job %s does not exist.", jobId));
+        }
     }
+
 
     //INTERNAL
     @RequestMapping(value = "/jobs/output-object", method = RequestMethod.GET)
-    public ModelAndView getOutputObject(@RequestParam(value = "id", required = true) long idParam) throws IOException {
-        return getJobOutputObjectAsString(idParam)
-                .map(jsonStr -> new ModelAndView("output_object", "jsonObj", jsonStr))
-                .orElseThrow(() -> new IllegalStateException(idParam + " does not appear to be a valid Job Id."));
+    public ModelAndView getOutputObject(@RequestParam(value = "id", required = true) long idParam) {
+        return new ModelAndView("output_object", "jobId", idParam);
     }
 
-    private Optional<String> getJobOutputObjectAsString(long jobId) throws IOException {
-        JobRequest jobRequest = mpfService.getJobRequest(jobId);
-        if (jobRequest == null) {
-            return Optional.empty();
-        }
-        try (Stream<String> lines = Files.lines(Paths.get(jobRequest.getOutputObjectPath()))) {
-            return Optional.of(lines.collect(joining()));
-        }
-    }
 
     /*
      * POST /jobs/{id}/resubmit

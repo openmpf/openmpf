@@ -26,20 +26,13 @@
 
 package org.mitre.mpf.mvc.util;
 
-import java.io.File;
-import java.net.URI;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.Paths;
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.rest.api.InfoModel;
-import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
-import org.mitre.mpf.rest.api.MarkupResultModel;
-import org.mitre.mpf.rest.api.SingleJobInfo;
-import org.mitre.mpf.rest.api.StreamingJobInfo;
+import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +40,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+
+import java.io.File;
+import java.net.URI;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @Component
 @Scope("singleton")
@@ -89,18 +89,17 @@ public class ModelUtils {
         boolean markupFileAvailable = false;
         boolean sourceFileAvailable = false;
 
-        if(markupResult.getMarkupUri() != null) {
-            try {
-                String nonUrlPath = markupResult.getMarkupUri();
-                markupUriContentType = NIOUtils.getPathContentType(Paths.get(URI.create(nonUrlPath)));
-                File f = new File(URI.create(nonUrlPath));
-                if (f != null && f.exists()) {
-                    markupFileAvailable = true;
-                    markupImgUrl = "markup/content?id=" + markupResult.getId();
-                    markupDownloadUrl = "markup/download?id=" + markupResult.getId();
-                }
-            } catch(IllegalArgumentException | FileSystemNotFoundException e) {
-                // URI has an authority component or URI scheme is not "file"
+        if (markupResult.getMarkupUri() != null) {
+            Path path = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
+            if (path != null && Files.exists(path)) {
+                markupUriContentType = NIOUtils.getPathContentType(path);
+                markupFileAvailable = true;
+                markupImgUrl = "markup/content?id=" + markupResult.getId();
+                markupDownloadUrl = "markup/download?id=" + markupResult.getId();
+            }
+            if (path == null) {
+                markupFileAvailable = true;
+                markupDownloadUrl = markupResult.getMarkupUri();
             }
         }
 

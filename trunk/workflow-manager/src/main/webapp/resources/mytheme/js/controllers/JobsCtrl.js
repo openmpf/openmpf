@@ -292,7 +292,10 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                         return '<p class="text-muted">Source file remotely hosted or not available</p>';
                     }
                 },
-                {data: "sourceUri"},
+                {
+                    data: "sourceUri",
+                    className: "smart-wrap"
+                },
                 {
                     data: "sourceDownload",
                     render: function (data, type, obj) {
@@ -327,6 +330,7 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                 },
                 {
                     data: "markupUri",
+                    className: "smart-wrap",
                     render: function (data, type, obj) {
                         if (obj.markupUri) {
                             return obj.markupUri;

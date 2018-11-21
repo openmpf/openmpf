@@ -24,47 +24,39 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.util;
 
-import org.mitre.mpf.wfm.enums.EnvVar;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
+package org.mitre.mpf.wfm.service;
 
-/**
- * This class loads any JNI libraries needed by the WFM. Classes which rely on these JNI libraries
- * should be marked appropriately using the {@link org.springframework.context.annotation.DependsOn}
- * annotation.
- */
-@Component(JniLoader.REF)
-@Scope("prototype")
-public class JniLoader {
-    public static final String REF = "jniLoader";
-    private static final Logger log = LoggerFactory.getLogger(JniLoader.class);
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-    private static boolean _isLoaded;
+public interface StorageBackend {
 
-    static {
-        log.info("Loading JNI libraries...");
-        try {
-            System.loadLibrary("mpfopencvjni");
-            _isLoaded = true;
-        }
-        catch (UnsatisfiedLinkError ex) {
-            log.warn("System.loadLibrary() failed due to: {}", ex.getMessage());
-            String libFullPath = System.getenv(EnvVar.MPF_HOME) + "/lib/libmpfopencvjni.so";
-            log.warn("Trying full path to library: {}", libFullPath);
-            System.load(libFullPath);
-            _isLoaded = true;
+    public String store(URI serviceUri, InputStream content) throws StorageException;
+
+    public String storeAsJson(URI serviceUri, Object content) throws StorageException;
+
+    public default String store(URI serviceUri, Path path) throws IOException, StorageException {
+        try (InputStream is = Files.newInputStream(path)) {
+            return store(serviceUri, is);
         }
     }
 
-    /**
-     * This method exists to force the static initializer run when running unit tests. This should always return true.
-     * @return true
-     */
-    public static boolean isLoaded() {
-        return _isLoaded;
+    public default String store(URI serviceUri, URL content) throws IOException, StorageException {
+        try (InputStream is = content.openStream()) {
+            return store(serviceUri, is);
+        }
+    }
+
+
+    public Type getType();
+
+    public enum Type {
+        NONE,
+        CUSTOM_NGINX
     }
 }

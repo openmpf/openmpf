@@ -55,6 +55,7 @@ import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
+import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +63,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
@@ -77,7 +77,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 	private static final Logger log = LoggerFactory.getLogger(JobCompleteProcessor.class);
 	public static final String REF = "jobCompleteProcessorImpl";
 
-	private Set<NotificationConsumer<JobCompleteNotification>> consumers = new ConcurrentSkipListSet<>();
+	private final Set<NotificationConsumer<JobCompleteNotification>> consumers = new ConcurrentSkipListSet<>();
 
 	@Autowired
 	@Qualifier(HibernateJobRequestDaoImpl.REF)
@@ -102,6 +102,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 	@Autowired
 	private JobProgress jobProgressStore;
+
+	@Autowired
+	private StorageService storageService;
+
 
 	@Override
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
@@ -183,7 +187,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		jobRequestDao.persist(jobRequest);
 	}
 
-	public void createOutputObject(long jobId, Mutable<BatchJobStatusType> jobStatus) throws WfmProcessingException {
+	@Override
+	public void createOutputObject(long jobId, Mutable<BatchJobStatusType> jobStatus) {
 		TransientJob transientJob = redis.getJob(jobId);
 		JobRequest jobRequest = jobRequestDao.findById(jobId);
 
@@ -193,7 +198,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 		JsonOutputObject jsonOutputObject = new JsonOutputObject(jobRequest.getId(),
 				UUID.randomUUID().toString(),
-				transientJob == null ? null : jsonUtils.convert(transientJob.getPipeline()),
+                jsonUtils.convert(transientJob.getPipeline()),
 				transientJob.getPriority(),
 				propertiesUtil.getSiteId(),
 				transientJob.getExternalId(),
@@ -208,6 +213,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		if (transientJob.getOverriddenAlgorithmProperties() != null) {
 			jsonOutputObject.getAlgorithmProperties().putAll(transientJob.getOverriddenAlgorithmProperties());
 		}
+		jsonOutputObject.getJobWarnings().addAll(redis.getJobWarnings(jobId));
+		jsonOutputObject.getJobErrors().addAll(redis.getJobErrors(jobId));
+
+		IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
+
+		boolean hasDetectionProcessingError = false;
 
 		int mediaIndex = 0;
 		for(TransientMedia transientMedia : transientJob.getMedia()) {
@@ -233,9 +244,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 						String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), transientAction.getName());
 
 						for (DetectionProcessingError detectionProcessingError : redis.getDetectionProcessingErrors(jobId, transientMedia.getId(), stageIndex, actionIndex)) {
+							hasDetectionProcessingError = true;
 							JsonDetectionProcessingError jsonDetectionProcessingError = new JsonDetectionProcessingError(detectionProcessingError.getStartOffset(), detectionProcessingError.getEndOffset(), detectionProcessingError.getError());
 							if (!mediaOutputObject.getDetectionProcessingErrors().containsKey(stateKey)) {
-								mediaOutputObject.getDetectionProcessingErrors().put(stateKey, new TreeSet<JsonDetectionProcessingError>());
+								mediaOutputObject.getDetectionProcessingErrors().put(stateKey, new TreeSet<>());
 							}
 							mediaOutputObject.getDetectionProcessingErrors().get(stateKey).add(jsonDetectionProcessingError);
 							if (!StringUtils.equalsIgnoreCase(mediaOutputObject.getStatus(), "COMPLETE")) {
@@ -247,7 +259,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 						}
 
 						Collection<Track> tracks = redis.getTracks(jobId, transientMedia.getId(), stageIndex, actionIndex);
-						if(tracks.size() == 0) {
+						if(tracks.isEmpty()) {
 							// Always include detection actions in the output object, even if they do not generate any results.
 							if (!mediaOutputObject.getTypes().containsKey(JsonActionOutputObject.NO_TRACKS_TYPE)) {
 								mediaOutputObject.getTypes().put(JsonActionOutputObject.NO_TRACKS_TYPE, new TreeSet<>());
@@ -335,7 +347,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 						}
 
 						if (actionIndex == transientStage.getActions().size() - 1) {
-							stateKeyBuilder.append("#").append(transientAction.getName());
+							stateKeyBuilder.append('#').append(transientAction.getName());
 						}
 					}
 				}
@@ -344,11 +356,16 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			mediaIndex++;
 		}
 
+		if (hasDetectionProcessingError) {
+			jsonOutputObject.getJobErrors()
+					.add("Some components had errors for some media. Refer to the detectionProcessingErrors fields.");
+		}
+
 		try {
-			File outputFile = propertiesUtil.createDetectionOutputObjectFile(jobId);
-			jsonUtils.serialize(jsonOutputObject, outputFile);
-			jobRequest.setOutputObjectPath(outputFile.getAbsolutePath());
+			String outputLocation = storageService.store(jsonOutputObject);
+			jobRequest.setOutputObjectPath(outputLocation);
 			jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
+			checkErrorMessages(jsonOutputObject, jobStatus);
 			jobRequestDao.persist(jobRequest);
 		} catch(IOException | WfmProcessingException wpe) {
 			log.error("Failed to create the JSON detection output object for '{}' due to an exception.", jobId, wpe);
@@ -359,8 +376,21 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		} catch (Exception exception) {
 			log.warn("Failed to destroy the cancellation routes associated with {}. If this job is resubmitted, it will likely not complete again!", jobId, exception);
 		}
-
 	}
+
+	private static void checkErrorMessages(JsonOutputObject outputObject, Mutable<BatchJobStatusType> jobStatus) {
+		if (jobStatus.getValue() == BatchJobStatusType.COMPLETE_WITH_ERRORS) {
+	    	return;
+	    }
+		if (!outputObject.getJobErrors().isEmpty()) {
+			jobStatus.setValue(BatchJobStatusType.COMPLETE_WITH_ERRORS);
+			return;
+		}
+		if (!outputObject.getJobWarnings().isEmpty()) {
+			jobStatus.setValue(BatchJobStatusType.COMPLETE_WITH_WARNINGS);
+		}
+	}
+
 
 	@Autowired
 	private JmsUtils jmsUtils;

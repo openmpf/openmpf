@@ -52,6 +52,7 @@ public class TestDlqRouteBuilder {
     public static final String ENTRY_POINT = "jms://MPF.TEST.ActiveMQ.DLQ";
     public static final String EXIT_POINT = "jms:MPF.TEST.COMPLETED_DETECTIONS";
     public static final String AUDIT_EXIT_POINT = "jms://MPF.TEST.DLQ_PROCESSED_MESSAGES";
+    public static final String INVALID_EXIT_POINT = "jms:MPF.TEST.DLQ_INVALID_MESSAGES";
     public static final String ROUTE_ID = "Test DLQ Route";
     public static final String SELECTOR_REPLY_TO = "queue://MPF.TEST.COMPLETED_DETECTIONS";
 
@@ -86,21 +87,21 @@ public class TestDlqRouteBuilder {
         camelContext.addComponent("jms", activeMQComponent);
         camelContext.start();
 
+        // TODO: Add converter and tests for DetectionRequest protobuf message body.
+
         connection = connectionFactory.createConnection();
         connection.start();
 
         session = connection.createSession(true, Session.AUTO_ACKNOWLEDGE);
 
-        DlqRouteBuilder dlqRouteBuilder =
-                new DlqRouteBuilder(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT, ROUTE_ID, SELECTOR_REPLY_TO, false);
+        DlqRouteBuilder dlqRouteBuilder = new DlqRouteBuilder(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT,
+                INVALID_EXIT_POINT, ROUTE_ID, SELECTOR_REPLY_TO, false);
 
         dlqRouteBuilder.setDeadLetterProcessor(mockDetectionDeadLetterProcessor);
         dlqRouteBuilder.setContext(camelContext);
         camelContext.addRoutes(dlqRouteBuilder);
 
         clearoutMessages(ENTRY_POINT);
-        // clearoutMessages(EXIT_POINT);
-        // clearoutMessages(AUDIT_EXIT_POINT);
     }
 
     @After

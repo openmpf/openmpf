@@ -51,10 +51,11 @@ public class DlqRouteBuilder extends RouteBuilder {
 	public static final String ENTRY_POINT = MpfEndpoints.DEAD_LETTER_QUEUE;
 	public static final String EXIT_POINT = MpfEndpoints.COMPLETED_DETECTIONS;
 	public static final String AUDIT_EXIT_POINT = MpfEndpoints.DLQ_PROCESSED_MESSAGES;
+	public static final String INVALID_EXIT_POINT = MpfEndpoints.DLQ_INVALID_MESSAGES;
 	public static final String ROUTE_ID = "DLQ Route";
 	public static final String SELECTOR_REPLY_TO = MpfEndpoints.COMPLETED_DETECTIONS_REPLY_TO;
 
-	private String entryPoint, exitPoint, auditExitPoint, routeId, selectorReplyTo;
+	private String entryPoint, exitPoint, auditExitPoint, invalidExitPoint, routeId, selectorReplyTo;
 	private boolean unmarshalProtobuf = true; // for testing purposes
 
 	@Autowired
@@ -62,14 +63,15 @@ public class DlqRouteBuilder extends RouteBuilder {
 	private DetectionDeadLetterProcessor detectionDeadLetterProcessor;
 
 	public DlqRouteBuilder() {
-		this(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT, ROUTE_ID, SELECTOR_REPLY_TO, true);
+		this(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT, INVALID_EXIT_POINT, ROUTE_ID, SELECTOR_REPLY_TO, true);
 	}
 
-	public DlqRouteBuilder(String entryPoint, String exitPoint, String auditExitPoint, String routeId,
-						   String selectorReplyTo, boolean unmarshalProtobuf) {
+	public DlqRouteBuilder(String entryPoint, String exitPoint, String auditExitPoint, String invalidExitPoint,
+						   String routeId, String selectorReplyTo, boolean unmarshalProtobuf) {
 		this.entryPoint = entryPoint;
 		this.exitPoint = exitPoint;
 		this.auditExitPoint = auditExitPoint;
+		this.invalidExitPoint = invalidExitPoint;
 		this.routeId = routeId;
 		this.selectorReplyTo = selectorReplyTo;
 		this.unmarshalProtobuf = unmarshalProtobuf;
@@ -98,7 +100,7 @@ public class DlqRouteBuilder extends RouteBuilder {
 						.log(LoggingLevel.ERROR, DlqRouteBuilder.class.getName(),
 							"Cannot parse message into a DetectionRequest. Cannot mark job ${header." + MpfHeaders.JOB_ID + "} as completed.")
 						// ActiveMQ DefaultErrorHandler will print out message details.
-						.to(MpfEndpoints.DLQ_INVALID_MESSAGES) // send possibly corrupted message to a separate queue for auditing
+						.to(invalidExitPoint) // send possibly corrupted message to a separate queue for auditing
 						.handled(true) // prevent further camel processing
 					.end()
 

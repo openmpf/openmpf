@@ -62,7 +62,6 @@ public class TestDlqRouteBuilder {
 
     public static final String BAD_SELECTOR_REPLY_TO = "queue://MPF.TEST.BAD.COMPLETED_DETECTIONS";
 
-    public static final String DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY = "dlqDeliveryFailureCause";
     public static final String DLQ_DUPLICATE_FAILURE_CAUSE =
             "java.lang.Throwable: duplicate from store for queue://MPF.DETECTION_DUMMY_REQUEST";
     public static final String DLQ_OTHER_FAILURE_CAUSE = "SOME OTHER FAILURE";
@@ -146,9 +145,15 @@ public class TestDlqRouteBuilder {
         return message;
     }
 
-    private void consumeLeftover(String dest, String replyTo, String deliveryFailureCause, String jmsCorrelationId)
-            throws JMSException, InvalidProtocolBufferException {
+    private void checkLeftover(String dest, String replyTo, String deliveryFailureCause, String jmsCorrelationId,
+                                 boolean isLeftover) throws JMSException, InvalidProtocolBufferException {
         BytesMessage message = (BytesMessage) receiveMessage(dest);
+
+        if (!isLeftover) {
+            Assert.assertNull(message);
+            return;
+        }
+
         Assert.assertNotNull(message);
 
         if (replyTo == null) {
@@ -157,7 +162,8 @@ public class TestDlqRouteBuilder {
             Assert.assertEquals(replyTo, message.getJMSReplyTo().toString());
         }
 
-        Assert.assertEquals(deliveryFailureCause, message.getStringProperty(DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY));
+        Assert.assertEquals(deliveryFailureCause,
+                message.getStringProperty(DlqRouteBuilder.DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY));
 
         byte[] protoBytes = new byte[(int)message.getBodyLength()];
         message.readBytes(protoBytes);
@@ -184,7 +190,7 @@ public class TestDlqRouteBuilder {
         }
 
         if (deliveryFailureCause != null) {
-            message.setStringProperty(DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY, deliveryFailureCause);
+            message.setStringProperty(DlqRouteBuilder.DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY, deliveryFailureCause);
         }
 
         String jmsCorrelationId = UUID.randomUUID().toString();
@@ -198,63 +204,61 @@ public class TestDlqRouteBuilder {
         return jmsCorrelationId;
     }
 
-    private void runTest(String dest, String replyTo, String deliveryFailureCause, boolean isHandled) throws Exception {
+    private void runTest(String dest, String replyTo, String deliveryFailureCause, boolean isHandled, boolean isLeftover) throws Exception {
         String jmsCorrelationId = sendDlqMessage(dest, replyTo, deliveryFailureCause);
         Thread.sleep(SLEEP_TIME_MILLISEC);
         verify(mockDetectionDeadLetterProcessor, times(isHandled ? 1 : 0)).process(any());
-        if (!isHandled) {
-            consumeLeftover(dest, replyTo, deliveryFailureCause, jmsCorrelationId);
-        }
+        checkLeftover(dest, replyTo, deliveryFailureCause, jmsCorrelationId, isLeftover);
     }
 
     // No reply-to tests
 
     @Test
     public void ignoreNoReplyToAndDupFailure() throws Exception {
-        runTest(ENTRY_POINT, null, DLQ_DUPLICATE_FAILURE_CAUSE, false);
+        runTest(ENTRY_POINT, null, DLQ_DUPLICATE_FAILURE_CAUSE, false, true);
     }
 
     @Test
     public void ignoreNoReplyToAndNoFailure() throws Exception {
-        runTest(ENTRY_POINT, null, null, false);
+        runTest(ENTRY_POINT, null, null, false, true);
     }
 
     @Test
     public void ignoreNoReplyToAndNonDupFailure() throws Exception {
-        runTest(ENTRY_POINT, null, DLQ_OTHER_FAILURE_CAUSE, false);
+        runTest(ENTRY_POINT, null, DLQ_OTHER_FAILURE_CAUSE, false, true);
     }
 
     // Bad reply-to tests
 
     @Test
     public void ignoreBadReplyToAndDupFailure() throws Exception {
-        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, DLQ_DUPLICATE_FAILURE_CAUSE, false);
+        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, DLQ_DUPLICATE_FAILURE_CAUSE, false, true);
     }
 
     @Test
     public void ignoreBadReplyToAndNoFailure() throws Exception {
-        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, null, false);
+        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, null, false, true);
     }
 
     @Test
     public void ignoreBadReplyToAndNonDupFailure() throws Exception {
-        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, DLQ_OTHER_FAILURE_CAUSE, false);
+        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, DLQ_OTHER_FAILURE_CAUSE, false, true);
     }
 
     // Good reply-to tests
 
     @Test
-    public void ignoreDupFailure() throws Exception {
-        runTest(ENTRY_POINT, SELECTOR_REPLY_TO, DLQ_DUPLICATE_FAILURE_CAUSE, false);
+    public void dropDupFailure() throws Exception {
+        runTest(ENTRY_POINT, SELECTOR_REPLY_TO, DLQ_DUPLICATE_FAILURE_CAUSE, false, false);
     }
 
     @Test
     public void handleNoFailure() throws Exception {
-        runTest(ENTRY_POINT, SELECTOR_REPLY_TO, null, true);
+        runTest(ENTRY_POINT, SELECTOR_REPLY_TO, null, true, false);
     }
 
     @Test
     public void handleNonDupFailure() throws Exception {
-        runTest(ENTRY_POINT, SELECTOR_REPLY_TO, DLQ_OTHER_FAILURE_CAUSE, true);
+        runTest(ENTRY_POINT, SELECTOR_REPLY_TO, DLQ_OTHER_FAILURE_CAUSE, true, false);
     }
 }

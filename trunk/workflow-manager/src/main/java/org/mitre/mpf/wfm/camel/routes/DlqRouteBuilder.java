@@ -53,6 +53,7 @@ public class DlqRouteBuilder extends RouteBuilder {
 	public static final String INVALID_EXIT_POINT = MpfEndpoints.DLQ_INVALID_MESSAGES;
 	public static final String ROUTE_ID = "DLQ Route";
 	public static final String SELECTOR_REPLY_TO = MpfEndpoints.COMPLETED_DETECTIONS_REPLY_TO;
+	public static final String DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY = "dlqDeliveryFailureCause";
 
 	private String entryPoint, exitPoint, auditExitPoint, invalidExitPoint, routeId, selectorReplyTo;
 
@@ -78,10 +79,10 @@ public class DlqRouteBuilder extends RouteBuilder {
 	public void configure() throws Exception {
 		log.debug("Configuring route '{}'.", routeId);
 
-		// Only process detection messages sent to components and not duplicates; otherwise leave messages on the
-		// default DLQ for auditing.
-        String selector = "?selector=" + java.net.URLEncoder.encode(MpfHeaders.JMS_REPLY_TO + "='" + selectorReplyTo + "'"
-                + " AND (dlqDeliveryFailureCause IS NULL OR dlqDeliveryFailureCause NOT LIKE '%duplicate from store%')", "UTF-8");
+		// Only process detection messages sent to components. Drop duplicate messages to prevent ActiveMQ heap space
+		// issues. Otherwise, leave messages on the default DLQ for auditing.
+
+		String selector = "?selector=" + java.net.URLEncoder.encode(MpfHeaders.JMS_REPLY_TO + "='" + selectorReplyTo + "'", "UTF-8");
 
         from(entryPoint + selector)
 			.routeId(routeId)
@@ -96,23 +97,29 @@ public class DlqRouteBuilder extends RouteBuilder {
 					.handled(true) // prevent further camel processing
 				.end()
 
-				// Attempt to deserialize the protobuf message now. Failure to deserialize will trigger the exception
-				// handler and prevent further exceptions and redelivery attempts for this message.
+				.choice()
+					.when(header(DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY).contains("duplicate from store"))
+						.stop() // drop message without processing or forwarding
+					.otherwise()
 
-				// On at least one occasion, the following exception was observed:
-				//     "com.google.protobuf.InvalidProtocolBufferException: Message missing required fields: data_uri"
-				// Further debugging is necessary to determine the root cause.
+						// Attempt to deserialize the protobuf message now. Failure to deserialize will trigger the exception
+						// handler and prevent further exceptions and redelivery attempts for this message.
 
-				.unmarshal().protobuf(DetectionProtobuf.DetectionRequest.getDefaultInstance()).convertBodyTo(String.class)
-				.multicast()
-					.pipeline()
-						.to(auditExitPoint) // send deserialized (readable) message to the exit point to indicate it has been processed, and for auditing
-					.end()
-					.pipeline()
-						.process(DetectionDeadLetterProcessor.REF) // generate a detection response protobuf message with an error status
-						.to(exitPoint) // send protobuf message to the intended destination to increment the job count
-					.end()
-				.end()
+						// On at least one occasion, the following exception was observed:
+						//     "com.google.protobuf.InvalidProtocolBufferException: Message missing required fields: data_uri"
+						// Further debugging is necessary to determine the root cause.
+
+						.unmarshal().protobuf(DetectionProtobuf.DetectionRequest.getDefaultInstance()).convertBodyTo(String.class)
+						.multicast()
+							.pipeline()
+								.to(auditExitPoint) // send deserialized (readable) message to the exit point to indicate it has been processed, and for auditing
+							.end()
+							.pipeline()
+								.process(DetectionDeadLetterProcessor.REF) // generate a detection response protobuf message with an error status
+								.to(exitPoint) // send protobuf message to the intended destination to increment the job count
+							.end()
+						.end()
+				.endChoice()
 			.end();
 	}
 }

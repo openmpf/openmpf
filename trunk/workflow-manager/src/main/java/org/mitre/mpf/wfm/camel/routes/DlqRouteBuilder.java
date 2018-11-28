@@ -30,7 +30,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.model.ProcessorDefinition;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionDeadLetterProcessor;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
@@ -56,29 +55,23 @@ public class DlqRouteBuilder extends RouteBuilder {
 	public static final String SELECTOR_REPLY_TO = MpfEndpoints.COMPLETED_DETECTIONS_REPLY_TO;
 
 	private String entryPoint, exitPoint, auditExitPoint, invalidExitPoint, routeId, selectorReplyTo;
-	private boolean unmarshalProtobuf = true; // for testing purposes
 
 	@Autowired
 	@Qualifier(DetectionDeadLetterProcessor.REF)
 	private DetectionDeadLetterProcessor detectionDeadLetterProcessor;
 
 	public DlqRouteBuilder() {
-		this(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT, INVALID_EXIT_POINT, ROUTE_ID, SELECTOR_REPLY_TO, true);
+		this(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT, INVALID_EXIT_POINT, ROUTE_ID, SELECTOR_REPLY_TO);
 	}
 
 	public DlqRouteBuilder(String entryPoint, String exitPoint, String auditExitPoint, String invalidExitPoint,
-						   String routeId, String selectorReplyTo, boolean unmarshalProtobuf) {
+						   String routeId, String selectorReplyTo) {
 		this.entryPoint = entryPoint;
 		this.exitPoint = exitPoint;
 		this.auditExitPoint = auditExitPoint;
 		this.invalidExitPoint = invalidExitPoint;
 		this.routeId = routeId;
 		this.selectorReplyTo = selectorReplyTo;
-		this.unmarshalProtobuf = unmarshalProtobuf;
-	}
-
-	public void setDeadLetterProcessor(DetectionDeadLetterProcessor deadLetterProcessor) {
-		this.detectionDeadLetterProcessor = deadLetterProcessor;
 	}
 
 	@Override
@@ -90,36 +83,33 @@ public class DlqRouteBuilder extends RouteBuilder {
         String selector = "?selector=" + java.net.URLEncoder.encode(MpfHeaders.JMS_REPLY_TO + "='" + selectorReplyTo + "'"
                 + " AND (dlqDeliveryFailureCause IS NULL OR dlqDeliveryFailureCause NOT LIKE '%duplicate from store%')", "UTF-8");
 
-        ProcessorDefinition def = from(entryPoint + selector)
+        from(entryPoint + selector)
 			.routeId(routeId)
-			.setExchangePattern(ExchangePattern.InOnly);
+			.setExchangePattern(ExchangePattern.InOnly)
 
-				if (unmarshalProtobuf) {
-					// Configure exception handler(s) before behaviors that can cause exceptions.
-					def = def.onException(InvalidProtocolBufferException.class)
-						.log(LoggingLevel.ERROR, DlqRouteBuilder.class.getName(),
-							"Cannot parse message into a DetectionRequest. Cannot mark job ${header." + MpfHeaders.JOB_ID + "} as completed.")
-						// ActiveMQ DefaultErrorHandler will print out message details.
-						.to(invalidExitPoint) // send possibly corrupted message to a separate queue for auditing
-						.handled(true) // prevent further camel processing
-					.end()
+				// Configure exception handler(s) before behaviors that can cause exceptions.
+				.onException(InvalidProtocolBufferException.class)
+					.log(LoggingLevel.ERROR, DlqRouteBuilder.class.getName(),
+						"Cannot parse message into a DetectionRequest. Cannot mark job ${header." + MpfHeaders.JOB_ID + "} as completed.")
+					// ActiveMQ DefaultErrorHandler will print out message details.
+					.to(invalidExitPoint) // send possibly corrupted message to a separate queue for auditing
+					.handled(true) // prevent further camel processing
+				.end()
 
-					// Attempt to deserialize the protobuf message now. Failure to deserialize will trigger the exception
-					// handler and prevent further exceptions and redelivery attempts for this message.
+				// Attempt to deserialize the protobuf message now. Failure to deserialize will trigger the exception
+				// handler and prevent further exceptions and redelivery attempts for this message.
 
-					// On at least one occasion, the following exception was observed:
-					//     "com.google.protobuf.InvalidProtocolBufferException: Message missing required fields: data_uri"
-					// Further debugging is necessary to determine the root cause.
+				// On at least one occasion, the following exception was observed:
+				//     "com.google.protobuf.InvalidProtocolBufferException: Message missing required fields: data_uri"
+				// Further debugging is necessary to determine the root cause.
 
-					.unmarshal().protobuf(DetectionProtobuf.DetectionRequest.getDefaultInstance()).convertBodyTo(String.class);
-				}
-
-				def.multicast()
+				.unmarshal().protobuf(DetectionProtobuf.DetectionRequest.getDefaultInstance()).convertBodyTo(String.class)
+				.multicast()
 					.pipeline()
 						.to(auditExitPoint) // send deserialized (readable) message to the exit point to indicate it has been processed, and for auditing
 					.end()
 					.pipeline()
-						.process(detectionDeadLetterProcessor) // generate a detection response protobuf message with an error status
+						.process(DetectionDeadLetterProcessor.REF) // generate a detection response protobuf message with an error status
 						.to(exitPoint) // send protobuf message to the intended destination to increment the job count
 					.end()
 				.end()

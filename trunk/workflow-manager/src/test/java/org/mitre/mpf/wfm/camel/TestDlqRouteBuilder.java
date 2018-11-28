@@ -26,28 +26,32 @@
 
 package org.mitre.mpf.wfm.camel;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.camel.component.ActiveMQComponent;
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.jms.JmsComponent;
 import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.impl.SimpleRegistry;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
-import org.mitre.mpf.component.executor.detection.MPFDetectionMain;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionDeadLetterProcessor;
 import org.mitre.mpf.wfm.camel.routes.DlqRouteBuilder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import javax.jms.*;
-
 import java.util.UUID;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestDlqRouteBuilder {
+
+    public static final String ACTIVE_MQ_HOST = "tcp://localhost:61616";
 
     public static final String ENTRY_POINT = "jms://MPF.TEST.ActiveMQ.DLQ";
     public static final String EXIT_POINT = "jms:MPF.TEST.COMPLETED_DETECTIONS";
@@ -62,8 +66,6 @@ public class TestDlqRouteBuilder {
     public static final String DLQ_DUPLICATE_FAILURE_CAUSE =
             "java.lang.Throwable: duplicate from store for queue://MPF.DETECTION_DUMMY_REQUEST";
     public static final String DLQ_OTHER_FAILURE_CAUSE = "SOME OTHER FAILURE";
-
-    public static final String TEST_BODY = "THIS IS A TEST MESSAGE";
 
     public static final int SLEEP_TIME_MILLISEC = 500;
     public static final int RECEIVE_TIMEOUT_MILLISEC = 500;
@@ -81,13 +83,14 @@ public class TestDlqRouteBuilder {
     public void setup() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        camelContext = new DefaultCamelContext();
-        connectionFactory = new ActiveMQConnectionFactory(MPFDetectionMain.ACTIVEMQHOST);
+        SimpleRegistry simpleRegistry = new SimpleRegistry();
+        simpleRegistry.put(DetectionDeadLetterProcessor.REF, mockDetectionDeadLetterProcessor);
+        camelContext = new DefaultCamelContext(simpleRegistry);
+
+        connectionFactory = new ActiveMQConnectionFactory(ACTIVE_MQ_HOST);
         activeMQComponent = ActiveMQComponent.jmsComponentAutoAcknowledge(connectionFactory);
         camelContext.addComponent("jms", activeMQComponent);
         camelContext.start();
-
-        // TODO: Add converter and tests for DetectionRequest protobuf message body.
 
         connection = connectionFactory.createConnection();
         connection.start();
@@ -95,9 +98,8 @@ public class TestDlqRouteBuilder {
         session = connection.createSession(true, Session.AUTO_ACKNOWLEDGE);
 
         DlqRouteBuilder dlqRouteBuilder = new DlqRouteBuilder(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT,
-                INVALID_EXIT_POINT, ROUTE_ID, SELECTOR_REPLY_TO, false);
+                INVALID_EXIT_POINT, ROUTE_ID, SELECTOR_REPLY_TO);
 
-        dlqRouteBuilder.setDeadLetterProcessor(mockDetectionDeadLetterProcessor);
         dlqRouteBuilder.setContext(camelContext);
         camelContext.addRoutes(dlqRouteBuilder);
 
@@ -145,8 +147,8 @@ public class TestDlqRouteBuilder {
     }
 
     private void consumeLeftover(String dest, String replyTo, String deliveryFailureCause, String jmsCorrelationId)
-            throws JMSException {
-        Message message = receiveMessage(dest);
+            throws JMSException, InvalidProtocolBufferException {
+        BytesMessage message = (BytesMessage) receiveMessage(dest);
         Assert.assertNotNull(message);
 
         if (replyTo == null) {
@@ -156,13 +158,25 @@ public class TestDlqRouteBuilder {
         }
 
         Assert.assertEquals(deliveryFailureCause, message.getStringProperty(DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY));
-        Assert.assertEquals(TEST_BODY, ((ObjectMessage)message).getObject().toString());
+
+        byte[] protoBytes = new byte[(int)message.getBodyLength()];
+        message.readBytes(protoBytes);
+        DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.parseFrom(protoBytes);
+        Assert.assertEquals("TEST ACTION", detectionRequest.getActionName());
+
         Assert.assertEquals(jmsCorrelationId, message.getJMSCorrelationID());
     }
 
     private String sendDlqMessage(String dest, String replyTo, String deliveryFailureCause) throws JMSException {
-        ObjectMessage message = session.createObjectMessage();
-        message.setObject(TEST_BODY);
+        BytesMessage message = session.createBytesMessage();
+        DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.newBuilder()
+                .setRequestId(123)
+                .setDataUri("file:///test")
+                .setStageIndex(1)
+                .setActionIndex(1)
+                .setActionName("TEST ACTION")
+                .build();
+        message.writeBytes(detectionRequest.toByteArray());
 
         if (replyTo != null) {
             Destination replyToDestination = session.createQueue(getJmsOrQueueShortName(replyTo));

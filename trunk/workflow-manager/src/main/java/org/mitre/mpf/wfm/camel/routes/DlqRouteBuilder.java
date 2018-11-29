@@ -36,8 +36,6 @@ import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /**
@@ -56,10 +54,6 @@ public class DlqRouteBuilder extends RouteBuilder {
 	public static final String DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY = "dlqDeliveryFailureCause";
 
 	private String entryPoint, exitPoint, auditExitPoint, invalidExitPoint, routeId, selectorReplyTo;
-
-	@Autowired
-	@Qualifier(DetectionDeadLetterProcessor.REF)
-	private DetectionDeadLetterProcessor detectionDeadLetterProcessor;
 
 	public DlqRouteBuilder() {
 		this(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT, INVALID_EXIT_POINT, ROUTE_ID, SELECTOR_REPLY_TO);

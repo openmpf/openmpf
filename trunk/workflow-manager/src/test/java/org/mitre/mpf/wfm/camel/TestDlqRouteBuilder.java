@@ -204,7 +204,8 @@ public class TestDlqRouteBuilder {
         return jmsCorrelationId;
     }
 
-    private void runTest(String dest, String replyTo, String deliveryFailureCause, boolean isHandled, boolean isLeftover) throws Exception {
+    private void runTest(String dest, String replyTo, String deliveryFailureCause, boolean isHandled,
+                         boolean isLeftover) throws Exception {
         String jmsCorrelationId = sendDlqMessage(dest, replyTo, deliveryFailureCause);
         Thread.sleep(SLEEP_TIME_MILLISEC);
         verify(mockDetectionDeadLetterProcessor, times(isHandled ? 1 : 0)).process(any());

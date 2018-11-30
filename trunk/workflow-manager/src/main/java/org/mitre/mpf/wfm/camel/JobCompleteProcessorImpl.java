@@ -340,17 +340,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 	                                                             TransientAction transientAction,
 	                                                             TransientMedia transientMedia,
 	                                                             TransientJob transientJob) {
-		JsonDetectionOutputObject exemplar = new JsonDetectionOutputObject(
-				track.getExemplar().getX(),
-				track.getExemplar().getY(),
-				track.getExemplar().getWidth(),
-				track.getExemplar().getHeight(),
-				track.getExemplar().getConfidence(),
-				track.getExemplar().getDetectionProperties(),
-				track.getExemplar().getMediaOffsetFrame(),
-				track.getExemplar().getMediaOffsetTime(),
-				track.getExemplar().getArtifactExtractionStatus().name(),
-				track.getExemplar().getArtifactPath());
+		JsonDetectionOutputObject exemplar = createDetectionOutputObject(track.getExemplar());
 
 		AggregateJobPropertiesUtil.PropertyInfo exemplarsOnlyProp = AggregateJobPropertiesUtil.calculateValue(
 				"EXEMPLARS_ONLY",
@@ -370,7 +360,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 		List<JsonDetectionOutputObject> detections;
 		if (exemplarsOnly) {
-			detections = Collections.singletonList(createDetectionOutputObject(track.getExemplar()));
+			detections = Collections.singletonList(exemplar);
 		}
 		else {
 			detections = track.getDetections().stream()

@@ -273,7 +273,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 	}
 
 	/** Combines two tracks. This is a destructive method. The contents of track1 reflect the merged track. */
-	private static Track merge(Track track1, Track track2){
+	public static Track merge(Track track1, Track track2){
 		Track merged = new Track(track1.getJobId(), track1.getMediaId(), track1.getStageIndex(), track1.getActionIndex(),
 				track1.getStartOffsetFrameInclusive(), track2.getEndOffsetFrameInclusive(),
 				track1.getStartOffsetTimeInclusive(), track2.getEndOffsetTimeInclusive(), track1.getType(),
@@ -282,15 +282,16 @@ public class TrackMergingProcessor extends WfmProcessor {
 		merged.getDetections().addAll(track1.getDetections());
 		merged.getDetections().addAll(track2.getDetections());
 
-		Detection exemplar = null;
+        merged.getTrackProperties().putAll(track1.getTrackProperties());
+		for (Map.Entry<String, String> entry : track2.getTrackProperties().entrySet()) {
+			merged.getTrackProperties()
+					.merge(entry.getKey(), entry.getValue(), (v1, v2) -> v1.equals(v2) ? v1 : v1 + "; " + v2);
+        }
 
-		for(Detection detection : merged.getDetections()) {
-			if(exemplar == null || exemplar.getConfidence() < detection.getConfidence()) {
-				exemplar = detection;
-			}
-		}
-
-		merged.setExemplar(exemplar);
+		merged.getDetections()
+				.stream()
+				.max(Comparator.comparingDouble(Detection::getConfidence))
+				.ifPresent(merged::setExemplar);
 		return merged;
 	}
 

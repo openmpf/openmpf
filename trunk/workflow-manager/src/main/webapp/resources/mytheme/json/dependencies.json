@@ -777,13 +777,6 @@
           "licenseType": "Dual License: CDDL Version 1.1 and GNU General Public License Version 2"
         },
         {
-          "name": "BoneCP",
-          "copyright": "2010 Wallace Wadge",
-          "projectUrl": "http://www.jolbox.com/index.html",
-          "sourceUrl": "https://github.com/wwadge/bonecp",
-          "licenseType": "Apache License Version 2"
-        },
-        {
           "name": "H2 Database Engine",
           "copyright": "2004-2014 H2 Group",
           "projectUrl": "http://www.h2database.com",
@@ -1258,13 +1251,6 @@
           "copyright": "2008-2013, Red Hat Inc",
           "sourceUrl": "https://github.com/hibernate/hibernate-commons-annotations",
           "licenseType": "GNU Lesser General Public License Version 2.1"
-        },
-        {
-          "name": "c3p0",
-          "copyright": "2015 Machinery For Change, Inc",
-          "projectUrl": "http://www.mchange.com/projects/c3p0/",
-          "sourceUrl": "https://github.com/swaldman/c3p0",
-          "licenseType": "Dual License: GNU Lesser General Public License or Eclipse Public License Version 1.0"
         },
         {
           "name": "mchange-commons-java",

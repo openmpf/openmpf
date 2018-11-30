@@ -279,7 +279,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 						} else {
 							for (Track track : tracks) {
 								JsonTrackOutputObject jsonTrackOutputObject
-										= createTrackOutputObject(track, stateKey, transientMedia, transientJob);
+										= createTrackOutputObject(track, stateKey, transientAction, transientMedia,
+										                          transientJob);
 
 								String type = jsonTrackOutputObject.getType();
 								if (!mediaOutputObject.getTypes().containsKey(type)) {
@@ -336,7 +337,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 	}
 
 	private static JsonTrackOutputObject createTrackOutputObject(Track track, String stateKey,
-	                                                             TransientMedia transientMedia, TransientJob job) {
+	                                                             TransientAction transientAction,
+	                                                             TransientMedia transientMedia,
+	                                                             TransientJob transientJob) {
 		JsonDetectionOutputObject exemplar = new JsonDetectionOutputObject(
 				track.getExemplar().getX(),
 				track.getExemplar().getY(),
@@ -349,8 +352,24 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 				track.getExemplar().getArtifactExtractionStatus().name(),
 				track.getExemplar().getArtifactPath());
 
+		AggregateJobPropertiesUtil.PropertyInfo exemplarsOnlyProp = AggregateJobPropertiesUtil.calculateValue(
+				"EXEMPLARS_ONLY",
+				transientAction.getProperties(),
+				transientJob.getOverriddenJobProperties(),
+				transientAction,
+				transientJob.getOverriddenAlgorithmProperties(),
+				transientMedia.getMediaSpecificProperties());
+
+		boolean exemplarsOnly;
+		if (exemplarsOnlyProp.getLevel() == AggregateJobPropertiesUtil.PropertyLevel.NONE) {
+			exemplarsOnly = transientJob.getDetectionSystemPropertiesSnapshot().isOutputObjectExemplarOnly();
+		}
+		else {
+			exemplarsOnly = Boolean.valueOf(exemplarsOnlyProp.getValue());
+		}
+
 		List<JsonDetectionOutputObject> detections;
-		if (job.getDetectionSystemPropertiesSnapshot().isOutputObjectExemplarOnly()) {
+		if (exemplarsOnly) {
 			detections = Collections.singletonList(createDetectionOutputObject(track.getExemplar()));
 		}
 		else {

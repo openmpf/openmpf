@@ -75,10 +75,9 @@ public class MPFDetectionMain {
 
             try {
                 if (componentBase != null && msgQueueName != null) {
-                    //TODO: Add a parameter for run directory and set it here.
+                    componentBase.setRunDirectory(System.getenv("MPF_HOME") + "/plugins");
                     componentBase.init();
                     detectionMessenger = new MPFDetectionMessenger(componentBase, msgQueueName);
-
                     LOG.info("Created messenger");
                 } else {
                     LOG.error("Could not create detection messenger.");

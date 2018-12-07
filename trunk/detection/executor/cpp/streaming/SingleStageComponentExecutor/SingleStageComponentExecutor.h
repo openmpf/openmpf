@@ -78,6 +78,10 @@ namespace MPF { namespace COMPONENT {
 
         void Run();
 
+        MPFSegmentReadyMessage GetNextSegmentReadyMsg(std::chrono::milliseconds &timeout_msec);
+        MPFFrameReadyMessage GetNextFrameToProcess(int next_frame_index,
+                                               std::chrono::milliseconds &timeout_msec);
+
         void FixTracks(const VideoSegmentInfo &segment_info,
                        std::vector<MPFVideoTrack> &tracks);
 

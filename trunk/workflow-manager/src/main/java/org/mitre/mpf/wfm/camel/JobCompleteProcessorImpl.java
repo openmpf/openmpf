@@ -51,6 +51,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
@@ -278,51 +279,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 							}
 						} else {
 							for (Track track : tracks) {
-								JsonDetectionOutputObject exemplar = new JsonDetectionOutputObject(
-										track.getExemplar().getX(),
-										track.getExemplar().getY(),
-										track.getExemplar().getWidth(),
-										track.getExemplar().getHeight(),
-										track.getExemplar().getConfidence(),
-										track.getExemplar().getDetectionProperties(),
-										track.getExemplar().getMediaOffsetFrame(),
-										track.getExemplar().getMediaOffsetTime(),
-										track.getExemplar().getArtifactExtractionStatus().name(),
-										track.getExemplar().getArtifactPath());
-
-								List<JsonDetectionOutputObject> detections = track.getDetections().stream()
-										.map(d -> new JsonDetectionOutputObject(
-												d.getX(),
-												d.getY(),
-												d.getWidth(),
-												d.getHeight(),
-												d.getConfidence(),
-												d.getDetectionProperties(),
-												d.getMediaOffsetFrame(),
-												d.getMediaOffsetTime(),
-												d.getArtifactExtractionStatus().name(),
-												d.getArtifactPath()))
-										.collect(toList());
-
-								JsonTrackOutputObject jsonTrackOutputObject = new JsonTrackOutputObject(
-										TextUtils.getTrackUuid(transientMedia.getSha256(),
-										                       track.getExemplar().getMediaOffsetFrame(),
-										                       track.getExemplar().getX(),
-										                       track.getExemplar().getY(),
-										                       track.getExemplar().getWidth(),
-										                       track.getExemplar().getHeight(),
-										                       track.getType()),
-										track.getStartOffsetFrameInclusive(),
-										track.getEndOffsetFrameInclusive(),
-										track.getStartOffsetTimeInclusive(),
-										track.getEndOffsetTimeInclusive(),
-										track.getType(),
-										stateKey,
-										track.getConfidence(),
-										track.getTrackProperties(),
-										exemplar,
-                                        detections);
-
+								JsonTrackOutputObject jsonTrackOutputObject
+										= createTrackOutputObject(track, stateKey, transientAction, transientMedia,
+										                          transientJob);
 
 								String type = jsonTrackOutputObject.getType();
 								if (!mediaOutputObject.getTypes().containsKey(type)) {
@@ -377,6 +336,74 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			log.warn("Failed to destroy the cancellation routes associated with {}. If this job is resubmitted, it will likely not complete again!", jobId, exception);
 		}
 	}
+
+	private static JsonTrackOutputObject createTrackOutputObject(Track track, String stateKey,
+	                                                             TransientAction transientAction,
+	                                                             TransientMedia transientMedia,
+	                                                             TransientJob transientJob) {
+		JsonDetectionOutputObject exemplar = createDetectionOutputObject(track.getExemplar());
+
+		AggregateJobPropertiesUtil.PropertyInfo exemplarsOnlyProp = AggregateJobPropertiesUtil.calculateValue(
+				MpfConstants.EXEMPLARS_ONLY_PROPERTY,
+				transientAction.getProperties(),
+				transientJob.getOverriddenJobProperties(),
+				transientAction,
+				transientJob.getOverriddenAlgorithmProperties(),
+				transientMedia.getMediaSpecificProperties());
+
+		boolean exemplarsOnly;
+		if (exemplarsOnlyProp.getLevel() == AggregateJobPropertiesUtil.PropertyLevel.NONE) {
+			exemplarsOnly = transientJob.getDetectionSystemPropertiesSnapshot().isOutputObjectExemplarOnly();
+		}
+		else {
+			exemplarsOnly = Boolean.valueOf(exemplarsOnlyProp.getValue());
+		}
+
+		List<JsonDetectionOutputObject> detections;
+		if (exemplarsOnly) {
+			detections = Collections.singletonList(exemplar);
+		}
+		else {
+			detections = track.getDetections().stream()
+					.map(d -> createDetectionOutputObject(d))
+					.collect(toList());
+		}
+
+		return new JsonTrackOutputObject(
+				TextUtils.getTrackUuid(transientMedia.getSha256(),
+				                       track.getExemplar().getMediaOffsetFrame(),
+				                       track.getExemplar().getX(),
+				                       track.getExemplar().getY(),
+				                       track.getExemplar().getWidth(),
+				                       track.getExemplar().getHeight(),
+				                       track.getType()),
+				track.getStartOffsetFrameInclusive(),
+				track.getEndOffsetFrameInclusive(),
+				track.getStartOffsetTimeInclusive(),
+				track.getEndOffsetTimeInclusive(),
+				track.getType(),
+				stateKey,
+				track.getConfidence(),
+				track.getTrackProperties(),
+				exemplar,
+				detections);
+	}
+
+
+	private static JsonDetectionOutputObject createDetectionOutputObject(Detection detection) {
+		return new JsonDetectionOutputObject(
+				detection.getX(),
+				detection.getY(),
+				detection.getWidth(),
+				detection.getHeight(),
+				detection.getConfidence(),
+				detection.getDetectionProperties(),
+				detection.getMediaOffsetFrame(),
+				detection.getMediaOffsetTime(),
+				detection.getArtifactExtractionStatus().name(),
+				detection.getArtifactPath());
+	}
+
 
 	private static void checkErrorMessages(JsonOutputObject outputObject, Mutable<BatchJobStatusType> jobStatus) {
 		if (jobStatus.getValue() == BatchJobStatusType.COMPLETE_WITH_ERRORS) {

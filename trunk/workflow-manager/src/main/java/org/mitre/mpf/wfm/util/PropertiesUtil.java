@@ -249,6 +249,10 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getBoolean("mpf.output.objects.enabled");
     }
 
+    public boolean isOutputObjectsExemplarsOnly() {
+        return mpfPropertiesConfig.getBoolean("mpf.output.objects.exemplars.only");
+    }
+
     public String getSharePath() {
         return mpfPropertiesConfig.getString("mpf.share.path");
     }
@@ -618,7 +622,7 @@ public class PropertiesUtil {
     }
 
     public String getAmqUri() {
-        return mpfPropertiesConfig.getString("mpf.output.objects.amq.broker.uri");
+        return mpfPropertiesConfig.getString("amq.broker.uri");
     }
 
     //

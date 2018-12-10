@@ -39,6 +39,8 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
 
     public static final String NO_TRACKS_TYPE = "NO TRACKS";
 
+    public static final String TRACKS_SUPPRESSED_TYPE = "TRACKS SUPPRESSED";
+
     @JsonProperty("source")
     @JsonPropertyDescription("The action source.")
     private String source;

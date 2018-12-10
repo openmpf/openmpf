@@ -51,6 +51,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
@@ -343,7 +344,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		JsonDetectionOutputObject exemplar = createDetectionOutputObject(track.getExemplar());
 
 		AggregateJobPropertiesUtil.PropertyInfo exemplarsOnlyProp = AggregateJobPropertiesUtil.calculateValue(
-				"EXEMPLARS_ONLY",
+				MpfConstants.EXEMPLARS_ONLY_PROPERTY,
 				transientAction.getProperties(),
 				transientJob.getOverriddenJobProperties(),
 				transientAction,

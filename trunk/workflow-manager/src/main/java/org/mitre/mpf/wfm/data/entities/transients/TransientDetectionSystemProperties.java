@@ -140,6 +140,12 @@ public class TransientDetectionSystemProperties {
         return Boolean.parseBoolean(detectionSystemPropertiesSnapshot.get("mpf.output.objects.exemplars.only"));
     }
 
+    @JsonIgnore
+    public boolean isOutputObjectLastStageOnly() {
+        return Boolean.parseBoolean(detectionSystemPropertiesSnapshot.get("mpf.output.objects.last.stage.only"));
+    }
+
+
     public String lookup(String propertyName) {
         return detectionSystemPropertiesSnapshot.get(propertyName);
     }

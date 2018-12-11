@@ -253,6 +253,10 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getBoolean("mpf.output.objects.exemplars.only");
     }
 
+    public boolean isOutputObjectsLastStageOnly() {
+        return mpfPropertiesConfig.getBoolean("mpf.output.objects.last.stage.only");
+    }
+
     public String getSharePath() {
         return mpfPropertiesConfig.getString("mpf.share.path");
     }

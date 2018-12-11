@@ -56,7 +56,8 @@ public class MpfPropertiesConfigurationBuilder {
             "detection.",
             "http.object.storage.type",
             "http.object.storage.service_uri",
-            "mpf.output.objects.exemplars.only");
+            "mpf.output.objects.exemplars.only",
+            "mpf.output.objects.last.stage.only");
 
     @javax.annotation.Resource(name="customPropFile")
     private FileSystemResource customPropFile;

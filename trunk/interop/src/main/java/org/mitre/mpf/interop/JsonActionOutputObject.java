@@ -26,13 +26,12 @@
 
 package org.mitre.mpf.interop;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.*;
 import org.apache.commons.lang3.ObjectUtils;
 
-import java.util.*;
+import java.util.Objects;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 @JsonTypeName("TypeOutputObject")
 public class JsonActionOutputObject implements Comparable<JsonActionOutputObject> {
@@ -48,6 +47,7 @@ public class JsonActionOutputObject implements Comparable<JsonActionOutputObject
 
     @JsonProperty("tracks")
     @JsonPropertyDescription("The set of object detection tracks produced in this action for the given medium.")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private SortedSet<JsonTrackOutputObject> tracks;
     public SortedSet<JsonTrackOutputObject> getTracks() { return tracks; }
 

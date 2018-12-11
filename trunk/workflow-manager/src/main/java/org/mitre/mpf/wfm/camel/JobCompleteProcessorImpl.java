@@ -341,7 +341,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		JsonDetectionOutputObject exemplar = createDetectionOutputObject(track.getExemplar());
 
 		AggregateJobPropertiesUtil.PropertyInfo exemplarsOnlyProp = AggregateJobPropertiesUtil.calculateValue(
-				MpfConstants.EXEMPLARS_ONLY_PROPERTY,
+				MpfConstants.OUTPUT_EXEMPLARS_ONLY_PROPERTY,
 				transientAction.getProperties(),
 				transientJob.getOverriddenJobProperties(),
 				transientAction,

@@ -54,6 +54,10 @@ class MPFFrameStore {
     // Deletes the copy of the frame data for this frame index.
     void DeleteFrame(const size_t frame_index);
 
+    // Deletes the copy of the frame data for a set of frames whose
+    // indices are given in the input vector.
+    void DeleteMultipleFrames(const std::vector<size_t> &frame_indices);
+
     bool AtCapacity() { return (frames_in_store_ >= capacity_); }
 
   private:

@@ -51,7 +51,8 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
         , log_prefix_(log_prefix)
         , settings_(std::move(settings))
         , frame_store_(settings_)
-        , msg_reader_(settings_, connection.Get())
+        , frame_ready_reader_(settings_, settings_.frame_ready_queue, connection.Get())
+        , segment_ready_reader_(settings_, settings_.segment_ready_queue, connection.Get())
         , msg_sender_(settings_, connection.Get())
         , job_(std::move(job))
         , component_(std::move(component))
@@ -153,7 +154,12 @@ void SingleStageComponentExecutor::Run() {
 
             // Create a consumer for this segment and get the
             // first message
-            frame_msg = msg_reader_.CreateFrameReadyConsumer(segment_number).GetFrameReadyMsg();
+            std::string selector = "SEGMENT_NUMBER = " + std::to_string(segment_number);
+            bool got_msg = frame_ready_reader_.RecreateConsumerWithSelector(selector).GetMsgNoWait(frame_msg);
+            while (!got_msg) {
+                got_msg = frame_ready_reader_.GetMsgNoWait(frame_msg);
+                std_in_watcher->InterruptibleSleep(timeout_msec);
+            }
 
             // Check that the segment number in the frame
             // ready message is the same as the segment number we
@@ -202,7 +208,8 @@ void SingleStageComponentExecutor::Run() {
                 num_frames_processed++;
                 frame_to_process += frame_interval;
 
-                // Send release frame message, even if it was not processed.
+                // Send release frame message
+                LOG4CXX_DEBUG(logger_, "Release frame " << frame_msg.frame_index);
                 msg_sender_.SendReleaseFrame(frame_msg.frame_index);
 
                 // If we haven't reached the end of the segment
@@ -294,7 +301,7 @@ MPFSegmentReadyMessage SingleStageComponentExecutor::GetNextSegmentReadyMsg(std:
     MPFSegmentReadyMessage seg_msg;
     StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
     while (true) {
-        bool got_msg = msg_reader_.GetSegmentReadyMsgNoWait(seg_msg);
+        bool got_msg = segment_ready_reader_.GetMsgNoWait(seg_msg);
         if (got_msg) return (std::move(seg_msg));
         else {
             std_in_watcher->InterruptibleSleep(timeout_msec);
@@ -308,13 +315,14 @@ MPFFrameReadyMessage SingleStageComponentExecutor::GetNextFrameToProcess(int nex
     MPFFrameReadyMessage frame_msg;
     StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
     while (true) {
-        bool got_msg = msg_reader_.GetFrameReadyMsgNoWait(frame_msg);
+        bool got_msg = frame_ready_reader_.GetMsgNoWait(frame_msg);
         if (got_msg) {
             if (frame_msg.frame_index == next_frame_index) {
                 return (std::move(frame_msg));
             }
             else {
                 // skipping the frame, so release it.
+                LOG4CXX_DEBUG(logger_, "Release frame " << frame_msg.frame_index);
                 msg_sender_.SendReleaseFrame(frame_msg.frame_index);
             }
         }

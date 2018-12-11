@@ -48,6 +48,7 @@ namespace MPF { namespace COMPONENT {
 
         UNABLE_TO_CONNECT_TO_STREAM = 75,
         STREAM_STALLED = 76,
+        FRAME_STORE_ERROR = 77,
     };
 
 

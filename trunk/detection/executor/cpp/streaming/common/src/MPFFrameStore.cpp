@@ -44,7 +44,7 @@ class MPF::FrameStoreImpl {
             : context_({redisConnect(settings.frame_store_server_hostname.c_str(),
                         settings.frame_store_server_portnum), redisFree}) {}
 
-    redisContext *Get() { return context_.get(); }
+    redisContext *GetContext() { return context_.get(); }
     void CheckReply(const redis_reply_ptr &reply, const std::string &redis_cmd);
 
   private:
@@ -68,8 +68,8 @@ void MPFFrameStore::StoreFrame(const cv::Mat &frame, const size_t frame_index) {
         frame_byte_size_ = frame.rows*frame.cols*frame.elemSize();
     }
     std::string frame_key = CreateKey(frame_index);
-    redis_reply_ptr reply{static_cast<redisReply *>(redisCommand(impl_ptr_->Get(), "SET key:%s %b", frame_key.c_str(), frame.data, frame_byte_size_)), freeReplyObject};
-    impl_ptr_->CheckReply(reply, std::string("SET key:" + frame_key));
+    redis_reply_ptr reply{static_cast<redisReply *>(redisCommand(impl_ptr_->GetContext(), "SET %s %b", frame_key.c_str(), frame.data, frame_byte_size_)), freeReplyObject};
+    impl_ptr_->CheckReply(reply, std::string("SET " + frame_key));
     ++frames_in_store_;
 }
 
@@ -83,9 +83,9 @@ void MPFFrameStore::GetFrame(cv::Mat &frame, const size_t frame_index) {
         frame_byte_size_ = frame.rows*frame.cols*frame.elemSize();
     }
     std::string frame_key = CreateKey(frame_index);
-    redis_reply_ptr reply{static_cast<redisReply *>(redisCommand(impl_ptr_->Get(), "GET key:%s", frame_key.c_str())), freeReplyObject};
+    redis_reply_ptr reply{static_cast<redisReply *>(redisCommand(impl_ptr_->GetContext(), "GET %s", frame_key.c_str())), freeReplyObject};
     // Check for errors
-    impl_ptr_->CheckReply(reply, std::string("GET key:" + frame_key));
+    impl_ptr_->CheckReply(reply, std::string("GET " + frame_key));
 
     if (reply->type == REDIS_REPLY_STRING) {
         // Copy the data out of the reply string
@@ -93,7 +93,7 @@ void MPFFrameStore::GetFrame(cv::Mat &frame, const size_t frame_index) {
         memcpy(frame.data, reply->str, reply->len);
     }
     else {
-        std::string err_str = "Redis command Get key:" + frame_key + " returned unrecognized type: " + std::to_string(reply->type);
+        std::string err_str = "Redis command Get " + frame_key + " returned unrecognized type: " + std::to_string(reply->type);
         throw std::runtime_error(err_str);
     }
 
@@ -105,12 +105,24 @@ void MPFFrameStore::DeleteFrame(const size_t frame_index) {
     // Convert the frame index to a key and delete the frame data from
     // the database.
     std::string frame_key = CreateKey(frame_index);
-    redis_reply_ptr reply{static_cast<redisReply *>(redisCommand(impl_ptr_->Get(), "DEL %s", frame_key.c_str())), freeReplyObject};
+    redis_reply_ptr reply{static_cast<redisReply *>(redisCommand(impl_ptr_->GetContext(), "DEL %s", frame_key.c_str())), freeReplyObject};
     // Check for errors
-    impl_ptr_->CheckReply(reply, std::string("DEL key:" + frame_key));
+    impl_ptr_->CheckReply(reply, std::string("DEL " + frame_key));
     --frames_in_store_;
 
 }
+
+void MPFFrameStore::DeleteMultipleFrames(const std::vector<size_t> &frame_indices) {
+
+    std::string key_string;
+    for (const auto &index : frame_indices) {
+        key_string = CreateKey(index);
+        redis_reply_ptr reply{static_cast<redisReply *>(redisCommand(impl_ptr_->GetContext(), "DEL %s", key_string.c_str())), freeReplyObject};
+        impl_ptr_->CheckReply(reply, std::string("DELETE " + key_string));
+    }
+    frames_in_store_ -= frame_indices.size();
+}
+
 
 
 std::string MPFFrameStore::CreateKey(const size_t index) {
@@ -119,7 +131,7 @@ std::string MPFFrameStore::CreateKey(const size_t index) {
 
 
 void FrameStoreImpl::CheckReply(const redis_reply_ptr &reply, const std::string &redis_cmd) {
-    if ((!reply)|| (reply->type == REDIS_REPLY_ERROR)) {
+    if ((NULL == reply.get()) || (reply->type == REDIS_REPLY_ERROR)) {
         std::string err_str = "Redis command " + redis_cmd + " failed: " + std::string(strerror(errno));
         if (reply) err_str += ": " + std::string(reply->str);
         throw std::runtime_error(err_str);

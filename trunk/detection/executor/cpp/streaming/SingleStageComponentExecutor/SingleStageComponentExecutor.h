@@ -41,54 +41,55 @@
 
 namespace MPF { namespace COMPONENT {
 
-    class SingleStageComponentExecutor {
+class SingleStageComponentExecutor {
 
-    public:
-        static ExitCode RunJob(const std::string &ini_path);
-
-
-    private:
-        log4cxx::LoggerPtr logger_;
-
-        const std::string log_prefix_;
-
-        MPF::COMPONENT::JobSettings settings_;
-        MPF::MPFFrameStore frame_store_;
-
-        MPF::BasicAmqMessageReader msg_reader_;
-        MPF::BasicAmqMessageSender msg_sender_;
-
-        MPF::COMPONENT::MPFStreamingVideoJob job_;
-
-        MPF::COMPONENT::StreamingComponentHandle component_;
-
-        const std::string detection_type_;
-
-        const double confidence_threshold_;
+  public:
+    static ExitCode RunJob(const std::string &ini_path);
 
 
-        SingleStageComponentExecutor(
-                const log4cxx::LoggerPtr &logger,
-                const std::string &log_prefix,
-                MPF::MPFMessagingConnection &connection,
-                MPF::COMPONENT::JobSettings &&settings,
-                MPF::COMPONENT::MPFStreamingVideoJob &&job,
-                MPF::COMPONENT::StreamingComponentHandle &&component,
-                const std::string &detection_type);
+  private:
+    log4cxx::LoggerPtr logger_;
 
-        void Run();
+    const std::string log_prefix_;
 
-        MPFSegmentReadyMessage GetNextSegmentReadyMsg(std::chrono::milliseconds &timeout_msec);
-        MPFFrameReadyMessage GetNextFrameToProcess(int next_frame_index,
+    MPF::COMPONENT::JobSettings settings_;
+    MPF::MPFFrameStore frame_store_;
+
+    MPF::BasicAmqMessageReader<MPFFrameReadyMessage> frame_ready_reader_;
+    MPF::BasicAmqMessageReader<MPFSegmentReadyMessage> segment_ready_reader_;
+    MPF::BasicAmqMessageSender msg_sender_;
+
+    MPF::COMPONENT::MPFStreamingVideoJob job_;
+
+    MPF::COMPONENT::StreamingComponentHandle component_;
+
+    const std::string detection_type_;
+
+    const double confidence_threshold_;
+
+
+    SingleStageComponentExecutor(
+        const log4cxx::LoggerPtr &logger,
+        const std::string &log_prefix,
+        MPF::MPFMessagingConnection &connection,
+        MPF::COMPONENT::JobSettings &&settings,
+        MPF::COMPONENT::MPFStreamingVideoJob &&job,
+        MPF::COMPONENT::StreamingComponentHandle &&component,
+        const std::string &detection_type);
+
+    void Run();
+
+    MPFSegmentReadyMessage GetNextSegmentReadyMsg(std::chrono::milliseconds &timeout_msec);
+    MPFFrameReadyMessage GetNextFrameToProcess(int next_frame_index,
                                                std::chrono::milliseconds &timeout_msec);
 
-        void FixTracks(const VideoSegmentInfo &segment_info,
-                       std::vector<MPFVideoTrack> &tracks);
+    void FixTracks(const VideoSegmentInfo &segment_info,
+                   std::vector<MPFVideoTrack> &tracks);
 
-        std::vector<MPFVideoTrack> TryGetRemainingTracks();
+    std::vector<MPFVideoTrack> TryGetRemainingTracks();
 
-        static log4cxx::LoggerPtr GetLogger(const std::string &app_dir);
-    };
+    static log4cxx::LoggerPtr GetLogger(const std::string &app_dir);
+};
 
 }}
 

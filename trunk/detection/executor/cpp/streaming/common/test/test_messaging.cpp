@@ -25,6 +25,8 @@
  ******************************************************************************/
 
 #include <string>
+#include <thread> // for std::this_thread::sleep_for()
+#include <chrono> // for std::chrono::milliseconds()
 #include <gtest/gtest.h>
 
 #include "detection.pb.h"
@@ -62,7 +64,9 @@ class StreamingMessagingTest : public ::testing::Test {
     StreamingMessagingTest() = default;
 
     static std::unique_ptr<MPFMessagingConnection> msg_mgr_;
-    static std::unique_ptr<BasicAmqMessageReader> reader_;
+    static std::unique_ptr<BasicAmqMessageReader<MPFFrameReadyMessage> > frame_ready_reader_;
+    static std::unique_ptr<BasicAmqMessageReader<MPFSegmentReadyMessage> > segment_ready_reader_;
+    static std::unique_ptr<BasicAmqMessageReader<MPFReleaseFrameMessage> > release_frame_reader_;
     static std::unique_ptr<BasicAmqMessageSender> sender_;
     static log4cxx::LoggerPtr logger_;
     static MPF::COMPONENT::JobSettings settings_;
@@ -70,7 +74,18 @@ class StreamingMessagingTest : public ::testing::Test {
     static void SetUpTestCase() {
         logger_ = log4cxx::Logger::getRootLogger();
         msg_mgr_.reset(new MPFMessagingConnection(settings_));
-        reader_.reset(new BasicAmqMessageReader(settings_, msg_mgr_->Get()));
+        frame_ready_reader_.reset(new BasicAmqMessageReader<MPFFrameReadyMessage>(
+            settings_,
+            settings_.frame_ready_queue,
+            msg_mgr_->Get()));
+        segment_ready_reader_.reset(new BasicAmqMessageReader<MPFSegmentReadyMessage>(
+            settings_,
+            settings_.segment_ready_queue,
+            msg_mgr_->Get()));
+        release_frame_reader_.reset(new BasicAmqMessageReader<MPFReleaseFrameMessage>(
+            settings_,
+            settings_.release_frame_queue,
+            msg_mgr_->Get()));
         sender_.reset(new BasicAmqMessageSender(settings_, msg_mgr_->Get()));
 }
 
@@ -81,7 +96,9 @@ class StreamingMessagingTest : public ::testing::Test {
     }
 };
 
-std::unique_ptr<BasicAmqMessageReader> StreamingMessagingTest::reader_ = NULL;
+std::unique_ptr<BasicAmqMessageReader<MPFFrameReadyMessage> > StreamingMessagingTest::frame_ready_reader_ = NULL;
+std::unique_ptr<BasicAmqMessageReader<MPFSegmentReadyMessage> > StreamingMessagingTest::segment_ready_reader_ = NULL;
+std::unique_ptr<BasicAmqMessageReader<MPFReleaseFrameMessage> > StreamingMessagingTest::release_frame_reader_ = NULL;
 std::unique_ptr<BasicAmqMessageSender> StreamingMessagingTest::sender_ = NULL;
 std::unique_ptr<MPFMessagingConnection> StreamingMessagingTest::msg_mgr_ = NULL;
 log4cxx::LoggerPtr StreamingMessagingTest::logger_;
@@ -160,8 +177,11 @@ TEST_F(StreamingMessagingTest, TestSegmentReadyMessage) {
 
     ASSERT_NO_THROW(sender_->SendSegmentReady(segment_number, width, height, cvType, cvBytes));
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     MPFSegmentReadyMessage msg;
-    ASSERT_NO_THROW( msg = reader_->GetSegmentReadyMsg() );
+    bool got_msg;
+    ASSERT_NO_THROW( got_msg = segment_ready_reader_->GetMsgNoWait(msg) );
+    ASSERT_TRUE(got_msg);
     ASSERT_EQ(msg.job_id, settings_.job_id);
     ASSERT_EQ(msg.segment_number, segment_number);
     ASSERT_EQ(msg.frame_width, width);
@@ -177,13 +197,16 @@ TEST_F(StreamingMessagingTest, TestFrameReadyMessage) {
     int segment_number = 29;
     long timestamp = getTimestamp();
 
-    ASSERT_NO_THROW(reader_->CreateFrameReadyConsumer(segment_number));
+    std::string selector = "SEGMENT_NUMBER = " + std::to_string(segment_number);
+    ASSERT_NO_THROW(frame_ready_reader_->RecreateConsumerWithSelector(selector));
 
     ASSERT_NO_THROW(sender_->SendFrameReady(segment_number, index, timestamp));
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     MPFFrameReadyMessage msg;
-    ASSERT_NO_THROW( msg = reader_->GetFrameReadyMsg() );
-
+    bool got_msg;
+    ASSERT_NO_THROW( got_msg = frame_ready_reader_->GetMsgNoWait(msg) );
+    ASSERT_TRUE(got_msg);
     ASSERT_EQ(msg.job_id, settings_.job_id);
     ASSERT_EQ(msg.segment_number, segment_number);
     ASSERT_EQ(msg.frame_index, index);
@@ -197,8 +220,11 @@ TEST_F(StreamingMessagingTest, TestReleaseFrameMessage) {
 
     ASSERT_NO_THROW(sender_->SendReleaseFrame(index));
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     MPFReleaseFrameMessage msg;
-    ASSERT_NO_THROW( msg = reader_->GetReleaseFrameMsg() );
+    bool got_msg;
+    ASSERT_NO_THROW( got_msg = release_frame_reader_->GetMsgNoWait(msg) );
+    ASSERT_TRUE(got_msg);
     ASSERT_EQ(msg.job_id, settings_.job_id);
     ASSERT_EQ(msg.frame_index, index);
 

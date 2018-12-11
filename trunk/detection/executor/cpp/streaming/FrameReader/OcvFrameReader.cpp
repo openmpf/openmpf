@@ -47,7 +47,7 @@ OcvFrameReader::OcvFrameReader(const log4cxx::LoggerPtr &logger,
         : logger_(logger)
         , log_prefix_(log_prefix)
         , settings_(std::move(settings))
-        , msg_reader_(settings_, connection.Get())
+        , release_frame_reader_(settings_, settings_.release_frame_queue, connection.Get())
         , msg_sender_(settings_, connection.Get())
         , frame_store_(settings_)
         , video_capture_(logger_, settings_.stream_uri, job) {}
@@ -131,22 +131,38 @@ void OcvFrameReader::Run() {
                                          frame.type(), frame_byte_size);
         }
 
-        // Put the frame into the frame store.
-        LOG4CXX_DEBUG(logger_, "Storing frame number " << frame_index);
-        frame_store_.StoreFrame(frame, frame_index);
+        try {
+            // Put the frame into the frame store.
+            LOG4CXX_DEBUG(logger_, "Storing frame number " << frame_index);
+            frame_store_.StoreFrame(frame, frame_index);
+        }
+        catch (const std::runtime_error &e) {
+            throw FatalError(ExitCode::FRAME_STORE_ERROR, "Failed when trying to store a frame: " + std::string(e.what()));
+        }
 
         // Send the frame ready message.
         msg_sender_.SendFrameReady(segment_number, frame_index, timestamp);
 
-        // If we have reached capacity in the frame store, then we
-        // need to start deleting frames from the frame store.
-        if (frame_store_.AtCapacity()) {
+        // Try to release as many frames as we can.
+        bool frames_released = ReleaseFrames();
+
+        // If we haven't been able to release enough frames, we may
+        // have reached capacity in the frame store. If that is the
+        // case, then we need to block until we can release at least
+        // one.
+        if (frame_store_.AtCapacity() && !frames_released) {
             MPFReleaseFrameMessage release_frame_msg;
             bool got_msg = false;
             while (true) {
-                got_msg = msg_reader_.GetReleaseFrameMsgNoWait(release_frame_msg);
+                got_msg = release_frame_reader_.GetMsgNoWait(release_frame_msg);
                 if (got_msg) {
-                    frame_store_.DeleteFrame(release_frame_msg.frame_index);
+                    LOG4CXX_DEBUG(logger_, "release frame " << release_frame_msg.frame_index);
+                    try {
+                        frame_store_.DeleteFrame(release_frame_msg.frame_index);
+                    }
+                    catch (const std::runtime_error &e) {
+                        throw FatalError(ExitCode::FRAME_STORE_ERROR, "Failed when trying to delete a frame: " + std::string(e.what()));
+                    }
                     break;
                 }
                 std_in_watcher->InterruptibleSleep(timeout_msec);
@@ -156,7 +172,33 @@ void OcvFrameReader::Run() {
 
 }
 
+bool OcvFrameReader::ReleaseFrames() {
+    MPFReleaseFrameMessage msg;
+    std::vector<size_t> frame_indices;
+    StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
+    bool got_msg = true;
 
+    // Read messages from the release frame queue until we have no
+    // more of them. Save the index in each message to a vector, then
+    // delete them as a group.
+    while (got_msg && !std_in_watcher->QuitReceived()) {
+        got_msg = release_frame_reader_.GetMsgNoWait(msg);
+        if (got_msg) {
+            LOG4CXX_DEBUG(logger_, "release frame " << msg.frame_index);
+            frame_indices.push_back(msg.frame_index);
+        }
+    }
+    if (!frame_indices.empty()) {
+        LOG4CXX_DEBUG(logger_, "Releasing " << frame_indices.size() << " frames");
+        try {
+            frame_store_.DeleteMultipleFrames(frame_indices);
+        }
+        catch (const std::runtime_error &e) {
+            throw FatalError(ExitCode::FRAME_STORE_ERROR, "Failed when trying to delete multiple frames: " + std::string(e.what()));
+        }
+    }
+    return (!frame_indices.empty());
+}
 
 template<>
 void OcvFrameReader::ReadFrame<MPF::COMPONENT::RetryStrategy::NEVER_RETRY>(cv::Mat &frame) {

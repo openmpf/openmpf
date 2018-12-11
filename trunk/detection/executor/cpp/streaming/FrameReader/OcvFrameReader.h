@@ -67,7 +67,7 @@ class OcvFrameReader {
     log4cxx::LoggerPtr logger_;
     std::string log_prefix_;
     MPF::COMPONENT::JobSettings settings_;
-    MPF::BasicAmqMessageReader msg_reader_;
+    MPF::BasicAmqMessageReader<MPFReleaseFrameMessage> release_frame_reader_;
     MPF::BasicAmqMessageSender msg_sender_;
     MPF::MPFFrameStore frame_store_;
     MPF::COMPONENT::StreamingVideoCapture video_capture_;
@@ -77,6 +77,8 @@ class OcvFrameReader {
 
     template <MPF::COMPONENT::RetryStrategy RETRY_STRATEGY>
     void ReadFrame(cv::Mat &frame);
+
+    bool ReleaseFrames();
 
     long GetTimestampMillis();
 

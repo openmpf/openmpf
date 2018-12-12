@@ -26,6 +26,8 @@
 
 #include "BasicAmqMessageReader.h"
 
+#include "MPFMessage.h"
+
 namespace MPF {
 
 template<>

@@ -36,6 +36,7 @@
 #include "BasicAmqMessageReader.h"
 #include "BasicAmqMessageSender.h"
 #include "MPFMessagingConnection.h"
+#include "MPFMessage.h"
 #include "MPFFrameStore.h"
 
 

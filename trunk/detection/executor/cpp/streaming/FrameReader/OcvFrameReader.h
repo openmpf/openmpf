@@ -41,6 +41,7 @@
 #include "JobSettings.h"
 #include "StreamingVideoCapture.h"
 #include "MPFMessagingConnection.h"
+#include "MPFMessage.h"
 #include "BasicAmqMessageReader.h"
 #include "BasicAmqMessageSender.h"
 #include "MPFFrameStore.h"

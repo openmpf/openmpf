@@ -44,13 +44,20 @@ import java.util.*;
 @Component
 public class MpfPropertiesConfigurationBuilder {
 
-    private static final String DETECTION_KEY_PREFIX = "detection.";
-    private static final String REMOTE_MEDIA_DOWNLOAD_KEY_PREFIX = "remote.media.download.";
-    private static final String NODE_AUTO_CONFIG_KEY_PREFIX = "node.auto.";
-    private static final String OBJECT_STORAGE_KEY_PREFIX = "http.object.storage.";
+    private static final Collection<String> MUTABLE_PREFIXES = ImmutableList.of(
+            "detection.",
+            "remote.media.download.",
+            "node.auto.",
+            "http.object.storage.",
+            "mpf.output.objects."
+    );
 
-    private static final Collection<String> SNAPSHOT_PREFIXES
-            = ImmutableList.of(DETECTION_KEY_PREFIX, "http.object.storage.type", "http.object.storage.service_uri");
+    private static final Collection<String> SNAPSHOT_PREFIXES = ImmutableList.of(
+            "detection.",
+            "http.object.storage.type",
+            "http.object.storage.service_uri",
+            "mpf.output.objects.exemplars.only",
+            "mpf.output.objects.last.stage.only");
 
     @javax.annotation.Resource(name="customPropFile")
     private FileSystemResource customPropFile;
@@ -231,25 +238,7 @@ public class MpfPropertiesConfigurationBuilder {
         return SNAPSHOT_PREFIXES.stream().anyMatch(key::startsWith);
     }
 
-
     public static boolean isMutableProperty(String key) {
-        return isDetectionProperty(key) || isRemoteMediaDownloadProperty(key) || isNodeAutoConfigProperty(key)
-                || isObjectStorageConfigProperty(key);
-    }
-
-    private static boolean isDetectionProperty(String key) {
-        return key.startsWith(DETECTION_KEY_PREFIX);
-    }
-
-    private static boolean isRemoteMediaDownloadProperty(String key) {
-        return key.startsWith(REMOTE_MEDIA_DOWNLOAD_KEY_PREFIX);
-    }
-
-    private static boolean isNodeAutoConfigProperty(String key) {
-        return key.startsWith(NODE_AUTO_CONFIG_KEY_PREFIX);
-    }
-
-    private static boolean isObjectStorageConfigProperty(String key) {
-        return key.startsWith(OBJECT_STORAGE_KEY_PREFIX);
+        return MUTABLE_PREFIXES.stream().anyMatch(key::startsWith);
     }
 }

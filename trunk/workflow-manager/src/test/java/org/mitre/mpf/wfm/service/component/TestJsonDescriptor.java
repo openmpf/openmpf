@@ -43,7 +43,7 @@ public class TestJsonDescriptor {
 
         assertEquals("CplusplusHelloWorld", descriptor.componentName);
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
-        assertEquals("2.1.0", descriptor.componentVersion);
+        assertEquals("3.0.0", descriptor.componentVersion);
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so", descriptor.batchLibrary);
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfStreamingCplusplusHelloWorld.so", descriptor.streamLibrary);
 
@@ -65,7 +65,7 @@ public class TestJsonDescriptor {
 
         assertEquals("CplusplusHelloCustomPipelinesComponent", descriptor.componentName);
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
-        assertEquals("2.1.0", descriptor.componentVersion);
+        assertEquals("3.0.0", descriptor.componentVersion);
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so", descriptor.batchLibrary);
         assertNull(descriptor.streamLibrary);
 
@@ -116,9 +116,9 @@ public class TestJsonDescriptor {
         assertNull(descriptor.pipelines);
         assertEquals("JavaTestDetection", descriptor.componentName);
         assertEquals(ComponentLanguage.JAVA, descriptor.sourceLanguage);
-        assertEquals("2.1.0", descriptor.componentVersion);
-        assertEquals("2.1.0", descriptor.middlewareVersion);
-        assertEquals("mpf-java-test-detection-component-2.1.0.jar", descriptor.batchLibrary);
+        assertEquals("3.0.0", descriptor.componentVersion);
+        assertEquals("3.0.0", descriptor.middlewareVersion);
+        assertEquals("mpf-java-test-detection-component-3.0.0.jar", descriptor.batchLibrary);
         assertNull(descriptor.streamLibrary);
         assertEquals(1, descriptor.environmentVariables.size());
         JsonComponentDescriptor.EnvironmentVariable envVar = descriptor.environmentVariables.get(0);

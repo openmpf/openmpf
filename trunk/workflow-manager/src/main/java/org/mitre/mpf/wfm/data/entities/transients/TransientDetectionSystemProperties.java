@@ -135,6 +135,17 @@ public class TransientDetectionSystemProperties {
         return URI.create(detectionSystemPropertiesSnapshot.get("http.object.storage.service_uri"));
     }
 
+    @JsonIgnore
+    public boolean isOutputObjectExemplarOnly() {
+        return Boolean.parseBoolean(detectionSystemPropertiesSnapshot.get("mpf.output.objects.exemplars.only"));
+    }
+
+    @JsonIgnore
+    public boolean isOutputObjectLastStageOnly() {
+        return Boolean.parseBoolean(detectionSystemPropertiesSnapshot.get("mpf.output.objects.last.stage.only"));
+    }
+
+
     public String lookup(String propertyName) {
         return detectionSystemPropertiesSnapshot.get(propertyName);
     }

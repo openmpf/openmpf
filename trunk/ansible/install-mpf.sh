@@ -26,7 +26,7 @@
 
 MPF_MANAGEMENT_PATH="/opt/mpf/manage/"
 echo "--------------------------------------------------------------------------------"
-echo "                            Installing OpenMPF 2.1.0                            "
+echo "                            Installing OpenMPF 3.0.0                            "
 echo "--------------------------------------------------------------------------------"
 if [ "$EUID" -ne 0 ]
   then echo "Please run as sudo/root. Exiting..."

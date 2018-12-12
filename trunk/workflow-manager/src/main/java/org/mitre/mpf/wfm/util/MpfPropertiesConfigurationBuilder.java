@@ -49,7 +49,8 @@ public class MpfPropertiesConfigurationBuilder {
             "remote.media.download.",
             "node.auto.",
             "http.object.storage.",
-            "mpf.output.objects."
+            "mpf.output.objects.",
+            "broadcast.job.status.enabled"
     );
 
     private static final Collection<String> SNAPSHOT_PREFIXES = ImmutableList.of(

@@ -748,5 +748,10 @@ public class PropertiesUtil {
     public int getHttpStorageUploadRetryCount() {
         return mpfPropertiesConfig.getInt("http.object.storage.upload.retry.count");
     }
+
+
+    public boolean isBroadcastJobStatusEnabled() {
+        return mpfPropertiesConfig.getBoolean("broadcast.job.status.enabled");
+    }
 }
 

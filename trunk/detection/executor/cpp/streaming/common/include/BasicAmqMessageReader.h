@@ -36,8 +36,6 @@
 #include <cms/Session.h>
 #include <cms/MessageConsumer.h>
 
-#include "MPFMessage.h"
-
 #include "JobSettings.h"
 
 
@@ -60,9 +58,9 @@ class BasicAmqMessageReader {
         , consumer_(session_->createConsumer(queue_.get())) {}
 
     BasicAmqMessageReader<T> &RecreateConsumerWithSelector(const std::string &selector) {
-    consumer_.reset(session_->createConsumer(queue_.get(), selector));
-    return *this;
-}
+        consumer_.reset(session_->createConsumer(queue_.get(), selector));
+        return *this;
+    }
 
     bool GetMsgNoWait(T &msg);
 
@@ -73,9 +71,7 @@ class BasicAmqMessageReader {
 
     std::shared_ptr<cms::Connection> connection_;
     std::unique_ptr<cms::Session> session_;
-
     std::unique_ptr<cms::Queue> queue_;
-
     std::unique_ptr<cms::MessageConsumer> consumer_;
 };
 }

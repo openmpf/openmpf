@@ -751,7 +751,7 @@ public class PropertiesUtil {
 
 
     public boolean isBroadcastJobStatusEnabled() {
-        return mpfPropertiesConfig.getBoolean("broadcast.job.status.enabled");
+        return mpfPropertiesConfig.getBoolean("web.broadcast.job.status.enabled");
     }
 }
 

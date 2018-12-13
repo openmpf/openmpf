@@ -26,9 +26,12 @@
 
 #include <jni.h>
 #include <stdlib.h>
+#include <string>
+#include <exception>
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include <MPFVideoCapture.h>
 
 /* Header for class org_mitre_mpf_frameextractor_FrameExtractor */
 
@@ -48,185 +51,173 @@ using namespace cv;
 JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNative
   (JNIEnv *env, jobject frameExtractorInstance, jstring video, jstring destinationPath, jobject map)
 {
-    if (env != NULL) {
-        // Get the bounding box map.
-        jclass clzFrameExtractor = env->GetObjectClass(frameExtractorInstance);
-        jmethodID clzFrameExtractor_fnGetFrames = env->GetMethodID(clzFrameExtractor, "getFrames", "()Ljava/util/Set;");
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
+    if (env == nullptr) {
+        return 8701;
+    }
+
+    // Get the bounding box map.
+    jclass clzFrameExtractor = env->GetObjectClass(frameExtractorInstance);
+    jmethodID clzFrameExtractor_fnGetFrames = env->GetMethodID(clzFrameExtractor, "getFrames", "()Ljava/util/Set;");
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return 8701;
+    }
+    jmethodID clzFrameExtractor_fnMakeFilename = env->GetMethodID(clzFrameExtractor, "makeFilename",
+                                                                  "(Ljava/lang/String;I)Ljava/lang/String;");
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return 8701;
+    }
+    jobject framesSet = env->CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetFrames);
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return 8701;
+    }
+
+    // Get the iterator class and methods.
+    jclass clzIterator = env->FindClass("java/util/Iterator");
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return 8701;
+    }
+    jmethodID clzIterator_fnNext = env->GetMethodID(clzIterator, "next", "()Ljava/lang/Object;");
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return 8701;
+    }
+    jmethodID clzIterator_fnHasNext = env->GetMethodID(clzIterator, "hasNext", "()Z");
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return 8701;
+    }
+
+    // Get Set class and methods.
+    jclass clzSet = env->FindClass("java/util/TreeSet");
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return 8701;
+    }
+    jmethodID clzSet_fnIterator = env->GetMethodID(clzSet, "iterator", "()Ljava/util/Iterator;");
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return 8701;
+    }
+
+    // Get the Map class and methods.
+    jclass clzMap = env->FindClass("java/util/Map");
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return 8701;
+    }
+    jmethodID clzMap_fnPut = env->GetMethodID(clzMap, "put",
+                                              "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return 8701;
+    }
+
+    jclass clzInteger = env->FindClass("java/lang/Integer");
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return 8701;
+    }
+    jmethodID clzInteger_fnIntValue = env->GetMethodID(clzInteger, "intValue", "()I");
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return 8701;
+    }
+
+    std::string videoPath;
+    {
+        const char *inChars = env->GetStringUTFChars(video, nullptr);
+        if (inChars == nullptr) {
             return 8701;
         }
-        jmethodID clzFrameExtractor_fnMakeFilename = env->GetMethodID(clzFrameExtractor, "makeFilename", "(Ljava/lang/String;I)Ljava/lang/String;");
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-            return 8701;
-        }
-        jobject framesSet = env->CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetFrames);
+        videoPath = inChars;
+        env->ReleaseStringUTFChars(video, inChars);
+    }
+    if (videoPath.empty()) {
+        return 8701;
+    }
+
+    try {
+        MPF::COMPONENT::MPFVideoCapture src(videoPath);
+
+        Mat frame;
+
+        jobject iterator = env->CallObjectMethod(framesSet, clzSet_fnIterator);
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
             return 8701;
         }
 
-        // Get the iterator class and methods.
-        jclass clzIterator = env->FindClass("java/util/Iterator");
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-            return 8701;
-        }
-        jmethodID clzIterator_fnNext = env->GetMethodID(clzIterator, "next", "()Ljava/lang/Object;");
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-            return 8701;
-        }
-        jmethodID clzIterator_fnHasNext = env->GetMethodID(clzIterator, "hasNext", "()Z");
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-            return 8701;
-        }
+        // While there are more frames in the set...
+        while (env->CallBooleanMethod(iterator, clzIterator_fnHasNext) == JNI_TRUE) {
+            if (env->ExceptionCheck()) {
+                env->ExceptionClear();
+                return 8701;
+            }
+            // Get the next frame index from the set...
+            jobject boxed = env->CallObjectMethod(iterator, clzIterator_fnNext);
+            if (env->ExceptionCheck()) {
+                env->ExceptionClear();
+                return 8701;
+            }
 
-        // Get Set class and methods.
-        jclass clzSet = env->FindClass("java/util/TreeSet");
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-            return 8701;
-        }
-        jmethodID clzSet_fnIterator = env->GetMethodID(clzSet, "iterator", "()Ljava/util/Iterator;");
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-            return 8701;
-        }
+            // Unbox it because Java...
+            jint unboxed = env->CallIntMethod(boxed, clzInteger_fnIntValue);
+            if (env->ExceptionCheck()) {
+                env->ExceptionClear();
+                return 8701;
+            }
 
-        // Get the Map class and methods.
-        jclass clzMap = env->FindClass("java/util/Map");
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-            return 8701;
-        }
-        jmethodID clzMap_fnPut = env->GetMethodID(clzMap, "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-            return 8701;
-        }
+            // Cast it to something OpenCV can use...
+            int nextFrameIndex = (int) unboxed;
 
-        jclass clzInteger = env->FindClass("java/lang/Integer");
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-            return 8701;
-        }
-        jmethodID clzInteger_fnValueOf = env->GetStaticMethodID(clzInteger, "valueOf", "(I)Ljava/lang/Integer;");
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-            return 8701;
-        }
-        jmethodID clzInteger_fnIntValue = env->GetMethodID(clzInteger, "intValue", "()I");
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-            return 8701;
-        }
+            // Tell OpenCV to go to that frame next...
+            src.SetFramePosition(nextFrameIndex);
 
-        // Set up the videos...
-        const char *inChars = env->GetStringUTFChars(video, NULL);
-        if (inChars != NULL) {
-            try {
-                VideoCapture src(inChars);
-                if (!src.isOpened()) {
+            // Get the frame...
+            src >> frame;
 
-                    // Cleanup...
-                    env->ReleaseStringUTFChars(video, inChars);
+            // If that frame is empty, we've reached the end of the video.
+            if (frame.empty()) { break; }
 
-                    return 8700;
+            // Otherwise, extract that frame.
+            jstring filename = (jstring) env->CallObjectMethod(frameExtractorInstance,
+                                                               clzFrameExtractor_fnMakeFilename,
+                                                               destinationPath,
+                                                               unboxed);
+            if (env->ExceptionCheck()) {
+                env->ExceptionClear();
+                return 8701;
+            }
+            env->CallObjectMethod(map, clzMap_fnPut, boxed, filename);
+            if (env->ExceptionCheck()) {
+                env->ExceptionClear();
+                return 8701;
+            }
+
+            if (filename != nullptr) {
+                const char *destChars = env->GetStringUTFChars(filename, nullptr);
+                if (destChars == nullptr) {
+                    return 8701;
                 }
-
-                Mat frame;
-                int a = 0, r = 0, g = 0, b = 0;
-
-                jobject iterator = env->CallObjectMethod(framesSet, clzSet_fnIterator);
+                imwrite(destChars, frame);
+                env->CallObjectMethod(map, clzMap_fnPut, boxed, filename);
                 if (env->ExceptionCheck()) {
-                    env->ReleaseStringUTFChars(video, inChars);
+                    env->ReleaseStringUTFChars(filename, destChars);
                     env->ExceptionClear();
                     return 8701;
                 }
-
-                // While there are more frames in the set...
-                while (env->CallBooleanMethod(iterator, clzIterator_fnHasNext) == JNI_TRUE) {
-                    if (env->ExceptionCheck()) {
-                        env->ReleaseStringUTFChars(video, inChars);
-                        env->ExceptionClear();
-                        return 8701;
-                    }
-                    // Get the next frame index from the set...
-                    jobject boxed = env->CallObjectMethod(iterator, clzIterator_fnNext);
-                    if (env->ExceptionCheck()) {
-                        env->ReleaseStringUTFChars(video, inChars);
-                        env->ExceptionClear();
-                        return 8701;
-                    }
-
-                    // Unbox it because Java...
-                    jint unboxed = env->CallIntMethod(boxed, clzInteger_fnIntValue);
-                    if (env->ExceptionCheck()) {
-                        env->ReleaseStringUTFChars(video, inChars);
-                        env->ExceptionClear();
-                        return 8701;
-                    }
-
-                    // Cast it to something OpenCV can use...
-                    int nextFrameIndex = (int)unboxed;
-
-                    // Tell OpenCV to go to that frame next...
-                    src.set(cv::CAP_PROP_POS_FRAMES, nextFrameIndex);
-
-                    // Get the frame...
-                    src >> frame;
-
-                    // If that frame is empty, we've reached the end of the video.
-                    if (frame.empty()) { break; }
-
-                    // Otherwise, extract that frame.
-                    jstring filename = (jstring)env->CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnMakeFilename, destinationPath, unboxed);
-                    if (env->ExceptionCheck()) {
-                        env->ReleaseStringUTFChars(video, inChars);
-                        env->ExceptionClear();
-                        return 8701;
-                    }
-                    env->CallObjectMethod(map, clzMap_fnPut, boxed, filename);
-                    if (env->ExceptionCheck()) {
-                        env->ReleaseStringUTFChars(video, inChars);
-                        env->ExceptionClear();
-                        return 8701;
-                    }
-
-                    if (filename != NULL) {
-                        const char *destChars = env->GetStringUTFChars(filename, NULL);
-                        if (destChars != NULL) {
-                            imwrite(destChars, frame);
-                            env->CallObjectMethod(map, clzMap_fnPut, boxed, filename);
-                            if (env->ExceptionCheck()) {
-                                env->ReleaseStringUTFChars(filename, destChars);
-                                env->ReleaseStringUTFChars(video, inChars);
-                                env->ExceptionClear();
-                                return 8701;
-                            }
-                            env->ReleaseStringUTFChars(filename, destChars);
-                        } else {
-                            env->ReleaseStringUTFChars(video, inChars);
-                            return 8701;
-                        }
-                    }
-                }
-                src.release();
-
-                env->ReleaseStringUTFChars(video, inChars);
-            } catch (cv::Exception) {
-                return 8701;
+                env->ReleaseStringUTFChars(filename, destChars);
             }
-        } else {
-            return 8701;
         }
-    } else {
+        return 0;
+    }
+    catch (std::exception &) {
         return 8701;
     }
-    return 0;
 }
 
 #ifdef __cplusplus

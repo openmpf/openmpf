@@ -29,13 +29,17 @@ aux_source_directory(./src/main/cpp SRC)
 
 find_package(OpenCV 3.3 EXACT REQUIRED PATHS /opt/opencv-3.3.0)
 
+find_package(mpfComponentInterface REQUIRED)
+find_package(mpfDetectionComponentApi REQUIRED)
+
+
 include_directories(${JNI_INCLUDE_DIRS} ${LOG4CXX_LIBS} ${OpenCV_INCLUDE_DIRS})
 add_library(mpfopencvjni SHARED ${SRC})
 
 set(JNI_LIBRARIES_WITHOUT_AWT ${JNI_LIBRARIES})
 list(REMOVE_AT JNI_LIBRARIES_WITHOUT_AWT 0)
 
-target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${JNI_LIBRARIES_WITHOUT_AWT} ${Log_LIBS})
+target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${JNI_LIBRARIES_WITHOUT_AWT} ${Log_LIBS} mpfDetectionComponentApi)
 
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_custom_command(TARGET mpfopencvjni POST_BUILD

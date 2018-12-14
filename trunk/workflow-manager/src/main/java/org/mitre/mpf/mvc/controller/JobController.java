@@ -180,7 +180,8 @@ public class JobController {
         jobs.sort(comparator);
     }
 
-    //INTERNAL
+    // INTERNAL
+    // Parameters come from DataTables library: https://datatables.net/manual/server-side
     @RequestMapping(value = {"/jobs-paged"}, method = RequestMethod.POST)
     @ResponseBody
     public JobPageListModel getJobStatusFiltered(
@@ -188,10 +189,9 @@ public class JobController {
             @RequestParam(value = "start", required = false) int start,
             @RequestParam(value = "length", required = false) int length,
             @RequestParam(value = "search", required = false) String search,
-            @RequestParam(value = "sort", required = false) String sort,
             @RequestParam(value = "order[0][column]", defaultValue = "0") String orderByColumn,
             @RequestParam(value = "order[0][dir]", defaultValue = "desc") String orderDirection) {
-        log.debug("Params draw:{} start:{},length:{},search:{},sort:{} ", draw, start, length, search, sort);
+        log.debug("Params draw:{} start:{},length:{},search:{}", draw, start, length, search);
 
         List<SingleJobInfo> jobInfoModels = getJobStatus(false);
         int recordsTotal = jobInfoModels.size();

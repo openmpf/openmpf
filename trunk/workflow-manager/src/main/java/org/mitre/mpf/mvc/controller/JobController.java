@@ -225,7 +225,7 @@ public class JobController {
 
         //handle paging
         int end = start + length;
-        end = (end > model.getRecordsTotal()) ? model.getRecordsTotal() : end;
+        end = (end > jobInfoModels.size()) ? jobInfoModels.size() : end;
         start = (start <= end) ? start : end;
         List<SingleJobInfo> jobInfoModelsFiltered = jobInfoModels.subList(start, end);
 

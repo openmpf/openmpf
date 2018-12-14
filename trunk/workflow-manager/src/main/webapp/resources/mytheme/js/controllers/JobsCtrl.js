@@ -57,10 +57,13 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
                 }
                 var interval = +pollingIntervalProp.value;
                 if (isNaN(interval) || interval < 1) {
+                    $scope.updateInfo = 'Automatic updates are disabled. Please refresh the page manually.';
                     return;
                 }
 
+                $scope.updateInfo = 'Last checked at ' + moment().format('h:mm:ss a');
                 var poller = $interval(function () {
+                    $scope.updateInfo = 'Last checked at ' + moment().format('h:mm:ss a');
                     if (jobTable) {
                         jobTable.ajax.reload(null, false);
                     }

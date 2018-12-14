@@ -97,7 +97,9 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
                 },
                 lengthMenu: [[5, 10, 25, 50, 100], [5, 10, 25, 50, 100]],
                 pageLength: 25,
-                ordering: false,
+                ordering: true,
+                orderMulti: false,
+                order: [[0, 'desc']],
                 searchHighlight: true,
                 renderer: "bootstrap",
                 columns: [

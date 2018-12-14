@@ -592,6 +592,10 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getInt("web.max.file.upload.cnt");
     }
 
+    public boolean isBroadcastJobStatusEnabled() {
+        return mpfPropertiesConfig.getBoolean("web.broadcast.job.status.enabled");
+    }
+
     //
     // Version information
     //
@@ -749,9 +753,5 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getInt("http.object.storage.upload.retry.count");
     }
 
-
-    public boolean isBroadcastJobStatusEnabled() {
-        return mpfPropertiesConfig.getBoolean("web.broadcast.job.status.enabled");
-    }
 }
 

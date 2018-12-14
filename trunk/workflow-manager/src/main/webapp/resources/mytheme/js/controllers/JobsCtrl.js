@@ -29,7 +29,7 @@
  * JobsCtrl
  * @constructor
  */
-var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, NotificationSvc) {
+var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, NotificationSvc, PropertiesSvc) {
 
     $scope.selectedJob = {};
     var jobTable = null;
@@ -37,7 +37,38 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
     var markupTableData = [];
 
     var init = function () {
+        scheduleUpdates();
         buildJobTable();
+    };
+
+
+    var scheduleUpdates = function () {
+        PropertiesSvc.get('web.broadcast.job.status.enabled')
+            .$promise
+            .then(function (broadcastProp) {
+                var broadcastIsEnabled = broadcastProp.value.toLowerCase() === 'true';
+                if (!broadcastIsEnabled) {
+                    return PropertiesSvc.get('web.job.polling.interval').$promise;
+                }
+            })
+            .then(function (pollingIntervalProp) {
+                if (!pollingIntervalProp) {
+                    return;
+                }
+                var interval = +pollingIntervalProp.value;
+                if (isNaN(interval) || interval < 1) {
+                    return;
+                }
+
+                var poller = $interval(function () {
+                    if (jobTable) {
+                        jobTable.ajax.reload(null, false);
+                    }
+                }, interval);
+                $scope.$on('$destroy', function() {
+                    $interval.cancel(poller);
+                });
+            });
     };
 
     var buildJobTable = function () {
@@ -64,8 +95,6 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                 drawCallback: function (settings) {
                     bindButtons();
                 },
-                scrollCollapse: true,
-                scrollY:'65vh',
                 lengthMenu: [[5, 10, 25, 50, 100], [5, 10, 25, 50, 100]],
                 pageLength: 25,
                 ordering: false,

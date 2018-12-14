@@ -26,9 +26,10 @@
 
 package org.mitre.mpf.mvc.controller;
 
- import org.mitre.mpf.mvc.model.PropertyModel;
+import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.util.MpfPropertiesConfigurationBuilder;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -157,4 +158,15 @@ public class AdminPropertySettingsController
 	public int getDefaultJobPriority() {
 		return propertiesUtil.getJmsPriority();
 	}
+
+
+	@RequestMapping(value = "/properties/{propertyName:.+}", method = RequestMethod.GET)
+	public ResponseEntity<?> getProperty(@PathVariable String propertyName) {
+        String propertyValue = propertiesUtil.lookup(propertyName);
+        if (propertyValue == null) {
+            return ResponseEntity.notFound().build();
+        }
+        boolean isMutable = MpfPropertiesConfigurationBuilder.isMutableProperty(propertyName);
+        return ResponseEntity.ok(new PropertyModel(propertyName, propertyValue, !isMutable));
+    }
 }

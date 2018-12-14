@@ -50,7 +50,8 @@ public class MpfPropertiesConfigurationBuilder {
             "node.auto.",
             "http.object.storage.",
             "mpf.output.objects.",
-            "web.broadcast.job.status.enabled"
+            "web.broadcast.job.status.enabled",
+            "web.job.polling.interval"
     );
 
     private static final Collection<String> SNAPSHOT_PREFIXES = ImmutableList.of(

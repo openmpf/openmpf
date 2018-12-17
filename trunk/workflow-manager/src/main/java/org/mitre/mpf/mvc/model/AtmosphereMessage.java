@@ -27,7 +27,7 @@
 package org.mitre.mpf.mvc.model;
 
 import java.util.Date;
-import java.util.HashMap;
+import java.util.Map;
 
 /** Generic Message class for server-side push using Atmosphere.  For more information on 
  *  how Atmosphere is used in workflow-manager, please see the documentation for AtmosphereController */
@@ -44,15 +44,15 @@ public class AtmosphereMessage {
 	private Date timestamp;
 	
 	/** the JSON content of the message, stored as a String representation of JSON */
-	private HashMap<String,Object> content;
+	private Map<String, ?> content;
 	
-	protected AtmosphereMessage( AtmosphereChannel channel, String event )  {
+	public AtmosphereMessage( AtmosphereChannel channel, String event )  {
 		this.channel = channel;
 		this.event = event;
 		this.timestamp = new Date();
 	}	
 
-	public AtmosphereMessage( AtmosphereChannel channel, String event, HashMap dataMap ) {
+	public AtmosphereMessage( AtmosphereChannel channel, String event, Map<String, ?> dataMap ) {
 		this( channel, event );
 		this.setContent( dataMap );
 	}
@@ -73,11 +73,11 @@ public class AtmosphereMessage {
 		this.timestamp = timestamp;
 	}
 
-	public HashMap<String,Object> getContent() {
+	public Map<String, ?> getContent() {
 		return content;
 	}
 
-	public void setContent(HashMap<String,Object> dataMap) {
+	public void setContent(Map<String, ?> dataMap) {
 		this.content = dataMap;
 	}
 	

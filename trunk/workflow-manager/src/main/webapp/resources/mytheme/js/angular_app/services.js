@@ -605,6 +605,9 @@ AppServices.factory('ServerSidePush',
                             //console.log("SSPC_SYSTEMMESSAGE message received: " + JSON.stringify(json,2,null));
                             SystemStatus.showAllSystemMessages();
                             break;
+                        case 'SSPC_PROPERTIES_CHANGED':
+                            $rootScope.$broadcast('SSPC_PROPERTIES_CHANGED');
+                            break;
                         default:
                             console.log("Message received on unknonwn SSPC (Atmosphere server-side push) channel: " + JSON.stringify(json, 2, null));
                             break;

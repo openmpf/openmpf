@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import org.mitre.mpf.mvc.model.AtmosphereChannel;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.PipelineService;
@@ -139,6 +140,8 @@ public class AdminPropertySettingsController
         } else {
             mpfService.deleteStandardSystemMessage("eServerPropertiesChanged");
         }
+
+        AtmosphereController.broadcast(AtmosphereChannel.SSPC_PROPERTIES_CHANGED);
 
         // Get an updated list of property models. Adjust the returned list of PropertyModels so they will indicate
         // whether or not a WFM restart is required to apply a change.

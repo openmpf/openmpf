@@ -35,44 +35,14 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
     var jobTable = null;
     var markupTable = null;
     var markupTableData = [];
+    var updateConfig = { broadcastEnabled: true, pollingInterval: -1, poller: null };
+    var tableLastUpdate = moment();
 
     var init = function () {
         scheduleUpdates();
         buildJobTable();
     };
 
-
-    var scheduleUpdates = function () {
-        PropertiesSvc.get('web.broadcast.job.status.enabled')
-            .$promise
-            .then(function (broadcastProp) {
-                var broadcastIsEnabled = broadcastProp.value.toLowerCase() === 'true';
-                if (!broadcastIsEnabled) {
-                    return PropertiesSvc.get('web.job.polling.interval').$promise;
-                }
-            })
-            .then(function (pollingIntervalProp) {
-                if (!pollingIntervalProp) {
-                    return;
-                }
-                var interval = +pollingIntervalProp.value;
-                if (isNaN(interval) || interval < 1) {
-                    $scope.updateInfo = 'Automatic updates are disabled. Please refresh the page manually.';
-                    return;
-                }
-
-                $scope.updateInfo = 'Last checked at ' + moment().format('h:mm:ss a');
-                var poller = $interval(function () {
-                    $scope.updateInfo = 'Last checked at ' + moment().format('h:mm:ss a');
-                    if (jobTable) {
-                        jobTable.ajax.reload(null, false);
-                    }
-                }, interval);
-                $scope.$on('$destroy', function() {
-                    $interval.cancel(poller);
-                });
-            });
-    };
 
     var buildJobTable = function () {
         if (jobTable != null) {
@@ -174,6 +144,9 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
                     $log.debug('jobsTables has finished its initialization.');
                 }
             });
+            jobTable.on('xhr.dt', function () {
+                tableLastUpdate = moment();
+            });
         }
     };
 
@@ -197,9 +170,86 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
         });
     };
 
+
+    var scheduleUpdates = function () {
+        getUpdateConfig().then(handleUpdateConfigChange);
+    };
+
+
+    var getUpdateConfig = function () {
+        return PropertiesSvc.get('web.broadcast.job.status.enabled')
+            .$promise
+            .then(function (broadcastProp) {
+                var broadcastEnabled = broadcastProp.value.toLowerCase() === 'true';
+                if (!broadcastEnabled) {
+                    return PropertiesSvc.get('web.job.polling.interval').$promise;
+                }
+            })
+            .then(function (pollingIntervalProp) {
+                if (!pollingIntervalProp) {
+                    return { broadcastEnabled: true,  pollingInterval: -1 };
+                }
+                var interval = +pollingIntervalProp.value;
+                if (isNaN(interval) || interval < 1) {
+                    return { broadcastEnabled: false,  pollingInterval: -1 };
+                }
+                return { broadcastEnabled: false,  pollingInterval: interval };
+            });
+    };
+
+    var handleUpdateConfigChange = function (newUpdateConfig) {
+        var pollingIntervalChanged = newUpdateConfig.pollingInterval !== updateConfig.pollingInterval;
+        updateConfig.broadcastEnabled = newUpdateConfig.broadcastEnabled;
+        updateConfig.pollingInterval = newUpdateConfig.pollingInterval;
+
+        if (updateConfig.broadcastEnabled) {
+            cancelPolling();
+            $scope.updateInfoMsg = null;
+            return;
+        }
+        if (updateConfig.pollingInterval < 1) {
+            cancelPolling();
+            $scope.updateInfoMsg = 'Automatic updates are disabled. Please refresh the page manually.';
+            return;
+        }
+
+        $scope.updateInfoMsg = 'Last checked at ' + tableLastUpdate.format('h:mm:ss a');
+        if (pollingIntervalChanged) {
+            cancelPolling();
+            updateConfig.poller = $interval(pollingUpdate, updateConfig.pollingInterval);
+        }
+    };
+
+    var pollingUpdate = function () {
+        if (!jobTable) {
+            return;
+        }
+        jobTable.ajax.reload(function() {
+            $scope.$apply(function () {
+                $scope.updateInfoMsg = 'Last checked at ' + moment().format('h:mm:ss a');
+            });
+        }, false);
+    };
+
+    var cancelPolling = function () {
+        if (updateConfig.poller) {
+            $interval.cancel(updateConfig.poller);
+            updateConfig.poller = null;
+        }
+    };
+
+    $scope.$on('$destroy', cancelPolling);
+
+    $scope.$on('SSPC_PROPERTIES_CHANGED', scheduleUpdates);
+
+
     //listen for updates from the server
     $scope.$on('SSPC_JOBSTATUS', function (event, msg) {
         $log.debug("SSPC_JOBSTATUS: " + JSON.stringify(msg));
+        if (!updateConfig.broadcastEnabled) {
+            scheduleUpdates();
+        }
+
         var job = msg.content;
 
         //send -1 and -1 on connect

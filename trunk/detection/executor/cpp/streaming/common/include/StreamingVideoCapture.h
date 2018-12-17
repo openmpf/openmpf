@@ -43,43 +43,33 @@
 namespace MPF { namespace COMPONENT {
 
 
-    class StreamingVideoCapture {
-    public:
-        StreamingVideoCapture(const log4cxx::LoggerPtr &logger,
-                              const std::string video_uri,
-                              const MPFStreamingVideoJob &job);
+class StreamingVideoCapture {
+  public:
 
-        bool Read(cv::Mat &frame);
+    StreamingVideoCapture(const log4cxx::LoggerPtr &logger,
+                          const std::string video_uri,
+                          const MPFStreamingVideoJob &job);
 
-        void ReadWithRetry(cv::Mat &frame);
+    bool Read(cv::Mat &frame);
 
-        bool ReadWithRetry(cv::Mat &frame, const std::chrono::milliseconds &timeout);
+    void ReadWithRetry(cv::Mat &frame);
 
-        void ReverseTransform(std::vector<MPFVideoTrack> &track) const;
+    bool ReadWithRetry(cv::Mat &frame, const std::chrono::milliseconds &timeout);
 
+  private:
 
-    private:
-        log4cxx::LoggerPtr logger_;
+    log4cxx::LoggerPtr logger_;
 
-        const MPFStreamingVideoJob job_;
+    const MPFStreamingVideoJob job_;
 
-        std::string video_uri_;
+    std::string video_uri_;
 
-        cv::VideoCapture cv_video_capture_;
+    cv::VideoCapture cv_video_capture_;
 
-        // Points to ReadAndInitialize until the first frame is read. Then, it will point to DefaultRead
-        bool (StreamingVideoCapture::*current_read_impl_)(cv::Mat &frame) = &StreamingVideoCapture::ReadAndInitialize;
+    bool DoReadRetry(cv::Mat &frame);
 
-        IFrameTransformer::Ptr frame_transformer_;
-
-        bool ReadAndInitialize(cv::Mat &frame);
-
-        bool DefaultRead(cv::Mat &frame);
-
-        bool DoReadRetry(cv::Mat &frame);
-
-        void BetweenRetrySleep(const ExecutorUtils::sleep_duration_t &duration) const;
-    };
+    void BetweenRetrySleep(const ExecutorUtils::sleep_duration_t &duration) const;
+};
 
 }}
 

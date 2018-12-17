@@ -31,6 +31,7 @@
 #include <string>
 #include <log4cxx/logger.h>
 
+#include "frame_transformers/FrameTransformerFactory.h"
 #include "ExecutorErrors.h"
 #include "StreamingComponentHandle.h"
 #include "BasicAmqMessageReader.h"
@@ -67,6 +68,8 @@ class SingleStageComponentExecutor {
     const std::string detection_type_;
 
     const double confidence_threshold_;
+
+    IFrameTransformer::Ptr frame_transformer_;
 
 
     SingleStageComponentExecutor(

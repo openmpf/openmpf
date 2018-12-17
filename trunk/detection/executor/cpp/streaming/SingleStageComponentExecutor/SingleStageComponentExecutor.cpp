@@ -24,8 +24,6 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include <assert.h>
-
 #include <libgen.h>
 #include <log4cxx/basicconfigurator.h>
 #include <log4cxx/xml/domconfigurator.h>
@@ -164,7 +162,15 @@ void SingleStageComponentExecutor::Run() {
             // Check that the segment number in the frame
             // ready message is the same as the segment number we
             // just received.
-            assert (frame_msg.segment_number == seg_msg.segment_number);
+            if (frame_msg.segment_number != seg_msg.segment_number) {
+                throw std::runtime_error("Received frame for the wrong correct segment (" + std::to_string(frame_msg.segment_number) + ")");
+            }
+
+            // Initialize the frame transformer.
+            cv::Size frame_size(seg_msg.frame_width, seg_msg.frame_height);
+            if (nullptr == frame_transformer_) {
+                frame_transformer_ = FrameTransformerFactory::GetTransformer(job_, frame_size);
+            }
 
             int segment_end_frame = frame_msg.frame_index + settings_.segment_size - 1;
             LOG4CXX_DEBUG(logger_, "segment_number = " << segment_number);
@@ -188,7 +194,6 @@ void SingleStageComponentExecutor::Run() {
             frame_to_process = frame_msg.frame_index;
             LOG4CXX_DEBUG(logger_, "frame_to_process = " << frame_to_process);
             while (!std_in_watcher->QuitReceived() && (frame_to_process <= segment_end_frame)) {
-                LOG4CXX_DEBUG(logger_, "processing frame = " << frame_to_process);
 
                 frame_timestamps[frame_msg.frame_index] = frame_msg.frame_timestamp;
 
@@ -198,6 +203,10 @@ void SingleStageComponentExecutor::Run() {
                               seg_msg.cvType);
                 frame_store_.GetFrame(frame, frame_msg.frame_index);
 
+                 // Apply transformations
+                frame_transformer_->TransformFrame(frame, frame_msg.frame_index);
+
+                // Process the frame in the component
                 bool activity_found = component_.ProcessFrame(frame, frame_msg.frame_index);
                 if (activity_found && !segment_activity_alert_sent) {
                     LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending new activity alert for frame: " << frame_msg.frame_index);
@@ -209,7 +218,6 @@ void SingleStageComponentExecutor::Run() {
                 frame_to_process += frame_interval;
 
                 // Send release frame message
-                LOG4CXX_DEBUG(logger_, "Release frame " << frame_msg.frame_index);
                 msg_sender_.SendReleaseFrame(frame_msg.frame_index);
 
                 // If we haven't reached the end of the segment
@@ -233,7 +241,6 @@ void SingleStageComponentExecutor::Run() {
                     LOG4CXX_DEBUG(logger_, "Last frame processed = " << last_frame_processed);
                     for (int i = last_frame_processed+1; i <= segment_end_frame; i++) {
                         try {
-                            LOG4CXX_DEBUG(logger_, "Release frame " << i);
                             frame_msg = GetNextFrameToProcess(i, timeout_msec);
                             msg_sender_.SendReleaseFrame(frame_msg.frame_index);
                         }
@@ -285,7 +292,15 @@ void SingleStageComponentExecutor::FixTracks(const VideoSegmentInfo &segment_inf
                                              std::vector<MPFVideoTrack> &tracks) {
     ExecutorUtils::DropOutOfSegmentDetections(logger_, segment_info, tracks);
     ExecutorUtils::DropLowConfidenceDetections(confidence_threshold_, tracks);
-    // video_capture_.ReverseTransform(tracks);
+    if (frame_transformer_ == nullptr && !tracks.empty()) {
+        throw std::logic_error("Cannot apply reverse transform before reading any frames.");
+    }
+
+    for (auto &track : tracks) {
+        for (auto &frame_loc_pair : track.frame_locations) {
+            frame_transformer_->ReverseTransform(frame_loc_pair.second, frame_loc_pair.first);
+        }
+    }
 }
 
 
@@ -322,7 +337,6 @@ MPFFrameReadyMessage SingleStageComponentExecutor::GetNextFrameToProcess(int nex
             }
             else {
                 // skipping the frame, so release it.
-                LOG4CXX_DEBUG(logger_, "Release frame " << frame_msg.frame_index);
                 msg_sender_.SendReleaseFrame(frame_msg.frame_index);
             }
         }

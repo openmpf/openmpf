@@ -247,6 +247,8 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
     $scope.$on('SSPC_JOBSTATUS', function (event, msg) {
         $log.debug("SSPC_JOBSTATUS: " + JSON.stringify(msg));
         if (!updateConfig.broadcastEnabled) {
+            // Received job broadcast even though job broadcast's were disabled when properties were last checked,
+            // so we need to re-check the state of the properties.
             scheduleUpdates();
         }
 

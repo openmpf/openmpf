@@ -53,9 +53,16 @@ public class JniLoader {
         }
         catch (UnsatisfiedLinkError ex) {
             log.warn("System.loadLibrary() failed due to: {}", ex.getMessage());
-            String libFullPath = System.getenv(EnvVar.MPF_HOME) + "/lib/libmpfopencvjni.so";
-            log.warn("Trying full path to library: {}", libFullPath);
-            System.load(libFullPath);
+            String libDir = System.getenv(EnvVar.MPF_HOME) + "/lib";
+
+            String componentApiLibPath = libDir + "/libmpfDetectionComponentApi.so";
+            log.warn("Trying to load component api library using full path: {}", componentApiLibPath);
+            System.load(componentApiLibPath);
+
+            String jniLibPath = libDir + "/libmpfopencvjni.so";
+            log.warn("Trying to load JNI library using full path: {}", jniLibPath);
+            System.load(jniLibPath);
+
             _isLoaded = true;
         }
     }

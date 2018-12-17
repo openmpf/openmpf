@@ -38,6 +38,9 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.util.TimeUtils;
+import org.mitre.mpf.mvc.controller.AtmosphereController;
+import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
@@ -199,14 +202,15 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			jobStatus.setValue(BatchJobStatusType.CANCELLED);
 		}
 
-		JsonOutputObject jsonOutputObject = new JsonOutputObject(jobRequest.getId(),
+		JsonOutputObject jsonOutputObject = new JsonOutputObject(
+				jobRequest.getId(),
 				UUID.randomUUID().toString(),
-                jsonUtils.convert(transientJob.getPipeline()),
+				jsonUtils.convert(transientJob.getPipeline()),
 				transientJob.getPriority(),
 				propertiesUtil.getSiteId(),
 				transientJob.getExternalId(),
-				jobRequest.getTimeReceived().toString(),
-				jobRequest.getTimeCompleted().toString(),
+				TimeUtils.getDateAsString(jobRequest.getTimeReceived()),
+				TimeUtils.getDateAsString(jobRequest.getTimeCompleted()),
 				jobStatus.getValue().toString());
 
 		if (transientJob.getOverriddenJobProperties() != null) {

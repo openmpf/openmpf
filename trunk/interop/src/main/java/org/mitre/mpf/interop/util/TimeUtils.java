@@ -37,11 +37,9 @@ import java.util.Date;
 
 public class TimeUtils {
 
-    // All timestamps in OpenMPF should adhere to this date/time pattern.
-    public static final String TIMESTAMP_PATTERN = "yyyy-MM-dd HH:mm:ss.S";
-
     // The timestampFormatter must remain as a static, or the jackson conversion to JSON will no longer work
-    private static final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN);
+    private static final DateTimeFormatter timestampFormatter
+            = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault());
 
     /**
      * Parse the timestamp String into a LocalDateTime using the date/time pattern adhered to by OpenMPF.
@@ -67,7 +65,7 @@ public class TimeUtils {
         if ( timestamp == null ) {
             return null;
         } else {
-            return timestampFormatter.format(timestamp);
+            return timestampFormatter.format(timestamp.atZone(ZoneId.systemDefault()));
         }
     }
 
@@ -95,8 +93,7 @@ public class TimeUtils {
         if ( date == null ) {
             return null;
         } else {
-            LocalDateTime timestamp = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-            return timestampFormatter.format(timestamp);
+            return timestampFormatter.format(date.toInstant());
         }
     }
 

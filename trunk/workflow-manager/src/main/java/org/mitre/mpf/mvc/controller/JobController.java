@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.*;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
@@ -60,9 +61,10 @@ import java.nio.file.NoSuchFileException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
 
@@ -151,18 +153,48 @@ public class JobController {
         }
     }
 
-    //INTERNAL
+
+    private static final Map<String, Comparator<SingleJobInfo>> JOB_TABLE_COLUMN_ORDERINGS
+            = ImmutableMap.<String, Comparator<SingleJobInfo>>builder()
+            .put("0", nullsFirstCompare(SingleJobInfo::getJobId))
+            .put("1", nullsFirstCompare(SingleJobInfo::getPipelineName))
+            .put("2", nullsFirstCompare(SingleJobInfo::getStartDate))
+            .put("3", nullsLastCompare(SingleJobInfo::getEndDate))
+            .put("4", nullsFirstCompare(SingleJobInfo::getJobStatus))
+            .put("5", Comparator.comparingInt(SingleJobInfo::getJobPriority))
+            .build();
+
+    private static <T, U extends Comparable<U>> Comparator<T> nullsFirstCompare(Function<T, U> keyExtractor) {
+        return Comparator.comparing(keyExtractor, Comparator.nullsFirst(Comparator.naturalOrder()));
+    }
+
+    private static <T, U extends Comparable<U>> Comparator<T> nullsLastCompare(Function<T, U> keyExtractor) {
+        return Comparator.comparing(keyExtractor, Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    private static void sortJobs(List<SingleJobInfo> jobs, String orderByColumn, String orderDirection) {
+        Comparator<SingleJobInfo> comparator = JOB_TABLE_COLUMN_ORDERINGS.get(orderByColumn);
+        if (orderDirection.equalsIgnoreCase("desc")) {
+            comparator = comparator.reversed();
+        }
+        jobs.sort(comparator);
+    }
+
+    // INTERNAL
+    // Parameters come from DataTables library: https://datatables.net/manual/server-side
     @RequestMapping(value = {"/jobs-paged"}, method = RequestMethod.POST)
     @ResponseBody
-    public JobPageListModel getJobStatusFiltered(@RequestParam(value = "draw", required = false) int draw,
-                                                 @RequestParam(value = "start", required = false) int start,
-                                                 @RequestParam(value = "length", required = false) int length,
-                                                 @RequestParam(value = "search", required = false) String search,
-                                                 @RequestParam(value = "sort", required = false) String sort) {
-        log.debug("Params draw:{} start:{},length:{},search:{},sort:{} ", draw, start, length, search, sort);
+    public JobPageListModel getJobStatusFiltered(
+            @RequestParam(value = "draw", required = false) int draw,
+            @RequestParam(value = "start", required = false) int start,
+            @RequestParam(value = "length", required = false) int length,
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "order[0][column]", defaultValue = "0") String orderByColumn,
+            @RequestParam(value = "order[0][dir]", defaultValue = "desc") String orderDirection) {
+        log.debug("Params draw:{} start:{},length:{},search:{}", draw, start, length, search);
 
         List<SingleJobInfo> jobInfoModels = getJobStatus(false);
-        Collections.reverse(jobInfoModels);//newest first
+        int recordsTotal = jobInfoModels.size();
 
         //handle search
         DateFormat df = new SimpleDateFormat("MM/dd/yyyy hh:mm a");
@@ -182,14 +214,18 @@ public class JobController {
             }
             jobInfoModels = search_results;
         }
+        sortJobs(jobInfoModels, orderByColumn, orderDirection);
 
         JobPageListModel model = new JobPageListModel();
-        model.setRecordsTotal(jobInfoModels.size());
-        model.setRecordsFiltered(jobInfoModels.size());// Total records, after filtering (i.e. the total number of records after filtering has been applied - not just the number of records being returned for this page of data).
+        // Total records, before filtering (i.e. the total number of records in the database)
+        model.setRecordsTotal(recordsTotal);
+        // Total records, after filtering (i.e. the total number of records after filtering has been applied -
+        // not just the number of records being returned for this page of data).
+        model.setRecordsFiltered(jobInfoModels.size());
 
         //handle paging
         int end = start + length;
-        end = (end > model.getRecordsTotal()) ? model.getRecordsTotal() : end;
+        end = (end > jobInfoModels.size()) ? jobInfoModels.size() : end;
         start = (start <= end) ? start : end;
         List<SingleJobInfo> jobInfoModelsFiltered = jobInfoModels.subList(start, end);
 

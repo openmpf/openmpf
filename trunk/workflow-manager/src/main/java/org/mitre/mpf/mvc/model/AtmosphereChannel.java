@@ -96,5 +96,7 @@ public enum AtmosphereChannel {
 	 * 									has changed.  The client then needs to do a /rest/system-message/{typeFilter} to get the new list
 	 * 									of system messages of that type
 	 */
-	SSPC_SYSTEMMESSAGE
+	SSPC_SYSTEMMESSAGE,
+
+	SSPC_PROPERTIES_CHANGED
 }

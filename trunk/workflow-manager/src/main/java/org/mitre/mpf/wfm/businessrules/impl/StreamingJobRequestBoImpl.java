@@ -31,8 +31,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.interop.util.TimeUtils;
-import org.mitre.mpf.mvc.controller.AtmosphereController;
-import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.Redis;
@@ -48,6 +46,7 @@ import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.exceptions.*;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
 import org.mitre.mpf.wfm.util.CallbackUtils;
@@ -121,6 +120,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     @Autowired
     private CallbackUtils callbackUtils;
+
+    @Autowired
+    private JobStatusBroadcaster jobStatusBroadcaster;
 
     /**
      * Converts a pipeline represented in JSON to a {@link TransientPipeline} instance.
@@ -629,7 +631,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 }
             }
 
-            AtmosphereController.broadcast(new JobStatusMessage(jobId, 100, status.getType(), date));
+            jobStatusBroadcaster.broadcast(jobId, 100, status.getType(), date);
             jobProgressStore.setJobProgress(jobId, 100.0f);
 
             log.info("[Streaming Job {}:*:*] Streaming Job complete!", jobId);

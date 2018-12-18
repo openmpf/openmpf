@@ -157,12 +157,13 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
                             LOG.warn("New node-manager is online that wasn't preconfigured. Treating as a spare node.");
                         }
                     }
+                    boolean isNew = !mgr.isAlive(); // if this is a new node-manager, it hasn't been active until now
+                    mgr.setLastKnownState(NodeManagerConstants.States.Running);
                     // Issue the callback
-                    if (notifier != null && !mgr.isAlive()) {
+                    if (notifier != null && isNew) {
                         // Call this whenever a node-manager becomes available to launch services.
                         notifier.newManager(mgr.getHostname());
                     }
-                    mgr.setLastKnownState(NodeManagerConstants.States.Running);
                     synchronized (nodeTable) {
                         nodeTable.put(mgrHost, mgr);
                     }

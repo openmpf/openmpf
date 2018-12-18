@@ -49,7 +49,9 @@ public class MpfPropertiesConfigurationBuilder {
             "remote.media.download.",
             "node.auto.",
             "http.object.storage.",
-            "mpf.output.objects."
+            "mpf.output.objects.",
+            "web.broadcast.job.status.enabled",
+            "web.job.polling.interval"
     );
 
     private static final Collection<String> SNAPSHOT_PREFIXES = ImmutableList.of(

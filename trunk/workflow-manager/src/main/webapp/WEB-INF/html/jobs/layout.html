@@ -24,7 +24,12 @@
     limitations under the License.
 -->
 <div class="page-header text-center">
-    <h3>Job Status</h3> <page-info>The jobs table will be periodically updated and an alert message will appear when new jobs are COMPLETE.</page-info>
+    <div>
+        <h3>Job Status</h3> <page-info>The jobs table will be periodically updated and an alert message will appear when new jobs are COMPLETE.</page-info>
+    </div>
+    <div ng-if="updateInfoMsg">
+        <small class="text-muted"> {{updateInfoMsg}} </small>
+    </div>
 </div>
 <div class="row">
     <div class="col-lg-12">

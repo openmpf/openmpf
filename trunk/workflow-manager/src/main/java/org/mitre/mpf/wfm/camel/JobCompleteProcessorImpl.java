@@ -38,8 +38,6 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.mitre.mpf.interop.*;
-import org.mitre.mpf.mvc.controller.AtmosphereController;
-import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
@@ -57,6 +55,7 @@ import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
@@ -92,9 +91,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 	private MarkupResultDao markupResultDao;
 
 	@Autowired
-	private IoUtils ioUtils;
-
-	@Autowired
 	private PropertiesUtil propertiesUtil;
 
 	@Autowired
@@ -109,6 +105,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 	@Autowired
 	private StorageService storageService;
+
+	@Autowired
+	private JobStatusBroadcaster jobStatusBroadcaster;
 
 
 	@Override
@@ -159,7 +158,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 				}
 			}
 
-			AtmosphereController.broadcast(new JobStatusMessage(jobId, 100, jobStatus.getValue(), new Date()));
+			jobStatusBroadcaster.broadcast(jobId, 100, jobStatus.getValue(), new Date());
 			jobProgressStore.setJobProgress(jobId, 100.0f);
 			log.info("[Job {}:*:*] Job complete!", jobId);
 		}

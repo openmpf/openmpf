@@ -24,67 +24,48 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.model;
 
+package org.mitre.mpf.wfm.service;
+
+import org.mitre.mpf.mvc.controller.AtmosphereController;
+import org.mitre.mpf.mvc.model.JobStatusMessage;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.springframework.stereotype.Service;
+
+import javax.inject.Inject;
 import java.util.Date;
-import java.util.Map;
 
-/** Generic Message class for server-side push using Atmosphere.  For more information on 
- *  how Atmosphere is used in workflow-manager, please see the documentation for AtmosphereController */
-public class AtmosphereMessage {
-	
-	/** channel name - see AtmosphereChannel.java for details */
-	private AtmosphereChannel channel;
-	
-	/** event name - see AtmosphereChannel.java for details */
-	private String event;
-	
-	/** timestamp for when the message is created, which may be different than when the event happened or when 
-	 * it is broadcasted) */
-	private Date timestamp;
-	
-	/** the JSON content of the message, stored as a String representation of JSON */
-	private Map<String, ?> content;
-	
-	public AtmosphereMessage( AtmosphereChannel channel, String event )  {
-		this.channel = channel;
-		this.event = event;
-		this.timestamp = new Date();
-	}	
+@Service
+public class JobStatusBroadcaster {
 
-	public AtmosphereMessage( AtmosphereChannel channel, String event, Map<String, ?> dataMap ) {
-		this( channel, event );
-		this.setContent( dataMap );
-	}
+    private final PropertiesUtil _propertiesUtil;
 
-	public AtmosphereChannel getChannel() {
-		return channel;
-	}
+    @Inject
+    JobStatusBroadcaster(PropertiesUtil propertiesUtil) {
+        _propertiesUtil = propertiesUtil;
+    }
 
-	public String getEvent() {
-		return event;
-	}
 
-	public Date getTimestamp() {
-		return timestamp;
-	}
+    public void broadcast(long jobId, double progress, BatchJobStatusType jobStatus) {
+        broadcast(jobId, progress, jobStatus, null);
+    }
 
-	public void setTimestamp(Date timestamp) {
-		this.timestamp = timestamp;
-	}
+    public void broadcast(long jobId, double progress, BatchJobStatusType jobStatus, Date endDate) {
+        if (_propertiesUtil.isBroadcastJobStatusEnabled()) {
+            AtmosphereController.broadcast(new JobStatusMessage(jobId, progress, jobStatus, endDate));
+        }
+    }
 
-	public Map<String, ?> getContent() {
-		return content;
-	}
 
-	public void setContent(Map<String, ?> dataMap) {
-		this.content = dataMap;
-	}
-	
-	@Override
-	public String toString() {
-		return "AtmosphereMessage [channel=" + channel + ", event=" + event + ", timestamp=" + timestamp + ", content="
-				+ content + "]";
-	}
+    public void broadcast(long jobId, double progress, StreamingJobStatusType jobStatus) {
+        broadcast(jobId, progress, jobStatus, null);
+    }
 
+    public void broadcast(long jobId, double progress, StreamingJobStatusType jobStatus, Date endDate) {
+        if (_propertiesUtil.isBroadcastJobStatusEnabled()) {
+            AtmosphereController.broadcast(new JobStatusMessage(jobId, progress, jobStatus, endDate));
+        }
+    }
 }

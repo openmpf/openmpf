@@ -26,13 +26,6 @@
 
 package org.mitre.mpf.wfm.util;
 
-import java.io.IOException;
-import java.net.SocketTimeoutException;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.concurrent.FutureCallback;
@@ -56,8 +49,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Component
@@ -122,11 +121,11 @@ public class CallbackUtils {
         List<String> jobStatusTypes = streamingJobStatuses.stream().map( jobStatus -> jobStatus.getType().name()).collect(Collectors.toList());
         List<String> jobStatusDetails = streamingJobStatuses.stream().map( jobStatus -> jobStatus.getDetail()).collect(Collectors.toList());
         List<String> activityFrameIds = redis.getActivityFrameIdsAsStrings(jobIds);
-        List<String> activityTimestamps = redis.getActivityTimestampsAsStrings(jobIds);
+        List<Instant> activityTimestamps = redis.getActivityTimestamps(jobIds);
 
         try {
             JsonHealthReportCollection jsonBody = new JsonHealthReportCollection(
-                    LocalDateTime.now(), jobIds, externalIds, jobStatusTypes, jobStatusDetails,
+                    Instant.now(), jobIds, externalIds, jobStatusTypes, jobStatusDetails,
                     activityFrameIds, activityTimestamps);
 
             sendPostCallback(jsonBody, callbackUri, jobIds, "health report(s)");

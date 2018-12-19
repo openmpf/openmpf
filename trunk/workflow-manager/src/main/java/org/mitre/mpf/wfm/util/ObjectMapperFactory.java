@@ -24,35 +24,56 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.interop.util;
 
+package org.mitre.mpf.wfm.util;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import org.mitre.mpf.interop.util.TimeUtils;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+
+import java.io.IOException;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 
-public class TimeUtils {
+@Configuration
+public class ObjectMapperFactory {
 
-    private static final DateTimeFormatter timestampFormatter
-            = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault());
-
-
-    private TimeUtils() {
-    }
-
-    public static String toIsoString(Instant instant) {
-        return instant == null
-                ? null
-                : timestampFormatter.format(instant);
-    }
-
-    public static String toIsoString(long millis) {
-        return toIsoString(Instant.ofEpochMilli(millis));
+    @Bean
+    public static ObjectMapper customObjectMapper() {
+        return Jackson2ObjectMapperBuilder.json()
+                .serializerByType(Instant.class, new InstantSerializer())
+                .deserializerByType(Instant.class, new InstantDeserializer())
+                .build();
     }
 
 
-    public static Instant toInstant(String isoString) {
-        return isoString == null
-                ? null
-                : timestampFormatter.parse(isoString, Instant::from);
+    private static class InstantSerializer extends StdSerializer<Instant> {
+        public InstantSerializer() {
+            super(Instant.class);
+        }
+
+        @Override
+        public void serialize(Instant value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+            gen.writeString(TimeUtils.toIsoString(value));
+        }
+    }
+
+    private static class InstantDeserializer extends StdDeserializer<Instant> {
+        public InstantDeserializer() {
+            super(Instant.class);
+        }
+
+        @Override
+        public Instant deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
+            String text = parser.getText();
+            return TimeUtils.toInstant(text);
+        }
     }
 }

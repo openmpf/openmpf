@@ -24,35 +24,32 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.interop.util;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+package org.mitre.mpf.mvc;
 
-public class TimeUtils {
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.stereotype.Component;
 
-    private static final DateTimeFormatter timestampFormatter
-            = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault());
+import javax.inject.Inject;
 
+@Component
+public class CustomJacksonHttpMessageConverter extends MappingJackson2HttpMessageConverter {
 
-    private TimeUtils() {
-    }
+    private static final ImmutableList<Class<?>> BLACKLIST = ImmutableList.of(String.class, Resource.class);
 
-    public static String toIsoString(Instant instant) {
-        return instant == null
-                ? null
-                : timestampFormatter.format(instant);
-    }
-
-    public static String toIsoString(long millis) {
-        return toIsoString(Instant.ofEpochMilli(millis));
+    @Inject
+    CustomJacksonHttpMessageConverter(ObjectMapper objectMapper) {
+        super(objectMapper);
     }
 
 
-    public static Instant toInstant(String isoString) {
-        return isoString == null
-                ? null
-                : timestampFormatter.parse(isoString, Instant::from);
+    @Override
+    public boolean canWrite(Class<?> clazz, MediaType mediaType) {
+        return BLACKLIST.stream().noneMatch(blc -> blc.isAssignableFrom(clazz))
+                && super.canWrite(clazz, mediaType);
     }
 }

@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.rest.api;
 
-import java.util.Date;
+import java.time.Instant;
 
 public class SingleJobInfo {
 	private Long jobId;
@@ -34,8 +34,8 @@ public class SingleJobInfo {
 	private int jobPriority = -1;
 	private String jobStatus;
 	private float jobProgress = 0;
-	private Date startDate;
-	private Date endDate;
+	private Instant startDate;
+	private Instant endDate;
 	private String outputObjectPath;
 	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
 	//to maintain the use of only standard Java in the model.api classes
@@ -44,7 +44,7 @@ public class SingleJobInfo {
 	public SingleJobInfo() {}
 	
 	public SingleJobInfo(Long jobId, String pipelineName, int jobPriority, String jobStatus, float jobProgress,
-			Date startDate, Date endDate, String outputObjectPath, boolean terminal) {
+	                     Instant startDate, Instant endDate, String outputObjectPath, boolean terminal) {
 		this.jobId = jobId;
 		this.pipelineName = pipelineName;
 		this.jobPriority = jobPriority;
@@ -79,11 +79,11 @@ public class SingleJobInfo {
 		this.jobProgress = jobProgress;
 	}
 	
-	public Date getStartDate() {
+	public Instant getStartDate() {
 		return startDate;
 	}
 
-	public Date getEndDate() {
+	public Instant getEndDate() {
 		return endDate;
 	}
 	

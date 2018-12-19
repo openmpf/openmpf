@@ -70,7 +70,7 @@ AppServices.factory('RoleService', [
 AppServices.service('PipelinesService', function ($http) {
     this.getAvailablePipelines = function () {
         // $http returns a promise, which has a then function, which also returns a promise
-        var promise = $http.get('pipelines/details').then(function (response) {
+        var promise = $http.get('pipelines').then(function (response) {
             // The then function here is an opportunity to modify the response
             //console.log('available_pipelines: ', response);
             // The return value gets picked up by the then in the controller.

@@ -47,6 +47,7 @@ import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 
 import static java.util.stream.Collectors.toList;
@@ -142,7 +143,7 @@ public class AddComponentServiceImpl implements AddComponentService {
 
             registerDeployedComponent(loadDescriptor(descriptorPath), currentModel);
 
-            currentModel.setDateRegistered(new Date());
+            currentModel.setDateRegistered(Instant.now());
             currentModel.setComponentState(ComponentState.REGISTERED);
             componentStateService.update(currentModel);
 
@@ -170,7 +171,7 @@ public class AddComponentServiceImpl implements AddComponentService {
 
         registerDeployedComponent(descriptor, registrationModel);
         registrationModel.setComponentState(ComponentState.REGISTERED);
-        registrationModel.setDateRegistered(new Date());
+        registrationModel.setDateRegistered(Instant.now());
         componentStateService.update(registrationModel);
     }
 

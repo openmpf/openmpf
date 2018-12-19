@@ -41,7 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.Date;
+import java.time.Instant;
 
 @Component(EndOfStageProcessor.REF)
 public class EndOfStageProcessor extends WfmProcessor {
@@ -80,10 +80,10 @@ public class EndOfStageProcessor extends WfmProcessor {
 						jobId,
 						100,
 						job.isCancelled() ? BatchJobStatusType.CANCELLED : BatchJobStatusType.COMPLETE,
-						new Date());
+						Instant.now());
 				jobProgressStore.setJobProgress(jobId, 100.0f);
 			} else {
-				jobStatusBroadcaster.broadcast(jobId, 99, BatchJobStatusType.BUILDING_OUTPUT_OBJECT, new Date());
+				jobStatusBroadcaster.broadcast(jobId, 99, BatchJobStatusType.BUILDING_OUTPUT_OBJECT, Instant.now());
 				jobProgressStore.setJobProgress(jobId, 99.0f);
 			}			
 			log.debug("[Job {}|*|*] All stages have completed. Setting the {} flag.", exchange.getIn().getHeader(MpfHeaders.JOB_ID), MpfHeaders.JOB_COMPLETE);

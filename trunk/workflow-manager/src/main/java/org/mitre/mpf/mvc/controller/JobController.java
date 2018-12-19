@@ -31,6 +31,7 @@ import io.swagger.annotations.*;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
@@ -58,8 +59,6 @@ import org.springframework.web.servlet.ModelAndView;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -197,7 +196,6 @@ public class JobController {
         int recordsTotal = jobInfoModels.size();
 
         //handle search
-        DateFormat df = new SimpleDateFormat("MM/dd/yyyy hh:mm a");
         if (search != null && search.length() > 0) {
             search = search.toLowerCase();
             List<SingleJobInfo> search_results = new ArrayList<SingleJobInfo>();
@@ -207,8 +205,8 @@ public class JobController {
                 if (info.getJobId().toString().contains(search) ||
                         (info.getPipelineName() != null && info.getPipelineName().toLowerCase().contains(search)) ||
                         (info.getJobStatus() != null && info.getJobStatus().toLowerCase().contains(search)) ||
-                        (info.getEndDate() != null && df.format(info.getEndDate()).toLowerCase().contains(search)) ||
-                        (info.getStartDate() != null && df.format(info.getStartDate()).toLowerCase().contains(search))) {
+                        (info.getEndDate() != null && TimeUtils.toIsoString(info.getEndDate()).toLowerCase().contains(search)) ||
+                        (info.getStartDate() != null && TimeUtils.toIsoString(info.getStartDate()).toLowerCase().contains(search))) {
                     search_results.add(info);
                 }
             }

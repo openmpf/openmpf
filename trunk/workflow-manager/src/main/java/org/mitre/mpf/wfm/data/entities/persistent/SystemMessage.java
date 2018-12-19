@@ -32,17 +32,12 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 import javax.persistence.*;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashMap;
 
 @ApiModel( description="The model for a System Message" )
 @Entity
 public class SystemMessage {
-
-    static final String _dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSX";
-    static DateFormat _dateFormatter = new SimpleDateFormat(_dateFormat);
 
     /* a unique message ID
      * This can be anything you want, but defaults to the timestamp, and the following are "standard" messages:
@@ -88,15 +83,14 @@ public class SystemMessage {
     @ApiModelProperty(value = "strategy for removing this message", allowableValues = "manual,atServerStartup", position=3)
     private String removeStrategy="manual";
 
-    @ApiModelProperty(value = "message timestamp, include only if you want to change the timestamp", hidden = true, access = "hidden" )
+    @ApiModelProperty(value = "message timestamp, include only if you want to change the timestamp", hidden = true, access = "hidden", dataType = "java.lang.String")
         /* hidden and access should make this disappear from the documentation (so that it would default to the current date)
          * however, as the springfox developer says here:  http://stackoverflow.com/questions/29206396/spring-mvc-swagger-how-to-hide-model-property-in-swagger-ui
          * we need to upgrade to the latest version of springfox, which, based on past history, is way beyond the scope of this task.
          * I will add this as a subtask to the task for testing this API.  For now, it is noted in the PUT documentation in SystemMessageController.
          */
-    @JsonFormat (shape = JsonFormat.Shape.STRING, pattern = _dateFormat )  // note date is ISO 8601, and can be in GMT or local time as long as the proper timezone is specified;
-                                                                           // however, the posted timestamp will have milliseconds set to 000 regardless of what is specified
-    private Date datePosted = new Date();
+    @JsonFormat (shape = JsonFormat.Shape.STRING )  // note date is ISO 8601, and can be in GMT or local time as long as the proper timezone is specified;
+    private Instant datePosted = Instant.now();
 
     public SystemMessage() {
     }
@@ -189,11 +183,11 @@ public class SystemMessage {
         }
     }
 
-    public Date getDatePosted() {
+    public Instant getDatePosted() {
         return datePosted;
     }
 
-    public void setDatePosted(Date datePosted) {
+    public void setDatePosted(Instant datePosted) {
         this.datePosted = datePosted;
     }
 

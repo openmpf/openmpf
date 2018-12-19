@@ -24,35 +24,28 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.interop.util;
 
+package org.mitre.mpf.wfm.data.access.hibernate;
+
+import javax.persistence.AttributeConverter;
+import javax.persistence.Converter;
+import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 
-public class TimeUtils {
+@Converter(autoApply = true)
+public class InstantAttributeConverter implements AttributeConverter<Instant, Timestamp> {
 
-    private static final DateTimeFormatter timestampFormatter
-            = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault());
-
-
-    private TimeUtils() {
-    }
-
-    public static String toIsoString(Instant instant) {
+    @Override
+    public Timestamp convertToDatabaseColumn(Instant instant) {
         return instant == null
                 ? null
-                : timestampFormatter.format(instant);
+                : Timestamp.from(instant);
     }
 
-    public static String toIsoString(long millis) {
-        return toIsoString(Instant.ofEpochMilli(millis));
-    }
-
-
-    public static Instant toInstant(String isoString) {
-        return isoString == null
+    @Override
+    public Instant convertToEntityAttribute(Timestamp timestamp) {
+        return timestamp == null
                 ? null
-                : timestampFormatter.parse(isoString, Instant::from);
+                : timestamp.toInstant();
     }
 }

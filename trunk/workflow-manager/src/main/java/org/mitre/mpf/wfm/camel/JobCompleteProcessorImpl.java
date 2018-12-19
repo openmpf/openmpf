@@ -38,9 +38,6 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.mitre.mpf.interop.*;
-import org.mitre.mpf.interop.util.TimeUtils;
-import org.mitre.mpf.mvc.controller.AtmosphereController;
-import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
@@ -71,6 +68,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.IntStream;
@@ -161,7 +159,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 				}
 			}
 
-			jobStatusBroadcaster.broadcast(jobId, 100, jobStatus.getValue(), new Date());
+			jobStatusBroadcaster.broadcast(jobId, 100, jobStatus.getValue(), Instant.now());
 			jobProgressStore.setJobProgress(jobId, 100.0f);
 			log.info("[Job {}:*:*] Job complete!", jobId);
 		}
@@ -188,7 +186,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		JobRequest jobRequest = jobRequestDao.findById(jobId);
 		assert jobRequest != null : String.format("A job request entity must exist with the ID %d", jobId);
 
-		jobRequest.setTimeCompleted(new Date());
+		jobRequest.setTimeCompleted(Instant.now());
 		jobRequest.setStatus(jobStatus);
 		jobRequestDao.persist(jobRequest);
 	}
@@ -209,8 +207,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 				transientJob.getPriority(),
 				propertiesUtil.getSiteId(),
 				transientJob.getExternalId(),
-				TimeUtils.getDateAsString(jobRequest.getTimeReceived()),
-				TimeUtils.getDateAsString(jobRequest.getTimeCompleted()),
+				jobRequest.getTimeReceived(),
+				jobRequest.getTimeCompleted(),
 				jobStatus.getValue().toString());
 
 		if (transientJob.getOverriddenJobProperties() != null) {

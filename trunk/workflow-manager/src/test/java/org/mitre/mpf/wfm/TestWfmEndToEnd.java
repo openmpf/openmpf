@@ -63,6 +63,7 @@ import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.*;
 
 
@@ -210,7 +211,7 @@ public class TestWfmEndToEnd {
 
 		JsonOutputObject jsonOutputObject = objectMapper.readValue(outputObjectPath.toFile(), JsonOutputObject.class);
 		Assert.assertEquals(jsonOutputObject.getJobId(), jobId);
-		String start = jsonOutputObject.getTimeStart(),
+		Instant start = jsonOutputObject.getTimeStart(),
 				stop = jsonOutputObject.getTimeStop();
 
 		completedJobs.clear();

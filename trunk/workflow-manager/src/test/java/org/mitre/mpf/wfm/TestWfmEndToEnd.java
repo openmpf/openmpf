@@ -95,11 +95,13 @@ public class TestWfmEndToEnd {
 	@Qualifier(JobCompleteProcessorImpl.REF)
 	private JobCompleteProcessor jobCompleteProcessor;
 
+	@Autowired
+	private ObjectMapper objectMapper;
+
 	protected static final int MINUTES = 1000 * 60; // 1000 milliseconds/second & 60 seconds/minute.
 
 	protected static final Logger log = LoggerFactory.getLogger(TestWfmEndToEnd.class);
 
-	protected static final ObjectMapper objectMapper = new ObjectMapper();
 
 	protected static boolean hasInitialized = false;
 	protected static int testCtr = 0;

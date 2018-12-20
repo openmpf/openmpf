@@ -44,8 +44,6 @@ public interface PipelineService {
 
 	SortedSet<String> getTaskNames();
 
-	String getPipelineDefinitionAsJson();
-
 	Set<AlgorithmDefinition> getAlgorithms();
 
 	AlgorithmDefinition getAlgorithm(String name);

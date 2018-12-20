@@ -32,6 +32,7 @@ import java.time.format.DateTimeFormatter;
 
 public class TimeUtils {
 
+    // Example: 2018-12-19T12:12:59.995-05:00
     private static final DateTimeFormatter timestampFormatter
             = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault());
 

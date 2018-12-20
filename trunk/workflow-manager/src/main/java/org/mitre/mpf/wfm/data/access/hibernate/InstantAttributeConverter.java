@@ -32,7 +32,9 @@ import javax.persistence.Converter;
 import java.sql.Timestamp;
 import java.time.Instant;
 
+@SuppressWarnings("unused")
 @Converter(autoApply = true)
+// Allows Hibernate entities to have fields of type java.time.Instant which get properly mapped to a database column.
 public class InstantAttributeConverter implements AttributeConverter<Instant, Timestamp> {
 
     @Override

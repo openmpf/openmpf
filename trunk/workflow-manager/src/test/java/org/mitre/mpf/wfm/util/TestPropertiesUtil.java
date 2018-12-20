@@ -172,7 +172,7 @@ public class TestPropertiesUtil {
         Assert.assertEquals(1, propertiesUtil.getSamplingInterval());
         Assert.assertEquals(30, propertiesUtil.getWebSessionTimeout());
 
-        propertiesUtil.getCustomProperties().stream().forEach(m -> Assert.assertFalse(m.getKey() +
+        propertiesUtil.getCustomProperties().forEach(m -> Assert.assertFalse(m.getKey() +
                 " should not need require a WFM restart", m.getNeedsRestart()));
 
         propertiesUtil.setAndSaveCustomProperties(newCustomPropertyModels);

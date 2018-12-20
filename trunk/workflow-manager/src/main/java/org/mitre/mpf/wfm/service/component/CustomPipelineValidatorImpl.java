@@ -342,7 +342,7 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
             JsonComponentDescriptor.Action action,
             JsonComponentDescriptor descriptor) {
 
-        if (action.algorithm.equals(descriptor.algorithm.name)) {
+        if (descriptor.algorithm != null && action.algorithm.equals(descriptor.algorithm.name)) {
             Set<ProcessingType> actionProcessingType = EnumSet.noneOf(ProcessingType.class);
             if (descriptor.supportsBatchProcessing()) {
                 actionProcessingType.add(ProcessingType.BATCH);

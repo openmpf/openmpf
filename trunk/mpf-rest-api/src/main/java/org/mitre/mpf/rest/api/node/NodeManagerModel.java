@@ -33,6 +33,7 @@ public class NodeManagerModel {
 	private String host;
 	private boolean core; // spare if false
 	private boolean online; // offline if false
+	private boolean autoConfigured;
 	private List<ServiceModel> services = new ArrayList<ServiceModel>();
 	
 	public NodeManagerModel() { }
@@ -60,6 +61,13 @@ public class NodeManagerModel {
 	}
 	public void setCoreNode(boolean core) {
 		this.core = core;
+	}
+
+	public boolean isAutoConfigured() {
+		return autoConfigured;
+	}
+	public void setAutoConfigured(boolean autoConfigured) {
+		this.autoConfigured = autoConfigured;
 	}
 	
 	public List<ServiceModel> getServices() {

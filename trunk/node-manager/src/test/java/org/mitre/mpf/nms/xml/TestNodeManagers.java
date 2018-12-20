@@ -24,20 +24,46 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel;
+package org.mitre.mpf.nms.xml;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
-import org.springframework.stereotype.Component;
+import org.junit.Assert;
+import org.junit.Test;
 
-/**
- * Trivial processor which consumes any messages it receives and does not emit any useful information. This is
- * used as terminal point of many processors.
- */
-@Component(NoOpProcessor.REF)
-public class NoOpProcessor implements Processor {
-	public static final String REF = "noOpProcessor";
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
-	@Override
-	public void process(Exchange exchange) throws Exception { }
+public class TestNodeManagers {
+
+    private final String SERVICE_REFERENCE = "service reference=";
+
+    @Test
+    public void testToXml() throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        Service testService = new Service("SomeTestService", "SomeTestPath");
+        testService.setLauncher("simple");
+        List<String> argsList = Arrays.asList("SomeTestArg", "MPF.DETECTION_TEST_REQUEST");
+        testService.setArgs(argsList);
+
+        NodeManager testNode1 = new NodeManager("somehost1");
+        testNode1.add(testService);
+
+        NodeManager testNode2 = new NodeManager("somehost2");
+        testNode2.add(testService);
+
+        NodeManagers nodeManagers = new NodeManagers();
+        nodeManagers.add(testNode1);
+        nodeManagers.add(testNode2);
+
+        NodeManagers.toXml(nodeManagers, outputStream);
+        String content = outputStream.toString();
+
+        Assert.assertFalse("XML should not be empty.", content.isEmpty());
+        Assert.assertFalse("XML should not contain \"" + SERVICE_REFERENCE + "\".",
+                content.contains(SERVICE_REFERENCE));
+
+        outputStream.close();
+    }
 }

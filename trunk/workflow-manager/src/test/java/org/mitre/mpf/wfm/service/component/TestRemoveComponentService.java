@@ -138,7 +138,7 @@ public class TestRemoveComponentService {
                 .removeComponent(COMPONENT_NAME);
 
         verify(_mockNodeManager)
-                .saveNodeManagerConfig(whereArg(nodes -> nodes.contains(nodeManagerModel)
+                .saveAndReloadNodeManagerConfig(whereArg(nodes -> nodes.contains(nodeManagerModel)
                         && nodes.contains(nodeManagerModel2)
                         && !nodeManagerModel.getServices().contains(serviceModel)
                         && nodeManagerModel.getServices().contains(serviceModel2)));

@@ -35,9 +35,11 @@ import org.mitre.mpf.mvc.model.AtmosphereChannel;
 import org.mitre.mpf.nms.*;
 import org.mitre.mpf.nms.NodeManagerConstants.States;
 import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
+import org.mitre.mpf.nms.xml.NodeManager;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
+import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,9 +47,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -69,33 +71,53 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     @Autowired
     private StreamingJobRequestBo streamingJobRequestBo;
 
+    @Autowired
+    private NodeManagerService nodeManagerService;
+
     // flag that indicates if at least one view update was initiated by JGroups
     private boolean viewUpdated = false;
 
-    private volatile boolean isRunning = false;
+    private volatile boolean isInitialized = false;
 
     private Map<String, ServiceDescriptor> serviceDescriptorMap = new ConcurrentHashMap<>();
 
+    // NOTE: Synchronize this method to prevent race conditions due to auto-configuration and auto-unconfiguration.
+    private synchronized void init(boolean isStartup) {
 
-    public void init(boolean reloadConfig) {
-        if (!reloadConfig) {
+        List<NodeManager> managers;
+
+        // Clear auto-configured nodes from the config file when starting the WFM and auto-unconfiguration is enabled.
+        boolean autoUnconfigNodes = isStartup && propertiesUtil.isNodeAutoUnconfigEnabled();
+        managers = masterNode.loadConfigFile(propertiesUtil.getNodeManagerConfigResource(), autoUnconfigNodes);
+
+        // Connect the master node to JGroups if the WFM is starting up.
+        if (isStartup) {
             masterNode.setCallback(this);
+            // NOTE: The following will result in retrieving and handling a JGroups view, which may result in
+            // auto-configuration, if it's enabled and a child node is available. That involves updating and reloading
+            // the config file, and thereby another call to this init() method in the same thread.
             masterNode.run();
-            isRunning = true;
         }
 
-        try (InputStream inStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
-            if (masterNode.loadConfigFile(inStream, propertiesUtil.getAmqUri())) {
-                if (!reloadConfig && !masterNode.areAllManagersPresent()) {
-                    waitForViewUpdate();
-                }
-                masterNode.launchAllNodes();
+        // NOTE: Abort the startup procedure if preempted by auto-configuration.
+        if (isStartup && isInitialized) {
+            String baseMsg = "Node auto-configuration completed before the default master node manager startup procedure.";
+            if (propertiesUtil.isNodeAutoConfigEnabled()) {
+                log.info(baseMsg + " Aborting the normal procedure.");
+                return;
             }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            log.error(baseMsg + " This is unexpected since auto-configuration is not enabled. Continuing anyway.");
         }
 
+        masterNode.configureNodes(managers, propertiesUtil.getAmqUri());
+        if (!isInitialized && !masterNode.areAllManagersPresent()) {
+            waitForViewUpdate();
+        }
+
+        masterNode.launchAllNodes();
         updateServiceDescriptors();
+
+        isInitialized = true;
     }
 
     private void waitForViewUpdate() {
@@ -129,18 +151,17 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
         }
     }
 
-    public void stop() {
-        try {
-            masterNode.shutdown();
-            isRunning = false;
-        }
-        catch(Exception e) {
-            log.error(e.getMessage(), e);
-        }
+    public void start() {
+        init(true);
     }
 
-    public boolean isRunning() {
-        return isRunning;
+    public void stop() {
+        masterNode.shutdown();
+        isInitialized = false;
+    }
+
+    public boolean isInitialized() {
+        return isInitialized;
     }
 
     private void updateServiceDescriptors() {
@@ -255,9 +276,18 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
         }
     }
 
+    // NOTE: This is called when a configured node manager becomes available, and also when a spare node is detected.
     @Override
     public void newManager(String hostname) {
         log.debug("{} manager has started.", hostname);
+        if (propertiesUtil.isNodeAutoConfigEnabled() &&
+                !masterNode.getConfiguredManagerHosts().containsKey(hostname)) {
+            try {
+                nodeManagerService.autoConfigureNewNode(hostname);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
         //go ahead and launch anything that is able to launch (nothing that starts with a state of Delete or InactiveNoStart)
         masterNode.launchAllNodes();
         broadcastNodeEvent(hostname, "OnNewManager");
@@ -266,6 +296,13 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     @Override
     public void managerDown(String hostname) {
         //log.debug("{} manager down.", hostname);
+        if (propertiesUtil.isNodeAutoUnconfigEnabled()) {
+            try {
+                nodeManagerService.unconfigureIfAutoConfiguredNode(hostname);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
         broadcastNodeEvent(hostname, "OnManagerDown");
     }
 
@@ -325,7 +362,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     public void reloadNodeManagerConfig() {
         log.info("Reloading the node manager config");
         Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.NodeManagerStatus.reloadNodeManagerConfig").start();
-        init(true);
+        init(false);
         split.stop();
     }
 

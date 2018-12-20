@@ -70,13 +70,13 @@ public class MarkupResult {
 	public void setMediaIndex(int mediaIndex) { this.mediaIndex = mediaIndex; }
 
 	/** The URI of the file which produced this result. */
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String sourceUri;
 	public String getSourceUri() { return sourceUri; }
 	public void setSourceUri(String sourceUri) { this.sourceUri = sourceUri; }
 
 	/** The URI of the marked-up file. */
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String markupUri;
 	public String getMarkupUri() { return markupUri; }
 	public void setMarkupUri(String markupUri) { this.markupUri = markupUri; }
@@ -93,7 +93,7 @@ public class MarkupResult {
 	public MarkupStatus getMarkupStatus() { return (markupStatus == null) ? MarkupStatus.UNKNOWN : markupStatus; }
 	public void setMarkupStatus(MarkupStatus markupStatus) { this.markupStatus = markupStatus; }
 
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String message;
 	public String getMessage() { return message; }
 	public void setMessage(String message) { this.message = message; }

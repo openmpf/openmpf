@@ -38,6 +38,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.EnvVar;
+import org.mitre.mpf.wfm.service.StorageBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -141,11 +143,11 @@ public class PropertiesUtil {
         String coreMpfNodesStr = System.getenv(EnvVar.CORE_MPF_NODES);
 
         if (StringUtils.isNullOrEmpty(coreMpfNodesStr)) {
-            throw new IllegalStateException(EnvVar.CORE_MPF_NODES + " environment variable must be defined.");
+            coreMpfNodes = ImmutableSet.of(); // empty set
+        } else {
+            coreMpfNodes = Arrays.stream(coreMpfNodesStr.split(",")).map(String::trim)
+                    .filter(node -> !node.isEmpty()).collect(collectingAndThen(toSet(), ImmutableSet::copyOf));
         }
-
-        coreMpfNodes = Arrays.stream(coreMpfNodesStr.split(",")).map(String::trim)
-                .filter(node -> !node.isEmpty()).collect(collectingAndThen(toSet(), ImmutableSet::copyOf));
     }
 
     private static File createOrFail(Path parent, String subdirectory, Set<PosixFilePermission> permissions)
@@ -185,10 +187,8 @@ public class PropertiesUtil {
      * @return Updated list of property models for the set of immutable properties.
      */
     public List<PropertyModel> getImmutableCustomProperties() {
-        // Get an updated list of property models. Each element contains current value. Return only the immutable system properties by
-        // filtering out the mutable detection properties from the list.
         return getCustomProperties().stream()
-                .filter(pm -> !isDetectionProperty(pm.getKey()))
+                .filter(pm -> !MpfPropertiesConfigurationBuilder.isMutableProperty(pm.getKey()))
                 .collect(toList());
     }
 
@@ -198,21 +198,15 @@ public class PropertiesUtil {
      * @return Updated list of property models for the set of mutable properties.
      */
     public List<PropertyModel> getMutableCustomProperties() {
-        // Get an updated list of property models. Each element contains current value. Return only the mutable system properties by
-        // filtering out the immutable detection properties from the list.
         return getCustomProperties().stream()
-                .filter(pm -> isDetectionProperty(pm.getKey()))
+                .filter(pm -> MpfPropertiesConfigurationBuilder.isMutableProperty(pm.getKey()))
                 .collect(toList());
     }
 
-    private static boolean isDetectionProperty(String key) {
-        return key.startsWith(MpfPropertiesConfigurationBuilder.DETECTION_KEY_PREFIX);
-    }
-
     public TransientDetectionSystemProperties createDetectionSystemPropertiesSnapshot() {
-        Map<String, String> detMap = new HashMap();
+        Map<String, String> detMap = new HashMap<>();
         mpfPropertiesConfig.getKeys().forEachRemaining(key -> {
-            if (isDetectionProperty(key)) {
+            if (MpfPropertiesConfigurationBuilder.propertyRequiresSnapshot(key)) {
                 detMap.put(key, mpfPropertiesConfig.getString(key)); // resolve final value
             }
         } );
@@ -255,12 +249,12 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getBoolean("mpf.output.objects.enabled");
     }
 
-    public boolean isOutputQueueEnabled() {
-        return mpfPropertiesConfig.getBoolean("mpf.output.objects.queue.enabled");
+    public boolean isOutputObjectsExemplarsOnly() {
+        return mpfPropertiesConfig.getBoolean("mpf.output.objects.exemplars.only");
     }
 
-    public String getOutputQueueName() {
-        return mpfPropertiesConfig.getString("mpf.output.objects.queue.name");
+    public boolean isOutputObjectsLastStageOnly() {
+        return mpfPropertiesConfig.getBoolean("mpf.output.objects.last.stage.only");
     }
 
     public String getSharePath() {
@@ -552,19 +546,6 @@ public class PropertiesUtil {
         return new File(mpfPropertiesConfig.getString("mpf.plugins.path"));
     }
 
-    public int getNumStartUpServices() {
-        String key = "startup.num.services.per.component";
-        try {
-            return mpfPropertiesConfig.getInt(key, 0);
-        } catch (ConversionException e) {
-            if (mpfPropertiesConfig.getString(key).startsWith("${")) {
-                log.warn("Unable to determine value for \"" + key + "\". It may not have been set via Maven. Using default value of \"0\".");
-                return 0;
-            }
-            throw e;
-        }
-    }
-
     public boolean isStartupAutoRegistrationSkipped() {
         String key = "startup.auto.registration.skip.spring";
         try {
@@ -611,6 +592,10 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getInt("web.max.file.upload.cnt");
     }
 
+    public boolean isBroadcastJobStatusEnabled() {
+        return mpfPropertiesConfig.getBoolean("web.broadcast.job.status.enabled");
+    }
+
     //
     // Version information
     //
@@ -645,7 +630,7 @@ public class PropertiesUtil {
     }
 
     public String getAmqUri() {
-        return mpfPropertiesConfig.getString("mpf.output.objects.amq.broker.uri");
+        return mpfPropertiesConfig.getString("amq.broker.uri");
     }
 
     //
@@ -700,6 +685,21 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getInt("remote.media.download.sleep");
     }
 
+    //
+    // Node management settings
+    //
+
+    public boolean isNodeAutoConfigEnabled() {
+        return mpfPropertiesConfig.getBoolean("node.auto.config.enabled");
+    }
+
+    public boolean isNodeAutoUnconfigEnabled() {
+        return mpfPropertiesConfig.getBoolean("node.auto.unconfig.enabled");
+    }
+
+    public int getNodeAutoConfigNumServices() {
+        return mpfPropertiesConfig.getInt("node.auto.config.num.services.per.component");
+    }
 
     // Helper methods
 
@@ -732,5 +732,26 @@ public class PropertiesUtil {
             Files.createDirectories(resourceDir);
         }
     }
+
+    public StorageBackend.Type getHttpObjectStorageType() {
+        return mpfPropertiesConfig.get(StorageBackend.Type.class, "http.object.storage.type");
+    }
+
+    public URI getHttpStorageServiceUri() {
+        return mpfPropertiesConfig.get(URI.class, "http.object.storage.service_uri");
+    }
+
+    public int getHttpStorageUploadThreadCount() {
+        return mpfPropertiesConfig.getInt("http.object.storage.upload.thread.count");
+    }
+
+    public int getHttpStorageUploadSegmentSize() {
+        return mpfPropertiesConfig.getInt("http.object.storage.upload.segment.size");
+    }
+
+    public int getHttpStorageUploadRetryCount() {
+        return mpfPropertiesConfig.getInt("http.object.storage.upload.retry.count");
+    }
+
 }
 

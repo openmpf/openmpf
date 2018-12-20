@@ -63,6 +63,10 @@
         {
             "name": "TikaTextDetection",
             "path": "/home/mpf/openmpf-projects/openmpf-components/java/TikaTextDetection"
+        },
+        {
+            "name": "TikaImageDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/java/TikaImageDetection"
         }
     ]
 }

@@ -38,6 +38,7 @@ import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonCallbackBody;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.ui.Utils;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -101,7 +102,7 @@ public class ITWebREST {
 
 	private static final Logger log = LoggerFactory.getLogger(ITWebREST.class);
 
-	private static ObjectMapper objectMapper = new ObjectMapper();
+	private static final ObjectMapper objectMapper = ObjectMapperFactory.customObjectMapper();
 
 	private static long job_created_id = -1L;
 	private static boolean test_ready = true;

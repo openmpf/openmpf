@@ -40,5 +40,8 @@ public enum MarkupStatus {
 	CANCELLED,
 
 	/** Indicates that markup failed. */
-	FAILED
+	FAILED,
+
+	/** Indicates that markup completed with warnings. */
+	COMPLETE_WITH_WARNING
 }

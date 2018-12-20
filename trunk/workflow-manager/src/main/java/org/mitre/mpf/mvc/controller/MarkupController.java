@@ -27,35 +27,22 @@
 package org.mitre.mpf.mvc.controller;
 
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLConnection;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.Paths;
-import java.util.*;
-
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
+import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.mvc.util.NIOUtils;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
 import org.mitre.mpf.rest.api.MarkupResultModel;
-import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.service.MpfService;
+import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +55,21 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Api(value = "Markup", description = "Access the information of marked up media")
 @Controller
@@ -146,7 +148,7 @@ public class MarkupController {
                     try {
                         String nonUrlPath = med.getMediaUri();
                         File f = new File(URI.create(nonUrlPath));
-                        if (f != null && f.exists()) {
+                        if (f.exists()) {
                             model.setSourceURIContentType(NIOUtils.getPathContentType(Paths.get(URI.create(nonUrlPath))));
                             model.setSourceImgUrl("server/node-image?nodeFullPath=" + Paths.get(URI.create(nonUrlPath)));
                             model.setSourceDownloadUrl("server/download?fullPath=" + Paths.get(URI.create(nonUrlPath)));
@@ -214,32 +216,60 @@ public class MarkupController {
         //TODO need a no image available if final nested if is not met
     }
 
+
     @RequestMapping(value = "/markup/download", method = RequestMethod.GET)
-    public void getFile(@RequestParam(value = "id", required = true) long id, HttpServletResponse response) throws IOException, URISyntaxException {
+    public void getFile(@RequestParam(value = "id", required = true) long id, HttpServletResponse response) throws IOException {
         MarkupResult mediaMarkupResult = mpfService.getMarkupResult(id);
-        if (mediaMarkupResult != null) {
-            String nonUrlPath = mediaMarkupResult.getMarkupUri().replace("file:", "");
-            File f = new File(nonUrlPath);
-            if (f.exists() && f.canRead()) {
-                String mimeType = URLConnection.guessContentTypeFromName(f.getName());
-                if (mimeType == null) {
-                    System.out.println("mimetype is not detectable, will take default");
-                    mimeType = "application/octet-stream";
-                }
-                response.setContentType(mimeType);
-                response.setHeader("Content-Disposition", String.format("attachment; filename=\"%s\"", f.getName()));
-                response.setContentLength((int) f.length());
-                //copy it to response's OutputStream
-                FileUtils.copyFile(f, response.getOutputStream());
-                response.flushBuffer();
-            }else {
-                log.debug("server download file failed for markup id= "+id);
-                response.setStatus(404);
-            }
-        }else {
-            log.debug("server download file failed for markup id= "+id);
+        if (mediaMarkupResult == null) {
+            log.debug("server download file failed for markup id = " +id);
             response.setStatus(404);
+            response.flushBuffer();
+            return;
+        }
+
+        Path localPath = IoUtils.toLocalPath(mediaMarkupResult.getMarkupUri()).orElse(null);
+        if (localPath != null) {
+            if (!Files.exists(localPath)) {
+                log.debug("server download file failed for markup id = " + id);
+                response.setStatus(404);
+                response.flushBuffer();
+                return;
+            }
+            try (InputStream inputStream = Files.newInputStream(localPath)) {
+                writeFileToResponse(Files.probeContentType(localPath), localPath.getFileName().toString(),
+                                    Files.size(localPath), inputStream, response);
+            }
+            return;
+        }
+
+        URL mediaUrl = IoUtils.toUrl(mediaMarkupResult.getMarkupUri());
+        int slashPos = mediaUrl.getPath().lastIndexOf('/');
+        String fileName = mediaUrl.getPath().substring(1 + slashPos);
+        if (fileName.isEmpty()) {
+            fileName = "markup_file";
+        }
+        URLConnection urlConnection = mediaUrl.openConnection();
+        try (InputStream inputStream = urlConnection.getInputStream()) {
+            writeFileToResponse(urlConnection.getContentType(), fileName, urlConnection.getContentLength(),
+                                inputStream, response);
         }
     }
 
+
+    private static void writeFileToResponse(String mimeType, String fileName, long contentLength,
+                                            InputStream inputStream, HttpServletResponse response) throws IOException {
+        if (mimeType == null) {
+            response.setContentType("application/octet-stream");
+        }
+        else {
+            response.setContentType(mimeType);
+        }
+        response.setHeader("Content-Disposition", String.format("attachment; filename=\"%s\"", fileName));
+        if (contentLength > 0 && contentLength < Integer.MAX_VALUE) {
+            response.setContentLength((int) contentLength);
+        }
+
+        IOUtils.copy(inputStream, response.getOutputStream());
+        response.flushBuffer();
+    }
 }

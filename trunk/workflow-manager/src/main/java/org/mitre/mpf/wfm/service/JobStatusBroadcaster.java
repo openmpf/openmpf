@@ -24,25 +24,48 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.interop;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+package org.mitre.mpf.wfm.service;
 
-@JsonTypeName("OutputObjectSummary")
-public class JsonOutputObjectSummary {
+import org.mitre.mpf.mvc.controller.AtmosphereController;
+import org.mitre.mpf.mvc.model.JobStatusMessage;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.springframework.stereotype.Service;
 
-	@JsonProperty("detectionOutputObjectPath")
-	@JsonPropertyDescription("The path to the detection output object for this job.")
-	private String detectionOutputObjectPath;
-	public String getDetectionOutputObjectPath() { return detectionOutputObjectPath; }
+import javax.inject.Inject;
+import java.util.Date;
+
+@Service
+public class JobStatusBroadcaster {
+
+    private final PropertiesUtil _propertiesUtil;
+
+    @Inject
+    JobStatusBroadcaster(PropertiesUtil propertiesUtil) {
+        _propertiesUtil = propertiesUtil;
+    }
 
 
+    public void broadcast(long jobId, double progress, BatchJobStatusType jobStatus) {
+        broadcast(jobId, progress, jobStatus, null);
+    }
 
-	@JsonCreator
-	public JsonOutputObjectSummary(@JsonProperty("detectionOutputObjectPath") String detectionOutputObjectPath) {
-		this.detectionOutputObjectPath = detectionOutputObjectPath;
-	}
+    public void broadcast(long jobId, double progress, BatchJobStatusType jobStatus, Date endDate) {
+        if (_propertiesUtil.isBroadcastJobStatusEnabled()) {
+            AtmosphereController.broadcast(new JobStatusMessage(jobId, progress, jobStatus, endDate));
+        }
+    }
+
+
+    public void broadcast(long jobId, double progress, StreamingJobStatusType jobStatus) {
+        broadcast(jobId, progress, jobStatus, null);
+    }
+
+    public void broadcast(long jobId, double progress, StreamingJobStatusType jobStatus, Date endDate) {
+        if (_propertiesUtil.isBroadcastJobStatusEnabled()) {
+            AtmosphereController.broadcast(new JobStatusMessage(jobId, progress, jobStatus, endDate));
+        }
+    }
 }

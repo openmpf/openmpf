@@ -52,6 +52,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.*;
 
+import static org.junit.Assert.assertEquals;
+
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
 @RunListener.ThreadSafe
@@ -260,4 +262,26 @@ public class TestTrackMergingProcessor {
         Assert.assertEquals(0, redis.getTracks(jobId, mediaId, 0, 0).size());
     }
 
+
+    @Test
+    public void testTrackLevelInfoRetainedAfterMerge() {
+        Track track1 = new Track(123, 1, 1, 1, 1, 1, "type", 0.25f);
+        track1.getTrackProperties().put("track1_only_prop", "track1_only_val");
+        track1.getTrackProperties().put("same_value_prop", "same_value_val");
+        track1.getTrackProperties().put("diff_value_prop", "diff_value_val1");
+
+        Track track2 = new Track(123, 1, 1, 1, 1, 1, "type", 0.75f);
+        track2.getTrackProperties().put("track2_only_prop", "track2_only_val");
+        track2.getTrackProperties().put("same_value_prop", "same_value_val");
+        track2.getTrackProperties().put("diff_value_prop", "diff_value_val2");
+
+        Track merged = TrackMergingProcessor.merge(track1, track2);
+        assertEquals(merged.getConfidence(), 0.75, 0.01);
+
+        SortedMap<String, String> mergedProps = merged.getTrackProperties();
+        assertEquals("track1_only_val", mergedProps.get("track1_only_prop"));
+        assertEquals("track2_only_val", mergedProps.get("track2_only_prop"));
+        assertEquals("same_value_val", mergedProps.get("same_value_prop"));
+        assertEquals("diff_value_val1; diff_value_val2", mergedProps.get("diff_value_prop"));
+    }
 }

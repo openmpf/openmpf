@@ -31,10 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -57,6 +54,7 @@ public class SystemMessage {
     private long id;
 
     @ApiModelProperty( value="The message.", position=1 )
+    @Column(columnDefinition = "TEXT")
     private String msg;
 
     @ApiModelProperty( value="The severity of the message", allowableValues = "info, warning, error", position=1 )

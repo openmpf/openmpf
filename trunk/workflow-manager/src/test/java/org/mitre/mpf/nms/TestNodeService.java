@@ -83,7 +83,7 @@ public class TestNodeService {
         nodeManagerModelList.add(newNode);
 
         // Can we commit the new node through the service?
-        Assert.assertTrue(nodeManagerService.saveNodeManagerConfig(nodeManagerModelList));
+        Assert.assertTrue(nodeManagerService.saveAndReloadNodeManagerConfig(nodeManagerModelList));
 
         // Extra credit! Can we confirm the call to getNodeManagerModels increments by 1 after the add?
         nodeManagerModelList = nodeManagerService.getNodeManagerModels();
@@ -99,7 +99,7 @@ public class TestNodeService {
 
         Assert.assertTrue(nodeManagerModelList.remove(nodeManagerModel));
 
-        Assert.assertTrue(nodeManagerService.saveNodeManagerConfig(nodeManagerModelList));
+        Assert.assertTrue(nodeManagerService.saveAndReloadNodeManagerConfig(nodeManagerModelList));
         int removedNodeCount = nodeManagerModelList.size();
 
         // Result should equal the original count (because we added and removed one node)
@@ -129,7 +129,7 @@ public class TestNodeService {
 
         nodeManagerModel.setServices(serviceModelList);
 
-        Assert.assertTrue(nodeManagerService.saveNodeManagerConfig(nodeManagerModels));
+        Assert.assertTrue(nodeManagerService.saveAndReloadNodeManagerConfig(nodeManagerModels));
 
         nodeManagerStatus.reloadNodeManagerConfig();
 
@@ -164,7 +164,7 @@ public class TestNodeService {
         serviceModel.setServiceCount(origServiceModelCount); // remove new instance
         nodeManagerModel.setServices(serviceModelList);
 
-        Assert.assertTrue(nodeManagerService.saveNodeManagerConfig(nodeManagerModels));
+        Assert.assertTrue(nodeManagerService.saveAndReloadNodeManagerConfig(nodeManagerModels));
 
         nodeManagerStatus.reloadNodeManagerConfig();
 

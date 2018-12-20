@@ -45,7 +45,7 @@ log() {
         if [ `whoami` == ${MPF_USER} ] ; then
             echo -e "$(date +"%Y-%m-%d %H:%M:%S,%3N") ${log_level} - ${log_text}" >> ${log_file}
         else
-            su - ${MPF_USER} -c "echo -e \"$(date +"%Y-%m-%d %H:%M:%S,%3N") ${log_level} - ${log_text}\" >> \"${log_file}\""
+            su ${MPF_USER} -c "echo -e \"$(date +"%Y-%m-%d %H:%M:%S,%3N") ${log_level} - ${log_text}\" >> \"${log_file}\""
         fi
     fi
 

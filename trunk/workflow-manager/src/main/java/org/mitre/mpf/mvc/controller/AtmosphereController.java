@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -155,8 +156,11 @@ public class AtmosphereController {
 	
 	/** very generic wrapper to Braodcaster.broadcast()
 	 *  	this method should be called when an event has happened that needs to be broadcasted to the clients */
-	public static void broadcast(AtmosphereChannel channel, String event, HashMap content) {
+	public static void broadcast(AtmosphereChannel channel, String event, Map<String, Object> content) {
 		broadcast(new AtmosphereMessage(channel, event, content));
 	}
 
+	public static void broadcast(AtmosphereChannel channel) {
+		broadcast(new AtmosphereMessage(channel, channel.name()));
+	}
 }

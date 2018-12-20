@@ -41,7 +41,7 @@
             // This propertiesResource.update call uses the /properties REST endpoint (method: PUT)
             // defined in AdminPropertySettingsController to save the system properties. The system properties are
             // passed as a List of Java org.mitre.mpf.mvc.model.PropertyModel objects to the mpf properties file. i.e. will save the system properties to the properties file.
-            var propertiesResource = $resource('properties', {}, {
+            var propertiesResource = $resource('properties/:propertyName', {}, {
                 update: {
                     method: 'PUT',
                     isArray: true
@@ -63,9 +63,12 @@
             var serverProperties = {};
 
             return {
-
                 serverNeedsRestart: function () {
                     return _.some(serverProperties, 'needsRestart'); // filters out native JS properties
+                },
+
+                get: function (propertyName) {
+                    return propertiesResource.get({propertyName: propertyName});
                 },
 
                 // Get the list of all mutable system properties.

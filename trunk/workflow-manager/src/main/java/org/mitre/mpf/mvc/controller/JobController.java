@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.*;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
@@ -40,28 +41,31 @@ import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.exceptions.InvalidPipelineObjectWfmProcessingException;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.NoSuchFileException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
-import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 // swagger includes
@@ -149,18 +153,48 @@ public class JobController {
         }
     }
 
-    //INTERNAL
+
+    private static final Map<String, Comparator<SingleJobInfo>> JOB_TABLE_COLUMN_ORDERINGS
+            = ImmutableMap.<String, Comparator<SingleJobInfo>>builder()
+            .put("0", nullsFirstCompare(SingleJobInfo::getJobId))
+            .put("1", nullsFirstCompare(SingleJobInfo::getPipelineName))
+            .put("2", nullsFirstCompare(SingleJobInfo::getStartDate))
+            .put("3", nullsLastCompare(SingleJobInfo::getEndDate))
+            .put("4", nullsFirstCompare(SingleJobInfo::getJobStatus))
+            .put("5", Comparator.comparingInt(SingleJobInfo::getJobPriority))
+            .build();
+
+    private static <T, U extends Comparable<U>> Comparator<T> nullsFirstCompare(Function<T, U> keyExtractor) {
+        return Comparator.comparing(keyExtractor, Comparator.nullsFirst(Comparator.naturalOrder()));
+    }
+
+    private static <T, U extends Comparable<U>> Comparator<T> nullsLastCompare(Function<T, U> keyExtractor) {
+        return Comparator.comparing(keyExtractor, Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    private static void sortJobs(List<SingleJobInfo> jobs, String orderByColumn, String orderDirection) {
+        Comparator<SingleJobInfo> comparator = JOB_TABLE_COLUMN_ORDERINGS.get(orderByColumn);
+        if (orderDirection.equalsIgnoreCase("desc")) {
+            comparator = comparator.reversed();
+        }
+        jobs.sort(comparator);
+    }
+
+    // INTERNAL
+    // Parameters come from DataTables library: https://datatables.net/manual/server-side
     @RequestMapping(value = {"/jobs-paged"}, method = RequestMethod.POST)
     @ResponseBody
-    public JobPageListModel getJobStatusFiltered(@RequestParam(value = "draw", required = false) int draw,
-                                                 @RequestParam(value = "start", required = false) int start,
-                                                 @RequestParam(value = "length", required = false) int length,
-                                                 @RequestParam(value = "search", required = false) String search,
-                                                 @RequestParam(value = "sort", required = false) String sort) {
-        log.debug("Params draw:{} start:{},length:{},search:{},sort:{} ", draw, start, length, search, sort);
+    public JobPageListModel getJobStatusFiltered(
+            @RequestParam(value = "draw", required = false) int draw,
+            @RequestParam(value = "start", required = false) int start,
+            @RequestParam(value = "length", required = false) int length,
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "order[0][column]", defaultValue = "0") String orderByColumn,
+            @RequestParam(value = "order[0][dir]", defaultValue = "desc") String orderDirection) {
+        log.debug("Params draw:{} start:{},length:{},search:{}", draw, start, length, search);
 
         List<SingleJobInfo> jobInfoModels = getJobStatus(false);
-        Collections.reverse(jobInfoModels);//newest first
+        int recordsTotal = jobInfoModels.size();
 
         //handle search
         DateFormat df = new SimpleDateFormat("MM/dd/yyyy hh:mm a");
@@ -180,14 +214,18 @@ public class JobController {
             }
             jobInfoModels = search_results;
         }
+        sortJobs(jobInfoModels, orderByColumn, orderDirection);
 
         JobPageListModel model = new JobPageListModel();
-        model.setRecordsTotal(jobInfoModels.size());
-        model.setRecordsFiltered(jobInfoModels.size());// Total records, after filtering (i.e. the total number of records after filtering has been applied - not just the number of records being returned for this page of data).
+        // Total records, before filtering (i.e. the total number of records in the database)
+        model.setRecordsTotal(recordsTotal);
+        // Total records, after filtering (i.e. the total number of records after filtering has been applied -
+        // not just the number of records being returned for this page of data).
+        model.setRecordsFiltered(jobInfoModels.size());
 
         //handle paging
         int end = start + length;
-        end = (end > model.getRecordsTotal()) ? model.getRecordsTotal() : end;
+        end = (end > jobInfoModels.size()) ? jobInfoModels.size() : end;
         start = (start <= end) ? start : end;
         List<SingleJobInfo> jobInfoModelsFiltered = jobInfoModels.subList(start, end);
 
@@ -198,14 +236,17 @@ public class JobController {
             List<MarkupResult> markupResults = mpfService.getMarkupResultsForJob(job.getJobId());
             job_model.setMarkupCount(markupResults.size());
             if(job_model.getOutputObjectPath() != null) {
-                File f = new File(job_model.getOutputObjectPath());
-                job_model.outputFileExists = (f != null && f.exists());
+                job_model.outputFileExists
+                        = IoUtils.toLocalPath(job_model.getOutputObjectPath())
+                            .map(Files::exists)
+                            .orElse(true);
             }
             model.addData(job_model);
         }
 
         return model;
     }
+
 
     /*
      * GET /jobs/{id}
@@ -249,7 +290,8 @@ public class JobController {
      * GET /jobs/{id}/output/detection
      */
     //EXTERNAL
-    @RequestMapping(value = "/rest/jobs/{id}/output/detection", method = RequestMethod.GET)
+    @RequestMapping(value = { "/rest/jobs/{id}/output/detection", "/jobs/{id}/output/detection"},
+                    method = RequestMethod.GET)
     @ApiOperation(value = "Gets the JSON detection output object of a specific job using the job id as a required path variable.",
             produces = "application/json", response = JsonOutputObject.class)
     @ApiResponses({
@@ -259,28 +301,28 @@ public class JobController {
     @ResponseBody
     public ResponseEntity<?> getSerializedDetectionOutputRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) throws IOException {
         //return 200 for successful GET and object; 404 for bad id
-        return getJobOutputObjectAsString(jobId)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+        JobRequest jobRequest = mpfService.getJobRequest(jobId);
+        if (jobRequest == null) {
+            return ResponseEntity.notFound().build();
+        }
+        try {
+            InputStreamResource inputStreamResource
+                    = new InputStreamResource(IoUtils.openStream(jobRequest.getOutputObjectPath()));
+            return ResponseEntity.ok(inputStreamResource);
+        }
+        catch (NoSuchFileException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(String.format("The output object for job %s does not exist.", jobId));
+        }
     }
+
 
     //INTERNAL
     @RequestMapping(value = "/jobs/output-object", method = RequestMethod.GET)
-    public ModelAndView getOutputObject(@RequestParam(value = "id", required = true) long idParam) throws IOException {
-        return getJobOutputObjectAsString(idParam)
-                .map(jsonStr -> new ModelAndView("output_object", "jsonObj", jsonStr))
-                .orElseThrow(() -> new IllegalStateException(idParam + " does not appear to be a valid Job Id."));
+    public ModelAndView getOutputObject(@RequestParam(value = "id", required = true) long idParam) {
+        return new ModelAndView("output_object", "jobId", idParam);
     }
 
-    private Optional<String> getJobOutputObjectAsString(long jobId) throws IOException {
-        JobRequest jobRequest = mpfService.getJobRequest(jobId);
-        if (jobRequest == null) {
-            return Optional.empty();
-        }
-        try (Stream<String> lines = Files.lines(Paths.get(jobRequest.getOutputObjectPath()))) {
-            return Optional.of(lines.collect(joining()));
-        }
-    }
 
     /*
      * POST /jobs/{id}/resubmit

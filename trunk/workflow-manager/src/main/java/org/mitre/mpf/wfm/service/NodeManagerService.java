@@ -55,13 +55,15 @@ public interface NodeManagerService {
 
     public boolean setServiceModels(Map<String, ServiceModel> nodeManagerFilePaletteMap);
 
-    public boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels) throws IOException;
-
-    public boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels, boolean reload) throws IOException;
-
+    public boolean saveAndReloadNodeManagerConfig(List<NodeManagerModel> nodeManagerModels) throws IOException;
+    
     public Set<String> getCoreNodes();
 
     public boolean isCoreNode(String host);
 
     public Set<String> getAvailableNodes();
+
+    public void autoConfigureNewNode(String host) throws IOException;
+
+    public void unconfigureIfAutoConfiguredNode(String host) throws IOException;
 }

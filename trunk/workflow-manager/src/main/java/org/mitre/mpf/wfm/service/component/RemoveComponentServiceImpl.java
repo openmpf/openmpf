@@ -265,7 +265,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
                     .removeIf(sm -> sm.getServiceName().equals(serviceName));
         }
         try {
-            nodeManagerService.saveNodeManagerConfig(nodeModels);
+            nodeManagerService.saveAndReloadNodeManagerConfig(nodeModels);
         }
         catch (IOException ex) {
             throw new IllegalStateException("Failed to save node manager config", ex);

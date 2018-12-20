@@ -49,6 +49,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
+
 
 @Component(RedisImpl.REF)
 public class RedisImpl implements Redis {
@@ -57,7 +59,7 @@ public class RedisImpl implements Redis {
     private static final Logger log = LoggerFactory.getLogger(RedisImpl.class);
 
     @Autowired
-    private RedisTemplate redisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Autowired
     private JsonUtils jsonUtils;
@@ -106,7 +108,8 @@ public class RedisImpl implements Redis {
             ACTIVITY_FRAME_ID = "ACTIVITY_FRAME_ID",
             ACTIVITY_TIMESTAMP = "ACTIVITY_TIMESTAMP",
             SUMMARY_REPORT_CALLBACK_URI = "SUMMARY_REPORT_CALLBACK_URI",
-            DO_CLEANUP = "DO_CLEANUP";
+            DO_CLEANUP = "DO_CLEANUP",
+            WARNINGS = "WARNINGS";
 
     /**
      * Creates a "key" from one or more components. This is a convenience method for creating
@@ -251,7 +254,9 @@ public class RedisImpl implements Redis {
             }
 
             redisTemplate.boundSetOps(BATCH_JOB).remove(Long.toString(jobId));
-            redisTemplate.delete(key(BATCH_JOB, jobId));
+            redisTemplate.delete(Arrays.asList(key(BATCH_JOB, jobId),
+                                               jobWarningsKey(jobId),
+                                               jobErrorsKey(jobId)));
             for ( TransientMedia transientMedia : transientJob.getMedia() ) {
                 redisTemplate.delete(key(BATCH_JOB, jobId, MEDIA, transientMedia.getId()));
                 if ( transientJob.getPipeline() != null ) {
@@ -578,7 +583,7 @@ public class RedisImpl implements Redis {
         } else if ( isJobTypeBatch(jobId) ) {
             // The batch job is known to the system and should be retrievable.
             // Get the hash containing the job properties.
-            Map<String, Object> jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
+            Map<Object, Object> jobHash = redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).entries();
 
             TransientJob transientJob = new TransientJob(jobId,
                     (String) (jobHash.get(EXTERNAL_ID)),
@@ -636,7 +641,7 @@ public class RedisImpl implements Redis {
         if (isJobTypeStreaming(jobId)) {
             // The streaming job is known to the system and should be retrievable.
             // Get the hash containing the job properties.
-            Map<String, Object> jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId))
+            Map<Object, Object> jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId))
                 .entries();
 
             TransientStreamingJob transientStreamingJob = new TransientStreamingJob(jobId,
@@ -1300,5 +1305,52 @@ public class RedisImpl implements Redis {
             log.warn("Job #{} was not found as a batch or a streaming job so we can't return the doCleanup flag (returning false).", jobId);
             return false;
         }
+    }
+
+    @Override
+    public void addJobWarning(long jobId, String message) {
+        redisTemplate.boundSetOps(jobWarningsKey(jobId))
+                .add(message);
+    }
+
+    @Override
+    public Set<String> getJobWarnings(long jobId) {
+        return getStringSet(jobWarningsKey(jobId));
+    }
+
+    private String jobWarningsKey(long jobId) {
+        return key(BATCH_JOB, jobId, WARNINGS);
+    }
+
+    @Override
+    public void addJobError(long jobId, String message) {
+        redisTemplate.boundSetOps(jobErrorsKey(jobId))
+                .add(message);
+    }
+
+    @Override
+    public Set<String> getJobErrors(long jobId) {
+        return getStringSet(jobErrorsKey(jobId));
+    }
+
+    private String jobErrorsKey(long jobId) {
+        return key(BATCH_JOB, jobId, ERRORS);
+    }
+
+    private Set<String> getStringSet(String key) {
+        return redisTemplate.boundSetOps(key)
+                .members()
+                .stream()
+                .map(Object::toString)
+                .collect(toSet());
+
+    }
+
+
+    @Override
+    public TransientDetectionSystemProperties getPropertiesSnapshot(long jobId) {
+        byte[] snapshotBytes = (byte[]) redisTemplate.boundHashOps(key(BATCH_JOB, jobId))
+                .get(DETECTION_SYSTEM_PROPERTIES_SNAPSHOT);
+        return jsonUtils.deserialize(snapshotBytes, TransientDetectionSystemProperties.class);
     }
 }

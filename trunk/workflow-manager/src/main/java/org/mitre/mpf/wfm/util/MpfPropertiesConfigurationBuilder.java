@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.util;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.configuration2.*;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
@@ -43,7 +44,22 @@ import java.util.*;
 @Component
 public class MpfPropertiesConfigurationBuilder {
 
-    public static final String DETECTION_KEY_PREFIX = "detection.";
+    private static final Collection<String> MUTABLE_PREFIXES = ImmutableList.of(
+            "detection.",
+            "remote.media.download.",
+            "node.auto.",
+            "http.object.storage.",
+            "mpf.output.objects.",
+            "web.broadcast.job.status.enabled",
+            "web.job.polling.interval"
+    );
+
+    private static final Collection<String> SNAPSHOT_PREFIXES = ImmutableList.of(
+            "detection.",
+            "http.object.storage.type",
+            "http.object.storage.service_uri",
+            "mpf.output.objects.exemplars.only",
+            "mpf.output.objects.last.stage.only");
 
     @javax.annotation.Resource(name="customPropFile")
     private FileSystemResource customPropFile;
@@ -95,8 +111,8 @@ public class MpfPropertiesConfigurationBuilder {
             // update all properties that will be written to disk
             tmpMpfCustomPropertiesConfig.setProperty(key, value);
 
-            // update only the detection.* values in the composite config used by the WFM
-            if (key.startsWith(DETECTION_KEY_PREFIX)) {
+            // update only the mutable properties in the composite config used by the WFM
+            if (isMutableProperty(key)) {
                 mpfCustomPropertiesConfig.setProperty(key, value);
             }
         }
@@ -218,5 +234,13 @@ public class MpfPropertiesConfigurationBuilder {
         ConfigurationUtils.copy(mpfCompositeConfig, tmpConfig);
 
         mpfConfigSnapshot = tmpConfig;
+    }
+
+    public static boolean propertyRequiresSnapshot(String key) {
+        return SNAPSHOT_PREFIXES.stream().anyMatch(key::startsWith);
+    }
+
+    public static boolean isMutableProperty(String key) {
+        return MUTABLE_PREFIXES.stream().anyMatch(key::startsWith);
     }
 }

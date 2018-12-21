@@ -103,18 +103,6 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>make empty log directory under install</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <mkdir dir="${basedir}/../install/log"/>
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <id>make empty tmp directory under install</id>
                         <phase>package</phase>
                         <goals>

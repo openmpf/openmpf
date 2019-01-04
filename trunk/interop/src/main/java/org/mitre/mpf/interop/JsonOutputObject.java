@@ -99,10 +99,12 @@ public class JsonOutputObject {
 	public SortedSet<JsonMediaOutputObject> getMedia() { return media; }
 
 	@JsonProperty("jobErrors")
+	@JsonPropertyDescription("The collection of error messages generated during job execution.")
 	private SortedSet<String> jobErrors;
 	public SortedSet<String> getJobErrors() { return jobErrors; }
 
 	@JsonProperty("jobWarnings")
+	@JsonPropertyDescription("The collection of warning messages generated during job execution.")
 	private SortedSet<String> jobWarnings;
 	public SortedSet<String> getJobWarnings() { return jobWarnings; }
 

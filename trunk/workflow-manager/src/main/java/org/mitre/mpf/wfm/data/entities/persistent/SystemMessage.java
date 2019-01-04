@@ -27,13 +27,11 @@
 package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 import javax.persistence.*;
 import java.time.Instant;
-import java.util.HashMap;
 
 @ApiModel( description="The model for a System Message" )
 @Entity
@@ -112,12 +110,6 @@ public class SystemMessage {
 //        setMsgID( id );
 //        setMsg(( msg ));
 //    }
-
-    public HashMap<String,String> toHashMap()  {
-        ObjectMapper m = new ObjectMapper();
-        HashMap<String,String> props = m.convertValue(this, HashMap.class);
-        return props;
-    }
 
     public long getId() {
         return id;

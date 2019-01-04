@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.service.component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.mitre.mpf.wfm.pipeline.xml.ValueType;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 
 import java.io.IOException;
 import java.net.URL;
@@ -36,6 +37,8 @@ import java.net.URL;
 import static org.junit.Assert.*;
 
 public class TestJsonDescriptor {
+
+    private static final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
 
     @Test
     public void canParseJsonDescriptorForCppComponent() throws IOException {
@@ -141,7 +144,6 @@ public class TestJsonDescriptor {
 
     private JsonComponentDescriptor loadDescriptor(String fileName) throws IOException {
         URL resource = getClass().getClassLoader().getResource(fileName);
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(resource, JsonComponentDescriptor.class);
+        return _objectMapper.readValue(resource, JsonComponentDescriptor.class);
     }
 }

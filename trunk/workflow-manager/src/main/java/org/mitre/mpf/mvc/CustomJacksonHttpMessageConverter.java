@@ -37,7 +37,8 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 
 // Spring's built-in MappingJackson2HttpMessageConverter does not allow you to configure the ObjectMapper that it uses.
-// This class ensures that classes that use ObjectMapper explicitly and controllers all use the same ObjectMapper.
+// Classes annotated with @Controller will use this class. This class ensures that those controllers,
+// and classes that explicitly use ObjectMapper, all use the same ObjectMapper instance.
 @Component
 public class CustomJacksonHttpMessageConverter extends MappingJackson2HttpMessageConverter {
 

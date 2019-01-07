@@ -26,10 +26,11 @@
 
 package org.mitre.mpf.wfm.enums;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.commons.lang3.StringUtils;
 
 // BatchJobStatusType enumeration describes all possible job status conditions applicable to a batch job.
 public enum BatchJobStatusType {
@@ -46,7 +47,7 @@ public enum BatchJobStatusType {
 
     /**
      * Indicates that a job was received, but a job could not be created from the contents of
-     * the request.
+     * the request. For example, this is used when an invalid pipeline is specified.
      */
     JOB_CREATION_ERROR(true),
 
@@ -101,7 +102,8 @@ public enum BatchJobStatusType {
     CANCELLED(true),
 
     /**
-     * Indicates the job is in an error state.
+     * Indicates the job is in an error state. This is used for unknown/unrecoverable
+     * errors, and when a piece of media is not available or cannot be retrieved.
      */
     ERROR(true);
 

@@ -1086,7 +1086,7 @@
                 <configuration>
                     <filesets>
                         <fileset>
-                            <directory>${env.MPF_HOME}/data</directory>
+                            <directory>${env.MPF_HOME}/share/data</directory>
                             <includes>
                                 <include>nodeManagerConfig.xml</include>
                                 <include>nodeServicesPalette.json</include>
@@ -1098,7 +1098,7 @@
                             </includes>
                         </fileset>
                         <fileset>
-                            <directory>${env.MPF_HOME}/config</directory>
+                            <directory>${env.MPF_HOME}/share/config</directory>
                             <includes>
                                 <include>mediaType.properties</include>
                                 <include>mpf-custom.properties</include>

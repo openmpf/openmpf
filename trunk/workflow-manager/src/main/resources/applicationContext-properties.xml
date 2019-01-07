@@ -34,11 +34,11 @@
                            http://www.springframework.org/schema/util/spring-util.xsd">
 
     <bean id="customPropFile" class="org.springframework.core.io.FileSystemResource">
-        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/config/mpf-custom.properties</value></constructor-arg>
+        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/share/config/mpf-custom.properties</value></constructor-arg>
     </bean>
 
     <bean id="mediaTypesFile" class="org.springframework.core.io.FileSystemResource">
-        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/config/mediaType.properties</value></constructor-arg>
+        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/share/config/mediaType.properties</value></constructor-arg>
     </bean>
 
     <beans profile="default">

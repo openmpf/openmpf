@@ -40,7 +40,7 @@ export no_proxy=localhost
 
 export MPF_USER=mpf
 export MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
-export MPF_LOG_PATH=$MPF_HOME/logs
+export MPF_LOG_PATH=$MPF_HOME/share/logs
 export MASTER_MPF_NODE=$HOSTNAME
 export THIS_MPF_NODE=$HOSTNAME
 export CORE_MPF_NODES=$THIS_MPF_NODE

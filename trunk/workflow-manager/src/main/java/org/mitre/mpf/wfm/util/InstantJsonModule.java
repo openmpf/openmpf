@@ -27,18 +27,48 @@
 
 package org.mitre.mpf.wfm.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import org.mitre.mpf.interop.util.TimeUtils;
 
-@Configuration
-public class ObjectMapperFactory {
+import java.io.IOException;
+import java.time.Instant;
 
-    @Bean
-    public static ObjectMapper customObjectMapper() {
-        return Jackson2ObjectMapperBuilder.json()
-                .modules(new InstantJsonModule())
-                .build();
+
+public final class InstantJsonModule extends SimpleModule {
+
+    public InstantJsonModule() {
+        addSerializer(new InstantSerializer());
+        addDeserializer(Instant.class, new InstantDeserializer());
+    }
+
+
+    private static class InstantSerializer extends StdSerializer<Instant> {
+        public InstantSerializer() {
+            super(Instant.class);
+        }
+
+        @Override
+        public void serialize(Instant value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+            gen.writeString(TimeUtils.toIsoString(value));
+        }
+    }
+
+
+    private static class InstantDeserializer extends StdDeserializer<Instant> {
+        public InstantDeserializer() {
+            super(Instant.class);
+        }
+
+        @Override
+        public Instant deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
+            String text = parser.getText();
+            return TimeUtils.toInstant(text);
+        }
     }
 }

@@ -70,6 +70,7 @@ public class JsonUtils {
     @PostConstruct
     private void init() {
         smileObjectMapper = new ObjectMapper(new SmileFactory());
+        smileObjectMapper.registerModule(new InstantJsonModule());
     }
 
     /** Parses the provided smile binary JSON object as an instance of the specified type or throws an exception if this conversion cannot be performed. */

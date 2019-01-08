@@ -56,7 +56,7 @@ public class SwaggerConfig {
             //  alternative is any(), but that defaults to somewhat useless autogen documentation
             .apis(RequestHandlerSelectors.withMethodAnnotation(
                 io.swagger.annotations.ApiOperation.class))
-            .paths(PathSelectors.any())
+            .paths(PathSelectors.ant("/rest/**"))
             .build()
             // list classes to be ignored in parameters (useful for optional internal parameters)
             .ignoredParameterTypes(javax.servlet.http.HttpSession.class)

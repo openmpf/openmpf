@@ -68,6 +68,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.IntStream;
@@ -158,7 +159,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 				}
 			}
 
-			jobStatusBroadcaster.broadcast(jobId, 100, jobStatus.getValue(), new Date());
+			jobStatusBroadcaster.broadcast(jobId, 100, jobStatus.getValue(), Instant.now());
 			jobProgressStore.setJobProgress(jobId, 100.0f);
 			log.info("[Job {}:*:*] Job complete!", jobId);
 		}
@@ -185,7 +186,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		JobRequest jobRequest = jobRequestDao.findById(jobId);
 		assert jobRequest != null : String.format("A job request entity must exist with the ID %d", jobId);
 
-		jobRequest.setTimeCompleted(new Date());
+		jobRequest.setTimeCompleted(Instant.now());
 		jobRequest.setStatus(jobStatus);
 		jobRequestDao.persist(jobRequest);
 	}
@@ -199,14 +200,15 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			jobStatus.setValue(BatchJobStatusType.CANCELLED);
 		}
 
-		JsonOutputObject jsonOutputObject = new JsonOutputObject(jobRequest.getId(),
+		JsonOutputObject jsonOutputObject = new JsonOutputObject(
+				jobRequest.getId(),
 				UUID.randomUUID().toString(),
-                jsonUtils.convert(transientJob.getPipeline()),
+				jsonUtils.convert(transientJob.getPipeline()),
 				transientJob.getPriority(),
 				propertiesUtil.getSiteId(),
 				transientJob.getExternalId(),
-				jobRequest.getTimeReceived().toString(),
-				jobRequest.getTimeCompleted().toString(),
+				jobRequest.getTimeReceived(),
+				jobRequest.getTimeCompleted(),
 				jobStatus.getValue().toString());
 
 		if (transientJob.getOverriddenJobProperties() != null) {

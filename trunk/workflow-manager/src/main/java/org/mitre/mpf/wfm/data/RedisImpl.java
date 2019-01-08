@@ -45,7 +45,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -982,7 +982,7 @@ public class RedisImpl implements Redis {
      */
     @Override
     @SuppressWarnings("unchecked")
-    public synchronized void setStreamingActivity(long jobId, long activityFrameId, LocalDateTime activityTimestamp) throws WfmProcessingException {
+    public synchronized void setStreamingActivity(long jobId, long activityFrameId, Instant activityTimestamp) throws WfmProcessingException {
         if ( isJobTypeStreaming(jobId) ) {
             if ( activityTimestamp == null ) {
                 String errorMsg = "Illegal: Can't set streaming activity timestamp to null for streaming job #" + jobId + ".";
@@ -1043,10 +1043,10 @@ public class RedisImpl implements Redis {
      */
     @Override
     @SuppressWarnings("unchecked")
-    public synchronized LocalDateTime getActivityTimestamp(long jobId) throws WfmProcessingException {
+    public synchronized Instant getActivityTimestamp(long jobId) throws WfmProcessingException {
         if ( isJobTypeStreaming(jobId) ) {
             Map jobHash = redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).entries();
-            return (LocalDateTime) jobHash.get(ACTIVITY_TIMESTAMP);
+            return (Instant) jobHash.get(ACTIVITY_TIMESTAMP);
         } else {
             String errorMsg = "Error: Job #" + jobId + " is not a streaming job, so we can't get the activity timestamp.";
             log.error(errorMsg);
@@ -1061,8 +1061,8 @@ public class RedisImpl implements Redis {
      */
     @Override
     public synchronized String getActivityTimestampAsString(long jobId) throws WfmProcessingException {
-        LocalDateTime timestamp = getActivityTimestamp(jobId);
-        return TimeUtils.getLocalDateTimeAsString(timestamp);
+        Instant timestamp = getActivityTimestamp(jobId);
+        return TimeUtils.toIsoString(timestamp);
     }
 
     /** This method is the same as {@link #getActivityTimestamp(long)}, it's just adapted for use with Lists.
@@ -1071,7 +1071,7 @@ public class RedisImpl implements Redis {
      * @throws WfmProcessingException
      */
     @Override
-    public synchronized List<LocalDateTime> getActivityTimestamps(List<Long> jobIds) throws WfmProcessingException {
+    public synchronized List<Instant> getActivityTimestamps(List<Long> jobIds) throws WfmProcessingException {
         return jobIds.stream().map(this::getActivityTimestamp).collect(Collectors.toList());
     }
 

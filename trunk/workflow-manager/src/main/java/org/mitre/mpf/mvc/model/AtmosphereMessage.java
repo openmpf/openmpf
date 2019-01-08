@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.mvc.model;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Map;
 
 /** Generic Message class for server-side push using Atmosphere.  For more information on 
@@ -41,7 +41,7 @@ public class AtmosphereMessage {
 	
 	/** timestamp for when the message is created, which may be different than when the event happened or when 
 	 * it is broadcasted) */
-	private Date timestamp;
+	private Instant timestamp;
 	
 	/** the JSON content of the message, stored as a String representation of JSON */
 	private Map<String, ?> content;
@@ -49,7 +49,7 @@ public class AtmosphereMessage {
 	public AtmosphereMessage( AtmosphereChannel channel, String event )  {
 		this.channel = channel;
 		this.event = event;
-		this.timestamp = new Date();
+		this.timestamp = Instant.now();
 	}	
 
 	public AtmosphereMessage( AtmosphereChannel channel, String event, Map<String, ?> dataMap ) {
@@ -65,11 +65,11 @@ public class AtmosphereMessage {
 		return event;
 	}
 
-	public Date getTimestamp() {
+	public Instant getTimestamp() {
 		return timestamp;
 	}
 
-	public void setTimestamp(Date timestamp) {
+	public void setTimestamp(Instant timestamp) {
 		this.timestamp = timestamp;
 	}
 

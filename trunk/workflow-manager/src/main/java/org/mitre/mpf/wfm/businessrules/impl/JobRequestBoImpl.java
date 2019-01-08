@@ -56,7 +56,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.util.FileSystemUtils;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -338,7 +338,7 @@ public class JobRequestBoImpl implements JobRequestBo {
     private JobRequest initializeInternal(JobRequest jobRequest, JsonJobRequest jsonJobRequest) throws WfmProcessingException {
         jobRequest.setPriority(jsonJobRequest.getPriority());
         jobRequest.setStatus(BatchJobStatusType.INITIALIZED);
-        jobRequest.setTimeReceived(new Date());
+        jobRequest.setTimeReceived(Instant.now());
         jobRequest.setInputObject(jsonUtils.serialize(jsonJobRequest));
         jobRequest.setPipeline(jsonJobRequest.getPipeline() == null ? null : TextUtils.trimAndUpper(jsonJobRequest.getPipeline().getName()));
 

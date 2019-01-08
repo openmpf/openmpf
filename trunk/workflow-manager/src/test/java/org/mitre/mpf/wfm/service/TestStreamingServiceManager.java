@@ -34,6 +34,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
 import org.mitre.mpf.wfm.service.component.ComponentLanguage;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.InOrder;
 import org.springframework.core.io.FileSystemResource;
@@ -68,7 +69,7 @@ public class TestStreamingServiceManager {
 	public void init() throws IOException {
 		_mockProperties = mock(PropertiesUtil.class);
 
-		_objectMapper = spy(new ObjectMapper());
+		_objectMapper = spy(ObjectMapperFactory.customObjectMapper());
 		_objectWriter = spy(_objectMapper.writerWithDefaultPrettyPrinter());
 		when(_objectMapper.writerWithDefaultPrettyPrinter())
 				.thenReturn(_objectWriter);

@@ -25,14 +25,15 @@
  ******************************************************************************/
 package org.mitre.mpf.mvc.model;
 
-import java.util.Date;
-import java.util.HashMap;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
+import java.time.Instant;
+import java.util.HashMap;
+
 public class JobStatusMessage extends AtmosphereMessage {
 
-    private void setContent (long id, double progress, String updatedJobStatus, Date endDate) {
+    private void setContent (long id, double progress, String updatedJobStatus, Instant endDate) {
         HashMap<String, Object> datamap = new HashMap<String, Object>();
         datamap.put("id", id);
         datamap.put("progress", progress);
@@ -41,14 +42,14 @@ public class JobStatusMessage extends AtmosphereMessage {
         this.setContent(datamap);
     }
 
-    public JobStatusMessage(long id, double progress, BatchJobStatusType batchJobStatus, Date endDate) {
+    public JobStatusMessage(long id, double progress, BatchJobStatusType batchJobStatus, Instant endDate) {
         super( AtmosphereChannel.SSPC_JOBSTATUS, "OnStatusChanged" );
         // If there are job progress updates and the status is null it will be updated to IN_PROGRESS
         BatchJobStatusType updatedJobStatus = (batchJobStatus != null) ? batchJobStatus : BatchJobStatusType.IN_PROGRESS;
         setContent(id, progress, updatedJobStatus.name(), endDate);
     }
 
-    public JobStatusMessage(long id, double progress, StreamingJobStatusType streamingJobStatus, Date endDate) {
+    public JobStatusMessage(long id, double progress, StreamingJobStatusType streamingJobStatus, Instant endDate) {
         super( AtmosphereChannel.SSPC_JOBSTATUS, "OnStatusChanged" );
         // If there are job progress updates and the status is null it will be updated to IN_PROGRESS
         StreamingJobStatusType updatedJobStatus = (streamingJobStatus != null) ? streamingJobStatus : StreamingJobStatusType.IN_PROGRESS;

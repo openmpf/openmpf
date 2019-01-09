@@ -90,12 +90,7 @@ public class DetectionResponseProcessor
 			}
 
 			DetectionProcessingError detectionProcessingError = new DetectionProcessingError(jobId, detectionResponse.getMediaId(), detectionResponse.getStageIndex(), detectionResponse.getActionIndex(), detectionResponse.getStartIndex(), detectionResponse.getStopIndex(), Objects.toString(detectionResponse.getError()));
-			if(!redis.addDetectionProcessingError(detectionProcessingError)) {
-
-				// We failed to persist the detection error. The user will have no record of this error except this log message.
-				log.warn("[{}] Failed to persist {} in the transient data store. The results of this job are unreliable.", logLabel, detectionProcessingError);
-			}
-
+			redis.addDetectionProcessingError(detectionProcessingError);
 			redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
 		}
 
@@ -205,9 +200,7 @@ public class DetectionResponseProcessor
 
 				if (!track.getDetections().isEmpty()) {
 					track.setExemplar(findExemplar(track));
-					if(!redis.addTrack(track)) {
-						log.warn("Failed to add the track '{}'.", track);
-					}
+					redis.addTrack(track);
 				}
 			}
 		}
@@ -249,9 +242,7 @@ public class DetectionResponseProcessor
 
 				if (!track.getDetections().isEmpty()) {
 					track.setExemplar(findExemplar(track));
-					if(!redis.addTrack(track)) {
-						log.warn("Failed to add the track '{}'.", track);
-					}
+					redis.addTrack(track);
 				}
 			}
 		}
@@ -282,9 +273,7 @@ public class DetectionResponseProcessor
 							generateTrack(location, 0, 0));
 					if (!track.getDetections().isEmpty()) {
 						track.setExemplar(findExemplar(track));
-						if(!redis.addTrack(track)) {
-							log.warn("Failed to add the track '{}'.", track);
-						}
+						redis.addTrack(track);
 					}
 				}
 			}
@@ -327,9 +316,7 @@ public class DetectionResponseProcessor
 
 				if (!track.getDetections().isEmpty()) {
 					track.setExemplar(findExemplar(track));
-					if(!redis.addTrack(track)) {
-						log.warn("Failed to add the track '{}'.", track);
-					}
+					redis.addTrack(track);
 				}
 			}
 		}

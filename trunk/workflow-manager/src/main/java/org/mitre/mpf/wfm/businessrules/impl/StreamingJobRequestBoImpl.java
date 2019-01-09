@@ -60,8 +60,12 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Instant;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 @Component
@@ -648,32 +652,31 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     @Override
     public void handleNewSummaryReport(JsonSegmentSummaryReport summaryReport) {
-        // Send summary report as soon as possible.
-        String summaryReportCallbackUri = redis.getSummaryReportCallbackURI(summaryReport.getJobId());
+        TransientStreamingJob transientStreamingJob = redis.getStreamingJob(summaryReport.getJobId());
+        String summaryReportCallbackUri = transientStreamingJob.getSummaryReportCallbackURI();
 
         // Include the externalId as obtained from REDIS in the summary report. Note that we should
         // set the externalId even if the summaryReport isn't sent, because the summaryReport may be written to disk after it is
         // optionally sent.
-        summaryReport.setExternalId(redis.getExternalId(summaryReport.getJobId()));
+        summaryReport.setExternalId(transientStreamingJob.getExternalId());
 
         if (summaryReportCallbackUri != null) {
             callbackUtils.sendSummaryReportCallback(summaryReport, summaryReportCallbackUri);
         }
 
-        // TODO: Add methods to redis so that we don't need to get the whole transient job.
-        TransientStreamingJob transientStreamingJob = redis.getStreamingJob(summaryReport.getJobId());
-        if (transientStreamingJob != null) {
-            if (transientStreamingJob.isOutputEnabled()) {
-                try {
-                    String outputPath = transientStreamingJob.getOutputObjectDirectory();
-                    File outputFile = propertiesUtil.createStreamingOutputObjectsFile(summaryReport.getReportDate(), new File(outputPath));
-                    jsonUtils.serialize(summaryReport, outputFile);
-                } catch(Exception e) {
-                    log.error("Failed to write the JSON summary report for job '{}' due to an exception.", summaryReport.getJobId(), e);
-                }
+        if (transientStreamingJob.isOutputEnabled()) {
+            try {
+                String outputPath = transientStreamingJob.getOutputObjectDirectory();
+                File outputFile = propertiesUtil.createStreamingOutputObjectsFile(summaryReport.getReportDate(),
+                                                                                  new File(outputPath));
+                jsonUtils.serialize(summaryReport, outputFile);
+            }
+            catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
     }
+
 
     /**
      * Send health reports to the health report callbacks associated with the streaming jobs.

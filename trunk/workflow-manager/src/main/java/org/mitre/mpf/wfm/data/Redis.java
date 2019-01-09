@@ -45,24 +45,20 @@ public interface Redis {
 	 * @param detectionProcessingError The non-null error to add.
 	 * @return {@literal true} iff the error was successfully stored in Redis.
 	 */
-    boolean addDetectionProcessingError(DetectionProcessingError detectionProcessingError) throws WfmProcessingException;
+    void addDetectionProcessingError(DetectionProcessingError detectionProcessingError) throws WfmProcessingException;
 
 	/**
 	 * Adds a track instance to the collection of tracks stored in the Redis data store for the associated job, task, and action.
 	 * If the track cannot be serialized, the track is silently dropped.
 	 * @param track The non-null track to add.
-	 * @return {@literal true} iff the track was added to Redis.
 	 */
-	boolean addTrack(Track track) throws WfmProcessingException;
+	void addTrack(Track track) throws WfmProcessingException;
 
 	/**
 	 * Marks a batch job as cancelled/cancelling in the Redis data store.
 	 * @param jobId The MPF-assigned ID of the batch job.
 	 */
 	boolean cancel(long jobId);
-
-	/** Clears the contents of the Redis data store. Equivalent to performing "FLUSH ALL". */
-	void clear();
 
 	/**
 	 * Purges all information from the Redis data store associated with a job referenced by its ID.
@@ -90,8 +86,6 @@ public interface Redis {
      * @return Method will return job status type for a batch job.
      */
     BatchJobStatusType getBatchJobStatus(long jobId);
-    List<BatchJobStatusType> getBatchJobStatuses(List<Long> jobIds);
-    List<String> getBatchJobStatusesAsStrings(List<Long> jobIds);
 
 	/**
 	 * Get the job status for the specified streaming job
@@ -137,14 +131,7 @@ public interface Redis {
 	 */
 	long getNextSequenceValue();
 
-	/**
-	 * Retrieves all of the tracks associated with a specific (job, media, task, action) 4-ple.
-	 * @param jobId The MPF-assigned ID of the job.
-	 * @param mediaId The MPF-assigned media ID.
-	 * @param taskIndex The index of the task which created the tracks in the job's pipeline.
-	 * @param actionIndex The index of the action in the job's pipeline's task which generated the tracks.
-	 * @return A non-null collection of tracks.
-	 */
+
 	SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex);
 
 	/**
@@ -154,15 +141,6 @@ public interface Redis {
 	 * @throws WfmProcessingException
 	 */
     int getTaskCountForJob(long jobId) throws WfmProcessingException;
-
-    /**
-     * Creates a "key" from one or more components. This is a convenience method for creating
-     * keys like JOB:1:MEDIA:15:DETECTION_ERRORS.
-     * @param component The required, non-null and non-empty root of the key.
-     * @param components The optional collection of additional components in the key.
-     * @return A single string built from the concatenation of all of the specified parameters and joined by a delimiter.
-     */
-    String key(Object component, Object... components);
 
 	/**
 	 * Persists the given {@literal TransientJob} instance in the Redis data store.
@@ -186,14 +164,6 @@ public interface Redis {
 	 * @throws WfmProcessingException If persisting the job fails for any reason.
 	 */
 	void persistJob(TransientStreamingJob transientStreamingJob) throws WfmProcessingException;
-
-	/**
-	 * Persists the given {@literal TransientStream} instance in the Redis data store and associates it with the given {@literal jobId}.
-	 * @param jobId The MPF-assigned ID of the job with which this stream is associated.
-	 * @param transientStream The non-null stream instance to persist.
-	 * @throws WfmProcessingException
-	 */
-	void persistStream(long jobId, TransientStream transientStream) throws WfmProcessingException;
 
 
 	/**
@@ -315,10 +285,8 @@ public interface Redis {
     List<String> getActivityFrameIdsAsStrings(List<Long> jobIds) throws WfmProcessingException;
 
     Instant getActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
-    String getActivityTimestampAsString(long jobId) throws WfmProcessingException;
 
     List<Instant> getActivityTimestamps(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
-	List<String> getActivityTimestampsAsStrings(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
 
 	List<Long> getCurrentStreamingJobs(List<Long> jobIds, boolean isActive );
 

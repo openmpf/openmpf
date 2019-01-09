@@ -32,7 +32,7 @@ import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
-import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
@@ -68,7 +68,7 @@ public class StorageServiceImpl implements StorageService {
 
     private final PropertiesUtil _propertiesUtil;
 
-    private final Redis _redis;
+    private final InProgressBatchJobsService _inProgressJobs;
 
     private final ObjectMapper _objectMapper;
 
@@ -78,11 +78,11 @@ public class StorageServiceImpl implements StorageService {
     @Inject
     StorageServiceImpl(
             PropertiesUtil propertiesUtil,
-            Redis redis,
+            InProgressBatchJobsService inProgressJobs,
             ObjectMapper objectMapper,
             Collection<StorageBackend> storageBackends) {
         _propertiesUtil = propertiesUtil;
-        _redis = redis;
+        _inProgressJobs = inProgressJobs;
         _objectMapper = objectMapper;
 
         _backends = new EnumMap<>(StorageBackend.Type.class);
@@ -115,7 +115,8 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public String store(JsonOutputObject outputObject) throws IOException {
-        TransientDetectionSystemProperties propertiesSnapshot = _redis.getPropertiesSnapshot(outputObject.getJobId());
+        TransientDetectionSystemProperties propertiesSnapshot
+                = _inProgressJobs.getJob(outputObject.getJobId()).getDetectionSystemPropertiesSnapshot();
         try {
             StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
             if (storageBackend != null) {
@@ -146,7 +147,8 @@ public class StorageServiceImpl implements StorageService {
             return;
         }
 
-        TransientDetectionSystemProperties propertiesSnapshot = _redis.getPropertiesSnapshot(markupResult.getJobId());
+        TransientDetectionSystemProperties propertiesSnapshot
+                = _inProgressJobs.getJob(markupResult.getJobId()).getDetectionSystemPropertiesSnapshot();
         try {
             StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
             if (storageBackend == null) {
@@ -183,7 +185,7 @@ public class StorageServiceImpl implements StorageService {
         }
         markupResult.setMessage(message);
         markupResult.setMarkupStatus(MarkupStatus.COMPLETE_WITH_WARNING);
-        _redis.addJobWarning(markupResult.getJobId(), message);
+        _inProgressJobs.addJobWarning(markupResult.getJobId(), message);
     }
 
 
@@ -202,7 +204,8 @@ public class StorageServiceImpl implements StorageService {
 
     private String processImageArtifact(ArtifactExtractionRequest request) {
         Path inputMediaPath = Paths.get(request.getPath());
-        TransientDetectionSystemProperties propertiesSnapshot = _redis.getPropertiesSnapshot(request.getJobId());
+        TransientDetectionSystemProperties propertiesSnapshot
+                = _inProgressJobs.getJob(request.getJobId()).getDetectionSystemPropertiesSnapshot();
         try {
             StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
             if (storageBackend != null) {
@@ -234,7 +237,7 @@ public class StorageServiceImpl implements StorageService {
     }
 
     private void addArtifactStoredLocallyWarning(long jobId, Exception ex) {
-        _redis.addJobWarning(
+        _inProgressJobs.addJobWarning(
                 jobId,
                 "Artifacts were stored locally because storing them remotely failed due to: " + ex);
     }
@@ -247,7 +250,8 @@ public class StorageServiceImpl implements StorageService {
                 .flatMap(Collection::stream)
                 .collect(toCollection(TreeSet::new));
 
-        TransientDetectionSystemProperties propertiesSnapshot = _redis.getPropertiesSnapshot(request.getJobId());
+        TransientDetectionSystemProperties propertiesSnapshot
+                = _inProgressJobs.getJob(request.getJobId()).getDetectionSystemPropertiesSnapshot();
         try {
             StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
             if (storageBackend != null) {

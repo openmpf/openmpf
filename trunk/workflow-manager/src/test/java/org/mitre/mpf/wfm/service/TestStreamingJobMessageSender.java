@@ -122,11 +122,19 @@ public class TestStreamingJobMessageSender {
 		stream.addMediaProperty("OVERRIDDEN STREAM PROPERTY", "Stream Specific Value");
 
 		long jobId = 1234;
-		TransientStreamingJob job = new TransientStreamingJob(
-				jobId, "external id", pipeline, 5, 100, true,
-				"output-dir", false);
-		job.setStream(stream);
-		job.getOverriddenJobProperties().put("OVERRIDDEN JOB PROPERTY", "Job Overridden Value");
+		TransientStreamingJob job = new TransientStreamingJobImpl(
+				jobId,
+				"external id",
+				pipeline,
+				stream,
+				5,
+				100,
+				true,
+				"output-dir",
+				null,
+				null,
+				Collections.singletonMap("OVERRIDDEN JOB PROPERTY", "Job Overridden Value"),
+				Collections.emptyMap());
 
 		ArgumentCaptor<LaunchStreamingJobMessage> msgCaptor = ArgumentCaptor.forClass(LaunchStreamingJobMessage.class);
 

@@ -26,8 +26,6 @@
 
 package org.mitre.mpf.wfm.businessrules;
 
-import java.util.List;
-import java.util.Map;
 import org.mitre.mpf.interop.JsonSegmentSummaryReport;
 import org.mitre.mpf.interop.JsonStreamingInputObject;
 import org.mitre.mpf.interop.JsonStreamingJobRequest;
@@ -38,6 +36,8 @@ import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidOutputObjectDirectoryWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException;
+
+import java.util.Map;
 
 public interface StreamingJobRequestBo {
 
@@ -100,7 +100,7 @@ public interface StreamingJobRequestBo {
 	 * filtered out. Otherwise, all current streaming jobs will be processed.
 	 * @throws WfmProcessingException thrown if an error occurs
 	 */
-	void sendHealthReports(List<Long> jobIds, boolean isActive) throws WfmProcessingException;
+	void sendHealthReports() throws WfmProcessingException;
 
 	void handleJobStatusChange(long jobId, StreamingJobStatus status, long timestamp);
 

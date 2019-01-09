@@ -77,7 +77,6 @@ public class MediaRetrieverRouteBuilder extends RouteBuilder {
                     .process(JobCompleteProcessorImpl.REF)
 				.when(header(MpfHeaders.EMPTY_SPLIT).isEqualTo(Boolean.TRUE))
 					.removeHeader(MpfHeaders.EMPTY_SPLIT)
-					.process(JobRetrievalProcessor.REF)
 					.to(exitPoint)
 				.otherwise()
 					.to(MpfEndpoints.MEDIA_RETRIEVAL_WORK_QUEUE)
@@ -89,7 +88,6 @@ public class MediaRetrieverRouteBuilder extends RouteBuilder {
 			.aggregate(header(MpfHeaders.CORRELATION_ID), stringCountBasedAggregator)
 			.completionPredicate(new SplitCompletedPredicate())
 			.removeHeader(MpfHeaders.SPLIT_COMPLETED)
-			.process(JobRetrievalProcessor.REF)
 			.to(exitPoint);
 	}
 }

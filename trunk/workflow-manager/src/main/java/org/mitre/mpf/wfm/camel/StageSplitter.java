@@ -35,5 +35,5 @@ import java.util.List;
 
 @Monitored
 public interface StageSplitter {
-	List<Message> performSplit(TransientJob transientJob, TransientStage transientStage) throws Exception;
+	List<Message> performSplit(TransientJob transientJob, TransientStage transientStage);
 }

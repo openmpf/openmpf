@@ -26,23 +26,17 @@
 
 package org.mitre.mpf.test;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Objects;
-import java.util.function.Predicate;
 import org.hamcrest.Description;
-import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
+
+import java.net.URISyntaxException;
+import java.util.*;
+import java.util.function.Predicate;
 
 public class TestUtil {
 
@@ -113,7 +107,18 @@ public class TestUtil {
         }
     }
 
-    public static TransientJob setupJob(long jobId, TransientDetectionSystemProperties transientDetectionSystemProperties, Redis redis, IoUtils ioUtils) throws WfmProcessingException {
+    public static TransientJob setupJob(
+            long jobId, TransientDetectionSystemProperties transientDetectionSystemProperties,
+            InProgressBatchJobsService inProgressJobs, IoUtils ioUtils) {
+        return setupJob(jobId, transientDetectionSystemProperties, inProgressJobs, ioUtils, Collections.emptyMap(),
+                        Collections.emptyMap());
+    }
+
+    public static TransientJob setupJob(
+            long jobId, TransientDetectionSystemProperties transientDetectionSystemProperties,
+            InProgressBatchJobsService inProgressJobs, IoUtils ioUtils,
+            Map<String, String> jobProperties, Map<String, Map<String, String>> algorithmProperties) {
+
         TransientPipeline dummyPipeline = new TransientPipeline("dummyPipeline", "dummyDescription");
         TransientStage dummyStageDet = new TransientStage("dummydummy", "dummyDescription", ActionType.DETECTION);
         TransientAction dummyAction = new TransientAction("dummyAction", "dummyDescription", "dummyAlgo");
@@ -121,11 +126,19 @@ public class TestUtil {
         dummyStageDet.getActions().add(dummyAction);
 
         dummyPipeline.getStages().add(dummyStageDet);
-        TransientJob dummyJob = new TransientJob(jobId, "234234", transientDetectionSystemProperties, dummyPipeline, 0, 1, false, false);
-        dummyJob.getMedia().add(new TransientMedia(234234,ioUtils.findFile("/samples/video_01.mp4").toString()));
 
-        redis.persistJob(dummyJob);
-        return dummyJob;
+        return inProgressJobs.addJob(
+                jobId,
+                "234234",
+                transientDetectionSystemProperties,
+                dummyPipeline,
+                1,
+                false,
+                null,
+                null,
+                Collections.singletonList(new TransientMedia(234234, ioUtils.findFile("/samples/video_01.mp4").toString())),
+                jobProperties,
+                algorithmProperties);
     }
 
 
@@ -136,6 +149,16 @@ public class TestUtil {
 
     public static boolean almostEqual(double x, double y) {
         return almostEqual(x, y, 0.01);
+    }
+
+
+    public static String findFile(String path) {
+        try {
+            return TestUtil.class.getResource(path).toURI().toString();
+        }
+        catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 }
 

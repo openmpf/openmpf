@@ -33,8 +33,8 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.IdGenerator;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
@@ -52,10 +52,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * The first step in the Workflow Manager is to translate a JSON job request into an internal
@@ -71,9 +73,8 @@ public class JobCreationProcessor extends WfmProcessor {
     @Autowired
     private PropertiesUtil propertiesUtil;
 
-    @Autowired
-	@Qualifier(RedisImpl.REF)
-	private Redis redis;
+	@Autowired
+	private InProgressBatchJobsService inProgressBatchJobs;
 
 	@Autowired
 	private JsonUtils jsonUtils;
@@ -157,6 +158,7 @@ public class JobCreationProcessor extends WfmProcessor {
 			if(jobId == null) {
 				// A persistent representation of the object has not yet been created, so do that now.
 				jobRequestEntity = jobRequestBo.initialize(jobRequest);
+				jobId = jobRequestEntity.getId();
 			} else {
 				// The persistent representation already exists - retrieve it.
 				jobRequestEntity = jobRequestDao.findById(jobId);
@@ -169,25 +171,26 @@ public class JobCreationProcessor extends WfmProcessor {
 
             TransientPipeline transientPipeline = buildPipeline(jobRequest.getPipeline());
 
-			TransientJob transientJob = new TransientJob(jobRequestEntity.getId(), jobRequest.getExternalId(), transientDetectionSystemProperties, transientPipeline,
-                                                0, jobRequest.getPriority(), jobRequest.isOutputObjectEnabled(), false,jobRequest.getCallbackURL(),jobRequest.getCallbackMethod());
-
-			transientJob.getOverriddenJobProperties().putAll(jobRequest.getJobProperties());
-
-			// algorithm properties should override any previously set properties (note: priority scheme enforced in DetectionSplitter)
-			transientJob.getOverriddenAlgorithmProperties().putAll(jobRequest.getAlgorithmProperties());
-
-			transientJob.getMedia().addAll(buildMedia(jobRequest.getMedia()));
-
-            redis.persistJob(transientJob);
+			TransientJob transientJob = inProgressBatchJobs.addJob(
+					jobRequestEntity.getId(),
+					jobRequest.getExternalId(),
+					transientDetectionSystemProperties,
+					transientPipeline,
+					jobRequest.getPriority(),
+					jobRequest.isOutputObjectEnabled(),
+					jobRequest.getCallbackURL(),
+					jobRequest.getCallbackMethod(),
+					buildMedia(jobRequest.getMedia()),
+					jobRequest.getJobProperties(),
+					(Map) jobRequest.getAlgorithmProperties());
 
 			if (transientPipeline == null) {
-				redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+				inProgressBatchJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
 				throw new WfmProcessingException(INVALID_PIPELINE_MESSAGE);
 			}
 
 			BatchJobStatusType jobStatus;
-			if (transientJob.getMedia().stream().anyMatch(m -> m.isFailed())) {
+			if (transientJob.getMedia().stream().anyMatch(TransientMedia::isFailed)) {
 				jobStatus = BatchJobStatusType.ERROR;
 				// allow the job to run since some of the media may be good
 			} else {
@@ -195,12 +198,11 @@ public class JobCreationProcessor extends WfmProcessor {
 			}
 
 			jobRequestEntity.setStatus(jobStatus);
-			redis.setJobStatus(jobId, jobStatus);
+			inProgressBatchJobs.setJobStatus(jobId, jobStatus);
 			jobStatusBroadcaster.broadcast(jobId, 0, jobStatus);
 
 			jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 
-			exchange.getOut().setBody(jsonUtils.serialize(transientJob));
 			exchange.getOut().getHeaders().put(MpfHeaders.JOB_ID, jobRequestEntity.getId());
 
 		} catch(WfmProcessingException exception) {
@@ -227,8 +229,14 @@ public class JobCreationProcessor extends WfmProcessor {
 	private List<TransientMedia> buildMedia(List<JsonMediaInputObject> inputMedia) throws WfmProcessingException {
 		List<TransientMedia> transientMedia = new ArrayList<>(inputMedia.size());
 		for(JsonMediaInputObject inputObject : inputMedia) {
-			TransientMedia media = new TransientMedia(redis.getNextSequenceValue(), inputObject.getMediaUri());
+			TransientMedia media = new TransientMedia(IdGenerator.next(), inputObject.getMediaUri());
 			media.getMediaSpecificProperties().putAll(inputObject.getProperties());
+
+			if (media.getUriScheme().isRemote()) {
+				String localFilePath = new File(propertiesUtil.getRemoteMediaCacheDirectory(), UUID.randomUUID().toString())
+						.getAbsolutePath();
+				media.setLocalPath(localFilePath);
+			}
 			transientMedia.add(media);
 		}
 		return transientMedia;

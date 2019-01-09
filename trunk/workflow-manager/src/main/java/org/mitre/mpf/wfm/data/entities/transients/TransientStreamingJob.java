@@ -26,92 +26,43 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 
-import java.util.HashMap;
+import java.time.Instant;
 import java.util.Map;
 
-public class TransientStreamingJob {
-	private long id;
-	public long getId() { return id; }
+public interface TransientStreamingJob {
+	public long getId();
 
-	private TransientPipeline pipeline;
-	public TransientPipeline getPipeline() { return pipeline; }
+	public StreamingJobStatus getJobStatus();
 
-	private String externalId;
-	public String getExternalId() { return externalId; }
+	public TransientPipeline getPipeline();
 
-	private int priority;
-	public int getPriority() { return  priority; }
+	public String getExternalId();
 
-	private long stallTimeout;
-	public void setStallTimeout(long value) { stallTimeout = value; }
-	public long getStallTimeout() { return stallTimeout; }
+	public int getPriority();
 
-	private boolean outputEnabled;
-	public void setOutputEnabled(boolean enabled) { outputEnabled = enabled; }
-	public boolean isOutputEnabled() { return outputEnabled; }
+	public long getStallTimeout();
 
-	private String outputObjectDirectory;
-	public void setOutputObjectDirectory(String outputObjectDirectory_s) { outputObjectDirectory = outputObjectDirectory_s; }
-	public String getOutputObjectDirectory() { return outputObjectDirectory; }
+	public boolean isOutputEnabled();
 
-	private TransientStream stream;
-	public TransientStream getStream() { return stream; }
-	public void setStream(TransientStream stream) { this.stream = stream; }
-	public void addStreamMetaData(String key, String value) { getStream().addMetadata(key, value); }
+	public String getOutputObjectDirectory();
 
-	private Map<String, Map<String, String>> overriddenAlgorithmProperties;
-	public Map<String, Map<String, String>> getOverriddenAlgorithmProperties() { return overriddenAlgorithmProperties; }
-	public void setOverriddenAlgorithmProperties(Map<String, Map<String, String>> overriddenAlgorithmProperties) { this.overriddenAlgorithmProperties = overriddenAlgorithmProperties; }
+	public TransientStream getStream();
 
-	private Map<String, String> overriddenJobProperties;
-	public Map<String, String> getOverriddenJobProperties() { return overriddenJobProperties; }
-	public void setOverriddenJobProperties(Map<String, String> overriddenJobProperties) { this.overriddenJobProperties = overriddenJobProperties; }
+	public Map<String, Map<String, String>> getOverriddenAlgorithmProperties();
 
-	private boolean cancelled;
-	public boolean isCancelled() { return cancelled; }
+	public Map<String, String> getOverriddenJobProperties();
 
-	private String healthReportCallbackURI;
-	public String getHealthReportCallbackURI() { return healthReportCallbackURI; }
-	private String summaryReportCallbackURI;
-	public String getSummaryReportCallbackURI() { return summaryReportCallbackURI; }
+	public boolean isCancelled();
 
-	public TransientStreamingJob(@JsonProperty("id") long id,
-                                 @JsonProperty("externalId") String externalId,
-                                 @JsonProperty("pipeline") TransientPipeline pipeline,
-                                 @JsonProperty("priority") int priority,
-								 @JsonProperty("stallTimeout") long stallTimeout,
-								 @JsonProperty("outputEnabled") boolean outputEnabled,
-								 @JsonProperty("outputObjectDirectory") String outputObjectDirectory,
-                                 @JsonProperty("cancelled") boolean cancelled) {
-		this.id = id;
-		this.externalId = externalId;
-		this.pipeline = pipeline;
-		this.priority = priority;
-		this.stallTimeout = stallTimeout;
-		this.outputEnabled = outputEnabled;
-		this.outputObjectDirectory = outputObjectDirectory;
-		this.cancelled = cancelled;
-		this.stream = null;
-		this.overriddenAlgorithmProperties = new HashMap<>();
-		this.overriddenJobProperties = new HashMap<>();
-	}
+	public String getHealthReportCallbackURI();
 
-	@JsonCreator
-	public TransientStreamingJob(@JsonProperty("id") long id,
-                                 @JsonProperty("externalId") String externalId,
-                                 @JsonProperty("pipeline") TransientPipeline pipeline,
-                                 @JsonProperty("priority") int priority,
-								 @JsonProperty("stallTimeout") long stallTimeout,
-								 @JsonProperty("outputEnabled") boolean outputEnabled,
-								 @JsonProperty("outputObjectDirectory") String outputObjectDirectory,
-                                 @JsonProperty("cancelled") boolean cancelled,
-								 @JsonProperty("healthReportCallbackURI") String healthReportCallbackURI,
-								 @JsonProperty("summaryReportCallbackURI") String summaryReportCallbackURI) {
-		this(id,externalId,pipeline,priority,stallTimeout,outputEnabled,outputObjectDirectory,cancelled);
-		this.healthReportCallbackURI = healthReportCallbackURI;
-		this.summaryReportCallbackURI = summaryReportCallbackURI;
-	}
+	public String getSummaryReportCallbackURI();
+
+	public long getLastActivityFrame();
+
+	public Instant getLastActivityTime();
+
+	public boolean isCleanupEnabled();
 }

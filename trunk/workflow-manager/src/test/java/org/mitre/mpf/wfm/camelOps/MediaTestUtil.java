@@ -24,54 +24,47 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.entities.transients;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.mitre.mpf.wfm.util.TextUtils;
+package org.mitre.mpf.wfm.camelOps;
 
-public class Candidate implements Comparable<Candidate> {
-	private String candidateId;
-	public String getCandidateId() { return candidateId; }
+import org.apache.camel.Exchange;
+import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultMessage;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 
-	private int rank;
-	public int getRank() { return rank; }
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-	private double score;
-	public double getScore() { return score; }
+public class MediaTestUtil {
 
-	@JsonCreator
-	public Candidate(@JsonProperty("candidateId") String candidateId,
-	                 @JsonProperty("rank") int rank,
-	                 @JsonProperty("score") double score) {
-		this.candidateId = candidateId;
-		this.rank = rank;
-		this.score = score;
-	}
 
-	public int hashCode() {  return rank; }
-	public boolean equals(Object other) {
-		if(other == null || !(other instanceof Candidate)) {
-			return false;
-		} else {
-			Candidate casted = (Candidate)other;
-			return TextUtils.nullSafeEquals(candidateId, casted.candidateId) && rank == casted.rank && Double.compare(score, casted.score) == 0;
-		}
-	}
-	public int compareTo(Candidate other) {
-		int result;
-		if(other == null) {
-			return 1;
-		} else if((result = TextUtils.nullSafeCompare(candidateId, other.candidateId)) != 0 ||
-				(result = Integer.compare(rank, other.rank)) != 0 ||
-				(result = Double.compare(score, other.score)) != 0) {
-			return result;
-		} else {
-			return 0;
-		}
-	}
+    public static Exchange setupExchange(long jobId, TransientMedia media,
+                                         InProgressBatchJobsService mockInProgressJobs) {
+        TransientJob job = mock(TransientJob.class);
+        when(job.getMedia(media.getId()))
+                .thenReturn(media);
+        when(mockInProgressJobs.getJob(jobId))
+                .thenReturn(job);
 
-	public String toString() {
-		return String.format("%s#<candidateId='%s', rank=%d, score=%f>", this.getClass().getSimpleName(), candidateId, rank, score);
-	}
+        Message inMessage = new DefaultMessage();
+        inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
+        inMessage.setHeader(MpfHeaders.MEDIA_ID, media.getId());
+
+        Message outMessage = new DefaultMessage();
+
+        Exchange exchange = mock(Exchange.class);
+        when(exchange.getIn())
+                .thenReturn(inMessage);
+        when(exchange.getOut())
+                .thenReturn(outMessage);
+
+        return exchange;
+    }
+
+
+    private MediaTestUtil() {
+    }
 }

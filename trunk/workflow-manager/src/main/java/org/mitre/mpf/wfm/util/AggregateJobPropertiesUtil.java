@@ -101,7 +101,7 @@ public class AggregateJobPropertiesUtil {
     private static PropertyInfo calculateValue(String propertyName, Map<String,String> actionProperties,
                                                Map<String, String> jobProperties,
                                                String algorithmNameFromAction,
-                                               Map<String,Map> algorithmProperties) {
+                                               Map<String, Map<String, String>> algorithmProperties) {
 
         if (algorithmNameFromAction != null &&
                 algorithmProperties.containsKey(algorithmNameFromAction) &&
@@ -138,7 +138,7 @@ public class AggregateJobPropertiesUtil {
     public static PropertyInfo calculateValue(String propertyName, Map<String,String> actionProperties,
                                               Map<String, String> jobProperties,
                                               ActionDefinition actionDefinition,
-                                              Map<String,Map> algorithmProperties,
+                                              Map<String, Map<String, String>> algorithmProperties,
                                               Map<String, String> mediaProperties) {
 
         if (mediaProperties.containsKey(propertyName)) {
@@ -163,7 +163,7 @@ public class AggregateJobPropertiesUtil {
     public static PropertyInfo calculateValue(String propertyName, Map<String,String> actionProperties,
                                               Map<String, String> jobProperties,
                                               TransientAction transientAction,
-                                              Map<String,Map> algorithmProperties,
+                                              Map<String, Map<String, String>> algorithmProperties,
                                               Map<String, String> mediaProperties) {
 
         if (mediaProperties.containsKey(propertyName)) {
@@ -188,7 +188,7 @@ public class AggregateJobPropertiesUtil {
     public static PropertyInfo calculateValue(String propertyName, Collection<PropertyDefinitionRef> actionProperties,
                                               Map<String, String> jobProperties,
                                               ActionDefinition actionDefinition,
-                                              Map<String,Map> algorithmProperties,
+                                              Map<String, Map<String, String>> algorithmProperties,
                                               Map<String, String> mediaProperties) {
 
         if (mediaProperties.containsKey(propertyName)) {

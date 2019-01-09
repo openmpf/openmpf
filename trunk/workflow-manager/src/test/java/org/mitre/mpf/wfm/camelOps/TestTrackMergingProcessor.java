@@ -29,24 +29,22 @@ package org.mitre.mpf.wfm.camelOps;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingProcessor;
-import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -58,11 +56,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(SpringJUnit4ClassRunner.class)
 @RunListener.ThreadSafe
 public class TestTrackMergingProcessor {
-    private static final Logger log = LoggerFactory.getLogger(TestTrackMergingProcessor.class);
     private static final int MINUTES = 1000 * 60; // 1000 milliseconds/second & 60 seconds/minute.
-
-    @Autowired
-    private ApplicationContext context;
 
     @Autowired
     private CamelContext camelContext;
@@ -78,7 +72,7 @@ public class TestTrackMergingProcessor {
     private JsonUtils jsonUtils;
 
     @Autowired
-    private Redis redis;
+    private InProgressBatchJobsService inProgressJobs;
 
     @Autowired
     private PropertiesUtil propertiesUtil;
@@ -165,10 +159,18 @@ public class TestTrackMergingProcessor {
         // Capture a snapshot of the detection system property settings when the job is created.
         TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
-        TransientJob trackMergeJob = new TransientJob(jobId, "999999", transientDetectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
-        trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
-
-        redis.persistJob(trackMergeJob);
+        inProgressJobs.addJob(
+                jobId,
+                "999999",
+                transientDetectionSystemProperties,
+                trackMergePipeline,
+                priority,
+                false,
+                null,
+                null,
+                Collections.singletonList(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString())),
+                Collections.emptyMap(),
+                Collections.emptyMap());
 
         /*
         * Create overlapping tracks for testing
@@ -205,7 +207,7 @@ public class TestTrackMergingProcessor {
         tracks.add(track4);
         tracks.add(track5);
 
-        redis.setTracks(jobId,mediaId,0,0,tracks);
+        inProgressJobs.setTracks(jobId,mediaId,0,0,tracks);
 
         trackMergingProcessor.wfmProcess(exchange);
 
@@ -215,7 +217,7 @@ public class TestTrackMergingProcessor {
         TrackMergingContext contextResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
         Assert.assertTrue(contextResponse.getStageIndex() == stageIndex);
         Assert.assertTrue(contextResponse.getJobId() == jobId);
-        Assert.assertEquals(expectedTracks, redis.getTracks(jobId, mediaId, 0, 0).size());
+        Assert.assertEquals(expectedTracks, inProgressJobs.getTracks(jobId, mediaId, 0, 0).size());
     }
 
     @Test(timeout = 5 * MINUTES)
@@ -243,13 +245,22 @@ public class TestTrackMergingProcessor {
         // Capture a snapshot of the detection system property settings when the job is created.
         TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
-        TransientJob trackMergeJob = new TransientJob(jobId, "999999", transientDetectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
-        trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
+        inProgressJobs.addJob(
+                jobId,
+                "999999",
+                transientDetectionSystemProperties,
+                trackMergePipeline,
+                priority,
+                false,
+                null,
+                null,
+                Collections.singletonList(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString())),
+                Collections.emptyMap(),
+                Collections.emptyMap());
 
-        redis.persistJob(trackMergeJob);
         SortedSet<Track> tracks = new TreeSet<Track>();
 
-        redis.setTracks(jobId, mediaId, 0, 0, tracks);
+        inProgressJobs.setTracks(jobId, mediaId, 0, 0, tracks);
 
         trackMergingProcessor.wfmProcess(exchange);
 
@@ -259,7 +270,7 @@ public class TestTrackMergingProcessor {
         TrackMergingContext contextResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
         Assert.assertTrue(contextResponse.getStageIndex() == stageIndex);
         Assert.assertTrue(contextResponse.getJobId() == jobId);
-        Assert.assertEquals(0, redis.getTracks(jobId, mediaId, 0, 0).size());
+        Assert.assertEquals(0, inProgressJobs.getTracks(jobId, mediaId, 0, 0).size());
     }
 
 

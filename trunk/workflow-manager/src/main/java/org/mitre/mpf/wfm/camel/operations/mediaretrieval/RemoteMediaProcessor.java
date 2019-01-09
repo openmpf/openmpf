@@ -30,8 +30,7 @@ import org.apache.camel.Exchange;
 import org.apache.commons.io.FileUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -39,7 +38,6 @@ import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -53,19 +51,18 @@ public class RemoteMediaProcessor extends WfmProcessor {
 	private static final Logger log = LoggerFactory.getLogger(RemoteMediaProcessor.class);
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
-	private Redis redis;
+	private InProgressBatchJobsService inProgressJobs;
 
 	@Autowired
-	@Qualifier(PropertiesUtil.REF)
-	protected PropertiesUtil propertiesUtil;
+	private PropertiesUtil propertiesUtil;
 
 	@Override
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
-		assert exchange.getIn().getBody() != null : "The body must not be null.";
-		assert exchange.getIn().getBody(byte[].class) != null : "The body must be convertible to String.";
 
-		TransientMedia transientMedia = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TransientMedia.class);
+	    long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+	    long mediaId = exchange.getIn().getHeader(MpfHeaders.MEDIA_ID, Long.class);
+
+		TransientMedia transientMedia = inProgressJobs.getJob(jobId).getMedia(mediaId);
 		log.debug("Retrieving {} and saving it to `{}`.", transientMedia.getUri(), transientMedia.getLocalPath());
 
 		switch(transientMedia.getUriScheme()) {
@@ -88,7 +85,7 @@ public class RemoteMediaProcessor extends WfmProcessor {
 						errorMessage = handleMediaRetrievalException(transientMedia, localFile, e);
 					} catch (Exception e) { // specifying "http::" will cause an IllegalArgumentException
 						errorMessage = handleMediaRetrievalException(transientMedia, localFile, e);
-						handleMediaRetrievalFailure(exchange, transientMedia, errorMessage);
+						handleMediaRetrievalFailure(jobId, transientMedia, errorMessage);
 						break; // exception is not recoverable
 					}
 
@@ -103,27 +100,26 @@ public class RemoteMediaProcessor extends WfmProcessor {
 							break; // abort download attempt
 						}
 					} else {
-						handleMediaRetrievalFailure(exchange, transientMedia, errorMessage);
+						handleMediaRetrievalFailure(jobId, transientMedia, errorMessage);
 					}
 				}
 
 				break;
 			default:
 				log.warn("The UriScheme '{}' was not expected at this time.");
-				transientMedia.setFailed(true);
-				transientMedia.setMessage(String.format("The scheme '%s' was not expected or does not have a handler associated with it.", transientMedia.getUriScheme()));
+				inProgressJobs.addMediaError(jobId, mediaId, String.format(
+						"The scheme '%s' was not expected or does not have a handler associated with it.",
+						transientMedia.getUriScheme()));
 				break;
 		}
 
-		redis.persistMedia(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class), transientMedia);
-
-		exchange.getOut().getHeaders().put(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
-		exchange.getOut().getHeaders().put(MpfHeaders.SPLIT_SIZE, exchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE));
-		exchange.getOut().getHeaders().put(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
-		exchange.getOut().setBody(jsonUtils.serialize(transientMedia));
+		exchange.getOut().setHeader(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
+		exchange.getOut().setHeader(MpfHeaders.SPLIT_SIZE, exchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE));
+		exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
+		exchange.getOut().setHeader(MpfHeaders.MEDIA_ID, mediaId);
 	}
 
-	private void deleteOrLeakFile(File file) {
+	private static void deleteOrLeakFile(File file) {
 		try {
 			if(file != null) {
 				file.delete();
@@ -133,16 +129,17 @@ public class RemoteMediaProcessor extends WfmProcessor {
 		}
 	}
 
-	private String handleMediaRetrievalException(TransientMedia transientMedia, File localFile, Exception e) {
+	private static String handleMediaRetrievalException(TransientMedia transientMedia, File localFile, Exception e) {
 		log.warn("Failed to retrieve {}.", transientMedia.getUri(), e);
 		// Try to delete the local file, but do not throw an exception if this operation fails.
 		deleteOrLeakFile(localFile);
 		return e.toString();
 	}
 
-	private void handleMediaRetrievalFailure(Exchange exchange, TransientMedia transientMedia, String errorMessage) {
-		transientMedia.setFailed(true);
-		transientMedia.setMessage("Error retrieving media and saving it to temp file: " + errorMessage);
-		redis.setJobStatus(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class), BatchJobStatusType.ERROR);
+	private void handleMediaRetrievalFailure(long jobId, TransientMedia transientMedia,
+	                                         String errorMessage) {
+		inProgressJobs.addMediaError(jobId, transientMedia.getId(),
+		                             "Error retrieving media and saving it to temp file: " + errorMessage);
+		inProgressJobs.setJobStatus(jobId, BatchJobStatusType.ERROR);
 	}
 }

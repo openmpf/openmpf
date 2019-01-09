@@ -31,20 +31,19 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.awt.*;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 /**
  * Merges tracks in a video.
@@ -71,8 +70,10 @@ public class TrackMergingProcessor extends WfmProcessor {
 	private static final Logger log = LoggerFactory.getLogger(TrackMergingProcessor.class);
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
-	private Redis redis;
+	private JsonUtils jsonUtils;
+
+	@Autowired
+	private InProgressBatchJobsService inProgressJobs;
 
 	@Override
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
@@ -83,7 +84,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 
 		assert trackMergingContext != null : "The TrackMergingContext instance must never be null.";
 
-		TransientJob transientJob = redis.getJob(trackMergingContext.getJobId());
+		TransientJob transientJob = inProgressJobs.getJob(trackMergingContext.getJobId());
 
 		assert transientJob != null : String.format("Redis failed to retrieve a job with ID %d.", trackMergingContext.getJobId());
 
@@ -139,16 +140,16 @@ public class TrackMergingProcessor extends WfmProcessor {
 																				samplingInterval, minTrackLength, mergeTracks, minGapBetweenTracks, minTrackOverlap);
 
 					if (trackMergingPlan.isMergeTracks()) {
-						SortedSet<Track> tracks = redis.getTracks(trackMergingContext.getJobId(), transientMedia.getId(), trackMergingContext.getStageIndex(), actionIndex);
+						SortedSet<Track> tracks = inProgressJobs.getTracks(trackMergingContext.getJobId(), transientMedia.getId(), trackMergingContext.getStageIndex(), actionIndex);
 						SortedSet<Track> newTracks = new TreeSet<Track>(combine(tracks, trackMergingPlan));
 						log.debug("[Job {}|{}|{}] Merging {} tracks down to {} in Media {}.", trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex, tracks.size(), newTracks.size(), transientMedia.getId());
-						redis.setTracks(trackMergingContext.getJobId(), transientMedia.getId(), trackMergingContext.getStageIndex(), actionIndex, newTracks);
+						inProgressJobs.setTracks(trackMergingContext.getJobId(), transientMedia.getId(), trackMergingContext.getStageIndex(), actionIndex, newTracks);
 					} else {
 						log.debug("[Job {}|{}|{}] Track merging has not been requested for this action and media {}.", trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex, transientMedia.getId());
 					}
 
 					if (trackMergingPlan.getMinTrackLength() > 1) {
-						SortedSet<Track> tracks = redis.getTracks(trackMergingContext.getJobId(), transientMedia.getId(), trackMergingContext.getStageIndex(), actionIndex);
+						SortedSet<Track> tracks = inProgressJobs.getTracks(trackMergingContext.getJobId(), transientMedia.getId(), trackMergingContext.getStageIndex(), actionIndex);
 						SortedSet<Track> newTracks = new TreeSet<Track>();
 						for (Track track : tracks) {
 							// Since both offset frames are inclusive, the actual track length is one greater than the delta.
@@ -157,7 +158,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 							}
 						}
 						log.debug("[Job {}|{}|{}] Pruning {} tracks down to {} tracks at least {} frames long in Media {}.", trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex, tracks.size(), newTracks.size(), trackMergingPlan.getMinTrackLength(), transientMedia.getId());
-						redis.setTracks(trackMergingContext.getJobId(), transientMedia.getId(), trackMergingContext.getStageIndex(), actionIndex, newTracks);
+						inProgressJobs.setTracks(trackMergingContext.getJobId(), transientMedia.getId(), trackMergingContext.getStageIndex(), actionIndex, newTracks);
 
 					} else {
 						log.debug("[Job {}|{}|{}] Minimum track length has not been enabled for this action and media {}.", trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex, transientMedia.getId());

@@ -30,9 +30,10 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,21 +48,25 @@ public class MediaInspectionSplitter extends WfmSplitter {
 	public static final String REF = "mediaInspectionSplitter";
 
 	@Autowired
-	private JsonUtils jsonUtils;
+	private InProgressBatchJobsService inProgressJobs;
 
 	@Override
 	public String getSplitterName() { return REF; }
 
-	public List<Message> wfmSplit(Exchange exchange) throws Exception {
+
+	@Override
+	public List<Message> wfmSplit(Exchange exchange) {
+		long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+		TransientJob transientJob = inProgressJobs.getJob(jobId);
 		List<Message> messages = new ArrayList<>();
-		TransientJob transientJob = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TransientJob.class);
 
 		if(!transientJob.isCancelled()) {
 			// If the job has not been cancelled, perform the split.
 			for (TransientMedia transientMedia : transientJob.getMedia()) {
 				if (!transientMedia.isFailed()) {
 					Message message = new DefaultMessage();
-					message.setBody(jsonUtils.serialize(transientMedia));
+					message.setHeader(MpfHeaders.JOB_ID, jobId);
+					message.setHeader(MpfHeaders.MEDIA_ID, transientMedia.getId());
 					messages.add(message);
 				} else {
 					log.warn("Skipping '{}' ({}). It is in an error state.", transientMedia.getUri(), transientMedia.getId());

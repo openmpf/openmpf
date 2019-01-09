@@ -39,20 +39,18 @@ import org.apache.tika.parser.external.ExternalParsersConfigReader;
 import org.mitre.mpf.framecounter.FrameCounter;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -65,20 +63,22 @@ public class MediaInspectionProcessor extends WfmProcessor {
 	private static final Logger log = LoggerFactory.getLogger(MediaInspectionProcessor.class);
 	public static final String REF = "mediaInspectionProcessor";
 
-	@Autowired
-	private IoUtils ioUtils;
+	private final InProgressBatchJobsService inProgressJobs;
 
-	@Autowired
-	@Qualifier(RedisImpl.REF)
-	private Redis redis;
+	private final IoUtils ioUtils;
+
+	@Inject
+	public MediaInspectionProcessor(InProgressBatchJobsService inProgressJobs, IoUtils ioUtils) {
+		this.inProgressJobs = inProgressJobs;
+		this.ioUtils = ioUtils;
+	}
+
 
 	@Override
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
-		assert exchange.getIn().getBody() != null : "The body must not be null.";
-		assert exchange.getIn().getBody(byte[].class) != null : "The body must be convertible to a String.";
-
-		TransientMedia transientMedia = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TransientMedia.class);
-		log.debug("Inspecting Media {}.", transientMedia.getId());
+        long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+        long mediaId = exchange.getIn().getHeader(MpfHeaders.MEDIA_ID, Long.class);
+		TransientMedia transientMedia = inProgressJobs.getJob(jobId).getMedia(mediaId);
 
 		if(!transientMedia.isFailed()) {
 			// Any request to pull a remote file should have already populated the local uri.
@@ -144,12 +144,11 @@ public class MediaInspectionProcessor extends WfmProcessor {
 		exchange.getOut().setHeader(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
 		exchange.getOut().setHeader(MpfHeaders.SPLIT_SIZE, exchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE));
 		exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
-
-		exchange.getOut().setBody(jsonUtils.serialize(transientMedia));
+		exchange.getOut().setHeader(MpfHeaders.JOB_ID, jobId);
+		exchange.getOut().setHeader(MpfHeaders.MEDIA_ID, mediaId);
 		if (transientMedia.isFailed()) {
-			redis.setJobStatus(exchange.getIn().getHeader(MpfHeaders.JOB_ID,Long.class), BatchJobStatusType.ERROR);
+			inProgressJobs.setJobStatus(jobId, BatchJobStatusType.ERROR);
 		}
-        redis.persistMedia(exchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class), transientMedia);
 	}
 
 	private void inspectAudio(File localFile, TransientMedia transientMedia) throws IOException, TikaException, SAXException {

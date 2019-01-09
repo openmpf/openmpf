@@ -30,6 +30,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.ResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -38,6 +39,7 @@ import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,18 +55,29 @@ public class DetectionResponseProcessor
 	private static final Logger log = LoggerFactory.getLogger(DetectionResponseProcessor.class);
 
 	@Autowired
+	private JsonUtils jsonUtils;
+
+	@Autowired
 	private PipelineService pipelineService;
 
+	@Autowired
+	private InProgressBatchJobsService inProgressJobs;
+
 	public DetectionResponseProcessor() {
-		clazz = DetectionProtobuf.DetectionResponse.class;
+		super(DetectionProtobuf.DetectionResponse.class);
 	}
 
 	@Override
 	public Object processResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, Map<String, Object> headers) throws WfmProcessingException {
 		String logLabel = String.format("Job %d|%d|%d", jobId, detectionResponse.getStageIndex(), detectionResponse.getActionIndex());
-
+		TransientJob job = inProgressJobs.getJob(jobId);
 		Float fps = null;
-		TransientMedia media = loadMedia(jobId, detectionResponse.getMediaId());
+		TransientMedia media = job.getMedia()
+				.stream()
+                .filter(m -> m.getId() == detectionResponse.getMediaId())
+				.findAny()
+				.orElseThrow(() -> new IllegalStateException("Unable to locate media with id: " +
+						                                             detectionResponse.getMediaId()));
 		if (DetectionProtobuf.DetectionResponse.DataType.VIDEO.equals(detectionResponse.getDataType())) {
 			if (media.getMetadata("FPS") != null) {
 				fps = Float.valueOf(media.getMetadata("FPS"));
@@ -80,23 +93,31 @@ public class DetectionResponseProcessor
 				detectionResponse.getStageName(),
 				detectionResponse.getActionName());
 
-		if(detectionResponse.getError() != DetectionProtobuf.DetectionError.NO_DETECTION_ERROR) {
-
+		if (detectionResponse.getError() != DetectionProtobuf.DetectionError.NO_DETECTION_ERROR) {
+			String errorMessage;
 			// Some error occurred during detection. Store this error.
-			if(detectionResponse.getError() != DetectionProtobuf.DetectionError.REQUEST_CANCELLED) {
-			    log.warn("[{}] Encountered a detection error while processing Media #{} [{}, {}]: {}", logLabel, detectionResponse.getMediaId(), detectionResponse.getStartIndex(), detectionResponse.getStopIndex(), detectionResponse.getError());
-			} else {
-				log.debug("[{}] Encountered a detection error while processing Media #{} [{}, {}]: {}", logLabel, detectionResponse.getMediaId(), detectionResponse.getStartIndex(), detectionResponse.getStopIndex(), detectionResponse.getError());
+			if (detectionResponse.getError() == DetectionProtobuf.DetectionError.REQUEST_CANCELLED) {
+				log.debug("[{}] Encountered a detection error while processing Media #{} [{}, {}]: {}",
+				          logLabel, detectionResponse.getMediaId(), detectionResponse.getStartIndex(),
+				          detectionResponse.getStopIndex(), detectionResponse.getError());
+				inProgressJobs.setJobStatus(jobId, BatchJobStatusType.CANCELLING);
+				errorMessage = MpfConstants.REQUEST_CANCELLED;
 			}
-
-			DetectionProcessingError detectionProcessingError = new DetectionProcessingError(jobId, detectionResponse.getMediaId(), detectionResponse.getStageIndex(), detectionResponse.getActionIndex(), detectionResponse.getStartIndex(), detectionResponse.getStopIndex(), Objects.toString(detectionResponse.getError()));
-			if(!redis.addDetectionProcessingError(detectionProcessingError)) {
-
-				// We failed to persist the detection error. The user will have no record of this error except this log message.
-				log.warn("[{}] Failed to persist {} in the transient data store. The results of this job are unreliable.", logLabel, detectionProcessingError);
+			else {
+				log.warn("[{}] Encountered a detection error while processing Media #{} [{}, {}]: {}", logLabel,
+				         detectionResponse.getMediaId(), detectionResponse.getStartIndex(),
+				         detectionResponse.getStopIndex(), detectionResponse.getError());
+				inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+				errorMessage = Objects.toString(detectionResponse.getError());
 			}
-
-			redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+			inProgressJobs.addDetectionProcessingError(new DetectionProcessingError(
+					jobId,
+					detectionResponse.getMediaId(),
+					detectionResponse.getStageIndex(),
+					detectionResponse.getActionIndex(),
+					detectionResponse.getStartIndex(),
+					detectionResponse.getStopIndex(),
+					errorMessage));
 		}
 
 		if (detectionResponse.getAudioResponsesCount() == 0
@@ -111,7 +132,6 @@ public class DetectionResponseProcessor
 		} else {
 			// Look for a confidence threshold.  If confidence threshold is defined, only return detections above the threshold.
 			ActionDefinition action = pipelineService.getAction(detectionResponse.getActionName());
-			TransientJob job = redis.getJob(jobId, detectionResponse.getMediaId());
 
 			double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
 
@@ -154,16 +174,6 @@ public class DetectionResponseProcessor
 	}
 
 
-	private TransientMedia loadMedia(long jobId, long mediaId) throws WfmProcessingException {
-		List<TransientMedia> mediaList = redis.getJob(jobId, mediaId).getMedia();
-		for (TransientMedia item : mediaList) {
-			if (item.getId() == mediaId) {
-				return item;
-			}
-		}
-
-		return null;
-	}
 
 	private void processVideoResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, Float fps, double confidenceThreshold) {
 		// Iterate through the videoResponse
@@ -205,9 +215,7 @@ public class DetectionResponseProcessor
 
 				if (!track.getDetections().isEmpty()) {
 					track.setExemplar(findExemplar(track));
-					if(!redis.addTrack(track)) {
-						log.warn("Failed to add the track '{}'.", track);
-					}
+					inProgressJobs.addTrack(track);
 				}
 			}
 		}
@@ -249,9 +257,7 @@ public class DetectionResponseProcessor
 
 				if (!track.getDetections().isEmpty()) {
 					track.setExemplar(findExemplar(track));
-					if(!redis.addTrack(track)) {
-						log.warn("Failed to add the track '{}'.", track);
-					}
+					inProgressJobs.addTrack(track);
 				}
 			}
 		}
@@ -282,9 +288,7 @@ public class DetectionResponseProcessor
 							generateTrack(location, 0, 0));
 					if (!track.getDetections().isEmpty()) {
 						track.setExemplar(findExemplar(track));
-						if(!redis.addTrack(track)) {
-							log.warn("Failed to add the track '{}'.", track);
-						}
+						inProgressJobs.addTrack(track);
 					}
 				}
 			}
@@ -327,9 +331,7 @@ public class DetectionResponseProcessor
 
 				if (!track.getDetections().isEmpty()) {
 					track.setExemplar(findExemplar(track));
-					if(!redis.addTrack(track)) {
-						log.warn("Failed to add the track '{}'.", track);
-					}
+					inProgressJobs.addTrack(track);
 				}
 			}
 		}

@@ -28,8 +28,7 @@ package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -38,7 +37,6 @@ import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -49,8 +47,7 @@ public class EndOfStageProcessor extends WfmProcessor {
 	private static final Logger log = LoggerFactory.getLogger(EndOfStageProcessor.class);
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
-	private Redis redis;
+	private InProgressBatchJobsService inProgressBatchJobs;
 	
 	@Autowired
 	private JobProgress jobProgressStore;
@@ -60,8 +57,7 @@ public class EndOfStageProcessor extends WfmProcessor {
 
 	@Override
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
-		TransientJob job = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TransientJob.class);
-		job.setCurrentStage(job.getCurrentStage() + 1);
+		TransientJob job = inProgressBatchJobs.getJob(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class));
 
 		log.info("[Job {}|{}|*] Stage Complete! Progress is now {}/{}.",
 				exchange.getIn().getHeader(MpfHeaders.JOB_ID),
@@ -69,8 +65,7 @@ public class EndOfStageProcessor extends WfmProcessor {
 				job.getCurrentStage(),
 				job.getPipeline().getStages().size());
 
-		exchange.getOut().setBody(jsonUtils.serialize(job));
-		redis.setCurrentTaskIndex(job.getId(), job.getCurrentStage());
+		inProgressBatchJobs.setCurrentTaskIndex(job.getId(), job.getCurrentStage() + 1);
 
 		if(job.getCurrentStage() >= job.getPipeline().getStages().size()) {
 			long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);

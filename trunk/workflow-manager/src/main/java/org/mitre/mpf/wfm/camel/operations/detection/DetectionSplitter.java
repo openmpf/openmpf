@@ -31,8 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.camel.StageSplitter;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
@@ -60,8 +59,7 @@ public class DetectionSplitter implements StageSplitter {
     public static final String REF = "detectionStageSplitter";
 
     @Autowired
-    @Qualifier(RedisImpl.REF)
-    private Redis redis;
+    private InProgressBatchJobsService inProgressBatchJobs;
 
     @Autowired
     @Qualifier(ImageMediaSegmenter.REF)
@@ -146,10 +144,8 @@ public class DetectionSplitter implements StageSplitter {
                 if (isFirstDetectionStage) {
                     previousTracks = Collections.emptySortedSet();
                 } else {
-                    previousTracks = redis.getTracks(transientJob.getId(),
-                            transientMedia.getId(),
-                            transientJob.getCurrentStage() - 1,
-                            0);
+                    previousTracks = inProgressBatchJobs.getTracks(transientJob.getId(), transientMedia.getId(),
+                                                                   transientJob.getCurrentStage() - 1, 0);
                 }
 
                 // Iterate through each of the actions and segment the media using the properties provided in that action.
@@ -280,10 +276,8 @@ public class DetectionSplitter implements StageSplitter {
                             detectionRequestMessages.size(), transientMedia.getId());
                 }
             } catch (WfmProcessingException e) {
-                redis.setJobStatus(transientJob.getId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
-                transientMedia.setFailed(true);
-                transientMedia.setMessage(e.getMessage());
-                redis.persistMedia(transientJob.getId(), transientMedia);
+                inProgressBatchJobs.setJobStatus(transientJob.getId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
+                inProgressBatchJobs.addMediaError(transientJob.getId(), transientMedia.getId(), e.getMessage());
             }
         }
 

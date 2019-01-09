@@ -27,10 +27,6 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import com.google.common.collect.Lists;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.apache.camel.Message;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
@@ -42,35 +38,27 @@ import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionSplitter;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
 @RunListener.ThreadSafe
 public class TestDetectionSplitter {
-    private static final Logger log = LoggerFactory.getLogger(TestDetectionSplitter.class);
-    private static final int MINUTES = 1000 * 60; // 1000 milliseconds/second & 60 seconds/minute.
-
-    @Autowired
-    private ApplicationContext context;
 
     @Autowired
     private IoUtils ioUtils;
@@ -93,26 +81,35 @@ public class TestDetectionSplitter {
     }
 
     @Test
-    public void testDetectionSplitter() throws Exception {
+    public void testDetectionSplitter() {
         final long testId = 12345;
         final String testExternalId = "externID";
         final TransientPipeline testPipe = new TransientPipeline("testPipe", "testDescr");
-        final int testStage = 0;
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
 
         // Capture a snapshot of the detection system property settings when the job is created.
         TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
-        TransientJob testJob = new TransientJob(testId, testExternalId, transientDetectionSystemProperties, testPipe, testStage, testPriority, testOutputEnabled, false);
         TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile("/samples/new_face_video.avi").toString());
         testMedia.setType("video/avi");
         // Video media must have FPS in metadata to support adaptive frame interval processing.
         testMedia.addMetadata("FPS", "30");
         List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
-        testJob.setMedia(listMedia);
         TransientStage testTransientStage = new TransientStage("stageName", "stageDescr", ActionType.DETECTION);
         testPipe.setStages(Collections.singletonList(testTransientStage));
+        TransientJob testJob = new TransientJobImpl(
+                testId,
+                testExternalId,
+                transientDetectionSystemProperties,
+                testPipe,
+                testPriority,
+                testOutputEnabled,
+                null,
+                null,
+                listMedia,
+                Collections.emptyMap(),
+                Collections.emptyMap());
 
         Map<String, String> mergeProp = new HashMap<>();
         mergeProp.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
@@ -139,8 +136,7 @@ public class TestDetectionSplitter {
         actionProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
         actionProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
         actionProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
-        TransientJob testJob = createSimpleJobForTest(actionProperties, "/samples/new_face_video.avi", "video/avi");
-        testJob.getOverriddenJobProperties().putAll(jobProperties);
+        TransientJob testJob = createSimpleJobForTest(actionProperties, jobProperties, "/samples/new_face_video.avi", "video/avi");
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
 
         Assert.assertEquals(12, responseList.size());
@@ -175,7 +171,7 @@ public class TestDetectionSplitter {
         jobProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
         jobProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
         TransientJob testJob = createSimpleJobForTest(jobProperties, "/samples/new_face_video.avi", "video/avi");
-        testJob.getMedia().get(0).getMediaSpecificProperties().putAll(mediaProperties);
+        testJob.getMedia().stream().findFirst().get().getMediaSpecificProperties().putAll(mediaProperties);
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
 
         Assert.assertEquals(12, responseList.size());
@@ -268,9 +264,8 @@ public class TestDetectionSplitter {
         jobProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "20");
         jobProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
         jobProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
-        TransientJob testJob = createSimpleJobForTest(Collections.emptyMap(), "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
-        testJob.getOverriddenJobProperties().putAll(jobProperties);
-        testJob.getMedia().get(0).getMediaSpecificProperties().putAll(mediaProperties);
+        TransientJob testJob = createSimpleJobForTest(Collections.emptyMap(), jobProperties, "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
+        testJob.getMedia().stream().findFirst().get().getMediaSpecificProperties().putAll(mediaProperties);
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
         Assert.assertEquals(1, responseList.size());
         Message message = responseList.get(0);
@@ -300,8 +295,7 @@ public class TestDetectionSplitter {
         actionProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
-        TransientJob testJob = createSimpleJobForTest(actionProperties, "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
-        testJob.getOverriddenJobProperties().putAll(jobProperties);
+        TransientJob testJob = createSimpleJobForTest(actionProperties, jobProperties, "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
         Assert.assertEquals(1, responseList.size());
         Message message = responseList.get(0);
@@ -332,7 +326,7 @@ public class TestDetectionSplitter {
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
         TransientJob testJob = createSimpleJobForTest(actionProperties, "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
-        testJob.getMedia().get(0).getMediaSpecificProperties().putAll(mediaProperties);
+        testJob.getMedia().stream().findFirst().get().getMediaSpecificProperties().putAll(mediaProperties);
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
         Assert.assertEquals(1, responseList.size());
         Message message = responseList.get(0);
@@ -350,14 +344,32 @@ public class TestDetectionSplitter {
         }
     }
 
-    private TransientJob createSimpleJobForTest(Map<String, String> actionProperties, String mediaUri, String mediaType) throws WfmProcessingException {
+    private TransientJob createSimpleJobForTest(
+            Map<String, String> actionProperties,
+            Map<String, String> jobProperties,
+            String mediaUri,
+            String mediaType) throws WfmProcessingException {
         final long testId = 12345;
         final String testExternalId = "externID";
         final TransientPipeline testPipe = new TransientPipeline("testPipe", "testDescr");
-        return createSimpleJobForTest(testId, testExternalId, testPipe, actionProperties, mediaUri, mediaType);
+        return createSimpleJobForTest(testId, testExternalId, testPipe, actionProperties, jobProperties, mediaUri, mediaType);
     }
 
-    private TransientJob createSimpleJobForTest(long testJobId, String testExternalId, TransientPipeline testPipe, Map<String, String> actionProperties, String mediaUri, String mediaType) throws WfmProcessingException {
+    private TransientJob createSimpleJobForTest(
+            Map<String, String> actionProperties,
+            String mediaUri,
+            String mediaType) {
+        return createSimpleJobForTest(actionProperties, Collections.emptyMap(), mediaUri, mediaType);
+    }
+
+    private TransientJob createSimpleJobForTest(
+            long testJobId,
+            String testExternalId,
+            TransientPipeline testPipe,
+            Map<String, String> actionProperties,
+            Map<String, String> jobProperties,
+            String mediaUri,
+            String mediaType) {
         final int testStage = 0;
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
@@ -365,7 +377,6 @@ public class TestDetectionSplitter {
         // Capture a snapshot of the detection system property settings when the job is created.
         TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
-        TransientJob testJob = new TransientJob(testJobId, testExternalId, transientDetectionSystemProperties, testPipe, testStage, testPriority, testOutputEnabled, false);
         TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile(mediaUri).toString());
         testMedia.setLength(300);
         testMedia.setType(mediaType);
@@ -375,9 +386,21 @@ public class TestDetectionSplitter {
         }
 
         List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
-        testJob.setMedia(listMedia);
         TransientStage testTransientStage = new TransientStage("stageName", "stageDescr", ActionType.DETECTION);
         testPipe.getStages().add(testTransientStage);
+
+        TransientJob testJob = new TransientJobImpl(
+                testJobId,
+                testExternalId,
+                transientDetectionSystemProperties,
+                testPipe,
+                testPriority,
+                testOutputEnabled,
+                null,
+                null,
+                listMedia,
+                jobProperties,
+                Collections.emptyMap());
 
         TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo");
         detectionAction.setProperties(actionProperties);
@@ -410,13 +433,18 @@ public class TestDetectionSplitter {
         // Capture a snapshot of the detection system property settings when the job is created.
         TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
-        TransientJob testJob = new TransientJob(nextId(), null, transientDetectionSystemProperties, dummyPipeline, 0, 0, false, false);
-
-        testJob.setMedia(listMedia);
-        testJob.getOverriddenJobProperties().putAll(jobProperties);
-        testJob.getOverriddenAlgorithmProperties().putAll(algorithmProperties);
-
-        return testJob;
+        return new TransientJobImpl(
+                nextId(),
+                null,
+                transientDetectionSystemProperties,
+                dummyPipeline,
+                0,
+                false,
+                null,
+                null,
+                listMedia,
+                jobProperties,
+                (Map) algorithmProperties);
 
     }
 
@@ -457,7 +485,7 @@ public class TestDetectionSplitter {
         String calcFrameInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
                 testJob.getPipeline().getStages().get(0).getActions().get(0),
                 testJob,
-                testJob.getMedia().get(0),
+                testJob.getMedia().stream().findFirst().get(),
                 frameIntervalSystemPropVal, frameRateCapSystemPropVal, mediaFPS);
 
         Assert.assertEquals(expectedFrameInterval.toString(), calcFrameInterval);

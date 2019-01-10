@@ -35,6 +35,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.test.MockRedisConfig;
+import org.mitre.mpf.test.SpringTestWithMocks;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
@@ -45,12 +46,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-@ContextConfiguration(classes = MockRedisConfig.class)
+@SpringTestWithMocks(classes = MockRedisConfig.class)
 @RunWith(SpringJUnit4ClassRunner.class)
 @RunListener.ThreadSafe
 public class TestMediaInspectionProcessor {

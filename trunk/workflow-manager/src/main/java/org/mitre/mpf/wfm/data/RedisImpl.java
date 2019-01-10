@@ -548,6 +548,7 @@ public class RedisImpl implements Redis {
      */
     @Override
     public synchronized void persistJob(TransientJob transientJob) throws WfmProcessingException {
+        log.info("Storing batch job {} in Redis.", transientJob.getId());
         // Redis cannot store complex objects, so it is necessary to store complex objects using
         // less complex data structures such as lists and hashes (maps). The jobHash variable
         // is used to store the simple properties of a job in a map.
@@ -623,6 +624,7 @@ public class RedisImpl implements Redis {
 
     @Override
     public synchronized void persistJob(TransientStreamingJob transientStreamingJob) throws WfmProcessingException {
+        log.info("Storing streaming job {} in Redis.", transientStreamingJob.getId());
         // Redis cannot store complex objects, so it is necessary to store complex objects using
         // less complex data structures such as lists and hashes (maps). The jobHash variable
         // is used to store the simple properties of a streaming job in a map.

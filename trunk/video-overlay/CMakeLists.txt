@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2017 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2018 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2017 The MITRE Corporation                                      #
+# Copyright 2018 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -29,18 +29,24 @@ aux_source_directory(./src/main/cpp SRC)
 
 find_package(OpenCV 3.3 EXACT REQUIRED PATHS /opt/opencv-3.3.0)
 
+find_package(mpfComponentInterface REQUIRED)
+find_package(mpfDetectionComponentApi REQUIRED)
+
+
 include_directories(${JNI_INCLUDE_DIRS} ${LOG4CXX_LIBS} ${OpenCV_INCLUDE_DIRS})
 add_library(mpfopencvjni SHARED ${SRC})
 
 set(JNI_LIBRARIES_WITHOUT_AWT ${JNI_LIBRARIES})
 list(REMOVE_AT JNI_LIBRARIES_WITHOUT_AWT 0)
 
-target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${JNI_LIBRARIES_WITHOUT_AWT} ${Log_LIBS})
+target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${JNI_LIBRARIES_WITHOUT_AWT} ${Log_LIBS} mpfDetectionComponentApi)
 
-add_custom_command(TARGET mpfopencvjni POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -D TARGET_BINARY_LOCATION="$<TARGET_FILE:mpfopencvjni>"
-    -D DEP_LIBS_INSTALL_LOCATION="${CMAKE_INSTALL_PREFIX}/lib"
-    -P ${CopySharedLibDependencies_LOCATION})
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_custom_command(TARGET mpfopencvjni POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -D TARGET_BINARY_LOCATION="$<TARGET_FILE:mpfopencvjni>"
+        -D DEP_LIBS_INSTALL_LOCATION="${CMAKE_INSTALL_PREFIX}/lib"
+        -P ${CopySharedLibDependencies_LOCATION})
+endif()
 
 install(TARGETS mpfopencvjni
         RUNTIME DESTINATION bin

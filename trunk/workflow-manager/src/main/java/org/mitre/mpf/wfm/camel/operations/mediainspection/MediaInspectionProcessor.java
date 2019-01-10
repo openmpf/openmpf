@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,22 +29,20 @@ package org.mitre.mpf.wfm.camel.operations.mediainspection;
 import com.google.common.base.Preconditions;
 import org.apache.camel.Exchange;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
+import org.apache.tika.parser.external.ExternalParsersConfigReader;
 import org.mitre.mpf.framecounter.FrameCounter;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.slf4j.Logger;
@@ -52,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -95,7 +92,9 @@ public class MediaInspectionProcessor extends WfmProcessor {
 					transientMedia.setSha256(DigestUtils.sha256Hex(inputStream));
 				} catch(IOException ioe) {
 					transientMedia.setFailed(true);
-					transientMedia.setMessage("Could not calculate the SHA-256 hash for the file due to an exception.");
+					String errorMessage = "Could not calculate the SHA-256 hash for the file due to IOException.";
+					transientMedia.setMessage(errorMessage);
+					log.error(errorMessage, ioe);
 				}
 
 				try {
@@ -103,7 +102,9 @@ public class MediaInspectionProcessor extends WfmProcessor {
 					transientMedia.setType(type);
 				} catch(IOException ioe) {
 					transientMedia.setFailed(true);
-					transientMedia.setMessage("Could not determine the MIME type for the media due to an exception.");
+					String errorMessage = "Could not determine the MIME type for the media due to IOException.";
+					transientMedia.setMessage(errorMessage);
+                    log.error(errorMessage, ioe);
 				}
 
 				switch(transientMedia.getMediaType()) {
@@ -120,17 +121,23 @@ public class MediaInspectionProcessor extends WfmProcessor {
 						break;
 
 					default:
-						transientMedia.setFailed(true);
-						transientMedia.setMessage("Unsupported file format.");
+						// DEBUG
+						//transientMedia.setFailed(true);
+						//transientMedia.setMessage("Unsupported file format.");
+                        log.error("transientMedia.getMediaType() = {} is undefined. ", transientMedia.getMediaType());
 						break;
 				}
 			} catch (Exception exception) {
-				log.warn("[Job {}|*|*] Failed to inspect Media #{} due to an exception.", exchange.getIn().getHeader(MpfHeaders.JOB_ID), transientMedia.getId(), exception);
+				log.error("[Job {}|*|*] Failed to inspect {} due to an exception.", exchange.getIn().getHeader(MpfHeaders.JOB_ID), transientMedia.getLocalPath(), exception);
 				transientMedia.setFailed(true);
-				transientMedia.setMessage(exception.getMessage());
+				if (exception instanceof TikaException) {
+					transientMedia.setMessage("Tika media inspection error: " + exception.getMessage());
+				} else {
+					transientMedia.setMessage(exception.getMessage());
+				}
 			}
 		} else {
-			log.debug("[Job {}|*|*] Skipping inspection of Media #{} as it is in an error state.", transientMedia.getId());
+			log.error("[Job {}|*|*] Skipping inspection of Media #{} as it is in an error state.", transientMedia.getId());
 		}
 
 		// Copy these headers to the output exchange.
@@ -140,9 +147,9 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
 		exchange.getOut().setBody(jsonUtils.serialize(transientMedia));
 		if (transientMedia.isFailed()) {
-			redis.setJobStatus(exchange.getIn().getHeader(MpfHeaders.JOB_ID,Long.class), JobStatus.IN_PROGRESS_ERRORS);
+			redis.setJobStatus(exchange.getIn().getHeader(MpfHeaders.JOB_ID,Long.class), BatchJobStatusType.ERROR);
 		}
-		redis.persistMedia(exchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class), transientMedia);
+        redis.persistMedia(exchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class), transientMedia);
 	}
 
 	private void inspectAudio(File localFile, TransientMedia transientMedia) throws IOException, TikaException, SAXException {
@@ -155,6 +162,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
 		transientMedia.setLength(-1);
 	}
 
+	// inspectVideo may add the following properties to the transientMedias metadata: FRAME_COUNT, FPS, DURATION, ROTATION.
+    // The TransientMedias length will be set to FRAME_COUNT.
 	private void inspectVideo(File localFile, TransientMedia transientMedia) throws IOException, TikaException, SAXException {
 		// FRAME_COUNT
 
@@ -248,40 +257,25 @@ public class MediaInspectionProcessor extends WfmProcessor {
 		transientMedia.setLength(1);
 	}
 
-	private Metadata generateFFMPEGMetadata(File fileName) throws IOException, TikaException, SAXException {
-		Tika tika = new Tika();
+	private Metadata generateFFMPEGMetadata(File file) throws IOException, TikaException, SAXException {
 		Metadata metadata = new Metadata();
-		ContentHandler handler = new DefaultHandler();
-		URL url = this.getClass().getClassLoader().getResource("tika-external-parsers.xml");
-		Parser parser = org.apache.tika.parser.external.ExternalParsersConfigReader.read(url.openStream()).get(0);
-
-		ParseContext context = new ParseContext();
-		String mimeType = null;
-		mimeType = tika.detect(fileName);
-		metadata.set(Metadata.CONTENT_TYPE, mimeType);
-
-		try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(fileName),
-				"Cannot open file '%s'", fileName)) {
-			parser.parse(stream, handler, metadata, context);
+		try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(file.toPath()),
+				"Cannot open file '%s'", file)) {
+			metadata.set(Metadata.CONTENT_TYPE, ioUtils.getMimeType(file));
+			URL url = this.getClass().getClassLoader().getResource("tika-external-parsers.xml");
+			Parser parser = ExternalParsersConfigReader.read(url.openStream()).get(0);
+			parser.parse(stream, new DefaultHandler(), metadata, new ParseContext());
 		}
 		return metadata;
 	}
 
-	private Metadata generateExifMetadata(File fileName) throws IOException, TikaException, SAXException {
-		Tika tika = new Tika();
+	private Metadata generateExifMetadata(File file) throws IOException, TikaException, SAXException {
 		Metadata metadata = new Metadata();
-		ContentHandler handler = new DefaultHandler();
-		Parser parser = new AutoDetectParser();
-		ParseContext context = new ParseContext();
-		String mimeType = null;
-		try (InputStream stream = Preconditions.checkNotNull(IOUtils.toBufferedInputStream(FileUtils.openInputStream(fileName)),
-				"Cannot open file '%s'", fileName)) {
-			mimeType = tika.detect(stream);
-			metadata.set(Metadata.CONTENT_TYPE, mimeType);
-		}
-		try (InputStream stream = Preconditions.checkNotNull(IOUtils.toBufferedInputStream(FileUtils.openInputStream(fileName)),
-				"Cannot open file '%s'", fileName)) {
-			parser.parse(stream, handler, metadata, context);
+		try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(file.toPath()),
+				"Cannot open file '%s'", file)) {
+			metadata.set(Metadata.CONTENT_TYPE, ioUtils.getMimeType(stream));
+			Parser parser = new AutoDetectParser();
+			parser.parse(stream, new DefaultHandler(), metadata, new ParseContext());
 		}
 		return metadata;
 	}

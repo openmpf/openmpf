@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -54,9 +54,17 @@ public class JavaTestDetectionComponent extends MPFDetectionComponentBase {
 
     @Override
     public List<MPFImageLocation> getDetections(MPFImageJob job) {
-        List<MPFImageLocation> tracks = new LinkedList<>();
+        List<MPFImageLocation> locations = new LinkedList<>();
         MPFImageLocation loc = new MPFImageLocation(0, 0, 0, 0, -1, generateDetectionProperties());
-        tracks.add(loc);
+        locations.add(loc);
+        return locations;
+    }
+
+    @Override
+    public List<MPFGenericTrack> getDetections(MPFGenericJob job) {
+        List<MPFGenericTrack> tracks = new LinkedList<>();
+        MPFGenericTrack track = new MPFGenericTrack(0, generateDetectionProperties());
+        tracks.add(track);
         return tracks;
     }
 
@@ -70,7 +78,8 @@ public class JavaTestDetectionComponent extends MPFDetectionComponentBase {
     public boolean supports(MPFDataType dataType) {
         return MPFDataType.IMAGE == dataType
                 || MPFDataType.VIDEO == dataType
-                || MPFDataType.AUDIO == dataType;
+                || MPFDataType.AUDIO == dataType
+                || MPFDataType.UNKNOWN == dataType;
     }
 
     @Override

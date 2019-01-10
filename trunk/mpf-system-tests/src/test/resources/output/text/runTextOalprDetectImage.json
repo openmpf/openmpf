@@ -23,8 +23,8 @@
   "priority": 4,
   "siteId": "mpf1",
   "externalJobId": "0f75b3ad-a904-424d-a115-9511c37309f7",
-  "timeStart": "2017-06-15 22:45:36.0",
-  "timeStop": "2017-06-15 22:46:20.0",
+  "timeStart": "2017-06-15T22:45:36.0-05:00",
+  "timeStop": "2017-06-15T22:46:20.0-05:00",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
@@ -55,14 +55,18 @@
                 "stopOffsetFrame": 1,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
+                "confidence": 87.26358032226562,
+                "trackProperties": {
+                  "TEXT": "LV42DY"
+                },
                 "type": "TEXT",
                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "exemplar": {
                   "x": 358,
                   "y": 419,
-                  "width": 106,
+                  "width": 110,
                   "height": 57,
-                  "confidence": 89.49258,
+                  "confidence": 87.26358032226562,
                   "detectionProperties": {
                     "TEXT": "LV42DY"
                   },
@@ -76,9 +80,9 @@
                   {
                     "x": 358,
                     "y": 419,
-                    "width": 106,
+                    "width": 110,
                     "height": 57,
-                    "confidence": 89.49258,
+                    "confidence": 87.26358032226562,
                     "detectionProperties": {
                       "TEXT": "LV42DY"
                     },
@@ -120,6 +124,10 @@
                 "stopOffsetFrame": 1,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
+                "confidence": 86.75150299072266,
+                "trackProperties": {
+                  "TEXT": "0116G"
+                },
                 "type": "TEXT",
                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "exemplar": {
@@ -127,7 +135,7 @@
                   "y": 1317,
                   "width": 238,
                   "height": 117,
-                  "confidence": 87.40117,
+                  "confidence": 86.75150299072266,
                   "detectionProperties": {
                     "TEXT": "0116G"
                   },
@@ -143,7 +151,7 @@
                     "y": 1317,
                     "width": 238,
                     "height": 117,
-                    "confidence": 87.40117,
+                    "confidence": 86.75150299072266,
                     "detectionProperties": {
                       "TEXT": "0116G"
                     },
@@ -165,16 +173,13 @@
     },
     {
       "mediaId": 25,
-      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/text/lp-trailer.jpg",
-      "mimeType": "image/jpeg",
+      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/text/lp-trailer.png",
+      "mimeType": "image/png",
       "length": 1,
       "sha256": "1fa8ede23ac49360fde6d3a063b3a4035ebfe450ed95e1d82ea108bc8e7accab",
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
-        "EXIF_ORIENTATION": "1",
-        "HORIZONTAL_FLIP": "FALSE",
-        "ROTATION": "0"
       },
       "mediaProperties": {},
       "markupResult": null,
@@ -189,6 +194,10 @@
                 "stopOffsetFrame": 1,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
+                "confidence": 90.93294,
+                "trackProperties": {
+                  "TEXT": "6EMZ948"
+                },
                 "type": "TEXT",
                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "exemplar": {

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -99,7 +99,7 @@ public class TestDescriptorValidator {
     @Test
     public void canValidateComponentLanguage() {
         JsonComponentDescriptor descriptor = new JsonComponentDescriptor();
-        assertValidationErrors(descriptor, "sourceLanguage must be java or c++");
+        assertValidationErrors(descriptor, "sourceLanguage must be java, c++, or python");
 
         descriptor.sourceLanguage = ComponentLanguage.forValue("java");
         assertFieldValid(descriptor, "sourceLanguage");
@@ -112,6 +112,31 @@ public class TestDescriptorValidator {
 
         descriptor.sourceLanguage = ComponentLanguage.forValue("C++");
         assertFieldValid(descriptor, "sourceLanguage");
+
+        descriptor.sourceLanguage = ComponentLanguage.forValue("Python");
+        assertFieldValid(descriptor, "sourceLanguage");
+
+        descriptor.sourceLanguage = ComponentLanguage.forValue("python");
+        assertFieldValid(descriptor, "sourceLanguage");
+    }
+
+
+    @Test
+    public void canValidateLibraryPath() {
+        JsonComponentDescriptor descriptor = new JsonComponentDescriptor();
+        assertValidationErrors(descriptor, doesNotSupportBatchOrStream());
+
+        descriptor.streamLibrary = "/path/to/stream/lib.so";
+        descriptor.batchLibrary = null;
+        assertNoValidationErrors(descriptor, doesNotSupportBatchOrStream());
+
+        descriptor.streamLibrary = null;
+        descriptor.batchLibrary = "/path/to/batch/lib.so";
+        assertNoValidationErrors(descriptor, doesNotSupportBatchOrStream());
+
+        descriptor.streamLibrary = "/path/to/stream/lib.so";
+        descriptor.batchLibrary = "/path/to/batch/lib.so";
+        assertNoValidationErrors(descriptor, doesNotSupportBatchOrStream());
     }
 
 
@@ -174,26 +199,6 @@ public class TestDescriptorValidator {
 
 
     @Test
-    public void canValidateLaunchArgs() {
-        JsonComponentDescriptor descriptor = new JsonComponentDescriptor();
-        assertValidationErrors(descriptor, isNull("launchArgs"));
-
-        descriptor.launchArgs = new ArrayList<>();
-        assertFieldValid(descriptor, "launchArgs");
-
-        descriptor.launchArgs.add("hello");
-        descriptor.launchArgs.add(null);
-        descriptor.launchArgs.add("");
-
-        assertFieldValid(descriptor, "launchArgs[0]");
-        assertValidationErrors(descriptor,
-                isEmpty("launchArgs[1]"),
-                isEmpty("launchArgs[2]"));
-
-    }
-
-
-    @Test
     public void canValidateEnvironmentVariables() {
         JsonComponentDescriptor descriptor = new JsonComponentDescriptor();
         assertValidationErrors(descriptor, isNull("environmentVariables"));
@@ -227,20 +232,7 @@ public class TestDescriptorValidator {
                 isNull("algorithm.actionType"),
                 isNull("algorithm.requiresCollection"),
                 doesNotSupportBatchOrStream());
-
-	    descriptor.algorithm.supportsStreamProcessing = true;
-	    descriptor.algorithm.supportsBatchProcessing = false;
-        assertFieldValid(descriptor, "algorithm");
-
-	    descriptor.algorithm.supportsStreamProcessing = false;
-	    descriptor.algorithm.supportsBatchProcessing = true;
-	    assertFieldValid(descriptor, "algorithm");
-
-	    descriptor.algorithm.supportsStreamProcessing = true;
-	    descriptor.algorithm.supportsBatchProcessing = true;
-	    assertFieldValid(descriptor, "algorithm");
-
-
+        
         descriptor.algorithm.actionType = ActionType.DETECTION;
         assertFieldValid(descriptor, "algorithm.actionType");
 
@@ -364,7 +356,20 @@ public class TestDescriptorValidator {
             String errorMessage = ex.getMessage();
             boolean containsAllMsgs = Stream.of(messages)
                     .allMatch(errorMessage::contains);
-            assertTrue("Exception message did not contain expected messages", containsAllMsgs);
+            assertTrue("Exception message did not contain expected message(s)", containsAllMsgs);
+        }
+    }
+
+    private void assertNoValidationErrors(JsonComponentDescriptor descriptor, String... messages) {
+        assertTrue("No messages passed in to check", messages.length > 0);
+        try {
+            _validator.validate(descriptor);
+        }
+        catch (InvalidComponentDescriptorException ex) {
+            String errorMessage = ex.getMessage();
+            boolean containsAnyMsgs = Stream.of(messages)
+                    .anyMatch(errorMessage::contains);
+            assertFalse("Exception message contained unexpected message(s)", containsAnyMsgs);
         }
     }
 
@@ -400,6 +405,6 @@ public class TestDescriptorValidator {
 
 
     private static String doesNotSupportBatchOrStream() {
-    	return "must contain supportsBatchProcessing, supportsStreamProcessing, or both.";
+    	return "must contain batchLibrary, streamLibrary, or both";
     }
 }

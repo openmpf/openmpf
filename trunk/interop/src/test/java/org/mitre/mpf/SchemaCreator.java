@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,34 +29,32 @@ package org.mitre.mpf;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
 import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
-import com.fasterxml.jackson.module.jsonSchema.factories.SchemaFactoryWrapper;
-import com.google.common.io.Files;
 import org.mitre.mpf.interop.*;
 
 import java.io.File;
-import java.nio.charset.Charset;
 
 public class SchemaCreator {
-	public static void main(String[] args) throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper();
-		JsonSchemaGenerator jsonSchemaGenerator = new JsonSchemaGenerator(objectMapper);
-		for(Class clazz : new Class[] {
-				// JsonAction.class,
-				JsonCallbackBody.class,
-				// JsonDetectionOutputObject.class,
-				// JsonDetectionProcessingError.class,
-				JsonJobRequest.class,
-				// JsonMarkupOutputObject.class,
-				// JsonMediaOutputObject.class,
-				JsonOutputObject.class,
-				JsonOutputObjectSummary.class
-				// JsonPipeline.class,
-				// JsonStage.class,
-				// JsonTrackOutputObject.class
-		}) {
-			JsonSchema jsonSchema = jsonSchemaGenerator.generateSchema(clazz);
-			objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(clazz.getSimpleName()+".schema.json"), jsonSchema);
-		}
-	}
+    public static void main(String[] args) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonSchemaGenerator jsonSchemaGenerator = new JsonSchemaGenerator(objectMapper);
+        for(Class clazz : new Class[] {
+                // JsonAction.class,
+                JsonCallbackBody.class,
+                // JsonDetectionOutputObject.class,
+                // JsonDetectionProcessingError.class,
+                JsonJobRequest.class,
+                // JsonMarkupOutputObject.class,
+                // JsonMediaOutputObject.class,
+                JsonOutputObject.class,
+                // JsonPipeline.class,
+                // JsonStage.class,
+                // JsonTrackOutputObject.class
+                JsonSegmentSummaryReport.class,
+                JsonHealthReportCollection.class
+        }) {
+            JsonSchema jsonSchema = jsonSchemaGenerator.generateSchema(clazz);
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(clazz.getSimpleName()+".schema.json"), jsonSchema);
+        }
+    }
 }
 

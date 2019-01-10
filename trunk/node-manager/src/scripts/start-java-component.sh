@@ -7,11 +7,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2017 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2018 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2017 The MITRE Corporation                                      #
+# Copyright 2018 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -26,7 +26,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# The arguments passed into this script should be 
+# The arguments passed into this script should be
 # 1. The component jar filename
 # 2. The activemq queue name
 # 3. The service name
@@ -37,11 +37,11 @@
 # don't source mpf.sh - if under /etc/profile.d we got it
 
 # Do an environment variable and Java property
-if [ -n "${ACTIVE_MQ_HOST}" ]; then
-    QUEUE_FLAGS="-DACTIVE_MQ_HOST=${ACTIVE_MQ_HOST}"
+if [ -n "${ACTIVE_MQ_BROKER_URI}" ]; then
+    QUEUE_FLAGS="-DACTIVE_MQ_BROKER_URI=${ACTIVE_MQ_BROKER_URI}"
 else
-    QUEUE_FLAGS="-DACTIVE_MQ_HOST=tcp://localhost:61616"
-    log_warn "ACTIVE_MQ_HOST unset or empty, using tcp://localhost:61616"
+    QUEUE_FLAGS="-DACTIVE_MQ_BROKER_URI=tcp://localhost:61616"
+    log_warn "ACTIVE_MQ_BROKER_URI unset or empty, using tcp://localhost:61616"
 fi
 
 
@@ -51,17 +51,7 @@ fi
 # NOTE: As of Java 8, PermGen no longer exists. Native system memory is used to store class data.
 
 JAVA_FLAGS="-Djava.library.path=${MPF_HOME}/lib:${MPF_HOME}/jars"
-JGROUPS_FLAGS=""
-
-if [ -n "${THIS_MPF_NODE}" -a -n "${ALL_MPF_NODES}" ]; then
-    JGROUPS_FLAGS="-Djgroups.tcp.address=${THIS_MPF_NODE} -Djgroups.tcp.port=7800 -Djgroups.tcpping.initial_hosts=${ALL_MPF_NODES}"
-else
-    log_warn "THIS_MPF_NODE and/or ALL_MPF_NODES for jgroups are not set"
-fi  
-
-# MPF_JAVA_FLAGS is usually set in the service definition in a  nodeManagerConfig.xml
 
 set -x
-exec ${JAVA_HOME}/bin/java ${JAVA_FLAGS} -cp ${MPF_HOME}/jars/mpf-java-component-executor-1.0.0.jar:${MPF_HOME}/plugins/$3/$1 -Dlogback.configurationFile=${MPF_HOME}/plugins/$3/logback.xml ${MPF_JAVA_FLAGS} ${JGROUPS_FLAGS} ${QUEUE_FLAGS} org.mitre.mpf.component.executor.detection.MPFDetectionMain $2
+exec ${JAVA_HOME}/bin/java ${JAVA_FLAGS} -cp ${MPF_HOME}/jars/mpf-java-component-executor-3.0.0.jar:${MPF_HOME}/plugins/$3/$1 -Dlogback.configurationFile=${MPF_HOME}/plugins/$3/logback.xml ${QUEUE_FLAGS} org.mitre.mpf.component.executor.detection.MPFDetectionMain $2
 set +x
-

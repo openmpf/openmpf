@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,10 +27,9 @@ package org.mitre.mpf.nms;
 
 import org.mitre.mpf.nms.xml.Service;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Simple {@link BaseServiceLauncher} that just sends a {@literal q\n} on STDIN
@@ -38,43 +37,36 @@ import java.util.Arrays;
  */
 public class SimpleServiceLauncher extends GenericServiceLauncher {
 
-    /**
-     * @param desc
-     */
     public SimpleServiceLauncher(ServiceDescriptor desc) {
         super(desc);
     }
 
-    // moved this into the XML!
     /**
-     * Required override in derived classes. This can be stubbed out if nothing
-     * needs to be done. Useful possibilities include sending something via
-     * STDIN to the app to tell it to shutdown gracefully followed by some sleep
-     * if needed. Upon return the caller will terminate the process.
+     * Special configuration for the process environment after BaseNodeLauncher
+     * configures the builder.
      *
-     * @Override public void additionalProcessPreconfig(ProcessBuilder pb) { //
-     * TODO Verify Implementation Map<String, String> env = pb.environment();
-     * String command = pb.command().get(0); command = command.substring(0,
-     * command.lastIndexOf('/')); env.put("LD_LIBRARY_PATH",
-     * env.get("LD_LIBRARY_PATH") + ":" + command + "/../lib"); }
+     * @param pb
      */
-    /**
-     * Required override in derived classes. This can be stubbed out if nothing
-     * needs to be done. Useful possibilities include sending something via
-     * STDIN to the app to tell it to shutdown gracefully followed by some sleep
-     * if needed. Upon return the caller will terminate the process.
-     
-    @Override
-    public void sendShutdownToApp() {
-        // TODO Verify Implementation
-        LOG.info("SHUTTING DOWN {}", this.getServiceName());
-        sendLine("q\n");
-        // should we wait for something returned?
-    }*/
+    @Override public void additionalProcessPreconfig(ProcessBuilder pb) {
+        // Add $MPF_HOME/lib to the end of ld library path for the C++ component executor process so that it can link
+        // with QT, AMQ, and protobuf libs. If ld library path is specified in a component descriptor file's
+        // "environmentVariables", it will already be in LD_LIBRARY_PATH before this method is invoked.
 
-    @Override
-    public void started(OutputStream input, InputStream output, InputStream error) {
-        // TODO Verify Implementation
+        String mpfHomeKey = "MPF_HOME";
+        String ldLibPathKey = "LD_LIBRARY_PATH";
+        Map<String, String> env = pb.environment();
+
+        String mpfHomeVal = env.get(mpfHomeKey);
+        if (mpfHomeVal == null) {
+            throw new IllegalStateException("Missing environment variable: " + mpfHomeKey);
+        }
+
+        String ldLibPathVal = env.get(ldLibPathKey);
+        if (ldLibPathVal != null) {
+            env.put(ldLibPathKey, ldLibPathVal + System.getProperty("path.separator") + mpfHomeVal + "/lib");
+        } else {
+            env.put(ldLibPathKey, mpfHomeVal + "/lib");
+        }
     }
 
     /**

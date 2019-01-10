@@ -25,8 +25,8 @@
   "priority": 4,
   "siteId": "mpf1",
   "externalJobId": "61cec8cc-525b-4ec2-8bc0-457355ad6193",
-  "timeStart": "2017-06-20 12:23:18.0",
-  "timeStop": "2017-06-20 12:23:51.0",
+  "timeStart": "2017-06-20T12:23:18.0-05:00",
+  "timeStop": "2017-06-20T12:23:51.0-05:00",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
@@ -59,6 +59,7 @@
                 "stopOffsetTime": 4351,
                 "type": "MOTION",
                 "source": "+#MOG MOTION DETECTION (WITH TRACKING) ACTION",
+                "confidence": -1.0,
                 "exemplar": {
                   "x": 0,
                   "y": 240,
@@ -566,6 +567,7 @@
                 "stopOffsetTime": 7278,
                 "type": "MOTION",
                 "source": "+#MOG MOTION DETECTION (WITH TRACKING) ACTION",
+                "confidence": -1.0,
                 "exemplar": {
                   "x": 304,
                   "y": 208,

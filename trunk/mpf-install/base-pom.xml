@@ -5,11 +5,11 @@
   ~ under contract, and is subject to the Rights in Data-General Clause       ~
   ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
   ~                                                                           ~
-  ~ Copyright 2017 The MITRE Corporation. All Rights Reserved.                ~
+  ~ Copyright 2018 The MITRE Corporation. All Rights Reserved.                ~
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright 2017 The MITRE Corporation                                      ~
+  ~ Copyright 2018 The MITRE Corporation                                      ~
   ~                                                                           ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
   ~ you may not use this file except in compliance with the License.          ~
@@ -30,7 +30,7 @@
     <parent>
         <groupId>org.mitre.mpf</groupId>
         <artifactId>mpf-project</artifactId>
-        <version>1.0.0</version>
+        <version>3.0.0</version>
 	    <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -97,20 +97,8 @@
                                 not the number of chmod processes.
                                 See https://ant.apache.org/manual/Tasks/chmod.html -->
                                 <chmod perm="755" verbose="true" maxparallel="100">
-                                    <fileset dir="${basedir}/../install" includes="**/*"/>
+                                    <fileset dir="${basedir}/../install" excludes="plugins/**"/>
                                 </chmod>
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>make empty log directory under install</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <mkdir dir="${basedir}/../install/log"/>
                             </target>
                         </configuration>
                     </execution>

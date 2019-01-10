@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,10 +27,7 @@
 package org.mitre.mpf.wfm.service;
 
 import com.thoughtworks.xstream.XStream;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.json.JSONObject;
-import org.json.XML;
 import org.mitre.mpf.interop.JsonAction;
 import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.interop.JsonStage;
@@ -43,7 +40,6 @@ import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
@@ -59,16 +55,10 @@ import java.util.stream.Collectors;
 
 @Component
 public class PipelineServiceImpl implements PipelineService {
-    private static final Logger log = LoggerFactory.getLogger(PipelineService.class);
+    private static final Logger log = LoggerFactory.getLogger(PipelineServiceImpl.class);
 
     @Autowired
-    @Qualifier(PropertiesUtil.REF)
     private PropertiesUtil propertiesUtil;
-
-    @Autowired
-    @Qualifier("loadedProperties")
-    private Properties properties;
-
 
     private XStream xStream;
 
@@ -82,6 +72,7 @@ public class PipelineServiceImpl implements PipelineService {
 
     @PostConstruct
     public void init() {
+        // Method is reading from the algorithms.xml file, to build up a collection of algorithm definitions.
         log.debug("Initializing PipelineManager");
         xStream = new XStream();
 
@@ -277,20 +268,6 @@ public class PipelineServiceImpl implements PipelineService {
     }
 
 
-    /** Gets the pipelines definition XML as an JSON string */
-    @Override
-    public String getPipelineDefinitionAsJson() {
-        try (InputStream inputStream = propertiesUtil.getPipelineDefinitions().getInputStream()) {
-            String pipelinesXmlString = IOUtils.toString(inputStream);
-            JSONObject xmlJSONObj = XML.toJSONObject(pipelinesXmlString);
-            return xmlJSONObj.toString();
-        }
-        catch (IOException ex) {
-            throw new UncheckedIOException("Could not read pipeline definition file", ex);
-        }
-    }
-
-
 
     //
     // Algorithm
@@ -391,18 +368,21 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public boolean pipelineSupportsBatch(String pipelineName) {
-    	return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::getSupportsBatchProcessing);
+    	return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::supportsBatchProcessing);
     }
 
 
     @Override
     public boolean pipelineSupportsStreaming(String pipelineName) {
-        return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::getSupportsStreamProcessing);
+        return pipelineSupportsProcessingType(pipelineName, AlgorithmDefinition::supportsStreamProcessing);
     }
 
 
     private boolean pipelineSupportsProcessingType(String pipelineName, Predicate<AlgorithmDefinition> supportsPred) {
         PipelineDefinition pipeline = getPipeline(pipelineName);
+        if (pipeline == null) {
+	        throw new InvalidPipelineObjectWfmProcessingException("Missing pipeline: \"" + pipelineName + "\".");
+        }
         return pipeline.getTaskRefs().stream()
                 .map(TaskDefinitionRef::getName)
 		        .allMatch(tName -> taskSupportsProcessingType(tName, supportsPred));
@@ -411,12 +391,12 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public boolean taskSupportsBatch(String taskName) {
-    	return taskSupportsProcessingType(taskName, AlgorithmDefinition::getSupportsBatchProcessing);
+    	return taskSupportsProcessingType(taskName, AlgorithmDefinition::supportsBatchProcessing);
     }
 
     @Override
     public boolean taskSupportsStreaming(String taskName) {
-        return taskSupportsProcessingType(taskName, AlgorithmDefinition::getSupportsStreamProcessing);
+        return taskSupportsProcessingType(taskName, AlgorithmDefinition::supportsStreamProcessing);
 
     }
 
@@ -429,12 +409,12 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public boolean actionSupportsBatch(String actionName) {
-        return actionSupportsProcessingType(actionName, AlgorithmDefinition::getSupportsBatchProcessing);
+        return actionSupportsProcessingType(actionName, AlgorithmDefinition::supportsBatchProcessing);
     }
 
     @Override
     public boolean actionSupportsStreaming(String actionName) {
-        return actionSupportsProcessingType(actionName, AlgorithmDefinition::getSupportsStreamProcessing);
+        return actionSupportsProcessingType(actionName, AlgorithmDefinition::supportsStreamProcessing);
     }
 
 
@@ -455,13 +435,25 @@ public class PipelineServiceImpl implements PipelineService {
     }
 
     private void addAlgorithm(AlgorithmDefinition algorithm) {
-        algorithm.getProvidesCollection().getAlgorithmProperties()
-		        .forEach(pd -> pd.setDefaultValue(properties));
+        setAlgorithmDefaultValues(algorithm);
 
         validateAlgorithm(algorithm);
         log.debug("{}: Adding algorithm", StringUtils.upperCase(algorithm.getName()));
         algorithms.put(StringUtils.upperCase(algorithm.getName()), algorithm);
     }
+
+
+    public void refreshAlgorithmDefaultValues() {
+        algorithms.values().forEach(this::setAlgorithmDefaultValues);
+    }
+
+    private void setAlgorithmDefaultValues(AlgorithmDefinition algorithm) {
+        algorithm.getProvidesCollection().getAlgorithmProperties()
+            .stream()
+            .filter(pd -> pd.getPropertiesKey() != null)
+            .forEach(pd -> pd.setDefaultValue(propertiesUtil.lookup(pd.getPropertiesKey())));
+    }
+
 
 
     @Override

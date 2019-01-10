@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -38,8 +38,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -133,7 +133,7 @@ public class ComponentStateServiceImpl implements ComponentStateService {
         RegisterComponentModel newModel = new RegisterComponentModel();
         newModel.setFullUploadedFilePath(componentPackagePath.toAbsolutePath().toString());
         newModel.setPackageFileName(componentPackagePath.getFileName().toString());
-        newModel.setDateUploaded(new Date());
+        newModel.setDateUploaded(Instant.now());
         newModel.setComponentState(ComponentState.DEPLOYED);
         newModel.setJsonDescriptorPath(descriptorPath.toString());
         addEntry(newModel);
@@ -158,7 +158,7 @@ public class ComponentStateServiceImpl implements ComponentStateService {
         RegisterComponentModel newModel = new RegisterComponentModel();
         newModel.setFullUploadedFilePath(pathToComponentPackage.toAbsolutePath().toString());
         newModel.setPackageFileName(pathToComponentPackage.getFileName().toString());
-        newModel.setDateUploaded(new Date());
+        newModel.setDateUploaded(Instant.now());
         newModel.setComponentState(componentState);
         addEntry(newModel);
     }

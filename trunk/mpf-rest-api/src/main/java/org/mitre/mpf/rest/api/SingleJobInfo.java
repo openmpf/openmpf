@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,16 +26,16 @@
 
 package org.mitre.mpf.rest.api;
 
-import java.util.Date;
+import java.time.Instant;
 
 public class SingleJobInfo {
 	private Long jobId;
 	private String pipelineName;
 	private int jobPriority = -1;
-	private String /*JobStatus*/ jobStatus;
+	private String jobStatus;
 	private float jobProgress = 0;
-	private Date startDate;
-	private Date endDate;
+	private Instant startDate;
+	private Instant endDate;
 	private String outputObjectPath;
 	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
 	//to maintain the use of only standard Java in the model.api classes
@@ -43,8 +43,8 @@ public class SingleJobInfo {
 
 	public SingleJobInfo() {}
 	
-	public SingleJobInfo(Long jobId, String pipelineName, int jobPriority, String /*JobStatus*/ jobStatus, float jobProgress, 
-			Date startDate, Date endDate, String outputObjectPath, boolean terminal) {
+	public SingleJobInfo(Long jobId, String pipelineName, int jobPriority, String jobStatus, float jobProgress,
+	                     Instant startDate, Instant endDate, String outputObjectPath, boolean terminal) {
 		this.jobId = jobId;
 		this.pipelineName = pipelineName;
 		this.jobPriority = jobPriority;
@@ -68,7 +68,7 @@ public class SingleJobInfo {
 		return jobPriority;
 	}
 	
-	public String /*JobStatus*/ getJobStatus() {
+	public String getJobStatus() {
 		return jobStatus;
 	}
 	
@@ -79,11 +79,11 @@ public class SingleJobInfo {
 		this.jobProgress = jobProgress;
 	}
 	
-	public Date getStartDate() {
+	public Instant getStartDate() {
 		return startDate;
 	}
 
-	public Date getEndDate() {
+	public Instant getEndDate() {
 		return endDate;
 	}
 	

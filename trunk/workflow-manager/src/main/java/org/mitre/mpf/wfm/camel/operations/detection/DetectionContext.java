@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -63,7 +63,7 @@ public class DetectionContext {
 	private final Set<Track> previousTracks;
 	public Set<Track> getPreviousTracks() { return previousTracks; }
 
-	public DetectionContext(
+    public DetectionContext(
 			long jobId,
 			int stageIndex,
 			String stageName,
@@ -83,4 +83,9 @@ public class DetectionContext {
 		this.previousTracks = previousTracks;
 		this.segmentingPlan = segmentingPlan;
 	}
+
+	public String toString() {
+	    return "DetectionContext: jobId: " + jobId + ", stageIndex: " + stageIndex + ", stageName: " + stageName +
+            ", actionIndex: " + actionIndex + ", actionName: " + actionName + ", algorithmProperties: " + algorithmProperties;
+    }
 }

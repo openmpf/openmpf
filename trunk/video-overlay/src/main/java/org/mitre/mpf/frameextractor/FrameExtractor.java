@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,15 +26,18 @@
 
 package org.mitre.mpf.frameextractor;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.util.*;
-
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class FrameExtractor {
     private static final Logger log = LoggerFactory.getLogger(FrameExtractor.class);
@@ -42,13 +45,20 @@ public class FrameExtractor {
     private final URI video;
     private final URI extractionDirectory;
     private final Set<Integer> frames = new TreeSet<Integer>();
+    private final FileNameGenerator fileNameGenerator;
     private String prefix = "frame";
 
 
     public FrameExtractor(URI video, URI extractionDirectory) {
+        this(video, extractionDirectory, FrameExtractor::defaultFileNameGenerator);
+    }
+
+    public FrameExtractor(URI video, URI extractionDirectory, FileNameGenerator fileNameGenerator) {
         this.video = video;
         this.extractionDirectory = extractionDirectory;
+        this.fileNameGenerator = fileNameGenerator;
     }
+
 
     public Map<Integer, String> execute() throws IOException {
         Split split = SimonManager.getStopwatch("org.mitre.mpf.frameextractor.FrameExtractor.execute").start();
@@ -92,14 +102,7 @@ public class FrameExtractor {
     }
 
     private String makeFilename(String path, int frameNumber) {
-        try {
-            File outputFile = new File(path, String.format("%s-%d.png", prefix, frameNumber));
-            outputFile.getParentFile().mkdirs();
-            return outputFile.getAbsolutePath();
-        } catch(Exception exception) {
-            log.error("Failed to create file '{}/{}' due to an exception.", path, String.format("%s-%d.png", prefix, frameNumber), exception);
-            return null;
-        }
+        return fileNameGenerator.generateFileName(path, frameNumber, prefix);
     }
 
     private native int executeNative(String sourceVideo, String destinationVideo, Map<Integer, String> paths);
@@ -122,5 +125,22 @@ public class FrameExtractor {
                 video,
                 extractionDirectory,
                 frames.size());
+    }
+
+    private static String defaultFileNameGenerator(String path, int frameNumber, String prefix) {
+        try {
+            File outputFile = new File(path, String.format("%s-%d.png", prefix, frameNumber));
+            outputFile.getParentFile().mkdirs();
+            return outputFile.getAbsolutePath();
+        } catch(Exception exception) {
+            log.error("Failed to create file '{}/{}' due to an exception.", path,
+                      String.format("%s-%d.png", prefix, frameNumber), exception);
+            return null;
+        }
+    }
+
+    @FunctionalInterface
+    public static interface FileNameGenerator {
+        public String generateFileName(String path, int frameNumber, String prefix);
     }
 }

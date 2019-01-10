@@ -23,8 +23,8 @@
   "priority": 4,
   "siteId": "mpf1",
   "externalJobId": "3cdc384a-d61e-4fad-b8f3-b8183a0e8515",
-  "timeStart": "2017-05-25 16:01:24.0",
-  "timeStop": "2017-05-25 16:01:54.0",
+  "timeStart": "2017-05-25T16:01:24.0-05:00",
+  "timeStop": "2017-05-25T16:01:54.0-05:00",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
@@ -55,14 +55,18 @@
                 "stopOffsetFrame": 61,
                 "startOffsetTime": 833,
                 "stopOffsetTime": 2542,
+                "confidence": -1.0,
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "trackProperties": {
+                  "TRANSCRIPTION": "what zero zero zero one"
+                },
                 "exemplar": {
                   "x": 0,
                   "y": 0,
                   "width": 0,
                   "height": 0,
-                  "confidence": 1.0,
+                  "confidence": -1.0,
                   "detectionProperties": {
                     "TRANSCRIPTION": "what zero zero zero one"
                   },
@@ -78,7 +82,7 @@
                     "y": 0,
                     "width": 0,
                     "height": 0,
-                    "confidence": 1.0,
+                    "confidence": -1.0,
                     "detectionProperties": {
                       "TRANSCRIPTION": "what zero zero zero one"
                     },
@@ -98,14 +102,18 @@
                 "stopOffsetFrame": 118,
                 "startOffsetTime": 2667,
                 "stopOffsetTime": 4917,
+                "confidence": -1.0,
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "trackProperties": {
+                  "TRANSCRIPTION": "nine oh two one oh"
+                },
                 "exemplar": {
                   "x": 0,
                   "y": 0,
                   "width": 0,
                   "height": 0,
-                  "confidence": 1.0,
+                  "confidence": -1.0,
                   "detectionProperties": {
                     "TRANSCRIPTION": "nine oh two one oh"
                   },
@@ -121,7 +129,7 @@
                     "y": 0,
                     "width": 0,
                     "height": 0,
-                    "confidence": 1.0,
+                    "confidence": -1.0,
                     "detectionProperties": {
                       "TRANSCRIPTION": "nine oh two one oh"
                     },
@@ -141,14 +149,18 @@
                 "stopOffsetFrame": 184,
                 "startOffsetTime": 6250,
                 "stopOffsetTime": 7667,
+                "confidence": -1.0,
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "trackProperties": {
+                  "TRANSCRIPTION": "cyril one eight sir oath"
+                },
                 "exemplar": {
                   "x": 0,
                   "y": 0,
                   "width": 0,
                   "height": 0,
-                  "confidence": 1.0,
+                  "confidence": -1.0,
                   "detectionProperties": {
                     "TRANSCRIPTION": "cyril one eight sir oath"
                   },
@@ -164,7 +176,7 @@
                     "y": 0,
                     "width": 0,
                     "height": 0,
-                    "confidence": 1.0,
+                    "confidence": -1.0,
                     "detectionProperties": {
                       "TRANSCRIPTION": "cyril one eight sir oath"
                     },
@@ -210,14 +222,18 @@
                 "stopOffsetFrame": 37,
                 "startOffsetTime": 250,
                 "stopOffsetTime": 1542,
+                "confidence": -1.0,
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "trackProperties": {
+                  "TRANSCRIPTION": "the green one right in the middle"
+                },
                 "exemplar": {
                   "x": 0,
                   "y": 0,
                   "width": 0,
                   "height": 0,
-                  "confidence": 1.0,
+                  "confidence": -1.0,
                   "detectionProperties": {
                     "TRANSCRIPTION": "the green one right in the middle"
                   },
@@ -233,7 +249,7 @@
                     "y": 0,
                     "width": 0,
                     "height": 0,
-                    "confidence": 1.0,
+                    "confidence": -1.0,
                     "detectionProperties": {
                       "TRANSCRIPTION": "the green one right in the middle"
                     },
@@ -279,14 +295,18 @@
                 "stopOffsetFrame": 107,
                 "startOffsetTime": 1042,
                 "stopOffsetTime": 4458,
+                "confidence": -1.0,
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "trackProperties": {
+                  "TRANSCRIPTION": "this three left on the left side of the one closest to us"
+                },
                 "exemplar": {
                   "x": 0,
                   "y": 0,
                   "width": 0,
                   "height": 0,
-                  "confidence": 1.0,
+                  "confidence": -1.0,
                   "detectionProperties": {
                     "TRANSCRIPTION": "this three left on the left side of the one closest to us"
                   },
@@ -302,7 +322,7 @@
                     "y": 0,
                     "width": 0,
                     "height": 0,
-                    "confidence": 1.0,
+                    "confidence": -1.0,
                     "detectionProperties": {
                       "TRANSCRIPTION": "this three left on the left side of the one closest to us"
                     },

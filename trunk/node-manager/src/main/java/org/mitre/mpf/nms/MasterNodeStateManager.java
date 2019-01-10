@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,18 +27,42 @@
 package org.mitre.mpf.nms;
 
 import org.jgroups.Message;
+import org.mitre.mpf.nms.streaming.MasterStreamingJobManager;
+import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
+import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
+import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
+import org.mitre.mpf.nms.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+
+@Component
 public class MasterNodeStateManager extends ChannelReceiver {
 
     private static final Logger LOG = LoggerFactory.getLogger(MasterNodeStateManager.class);
+
+    private final MasterStreamingJobManager streamingJobManager;
+
+
+    @Autowired
+    public MasterNodeStateManager(PropertiesUtil propertiesUtil, ChannelNode channelNode,
+                                  MasterStreamingJobManager streamingJobManager) {
+        super(propertiesUtil, channelNode);
+        this.streamingJobManager = streamingJobManager;
+    }
 
 
     @Override
     public void receive(Message msg) {
         Object obj = msg.getObject();
-        if (obj instanceof ServiceStatusUpdate) {
+        if (obj instanceof StreamingJobExitedMessage) {
+            StreamingJobExitedMessage exitMessage = (StreamingJobExitedMessage) obj;
+            streamingJobManager.streamingJobExited(exitMessage);
+            getNotifier().streamingJobExited(exitMessage);
+        }
+        else if (obj instanceof ServiceStatusUpdate) {
             ServiceStatusUpdate nsu = (ServiceStatusUpdate) obj;
             //System.out.println("I received a node status update: " + nsu.getNodeName() + " : " + nsu.getTheNode().getLastKnownState());
 
@@ -198,9 +222,11 @@ public class MasterNodeStateManager extends ChannelReceiver {
     public void shutdownAllServices() {
         synchronized (getServiceTable()) {
             LOG.info("Shutting down all the services currently running: {}", getServiceTable().size());
-            getServiceTable().values()
-                    .forEach(this::shutdownService);
+            getServiceTable().values().forEach(this::shutdownService);
         }
+
+        streamingJobManager.stopAllJobs();
+
         // do we expect replies, like Inactive
         try {
             Thread.sleep(10000); // shutdown takes some time - let the messages get out
@@ -208,5 +234,15 @@ public class MasterNodeStateManager extends ChannelReceiver {
             LOG.error("Received interrupt during shutdown. Ignoring interrupt since already shutting down", e);
             Thread.currentThread().interrupt();
         }
+    }
+
+
+    public void startStreamingJob(LaunchStreamingJobMessage launchMessage) {
+        streamingJobManager.startJob(launchMessage, getRunningNodes());
+    }
+
+
+    public void stopStreamingJob(StopStreamingJobMessage message) {
+        streamingJobManager.stopJob(message);
     }
 }

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.enums;
 
 public class MpfConstants {
 	public static final String
+		FRAME_RATE_CAP_PROPERTY = "FRAME_RATE_CAP",
 		ARTIFACT_EXTRACTION_POLICY_PROPERTY = "ARTIFACT_EXTRACTION_POLICY",
 		MEDIA_SAMPLING_INTERVAL_PROPERTY = "FRAME_INTERVAL",
 		CONFIDENCE_THRESHOLD_PROPERTY = "CONFIDENCE_THRESHOLD",
@@ -47,5 +48,7 @@ public class MpfConstants {
 		HORIZONTAL_FLIP_PROPERTY = "HORIZONTAL_FLIP",
 		AUTO_ROTATE_PROPERTY = "AUTO_ROTATE",
 		AUTO_FLIP_PROPERTY = "AUTO_FLIP",
-		REPORT_ERROR = "REPORT_ERROR";
+		REPORT_ERROR = "REPORT_ERROR",
+        OUTPUT_EXEMPLARS_ONLY_PROPERTY = "OUTPUT_EXEMPLARS_ONLY",
+		OUTPUT_LAST_STAGE_ONLY_PROPERTY = "OUTPUT_LAST_STAGE_ONLY";
 }

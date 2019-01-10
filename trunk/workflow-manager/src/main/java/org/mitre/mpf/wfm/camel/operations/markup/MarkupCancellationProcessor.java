@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -35,6 +35,7 @@ import org.springframework.stereotype.Component;
 public class MarkupCancellationProcessor implements Processor {
     public static final String REF = "markupCancellationProcessor";
 
+    @Override
     public void process(Exchange exchange) throws Exception {
         // Copy the headers from the incoming message to the outgoing message.
         exchange.getOut().getHeaders().putAll(exchange.getIn().getHeaders());

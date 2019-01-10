@@ -56,8 +56,8 @@
   "priority": 4,
   "siteId": "mpf1",
   "externalJobId": "d9beb126-f728-4843-81ef-f28637238e3c",
-  "timeStart": "2017-05-21 20:56:56.0",
-  "timeStop": "2017-05-21 20:57:34.0",
+  "timeStart": "2017-05-21T20:56:56.0-05:00",
+  "timeStop": "2017-05-21T20:57:34.0-05:00",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
@@ -95,6 +95,7 @@
                 "stopOffsetTime": 4238,
                 "type": "FACE",
                 "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION",
+                "confidence": 50.0,
                 "exemplar": {
                   "x": 483,
                   "y": 80,
@@ -927,6 +928,7 @@
                 "stopOffsetTime": 4004,
                 "type": "FACE",
                 "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION",
+                "confidence": 31.0,
                 "exemplar": {
                   "x": 574,
                   "y": 51,
@@ -1187,6 +1189,7 @@
                 "stopOffsetTime": 14848,
                 "type": "FACE",
                 "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION",
+                "confidence": 28.0,
                 "exemplar": {
                   "x": 477,
                   "y": 78,
@@ -1694,6 +1697,7 @@
                 "stopOffsetTime": 15482,
                 "type": "FACE",
                 "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION",
+                "confidence": 15.0,
                 "exemplar": {
                   "x": 274,
                   "y": 68,
@@ -2026,6 +2030,7 @@
                 "stopOffsetTime": 17351,
                 "type": "MOTION",
                 "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION",
+                "confidence": -1.0,
                 "exemplar": {
                   "x": 0,
                   "y": 0,

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -32,8 +32,8 @@ import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,25 +61,35 @@ public class JobStatusCalculator {
     private JsonUtils jsonUtils;
 
     /**
-     * Calculates the terminal status of a job
+     * Calculates the terminal status of a batch job
      * @param exchange  An incoming job exchange
-     * @return  The terminal JobStatus for the job.
+     * @return  The terminal JobStatus for the batch job.
      * @throws WfmProcessingException
      */
-    public JobStatus calculateStatus(Exchange exchange) throws WfmProcessingException {
+    public BatchJobStatusType calculateStatus(Exchange exchange) throws WfmProcessingException {
         TransientJob job = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TransientJob.class);
 
-        JobStatus statusFromRedis = redis.getJobStatus(job.getId());
+        BatchJobStatusType statusFromRedis = redis.getBatchJobStatus(job.getId());
 
-        if (statusFromRedis.equals(JobStatus.IN_PROGRESS_WARNINGS)) {
-            redis.setJobStatus(job.getId(), JobStatus.COMPLETE_WITH_WARNINGS);
-            return JobStatus.COMPLETE_WITH_WARNINGS;
-        } else if (statusFromRedis.equals(JobStatus.IN_PROGRESS_ERRORS)) {
-            redis.setJobStatus(job.getId(), JobStatus.COMPLETE_WITH_ERRORS);
-            return JobStatus.COMPLETE_WITH_ERRORS;
-        } else {
-            redis.setJobStatus(job.getId(), JobStatus.COMPLETE);
-            return JobStatus.COMPLETE;
+        if (statusFromRedis.equals(BatchJobStatusType.ERROR) ||
+                statusFromRedis.equals(BatchJobStatusType.UNKNOWN) ||
+                statusFromRedis.equals(BatchJobStatusType.COMPLETE_WITH_ERRORS) ||
+                statusFromRedis.equals(BatchJobStatusType.COMPLETE_WITH_WARNINGS)) {
+            return statusFromRedis;
         }
+
+        if (statusFromRedis.equals(BatchJobStatusType.IN_PROGRESS_WARNINGS)) {
+            redis.setJobStatus(job.getId(), BatchJobStatusType.COMPLETE_WITH_WARNINGS);
+            return BatchJobStatusType.COMPLETE_WITH_WARNINGS;
+        }
+
+        if (statusFromRedis.equals(BatchJobStatusType.IN_PROGRESS_ERRORS)) {
+            redis.setJobStatus(job.getId(), BatchJobStatusType.COMPLETE_WITH_ERRORS);
+            return BatchJobStatusType.COMPLETE_WITH_ERRORS;
+        }
+
+        // default
+        redis.setJobStatus(job.getId(), BatchJobStatusType.COMPLETE);
+        return BatchJobStatusType.COMPLETE;
     }
 }

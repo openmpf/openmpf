@@ -6,11 +6,11 @@
   ~ under contract, and is subject to the Rights in Data-General Clause       ~
   ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
   ~                                                                           ~
-  ~ Copyright 2017 The MITRE Corporation. All Rights Reserved.                ~
+  ~ Copyright 2018 The MITRE Corporation. All Rights Reserved.                ~
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright 2017 The MITRE Corporation                                      ~
+  ~ Copyright 2018 The MITRE Corporation                                      ~
   ~                                                                           ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
   ~ you may not use this file except in compliance with the License.          ~
@@ -33,7 +33,7 @@
     <parent>
         <groupId>org.mitre.mpf</groupId>
         <artifactId>mpf-project</artifactId>
-        <version>1.0.0</version>
+        <version>3.0.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -262,6 +262,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.springframework.retry</groupId>
+            <artifactId>spring-retry</artifactId>
+            <version>1.1.5.RELEASE</version>
+        </dependency>
+
+        <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
             <version>${commons.codec.version}</version>
@@ -270,6 +276,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
             <version>${commons.collections4.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons.io.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.inject</groupId>
@@ -426,14 +437,13 @@
             <version>${apache.httpclient.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-core</artifactId>
-            <version>${hibernate.framework.version}</version>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpasyncclient</artifactId>
+            <version>${apache.httpasyncclient.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-c3p0</artifactId>
+            <artifactId>hibernate-core</artifactId>
             <version>${hibernate.framework.version}</version>
         </dependency>
         <dependency>
@@ -445,6 +455,12 @@
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-infinispan</artifactId>
             <version>${hibernate.framework.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jgroups</groupId>
+                    <artifactId>jgroups</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>
@@ -480,11 +496,6 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>${commons.io.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.thoughtworks.xstream</groupId>
             <artifactId>xstream</artifactId>
             <version>${xstream.version}</version>
@@ -492,7 +503,7 @@
         <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
-            <version>${common.beanutils.version}</version>
+            <version>${commons.beanutils.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
@@ -569,12 +580,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.jolbox</groupId>
-            <artifactId>bonecp-spring</artifactId>
-            <version>${bonecp.spring.version}</version>
-        </dependency>
-
-        <dependency>
          <groupId>org.aspectj</groupId>
 			<artifactId>aspectjweaver</artifactId>
             <version>${aspectjweaver.version}</version>
@@ -606,6 +611,11 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
             <version>${jackson.version}</version>
         </dependency>
         <!-- / added for Jackson -->
@@ -764,6 +774,12 @@
             <scope>test</scope>
         </dependency>
         <!-- / for testing HTTP callback -->
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <version>${commons.configuration2.version}</version>
+        </dependency>
     </dependencies>
 
     <!-- NOTE: profile tags override non-profile tags -->
@@ -853,12 +869,12 @@
                         <!--you will also need to have the environmental variable DISPLAY=:99 for xvfb, and TOMCAT_BASE_URL=http://localhost:8181-->
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>2.18.1</version>
+                        <version>2.20.1</version>
                         <dependencies>
                             <dependency>
                                 <groupId>org.apache.maven.surefire</groupId>
                                 <artifactId>surefire-junit47</artifactId>
-                                <version>2.18.1</version>
+                                <version>2.20.1</version>
                             </dependency>
                         </dependencies>
                         <executions>
@@ -893,7 +909,7 @@
                     <repackJars>false</repackJars>
                     <needarch>false</needarch>
                     <vendor>The MITRE Corporation</vendor>
-                    <license>COPYRIGHT 2013-2017 MITRE CORPORATION, all rights reserved.</license>
+                    <license>COPYRIGHT 2018 MITRE CORPORATION, all rights reserved.</license>
                     <distribution>MPF</distribution>
                     <group>Application</group>
                     <version>${project.version}</version>
@@ -976,6 +992,7 @@
                     <excludes>
                         <exclude>**/TestWorkflowManager.java</exclude>
                     </excludes>
+                    <argLine>-Djava.library.path=${env.MPF_HOME}/lib</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -1010,12 +1027,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.18.1</version>
+                <version>2.20.1</version>
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.maven.surefire</groupId>
                         <artifactId>surefire-junit47</artifactId>
-                        <version>2.18.1</version>
+                        <version>2.20.1</version>
                     </dependency>
                 </dependencies>
                 <executions>
@@ -1064,36 +1081,38 @@
             </plugin>
 
             <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>${env.MPF_HOME}/share/data</directory>
+                            <includes>
+                                <include>nodeManagerConfig.xml</include>
+                                <include>nodeServicesPalette.json</include>
+                                <include>Algorithms.xml</include>
+                                <include>Actions.xml</include>
+                                <include>Tasks.xml</include>
+                                <include>Pipelines.xml</include>
+                                <include>components.json</include>
+                            </includes>
+                        </fileset>
+                        <fileset>
+                            <directory>${env.MPF_HOME}/share/config</directory>
+                            <includes>
+                                <include>mediaType.properties</include>
+                                <include>mpf-custom.properties</include>
+                            </includes>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>1.7</version>
                 <executions>
-                    <execution>
-                        <id>clean-component-config-files</id>
-                        <phase>clean</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target name="clean-component-config-files">
-                                <delete>
-                                    <fileset dir="${env.MPF_HOME}/data" erroronmissingdir="false">
-                                        <include name="nodeManagerConfig.xml"/>
-                                        <include name="nodeServicesPalette.json"/>
-                                        <include name="Algorithms.xml"/>
-                                        <include name="Actions.xml"/>
-                                        <include name="Tasks.xml"/>
-                                        <include name="Pipelines.xml"/>
-                                        <include name="components.json"/>
-                                    </fileset>
-                                    <fileset dir="${env.MPF_HOME}/config" erroronmissingdir="false">
-                                        <include name="mediaType.properties"/>
-                                        <include name="mpf-custom.properties"/>
-                                    </fileset>
-                                </delete>
-                            </target>
-                        </configuration>
-                    </execution>
                     <execution>
                         <id>copy-resources-from-cpp-hello-world</id>
                         <phase>validate</phase>
@@ -1233,6 +1252,7 @@
                             <outputDirectory>src/main/webapp/resources/mytheme/downloads</outputDirectory>
                             <tarLongFileMode>gnu</tarLongFileMode>
                             <appendAssemblyId>false</appendAssemblyId>
+                            <attach>false</attach>
                         </configuration>
                     </execution>
                 </executions>

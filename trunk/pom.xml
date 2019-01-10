@@ -5,11 +5,11 @@
   ~ under contract, and is subject to the Rights in Data-General Clause       ~
   ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
   ~                                                                           ~
-  ~ Copyright 2017 The MITRE Corporation. All Rights Reserved.                ~
+  ~ Copyright 2018 The MITRE Corporation. All Rights Reserved.                ~
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright 2017 The MITRE Corporation                                      ~
+  ~ Copyright 2018 The MITRE Corporation                                      ~
   ~                                                                           ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
   ~ you may not use this file except in compliance with the License.          ~
@@ -30,7 +30,7 @@
   <parent>
     <artifactId>mpf-project</artifactId>
     <groupId>org.mitre.mpf</groupId>
-    <version>1.0.0</version>
+    <version>3.0.0</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -43,7 +43,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.rpm.prefix>/opt/mpf</maven.rpm.prefix>
         <maven.build.timestamp.format>yyyy.MM.dd.HH.mm.ss</maven.build.timestamp.format>
-        <mpf.version.timestamp>${maven.build.timestamp}</mpf.version.timestamp>
+        <version.timestamp>${maven.build.timestamp}</version.timestamp>
         <gitBranch>unknown</gitBranch>
         <gitShortId>0</gitShortId>
         <jenkinsBuildNumber>0</jenkinsBuildNumber>
@@ -83,6 +83,7 @@
                                 <argument>--build-dir=${components.build.dir}</argument>
                                 <argument>--java-sdk-src=${components.build.sdks.java}</argument>
                                 <argument>--cpp-sdk-src=${components.build.sdks.cpp}</argument>
+                                <argument>--python-sdk-src=${components.build.sdks.python}</argument>
                                 <argument>--component-search-path=${components.build.search.paths}</argument>
                                 <argument>--components=${components.build.components}</argument>
                                 <argument>--parallel=${components.build.parallel.builds}</argument>
@@ -206,6 +207,26 @@
                                 <successCode>0</successCode>
                                 <successCode>1</successCode>
                             </successCodes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>python-component-util-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>python</executable>
+                            <arguments>
+                                <argument>
+                                    ${components.build.sdks.python}/detection/component_util/tests/__main__.py
+                                </argument>
+                            </arguments>
+                            <environmentVariables>
+                                <PYTHONPATH>
+                                    ${env.MPF_SDK_INSTALL_PATH}/python/site-packages:${user.home}/mpf-sdk-install/python/site-packages
+                                </PYTHONPATH>
+                            </environmentVariables>
                         </configuration>
                     </execution>
                 </executions>

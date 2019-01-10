@@ -1,46 +1,46 @@
 {
-  "componentName" : "JavaTestDetection",
-  "componentVersion" : "1.0.0",
-  "middlewareVersion" :  "1.0.0",
-  "sourceLanguage" : "java",
-  "pathName" : "mpf-java-test-detection-component-1.0.0.jar",
-  "launchArgs" : [],
-  "environmentVariables" : [ {
-    "name" : "DUMMY_VAR",
-    "value" : "nothing",
-    "sep" : null
-    } ],
-  "algorithm" : {
-    "name" : "JavaTest",
-    "description" : "A dummy Java detection component.",
-    "actionType" : "DETECTION",
-    "supportsBatchProcessing": true,
-    "requiresCollection" : {
-      "states" : []
+  "componentName": "JavaTestDetection",
+  "componentVersion": "3.0.0",
+  "middlewareVersion": "3.0.0",
+  "sourceLanguage": "java",
+  "batchLibrary": "mpf-java-test-detection-component-3.0.0.jar",
+  "environmentVariables": [
+    {
+      "name": "DUMMY_VAR",
+      "value": "nothing",
+      "sep": null
+    }
+  ],
+  "algorithm": {
+    "name": "JavaTest",
+    "description": "A dummy Java detection component.",
+    "actionType": "DETECTION",
+    "requiresCollection": {
+      "states": []
     },
-    "providesCollection" : {
-      "states" : [
+    "providesCollection": {
+      "states": [
         "state1",
         "state2"
       ],
-      "properties" : [
+      "properties": [
         {
-          "name" : "prop1",
-          "description" : "my prop 1",
-          "type" : "INT",
-          "defaultValue" : "2"
+          "name": "prop1",
+          "description": "my prop 1",
+          "type": "INT",
+          "defaultValue": "2"
         },
         {
-          "name" : "prop2",
-          "description" : "my prop 2",
-          "type" : "BOOLEAN",
-          "defaultValue" : "true"
+          "name": "prop2",
+          "description": "my prop 2",
+          "type": "BOOLEAN",
+          "defaultValue": "true"
         },
         {
-          "name" : "prop3",
-          "description" : "my prop 3",
-          "type" : "STRING",
-          "defaultValue" : "string property"
+          "name": "prop3",
+          "description": "my prop 3",
+          "type": "STRING",
+          "defaultValue": "string property"
         }
       ]
     }

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.data.entities.transients;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.interop.util.CompareUtils;
 import org.mitre.mpf.wfm.util.TextUtils;
 
 import java.util.*;
@@ -81,6 +82,12 @@ public class Track implements Comparable<Track> {
 	private final String type;
 	public String getType() { return type; }
 
+	private final float confidence;
+	public float getConfidence() { return confidence; }
+
+	private final SortedMap<String, String> trackProperties;
+	public SortedMap<String, String> getTrackProperties() { return trackProperties; }
+
 	/**
 	 * The natural ordered (by start index) collection of detections which correspond to the position of the object
 	 * as it moves through the track.
@@ -114,9 +121,10 @@ public class Track implements Comparable<Track> {
 			int actionIndex,
 			int startOffsetFrameInclusive,
 			int endOffsetFrameInclusive,
-			String type) {
+			String type,
+			float confidence) {
 		this(jobId, mediaId, stageIndex, actionIndex, startOffsetFrameInclusive, endOffsetFrameInclusive,
-		     0, 0, type);
+		     0, 0, type, confidence);
 	}
 
 	/**
@@ -147,7 +155,8 @@ public class Track implements Comparable<Track> {
 			@JsonProperty("endOffsetFrameInclusive") int endOffsetFrameInclusive,
 			@JsonProperty("startOffsetTimeInclusive") int startOffsetTimeInclusive,
 			@JsonProperty("endOffsetTimeInclusive") int endOffsetTimeInclusive,
-			@JsonProperty("type") String type) {
+			@JsonProperty("type") String type,
+			@JsonProperty("confidence") float confidence) {
 		this.jobId = jobId;
 		this.mediaId = mediaId;
 		this.stageIndex = stageIndex;
@@ -157,22 +166,23 @@ public class Track implements Comparable<Track> {
 		this.startOffsetTimeInclusive = startOffsetTimeInclusive;
 		this.endOffsetTimeInclusive = endOffsetTimeInclusive;
 		this.type = StringUtils.upperCase(StringUtils.trimToNull(type));
+		this.confidence = confidence;
+		trackProperties = new TreeMap<>();
 		detections = new TreeSet<>();
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(jobId, mediaId, stageIndex, actionIndex, startOffsetFrameInclusive, endOffsetFrameInclusive,
-		                    startOffsetTimeInclusive, endOffsetTimeInclusive, TextUtils.nullSafeHashCode(type));
+		                    startOffsetTimeInclusive, endOffsetTimeInclusive, TextUtils.nullSafeHashCode(type),
+		                    confidence, trackProperties, exemplar, detections);
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof Track)) {
-			return false;
-		}
-		Track casted = (Track) obj;
-		return compareTo(casted) == 0;
+	    return this == obj
+			    || (obj instanceof Track
+	                    && compareTo((Track) obj) == 0);
 	}
 
 
@@ -203,6 +213,8 @@ public class Track implements Comparable<Track> {
 			.thenComparingInt(Track::getStartOffsetTimeInclusive)
 			.thenComparingInt(Track::getEndOffsetTimeInclusive)
 			.thenComparing(Track::getType, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparingDouble(Track::getConfidence)
+            .thenComparing(Track::getTrackProperties, CompareUtils.MAP_COMPARATOR)
 			.thenComparing(Track::getExemplar, Comparator.nullsFirst(Comparator.naturalOrder()))
 			.thenComparing(Track::getDetections, DETECTION_SET_COMPARATOR));
 

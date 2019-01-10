@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,12 +29,9 @@ package org.mitre.mpf.wfm.data.entities.transients;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class TransientJob {
 	private long id;
@@ -66,9 +63,8 @@ public class TransientJob {
 
 	private Map<String, String> overriddenJobProperties;
 	public Map<String, String> getOverriddenJobProperties() { return overriddenJobProperties; }
-	public void setOverriddenJobProperties(Map<String, String> overriddenJobProperties) { this.overriddenJobProperties = overriddenJobProperties; }
 
-	private boolean cancelled;
+    private boolean cancelled;
 	public boolean isCancelled() { return cancelled; }
 
 	private String callbackURL;
@@ -77,8 +73,15 @@ public class TransientJob {
 	private String callbackMethod;
 	public String getCallbackMethod() { return callbackMethod; }
 
+	// Detection system properties for this job should be immutable, the detection system property values
+	// shouldn't change once the job is created even if they are changed on the UI by an admin..
+	// The detectionSystemPropertiesSnapshot contains the values of the detection system properties at the time this batch job was created.
+    private TransientDetectionSystemProperties detectionSystemPropertiesSnapshot;
+    public TransientDetectionSystemProperties getDetectionSystemPropertiesSnapshot() { return this.detectionSystemPropertiesSnapshot; }
+
 	public TransientJob(long id,
 						String externalId,
+						TransientDetectionSystemProperties detectionSystemPropertiesSnapshot,
 						TransientPipeline pipeline,
 						int currentStage,
 						int priority,
@@ -87,6 +90,7 @@ public class TransientJob {
 		this.id = id;
 		this.externalId = externalId;
 		this.pipeline = pipeline;
+		this.detectionSystemPropertiesSnapshot = detectionSystemPropertiesSnapshot;
 		this.currentStage = currentStage;
 		this.priority = priority;
 		this.outputEnabled = outputEnabled;
@@ -99,14 +103,15 @@ public class TransientJob {
 	@JsonCreator
 	public TransientJob(@JsonProperty("id") long id,
 	                    @JsonProperty("externalId") String externalId,
-	                    @JsonProperty("pipeline") TransientPipeline pipeline,
+                        @JsonProperty("detectionSystemPropertiesSnapshot") TransientDetectionSystemProperties detectionSystemPropertiesSnapshot,
+                        @JsonProperty("pipeline") TransientPipeline pipeline,
 	                    @JsonProperty("currentStage") int currentStage,
 	                    @JsonProperty("priority") int priority,
 	                    @JsonProperty("outputEnabled") boolean outputEnabled,
 	                    @JsonProperty("cancelled") boolean cancelled,
 						@JsonProperty("callbackURL") String callbackURL,
 						@JsonProperty("callbackMethod") String callbackMethod) {
-		this(id,externalId,pipeline,currentStage,priority,outputEnabled,cancelled);
+		this(id,externalId,detectionSystemPropertiesSnapshot,pipeline,currentStage,priority,outputEnabled,cancelled);
 		this.callbackURL = callbackURL;
 		this.callbackMethod = callbackMethod;
 	}

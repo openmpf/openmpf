@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.thoughtworks.xstream.XStream;
 import org.mitre.mpf.nms.xml.EnvironmentVariable;
 import org.mitre.mpf.nms.xml.NodeManager;
 import org.mitre.mpf.nms.xml.NodeManagers;
@@ -70,30 +69,15 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
 
     @Override
-    public boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels) throws IOException {
-        return saveNodeManagerConfig(nodeManagerModels, true);
-    }
-
-    @Override
-    public boolean saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels, boolean reload) throws IOException {
-
+    public boolean saveAndReloadNodeManagerConfig(List<NodeManagerModel> nodeManagerModels) throws IOException {
         NodeManagers managers = convertFromModels(nodeManagerModels);
 
-        XStream xStream = new XStream();
-        //just adding all of them from the start - do not see a disadvantage from doing this
-        xStream.processAnnotations(NodeManagers.class);
-        xStream.processAnnotations(NodeManager.class);
-        xStream.processAnnotations(Service.class);
-        xStream.processAnnotations(EnvironmentVariable.class);
-
         try (OutputStream outputStream = propertiesUtil.getNodeManagerConfigResource().getOutputStream()) {
-            xStream.toXML(managers, outputStream);
+            NodeManagers.toXml(managers, outputStream);
         }
 
-        if (reload) {
-            //could produce an InterruptedException from Thread.sleep - will be caught by the ErrorController super class
-            nodeManagerStatus.reloadNodeManagerConfig();
-        }
+        //could produce an InterruptedException from Thread.sleep - will be caught by the ErrorController super class
+        nodeManagerStatus.reloadNodeManagerConfig();
 
         return true;
     }
@@ -110,6 +94,7 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
     private static NodeManager convertFromModel(NodeManagerModel model) {
         NodeManager manager = new NodeManager(model.getHost());
+        manager.setAutoConfigured(model.isAutoConfigured());
         model.getServices().stream()
                 .map(NodeManagerServiceImpl::convertFromModel)
                 .forEach(manager::add);
@@ -143,9 +128,11 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
 
 
-    private static NodeManagerModel convertToModel(NodeManager nodeManager) {
+    private NodeManagerModel convertToModel(NodeManager nodeManager, Set<String> availableNodes) {
         NodeManagerModel model = new NodeManagerModel(nodeManager.getTarget());
-
+        model.setCoreNode(isCoreNode(model.getHost()));
+        model.setOnline(availableNodes.contains(model.getHost()));
+        model.setAutoConfigured(nodeManager.isAutoConfigured());
         if (nodeManager.getServices() != null) {
             nodeManager.getServices().stream()
                 .map(ServiceModel::new)
@@ -156,17 +143,19 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
 
     @Override
-    public List<NodeManagerModel> getNodeManagerModels() {
+    public synchronized List<NodeManagerModel> getNodeManagerModels() {
         try (InputStream inputStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
             NodeManagers managers = NodeManagers.fromXml(inputStream);
-            if (managers.managers() == null) {
-                return new ArrayList<>();
-            }
 
-            return managers.managers()
+            // get the current view once, and then update all the models
+            Set<String> availableNodes = getAvailableNodes();
+
+            List<NodeManagerModel> nodeManagerModels = managers.getAll()
                     .stream()
-                    .map(NodeManagerServiceImpl::convertToModel)
+                    .map(m -> convertToModel(m, availableNodes))
                     .collect(toCollection(ArrayList::new));
+
+            return nodeManagerModels;
         }
         catch (IOException ex) {
             throw new UncheckedIOException("Unable to load node manager models", ex);
@@ -263,4 +252,42 @@ public class NodeManagerServiceImpl implements NodeManagerService {
         }
     }
 
+    @Override
+    public Set<String> getCoreNodes() {
+        return propertiesUtil.getCoreMpfNodes();
+    }
+
+    @Override
+    public boolean isCoreNode(String host) {
+        return propertiesUtil.getCoreMpfNodes().contains(host);
+    }
+
+    @Override
+    public Set<String> getAvailableNodes() {
+        return nodeManagerStatus.getAvailableNodes();
+    }
+
+    @Override
+    public synchronized void autoConfigureNewNode(String host) throws IOException {
+        // Add all services to the new node
+        NodeManagerModel newNode = new NodeManagerModel();
+        newNode.setHost(host);
+        newNode.setAutoConfigured(true);
+
+        List<ServiceModel> serviceModels = new ArrayList<>(getServiceModels().values());
+        serviceModels.forEach(n -> n.setServiceCount(propertiesUtil.getNodeAutoConfigNumServices()));
+        newNode.setServices(serviceModels);
+
+        List<NodeManagerModel> nodeManagerModelList = getNodeManagerModels();
+        nodeManagerModelList.add(newNode);
+        saveAndReloadNodeManagerConfig(nodeManagerModelList);
+    }
+
+    @Override
+    public synchronized void unconfigureIfAutoConfiguredNode(String host) throws IOException {
+        List<NodeManagerModel> nodeManagerModelList = getNodeManagerModels();
+        if (nodeManagerModelList.removeIf(node -> (node.getHost().equals(host) && node.isAutoConfigured()))) {
+            saveAndReloadNodeManagerConfig(nodeManagerModelList);
+        }
+    }
 }

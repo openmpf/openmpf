@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2017 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2018 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2017 The MITRE Corporation                                      #
+# Copyright 2018 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -77,3 +77,23 @@
   when: "not item.register and '{{ item.componentState }}'!= 'REGISTERED' and item.packageFilePath and registration_results.status is not defined"
   run_once: true
   delegate_to: "{{ master_host }}"
+
+
+- name: Load external component descriptor
+  set_fact:
+    ext_component_descriptor: "{{ lookup('file', '{{ plugins_dir }}/{{ item.componentDescriptorPath }}')|from_json }}"
+    component_full_path: "{{ plugins_dir }}/{{ item.componentTLD }}"
+  when:
+    - item.register
+    - registration_results.status == 200
+
+
+- include: setup_python_component_venv.yml
+  vars:
+    component_path: "{{ component_full_path }}"
+    descriptor: "{{ ext_component_descriptor }}"
+  become: yes
+  become_user: mpf
+  when:
+    - ext_component_descriptor is defined
+    - ext_component_descriptor.sourceLanguage|default('')|lower == "python"

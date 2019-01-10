@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -307,12 +307,12 @@ div.server-media .panel-body{
 }
 
 .formlabel {
-    color: #505050;
+    color: #505050; /* dark gray */
     text-align: left;
 }
 
 .formlabelChanged {
-    color: #ab5d05 !important;
+    color: #ab5d05 !important; /* burnt orange */
     font-weight: bold;
 }
 
@@ -472,6 +472,9 @@ div.dt-buttons .media-propertied-dt-button,div.dt-buttons .media-propertied-dt-b
 #jobTable_filter input {
     width: 90%;
 }
+#jobTable tr:hover td {
+    background-color: #e9e9e9
+}
 .img-btn {
     height:50px;
     cursor:pointer;
@@ -619,4 +622,13 @@ table.dataTable span.highlight {
 .helper-icon {
     cursor:pointer;
     color:#428bca;
+}
+
+
+.progress-bar {
+    padding: .2em;
+}
+
+.progress {
+    background-image: linear-gradient(to bottom,#CCCCCC 0,#BBBBBB 100%);
 }

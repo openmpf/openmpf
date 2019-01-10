@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.camelOps;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
@@ -42,6 +41,7 @@ import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +51,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.*;
+
+import static org.junit.Assert.assertEquals;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -77,6 +79,9 @@ public class TestTrackMergingProcessor {
 
     @Autowired
     private Redis redis;
+
+    @Autowired
+    private PropertiesUtil propertiesUtil;
 
     @Test(timeout = 5 * MINUTES)
     public void testTrackMergingOn() throws Exception {
@@ -156,7 +161,11 @@ public class TestTrackMergingProcessor {
         trackMergeStageDet.getActions().add(detectionAction);
 
         trackMergePipeline.getStages().add(trackMergeStageDet);
-        TransientJob trackMergeJob = new TransientJob(jobId, "999999", trackMergePipeline, stageIndex, priority, false, false);
+
+        // Capture a snapshot of the detection system property settings when the job is created.
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+
+        TransientJob trackMergeJob = new TransientJob(jobId, "999999", transientDetectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
         trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
 
         redis.persistJob(trackMergeJob);
@@ -165,27 +174,27 @@ public class TestTrackMergingProcessor {
         * Create overlapping tracks for testing
         */
         SortedSet<Track> tracks = new TreeSet<Track>();
-        Track track1 = new Track(jobId, mediaId, 0, 0, 0, 199, "VIDEO");
+        Track track1 = new Track(jobId, mediaId, 0, 0, 0, 199, "VIDEO", 18f);
         Detection detection1a = new Detection(10,10,52,60,18f,0,0,null);
         Detection detection1b = new Detection(10,10,52,60,18f,199,0,null);
         track1.getDetections().add(detection1a);
         track1.getDetections().add(detection1b);
-        Track track2 = new Track(jobId, mediaId, 0, 0, 200, 399, "VIDEO");
+        Track track2 = new Track(jobId, mediaId, 0, 0, 200, 399, "VIDEO", 18f);
         Detection detection2a = new Detection(10,10,52,60,18f,200,0,null);
         Detection detection2b = new Detection(10,10,52,60,18f,399,0,null);
         track2.getDetections().add(detection2a);
         track2.getDetections().add(detection2b);
-        Track track3 = new Track(jobId, mediaId, 0, 0, 470, 477, "VIDEO");
+        Track track3 = new Track(jobId, mediaId, 0, 0, 470, 477, "VIDEO", 18f);
         Detection detection3a = new Detection(10,10,52,60,18f,420,0,null);
         Detection detection3b = new Detection(10,10,52,60,18f,599,0,null);
         track3.getDetections().add(detection3a);
         track3.getDetections().add(detection3b);
-        Track track4 = new Track(jobId, mediaId, 0, 0, 480, 599, "VIDEO");
+        Track track4 = new Track(jobId, mediaId, 0, 0, 480, 599, "VIDEO", 18f);
         Detection detection4a = new Detection(10,10,52,60,18f,480,0,null);
         Detection detection4b = new Detection(10,10,52,60,18f,599,0,null);
         track4.getDetections().add(detection4a);
         track4.getDetections().add(detection4b);
-        Track track5 = new Track(jobId, mediaId, 0, 0, 600, 610, "VIDEO");
+        Track track5 = new Track(jobId, mediaId, 0, 0, 600, 610, "VIDEO", 18f);
         Detection detection5a = new Detection(10,10,89,300,18f,600,0,null);
         Detection detection5b = new Detection(10,10,84,291,18f,610,0,null);
         track5.getDetections().add(detection5a);
@@ -230,7 +239,11 @@ public class TestTrackMergingProcessor {
         trackMergeStageDet.getActions().add(detectionAction);
 
         trackMergePipeline.getStages().add(trackMergeStageDet);
-        TransientJob trackMergeJob = new TransientJob(jobId, "999999", trackMergePipeline, stageIndex, priority, false, false);
+
+        // Capture a snapshot of the detection system property settings when the job is created.
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+
+        TransientJob trackMergeJob = new TransientJob(jobId, "999999", transientDetectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
         trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
 
         redis.persistJob(trackMergeJob);
@@ -249,4 +262,26 @@ public class TestTrackMergingProcessor {
         Assert.assertEquals(0, redis.getTracks(jobId, mediaId, 0, 0).size());
     }
 
+
+    @Test
+    public void testTrackLevelInfoRetainedAfterMerge() {
+        Track track1 = new Track(123, 1, 1, 1, 1, 1, "type", 0.25f);
+        track1.getTrackProperties().put("track1_only_prop", "track1_only_val");
+        track1.getTrackProperties().put("same_value_prop", "same_value_val");
+        track1.getTrackProperties().put("diff_value_prop", "diff_value_val1");
+
+        Track track2 = new Track(123, 1, 1, 1, 1, 1, "type", 0.75f);
+        track2.getTrackProperties().put("track2_only_prop", "track2_only_val");
+        track2.getTrackProperties().put("same_value_prop", "same_value_val");
+        track2.getTrackProperties().put("diff_value_prop", "diff_value_val2");
+
+        Track merged = TrackMergingProcessor.merge(track1, track2);
+        assertEquals(merged.getConfidence(), 0.75, 0.01);
+
+        SortedMap<String, String> mergedProps = merged.getTrackProperties();
+        assertEquals("track1_only_val", mergedProps.get("track1_only_prop"));
+        assertEquals("track2_only_val", mergedProps.get("track2_only_prop"));
+        assertEquals("same_value_val", mergedProps.get("same_value_prop"));
+        assertEquals("diff_value_val1; diff_value_val2", mergedProps.get("diff_value_prop"));
+    }
 }

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -31,8 +31,6 @@ import com.thoughtworks.xstream.annotations.XStreamAsAttribute;
 import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Properties;
 
 @XStreamAlias("property")
 public class PropertyDefinition {
@@ -58,6 +56,7 @@ public class PropertyDefinition {
 
 	@XStreamAsAttribute
 	protected String propertiesKey;
+	public String getPropertiesKey() { return propertiesKey; }
 
 
 	public PropertyDefinition(String name, ValueType type, String description, String defaultValue, String propertiesKey) {
@@ -72,10 +71,8 @@ public class PropertyDefinition {
 		this(name, type, description, defaultValue, null);
 	}
 
-	public void setDefaultValue(Properties properties) {
-		if (propertiesKey != null) {
-			defaultValue = properties.getProperty(propertiesKey);
-		}
+	public void setDefaultValue(String defaultValue) {
+		this.defaultValue = defaultValue;
 	}
 
 	@Override

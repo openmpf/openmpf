@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -232,7 +232,7 @@
                         //  currently, it only returns a string
                         $confirm({
                             title: 'Error',
-                            text: 'An error occurred when saving the pipeline.  Most likely, this is because the name is not unique, or no tasks are defined.'});
+                            text: 'An error occurred when saving the pipeline.  Most likely, this is because the name is invalid, or no tasks are defined.'});
                         console.log("***Error from Pipelines2Service.save() :");
                         console.log(error);
                     });
@@ -537,7 +537,7 @@
                         //  currently, it only returns a string
                         $confirm({
                             title: 'Error',
-                            text: 'An error occurred when saving the action.  Most likely, this is because the name is not unique, or a parameter is missing.'});
+                            text: 'An error occurred when saving the action.  Most likely, this is because the name is invalid, or a parameter is missing.'});
                         console.log("***Error from ActionService.save() :");
                         console.log(error);
                     });
@@ -568,7 +568,7 @@
                         //  currently, it only returns a string
                         $confirm({
                             title: 'Error',
-                            text: 'An error occurred when saving the task.'});
+                            text: 'An error occurred when saving the task. Most likely, this is because the name is invalid.'});
                         console.log("***Error from TaskService.save() :");
                         console.log(error);
                     });

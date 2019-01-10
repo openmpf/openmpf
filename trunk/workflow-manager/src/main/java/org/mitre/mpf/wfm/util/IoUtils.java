@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -34,14 +34,19 @@ import org.mitre.mpf.wfm.enums.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.*;
-import java.util.List;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.*;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 @Component(IoUtils.REF)
 public class IoUtils {
@@ -49,16 +54,11 @@ public class IoUtils {
     private static final Logger log = LoggerFactory.getLogger(IoUtils.class);
 
     @Autowired
-    @Qualifier(PropertiesUtil.REF)
-    private PropertiesUtil propertiesUtil;
+    private MediaTypeUtils mediaTypeUtils;
 
     // Detect is thread safe, so only one instance is needed.
     // See: {@link http://grokbase.com/t/tika/user/114qab9908/is-the-method-detect-of-instance-org-apache-tika-tika-thread-safe}
     private final Tika tikaInstance = new Tika();
-
-    private Tika getTikaInstance() {
-        return tikaInstance;
-    }
 
     /**
      * Gets the MIME type associated with the file located at {@code url}. This method never returns null.
@@ -84,8 +84,7 @@ public class IoUtils {
      */
     public String getMimeType(String absolutePath) {
         Validate.notNull(absolutePath, "The absolutePath parameter must not be null.");
-        String mimeType = tikaInstance.detect(absolutePath);
-        return mimeType;
+        return tikaInstance.detect(absolutePath);
     }
 
     /***
@@ -94,8 +93,7 @@ public class IoUtils {
      * @return
      */
     public String getMimeType(byte[] bytes) {
-        String mimeType = tikaInstance.detect(bytes);
-        return mimeType;
+        return tikaInstance.detect(bytes);
     }
 
     /**
@@ -104,8 +102,7 @@ public class IoUtils {
      * @return
      */
     public String getMimeType(File file) throws IOException {
-        String mimeType = tikaInstance.detect(file);
-        return mimeType;
+        return tikaInstance.detect(file);
     }
 
     /**
@@ -114,8 +111,7 @@ public class IoUtils {
      * @return
      */
     public String getMimeType(InputStream inputStream) throws IOException {
-        String mimeType = tikaInstance.detect(inputStream);
-        return mimeType;
+        return tikaInstance.detect(inputStream);
     }
 
     /**
@@ -137,7 +133,7 @@ public class IoUtils {
             return MediaType.AUDIO;
         } else {
             log.warn(String.format("The MIME type '%s' does not map to a MediaType.", mimeType));
-            return MediaType.UNSUPPORTED;
+            return MediaType.UNKNOWN;
         }
     }
 
@@ -226,25 +222,11 @@ public class IoUtils {
 
     /***
      * Returns true if the file passes mime and custom extension tests
-     * @param contentType
-     * @param filename
-     * @return
-     */
-    private boolean isApproved(String contentType,String filename) {
-        if (isApprovedContentType(contentType) || isApprovedCustomExtension(filename)) {
-            return true;
-        }
-        return false;
-    }
-
-    /***
-     * Returns true if the file passes mime and custom extension tests
      * @param file
      * @return
      */
     public boolean isApprovedFile(File file) {
-        String contentType = getMimeType(file.getAbsolutePath());
-        return isApproved(contentType,file.getAbsolutePath());
+        return isApprovedContentType(getMimeType(file.getAbsolutePath()));
     }
 
     /***
@@ -254,43 +236,102 @@ public class IoUtils {
      * @throws WfmProcessingException
      */
     public boolean isApprovedFile(URL url) throws WfmProcessingException {
-        String filename = url.getFile();
-        String contentType = getMimeType(url);
-        return isApproved(contentType,filename);
+        return isApprovedContentType(getMimeType(url));
     }
 
     /***
-     * Returns true if the file passes mime and custom extension tests
-     * @param contentType
-     * @param filename
-     * @return
-     */
-    public boolean isApprovedFile(String contentType,String filename) {
-        return isApproved(contentType,filename);
-    }
-
-    /***
-     * Returns true if the content type is not equal to null and the content type does start with AUDIO, IMAGE, or VIDEO
+     * Returns true if the content type is not equal to null
      * @param contentType
      * @return
      */
     public boolean isApprovedContentType(String contentType) {
-        MediaType type = MediaTypeUtils.parse(contentType);
-        return (type != MediaType.UNSUPPORTED);
+        return mediaTypeUtils.parse(contentType) != null;
     }
 
-    /***
-     * Returns true of the path ends with a custom extension
-     * @param pathStr
-     * @return
-     */
-    public boolean isApprovedCustomExtension(String pathStr) {
-        List<String> customExtensions = propertiesUtil.getServerMediaTreeCustomExtensions();
-        for (String extn : customExtensions) {
-            if (pathStr.endsWith(extn)) {
-                return true;
-            }
+
+    public static void closeQuietly(Closeable closeable) {
+        if (closeable == null) {
+            return;
         }
-        return false;
+        try {
+            closeable.close();
+        }
+        catch (IOException ignored) {
+        }
+    }
+
+
+    public static Optional<Path> toLocalPath(String pathOrUri) {
+        if (pathOrUri == null) {
+            return Optional.empty();
+        }
+        try {
+            URI uri = new URI(pathOrUri);
+            String scheme = uri.getScheme();
+            if (scheme == null) {
+                return Optional.of(Paths.get(pathOrUri));
+            }
+            if ("file".equalsIgnoreCase(scheme)) {
+                return Optional.of(Paths.get(uri));
+            }
+            return Optional.empty();
+        }
+        catch (URISyntaxException ignored) {
+            return Optional.of(Paths.get(pathOrUri));
+        }
+    }
+
+
+    public static URL toUrl(String pathOrUri) {
+        MalformedURLException suppressed;
+        try {
+            return new URL(pathOrUri);
+        }
+        catch (MalformedURLException e) {
+            suppressed = e;
+        }
+
+        try {
+            return Paths.get(pathOrUri).toUri().toURL();
+        }
+        catch (MalformedURLException e) {
+            e.addSuppressed(suppressed);
+            throw new IllegalArgumentException("pathOrUri", e);
+        }
+    }
+
+    public static InputStream openStream(String pathOrUri) throws IOException {
+        Optional<Path> localPath = toLocalPath(pathOrUri);
+        if (localPath.isPresent()) {
+            return Files.newInputStream(localPath.get());
+        }
+        return new URL(pathOrUri).openStream();
+    }
+
+
+    public static void deleteEmptyDirectoriesRecursively(Path startDir) {
+        if (!Files.exists(startDir)) {
+            return;
+        }
+        try {
+            Files.walkFileTree(startDir, new SimpleFileVisitor<Path>() {
+
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    if (isEmpty(dir)) {
+                        Files.delete(dir);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
+        catch (IOException e) {
+            log.warn("IOException while deleting " + startDir, e);
+        }
+    }
+
+    private static boolean isEmpty(Path dir) throws IOException {
+        try (Stream<Path> paths = Files.list(dir)) {
+            return !paths.findAny().isPresent();
+        }
     }
 }

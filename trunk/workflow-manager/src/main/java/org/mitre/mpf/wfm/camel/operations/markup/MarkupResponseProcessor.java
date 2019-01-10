@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,15 +29,17 @@ package org.mitre.mpf.wfm.camel.operations.markup;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.camel.ResponseProcessor;
+import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
+import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.enums.JobStatus;
-import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MarkupStatus;
+import org.mitre.mpf.wfm.service.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,13 +65,16 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
 	@Qualifier(HibernateMarkupResultDaoImpl.REF)
 	private MarkupResultDao markupResultDao;
 
+	@Autowired
+	private StorageService storageService;
+
 	@Override
 	public Object processResponse(long jobId, Markup.MarkupResponse markupResponse, Map<String, Object> headers) throws WfmProcessingException {
 		log.debug("[Job {}:{}:{}] Received response for Media {} (Index = {}). Error? {}", jobId, markupResponse.getTaskIndex(), markupResponse.getActionIndex(), markupResponse.getMediaId(), markupResponse.getMediaIndex(), markupResponse.getHasError() ? markupResponse.getErrorMessage() : "None.");
 		MarkupResult markupResult = new MarkupResult();
 		markupResult.setTaskIndex(markupResponse.getTaskIndex());
 		markupResult.setActionIndex(markupResponse.getActionIndex());
-		markupResult.setMediaId((int)(markupResponse.getMediaId()));
+		markupResult.setMediaId(markupResponse.getMediaId());
 		markupResult.setMediaIndex(markupResponse.getMediaIndex());
 		markupResult.setJobId(jobId);
 		markupResult.setMarkupStatus(markupResponse.getHasError() ? MarkupStatus.FAILED : MarkupStatus.COMPLETE);
@@ -77,12 +82,18 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
 		markupResult.setMessage(markupResponse.hasErrorMessage() ? markupResponse.getErrorMessage() : null);
 
 		TransientJob transientJob = redis.getJob(jobId);
+		TransientMedia transientMedia = transientJob.getMedia().get(markupResponse.getMediaIndex());
 		markupResult.setPipeline(transientJob.getPipeline().getName());
-		markupResult.setSourceUri(transientJob.getMedia().get((int) (markupResponse.getMediaIndex())).getUri());
+		markupResult.setSourceUri(transientMedia.getUri());
+
+		storageService.store(markupResult);
 		markupResultDao.persist(markupResult);
 
-		if (markupResponse.getHasError()) {
-			redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_ERRORS);
+		if (markupResult.getMarkupStatus() == MarkupStatus.FAILED) {
+			redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+		}
+		if (markupResult.getMarkupStatus() == MarkupStatus.COMPLETE_WITH_WARNING) {
+			redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_WARNINGS);
 		}
 		return null;
 	}

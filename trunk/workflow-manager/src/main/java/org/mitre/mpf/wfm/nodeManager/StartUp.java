@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,42 +29,37 @@ package org.mitre.mpf.wfm.nodeManager;
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Service;
 
 @Service
 public class StartUp implements SmartLifecycle {
 
-	@Value("${masterNode.enabled}")
-	private boolean useMasterNode;
-
 	@Autowired
 	private NodeManagerStatus nodeManagerStatus;
 
 	@Override
 	public boolean isAutoStartup() {
-		//this property is not being used
-		return useMasterNode;
+		return true;
 	}
 
 	@Override
 	public void start() {
 		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
-		nodeManagerStatus.init(false);
+		nodeManagerStatus.start();
 		split.stop();
 	}
 
 	@Override
 	public void stop() {
-		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.start").start();
+		Split split = SimonManager.getStopwatch("org.mitre.mpf.wfm.nodeManager.StartUp.stop").start();
 		nodeManagerStatus.stop();
 		split.stop();
 	}
 
 	@Override
 	public boolean isRunning() {
-		return nodeManagerStatus.isRunning();
+		return nodeManagerStatus.isInitialized();
 	}
 
 	@Override

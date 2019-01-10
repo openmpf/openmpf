@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,9 +28,10 @@ package org.mitre.mpf.wfm.service.component;
 
 
 import com.google.common.collect.Lists;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -51,17 +52,8 @@ public class AnsibleDeploymentService implements ComponentDeploymentService {
             "If this is a single node configuration, " +
             "try adding \"mpf.ansible.local-only=true\" to mpf-private.properties";
 
-    @Value("${mpf.ansible.child.vars.path}")
-    private  String _varsPath;
-
-    @Value("${mpf.ansible.compdeploy.path}")
-    private String _compDeployPath;
-
-    @Value("${mpf.ansible.compremove.path}")
-    private String _compRemovePath;
-
-    @Value("${mpf.ansible.local-only:false}")
-    private boolean _ansibleLocalOnly;
+    @Autowired
+    private PropertiesUtil propertiesUtil;
 
     @Override
     public String deployComponent(String componentPackageFileName) throws DuplicateComponentException {
@@ -105,7 +97,7 @@ public class AnsibleDeploymentService implements ComponentDeploymentService {
             throws DuplicateComponentException, IOException, InterruptedException
     {
         String uploadedComponentArg = "uploaded_component=" + componentPackageFileName;
-        Process ansibleProc = createAnsibleProc(_compDeployPath, uploadedComponentArg);
+        Process ansibleProc = createAnsibleProc(propertiesUtil.getAnsibleCompDeployPath(), uploadedComponentArg);
 
         String topLevelDirectoryPath = null;
         String descriptorPath = null;
@@ -191,7 +183,7 @@ public class AnsibleDeploymentService implements ComponentDeploymentService {
 
     private void runAnsibleUndeploy(String componentTld) throws IOException, InterruptedException {
         String componentTldArg = "component_tld=" + componentTld;
-        Process ansibleProc = createAnsibleProc(_compRemovePath, componentTldArg);
+        Process ansibleProc = createAnsibleProc(propertiesUtil.getAnsibleCompRemovePath(), componentTldArg);
 
         String missingComponentPath = null;
         boolean failedDueToHostUnreachable = false;
@@ -231,9 +223,9 @@ public class AnsibleDeploymentService implements ComponentDeploymentService {
                 "ansible-playbook",
                 playbookPath,
                 "--user=mpf",
-                "-e", "@" + _varsPath,
+                "-e", "@" + propertiesUtil.getAnsibleChildVarsPath(),
                 "-e", finalArg);
-        if (_ansibleLocalOnly) {
+        if (propertiesUtil.isAnsibleLocalOnly()) {
             command.add("--connection=local");
         }
 

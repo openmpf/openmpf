@@ -7,11 +7,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2017 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2018 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2017 The MITRE Corporation                                      #
+# Copyright 2018 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -92,7 +92,7 @@ log_setup() {
 
 	logdir=$(dirname "${logfile}")
 
-	su - ${MPF_USER} -c "mkdir -p ${logdir} 2> /dev/null"
+	su ${MPF_USER} -c "mkdir -p ${logdir} 2> /dev/null"
 	RETVAL=$?
 
 	if ! [ $RETVAL -eq 0 ]; then
@@ -100,7 +100,7 @@ log_setup() {
 		return 1
 	fi
  
-	su - ${MPF_USER} -c "touch ${logfile} 2> /dev/null"
+	su ${MPF_USER} -c "touch ${logfile} 2> /dev/null"
 	RETVAL=$?
 
 	if ! [ $RETVAL -eq 0 ]; then
@@ -161,7 +161,7 @@ start() {
 	   rm -f ${lockfile} ${pidrunfile}
 	fi
 
-	su - ${MPF_USER} -c "$nodeManager ${pidfile} ${logfile} 2> >($errHandler ${logfile})"
+	su ${MPF_USER} -c "$nodeManager ${pidfile} ${logfile} 2> >($errHandler ${logfile})"
     RETVAL=$?
 
 	if [ $RETVAL -eq 0 ]; then

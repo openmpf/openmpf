@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,16 +29,20 @@
  * JobsCtrl
  * @constructor
  */
-var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, NotificationSvc) {
+var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, NotificationSvc, PropertiesSvc) {
 
     $scope.selectedJob = {};
     var jobTable = null;
     var markupTable = null;
     var markupTableData = [];
+    var updateConfig = { broadcastEnabled: true, pollingInterval: -1, poller: null };
+    var tableLastUpdate = moment();
 
     var init = function () {
+        scheduleUpdates();
         buildJobTable();
     };
+
 
     var buildJobTable = function () {
         if (jobTable != null) {
@@ -64,11 +68,11 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                 drawCallback: function (settings) {
                     bindButtons();
                 },
-                scrollCollapse: true,
-                scrollY:'65vh',
                 lengthMenu: [[5, 10, 25, 50, 100], [5, 10, 25, 50, 100]],
                 pageLength: 25,
-                ordering: false,
+                ordering: true,
+                orderMulti: false,
+                order: [[0, 'desc']],
                 searchHighlight: true,
                 renderer: "bootstrap",
                 columns: [
@@ -96,17 +100,17 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                         data: "jobStatus",
                         render: function (data, atype, job) {
                             var type = "label-default";
-                            if (job.jobStatus.toLowerCase().indexOf("error") > 0) {
+                            if (job.jobStatus.toLowerCase().indexOf("error") >= 0) {
                                 type = "label-danger";
-                            } else if (job.jobStatus.toLowerCase().indexOf("warnings") > 0) {
+                            } else if (job.jobStatus.toLowerCase().indexOf("warning") >= 0) {
                                 type = "label-warning";
-                            } else if (job.jobStatus.toLowerCase().indexOf("unknown") > 0) {
+                            } else if (job.jobStatus.toLowerCase().indexOf("unknown") >= 0) {
                                 type = "label-primary";
                             }
                             var hideProgress = 'style="display:none;"';
-                            if (job.jobProgress > 0 && job.jobProgress < 100) hideProgress = "";
+                            if (job.jobStatus.startsWith('IN_PROGRESS') && job.jobProgress < 100) hideProgress = "";
                             var progress = job.jobProgress.toFixed();
-                            var progressDiv = '<div class="progress" ' + hideProgress + '><div class="progress-bar progress-bar-success" role="progressbar"  id="jobProgress' + job.jobId + '" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="min-width: 4em;width:' + progress + '%">' + progress + '%</div></div>';
+                            var progressDiv = '<div class="progress" ' + hideProgress + '><div class="progress-bar progress-bar-success" role="progressbar"  id="jobProgress' + job.jobId + '" aria-valuenow="0" aria-valuemin="' + progress + '" aria-valuemax="100" style="width:' + progress + '%">' + progress + '%</div></div>';
                             return '<span class="job-status label ' + type + '" id="jobStatusCell' + job.jobId + '">' + job.jobStatus + '</span>' + progressDiv;
                         }
                     },
@@ -123,23 +127,25 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                             if (job.terminal || job.jobStatus == 'CANCELLING' || job.jobStatus == 'COMPLETE') cancel_disabled = "disabled=disabled";
                             var isterminal = "";
                             if (!job.terminal) isterminal = "disabled=disabled";
-                            var hasMarkup = "";
                             var hasOutput = "disabled=disabled";
                             var output_link = "";
                             if (job.outputFileExists) {
                                 hasOutput = "";
                             }
                             return '<div class="btn-group btn-group-sm" role="group" >' +
-                                '<button type="button" class="btn btn-default cancelBtn" id="cancelBtn' + job.jobId + '"  ' + cancel_disabled + ' ><i class="fa fa-stop"  title="Stop"></i></button>' +
-                                '<button type="button" class="btn btn-default resubmitBtn"  id="resubmitBtn' + job.jobId + '"' + isterminal + '><i class="fa fa-refresh"  title="Resubmit"></i></button>' +
-                                '<button type="button" class="btn btn-default markupBtn" ' + hasMarkup + ' id="markupBtn' + job.jobId + '" title="' + job.markupCount + ' media" ><i class="fa fa-picture-o" title="Media"></i></button>' +
-                                '<a type="button" href="jobs/output-object?id=' + job.jobId + '" class="btn btn-default jsonBtn" target="_blank"  ' + hasOutput + ' title="JSON ouput">{ }</a></div>';
+                                '<button type="button" class="btn btn-default cancelBtn" id="cancelBtn' + job.jobId + '"' + cancel_disabled + ' title="Stop"><i class="fa fa-stop"></i></button>' +
+                                '<button type="button" class="btn btn-default resubmitBtn"  id="resubmitBtn' + job.jobId + '"' + isterminal + ' title="Resubmit"><i class="fa fa-refresh"></i></button>' +
+                                '<button type="button" class="btn btn-default markupBtn" id="markupBtn' + job.jobId + '" title="Media" ><i class="fa fa-picture-o" title="Media"></i></button>' +
+                                '<a type="button" href="jobs/output-object?id=' + job.jobId + '" class="btn btn-default jsonBtn" id="jsonBtn' + job.jobId + '" target="_blank"  ' + hasOutput + ' title="JSON Output">{ }</a></div>';
                         }
                     }
                 ],
                 initComplete: function (settings, json) {
                     $log.debug('jobsTables has finished its initialization.');
                 }
+            });
+            jobTable.on('xhr.dt', function () {
+                tableLastUpdate = moment();
             });
         }
     };
@@ -164,9 +170,88 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
         });
     };
 
+
+    var scheduleUpdates = function () {
+        getUpdateConfig().then(handleUpdateConfigChange);
+    };
+
+
+    var getUpdateConfig = function () {
+        return PropertiesSvc.get('web.broadcast.job.status.enabled')
+            .$promise
+            .then(function (broadcastProp) {
+                var broadcastEnabled = broadcastProp.value.toLowerCase() === 'true';
+                if (!broadcastEnabled) {
+                    return PropertiesSvc.get('web.job.polling.interval').$promise;
+                }
+            })
+            .then(function (pollingIntervalProp) {
+                if (!pollingIntervalProp) {
+                    return { broadcastEnabled: true,  pollingInterval: -1 };
+                }
+                var interval = +pollingIntervalProp.value;
+                if (isNaN(interval) || interval < 1) {
+                    return { broadcastEnabled: false,  pollingInterval: -1 };
+                }
+                return { broadcastEnabled: false,  pollingInterval: interval };
+            });
+    };
+
+    var handleUpdateConfigChange = function (newUpdateConfig) {
+        var pollingIntervalChanged = newUpdateConfig.pollingInterval !== updateConfig.pollingInterval;
+        updateConfig.broadcastEnabled = newUpdateConfig.broadcastEnabled;
+        updateConfig.pollingInterval = newUpdateConfig.pollingInterval;
+
+        if (updateConfig.broadcastEnabled) {
+            cancelPolling();
+            $scope.updateInfoMsg = null;
+            return;
+        }
+        if (updateConfig.pollingInterval < 1) {
+            cancelPolling();
+            $scope.updateInfoMsg = 'Automatic updates are disabled. Please refresh the page manually.';
+            return;
+        }
+
+        $scope.updateInfoMsg = 'Last checked at ' + tableLastUpdate.format('h:mm:ss a');
+        if (pollingIntervalChanged) {
+            cancelPolling();
+            updateConfig.poller = $interval(pollingUpdate, updateConfig.pollingInterval);
+        }
+    };
+
+    var pollingUpdate = function () {
+        if (!jobTable) {
+            return;
+        }
+        jobTable.ajax.reload(function() {
+            $scope.$apply(function () {
+                $scope.updateInfoMsg = 'Last checked at ' + moment().format('h:mm:ss a');
+            });
+        }, false);
+    };
+
+    var cancelPolling = function () {
+        if (updateConfig.poller) {
+            $interval.cancel(updateConfig.poller);
+            updateConfig.poller = null;
+        }
+    };
+
+    $scope.$on('$destroy', cancelPolling);
+
+    $scope.$on('SSPC_PROPERTIES_CHANGED', scheduleUpdates);
+
+
     //listen for updates from the server
     $scope.$on('SSPC_JOBSTATUS', function (event, msg) {
         $log.debug("SSPC_JOBSTATUS: " + JSON.stringify(msg));
+        if (!updateConfig.broadcastEnabled) {
+            // Received job broadcast even though job broadcast's were disabled when properties were last checked,
+            // so we need to re-check the state of the properties.
+            scheduleUpdates();
+        }
+
         var job = msg.content;
 
         //send -1 and -1 on connect
@@ -178,11 +263,13 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
             $("#jobStatusCell" + job.id).html(job.jobStatus);
 
             //keep the job progress val at 99% until it is complete or cancelled
-            if (progress > 99 && !(job.jobStatus.startsWith('COMPLETE') || job.jobStatus.startsWith('CANCELLED'))) {
-                progress = 99;
-            } else if (job.jobStatus.startsWith('COMPLETE') || job.jobStatus.startsWith('CANCELLED')) {
+            if (job.jobStatus.startsWith('COMPLETE') || job.jobStatus.startsWith('CANCELLED') 
+			|| job.jobStatus.startsWith('ERROR') || job.jobStatus.startsWith('UNKNOWN')) {
                 jobTable.ajax.reload(null, false);
+            } else if (progress > 99) {
+                progress = 99;
             }
+
             if (progress < 100) {
                 $("#jobProgress" + job.id).parent().show();
                 $("#jobProgress" + job.id).html(progress + "%");
@@ -288,16 +375,21 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                                 return '<span class="glyphicon glyphicon-file"></span>';
                             }
                         }
-                        return '<span class="glyphicon glyphicon-ban-circle" title="Not Available"></span>';
+                        return '<p class="text-muted">Source file remotely hosted or not available</p>';
                     }
                 },
-                {data: "sourceUri"},
+                {
+                    data: "sourceUri",
+                    className: "smart-wrap"
+                },
                 {
                     data: "sourceDownload",
                     render: function (data, type, obj) {
-                        var disabled = "disabled=disabled";
-                        if (obj.sourceDownload) disabled = "";
-                        return '<a href="' + obj.sourceDownload + '" download="' + obj.sourceUri + '" class="btn btn-default" ' + disabled + ' role="button"><i class="fa fa-download" title="Download"></i></a>';
+                        if (obj.sourceDownload) {
+                            return '<a href="' + obj.sourceDownload + '" download="' + obj.sourceUri + '" class="btn btn-default" role="button" title="Download"><i class="fa fa-download"></i></a>';
+                        } else {
+                            return '<p class="text-muted">Source file remotely hosted or not available</p>';
+                        }
                     }
                 },
                 {
@@ -319,16 +411,28 @@ var JobsCtrl = function ($scope, $log, $compile, ServerSidePush, JobsService, No
                                 return '<span class="glyphicon glyphicon-file"></span>';
                             }
                         }
-                        return '<span class="glyphicon glyphicon-ban-circle" title="Not Available"></span>';
+                        return '<p class="text-muted">No markup</p>';
                     }
                 },
-                {data: "markupUri"},
+                {
+                    data: "markupUri",
+                    className: "smart-wrap",
+                    render: function (data, type, obj) {
+                        if (obj.markupUri) {
+                            return obj.markupUri;
+                        } else {
+                            return '<p class="text-muted">No markup</p>';
+                        }
+                    }
+                },
                 {
                     data: "markupDownload",
                     render: function (data, type, obj) {
-                        var disabled = "disabled=disabled";
-                        if (obj.markupDownload) disabled = "";
-                        return '<a href="' + obj.markupDownload + '" download="' + obj.markupUri + '" class="btn btn-default" ' + disabled + ' role="button"><i class="fa fa-download" title="Download"></i></a>';
+                        if (obj.markupDownload) {
+                            return '<a href="' + obj.markupDownload + '" download="' + obj.markupUri + '" class="btn btn-default" role="button"><i class="fa fa-download" title="Download"></i></a>';
+                        } else {
+                            return '<p class="text-muted">No markup</p>';
+                        }
                     }
                 }
             ],

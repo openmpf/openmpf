@@ -8,11 +8,11 @@
     under contract, and is subject to the Rights in Data-General Clause
     52.227-14, Alt. IV (DEC 2007).
 
-    Copyright 2017 The MITRE Corporation. All Rights Reserved.
+    Copyright 2018 The MITRE Corporation. All Rights Reserved.
 --%>
 
 <%--
-    Copyright 2017 The MITRE Corporation
+    Copyright 2018 The MITRE Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -32,14 +32,30 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Output Object View</title>
+    <script src="../resources/js/jquery-1.11.0.min.js"></script>
+    <script>
+        (function() {
+            var jobId = '${jobId}';
+            $.get(jobId + '/output/detection')
+                .done(function (data) {
+                    $(function () {
+                        $('body').text(JSON.stringify(data, null, 3));
+                    });
+                })
+                .fail(function (evt) {
+                    if (evt.status === 404) {
+                        alert('Job with id ' + jobId + ' does not exist.');
+                        return;
+                    }
+                    var alertMsg = 'An error occurred while trying to get the output object for job ' + jobId;
+                    var responseMsg = (evt.responseJSON && evt.responseJSON.message) || evt.responseText;
+                    if (responseMsg) {
+                        alertMsg += ': ' + responseMsg;
+                    }
+                    alert(alertMsg);
+                });
+        })();
+    </script>
 </head>
-<body style="white-space: pre; font-family: monospace;">
-<script>
-    (function() {
-        var obj = ${jsonObj};
-        document.body.innerHTML = "";
-        document.body.appendChild(document.createTextNode(JSON.stringify(obj, null, 3)));
-    })();
-</script>
-</body>
+<body style="white-space: pre; font-family: monospace;"></body>
 </html>

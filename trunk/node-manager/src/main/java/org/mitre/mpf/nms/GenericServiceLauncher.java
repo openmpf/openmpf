@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,14 +26,14 @@
 
 package org.mitre.mpf.nms;
 
+import org.mitre.mpf.nms.xml.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-
-import org.mitre.mpf.nms.xml.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Generic {@link BaseServiceLauncher} that just sends a newline on STDIN to tell the subprocess to shutdown.
@@ -47,18 +47,14 @@ public class GenericServiceLauncher extends BaseServiceLauncher  {
     }
 
     /**
-     * Required override in derived classes.  This can be stubbed out if nothing needs to be done.
-     * Useful possibilities include sending something via STDIN to the app to tell it to shutdown gracefully
-     * followed by some sleep if needed.  Upon return the caller will terminate the process.
+     * Special configuration for the process environment after BaseNodeLauncher
+     * configures the builder.
+     *
+     * @param pb
      */
     @Override
-    public void additionalProcessPreconfig(ProcessBuilder pb) {
-        // TODO Verify Implementation
-    }
+    public void additionalProcessPreconfig(ProcessBuilder pb) {}
 
-    /**
-     * This doesn't do anything besides sending a newline
-     */
     @Override
     public void sendShutdownToApp() {
         LOG.debug("Sending down 'q' to {}", this.getServiceName());
@@ -68,9 +64,7 @@ public class GenericServiceLauncher extends BaseServiceLauncher  {
     }
 
     @Override
-    public void started(OutputStream inStream, InputStream outStream, InputStream errStream) {
-
-    }
+    public void started(OutputStream inStream, InputStream outStream, InputStream errStream) {}
 
     /**
      * Returns the the full command to execute.

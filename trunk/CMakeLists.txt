@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2017 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2018 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2017 The MITRE Corporation                                      #
+# Copyright 2018 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -30,10 +30,6 @@ cmake_policy(SET CMP0015 NEW)
 
 #add_definitions(-Wno-cpp)
 ADD_DEFINITIONS("-std=c++0x")
-
-set(Protobuf_INCLUDE_DIR /apps/install/include)
-set(Protobuf_LIBRARY /apps/install/lib/libprotobuf.so)
-
 
 set(FIND_LIBRARY_USE_LIB64_PATHS true)
 
@@ -64,9 +60,6 @@ find_package(JNI)
 # Build ProtoBufs
 add_subdirectory(protobuf)
 
-# Tell cmake these will exist at build time
-set_source_files_properties(${MPF_PROTO_HEADERS} PROPERTIES GENERATED TRUE)
-
 
 # The qmake program needs to be on the path in order for find_package to work for
 # the Qt package.
@@ -96,13 +89,22 @@ install(FILES ${MATCHING_FILES} DESTINATION "lib")
 
 # Find and install the FFmpeg libs
 find_program(FFMPEG_BINARY_PATH NAMES ffmpeg)
-execute_process(COMMAND ${CMAKE_COMMAND} -D TARGET_BINARY_LOCATION=${FFMPEG_BINARY_PATH}
-   -D DEP_LIBS_INSTALL_LOCATION=${CMAKE_INSTALL_PREFIX}/lib
-   -P ${CopySharedLibDependencies_LOCATION})
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    execute_process(COMMAND ${CMAKE_COMMAND} -D TARGET_BINARY_LOCATION=${FFMPEG_BINARY_PATH}
+       -D DEP_LIBS_INSTALL_LOCATION=${CMAKE_INSTALL_PREFIX}/lib
+       -P ${CopySharedLibDependencies_LOCATION})
+endif()
 
+# The C++ component executables for both streaming and batch jobs use a common
+# set of functions to translate between MPF data types and corresponding protobuf
+# types. These shared functions are held in the common/MPFMessageUtils.cpp file.
+set(MSG_UTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/detection/executor/cpp/common)
+set(MSG_UTILS_FILE ${MSG_UTILS_DIR}/MPFMessageUtils.cpp)
 
-# Build the common detection component executable amq_detection_component
-add_subdirectory(detection/executor/cpp)
+# Build the detection component executable for batch jobs
+add_subdirectory(detection/executor/cpp/batch)
+# Build the executables for streaming jobs
+add_subdirectory(detection/executor/cpp/streaming)
 
 # Build the video overlay utility
 add_subdirectory(video-overlay)

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -342,12 +342,12 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
             JsonComponentDescriptor.Action action,
             JsonComponentDescriptor descriptor) {
 
-        if (action.algorithm.equals(descriptor.algorithm.name)) {
+        if (descriptor.algorithm != null && action.algorithm.equals(descriptor.algorithm.name)) {
             Set<ProcessingType> actionProcessingType = EnumSet.noneOf(ProcessingType.class);
-            if (descriptor.algorithm.supportsBatchProcessing) {
+            if (descriptor.supportsBatchProcessing()) {
                 actionProcessingType.add(ProcessingType.BATCH);
             }
-            if (descriptor.algorithm.supportsStreamProcessing) {
+            if (descriptor.supportsStreamProcessing()) {
                 actionProcessingType.add(ProcessingType.STREAMING);
             }
             return actionProcessingType;
@@ -401,10 +401,10 @@ public class CustomPipelineValidatorImpl implements CustomPipelineValidator {
         }
 
         Set<ProcessingType> actionProcessingTypes = EnumSet.noneOf(ProcessingType.class);
-        if (existingAlgo.getSupportsBatchProcessing()) {
+        if (existingAlgo.supportsBatchProcessing()) {
             actionProcessingTypes.add(ProcessingType.BATCH);
         }
-        if (existingAlgo.getSupportsStreamProcessing()) {
+        if (existingAlgo.supportsStreamProcessing()) {
             actionProcessingTypes.add(ProcessingType.STREAMING);
         }
         return actionProcessingTypes;

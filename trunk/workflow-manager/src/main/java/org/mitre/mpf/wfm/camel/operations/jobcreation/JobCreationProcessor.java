@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -30,18 +30,21 @@ import org.apache.camel.Exchange;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
-import org.mitre.mpf.wfm.data.*;
+import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.JobStatus;
-import org.mitre.mpf.wfm.businessrules.JobRequestBo;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +52,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * The first step in the Workflow Manager is to translate a JSON job request into an internal
@@ -62,7 +68,10 @@ public class JobCreationProcessor extends WfmProcessor {
 	public static final String REF = "jobCreationProcessor";
 	private static final String INVALID_PIPELINE_MESSAGE = "INVALID_PIPELINE_MESSAGE";
 
-	@Autowired
+    @Autowired
+    private PropertiesUtil propertiesUtil;
+
+    @Autowired
 	@Qualifier(RedisImpl.REF)
 	private Redis redis;
 
@@ -76,6 +85,9 @@ public class JobCreationProcessor extends WfmProcessor {
 	@Autowired
 	@Qualifier(HibernateJobRequestDaoImpl.REF)
 	private HibernateDao<JobRequest> jobRequestDao;
+
+	@Autowired
+	private JobStatusBroadcaster jobStatusBroadcaster;
 
 	/** Converts a pipeline represented in JSON to a {@link org.mitre.mpf.wfm.data.entities.transients.TransientPipeline} instance. */
 	private TransientPipeline buildPipeline(JsonPipeline jsonPipeline) {
@@ -150,9 +162,15 @@ public class JobCreationProcessor extends WfmProcessor {
 				jobRequestEntity = jobRequestDao.findById(jobId);
 			}
 
-			TransientPipeline transientPipeline = buildPipeline(jobRequest.getPipeline());
+            // Capture the current state of the detection system properties at the time when this job is created. Since the
+            // detection system properties may be changed by an administrator, we must ensure that the job uses a consistent set of detection system
+            // properties through all stages of the jobs pipeline by storing these detection system property values in REDIS.
+            TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
-			TransientJob transientJob = new TransientJob(jobRequestEntity.getId(), jobRequest.getExternalId(), transientPipeline, 0, jobRequest.getPriority(), jobRequest.isOutputObjectEnabled(), false,jobRequest.getCallbackURL(),jobRequest.getCallbackMethod());
+            TransientPipeline transientPipeline = buildPipeline(jobRequest.getPipeline());
+
+			TransientJob transientJob = new TransientJob(jobRequestEntity.getId(), jobRequest.getExternalId(), transientDetectionSystemProperties, transientPipeline,
+                                                0, jobRequest.getPriority(), jobRequest.isOutputObjectEnabled(), false,jobRequest.getCallbackURL(),jobRequest.getCallbackMethod());
 
 			transientJob.getOverriddenJobProperties().putAll(jobRequest.getJobProperties());
 
@@ -160,33 +178,44 @@ public class JobCreationProcessor extends WfmProcessor {
 			transientJob.getOverriddenAlgorithmProperties().putAll(jobRequest.getAlgorithmProperties());
 
 			transientJob.getMedia().addAll(buildMedia(jobRequest.getMedia()));
-			redis.persistJob(transientJob);
 
-			if(transientPipeline == null) {
-				redis.setJobStatus(jobId, JobStatus.IN_PROGRESS_ERRORS);
+            redis.persistJob(transientJob);
+
+			if (transientPipeline == null) {
+				redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
 				throw new WfmProcessingException(INVALID_PIPELINE_MESSAGE);
 			}
 
-			// Everything has been good so far. Update the job status.
-			jobRequestEntity.setStatus(JobStatus.IN_PROGRESS);
-			redis.setJobStatus(jobId, JobStatus.IN_PROGRESS);
+			BatchJobStatusType jobStatus;
+			if (transientJob.getMedia().stream().anyMatch(m -> m.isFailed())) {
+				jobStatus = BatchJobStatusType.ERROR;
+				// allow the job to run since some of the media may be good
+			} else {
+				jobStatus = BatchJobStatusType.IN_PROGRESS;
+			}
+
+			jobRequestEntity.setStatus(jobStatus);
+			redis.setJobStatus(jobId, jobStatus);
+			jobStatusBroadcaster.broadcast(jobId, 0, jobStatus);
+
 			jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 
 			exchange.getOut().setBody(jsonUtils.serialize(transientJob));
 			exchange.getOut().getHeaders().put(MpfHeaders.JOB_ID, jobRequestEntity.getId());
+
 		} catch(WfmProcessingException exception) {
 			try {
 				// Make an effort to mark the job as failed.
 				if(INVALID_PIPELINE_MESSAGE.equals(exception.getMessage())) {
-					log.warn("Job #{} did not specify a valid pipeline.", jobId);
+					log.warn("Batch Job #{} did not specify a valid pipeline.", jobId);
 				} else {
-					log.warn("Failed to parse the input object for Job #{} due to an exception.", jobRequestEntity.getId(), exception);
+					log.warn("Failed to parse the input object for Batch Job #{} due to an exception.", jobRequestEntity.getId(), exception);
 				}
-				jobRequestEntity.setStatus(JobStatus.JOB_CREATION_ERROR);
-				jobRequestEntity.setTimeCompleted(new Date());
+				jobRequestEntity.setStatus(BatchJobStatusType.JOB_CREATION_ERROR);
+				jobRequestEntity.setTimeCompleted(Instant.now());
 				jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 			} catch(Exception persistException) {
-				log.warn("Failed to mark Job #{} as failed due to an exception. It will remain it its current state until manually changed.", jobRequestEntity, persistException);
+				log.warn("Failed to mark Batch Job #{} as failed due to an exception. It will remain it its current state until manually changed.", jobRequestEntity, persistException);
 			}
 
 			// Set a flag so that the routing logic knows that the job has completed.
@@ -205,3 +234,6 @@ public class JobCreationProcessor extends WfmProcessor {
 		return transientMedia;
 	}
 }
+
+
+

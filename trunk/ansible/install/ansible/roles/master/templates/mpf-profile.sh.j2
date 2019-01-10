@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2017 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2018 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2017 The MITRE Corporation                                      #
+# Copyright 2018 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -23,16 +23,28 @@
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
-#This file managed by ansible. Do not edit directly
+# This file managed by ansible.
 export no_proxy=localhost,{{ repo_host }}
+
 export MPF_USER=mpf
 export MPF_HOME={{ mpf_home }}
-export MPF_LOG_PATH={{ mpf_home }}/share/logs
-export JAVA_HOME=/usr/java/latest
+export MPF_LOG_PATH=$MPF_HOME/share/logs
+export MASTER_MPF_NODE={{ master_host }}
 export THIS_MPF_NODE={{ inventory_hostname }}
-export ALL_MPF_NODES={{ master_host }}[7800],{% if groups['mpf-child'] is defined %}{% for host in groups['mpf-child'] %}{{ host }}[7800],{% endfor %}{% endif %}
+export CORE_MPF_NODES={{ master_host }},{% if groups['mpf-child'] is defined %}{% for host in groups['mpf-child'] %}{{ host }},{% endfor %}{% endif %}
 
-#CATALINA_OPTS is set in {{ tomcat_home }}/bin/setenv.sh
+export JAVA_HOME=/usr/java/latest
 
-export ACTIVE_MQ_HOST="failover://(tcp://{{ master_host }}:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
+export JGROUPS_TCP_ADDRESS=$THIS_MPF_NODE
+export JGROUPS_TCP_PORT=7800
+export JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
+
+# CATALINA_OPTS is set in {{ tomcat_home }}/bin/setenv.sh
+
+export ACTIVE_MQ_HOST=$MASTER_MPF_NODE
+export MYSQL_HOST=localhost
+export REDIS_HOST=localhost
+
+export ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
+
 command -v register-python-argcomplete > /dev/null && eval "$(register-python-argcomplete mpf)"

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -25,10 +25,12 @@
  ******************************************************************************/
 package org.mitre.mpf.nms;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
+import org.mitre.mpf.nms.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -37,14 +39,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static java.util.stream.Collectors.joining;
 
@@ -53,11 +50,11 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
 
     private static final Logger LOG = LoggerFactory.getLogger(ChannelReceiver.class);
 
-    public static final char FQN_SEP = ':';
-    public static final Pattern FQN_PATTERN = Pattern.compile("^([^:]+):([^:]+):(.*)");
-
     // the interface to JGroups
-    private ChannelNode msgChannel;
+    private final ChannelNode msgChannel;
+
+    private final PropertiesUtil propertiesUtil;
+
     // key is FQN of the service: for example, mpf1:Markup:1
     private final Map<String, ServiceDescriptor> serviceTable = new ConcurrentHashMap<>();
     // key is target (logical) host name: mpf1
@@ -65,42 +62,11 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
 
     private ClusterChangeNotifier notifier;          // For callbacks when changing node states
 
-    // Figure our hostname for help in naming us to JGroups
-    private static String myHost = "UnknownHostname";
 
-    /**
-     * NodeTypes (types of ChannelReceiver).
-     */
-    public enum NodeTypes {
-
-        ReceiverNode, NodeManager, MasterNode;
-
-        public static NodeTypes lookup(String name) {
-            try {
-                return NodeTypes.valueOf(name);
-            } catch (IllegalArgumentException iae) {
-                LOG.warn(String.format("Failed to lookup node type with name: %s", name), iae);
-                return null;
-            }
-        }
+    protected ChannelReceiver(PropertiesUtil propertiesUtil, ChannelNode channelNode) {
+        this.propertiesUtil = propertiesUtil;
+        msgChannel = channelNode;
     }
-
-    //removed a static initializer that contained this code, it must be called by all constructors
-    private static void determineHost() {
-        myHost = System.getenv("THIS_MPF_NODE");
-        LOG.debug("Hostname is: '{}'.", myHost);
-        
-        if(myHost == null) {
-            LOG.error("Could not determine the hostname.");
-        }
-    }
-
-
-    protected ChannelReceiver() {
-    	determineHost();
-        msgChannel = new ChannelNode();
-    }
-
 
     /**
      * a notifier will have methods called when the cluster state changes
@@ -154,6 +120,10 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
 
     @Override
     public void viewAccepted(View view) {
+        handleView(view, false);
+    }
+
+    private void handleView(View view, boolean forced) {
         // What is currently out there
         String participants = view.getMembers().stream()
                 .map(Object::toString)
@@ -166,37 +136,34 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         Map<String, Boolean> managersInView = new HashMap<>();
         for (Address addr : view.getMembers()) {
             String name = addr.toString();
-            LOG.debug("viewAccepted from {}", name);
+            LOG.info("Cluster view accepted from {}", name);
             // If it's a node manager then track it, it's name contains the machine name upon which it resides
-            Matcher mo = FQN_PATTERN.matcher(name);
-            if (!mo.matches()) {
-                LOG.warn("Not well formed name, skipping {}", name);
+            Pair<String, NodeTypes> hostNodeTypePair = AddressParser.parse(addr);
+            if (hostNodeTypePair == null) {
                 continue;
             }
-            // see if we know what type this is
-            NodeTypes ntype = NodeTypes.lookup(mo.group(1));
-            if (null == ntype) {
-                LOG.warn("Unknown Node Type: {}", mo.group(1));
-                continue;
-            }
-            switch (ntype) {
+            switch (hostNodeTypePair.getRight()) {
                 case NodeManager:
-                    String mgrHost = mo.group(2);
+                    String mgrHost = hostNodeTypePair.getLeft();
                     managersInView.put(mgrHost, Boolean.TRUE);
 
-                    // Normally, managers are known in advance by masters after loading an XML configuration file
-                    // It could happen that someone starts up a manager elsewhere on the network that isn't enumerated
-                    // Also, we have to consider that we've got one stopping/restarting over its lifecycle
+                    // Normally, managers are known in advance by masters after loading an XML configuration file.
+                    // It could happen that someone starts up a manager elsewhere on the network that isn't enumerated.
+                    // Also, we have to consider that we've got one stopping/restarting over its lifecycle.
                     NodeDescriptor mgr = nodeTable.get(mgrHost);
                     if (mgr == null) {
                         mgr = new NodeDescriptor(mgrHost);
-                        LOG.warn("New node-manager is online that wasn't preconfigured. Rogue?");
-                        // Issue the callback
-                        if (notifier != null) {
-                            notifier.newManager(mgr.getHostname());
+                        if (!mgr.doesHostMatch(propertiesUtil.getThisMpfNode())) { // don't warn about self
+                            LOG.warn("New node-manager is online that wasn't preconfigured. Treating as a spare node.");
                         }
                     }
+                    boolean isNew = !mgr.isAlive(); // if this is a new node-manager, it hasn't been active until now
                     mgr.setLastKnownState(NodeManagerConstants.States.Running);
+                    // Issue the callback
+                    if (notifier != null && isNew) {
+                        // Call this whenever a node-manager becomes available to launch services.
+                        notifier.newManager(mgr.getHostname());
+                    }
                     synchronized (nodeTable) {
                         nodeTable.put(mgrHost, mgr);
                     }
@@ -236,7 +203,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
                             }
                         }
                     }
-                    LOG.error("Node-manager offline on " + entry.getKey());
+                    LOG.warn("Node-manager offline on " + entry.getKey());
                     if (notifier != null) {
                         notifier.managerDown(entry.getValue().getHostname());
                     }
@@ -245,6 +212,10 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         }
 
         super.viewAccepted(view);
+
+        if (notifier != null) {
+            notifier.viewUpdated(forced);
+        }
     }
 
 
@@ -266,7 +237,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
     }
 
     public Set<String> getRunningNodes() {
-        // no need to have conncurrent hashmap
+        // no need to have concurrent hashmap
         Set<String> rn = new HashSet<>();
         for (Entry<String, NodeDescriptor> e : this.nodeTable.entrySet()) {
             if (e.getValue().getLastKnownState() == NodeManagerConstants.States.Running) {
@@ -320,15 +291,11 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         return nodeTable;
     }
 
-    protected static String getMyHost() {
-        return myHost;
-    }
-
     protected ClusterChangeNotifier getNotifier() {
         return notifier;
     }
 
-    public void startReceiving(InputStream jgroupsConfigXml, String channelName, NodeTypes nodeType, String description) {
+    public void startReceiving(NodeTypes nodeType, String description) {
         // build fqn
         if (null == description) {
             description = "";
@@ -336,15 +303,16 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
         if (null == nodeType) {
             nodeType = NodeTypes.ReceiverNode;
         }
-        String fqn = nodeType.name() + FQN_SEP + myHost + FQN_SEP + description;
+        String fqn = AddressParser.createFqn(nodeType, propertiesUtil.getThisMpfNode(), description);
 
         LOG.debug("{} starting up", fqn);
-        msgChannel = new ChannelNode();
-        if (null == jgroupsConfigXml) {
-            String jgConfig = System.getProperty(NodeManagerConstants.JGROUPS_CONFIG_PARAM, "jGroupsTCPConfig.xml");
-            jgroupsConfigXml = NodeManager.class.getClassLoader().getResourceAsStream(jgConfig);
-        }
         // this connects us to the jgroups channel defined, we are now live and ready for comm
-        msgChannel.connect(jgroupsConfigXml, channelName, fqn, this);
+        msgChannel.connect(fqn, this);
+
+        handleView(msgChannel.getView(), true);
+    }
+
+    public Set<String> getAvailableNodes() {
+        return msgChannel.getAvailableNodes();
     }
 }

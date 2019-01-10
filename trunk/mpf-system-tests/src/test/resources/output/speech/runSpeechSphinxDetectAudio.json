@@ -23,8 +23,8 @@
   "priority": 4,
   "siteId": "mpf1",
   "externalJobId": "9a11c172-ca26-4e0f-b39f-ff2494a1aba4",
-  "timeStart": "2017-05-25 16:00:44.0",
-  "timeStop": "2017-05-25 16:01:24.0",
+  "timeStart": "2017-05-25T16:00:44.0-05:00",
+  "timeStop": "2017-05-25T16:01:24.0-05:00",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
@@ -32,7 +32,7 @@
     {
       "mediaId": 19,
       "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/mpf-system-tests/target/test-classes/samples/speech/10001-90210-01803.wav",
-      "mimeType": "audio/x-wav",
+      "mimeType": "audio/vnd.wave",
       "length": -1,
       "sha256": "dcfea5712c43a43ba7ae8083afb39d36993e5a69c46e88b68aaa72b65cb615bb",
       "message": null,
@@ -53,11 +53,15 @@
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 830,
                 "stopOffsetTime": 2530,
+                "confidence": -1.0,
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "trackProperties": {
+                  "TRANSCRIPTION": "one zero zero zero one"
+                },
                 "exemplar": {
                   "x": 0,
-                  "y": 1,
+                  "y": 0,
                   "width": 0,
                   "height": 0,
                   "confidence": -1.0,
@@ -73,7 +77,7 @@
                 "detections": [
                   {
                     "x": 0,
-                    "y": 1,
+                    "y": 0,
                     "width": 0,
                     "height": 0,
                     "confidence": -1.0,
@@ -96,11 +100,15 @@
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 3920,
                 "stopOffsetTime": 4880,
+                "confidence": -1.0,
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "trackProperties": {
+                  "TRANSCRIPTION": "nine oh two one oh"
+                },
                 "exemplar": {
                   "x": 0,
-                  "y": 1,
+                  "y": 0,
                   "width": 0,
                   "height": 0,
                   "confidence": -1.0,
@@ -116,7 +124,7 @@
                 "detections": [
                   {
                     "x": 0,
-                    "y": 1,
+                    "y": 0,
                     "width": 0,
                     "height": 0,
                     "confidence": -1.0,
@@ -139,11 +147,15 @@
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 6240,
                 "stopOffsetTime": 7900,
+                "confidence": -1.0,
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "trackProperties": {
+                  "TRANSCRIPTION": "cyril one eight zero three"
+                },
                 "exemplar": {
                   "x": 0,
-                  "y": 1,
+                  "y": 0,
                   "width": 0,
                   "height": 0,
                   "confidence": -1.0,
@@ -159,7 +171,7 @@
                 "detections": [
                   {
                     "x": 0,
-                    "y": 1,
+                    "y": 0,
                     "width": 0,
                     "height": 0,
                     "confidence": -1.0,
@@ -185,7 +197,7 @@
     {
       "mediaId": 17,
       "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/mpf-system-tests/target/test-classes/samples/speech/green.wav",
-      "mimeType": "audio/x-wav",
+      "mimeType": "audio/vnd.wave",
       "length": -1,
       "sha256": "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0",
       "message": null,
@@ -206,11 +218,15 @@
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 280,
                 "stopOffsetTime": 1520,
+                "confidence": -1.0,
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "trackProperties": {
+                  "TRANSCRIPTION": "the green one right in the middle"
+                },
                 "exemplar": {
                   "x": 0,
-                  "y": 1,
+                  "y": 0,
                   "width": 0,
                   "height": 0,
                   "confidence": -1.0,
@@ -226,7 +242,7 @@
                 "detections": [
                   {
                     "x": 0,
-                    "y": 1,
+                    "y": 0,
                     "width": 0,
                     "height": 0,
                     "confidence": -1.0,
@@ -252,7 +268,7 @@
     {
       "mediaId": 18,
       "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/mpf-system-tests/target/test-classes/samples/speech/left.wav",
-      "mimeType": "audio/x-wav",
+      "mimeType": "audio/vnd.wave",
       "length": -1,
       "sha256": "382fe5814ccf0253594a31f2ca8c3c320899c543b008374c7f26b85eab7508af",
       "message": null,
@@ -273,11 +289,15 @@
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 1100,
                 "stopOffsetTime": 4470,
+                "confidence": -1.0,
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "trackProperties": {
+                  "TRANSCRIPTION": "this three left on the left side of the one closest to us"
+                },
                 "exemplar": {
                   "x": 0,
-                  "y": 1,
+                  "y": 0,
                   "width": 0,
                   "height": 0,
                   "confidence": -1.0,
@@ -293,7 +313,7 @@
                 "detections": [
                   {
                     "x": 0,
-                    "y": 1,
+                    "y": 0,
                     "width": 0,
                     "height": 0,
                     "confidence": -1.0,

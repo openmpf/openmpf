@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,8 +26,8 @@
 
 package org.mitre.mpf.mvc.model;
 
-import java.util.Date;
-import java.util.HashMap;
+import java.time.Instant;
+import java.util.Map;
 
 /** Generic Message class for server-side push using Atmosphere.  For more information on 
  *  how Atmosphere is used in workflow-manager, please see the documentation for AtmosphereController */
@@ -41,18 +41,18 @@ public class AtmosphereMessage {
 	
 	/** timestamp for when the message is created, which may be different than when the event happened or when 
 	 * it is broadcasted) */
-	private Date timestamp;
+	private Instant timestamp;
 	
 	/** the JSON content of the message, stored as a String representation of JSON */
-	private HashMap<String,Object> content;
+	private Map<String, ?> content;
 	
-	protected AtmosphereMessage( AtmosphereChannel channel, String event )  {
+	public AtmosphereMessage( AtmosphereChannel channel, String event )  {
 		this.channel = channel;
 		this.event = event;
-		this.timestamp = new Date();
+		this.timestamp = Instant.now();
 	}	
 
-	public AtmosphereMessage( AtmosphereChannel channel, String event, HashMap dataMap ) {
+	public AtmosphereMessage( AtmosphereChannel channel, String event, Map<String, ?> dataMap ) {
 		this( channel, event );
 		this.setContent( dataMap );
 	}
@@ -65,19 +65,19 @@ public class AtmosphereMessage {
 		return event;
 	}
 
-	public Date getTimestamp() {
+	public Instant getTimestamp() {
 		return timestamp;
 	}
 
-	public void setTimestamp(Date timestamp) {
+	public void setTimestamp(Instant timestamp) {
 		this.timestamp = timestamp;
 	}
 
-	public HashMap<String,Object> getContent() {
+	public Map<String, ?> getContent() {
 		return content;
 	}
 
-	public void setContent(HashMap<String,Object> dataMap) {
+	public void setContent(Map<String, ?> dataMap) {
 		this.content = dataMap;
 	}
 	

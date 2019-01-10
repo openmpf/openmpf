@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,7 +28,7 @@ package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,7 @@ public class DefaultJobErrorHandler implements Processor {
 		if(jobId == null) {
 			log.warn("An error was encountered while processing a job, but not enough information has been provided to determine which job produced this error.", throwable);
 		} else {
-			log.warn("An error was encountered while processing Job #{}. The Job will be marked as {}.", jobId, JobStatus.ERROR, throwable);
+			log.warn("An error was encountered while processing Job #{}. The Job will be marked as {}.", jobId, BatchJobStatusType.ERROR, throwable);
 		}
 	}
 }

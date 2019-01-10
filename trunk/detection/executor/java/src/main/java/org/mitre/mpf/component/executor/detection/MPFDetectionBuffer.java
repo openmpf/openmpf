@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,15 +26,10 @@
 
 package org.mitre.mpf.component.executor.detection;
 
-import java.util.*;
-
 import com.google.common.base.Joiner;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.io.FilenameUtils;
 import org.mitre.mpf.component.api.detection.*;
-import org.mitre.mpf.component.api.messaging.MPFMessageMetadata;
-import org.mitre.mpf.component.api.messaging.detection.MPFDetectionAudioRequest;
-import org.mitre.mpf.component.api.messaging.detection.MPFDetectionImageRequest;
-import org.mitre.mpf.component.api.messaging.detection.MPFDetectionVideoRequest;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer.AlgorithmProperty;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
@@ -42,7 +37,9 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import java.util.*;
 
 public class MPFDetectionBuffer {
 
@@ -50,12 +47,12 @@ public class MPFDetectionBuffer {
 
     private DetectionRequest detectionRequest = null;
 
-    public MPFDetectionBuffer(final byte[] requestContents) {
+    public MPFDetectionBuffer(final byte[] requestContents) throws InvalidProtocolBufferException {
         try {
             detectionRequest = DetectionRequest.parseFrom(requestContents);
         } catch (InvalidProtocolBufferException e) {
-            LOG.error("Failed to parse the request protocol buffer due to Exception ", e);
-            e.printStackTrace();
+            LOG.error("Failed to parse the request protocol buffer.");
+            throw e;
         }
     }
 
@@ -67,9 +64,7 @@ public class MPFDetectionBuffer {
         return props;
     }
 
-    public MPFMessageMetadata getMessageMetadata(final byte[] requestContents) {
-
-        MPFMessageMetadata inputs = null;
+    public MPFMessageMetadata getMessageMetadata(Message message) throws JMSException {
 
         String dataUri = detectionRequest.getDataUri();
         MPFDataType dataType = translateProtobufDataType(detectionRequest.getDataType());
@@ -83,14 +78,25 @@ public class MPFDetectionBuffer {
 
         Map<String, String> mediaProperties = copyProperties(detectionRequest.getMediaMetadataList());
 
-        String jobName = "Job " + detectionRequest.getRequestId() + ":" + FilenameUtils.getName(dataUri);
-        inputs = new MPFMessageMetadata(dataUri, dataType,
-                detectionRequest.getMediaId(),
-                detectionRequest.getStageName(), detectionRequest.getStageIndex(),
-                detectionRequest.getActionName(), detectionRequest.getActionIndex(),
-                algorithmProperties, mediaProperties, requestId, jobName);
+        try {
+            String correlationId = message.getStringProperty("CorrelationId");
+            String breadcrumbId = message.getStringProperty("breadcrumbId");
+            int splitSize = message.getIntProperty("SplitSize");
+            long jobId = message.getLongProperty("JobId");
 
-        return inputs;
+            String jobName = "Job " + jobId + ":" + FilenameUtils.getName(dataUri);
+
+            return new MPFMessageMetadata(dataUri, dataType,
+                    detectionRequest.getMediaId(),
+                    detectionRequest.getStageName(), detectionRequest.getStageIndex(),
+                    detectionRequest.getActionName(), detectionRequest.getActionIndex(),
+                    algorithmProperties, mediaProperties, requestId,
+                    correlationId, breadcrumbId, splitSize, jobId, jobName);
+
+        } catch (JMSException e) {
+            LOG.error("Failed to get JMS message property.");
+            throw e;
+        }
     }
 
     public MPFDetectionAudioRequest getAudioRequest() {
@@ -178,6 +184,20 @@ public class MPFDetectionBuffer {
     }
 
 
+    public MPFDetectionGenericRequest getGenericRequest() {
+        if (detectionRequest.getGenericRequest().hasFeedForwardTrack()) {
+            DetectionProtobuf.GenericTrack track = detectionRequest.getGenericRequest().getFeedForwardTrack();
+            // Copy the properties
+            Map<String, String> trackProps = copyProperties(track.getDetectionPropertiesList());
+            MPFGenericTrack new_track = new MPFGenericTrack(track.getConfidence(), trackProps);
+            return new MPFDetectionGenericRequest(new_track);
+        }
+        else {
+            return new MPFDetectionGenericRequest();
+        }
+    }
+
+
     private DetectionResponse.Builder packCommonFields(
             final MPFMessageMetadata msgMetadata,
             final MPFDetectionError msgError) {
@@ -209,8 +229,8 @@ public class MPFDetectionBuffer {
         audioResponseBuilder.setDetectionType(detectionType);
 
         if (!tracks.isEmpty()) {
-            LOG.debug("Number of audio tracks in detection response for request ID " +
-                    msgMetadata.getRequestId() + " = " + tracks.size());
+            LOG.debug("Number of audio tracks in detection response for job ID " +
+                    msgMetadata.getJobId() + " = " + tracks.size());
 
             for (int i = 0; i < tracks.size(); i++) {
 
@@ -245,8 +265,8 @@ public class MPFDetectionBuffer {
         videoResponseBuilder.setDetectionType(detectionType);
 
         if (!tracks.isEmpty()) {
-            LOG.info("Number of video tracks in detection response for request ID " +
-                    msgMetadata.getRequestId() + " = " + tracks.size());
+            LOG.info("Number of video tracks in detection response for job ID " +
+                    msgMetadata.getJobId() + " = " + tracks.size());
 
             for (int i = 0; i < tracks.size(); i++) {
                 Set<DetectionProtobuf.VideoTrack.FrameLocationMap> frameLocationMapSet = new HashSet<>();
@@ -298,8 +318,8 @@ public class MPFDetectionBuffer {
         imageResponseBuilder.setDetectionType(detectionType);
 
         if (!locations.isEmpty()) {
-            LOG.debug("Number of image locations in detection response for request ID " +
-                    msgMetadata.getRequestId() + " = " + locations.size());
+            LOG.debug("Number of image locations in detection response for job ID " +
+                    msgMetadata.getJobId() + " = " + locations.size());
 
             for (int i = 0; i < locations.size(); i++) {
                 imageResponseBuilder.addImageLocations(DetectionProtobuf.ImageLocation.newBuilder()
@@ -312,6 +332,39 @@ public class MPFDetectionBuffer {
 
             }
 
+        }
+
+        responseContents = detectionResponseBuilder
+                .setRequestId(msgMetadata.getRequestId())
+                .setDataType(translateMPFDetectionDataType(msgMetadata.getDataType()))
+                .build()
+                .toByteArray();
+
+        return responseContents;
+    }
+
+    public byte[] createGenericResponseMessage(final MPFMessageMetadata msgMetadata,
+                                               final String detectionType,
+                                               final List<MPFGenericTrack> tracks,
+                                               final MPFDetectionError msgError) {
+        byte[] responseContents = null;
+
+        DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder = packCommonFields(msgMetadata, msgError);
+
+        DetectionProtobuf.DetectionResponse.GenericResponse.Builder genericResponseBuilder = detectionResponseBuilder.addGenericResponsesBuilder();
+        genericResponseBuilder.setDetectionType(detectionType);
+
+        if (!tracks.isEmpty()) {
+            LOG.debug("Number of generic tracks in detection response for job ID " +
+                    msgMetadata.getJobId() + " = " + tracks.size());
+
+            for (int i = 0; i < tracks.size(); i++) {
+
+                DetectionProtobuf.GenericTrack genericTrack = genericResponseBuilder.addGenericTracksBuilder()
+                        .setConfidence(tracks.get(i).getConfidence())
+                        .addAllDetectionProperties(convertProperties(tracks.get(i).getDetectionProperties()))
+                        .build();
+            }
         }
 
         responseContents = detectionResponseBuilder
@@ -405,6 +458,8 @@ public class MPFDetectionBuffer {
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.INVALID_ROTATION;
             case MPF_MEMORY_ALLOCATION_FAILED:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.MEMORY_ALLOCATION_FAILED;
+            case MPF_GPU_ERROR:
+                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.GPU_ERROR;
             default:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.UNRECOGNIZED_DETECTION_ERROR;
         }

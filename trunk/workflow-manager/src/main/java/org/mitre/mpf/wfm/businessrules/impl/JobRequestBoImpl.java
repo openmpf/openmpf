@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -31,7 +31,6 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
-import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.camel.routes.JobCreatorRouteBuilder;
@@ -42,8 +41,9 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.JmsUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
@@ -54,8 +54,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import org.springframework.util.FileSystemUtils;
 
-import java.util.*;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class JobRequestBoImpl implements JobRequestBo {
@@ -106,6 +110,9 @@ public class JobRequestBoImpl implements JobRequestBo {
     @Autowired
     @Qualifier(HibernateMarkupResultDaoImpl.REF)
     private MarkupResultDao markupResultDao;
+
+    @Autowired
+    private JobStatusBroadcaster jobStatusBroadcaster;
 
     @EndpointInject(uri = JobCreatorRouteBuilder.ENTRY_POINT)
     private ProducerTemplate jobRequestProducerTemplate;
@@ -251,9 +258,11 @@ public class JobRequestBoImpl implements JobRequestBo {
             throw new WfmProcessingException(String.format("A job with the id %d is not known to the system.", jobId));
         }
 
-        assert jobRequest.getStatus() != null : "Jobs must not have a null status.";
+        if (jobRequest.getStatus() == null) {
+            throw new WfmProcessingException(String.format("Job %d must not have a null status.", jobId));
+        }
 
-        if (jobRequest.getStatus().isTerminal() || jobRequest.getStatus() == JobStatus.CANCELLING) {
+        if (jobRequest.getStatus().isTerminal() || jobRequest.getStatus() == BatchJobStatusType.CANCELLING) {
             log.warn("[Job {}:*:*] This job is in the state of '{}' and cannot be cancelled at this time.", jobId, jobRequest.getStatus().name());
             return false;
         } else {
@@ -270,7 +279,7 @@ public class JobRequestBoImpl implements JobRequestBo {
                 } catch (Exception exception) {
                     log.warn("[Job {}:*:*] Failed to remove the pending work elements in the message broker for this job. The job must complete the pending work elements before it will cancel the job.", jobId, exception);
                 }
-                jobRequest.setStatus(JobStatus.CANCELLING);
+                jobRequest.setStatus(BatchJobStatusType.CANCELLING);
                 jobRequestDao.persist(jobRequest);
             } else {
                 // Warn of the race condition where Redis and the persistent database reflect different states.
@@ -288,37 +297,33 @@ public class JobRequestBoImpl implements JobRequestBo {
         JobRequest jobRequest = jobRequestDao.findById(jobId);
         if (jobRequest == null) {
             throw new WfmProcessingException(String.format("A job with id %d is not known to the system.", priority));
-        } else if (!jobRequest.getStatus().isTerminal()) {
-            throw new WfmProcessingException(String.format("The job with id %d is in the non-terminal state of '%s'. Only jobs in a terminal state may be resubmitted.",
-                    jobId, jobRequest.getStatus().name()));
-        } else {
-            JsonJobRequest jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
-
-            // If the priority should be changed during resubmission, make that change now.
-            if (priorityPolicy == PriorityPolicy.PROVIDED) {
-
-                // Create a copy of this job's media in order to add it to the new instance we're about to create.
-                final List<JsonMediaInputObject> originalMedia = new LinkedList<>();
-                for (JsonMediaInputObject media : jsonJobRequest.getMedia()) {
-                    JsonMediaInputObject originalMedium = new JsonMediaInputObject(media.getMediaUri());
-                    originalMedium.getProperties().putAll(media.getProperties());
-                    originalMedia.add(originalMedium);
-                }
-
-                // Attempt to recreate the pipeline because registered components; as well as algorithms, actions, tasks, and pipelines;
-                // may have changed since the first time the job was run.
-                JsonPipeline jsonPipeline = pipelineService.createJsonPipeline(jsonJobRequest.getPipeline().getName());
-
-                jsonJobRequest = new JsonJobRequest(jsonJobRequest.getExternalId(), jsonJobRequest.isOutputObjectEnabled(), jsonPipeline, priority) {{
-                    getMedia().addAll(originalMedia);
-                }};
-
-            }
-
-            jobRequest = initializeInternal(jobRequest, jsonJobRequest);
-            markupResultDao.deleteByJobId(jobId);
-            return runInternal(jobRequest, jsonJobRequest, priority);
         }
+        if (!jobRequest.getStatus().isTerminal()) {
+            throw new WfmProcessingException(String.format(
+                    "The job with id %d is in the non-terminal state of '%s'. Only jobs in a terminal state may be resubmitted.",
+                    jobId, jobRequest.getStatus().name()));
+        }
+        if (pipelineService.getPipeline(jobRequest.getPipeline()) == null) {
+            throw new WfmProcessingException(String.format("The \"%s\" pipeline does not exist.",
+                                                           jobRequest.getPipeline()));
+        }
+        JsonJobRequest jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
+
+        // If the priority should be changed during resubmission, make that change now.
+        if (priorityPolicy == PriorityPolicy.PROVIDED) {
+            jsonJobRequest.setPriority(priority);
+        }
+
+        jobRequest = initializeInternal(jobRequest, jsonJobRequest);
+        markupResultDao.deleteByJobId(jobId);
+        FileSystemUtils.deleteRecursively(propertiesUtil.getJobArtifactsDirectory(jobId));
+        FileSystemUtils.deleteRecursively(propertiesUtil.getJobOutputObjectsDirectory(jobId));
+        FileSystemUtils.deleteRecursively(propertiesUtil.getJobMarkupDirectory(jobId));
+
+        redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
+        jobStatusBroadcaster.broadcast(jobId, 0, BatchJobStatusType.IN_PROGRESS);
+
+        return runInternal(jobRequest, jsonJobRequest, priority);
     }
 
     /**
@@ -332,8 +337,8 @@ public class JobRequestBoImpl implements JobRequestBo {
      */
     private JobRequest initializeInternal(JobRequest jobRequest, JsonJobRequest jsonJobRequest) throws WfmProcessingException {
         jobRequest.setPriority(jsonJobRequest.getPriority());
-        jobRequest.setStatus(JobStatus.INITIALIZED);
-        jobRequest.setTimeReceived(new Date());
+        jobRequest.setStatus(BatchJobStatusType.INITIALIZED);
+        jobRequest.setTimeReceived(Instant.now());
         jobRequest.setInputObject(jsonUtils.serialize(jsonJobRequest));
         jobRequest.setPipeline(jsonJobRequest.getPipeline() == null ? null : TextUtils.trimAndUpper(jsonJobRequest.getPipeline().getName()));
 
@@ -342,7 +347,13 @@ public class JobRequestBoImpl implements JobRequestBo {
 
         // Set output object version to null.
         jobRequest.setOutputObjectVersion(null);
-        return jobRequestDao.persist(jobRequest);
+
+        JobRequest persistedRequest = jobRequestDao.persist(jobRequest);
+
+        jobStatusBroadcaster.broadcast(persistedRequest.getId(), 0, BatchJobStatusType.INITIALIZED);
+
+        return persistedRequest;
+
     }
 
     /**

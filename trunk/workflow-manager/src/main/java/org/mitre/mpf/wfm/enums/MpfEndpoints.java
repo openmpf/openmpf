@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -53,5 +53,6 @@ public class MpfEndpoints {
             UNSOLICITED_MESSAGES = "jms:MPF.UNSOLICITED_MESSAGES",
 
             DEAD_LETTER_QUEUE = "activemq:ActiveMQ.DLQ",
-            PROCESSED_DLQ_MESSAGES_QUEUE = "jms:MPF.PROCESSED_DLQ_MESSAGES";
+            DLQ_PROCESSED_MESSAGES = "jms:MPF.DLQ_PROCESSED_MESSAGES",
+            DLQ_INVALID_MESSAGES = "jms:MPF.DLQ_INVALID_MESSAGES";
 }

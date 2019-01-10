@@ -27,8 +27,8 @@
   "priority": 4,
   "siteId": "mpf1",
   "externalJobId": "de09d7f3-cf32-4997-8352-82918887d106",
-  "timeStart": "2017-06-15 22:42:53.0",
-  "timeStop": "2017-06-15 22:43:00.0",
+  "timeStart": "2017-06-15T22:42:53.0-05:00",
+  "timeStop": "2017-06-15T22:43:00.0-05:00",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
@@ -59,6 +59,7 @@
                 "stopOffsetFrame": 112,
                 "startOffsetTime": 3670,
                 "stopOffsetTime": 3737,
+                "confidence": 17.0,
                 "type": "FACE",
                 "source": "+#TEST OCV FACE WITH ROI ACTION",
                 "exemplar": {
@@ -124,6 +125,7 @@
                 "stopOffsetFrame": 251,
                 "startOffsetTime": 8108,
                 "stopOffsetTime": 8375,
+                "confidence": 41.0,
                 "type": "FACE",
                 "source": "+#TEST OCV FACE WITH ROI ACTION",
                 "exemplar": {

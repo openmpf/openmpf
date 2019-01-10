@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -41,16 +41,17 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
+import org.mitre.mpf.nms.xml.EnvironmentVariable;
+import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.rest.api.node.DeployedNodeManagerModel;
 import org.mitre.mpf.rest.api.node.DeployedServiceModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.rest.client.CustomRestClient;
-import org.mitre.mpf.nms.xml.EnvironmentVariable;
-import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.ui.Utils;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,12 +68,11 @@ import static org.junit.Assert.*;
 public class ITComponentLifecycle {
 
     private static final Logger log = LoggerFactory.getLogger(ITComponentLifecycle.class);
-    private static final String mpfCredentials = "Basic bXBmOm1wZjEyMw==";
-    private static final String adminCredentials = "Basic YWRtaW46bXBmYWRtCg";
     private static RestClient client;
     private static CustomRestClient customClient;
+    private static final ObjectMapper objectMapper = ObjectMapperFactory.customObjectMapper();
     private final int MINUTES = 60 * 1000;  // millisec
-    
+
     // use url with port 8080 for testing with Intellij and 8181 for running mvn verify
     private static String urlBase = "http://localhost:8080/workflow-manager/rest/";
 //    private static String urlBase = "http://localhost:8181/workflow-manager/rest/";
@@ -106,9 +106,9 @@ public class ITComponentLifecycle {
             @Override
             public void intercept(HttpRequestBase request) {
             	if(asAdmin) {
-            		request.addHeader("Authorization", adminCredentials);
+            		request.addHeader("Authorization", WebRESTUtils.ADMIN_AUTHORIZATION);
             	} else {
-            		request.addHeader("Authorization", mpfCredentials);
+            		request.addHeader("Authorization", WebRESTUtils.MPF_AUTHORIZATION);
             	}                
             }
         };
@@ -146,9 +146,8 @@ public class ITComponentLifecycle {
             log.error("IOException occurred while getting deployed node manager info");
             e.printStackTrace();
         }
-        ObjectMapper mapper = new ObjectMapper();
         try {
-            model = mapper.treeToValue(node, DeployedNodeManagerModel.class);
+            model = objectMapper.treeToValue(node, DeployedNodeManagerModel.class);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
@@ -208,26 +207,22 @@ public class ITComponentLifecycle {
 
         // create service
         JSONParser parser = new JSONParser();
+        String componentName = "";
         String sourceLanguage = "";
-        String pathName = "";
+        String batchLibrary = "";
         String serviceName = "";
         String algDesc = "";
         String algName = "";
         ActionType algorithmActionType = ActionType.UNDEFINED;
-        List<String> componentLaunchArguments = null;
         List<EnvironmentVariable> componentEnvVars = null;
         try {
             Object obj = parser.parse(new FileReader(filePath));
             JSONObject jsonObject = (JSONObject) obj;
+            componentName = (String) jsonObject.get("componentName");
             sourceLanguage = (String) jsonObject.get("sourceLanguage");
-            pathName = (String) jsonObject.get("pathName");
-            JSONArray launchArgs = (JSONArray) jsonObject.get("launchArgs");
+            batchLibrary = (String) jsonObject.get("batchLibrary");
             JSONArray envVars = (JSONArray) jsonObject.get("environmentVariables");
             JSONObject algorithm = (JSONObject) jsonObject.get("algorithm");
-            componentLaunchArguments = new ArrayList<String>();
-            for (int i = 0; i < launchArgs.size(); i++) {
-                componentLaunchArguments.add(launchArgs.get(i).toString());
-            }
             componentEnvVars = new ArrayList<EnvironmentVariable>();
             for (int j = 0; j < envVars.size(); j++) {
                 JSONObject var = (JSONObject) envVars.get(j);
@@ -252,27 +247,26 @@ public class ITComponentLifecycle {
             log.error("ParseException occurred while trying to create new service");
             e.printStackTrace();
         }
+
+        String queueName = "MPF." + algorithmActionType.toString() +  "_" + algName + "_REQUEST";
         Service algorithmService;
-        if (!sourceLanguage.equalsIgnoreCase("java")) {
-            algorithmService = new Service(serviceName, "${MPF_HOME}/bin/" + pathName);
-            String queueName = "MPF." + algorithmActionType.toString() +  "_" + algName + "_REQUEST";
-            componentLaunchArguments.add(1, queueName.toString());
-            algorithmService.setLauncher("simple");
-            algorithmService.setWorkingDirectory(null);
-            algorithmService.setEnvVars(componentEnvVars);
-        } else {
+
+        if (sourceLanguage.equalsIgnoreCase("java")) {
             algorithmService = new Service(serviceName, "${MPF_HOME}/bin/start-java-component.sh");
-            algorithmService.addArg(pathName);
-            String queueName = "MPF." + algorithmActionType.toString() +  "_" + algName + "_REQUEST";
+            algorithmService.addArg(batchLibrary);
             algorithmService.addArg(queueName);
             algorithmService.addArg(serviceName);
+            algorithmService.setLauncher("generic");
             algorithmService.setWorkingDirectory("${MPF_HOME}/jars");
-
-        }
-        for (String componentLaunchArgument : componentLaunchArguments) {
-            algorithmService.addArg(componentLaunchArgument);
+        } else { // C++
+            algorithmService = new Service(serviceName, "${MPF_HOME}/bin/amq_detection_component");
+            algorithmService.addArg(batchLibrary);
+            algorithmService.addArg(queueName);
+            algorithmService.setLauncher("simple");
+            algorithmService.setWorkingDirectory("${MPF_HOME}/plugins/" + componentName);
         }
         algorithmService.setDescription(algDesc);
+        algorithmService.setEnvVars(componentEnvVars);
 
         // get current node config
         List<NodeManagerModel> nodeManagerModels = getNodeConfig();
@@ -379,7 +373,7 @@ public class ITComponentLifecycle {
         	MpfResponse mpfResponse =  
         			customClient.customPostParams(url, params, MpfResponse.class, 200);
         	assertNotNull(mpfResponse);
-        	assertTrue(mpfResponse.getResponseCode() == 0);
+        	assertEquals(MpfResponse.RESPONSE_CODE_SUCCESS, mpfResponse.getResponseCode());
         	assertTrue(mpfResponse.getMessage() == null);
             setCredentials(false);
         } catch (Exception e) {

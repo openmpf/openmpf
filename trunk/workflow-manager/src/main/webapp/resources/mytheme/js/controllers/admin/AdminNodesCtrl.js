@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -37,17 +37,19 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
     $scope.nodes = []; // the existing nodes and services currently running
     $scope.counters = {};
     $scope.btns_disabled = false;
-    var refresh_counter = 0;
+    var service_actions_counter = 0;
     var default_cursor = document.body.style.cursor;
-    var nodeHostnames = [];
     var configurations = [];    // the nodes' configurations
+
+    // use a timer to prevent the user from performing any more actions until the current action completes or times out
     var waitTimeout = null;
     var waitTimeoutDelay = 30000; //30 sec
+
     var open_services={};
 
     //// Operations ////
     var init = function () {
-        refresh_counter = 0;
+        service_actions_counter = 0;
         RoleService.getRoleInfo().then(function (roleInfo) {
             $scope.isAdmin = roleInfo.admin;
             $log.debug("$scope.isAdmin=" + $scope.isAdmin);
@@ -55,10 +57,6 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
             ServicesCatalogService.getServicesCatalog(true).then(function (data) {
                 $log.debug("serviceCatalog", data);//angular.toJson(data)
                 $scope.serviceCatalog = $filter('orderBy')(data, 'serviceName');
-            });
-            NodeService.getAllNodesHostnames().then(function (data) {
-                $log.debug("NodesHostnames", data);
-                nodeHostnames = data;
             });
 
             getConfigs();
@@ -74,19 +72,24 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
         NodeService.getNodeConfigs().then(function (configs) {
             NodeService.getServices().then(function (data) {
 
+                // update stored configurations
+                configurations = configs;
+
                 //there may be some hosts with 0 services, need to add those hosts
                 angular.forEach(configs, function (config) {
                     var found = false;
                     for (var i = 0; i < $scope.nodes.length; i++) {
                         var existing_host_data = $scope.nodes[i];
                         if (existing_host_data.name == config.host) {
+                            $scope.nodes[i].online = config.online;
+                            $scope.nodes[i].autoConfigured = config.autoConfigured;
                             $scope.nodes[i].updated = true;
                             found = true;
                         }
                     }
                     //create new node
                     if (!found) {
-                         $scope.nodes.push({name: config.host, serviceGroups: [], updated: true});
+                         $scope.nodes.push({name: config.host, core: config.coreNode, online: config.online, autoConfigured: config.autoConfigured, serviceGroups: [], updated: true});
                     }
                 });
 
@@ -190,10 +193,9 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
                         }
                     }
 
-                    //adjust the refresh_counter for waiting on many updates to complete to change the cursor & enable buttons
-                    refresh_counter--;
-                    if (refresh_counter < 0) refresh_counter = 0;
-                    if (refresh_counter <= 0) {
+                    //if we're not waiting for any service actions to complete, then change the cursor & enable buttons
+                    if (service_actions_counter < 0) service_actions_counter = 0;
+                    if (service_actions_counter <= 0) {
                         document.body.style.cursor = default_cursor;
                         $scope.btns_disabled = false;
                     }
@@ -208,6 +210,10 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
             });
         });
     };
+
+    //debounce the updateServices() call so that it will only be invoked once after receiving multiple
+    //node and service event broadcasts in a row
+    var lazyUpdateServices = _.debounce(updateServices, 1000);
 
     // Actions
     $scope.nodeServiceInfo = function (nodeServiceList) {
@@ -234,6 +240,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
                     var host_service = config_host.services[i];
                     if (host_service.serviceName == service) {
                         configurations[j].services[i].serviceCount = parseInt(count);
+                        configurations[j].autoConfigured = false;
                         found = true;
                         break;
                     }
@@ -242,6 +249,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
                     var services = $filter('filter')($scope.serviceCatalog, {serviceName: service});
                     services[0].serviceCount = parseInt(count);
                     $.merge(config_host.services, services);
+                    config_host.autoConfigured = false;
                 }
             }
         }
@@ -257,6 +265,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
                     var host_service = config_host.services[i];
                     if (host_service.serviceName == nodename) {
                         configurations[j].services[i].serviceCount = 0;
+                        configurations[j].autoConfigured = false;
                         break;
                     }
                 }
@@ -277,6 +286,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
                     var host_service = config_host.services[i];
                     if (host_service.serviceName == service_name) {
                         configurations[j].services[i].serviceCount--;
+                        configurations[j].autoConfigured = false;
                         break;
                     }
                 }
@@ -286,16 +296,18 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
     };
 
     $scope.addNode = function () {
-        $confirm({hostnames: getConfigurableHostnames()}, {templateUrl: 'add-new-node-dialog.html'})
-            .then(function (selectedHostname) {
-                if (selectedHostname) {
-                    var services = [];
-                    if ($("#new_node_all_services").prop("checked")) services = angular.copy($scope.serviceCatalog);
-                    var node = {"host": selectedHostname, "services": services};
-                    configurations.push(node);
-                    saveConfigs();
-                }
-            });
+        NodeService.getAllNodeHostnames().then(function (data) {
+            $confirm({hostnames: getConfigurableHostnames(data)}, {templateUrl: 'add-node-dialog.html'})
+                .then(function (selectedHostname) {
+                    if (selectedHostname) {
+                        var services = [];
+                        if ($("#add_node_all_services").prop("checked")) services = angular.copy($scope.serviceCatalog);
+                        var node = {"host": selectedHostname, "services": services};
+                        configurations.push(node);
+                        saveConfigs();
+                    }
+                });
+        });
     };
 
     $scope.addAllServices = function (hostname) {
@@ -310,6 +322,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
                 host.services.push(service);
             }
         });
+        host.autoConfigured = false;
         $log.debug("configurations", configurations);
         saveConfigs();
     };
@@ -324,15 +337,14 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
         saveConfigs();
     };
 
-    var getConfigurableHostnames = function () {
-        var fullList = nodeHostnames;
+    var getConfigurableHostnames = function (nodeHostnames) {
         var configList = [];
         var out = [];
 
         angular.forEach(configurations, function (item) {
             configList.push(item.host)
         });
-        angular.forEach(fullList, function (item) {
+        angular.forEach(nodeHostnames, function (item) {
             if (configList.indexOf(item) < 0) {
                 out.push(item)
             }
@@ -368,6 +380,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
 
                 if (savedSuccessfully) {
                     $log.debug(' successfully saved: ' + response.status);
+                    service_actions_counter--;
                     updateServices();
                 }
             },
@@ -379,7 +392,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
 
     var startAction = function () {
         document.body.style.cursor = 'wait';
-        refresh_counter++;
+        service_actions_counter++;
         $scope.btns_disabled = true;
         restartWaitTimer();
     };
@@ -404,7 +417,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
         $log.debug("restartService", service);
         if (service.isRunning) {
             startAction();
-            refresh_counter++;//need to add another counter for 2nd action
+            service_actions_counter++;//need to add another counter for 2nd action
             NodeService.restartService(service.name);
         }
     };
@@ -477,7 +490,7 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
 
     var waitTimerExpired = function () {
         $scope.btns_disabled = false;
-        refresh_counter = 0;
+        service_actions_counter = 0;
         document.body.style.cursor = default_cursor;
     };
 
@@ -486,7 +499,14 @@ var AdminNodesCtrl = function ($scope, $log, $filter, $http, $timeout, $confirm,
     //on a node service change status, update the model
     $scope.$on('SSPC_SERVICE', function (event, msg) {
         $log.debug("SSPC_SERVICE (in nodes and processes page): " + JSON.stringify(msg));
-        updateServices();
+        service_actions_counter--;
+        lazyUpdateServices();
+    });
+
+    //on a node change status (offline to online, and vice versa), update the model
+    $scope.$on('SSPC_NODE', function (event, msg) {
+        $log.debug("SSPC_NODE (in nodes and processes page): " + JSON.stringify(msg));
+        lazyUpdateServices();
     });
 
     $scope.$on('$destroy', function () {

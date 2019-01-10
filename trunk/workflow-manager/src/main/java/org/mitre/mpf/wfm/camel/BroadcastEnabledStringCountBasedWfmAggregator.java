@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,15 +27,14 @@
 package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Exchange;
-import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobProgress;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +57,9 @@ public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBa
 	@Autowired
 	private JobProgress jobProgressStore;
 
+	@Autowired
+	private JobStatusBroadcaster jobStatusBroadcaster;
+
 	public void onResponse(Exchange newExchange) {
 		super.onResponse(newExchange);
 		if(!Boolean.TRUE.equals(newExchange.getIn().getHeader(MpfHeaders.SUPPRESS_BROADCAST))) {
@@ -75,7 +77,7 @@ public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBa
 
 					JobRequest jobRequest = hibernateJobRequestDao.findById(jobId); // TODO: Does this have a significant impact on the speed of this method?
 
-					AtmosphereController.broadcast(new JobStatusMessage(jobId, jobProgress, jobRequest.getStatus(), null));
+					jobStatusBroadcaster.broadcast(jobId, jobProgress, jobRequest.getStatus());
 
 					//store the current job progress to prevent progress displaying as zero on manual refreshes
 					jobProgressStore.setJobProgress(jobId, jobProgress);

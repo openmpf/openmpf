@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2017 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2018 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2017 The MITRE Corporation                                      #
+# Copyright 2018 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -43,3 +43,46 @@
     command: >
       mysql --execute="alter table mpf.job_request add output_object_version varchar(255);"
     when: "check_output_object_version.rc == 1 and 'output_object_version' not in check_output_object_version.stdout"
+
+  # make sure the following mpf release 1.0 to 2.0 changes have been applied to MySQL schema.
+  # Leave these checks in, because the next set of "Add" blocks include the handling commands
+
+  # Add status_detail to the mpf.streaming_job_request table
+  - name: Check for status_detail column in mpf.streaming_job_request table
+    shell: >
+      mysql --execute="show columns from mpf.streaming_job_request like 'status_detail';" | grep 'status_detail'
+    register: check_status_detail
+    failed_when:
+      - "'ERROR 2002' in check_status_detail.stderr"
+
+  - name: Add status_detail column to mpf.streaming_job_request table
+    command: >
+      mysql --execute="alter table mpf.streaming_job_request add column status_detail varchar(255) after status;"
+    when: "check_status_detail.rc == 1 and 'status_detail' not in check_status_detail.stdout"
+
+  # Add activity_frame_id to the mpf.streaming_job_request table
+  - name: Check for activity_frame_id column in mpf.streaming_job_request table
+    shell: >
+      mysql --execute="show columns from mpf.streaming_job_request like 'activity_frame_id';" | grep 'activity_frame_id'
+    register: check_activity_frame_id
+    failed_when:
+      - "'ERROR 2002' in check_activity_frame_id.stderr"
+
+  - name: Add activity_frame_id column to mpf.streaming_job_request table
+    command: >
+      mysql --execute="alter table mpf.streaming_job_request add column activity_frame_id varchar(255);"
+    when: "check_activity_frame_id.rc == 1 and 'activity_frame_id' not in check_activity_frame_id.stdout"
+
+  # Add activity_timestamp to the mpf.streaming_job_request table
+  - name: Check for activity_timestamp column in mpf.streaming_job_request table
+    shell: >
+      mysql --execute="show columns from mpf.streaming_job_request like 'activity_timestamp';" | grep 'activity_timestamp'
+    register: check_activity_timestamp
+    failed_when:
+      - "'ERROR 2002' in check_activity_timestamp.stderr"
+
+  - name: Add activity_timestamp column to mpf.streaming_job_request table
+    command: >
+      mysql --execute="alter table mpf.streaming_job_request add column activity_timestamp datetime;"
+    when: "check_activity_timestamp.rc == 1 and 'activity_timestamp' not in check_activity_timestamp.stdout"
+

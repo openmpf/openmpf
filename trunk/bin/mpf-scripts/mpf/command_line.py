@@ -6,11 +6,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2017 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2018 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2017 The MITRE Corporation                                      #
+# Copyright 2018 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -31,6 +31,7 @@ import argh
 import argh.utils
 
 import mpf_clean
+import mpf_nodes
 import mpf_sys
 import mpf_users
 import mpf_util
@@ -41,6 +42,7 @@ def main():
     parser.add_commands(mpf_sys.COMMANDS)
     parser.add_commands(mpf_users.COMMANDS)
     parser.add_commands(mpf_clean.COMMANDS)
+    parser.add_commands(mpf_nodes.COMMANDS)
 
     subs = argh.utils.get_subparsers(parser)
     subs.help = 'For command specific arguments and help run: %(prog)s <command> --help\n'
@@ -49,7 +51,7 @@ def main():
     try:
         parser.dispatch()
     except mpf_util.MpfError as err:
-        parser.exit('error: %s' % err.message)
+        parser.exit(mpf_util.MsgUtil.red('Error: %s' % err.message))
 
 
 class PrintHelpOnErrorParser(argh.ArghParser):
@@ -59,7 +61,7 @@ class PrintHelpOnErrorParser(argh.ArghParser):
         else:
             # no command provided
             self.print_help()
-            self.exit(2, '\n%s: error: %s\n' % (self.prog, message))
+            self.exit(2, mpf_util.MsgUtil.red('\n%s: Error: %s\n' % (self.prog, message)))
 
 
 if __name__ == '__main__':

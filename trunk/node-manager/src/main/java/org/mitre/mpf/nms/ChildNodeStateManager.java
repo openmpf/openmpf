@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,21 +28,41 @@ package org.mitre.mpf.nms;
 
 import org.jgroups.Address;
 import org.jgroups.Message;
+import org.mitre.mpf.nms.streaming.messages.StreamingJobMessage;
+import org.mitre.mpf.nms.streaming.ChildStreamingJobManager;
+import org.mitre.mpf.nms.util.PropertiesUtil;
+import org.mitre.mpf.nms.util.SleepUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Component
 public class ChildNodeStateManager extends ChannelReceiver {
 
     private static final Logger LOG = LoggerFactory.getLogger(ChildNodeStateManager.class);
 
-    private static int minServiceTimeUpMillis = 60000;
+
+    private final PropertiesUtil propertiesUtil;
+
+    private final ChildStreamingJobManager streamingJobManager;
 
     private final Map<String, BaseServiceLauncher> launchedAppsMap = new HashMap<>();
+
+
+    @Autowired
+    public ChildNodeStateManager(PropertiesUtil propertiesUtil, ChannelNode channelNode,
+                                 ChildStreamingJobManager streamingJobManager) {
+        super(propertiesUtil, channelNode);
+        this.propertiesUtil = propertiesUtil;
+        this.streamingJobManager = streamingJobManager;
+    }
+
 
     @Override
     public void receive(Message msg) {
@@ -50,7 +70,10 @@ public class ChildNodeStateManager extends ChannelReceiver {
         Address sender = msg.getSrc();  // handle so we can send a response back (if desired)
 
         //log.info("Received message from {}", sender);
-        if (obj instanceof ServiceStatusUpdate) {
+	    if (obj instanceof StreamingJobMessage) {
+	       streamingJobManager.handle((StreamingJobMessage) obj);
+        }
+        else if (obj instanceof ServiceStatusUpdate) {
             LOG.debug("Received a ServiceStatusUpdate from {}", sender);
             ServiceStatusUpdate ssu = (ServiceStatusUpdate) obj;
             ServiceDescriptor sd = ssu.getServiceDescriptor();
@@ -78,7 +101,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
                 }
             }
 
-            if (sd.doesHostMatch(getMyHost())) {
+            if (sd.doesHostMatch(propertiesUtil.getThisMpfNode())) {
                 // one of ours set it up correctly
                 switch (sd.getLastKnownState()) {
                     case Delete:
@@ -118,7 +141,7 @@ public class ChildNodeStateManager extends ChannelReceiver {
 
                 // If we are not already deemed running, tell the world that indeed we are
                 if (msu.getLastKnownState() != NodeManagerConstants.States.Running
-                        && msu.getTheNode().doesHostMatch(getMyHost())) {
+                        && msu.getTheNode().doesHostMatch(propertiesUtil.getThisMpfNode())) {
                     updateState(msu.getTheNode(), NodeManagerConstants.States.Running);
                 }
             }
@@ -133,12 +156,15 @@ public class ChildNodeStateManager extends ChannelReceiver {
      */
     public void shutdown(ServiceDescriptor desc, boolean markAsDelete, boolean noStartOnConfigChange) {
         // lookup node by name, remove from table, perform other actions (or let object do its own cleanup)
-        BaseServiceLauncher theApp = launchedAppsMap.get(desc.getName());
+        BaseServiceLauncher theApp;
+        synchronized (launchedAppsMap) {
+            theApp = launchedAppsMap.remove(desc.getName());
+        }
         if (theApp != null) {
             //make sure the state does not go back to Inactive if removed from the config!
             theApp.shutdown();
             //TODO: this logic should be improved
-            if(noStartOnConfigChange) {
+            if (noStartOnConfigChange) {
                 updateState(desc, NodeManagerConstants.States.InactiveNoStart);
             } else {
                 NodeManagerConstants.States newState = markAsDelete
@@ -147,8 +173,6 @@ public class ChildNodeStateManager extends ChannelReceiver {
                 updateState(desc, newState);
             }
         }
-
-        launchedAppsMap.remove(desc.getName());
     }
 
     /**
@@ -157,31 +181,36 @@ public class ChildNodeStateManager extends ChannelReceiver {
      * @param desc - What we need to start
      */
     private void launch(ServiceDescriptor desc) {
-        // create and launch a node of the specified type with the given name
-        if (!launchedAppsMap.containsKey(desc.getName())) {
-            BaseServiceLauncher launcher = BaseServiceLauncher.getLauncher(desc);
+        boolean error = false;
+        synchronized (launchedAppsMap) {
+            if (launchedAppsMap.containsKey(desc.getName())) {
+                return;
+            }
 
+            // create and launch a node of the specified type with the given name
+            BaseServiceLauncher launcher = BaseServiceLauncher.getLauncher(desc);
             if (launcher != null) {
                 // if it's startable then hold onto it
-                if (launcher.startup(minServiceTimeUpMillis)) {
+                if (launcher.startup(propertiesUtil.getMinServiceUpTimeMillis())) {
                     launchedAppsMap.put(launcher.getServiceName(), launcher);
                     updateState(desc, NodeManagerConstants.States.Running);
                     LOG.debug("Sending {} state for {}", NodeManagerConstants.States.Running, desc.getName());
                 } else {
                     LOG.error("Could not launch: {} at path: {}", desc.getName(), desc.getService().getCmdPath());
-                    // Give time for things to propagate
-                    SleepUtil.interruptableSleep(2000);
-                    desc.setFatalIssueFlag(true);
-                    updateState(desc, NodeManagerConstants.States.Inactive);
+                    error = true;
                 }
             } else {
                 LOG.error("Could not create launcher for: {} at path: {}", desc.getName(),
                         desc.getService().getCmdPath());
-                // Give time for things to propagate
-                SleepUtil.interruptableSleep(2000);
-                desc.setFatalIssueFlag(true);
-                updateState(desc, NodeManagerConstants.States.Inactive);
+                error = true;
             }
+        }
+
+        if (error) {
+            // Give time for things to propagate
+            SleepUtil.interruptableSleep(2000);
+            desc.setFatalIssueFlag(true);
+            updateState(desc, NodeManagerConstants.States.Inactive);
         }
     }
 
@@ -192,14 +221,15 @@ public class ChildNodeStateManager extends ChannelReceiver {
      */
     public void run() {
         // We are running - tell the world
-        NodeDescriptor mgr = new NodeDescriptor(ChannelReceiver.getMyHost());
+        NodeDescriptor mgr = new NodeDescriptor(propertiesUtil.getThisMpfNode());
         updateState(mgr, NodeManagerConstants.States.Running);
 
         // Now that we are all up and running and syncd with the cluster, see if we had been tasked
         // with any launches that we weren't there to do.
         synchronized (getServiceTable()) {
             for (ServiceDescriptor sd : getServiceTable().values()) {
-                if (sd.doesStateMatch(NodeManagerConstants.States.Launching) && sd.doesHostMatch(getMyHost())) {
+                if (sd.doesStateMatch(NodeManagerConstants.States.Launching)
+                        && sd.doesHostMatch(propertiesUtil.getThisMpfNode())) {
                     // @todo: offline when messages came? If we went away the state of these would be running!
                     // System.err.println("Launching a previously setup node: " + sd.getName());
                     LOG.debug("Launching a previously setup node: " + sd.getName());
@@ -216,55 +246,48 @@ public class ChildNodeStateManager extends ChannelReceiver {
         while (isConnected()) {
             SleepUtil.interruptableSleep(2000);
 
-            // Let's log some info
-            int running = launchedAppsMap.size();
-            for (BaseServiceLauncher n : launchedAppsMap.values()) {
-                ServiceDescriptor sd = getServiceTable().get(n.getServiceName());
+            synchronized (launchedAppsMap) {
+                int running = launchedAppsMap.size();
+                for (BaseServiceLauncher n : launchedAppsMap.values()) {
+                    ServiceDescriptor sd = getServiceTable().get(n.getServiceName());
 
-                if (null == sd) {
-                    LOG.warn("Missing launched service: {}", n.getServiceName());
-                    continue;
-                }
-
-                // If a process we are responsible for is no longer running, notify the world, then mark it for
-                // deletion from our list of managed processes.  Don't delete in mid enumeration.
-                if (n.runToCompletion()) {
-                    LOG.debug("{} has gone offline", n.getServiceName());
-                    toDelete.add(n.getServiceName());
-                    sd.setFatalIssueFlag(n.getFatalProblemFlag());
-                    //mark as InactiveNoStart here if the fatal issue flag is set! will prevent that service from
-                    //starting on node manger config being saved or the worklow manager webapp being restarted
-                    if(n.getFatalProblemFlag()) {
-                        updateState(sd, NodeManagerConstants.States.InactiveNoStart);
-                    } else {
-                        updateState(sd, NodeManagerConstants.States.Inactive);
+                    if (null == sd) {
+                        LOG.warn("Missing launched service: {}", n.getServiceName());
+                        continue;
                     }
-                    running--;
-                    // Otherwise, just keep track of any restarts the process is going through
-                } else if (n.getRestartCount() > sd.getRestarts()) {
-                    LOG.debug("{} has a new restart count of {}", n.getServiceName(), n.getRestartCount());
-                    sd.setRestarts(n.getRestartCount());
-                    updateState(sd, sd.getLastKnownState());
+
+                    // If a process we are responsible for is no longer running, notify the world, then mark it for
+                    // deletion from our list of managed processes.  Don't delete in mid enumeration.
+                    if (n.runToCompletion()) {
+                        LOG.debug("{} has gone offline", n.getServiceName());
+                        toDelete.add(n.getServiceName());
+                        sd.setFatalIssueFlag(n.getFatalProblemFlag());
+                        //mark as InactiveNoStart here if the fatal issue flag is set! will prevent that service from
+                        //starting on node manger config being saved or the worklow manager webapp being restarted
+                        if (n.getFatalProblemFlag()) {
+                            updateState(sd, NodeManagerConstants.States.InactiveNoStart);
+                        } else {
+                            updateState(sd, NodeManagerConstants.States.Inactive);
+                        }
+                        running--;
+                        // Otherwise, just keep track of any restarts the process is going through
+                    } else if (n.getRestartCount() > sd.getRestarts()) {
+                        LOG.debug("{} has a new restart count of {}", n.getServiceName(), n.getRestartCount());
+                        sd.setRestarts(n.getRestartCount());
+                        updateState(sd, sd.getLastKnownState());
+                    }
                 }
-            }
-            // Anything that terminated (restart != true) has to be cleaned up outside the iterator above
-            for (String name : toDelete) {
-                launchedAppsMap.remove(name);
-            }
-            toDelete.clear();
+                // Anything that terminated (restart != true) has to be cleaned up outside the iterator above
+                for (String name : toDelete) {
+                    launchedAppsMap.remove(name);
+                }
+                toDelete.clear();
 
-            if (running != lastRunning) {
-                LOG.info("At this point, there are {} running nodes", running);
+                if (running != lastRunning) {
+                    LOG.info("At this point, there are {} running nodes", running);
+                }
+                lastRunning = running;
             }
-            lastRunning = running;
         }
-    }
-
-    public static void setMinServiceTimeUpMillis(int newTime) {
-        minServiceTimeUpMillis = newTime;
-    }
-
-    public static int getMinServiceTimeUpMillis() {
-        return minServiceTimeUpMillis;
     }
 }

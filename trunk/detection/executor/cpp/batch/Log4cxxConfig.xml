@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ NOTICE                                                                    ~
+  ~                                                                           ~
+  ~ This software (or technical data) was produced for the U.S. Government    ~
+  ~ under contract, and is subject to the Rights in Data-General Clause       ~
+  ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
+  ~                                                                           ~
+  ~ Copyright 2018 The MITRE Corporation. All Rights Reserved.                ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright 2018 The MITRE Corporation                                      ~
+  ~                                                                           ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
+  ~ you may not use this file except in compliance with the License.          ~
+  ~ You may obtain a copy of the License at                                   ~
+  ~                                                                           ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0                             ~
+  ~                                                                           ~
+  ~ Unless required by applicable law or agreed to in writing, software       ~
+  ~ distributed under the License is distributed on an "AS IS" BASIS,         ~
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  ~
+  ~ See the License for the specific language governing permissions and       ~
+  ~ limitations under the License.                                            ~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+  <!-- Output the log message to system console.
+    -->
+  <appender name="appxConsoleAppender" class="org.apache.log4j.ConsoleAppender">    
+    <param name="Target" value="System.out"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%m%n"/>
+        </layout>
+  </appender>
+
+
+  <appender name="STDERR-WARN" class="org.apache.log4j.ConsoleAppender">    
+    <param name="Target" value="System.err"/>
+    <!-- deny all events with a level below WARN, that is INFO, TRACE, and DEBUG -->
+    <filter class="org.apache.log4j.varia.LevelRangeFilter">
+      <param name="levelMin" value="WARN" />
+    </filter>
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="%m%n"/>
+    </layout>
+  </appender>
+
+  <!-- Output the log message to log file-->
+  <appender name="MPF-AMQ-DETECTION-FILE" class="org.apache.log4j.DailyRollingFileAppender">
+    <param name="file" value="${MPF_LOG_PATH}/${THIS_MPF_NODE}/log/detection.log" />
+    <param name="DatePattern" value="'.'yyyy-MM-dd" />
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="%d %p [%t] %c{36}:%L - %m%n" />
+    </layout>
+  </appender>
+
+  <logger name="org.mitre.mpf.detection" additivity="false">
+    <level value="INFO"/>
+    <appender-ref ref="MPF-AMQ-DETECTION-FILE"/>
+  </logger>
+
+    <root>
+        <level value="INFO"/>
+        <appender-ref ref="STDERR-WARN"/>
+    </root>
+
+ </log4j:configuration>

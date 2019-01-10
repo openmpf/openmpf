@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -145,7 +145,7 @@ public class TestAudioMediaSegmenter {
 
 
 	private static TransientMedia createTestMedia() {
-		TransientMedia media = new TransientMedia(1, "file:///example.jpg");
+		TransientMedia media = new TransientMedia(1, "file:///example.wav");
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;
@@ -155,13 +155,13 @@ public class TestAudioMediaSegmenter {
 	private static Set<Track> createTestTracks() {
 		Detection detection1 = createDetection(5, 5);
 		Track track1 = new Track(1, 1, 0, 0, 0,
-		                         -1, 5, 10, "");
+		                         -1, 5, 10, "", 5);
 		track1.setExemplar(detection1);
 		track1.getDetections().add(detection1);
 
 		Detection detection2 = createDetection(15, 15);
 		Track track2 = new Track(1, 1, 0, 0, 0,
-		                         -1, 15, 30, "");
+		                         -1, 15, 30, "", 15);
 		track2.setExemplar(detection2);
 		track2.getDetections().add(detection2);
 

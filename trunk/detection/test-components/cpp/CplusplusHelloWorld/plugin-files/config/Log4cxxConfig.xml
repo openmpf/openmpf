@@ -6,11 +6,11 @@
   ~ under contract, and is subject to the Rights in Data-General Clause       ~
   ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
   ~                                                                           ~
-  ~ Copyright 2017 The MITRE Corporation. All Rights Reserved.                ~
+  ~ Copyright 2018 The MITRE Corporation. All Rights Reserved.                ~
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright 2017 The MITRE Corporation                                      ~
+  ~ Copyright 2018 The MITRE Corporation                                      ~
   ~                                                                           ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
   ~ you may not use this file except in compliance with the License.          ~
@@ -39,6 +39,20 @@
   <logger name="HelloWorldTest" additivity="false">
     <level value="INFO"/>
     <appender-ref ref="HELLO-WORLD-TEST-FILE"/>
+  </logger>
+
+
+  <appender name="STREAMING-HELLO-WORLD-TEST-FILE" class="org.apache.log4j.DailyRollingFileAppender">
+    <param name="file" value="${MPF_LOG_PATH}/${THIS_MPF_NODE}/log/streaming-hello-world-test.log" />
+    <param name="DatePattern" value="'.'yyyy-MM-dd" />
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="%d %p [%t] %c{36}:%L - %m%n" />
+    </layout>
+  </appender>
+
+  <logger name="StreamingHelloWorldTest" additivity="false">
+    <level value="INFO"/>
+    <appender-ref ref="STREAMING-HELLO-WORLD-TEST-FILE"/>
   </logger>
 
  </log4j:configuration>

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -37,6 +37,7 @@ import org.mitre.mpf.rest.api.node.DeployedNodeManagerModel;
 import org.mitre.mpf.rest.api.node.DeployedServiceModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
+import org.mitre.mpf.wfm.enums.EnvVar;
 import org.mitre.mpf.wfm.nodeManager.NodeManagerStatus;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.slf4j.Logger;
@@ -56,10 +57,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 // swagger includes
 
@@ -115,7 +113,7 @@ public class NodeController {
 	// EXTERNAL
 	@RequestMapping(value = "/rest/nodes/hosts", method = RequestMethod.GET)
 	@ApiOperation(value = "Returns a collection of key-value pairs <String, Boolean> containing a hostname and its node configuration status. "
-			+ "If the configuration status is 'true' that hostname is configurated to run a node manager.", notes = "The response is a set of JSON key-value pairs, where the key is the hostname and the value is the configuration status.", produces = "application/json")
+			+ "If the configuration status is 'true' that hostname is configured to run a node manager.", notes = "The response is a set of JSON key-value pairs, where the key is the hostname and the value is the configuration status.", produces = "application/json")
 	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successful response"),
 			@ApiResponse(code = 401, message = "Bad credentials") })
 	@ResponseBody
@@ -131,23 +129,41 @@ public class NodeController {
 	}
 
 	/*
-	 * GET /nodes/all-mpf-nodes 
-	 * get all mpf nodes env var
+	 * GET /nodes/all
 	 */
-	// INTERNAL
-	@RequestMapping(value = "/nodes/all-mpf-nodes", method = RequestMethod.GET)
+	// EXTERNAL: Only used externally by "mpf list-nodes"
+	@RequestMapping(value = "/rest/nodes/all", method = RequestMethod.GET)
 	@ResponseBody
-	public List<String> getAllMpfNodes() {
-		final String value = System.getenv("ALL_MPF_NODES");
-		List<String> allMpfNodes = new ArrayList<String>();
-		if (!StringUtils.isNullOrEmpty(value)) {
-			for (String mpfNode : value.split(",")) {
-				// using regex if we change the port from 7800
-				// replace ports 2 to 5 digits long
-				allMpfNodes.add(mpfNode.replaceFirst("\\[\\d{2,5}\\]", ""));
-			}
+	public ResponseEntity getAllNodesRest(
+			@RequestParam(value = "type", required = false, defaultValue="all") String type) {
+		return getAllNodes(type);
+	}
+
+	// INTERNAL
+	@RequestMapping(value = "/nodes/all", method = RequestMethod.GET)
+	@ResponseBody
+	public ResponseEntity getAllNodes(
+			@RequestParam(value = "type", required = false, defaultValue="all") String type) {
+
+		Set<String> coreNodes = nodeManagerService.getCoreNodes();
+
+		if (type.equals("core")) {
+			return ResponseEntity.ok().body(coreNodes);
 		}
-		return allMpfNodes;
+
+		Set<String> nodes = new HashSet<>(nodeManagerService.getAvailableNodes());
+		if (type.equals("spare")) {
+			nodes.removeAll(coreNodes);
+			return ResponseEntity.ok().body(nodes);
+		}
+		if (type.equals("all")) {
+			nodes.addAll(coreNodes);
+			return ResponseEntity.ok().body(nodes);
+		}
+
+		String error = "Unexpected \"type\" value: \"" + type + "\".";
+		log.error("Error processing [GET] /nodes/all: " + error);
+		return ResponseEntity.badRequest().body(error);
 	}
 
 	/*
@@ -160,7 +176,7 @@ public class NodeController {
 	@ResponseBody
 	public String getMasterNode() {
 		String masterNode;
-		masterNode = System.getenv("THIS_MPF_NODE");
+		masterNode = System.getenv(EnvVar.THIS_MPF_NODE);
 		if ( StringUtils.isNullOrEmpty( masterNode ) ) {
 			// apparently, getting the current host is non-trivial, the solution below is
 			//	based on the following articles:
@@ -171,7 +187,7 @@ public class NodeController {
 				InetAddress localhost = InetAddress.getLocalHost();
 				masterNode = localhost.getHostName();
 			} catch (UnknownHostException e) {
-				masterNode = System.getenv("HOSTNAME");
+				masterNode = System.getenv(EnvVar.HOSTNAME);
 				if ( masterNode == null ) {
 					Process p;
 					try {
@@ -236,7 +252,9 @@ public class NodeController {
 
 		// POSTing to this external REST endpoint requires the user to be an
 		// admin
-		MpfResponse mpfResponse = new MpfResponse(1, "Error while saving the node configuration - please check server logs.");
+		MpfResponse mpfResponse = new MpfResponse(
+				MpfResponse.RESPONSE_CODE_ERROR,
+				"Error while saving the node configuration. Please check server logs.");
 
 		boolean validAuth = false;
 
@@ -258,13 +276,14 @@ public class NodeController {
 			} else {
 				log.error("Invalid/non-admin user with name '{}' is attempting to save a new node configuration.",
 						authenticationModel.getUserPrincipalName());
-				mpfResponse.setMessage(1,
+				mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_ERROR,
 						"Node config changes not saved! You do not have the proper user privileges to make this change! Please log in as an admin user.");
 				// do not continue! - leads to false return
 			}
 		} else {
 			log.error("Null httpServletRequest - this should not happen.");
-			mpfResponse.setMessage(1, "Unknown error, please check the server logs or try the request again.");
+			mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_ERROR,
+			                       "Unknown error, please check the server logs or try the request again.");
 			// do not continue! - leads to false return
 		}
 
@@ -279,7 +298,9 @@ public class NodeController {
 	@ResponseStatus(value = HttpStatus.CREATED) // return 201 for post
 	public MpfResponse saveNodeManagerConfigSession(@RequestBody List<NodeManagerModel> nodeManagerModels)
 			throws InterruptedException, IOException {
-		MpfResponse mpfResponse = new MpfResponse(1, "Error while saving the node configuration - please check server logs.");
+		MpfResponse mpfResponse = new MpfResponse(
+				MpfResponse.RESPONSE_CODE_ERROR,
+				"Error while saving the node configuration. Please check server logs.");
 		saveNodeManagerConfig(nodeManagerModels, mpfResponse);
 		return mpfResponse;
 	}
@@ -321,7 +342,8 @@ public class NodeController {
 
 		// POSTing to this external REST endpoint requires the user to be an
 		// admin
-		MpfResponse mpfResponse = new MpfResponse(1, "Error while starting service - please check server logs.");
+		MpfResponse mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR,
+		                                          "Error while starting service. Please check server logs.");
 
 		boolean validAuth = startStopNodeService(httpServletRequest, "start", serviceName,
 				mpfResponse);
@@ -344,7 +366,8 @@ public class NodeController {
 
 		// POSTing to this external REST endpoint requires the user to be an
 		// admin
-		MpfResponse mpfResponse = new MpfResponse(1, "Error while stopping service - please check server logs.");
+		MpfResponse mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR,
+		                                          "Error while stopping service. Please check server logs.");
 
 		boolean validAuth = startStopNodeService(httpServletRequest, "stop", serviceName,
 				mpfResponse);
@@ -362,7 +385,8 @@ public class NodeController {
 	public MpfResponse startStopServiceSession(@PathVariable("startORstop") String startOrStopStr,
 			@PathVariable("serviceName") String serviceName) {
 
-		MpfResponse mpfResponse = new MpfResponse(1, "Error while chaning service state - please check server logs.");
+		MpfResponse mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR,
+		                                          "Error while changing service state. Please check server logs.");
 
 		if (startOrStopStr.equals("start")) {
 			startService(serviceName, mpfResponse);
@@ -372,7 +396,7 @@ public class NodeController {
 			String errorStr = "Invalid start or stop path variable of '" + startOrStopStr
 					+ "', the first path variable must be 'start' or 'stop'.";
 			log.error(errorStr);
-			mpfResponse.setMessage(1, errorStr);
+			mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
 		}
 
 		return mpfResponse;
@@ -417,13 +441,14 @@ public class NodeController {
 	private void saveNodeManagerConfig(List<NodeManagerModel> nodeManagerModels,
 			final MpfResponse mpfResponse) throws IOException, InterruptedException {
 
-		if (nodeManagerService.saveNodeManagerConfig(nodeManagerModels)) {
+		if (nodeManagerService.saveAndReloadNodeManagerConfig(nodeManagerModels)) {
 			log.info("Successfully updated the node config");
-			mpfResponse.setResponseCode(0);
+			mpfResponse.setResponseCode(MpfResponse.RESPONSE_CODE_SUCCESS);
 		} else {
 			// should always access the nodeManagerConfigName resource and throw
 			// an exception before getting here			
-			mpfResponse.setMessage(1, "Failed to access the node manager config resource.");
+			mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_ERROR,
+			                       "Failed to access the node manager config resource.");
 		}
 	}
 
@@ -451,14 +476,14 @@ public class NodeController {
 				log.error(
 						"Invalid/non-admin user with name '{}' is attempting to start or stop a service with name '{}'.",
 						authenticationModel.getUserPrincipalName(), serviceName);				
-				mpfResponse.setMessage(1, 
+				mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_ERROR,
 						"Node service status not changed! You do not have the proper user privileges to make this change! Please log in as an admin user.");
 				// do not continue! - validAuth is false
 			}
 		} else {
 			log.error(
 					"Null httpServletRequest or nodeServiceStatusChangeResult - this should not happen. The issue must be due to incorrect usage of this method.");
-			mpfResponse.setMessage(1, "Unknown error, please check the server logs.");
+			mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_ERROR, "Unknown error, please check the server logs.");
 			// do not continue! - validAuth is false
 		}
 
@@ -474,7 +499,7 @@ public class NodeController {
 				String errorStr = "Invalid start or stop option of '" + startOrStopStr
 						+ "', the option must be case insensitive 'start' or 'stop'.";
 				log.error(errorStr);
-				mpfResponse.setMessage(1, errorStr);
+				mpfResponse.setMessage(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
 			}
 		}
 		// no need for else
@@ -485,23 +510,28 @@ public class NodeController {
 	private void startService(String serviceName, final MpfResponse mpfResponse) {
 		log.debug("Try to start sevice with name: '{}'" + serviceName);
 		boolean result = nodeManagerStatus.startService(serviceName);
-		if (!result) {
-			mpfResponse.setMessage(1,
+		if (result) {
+			mpfResponse.setResponseCode(MpfResponse.RESPONSE_CODE_SUCCESS);
+		}
+		else {
+			mpfResponse.setMessage(
+					MpfResponse.RESPONSE_CODE_ERROR,
 					"Error starting the service with name '" + serviceName + "'. Please check the server logs.");
 		}
-		//could just do !result to int, but error codes can change
-		mpfResponse.setResponseCode((result) ? 0 : 1);
 	}
 
 	private void shutdownService(String serviceName, final MpfResponse mpfResponse) {
 		log.debug("Try to shut down sevice with name: '{}'" + serviceName);
 		boolean result = nodeManagerStatus.shutdownService(serviceName);
-		if (!result) {
-			mpfResponse.setMessage(1,
-					"Error shutting down the service with name '" + serviceName + "'. Please check the server logs.");
+		if (result) {
+			mpfResponse.setResponseCode(MpfResponse.RESPONSE_CODE_SUCCESS);
 		}
-		//could just do !result to int, but error codes can change
-		mpfResponse.setResponseCode((result) ? 0 : 1);
+		else {
+			mpfResponse.setMessage(
+					MpfResponse.RESPONSE_CODE_ERROR,
+					"Error shutting down the service with name '" + serviceName + "'. Please check the server logs.");
+
+		}
 	}
 
 	private Map<String, ServiceModel> getServiceModels() {

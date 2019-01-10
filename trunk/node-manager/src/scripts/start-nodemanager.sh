@@ -7,11 +7,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2017 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2018 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2017 The MITRE Corporation                                      #
+# Copyright 2018 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -35,7 +35,7 @@
 pidfile=$1
 logfile=$2
 
-jarfile="${MPF_HOME}/jars/mpf-nodemanager-1.0.0.jar"
+jarfile="${MPF_HOME}/jars/mpf-nodemanager-3.0.0.jar"
 
 # for debugging
 # log_debug "Environment:\n`env`" "${logfile}" false
@@ -47,22 +47,13 @@ fi
 
 javabin=${JAVA_HOME}/bin/java
 
-if [ -n "${THIS_MPF_NODE}" -a -n "${ALL_MPF_NODES}" ]; then
-    JGROUPS_FLAGS="-Djgroups.tcp.address=${THIS_MPF_NODE} -Djgroups.tcp.port=7800 -Djgroups.tcpping.initial_hosts=${ALL_MPF_NODES}"
-else
-    log_warn "THIS_MPF_NODE and/or ALL_MPF_NODES for jgroups are not set" "${logfile}" false
-fi  
-
-# this should not be set unless running local tests
-#export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:install/lib"
-
-# ideally, daemons should have a wd of / (root), however nodemanager might cwd when it executes a service
+# ideally, daemons should have a wd of / (root), however node-manager might cwd when it executes a service
 cd /
 
 # log_info "Using MPF_HOME=${MPF_HOME}" "${logfile}" false
 
 # jar process will manage its own log; log will be rotated every night at midnight
-nohup  ${javabin} ${JGROUPS_FLAGS} ${MPF_JAVA_FLAGS} -jar ${jarfile} > /dev/null & #2>&1 #now displaying std err
+nohup  ${javabin} -jar ${jarfile} > /dev/null & #2>&1 #now displaying std err
 
 # pid of the nohup process
 pid=$!

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -155,9 +155,16 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 	    Set<Integer> keyFrames = ImmutableSet.of(0, 30, 60);
 
 	    assertTrue("Found detection in non-keyframe", detections.stream()
-			               .allMatch(o -> keyFrames.contains(o.getOffset())));
+			               .allMatch(o -> keyFrames.contains(o.getOffsetFrame())));
     }
 
+
+	@Test(timeout = 15 * MINUTES)
+	public void runDarknetDetectVideo() throws Exception {
+		runSystemTest("TINY YOLO OBJECT DETECTION PIPELINE",
+		              "output/object/runDarknetDetectVideo.json",
+		              "/samples/face/video_01.mp4");
+	}
 
 
 	@Test(timeout = 5 * MINUTES)
@@ -201,6 +208,38 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 		runFeedForwardRegionTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
 		                         "PERSON", firstMotionFrame, maxXMotion);
+	}
+
+	private static final Map<String, String> TINY_YOLO_CONFIG = ImmutableMap.of(
+			"MODEL_NAME", "tiny yolo");
+
+
+	private static Map<String, String> getTinyYoloConfig(Map<String, String> otherProperties) {
+		Map<String, String> result = new HashMap<>(otherProperties);
+		result.putAll(TINY_YOLO_CONFIG);
+		return result;
+	}
+
+
+	@Test(timeout = 5 * MINUTES)
+	public void runMogThenDarknetFeedForwardRegionTest() {
+		String actionTaskName = "TEST DARKNET WITH FEED FORWARD SUPERSET REGION";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "DARKNET",
+		          getTinyYoloConfig(ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION")));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED SUPERSET REGION TO DARKNET PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		int maxXMotion = 320 / 2; // Video is 320 x 300 and only the person on the left side of the frame moves.
+
+		runFeedForwardRegionTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
+		                         "CLASS", firstMotionFrame, maxXMotion);
 	}
 
 
@@ -369,8 +408,8 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 			JsonTrackOutputObject t1 = it1.next();
 			JsonTrackOutputObject t2 = it2.next();
 
-			assertEquals(t1.getStartOffset(), t2.getStartOffset());
-			assertEquals(t1.getStopOffset(), t2.getStopOffset());
+			assertEquals(t1.getStartOffsetFrame(), t2.getStartOffsetFrame());
+			assertEquals(t1.getStopOffsetFrame(), t2.getStopOffsetFrame());
 			assertDetectionsMatch(t1.getDetections(), t2.getDetections());
 		}
 	}
@@ -437,6 +476,28 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 		int minXRightDetection = 320 / 2;  // Video is 320x300 and there is a person on the right side of the frame.
 		runFeedForwardFullFrameTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
 		                            "PERSON", firstMotionFrame, maxXLeftDetection, minXRightDetection);
+	}
+
+
+	@Test(timeout = 5 * MINUTES)
+	public void runMogThenDarknetFeedForwardFullFrameTest() {
+		String actionTaskName = "TEST DARKNET WITH FEED FORWARD FULL FRAME";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "DARKNET",
+		          getTinyYoloConfig(ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME")));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED FULL FRAME TO DARKNET PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+		int maxXLeftDetection = 320 / 2;  // Video is 320x300 and there is a person on the left side of the frame.
+		int minXRightDetection = 320 / 2;  // Video is 320x300 and there is a person on the right side of the frame.
+		runFeedForwardFullFrameTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
+		                            "CLASS", firstMotionFrame, maxXLeftDetection, minXRightDetection);
 	}
 
 
@@ -683,7 +744,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         runSystemTest(pipelineName, "output/text/runTextOalprDetectImage.json",
                 "/samples/text/lp-bmw.jpg",
                 "/samples/text/lp-police-car.jpg",
-                "/samples/text/lp-trailer.jpg");
+                "/samples/text/lp-trailer.png");
     }
 
     @Test(timeout = 10 * MINUTES)

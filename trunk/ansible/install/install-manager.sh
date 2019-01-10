@@ -6,11 +6,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2017 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2018 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2017 The MITRE Corporation                                      #
+# Copyright 2018 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -57,14 +57,15 @@ if ! rpm -q --quiet createrepo ; then
   PYDEVEL_RPM=$(find $REPO_PATH"/rpms/management/" -type f -name "python-devel*.rpm")
 
   yum -y --nogpgcheck localinstall --disablerepo=* $DLT_RPM $PYDLT_RPM $CR_RPM $PYXML2_RPM $XML2_RPM $LIBSEL_RPM $PYTHON_RPM $PYLIB_RPM $PYDEVEL_RPM
-
-  echo "Completed installing createrepo."
 else
   echo "Createrepo already installed."
 fi
+
 if [ -z $(rpm -qa | grep createrepo) ]; then
   echo "Required package not found: createrepo. Exiting..."
   exit
+else
+  echo "Completed installing createrepo."
 fi
 
 echo -e "Creating local MPF RPM repository...\c"

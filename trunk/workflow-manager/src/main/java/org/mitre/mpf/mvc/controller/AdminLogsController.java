@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,13 +26,10 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.json.JSONObject;
-import org.mitre.mpf.mvc.util.tailer.FilteredMpfLogTailerListener;
+ import org.mitre.mpf.mvc.util.tailer.FilteredMpfLogTailerListener;
 import org.mitre.mpf.mvc.util.tailer.MpfLogLevel;
 import org.mitre.mpf.mvc.util.tailer.MpfLogTailer;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.nodeManager.NodeManagerStatus;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +47,6 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.util.*;
 
 // NOTE: Don't use @Scope("request") because we don't need to access to the session
@@ -62,10 +58,6 @@ import java.util.*;
 public class AdminLogsController
 {
 	private static final Logger log = LoggerFactory.getLogger(AdminLogsController.class);
-
-	public static final String DEFAULT_ERROR_VIEW = "error";
-
-    private static final String thisHost = System.getenv("THIS_MPF_NODE");
 
     private final FilenameFilter filenameFilter = new LogFilenameFilter();
 
@@ -79,10 +71,6 @@ public class AdminLogsController
     @Qualifier(PropertiesUtil.REF)
     private PropertiesUtil propertiesUtil;
 
-    //TODO: should retrieve info for this using mpfService
-    @Autowired
-    private NodeManagerStatus nodeManagerStatus;
-
 	@RequestMapping(value = "/adminLogs", method = RequestMethod.GET)
 	public ModelAndView adminLogs(HttpServletRequest request) throws WfmProcessingException {
 		return new ModelAndView("admin_logs");
@@ -90,31 +78,22 @@ public class AdminLogsController
 
     @RequestMapping(value = "/adminLogsMap", method = RequestMethod.GET)
     @ResponseBody
-    public String getLogsMap(HttpServletRequest request) throws WfmProcessingException {
+    public Map<String, Set<String>> getLogsMap() throws WfmProcessingException {
 
         nodesAndLogs = getNodesAndLogs();
-
-        String json;
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            json = mapper.writeValueAsString(nodesAndLogs);
-        } catch (IOException e) {
-            throw new WfmProcessingException("Unable to generate map of nodes to log files.", e);
-        }
-
-        return json;
+        return nodesAndLogs;
     }
 
     @RequestMapping(value = "/adminLogsUpdate", method = RequestMethod.GET)
     @ResponseBody
-    public String updateLog(@RequestParam(value = "nodeSelection") String nodeSelection,
-                            @RequestParam(value = "logSelection") String logSelection,
-                            @RequestParam(value = "logLevelSelection") String logLevelSelection,
-                            @RequestParam(value = "maxLines") int maxLines,
-                            @RequestParam(value = "cycleId") int cycleId,
-                            @RequestParam(value = "lastChecked") long lastChecked,
-                            @RequestParam(value = "lastPosition") long lastPosition,
-                            @RequestParam(value = "lastLineLevel", required = false) String lastLineLevel)
+    public Map<String, Object> updateLog(@RequestParam(value = "nodeSelection") String nodeSelection,
+                                         @RequestParam(value = "logSelection") String logSelection,
+                                         @RequestParam(value = "logLevelSelection") String logLevelSelection,
+                                         @RequestParam(value = "maxLines") int maxLines,
+                                         @RequestParam(value = "cycleId") int cycleId,
+                                         @RequestParam(value = "lastChecked") long lastChecked,
+                                         @RequestParam(value = "lastPosition") long lastPosition,
+                                         @RequestParam(value = "lastLineLevel", required = false) String lastLineLevel)
         throws WfmProcessingException {
         /*
         log.info("updateLog: nodeSelection={}, logSelection={}, logLevelSelection={}, maxLines={}, " +
@@ -138,7 +117,7 @@ public class AdminLogsController
             }
         }
 
-        JSONObject json = new JSONObject();
+        Map<String, Object> json = new HashMap<>();
         if (logFile != null && logFile.exists()) {
             // log.info("creating tailer for {}", logFile );
             FilteredMpfLogTailerListener tailerListener =
@@ -184,7 +163,7 @@ public class AdminLogsController
             json.put("logExists", false);
             json.put("cycleId", cycleId);
         }
-        return json.toString();
+        return json;
     }
 
     private Map<String, Set<String>> getNodesAndLogs() throws WfmProcessingException {

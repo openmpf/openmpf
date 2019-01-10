@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,8 +26,8 @@
 
 package org.mitre.mpf.rest.api.component;
 
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class RegisterComponentModel {
@@ -35,11 +35,12 @@ public class RegisterComponentModel {
 	private String _packageFileName;
 	private String _fullUploadedFilePath;
     private String _jsonDescriptorPath;
-	private Date _dateUploaded;
-	private Date _dateRegistered;
+	private Instant _dateUploaded;
+	private Instant _dateRegistered;
 	private ComponentState _componentState = ComponentState.UNKNOWN;
     private String _algorithmName;
     private String _serviceName;
+    private String _streamingServiceName;
 	private List<String> _actions = new ArrayList<>();
 	private List<String> _tasks = new ArrayList<>();
 	private List<String> _pipelines = new ArrayList<>();
@@ -60,17 +61,17 @@ public class RegisterComponentModel {
 		_fullUploadedFilePath = fullUploadedFilePath;
 	}
 
-	public Date getDateUploaded() {
+	public Instant getDateUploaded() {
 		return _dateUploaded;
 	}
-	public void setDateUploaded(Date dateUploaded) {
+	public void setDateUploaded(Instant dateUploaded) {
 		_dateUploaded = dateUploaded;
 	}
 
-	public Date getDateRegistered() {
+	public Instant getDateRegistered() {
 		return _dateRegistered;
 	}
-	public void setDateRegistered(Date dateRegistered) {
+	public void setDateRegistered(Instant dateRegistered) {
 		_dateRegistered = dateRegistered;
 	}
 
@@ -103,6 +104,14 @@ public class RegisterComponentModel {
 
     public void setServiceName(String serviceName) {
 		_serviceName = serviceName;
+    }
+
+    public String getStreamingServiceName() {
+		return _streamingServiceName;
+    }
+
+    public void setStreamingServiceName(String streamingServiceName) {
+		_streamingServiceName = streamingServiceName;
     }
 
     public String getJsonDescriptorPath() {

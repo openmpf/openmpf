@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import com.google.common.collect.Lists;
+import java.util.List;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
@@ -38,11 +39,13 @@ import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.wfm.camel.WfmSplitterInterface;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
+import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,8 +53,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import java.util.List;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -69,6 +70,9 @@ public class TestMediaInspectionSplitter {
     @Autowired
     @Qualifier(JsonUtils.REF)
     private JsonUtils jsonUtils;
+
+    @Autowired
+    private PropertiesUtil propertiesUtil;
 
     @Autowired
     @Qualifier(MediaInspectionSplitter.REF)
@@ -93,7 +97,11 @@ public class TestMediaInspectionSplitter {
         final int testStage = 1;
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
-        TransientJob testJob = new TransientJob(jobId, testExternalId, testPipe, testStage, testPriority, testOutputEnabled, false);
+
+        // Capture a snapshot of the detection system property settings when the job is created.
+        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+
+        TransientJob testJob = new TransientJob(jobId, testExternalId, transientDetectionSystemProperties, testPipe, testStage, testPriority, testOutputEnabled, false);
         final long testMediaId = 123456;
         final String testURI = "/samples/new_face_video.avi";
         TransientMedia testMedia = new TransientMedia(testMediaId, testURI);

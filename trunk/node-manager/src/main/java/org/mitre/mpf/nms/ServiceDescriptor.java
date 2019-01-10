@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,14 +26,14 @@
 
 package org.mitre.mpf.nms;
 
+import org.mitre.mpf.nms.NodeManagerConstants.ServiceTypes;
+import org.mitre.mpf.nms.xml.Service;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import static org.mitre.mpf.nms.ChannelReceiver.FQN_SEP;
 
-import org.mitre.mpf.nms.NodeManagerConstants.ServiceTypes;
-import org.mitre.mpf.nms.xml.Service;
+import static org.mitre.mpf.nms.AddressParser.FQN_SEP;
 
 
 /**

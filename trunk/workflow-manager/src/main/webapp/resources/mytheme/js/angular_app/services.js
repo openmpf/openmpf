@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -70,7 +70,7 @@ AppServices.factory('RoleService', [
 AppServices.service('PipelinesService', function ($http) {
     this.getAvailablePipelines = function () {
         // $http returns a promise, which has a then function, which also returns a promise
-        var promise = $http.get('pipelines/details').then(function (response) {
+        var promise = $http.get('pipelines').then(function (response) {
             // The then function here is an opportunity to modify the response
             //console.log('available_pipelines: ', response);
             // The return value gets picked up by the then in the controller.
@@ -193,14 +193,6 @@ AppServices.service('MediaService', function ($http) {
         }).then(function (response) {
             return response.data;
         });
-        return promise;
-    };
-
-    this.getCustomUploadExtensions = function () {
-        var promise = $http.get('media/custom-upload-extensions')
-            .then(function (response) {
-                return response.data;
-            });
         return promise;
     };
 
@@ -358,28 +350,21 @@ AppServices.service('NodeService', function ($http, $timeout, $log,$filter) {
         return promise;
     };
 
-    /** http gets the hostnames of all nodes
-     * @param refetch - boolean to specify if this should drop the cached value and get the catalog afresh from the server
-     * @param debugging - boolean to specify adding some additional elements for debugging purposes
-     * @returns {*}
-     */
-    this.getAllNodesHostnames= function () {
-        var promise = $http.get("nodes/all-mpf-nodes").then(function (response) {
-                // The then function here is an opportunity to modify the response
-                //$log.debug('using $http to fetch : ', "nodes/all-mpf-nodes");
-                //$log.debug('  returned data=', response.data);
-                var nodesList = [];
-                angular.forEach(response.data, function (obj) {
-                    // deduplicate entries: ALL_MPF_NODES needs to specify the master node host twice
-                    //  because the configure script requires you to enter the hostname for the parent node
-                    //  to have a nodemanager.  the following removes the duplicate
-                    if (nodesList.indexOf(obj) == -1) {
-                        nodesList.push(obj);
-                    }
-                });
+    // http gets the hostnames of all nodes
+    this.getAllNodeHostnames= function (type = "all") {
+        var promise = $http.get("nodes/all?type=" + type).then(function (response) {
+            var nodesList = [];
+            angular.forEach(response.data, function (obj) {
+                // deduplicate entries: CORE_MPF_NODES may specify the master node host twice
+                // because the configure script requires you to enter the hostname for the parent node
+                // to have a nodemanager
+                if (nodesList.indexOf(obj) == -1) {
+                    nodesList.push(obj);
+                }
+            });
 
-                // sort entries
-                nodesList = $filter('orderBy')(nodesList);
+            // sort entries
+            nodesList = $filter('orderBy')(nodesList);
                 return nodesList;
             });
         return promise;
@@ -572,7 +557,9 @@ AppServices.factory('ServerSidePush',
                                     // if in terminal state
                                     if (msg.jobStatus == 'COMPLETE' ||
                                         msg.jobStatus == 'COMPLETE_WITH_ERRORS' ||
-                                        msg.jobStatus == 'COMPLETE_WITH_WARNINGS') {
+                                        msg.jobStatus == 'COMPLETE_WITH_WARNINGS' ||
+                                        msg.jobStatus == 'ERROR' ||
+                                        msg.jobStatus == 'UNKNOWN') {
 
                                         // ensure job is part of session to avoid flooding the UI with notifications
                                         JobsService.getJob(msg.id, true).then(function (job) {
@@ -582,10 +569,16 @@ AppServices.factory('ServerSidePush',
                                                     NotificationSvc.success('Job ' + msg.id + ' is now complete!');
                                                 } else if (msg.jobStatus == 'COMPLETE_WITH_ERRORS') {
                                                     console.log('job complete (with errors) for id: ' + msg.id);
-                                                    NotificationSvc.success('Job ' + msg.id + ' is now complete (with errors).');
+                                                    NotificationSvc.error('Job ' + msg.id + ' is now complete (with errors).');
                                                 } else if (msg.jobStatus == 'COMPLETE_WITH_WARNINGS') {
                                                     console.log('job complete (with warnings) for id: ' + msg.id);
-                                                    NotificationSvc.success('Job ' + msg.id + ' is now complete (with warnings).');
+                                                    NotificationSvc.warning('Job ' + msg.id + ' is now complete (with warnings).');
+                                                } else if (msg.jobStatus == 'ERROR') {
+                                                    console.log('job ' + msg.id + ' terminated due to an error');
+                                                    NotificationSvc.error('Job ' + msg.id + ' terminated due to an error. Check the Workflow Manager log for details.');
+                                                } else if (msg.jobStatus == 'UNKNOWN') {
+                                                    console.log('job ' + msg.id + ' is in an unknown state');
+                                                    NotificationSvc.info('Job ' + msg.id + ' is in an unknown state. Check the Workflow Manager log for details.');
                                                 }
                                             }
                                         });
@@ -593,6 +586,10 @@ AppServices.factory('ServerSidePush',
                                 }
                             }
 
+                            break;
+                        case 'SSPC_NODE':
+                            $rootScope.$broadcast('SSPC_NODE', json);
+                            //console.log("SSPC_NODE message received: " + JSON.stringify(json,2,null));
                             break;
                         case 'SSPC_SERVICE':
                             $rootScope.$broadcast('SSPC_SERVICE', json);
@@ -607,6 +604,9 @@ AppServices.factory('ServerSidePush',
                             $rootScope.$broadcast('SSPC_SYSTEMMESSAGE', json);
                             //console.log("SSPC_SYSTEMMESSAGE message received: " + JSON.stringify(json,2,null));
                             SystemStatus.showAllSystemMessages();
+                            break;
+                        case 'SSPC_PROPERTIES_CHANGED':
+                            $rootScope.$broadcast('SSPC_PROPERTIES_CHANGED');
                             break;
                         default:
                             console.log("Message received on unknonwn SSPC (Atmosphere server-side push) channel: " + JSON.stringify(json, 2, null));
@@ -877,6 +877,9 @@ AppServices.factory('NotificationSvc', [
         return {
             error: function (message, layout) {
                 generateNotyAlert("error", message, layout);
+            },
+            warning: function (message, layout) {
+                generateNotyAlert("warning", message, layout);
             },
             success: function (message, layout) {
                 generateNotyAlert("success", message, layout);

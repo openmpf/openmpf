@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,18 +26,19 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.mitre.mpf.mvc.model.*;
 import org.mitre.mpf.mvc.util.JsonView;
+import org.mitre.mpf.rest.api.PipelinesResponse;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.DuplicateNameWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.NotFoundWfmProcessingException;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.*;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,29 +65,31 @@ public class PipelineController {
 
     private static final Logger log = LoggerFactory.getLogger(PipelineController.class);
 
-    public static final String DEFAULT_ERROR_VIEW = "error";
-
     @Autowired
     private PipelineService pipelineService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     /*
      *	/pipelines
      */
     //EXTERNAL
-    //1. REST API - Gets the available pipeline names that can be used to process media URIs
+    //1. REST API - Gets the available pipelines that can be used to process media URIs
     // pipelines: todo: the final /rest/pipelines REST API should be identical to what /pipelines is doing
     @RequestMapping(value = {"/rest/pipelines"}, method = RequestMethod.GET)
 	@ApiOperation(value="Retrieves list of available pipelines.",
-		notes="The response will be a JSON array of strings with each item being a pipeline.",
-		produces="application/json", response=String.class, responseContainer="List" )
+		notes="The response will be a JSON array of PipelinesResponse with each item naming the pipeline, and that pipeline's capability to support a batch and/or a streaming job.",
+		produces="application/json", response=PipelinesResponse.class, responseContainer="List" )
     @ApiResponses(value = { 
     		@ApiResponse(code = 200, message = "Successful response"), 
     		@ApiResponse(code = 401, message = "Bad credentials") })
     @ResponseBody
-    public List<String> getAvailablePipelinesRest() {
-        return new ArrayList<>(pipelineService.getPipelineNames());
+    public List<PipelinesResponse> getAvailablePipelinesRest() {
+        SortedSet<String> pipelineNames = pipelineService.getPipelineNames();
+        return pipelineNames.stream().map(pipelineName -> new PipelinesResponse(pipelineName,
+            pipelineService.pipelineSupportsBatch(pipelineName), pipelineService.pipelineSupportsStreaming(pipelineName))).collect(Collectors.toList());
     }
-
 
     //INTERNAL
     /**
@@ -102,16 +105,6 @@ public class PipelineController {
                 .stream()
                 .map(c -> new PipelineComponentBasicInfo(c.getName(), c.getDescription()))
                 .collect(Collectors.toSet());
-    }
-
-    //INTERNAL - deprecated
-    //  pipelines2: todo: should remove this after removing usage in
-    //      AppServices.service('PipelineService'... in client code
-    @Deprecated
-    @RequestMapping(value = {"/pipelines/details"}, method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public String getAvailablePipelinesDetails() {
-        return pipelineService.getPipelineDefinitionAsJson();
     }
 
 
@@ -176,6 +169,7 @@ public class PipelineController {
         return pipelineDefinition;
     }
 
+    // This method is used when a custom pipeline is created using the WFM UI option "Configuration" --> "Pipelines 2"
     //INTERNAL
     /**
      * Creates a new pipeline
@@ -195,11 +189,25 @@ public class PipelineController {
         //force uppercase
         String name = pipelineModel.getName().toUpperCase();
 
-        PipelineDefinition pipelineDefinition = new PipelineDefinition(name, description);
-        for (String taskName : pipelineModel.getTasksToAdd()) {
-            pipelineDefinition.getTaskRefs().add(new TaskDefinitionRef(taskName));
+        try {
+
+            // Only allow pipelines names that contain uppercase letters, numbers, dash, hyphen or white space.
+            // This method may throw a WfmProcessingException, allowing for rejection of the pipeline if the name doesn't validate.
+            validatePipelineOrTaskOrActionName(name);
+
+            PipelineDefinition pipelineDefinition = new PipelineDefinition(name, description);
+            for (String taskName : pipelineModel.getTasksToAdd()) {
+                pipelineDefinition.getTaskRefs().add(new TaskDefinitionRef(taskName));
+            }
+            pipelineService.savePipeline(pipelineDefinition);
+
+        } catch (WfmProcessingException e) {
+
+            // log the error, then rethrow the WfmProcessingException back to the caller for handling.
+            log.error("pipeline name validation error with message: {}", e.getMessage());
+            throw e;
+
         }
-        pipelineService.savePipeline(pipelineDefinition);
     }
 
     //INTERNAL
@@ -253,6 +261,7 @@ public class PipelineController {
         return task;
     }
 
+    // This method is used when a custom action is created using the WFM UI option "Configuration" --> "Pipelines 2"
     //INTERNAL
     /**
      * Adds a task with an associated collection of actions.
@@ -272,6 +281,10 @@ public class PipelineController {
         String description = taskModel.getDescription();
         //force uppercase
         String name = taskModel.getName().toUpperCase();
+
+        // Only allow task names that contain uppercase letters, numbers, dash, hyphen or white space.
+        // This method may throw a WfmProcessingException, allowing for rejection of the task if the name doesn't validate.
+        validatePipelineOrTaskOrActionName(name);
 
         TaskDefinition taskDefinition = new TaskDefinition(name, description);
         for (String actionName : taskModel.getActionsToAdd()) {
@@ -331,6 +344,7 @@ public class PipelineController {
         return action;
     }
 
+    // This method is used when a custom action is created using the WFM UI option "Configuration" --> "Pipelines 2"
     //INTERNAL
     /**
      * Adds an action with an associated action and properties.
@@ -346,12 +360,28 @@ public class PipelineController {
             produces = "application/json" )
     @ResponseBody
     public void createActionJson2(@RequestBody ActionModel actionModel, HttpServletResponse response) throws WfmProcessingException {
+
         Map<String, String> modifiedProperties;
         try {
-            modifiedProperties = new ObjectMapper().readValue(actionModel.getProperties(), HashMap.class);
+
+            // Only allow action names that contain uppercase letters, numbers, dash, hyphen or white space.
+            // This method may throw a WfmProcessingException, allowing for rejection of the action if the name doesn't validate.
+            String name = actionModel.getActionName().toUpperCase();
+            validatePipelineOrTaskOrActionName(name);
+
+            modifiedProperties = objectMapper.readValue(actionModel.getProperties(), HashMap.class);
+
+        } catch (WfmProcessingException wfme) {
+
+            // log the error, then rethrow the WfmProcessingException back to the caller for handling.
+            log.error("action name validation error with message: {}", wfme.getMessage());
+            throw wfme;
+
         } catch (Exception e) {
+
             log.error("error getting properties with message: {}", e.getMessage());
             throw new WfmProcessingException("Invalid properties value: " + actionModel.getProperties() + ".", e);
+
         }
 
         saveAction(actionModel, modifiedProperties);
@@ -450,17 +480,20 @@ public class PipelineController {
     //      and are still being used by piplines 1 page
     // old?    @RequestMapping(value = "/pipelines/algorithm-properties", method = RequestMethod.GET)
 
+    // This method is used when a custom action is created using the WFM UI option "Configuration" --> "Pipelines"
     //TODO: Remove when Pipelines1 page is phased out.
     @Deprecated
     @RequestMapping(value = "/pipelines/create-action", method = RequestMethod.POST)
     @ResponseBody
     public Object createActionJson(@RequestBody ActionModel actionModel, HttpServletResponse response) throws WfmProcessingException {
+
+
         Tuple<Boolean,String> responseTuple = null;
 
         //IMPORTANT!! - only passing in the modified properties in this method
         Map<String, String> modifiedProperties = new HashMap<String, String>();
         try {
-        	modifiedProperties = new ObjectMapper().readValue(actionModel.getProperties(), HashMap.class);
+        	modifiedProperties = objectMapper.readValue(actionModel.getProperties(), HashMap.class);
         } catch (IOException e) {
             log.error("error getting properties with message: {}", e.getMessage());
             responseTuple = new Tuple<Boolean, String>(false, e.getMessage());
@@ -468,18 +501,25 @@ public class PipelineController {
         }
 
         try {
-        	saveAction(actionModel, modifiedProperties);
+
+            // Only allow action names that contain uppercase letters, numbers, dash, hyphen or white space.
+            // This method may throw a WfmProcessingException, allowing for rejection of the action if the name doesn't validate.
+            String name = actionModel.getActionName().toUpperCase();
+            validatePipelineOrTaskOrActionName(name);
+
+            saveAction(actionModel, modifiedProperties);
             log.debug("Successfully created action: " + actionModel.getActionName());
         	responseTuple = new Tuple<>(true, null);
         }
         catch (WfmProcessingException ex) {
-            log.error("new action creation failed and nothing was saved to xml", ex);
+            log.error("Unable to save action. Please check the server logs.", ex);
             responseTuple = new Tuple<>(false, "Unable to save action.");
         }
 
         return JsonView.Render(responseTuple, response);
     }
 
+    // This method is used when a custom pipeline is created using the WFM UI option "Configuration" --> "Pipelines"
     //TODO: Remove when Pipelines1 page is phased out.
     @Deprecated
     @RequestMapping(value = "/pipelines/add-task-or-pipeline", method = RequestMethod.POST)
@@ -493,9 +533,16 @@ public class PipelineController {
             String description = addToPipelineModel.getDescription();
             //force uppercase
             String name = addToPipelineModel.getName().toUpperCase();
-            String type = addToPipelineModel.getType();
+
+            String type = null;
 
             try {
+
+                type = addToPipelineModel.getType();
+
+                // Only allow pipelines names that contain uppercase letters, numbers, dash, hyphen or white space. Reject the pipeline if the name doesn't validate.
+                validatePipelineOrTaskOrActionName(name);
+
                 //actions is handled by "/createaction"
                 if(type.equals("task")) {
                     TaskDefinition taskDefinition = new TaskDefinition(name, description);
@@ -515,7 +562,7 @@ public class PipelineController {
                 responseTuple = new Tuple<Boolean, String>(true, null);
             }
             catch (WfmProcessingException ex) {
-                responseTuple = new Tuple<Boolean, String>(false, "failed to add the " + type + " check logs for detailed error");
+                responseTuple = new Tuple<Boolean, String>(false, "Unable to save " + type +". Please check the server logs.");
                 log.error(responseTuple.getSecond(), ex);
             }
         } else {
@@ -524,5 +571,18 @@ public class PipelineController {
         }
 
         return JsonView.Render(responseTuple, response);
+    }
+
+    /** Only allow pipeline, task or action names that contain uppercase letters, numbers, dash, hyphen or white space.
+     * The pipeline, task or action should be rejected if the name doesn't validate.
+     * This method assumes the conversion from lower to uppercase has already been done, so there is no need to check for lowercase letters.
+     * @param name name of the task or pipeline to be validated.
+     * @exception WfmProcessingException is thrown if the pipeline, task or action name doesn't validate
+     **/
+    private static void validatePipelineOrTaskOrActionName(String name) throws WfmProcessingException {
+        if ( !name.matches("([A-Z0-9 _\\-()])+") ) {
+            throw new WfmProcessingException("Pipeline, task, and action names can only contain uppercase letters, " +
+                    "numbers, dashes, hyphens, parentheses, and white space. \"" + name + "\" didn't validate.");
+        }
     }
 }

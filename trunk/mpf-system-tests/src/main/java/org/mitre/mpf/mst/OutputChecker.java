@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -136,6 +136,7 @@ public class OutputChecker {
     private void compareJsonTrackOutputObjects(SortedSet<JsonTrackOutputObject> expectedTracksSet,
                                                SortedSet<JsonTrackOutputObject> actualTracksSet,
                                                String pipeline){
+        _errorCollector.checkNowThat("Track Count:", actualTracksSet.size(), is(expectedTracksSet.size()));
         Iterator<JsonTrackOutputObject> expIter = expectedTracksSet.iterator();
         Iterator<JsonTrackOutputObject> actIter = actualTracksSet.iterator();
 
@@ -181,6 +182,12 @@ public class OutputChecker {
 
             //log.info("expObjLocations size is {}", expObjLocations.size());
             //log.info("actObjLocations size is {}", actObjLocations.size());
+
+            _errorCollector.checkThat("Track Confidence", (double) actExtrResult.getConfidence(),
+                                      closeTo(expExtrResult.getConfidence(), 0.01));
+
+            _errorCollector.checkThat("TrackProperties", actExtrResult.getTrackProperties(),
+                                      is(expExtrResult.getTrackProperties()));
 
             // Check now to avoid NoSuchElementException during iteration
             _errorCollector.checkNowThat("ObjectLocations size", actObjLocations.size(), is(expObjLocations.size()));

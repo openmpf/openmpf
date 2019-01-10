@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -70,13 +70,13 @@ public class MarkupResult {
 	public void setMediaIndex(int mediaIndex) { this.mediaIndex = mediaIndex; }
 
 	/** The URI of the file which produced this result. */
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String sourceUri;
 	public String getSourceUri() { return sourceUri; }
 	public void setSourceUri(String sourceUri) { this.sourceUri = sourceUri; }
 
 	/** The URI of the marked-up file. */
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String markupUri;
 	public String getMarkupUri() { return markupUri; }
 	public void setMarkupUri(String markupUri) { this.markupUri = markupUri; }
@@ -93,7 +93,7 @@ public class MarkupResult {
 	public MarkupStatus getMarkupStatus() { return (markupStatus == null) ? MarkupStatus.UNKNOWN : markupStatus; }
 	public void setMarkupStatus(MarkupStatus markupStatus) { this.markupStatus = markupStatus; }
 
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String message;
 	public String getMessage() { return message; }
 	public void setMessage(String message) { this.message = message; }

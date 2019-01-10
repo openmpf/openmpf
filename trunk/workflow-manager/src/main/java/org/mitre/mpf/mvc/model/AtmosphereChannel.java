@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -61,10 +61,11 @@ public enum AtmosphereChannel {
 
 	/** SSPC_NODE: node related events
 	 *  note this differs from previous event notifications where SSPC_NODE and SSPC_SERVICE were all part of a single web service
+	 *  Events(s):
+	 * 		OnNewManager - when a node manager is started
+	 * 		OnManagerDown - when a node manager is stopped
 	 * 	Event(s) not yet implemented:
 	 * 		OnNodeConfigurationChanged - ???
-	 * 		OnNewManager - ???
-	 * 		OnManagerDown - ???
 	 */
 	SSPC_NODE,
 
@@ -95,5 +96,7 @@ public enum AtmosphereChannel {
 	 * 									has changed.  The client then needs to do a /rest/system-message/{typeFilter} to get the new list
 	 * 									of system messages of that type
 	 */
-	SSPC_SYSTEMMESSAGE
+	SSPC_SYSTEMMESSAGE,
+
+	SSPC_PROPERTIES_CHANGED
 }

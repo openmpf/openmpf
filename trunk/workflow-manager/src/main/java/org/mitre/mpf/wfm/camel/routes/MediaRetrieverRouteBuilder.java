@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -31,7 +31,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.camel.*;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
-import org.mitre.mpf.wfm.enums.JobStatus;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +63,7 @@ public class MediaRetrieverRouteBuilder extends RouteBuilder {
 	}
 
 	@Override
-	public void configure() throws Exception {
+	public void configure() {
 		from(entryPoint)
 			.routeId(ROUTE_ID)
 				.setExchangePattern(ExchangePattern.InOnly)
@@ -73,8 +73,8 @@ public class MediaRetrieverRouteBuilder extends RouteBuilder {
 			.choice()
 				.when(header(MpfHeaders.SPLITTING_ERROR).isEqualTo(Boolean.TRUE))
 					.removeHeader(MpfHeaders.SPLITTING_ERROR)
-					.setHeader(MpfHeaders.JOB_STATUS, constant(JobStatus.ERROR.name()))
-					.to(JobCompletedRouteBuilder.ENTRY_POINT)
+					.setHeader(MpfHeaders.JOB_STATUS, constant(BatchJobStatusType.ERROR.name()))
+                    .process(JobCompleteProcessorImpl.REF)
 				.when(header(MpfHeaders.EMPTY_SPLIT).isEqualTo(Boolean.TRUE))
 					.removeHeader(MpfHeaders.EMPTY_SPLIT)
 					.process(JobRetrievalProcessor.REF)

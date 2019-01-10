@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -35,42 +35,34 @@ public class PropertyModel {
 
 	private boolean _needsRestart;
 
-
 	public PropertyModel() {
 
 	}
 
-
-	public PropertyModel( String key, String value, boolean needsRestart) {
-		_key = key;
-		_value = value;
-		_needsRestart = needsRestart;
-	}
+    public PropertyModel( String key, String value, boolean needsRestart) {
+        _key = key;
+        _value = value;
+        _needsRestart = needsRestart;
+    }
 
 
 	public String getKey() {
 		return _key;
 	}
-
 	public void setKey(String key) {
 		_key = key;
 	}
 
-
 	public String getValue() {
 		return _value;
 	}
-
 	public void setValue(String value) {
 		_value = value;
 	}
 
+	public boolean getNeedsRestart() { return _needsRestart; }
 
-	public boolean getNeedsRestart() {
-		return _needsRestart;
-	}
-
-	public void setNeedsRestart(boolean needsRestart) {
-		_needsRestart = needsRestart;
-	}
+	public String toString() {
+        return "_key: " + _key + ", _value: " + _value + ", _needsRestart: " + _needsRestart;
+    }
 }

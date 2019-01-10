@@ -5,11 +5,11 @@
     under contract, and is subject to the Rights in Data-General Clause
     52.227-14, Alt. IV (DEC 2007).
 
-    Copyright 2017 The MITRE Corporation. All Rights Reserved.
+    Copyright 2018 The MITRE Corporation. All Rights Reserved.
 -->
 
 <!--
-    Copyright 2017 The MITRE Corporation
+    Copyright 2018 The MITRE Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -24,7 +24,12 @@
     limitations under the License.
 -->
 <div class="page-header text-center">
-    <h3>Job Status</h3> <page-info>The jobs table will be periodically updated and an alert message will appear when new jobs are COMPLETE.</page-info>
+    <div>
+        <h3>Job Status</h3> <page-info>The jobs table will be periodically updated and an alert message will appear when new jobs are COMPLETE.</page-info>
+    </div>
+    <div ng-if="updateInfoMsg">
+        <small class="text-muted"> {{updateInfoMsg}} </small>
+    </div>
 </div>
 <div class="row">
     <div class="col-lg-12">
@@ -134,12 +139,12 @@
             <div class="modal-body ">
                 <table id="markupsTable" class="table table-bordered table-striped dataTable" width="100%" role="grid" style="width: 100%;table-layout: auto;">
                     <thead>
-                    <th></th>
-                    <th>Source</th>
-                    <th></th>
-                    <th></th>
-                    <th>Output</th>
-                    <th></th>
+                    <th>Source Preview</th>
+                    <th>Source Path</th>
+                    <th>Source Actions</th>
+                    <th>Markup Preview</th>
+                    <th>Markup Path</th>
+                    <th>Markup Actions</th>
                     </thead>
                 </table>
             </div>

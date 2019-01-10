@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2017 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2017 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -46,9 +46,9 @@ import static java.util.stream.Collectors.toMap;
 @Named
 public class StartupComponentServiceStarterImpl implements StartupComponentServiceStarter {
 
-	private final int _numStartUpServices;
+	private final boolean _isNodeAutoConfigEnabled;
 
-	private final String _thisMpfNodeHostName;
+	private final int _nodeAutoConfigNumServices;
 
 	private final NodeManagerService _nodeManagerService;
 
@@ -57,15 +57,15 @@ public class StartupComponentServiceStarterImpl implements StartupComponentServi
 	public StartupComponentServiceStarterImpl(
 			PropertiesUtil propertiesUtil,
 			NodeManagerService nodeManagerService) {
-		_numStartUpServices = propertiesUtil.getNumStartUpServices();
-		_thisMpfNodeHostName = propertiesUtil.getThisMpfNodeHostName();
+		_isNodeAutoConfigEnabled = propertiesUtil.isNodeAutoConfigEnabled();
+		_nodeAutoConfigNumServices = propertiesUtil.getNodeAutoConfigNumServices();
 		_nodeManagerService = nodeManagerService;
 	}
 
 
 	@Override
 	public void startServicesForComponents(List<RegisterComponentModel> components) {
-		if (_numStartUpServices <= 0 || _thisMpfNodeHostName == null) {
+		if (!_isNodeAutoConfigEnabled || _nodeAutoConfigNumServices <= 0) {
 			return;
 		}
 
@@ -75,38 +75,17 @@ public class StartupComponentServiceStarterImpl implements StartupComponentServi
 			return;
 		}
 
-		for (ServiceModel service : servicesToStart) {
-			if (service.getServiceCount() < _numStartUpServices) {
-				service.setServiceCount(_numStartUpServices);
-			}
-		}
+		servicesToStart.forEach(n -> n.setServiceCount(_nodeAutoConfigNumServices));
 
-		_nodeManagerService.setServiceModels(allServiceModels);
+		List<NodeManagerModel> allConfiguredNodes = _nodeManagerService.getNodeManagerModels();
+		allConfiguredNodes.stream().filter(NodeManagerModel::isAutoConfigured)
+				.forEach(n -> addServicesToNode(n, servicesToStart));
 
-		List<NodeManagerModel> allNodes = new ArrayList<>(_nodeManagerService.getNodeManagerModels());
-		NodeManagerModel thisNode = getThisNodeModel(allNodes);
-		addServicesToNode(thisNode, servicesToStart);
 		try {
-			_nodeManagerService.saveNodeManagerConfig(allNodes);
+			_nodeManagerService.saveAndReloadNodeManagerConfig(allConfiguredNodes);
 		}
 		catch (IOException e) {
 			throw new UncheckedIOException(e);
-		}
-	}
-
-
-	private NodeManagerModel getThisNodeModel(Collection<NodeManagerModel> nodes) {
-		Optional<NodeManagerModel> thisNodeModel = nodes.stream()
-				.filter(n -> _thisMpfNodeHostName.equals(n.getHost()))
-				.findAny();
-
-		if (thisNodeModel.isPresent()) {
-			return thisNodeModel.get();
-		}
-		else {
-			NodeManagerModel thisNode = new NodeManagerModel(_thisMpfNodeHostName);
-			nodes.add(thisNode);
-			return thisNode;
 		}
 	}
 

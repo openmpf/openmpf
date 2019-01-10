@@ -24,20 +24,21 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
-import org.springframework.stereotype.Component;
+package org.mitre.mpf.wfm.service;
 
-/**
- * Trivial processor which consumes any messages it receives and does not emit any useful information. This is
- * used as terminal point of many processors.
- */
-@Component(NoOpProcessor.REF)
-public class NoOpProcessor implements Processor {
-	public static final String REF = "noOpProcessor";
+import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 
-	@Override
-	public void process(Exchange exchange) throws Exception { }
+import java.io.IOException;
+import java.util.Map;
+
+public interface StorageService {
+
+    public String store(JsonOutputObject outputObject) throws IOException;
+
+    public Map<Integer, String> store(ArtifactExtractionRequest request);
+
+    public void store(MarkupResult markupResult);
 }

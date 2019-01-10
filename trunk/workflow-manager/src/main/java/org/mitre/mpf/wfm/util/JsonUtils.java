@@ -38,6 +38,7 @@ import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -63,12 +64,13 @@ public class JsonUtils {
      * Single instance of the ObjectMapper which converts between Java objects and text-based JSON. While less efficient
      * in terms of space, text-based JSON remains user-readable.
      */
+    @Autowired
     private ObjectMapper jsonObjectMapper;
 
     @PostConstruct
     private void init() {
         smileObjectMapper = new ObjectMapper(new SmileFactory());
-        jsonObjectMapper = new ObjectMapper();
+        smileObjectMapper.registerModule(new InstantJsonModule());
     }
 
     /** Parses the provided smile binary JSON object as an instance of the specified type or throws an exception if this conversion cannot be performed. */

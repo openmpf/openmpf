@@ -70,7 +70,7 @@ AppServices.factory('RoleService', [
 AppServices.service('PipelinesService', function ($http) {
     this.getAvailablePipelines = function () {
         // $http returns a promise, which has a then function, which also returns a promise
-        var promise = $http.get('pipelines/details').then(function (response) {
+        var promise = $http.get('pipelines').then(function (response) {
             // The then function here is an opportunity to modify the response
             //console.log('available_pipelines: ', response);
             // The return value gets picked up by the then in the controller.
@@ -604,6 +604,9 @@ AppServices.factory('ServerSidePush',
                             $rootScope.$broadcast('SSPC_SYSTEMMESSAGE', json);
                             //console.log("SSPC_SYSTEMMESSAGE message received: " + JSON.stringify(json,2,null));
                             SystemStatus.showAllSystemMessages();
+                            break;
+                        case 'SSPC_PROPERTIES_CHANGED':
+                            $rootScope.$broadcast('SSPC_PROPERTIES_CHANGED');
                             break;
                         default:
                             console.log("Message received on unknonwn SSPC (Atmosphere server-side push) channel: " + JSON.stringify(json, 2, null));

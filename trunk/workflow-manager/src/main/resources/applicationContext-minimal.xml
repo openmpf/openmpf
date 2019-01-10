@@ -60,7 +60,6 @@
     <bean class="org.mitre.mpf.wfm.service.ServerMediaServiceImpl"/>
     <bean class="org.mitre.mpf.wfm.service.component.AnsibleDeploymentService"/>
     <bean class="org.mitre.mpf.wfm.service.component.ComponentStateServiceImpl"/>
-    <bean class="com.fasterxml.jackson.databind.ObjectMapper"/>
     <bean class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean"/>
     <bean class="org.mitre.mpf.wfm.service.component.ComponentDescriptorValidatorImpl"/>
     <bean class="org.mitre.mpf.wfm.service.component.ExtrasDescriptorValidatorImpl"/>

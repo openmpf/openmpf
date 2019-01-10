@@ -103,11 +103,12 @@ public class TransientStream {
 		this.id = id;
         streamResource = new StreamResource(uri);
 
-        assert streamResource != null : "Stream resource must not be null, check construction for id="+id+" and uri="+uri;
+        assert streamResource != null : "Stream resource must not be null, check construction for id=" + id + " and uri=" + uri;
 
         if ( !isSupportedUriScheme() ) {
             failed = true;
-            message = "URI scheme " + streamResource.getUriScheme() + " is not valid for stream, error is "+streamResource.getResourceStatusMessage()+".  Check OpenMPF documentation for the list of supported protocols.";
+            message = "URI scheme " + streamResource.getUriScheme() + " is not valid for stream: " +
+					streamResource.getResourceStatusMessage() + ". Check OpenMPF documentation for the list of supported protocols.";
         }
 	}
 

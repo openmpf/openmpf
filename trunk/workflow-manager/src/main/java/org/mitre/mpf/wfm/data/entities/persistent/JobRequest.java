@@ -26,18 +26,10 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
-import java.util.Date;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Lob;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+
+import javax.persistence.*;
+import java.time.Instant;
 
 /**
  * This class includes the essential information which describes a batch job. Instances of this class are stored in a
@@ -58,17 +50,15 @@ public class JobRequest {
 
 	/** The timestamp indicating when the server received this job. */
 	@Column
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date timeReceived;
-	public Date getTimeReceived() { return timeReceived; }
-	public void setTimeReceived(Date timeReceived) { this.timeReceived = timeReceived; }
+	private Instant timeReceived;
+	public Instant getTimeReceived() { return timeReceived; }
+	public void setTimeReceived(Instant timeReceived) { this.timeReceived = timeReceived; }
 
 	/** The timestamp indicating when the server completed this job.*/
 	@Column
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date timeCompleted;
-	public Date getTimeCompleted() { return timeCompleted; }
-	public void setTimeCompleted(Date timeCompleted) { this.timeCompleted = timeCompleted; }
+	private Instant timeCompleted;
+	public Instant getTimeCompleted() { return timeCompleted; }
+	public void setTimeCompleted(Instant timeCompleted) { this.timeCompleted = timeCompleted; }
 	
 	/** The priority of the job set when creating the job.*/
 	@Column	
@@ -89,7 +79,7 @@ public class JobRequest {
 	public byte[] getInputObject() { return inputObject; }
 	public void setInputObject(byte[] inputObject) { this.inputObject = inputObject; }
 
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String outputObjectPath;
 	public String getOutputObjectPath() { return outputObjectPath; }
 	public void setOutputObjectPath(String outputObjectPath) { this.outputObjectPath = outputObjectPath; }

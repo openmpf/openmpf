@@ -34,25 +34,15 @@
         <property name="targetDataSource" ref="mainDataSource"/>
     </bean>
 
-    <bean id="mainDataSource" class="com.jolbox.bonecp.BoneCPDataSource" destroy-method="close">
 
-        <!--<property name="idleConnectionTestPeriod" value="60"/>-->
-
-        <property name="maxConnectionsPerPartition" value="3"/>
-        <property name="minConnectionsPerPartition" value="1"/>
-        <property name="partitionCount" value="5"/>
-        <property name="acquireIncrement" value="10"/>
-        <property name="statementsCacheSize" value="50"/>
-        <!--<property name="releaseHelperThreads" value="3"/>-->
-
-        <property name="driverClass" value="${jdbc.driverClassName}"/>
-        <property name="jdbcUrl" value="${jdbc.url}"/>
+    <bean id="mainDataSource" class="org.apache.commons.dbcp.BasicDataSource">
+        <property name="driverClassName" value="${jdbc.driverClassName}"/>
+        <property name="url" value="${jdbc.url}"/>
         <property name="username" value="${jdbc.username}"/>
         <property name="password" value="${jdbc.password}"/>
-        <!--<property name="connectionTimeoutInMs" value="10000"/>-->
-        <!--<property name="idleConnectionTestPeriodInSeconds" value="15"/>-->
-        <!--<property name="idleMaxAgeInSeconds" value="15"/>-->
+        <property name="validationQuery" value="SELECT 1" />
     </bean>
+
 
     <!-- Hibernate session factory -->
     <bean id="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">

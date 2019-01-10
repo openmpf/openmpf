@@ -30,9 +30,6 @@ package org.mitre.mpf.wfm.businessrules.impl;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.*;
-import org.mitre.mpf.interop.util.TimeUtils;
-import org.mitre.mpf.mvc.controller.AtmosphereController;
-import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.Redis;
@@ -48,6 +45,7 @@ import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.exceptions.*;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
 import org.mitre.mpf.wfm.util.CallbackUtils;
@@ -62,6 +60,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -121,6 +120,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     @Autowired
     private CallbackUtils callbackUtils;
+
+    @Autowired
+    private JobStatusBroadcaster jobStatusBroadcaster;
 
     /**
      * Converts a pipeline represented in JSON to a {@link TransientPipeline} instance.
@@ -439,7 +441,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     private StreamingJobRequest initializeInternal(StreamingJobRequest streamingJobRequest, JsonStreamingJobRequest jsonStreamingJobRequest) throws WfmProcessingException {
         streamingJobRequest.setPriority(jsonStreamingJobRequest.getPriority());
         streamingJobRequest.setStatus(StreamingJobStatusType.INITIALIZING);
-        streamingJobRequest.setTimeReceived(new Date());
+        streamingJobRequest.setTimeReceived(Instant.now());
         streamingJobRequest.setInputObject(jsonUtils.serialize(jsonStreamingJobRequest));
         streamingJobRequest.setPipeline(jsonStreamingJobRequest.getPipeline() == null ? null : TextUtils.trimAndUpper(jsonStreamingJobRequest.getPipeline().getName()));
 
@@ -501,7 +503,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             try {
                 // make an effort to mark the streaming job as failed in the long-term database
                 streamingJobRequestEntity.setStatus(StreamingJobStatusType.JOB_CREATION_ERROR, errorMessage);
-                streamingJobRequestEntity.setTimeCompleted(new Date());
+                streamingJobRequestEntity.setTimeCompleted(Instant.now());
                 streamingJobRequestEntity = streamingJobRequestDao.persist(streamingJobRequestEntity);
             } catch (Exception persistException) {
                 log.warn("Failed to mark Streaming Job #{} as failed due to an exception. It will remain it its current state until manually changed.", streamingJobRequestEntity, persistException);
@@ -592,11 +594,10 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             callbackUtils.sendHealthReportCallback(healthReportCallbackUri, Collections.singletonList(jobId));
         }
 
-        Date date = new Date(timestamp);
 
         StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
         if (status.isTerminal()) {
-            streamingJobRequest.setTimeCompleted(date);
+            streamingJobRequest.setTimeCompleted(Instant.ofEpochMilli(timestamp));
         }
         streamingJobRequest.setStatus(status.getType());
 
@@ -629,7 +630,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 }
             }
 
-            AtmosphereController.broadcast(new JobStatusMessage(jobId, 100, status.getType(), date));
+            jobStatusBroadcaster.broadcast(jobId, 100, status.getType(), Instant.ofEpochMilli(timestamp));
             jobProgressStore.setJobProgress(jobId, 100.0f);
 
             log.info("[Streaming Job {}:*:*] Streaming Job complete!", jobId);
@@ -638,7 +639,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     @Override
     public void handleNewActivityAlert(long jobId, long frameId, long timestamp) {
-        redis.setStreamingActivity(jobId, frameId, TimeUtils.millisToDateTime(timestamp));
+        redis.setStreamingActivity(jobId, frameId, Instant.ofEpochMilli(timestamp));
         String healthReportCallbackUri = redis.getHealthReportCallbackURI(jobId);
         if (healthReportCallbackUri != null) {
             callbackUtils.sendHealthReportCallback(healthReportCallbackUri, Collections.singletonList(jobId));

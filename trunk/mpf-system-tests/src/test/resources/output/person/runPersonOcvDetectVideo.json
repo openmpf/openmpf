@@ -23,8 +23,8 @@
   "priority": 4,
   "siteId": "mpf1",
   "externalJobId": "af5e6622-b202-4dd0-97b7-a91e2ef91875",
-  "timeStart": "2016-10-03 16:19:18.0",
-  "timeStop": "2016-10-03 16:21:30.0",
+  "timeStart": "2016-10-03T16:19:18.0-05:00",
+  "timeStop": "2016-10-03T16:21:30.0-05:00",
   "status": "COMPLETE",
   "media": [
     {

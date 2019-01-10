@@ -38,6 +38,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.EnvVar;
+import org.mitre.mpf.wfm.service.StorageBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,12 +51,13 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 
 import static java.util.stream.Collectors.*;
@@ -204,7 +206,7 @@ public class PropertiesUtil {
     public TransientDetectionSystemProperties createDetectionSystemPropertiesSnapshot() {
         Map<String, String> detMap = new HashMap<>();
         mpfPropertiesConfig.getKeys().forEachRemaining(key -> {
-            if (MpfPropertiesConfigurationBuilder.isDetectionProperty(key)) {
+            if (MpfPropertiesConfigurationBuilder.propertyRequiresSnapshot(key)) {
                 detMap.put(key, mpfPropertiesConfig.getString(key)); // resolve final value
             }
         } );
@@ -247,12 +249,12 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getBoolean("mpf.output.objects.enabled");
     }
 
-    public boolean isOutputQueueEnabled() {
-        return mpfPropertiesConfig.getBoolean("mpf.output.objects.queue.enabled");
+    public boolean isOutputObjectsExemplarsOnly() {
+        return mpfPropertiesConfig.getBoolean("mpf.output.objects.exemplars.only");
     }
 
-    public String getOutputQueueName() {
-        return mpfPropertiesConfig.getString("mpf.output.objects.queue.name");
+    public boolean isOutputObjectsLastStageOnly() {
+        return mpfPropertiesConfig.getBoolean("mpf.output.objects.last.stage.only");
     }
 
     public String getSharePath() {
@@ -316,8 +318,8 @@ public class PropertiesUtil {
      * @return output object File that was created under the specified output objects directory
      * @throws IOException
      */
-    public File createStreamingOutputObjectsFile(LocalDateTime time, File parentDir) throws IOException {
-        String fileName = String.format("summary-report %s.json", TimeUtils.getLocalDateTimeAsString(time));
+    public File createStreamingOutputObjectsFile(Instant time, File parentDir) throws IOException {
+        String fileName = String.format("summary-report %s.json", TimeUtils.toIsoString(time));
         Path path = Paths.get(parentDir.toURI()).resolve(fileName).normalize().toAbsolutePath();
         Files.createDirectories(path.getParent());
         return path.toFile();
@@ -590,6 +592,10 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getInt("web.max.file.upload.cnt");
     }
 
+    public boolean isBroadcastJobStatusEnabled() {
+        return mpfPropertiesConfig.getBoolean("web.broadcast.job.status.enabled");
+    }
+
     //
     // Version information
     //
@@ -624,7 +630,7 @@ public class PropertiesUtil {
     }
 
     public String getAmqUri() {
-        return mpfPropertiesConfig.getString("mpf.output.objects.amq.broker.uri");
+        return mpfPropertiesConfig.getString("amq.broker.uri");
     }
 
     //
@@ -726,5 +732,26 @@ public class PropertiesUtil {
             Files.createDirectories(resourceDir);
         }
     }
+
+    public StorageBackend.Type getHttpObjectStorageType() {
+        return mpfPropertiesConfig.get(StorageBackend.Type.class, "http.object.storage.type");
+    }
+
+    public URI getHttpStorageServiceUri() {
+        return mpfPropertiesConfig.get(URI.class, "http.object.storage.service_uri");
+    }
+
+    public int getHttpStorageUploadThreadCount() {
+        return mpfPropertiesConfig.getInt("http.object.storage.upload.thread.count");
+    }
+
+    public int getHttpStorageUploadSegmentSize() {
+        return mpfPropertiesConfig.getInt("http.object.storage.upload.segment.size");
+    }
+
+    public int getHttpStorageUploadRetryCount() {
+        return mpfPropertiesConfig.getInt("http.object.storage.upload.retry.count");
+    }
+
 }
 

@@ -43,23 +43,21 @@ public class JobRouterRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(JobRouterRouteBuilder.class);
 
 	public static final String ENTRY_POINT = "direct:jobRouter";
-	public static final String EXIT_POINT = JobCompletedRouteBuilder.ENTRY_POINT;
 	public static final String ROUTE_ID = "Job Router Route";
 
-	private final String entryPoint, exitPoint, routeId;
+	private final String entryPoint, routeId;
 
 	public JobRouterRouteBuilder() {
-		this(ENTRY_POINT, EXIT_POINT, ROUTE_ID);
+		this(ENTRY_POINT, ROUTE_ID);
 	}
 
-	public JobRouterRouteBuilder(String entryPoint, String exitPoint, String routeId) {
+	public JobRouterRouteBuilder(String entryPoint, String routeId) {
 		this.entryPoint = entryPoint;
-		this.exitPoint = exitPoint;
 		this.routeId = routeId;
 	}
 
 	@Override
-	public void configure() throws Exception {
+	public void configure() {
 		log.debug("Configuring route '{}'.", routeId);
 
 		from(entryPoint)
@@ -68,7 +66,7 @@ public class JobRouterRouteBuilder extends RouteBuilder {
 			.choice()
 				.when(method(JobCompletePredicate.class))
 					.setHeader(MpfHeaders.JOB_STATUS).method(JobStatusCalculator.class)
-				.to(exitPoint)
+                    .process(JobCompleteProcessorImpl.REF)
 				.otherwise()
 					.split().method(DefaultStageSplitter.REF, "split")
 						.parallelProcessing() // Create work units and process them in any order.

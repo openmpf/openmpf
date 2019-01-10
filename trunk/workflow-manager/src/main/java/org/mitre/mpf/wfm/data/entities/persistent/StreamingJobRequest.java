@@ -29,7 +29,7 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.time.Instant;
 
 /**
  * This class includes the essential information which describes a streaming job. Instances of this class are stored in a
@@ -50,17 +50,15 @@ public class StreamingJobRequest {
 
 	/** The timestamp indicating when the server received this streaming job. */
 	@Column
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date timeReceived;
-	public Date getTimeReceived() { return timeReceived; }
-	public void setTimeReceived(Date timeReceived) { this.timeReceived = timeReceived; }
+	private Instant timeReceived;
+	public Instant getTimeReceived() { return timeReceived; }
+	public void setTimeReceived(Instant timeReceived) { this.timeReceived = timeReceived; }
 
 	/** The timestamp indicating when the server completed this streaming job.*/
 	@Column
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date timeCompleted;
-	public Date getTimeCompleted() { return timeCompleted; }
-	public void setTimeCompleted(Date timeCompleted) { this.timeCompleted = timeCompleted; }
+	private Instant timeCompleted;
+	public Instant getTimeCompleted() { return timeCompleted; }
+	public void setTimeCompleted(Instant timeCompleted) { this.timeCompleted = timeCompleted; }
 	
 	/** The priority of the job set when creating the streaming job.*/
 	@Column	
@@ -84,7 +82,7 @@ public class StreamingJobRequest {
         setStatusDetail(statusDetail);
     }
 
-    @Column
+    @Column(columnDefinition = "TEXT")
     private String statusDetail = null;
     public String getStatusDetail() { return statusDetail; }
     public void setStatusDetail(String statusDetail) { this.statusDetail = statusDetail; }
@@ -95,7 +93,7 @@ public class StreamingJobRequest {
 	public byte[] getInputObject() { return inputObject; }
 	public void setInputObject(byte[] inputObject) { this.inputObject = inputObject; }
 
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String outputObjectDirectory;
 	public String getOutputObjectDirectory() { return outputObjectDirectory; }
 	public void setOutputObjectDirectory(String outputObjectDirectory) { this.outputObjectDirectory = outputObjectDirectory; }
@@ -110,17 +108,17 @@ public class StreamingJobRequest {
 	public String getExternalId() { return externalId; }
 	public void setExternalId(String externalId) { this.externalId = externalId; }
 
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String streamUri;
 	public String getStreamUri() { return streamUri; }
 	public void setStreamUri(String streamUri) { this.streamUri = streamUri; }
 
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String healthReportCallbackUri;
 	public String getHealthReportCallbackUri() { return healthReportCallbackUri; }
 	public void setHealthReportCallbackUri(String healthReportCallbackUri) { this.healthReportCallbackUri = healthReportCallbackUri; }
 
-	@Column
+	@Column(columnDefinition = "TEXT")
 	private String summaryReportCallbackUri;
 	public String getSummaryReportCallbackUri() { return summaryReportCallbackUri; }
 	public void setSummaryReportCallbackUri(String summaryReportCallbackUri) { this.summaryReportCallbackUri = summaryReportCallbackUri; }
@@ -136,10 +134,9 @@ public class StreamingJobRequest {
     public String getActivityFrameId() { return activityFrameId; }
 
     @Column
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date activityTimestamp;
-    public Date getActivityTimestamp() { return activityTimestamp; }
-    public void setActivityTimestamp(Date activityTimestamp) { this.activityTimestamp = activityTimestamp; }
+    private Instant activityTimestamp;
+    public Instant getActivityTimestamp() { return activityTimestamp; }
+    public void setActivityTimestamp(Instant activityTimestamp) { this.activityTimestamp = activityTimestamp; }
 
 
     public String toString() { return String.format("%s#<id='%d'>", this.getClass().getSimpleName(), getId()); }

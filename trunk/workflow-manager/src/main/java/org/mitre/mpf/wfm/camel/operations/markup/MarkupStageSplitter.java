@@ -35,7 +35,6 @@ import org.mitre.mpf.videooverlay.BoundingBoxMap;
 import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.transients.*;
@@ -52,8 +51,8 @@ import org.springframework.stereotype.Component;
 
 import java.awt.*;
 import java.io.File;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.stream.DoubleStream;
 
 @Component(MarkupStageSplitter.REF)
@@ -62,7 +61,6 @@ public class MarkupStageSplitter implements StageSplitter {
 	private static final Logger log = LoggerFactory.getLogger(MarkupStageSplitter.class);
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
 	private Redis redis;
 
 	@Autowired

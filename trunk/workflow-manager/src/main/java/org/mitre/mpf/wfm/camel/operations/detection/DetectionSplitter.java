@@ -32,7 +32,6 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
@@ -60,7 +59,6 @@ public class DetectionSplitter implements StageSplitter {
     public static final String REF = "detectionStageSplitter";
 
     @Autowired
-    @Qualifier(RedisImpl.REF)
     private Redis redis;
 
     @Autowired

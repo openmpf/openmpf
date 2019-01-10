@@ -35,7 +35,6 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.camel.routes.JobCreatorRouteBuilder;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
@@ -100,7 +99,6 @@ public class JobRequestBoImpl implements JobRequestBo {
     private JmsUtils jmsUtils;
 
     @Autowired
-    @Qualifier(RedisImpl.REF)
     private Redis redis;
 
     @Autowired
@@ -319,9 +317,6 @@ public class JobRequestBoImpl implements JobRequestBo {
         FileSystemUtils.deleteRecursively(propertiesUtil.getJobArtifactsDirectory(jobId));
         FileSystemUtils.deleteRecursively(propertiesUtil.getJobOutputObjectsDirectory(jobId));
         FileSystemUtils.deleteRecursively(propertiesUtil.getJobMarkupDirectory(jobId));
-
-        redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
-        jobStatusBroadcaster.broadcast(jobId, 0, BatchJobStatusType.IN_PROGRESS);
 
         return runInternal(jobRequest, jsonJobRequest, priority);
     }

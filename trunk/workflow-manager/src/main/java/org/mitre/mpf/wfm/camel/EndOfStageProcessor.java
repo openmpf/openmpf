@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.camel;
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -38,7 +37,6 @@ import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -49,7 +47,6 @@ public class EndOfStageProcessor extends WfmProcessor {
 	private static final Logger log = LoggerFactory.getLogger(EndOfStageProcessor.class);
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
 	private Redis redis;
 	
 	@Autowired

@@ -50,10 +50,9 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.*;
 
 
-@Component(RedisImpl.REF)
+@Component
 public class RedisImpl implements Redis {
 
-    public static final String REF = "redisImpl";
     private static final Logger log = LoggerFactory.getLogger(RedisImpl.class);
 
     @Autowired
@@ -911,7 +910,7 @@ public class RedisImpl implements Redis {
             return batchExternalId;
         }
 
-        String streamingExternalId = getHashValue(key(BATCH_JOB, jobId), EXTERNAL_ID);
+        String streamingExternalId = getHashValue(key(STREAMING_JOB, jobId), EXTERNAL_ID);
         if (streamingExternalId != null || isJobTypeStreaming(jobId)) {
             return streamingExternalId;
         }
@@ -978,6 +977,7 @@ public class RedisImpl implements Redis {
     public synchronized void setDoCleanup(long jobId, boolean doCleanup) {
         if (isJobTypeStreaming(jobId)) {
             redisTemplate.boundHashOps(key(STREAMING_JOB, jobId)).put(DO_CLEANUP, doCleanup);
+            return;
         }
         throwIfBatchJob(jobId);
         throw new WfmProcessingException(String.format(

@@ -516,7 +516,7 @@ public class JobController {
             }
         } catch (WfmProcessingException wpe) {
             String errorStr = "Failed to resubmit the job with id '" + Long.toString(jobId) + "'. " + wpe.getMessage();
-            log.error(errorStr);
+            log.error(errorStr, wpe);
             return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
         }
         String errorStr = "Failed to resubmit the job with id '" + Long.toString(jobId) + "'. Please check to make sure the job exists before submitting a resubmit request. "

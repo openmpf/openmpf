@@ -33,7 +33,6 @@ import org.mitre.mpf.interop.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
@@ -109,7 +108,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     private JsonUtils jsonUtils;
 
     @Autowired
-    @Qualifier(RedisImpl.REF)
     private Redis redis;
 
     @Autowired

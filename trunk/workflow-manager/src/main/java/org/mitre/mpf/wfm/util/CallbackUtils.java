@@ -41,12 +41,10 @@ import org.mitre.mpf.interop.JsonSegmentSummaryReport;
 import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -73,7 +71,6 @@ public class CallbackUtils {
     private JsonUtils jsonUtils;
 
     @Autowired
-    @Qualifier(RedisImpl.REF)
     private Redis redis;
 
     private static CloseableHttpAsyncClient httpAsyncClient;

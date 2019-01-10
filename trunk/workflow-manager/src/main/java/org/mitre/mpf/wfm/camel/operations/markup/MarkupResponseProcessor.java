@@ -31,7 +31,6 @@ import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.camel.ResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
@@ -58,7 +57,6 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
 	}
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
 	private Redis redis;
 
 	@Autowired

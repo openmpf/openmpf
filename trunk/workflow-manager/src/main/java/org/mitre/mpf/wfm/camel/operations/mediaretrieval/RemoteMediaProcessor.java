@@ -31,7 +31,6 @@ import org.apache.commons.io.FileUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -53,7 +52,6 @@ public class RemoteMediaProcessor extends WfmProcessor {
 	private static final Logger log = LoggerFactory.getLogger(RemoteMediaProcessor.class);
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
 	private Redis redis;
 
 	@Autowired

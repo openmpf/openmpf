@@ -40,7 +40,6 @@ import org.mitre.mpf.framecounter.FrameCounter;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -48,7 +47,6 @@ import org.mitre.mpf.wfm.util.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -69,7 +67,6 @@ public class MediaInspectionProcessor extends WfmProcessor {
 	private IoUtils ioUtils;
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
 	private Redis redis;
 
 	@Override

@@ -30,12 +30,10 @@ import com.google.protobuf.MessageLite;
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.util.Map;
 
@@ -43,7 +41,6 @@ public abstract class ResponseProcessor<T extends MessageLite> extends WfmProces
 	private static final Logger log = LoggerFactory.getLogger(ResponseProcessor.class);
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
 	protected Redis redis;
 
 	protected Class<T> clazz;

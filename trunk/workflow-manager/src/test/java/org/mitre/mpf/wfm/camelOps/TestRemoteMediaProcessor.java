@@ -26,18 +26,14 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
-import java.net.URI;
-import java.util.List;
-import java.util.UUID;
-import javax.annotation.PostConstruct;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultExchange;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.mpf.test.MockRedisConfig;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.WfmSplitterInterface;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
@@ -53,20 +49,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
+import javax.annotation.PostConstruct;
+import java.net.URI;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+
+@ContextConfiguration(classes = MockRedisConfig.class)
 @RunWith(SpringJUnit4ClassRunner.class)
 public class TestRemoteMediaProcessor {
 	private static final Logger log = LoggerFactory.getLogger(TestRemoteMediaProcessor.class);
 	private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 	private static final String EXT_IMG = "https://raw.githubusercontent.com/openmpf/openmpf/master/trunk/mpf-system-tests/src/test/resources/samples/face/meds-aa-S001-01.jpg";
-
-
-	@Autowired
-	private ApplicationContext context;
 
 	@Autowired
 	private CamelContext camelContext;
@@ -90,17 +87,13 @@ public class TestRemoteMediaProcessor {
 
 	private TransientJob transientJob;
 
-	private static final MutableInt SEQUENCE = new MutableInt();
+	private static final AtomicInteger SEQUENCE = new AtomicInteger();
 	public int next() {
-		synchronized (SEQUENCE) {
-			int next = SEQUENCE.getValue();
-			SEQUENCE.increment();
-			return next;
-		}
+		return SEQUENCE.getAndIncrement();
 	}
 
 	@PostConstruct
-	public void init() throws Exception {
+	public void init() {
 		setHttpProxies();
 
 		// Capture a snapshot of the detection system property settings when the job is created.

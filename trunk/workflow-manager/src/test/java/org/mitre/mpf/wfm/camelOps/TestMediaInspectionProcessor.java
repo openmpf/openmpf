@@ -30,15 +30,13 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
+import org.mitre.mpf.test.MockRedisConfig;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
-import org.mitre.mpf.wfm.camel.WfmSplitterInterface;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
-import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
-import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.IoUtils;
@@ -47,19 +45,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
+import java.util.concurrent.atomic.AtomicInteger;
+
+@ContextConfiguration(classes = MockRedisConfig.class)
 @RunWith(SpringJUnit4ClassRunner.class)
 @RunListener.ThreadSafe
 public class TestMediaInspectionProcessor {
 	private static final Logger log = LoggerFactory.getLogger(TestMediaInspectionProcessor.class);
 	private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
-
-	@Autowired
-	private ApplicationContext context;
 
 	@Autowired
 	private CamelContext camelContext;
@@ -68,27 +64,17 @@ public class TestMediaInspectionProcessor {
 	@Qualifier(MediaInspectionProcessor.REF)
 	private WfmProcessorInterface mediaInspectionProcessor;
 
-	@Autowired
-	@Qualifier(MediaInspectionSplitter.REF)
-	private WfmSplitterInterface mediaInspectionSplitter;
-
     @Autowired
     private IoUtils ioUtils;
 
     @Autowired
     private JsonUtils jsonUtils;
 
-    @Autowired
-    private Redis redis;
-
-    private static final MutableInt SEQUENCE = new MutableInt();
+    private static final AtomicInteger SEQUENCE = new AtomicInteger();
     public int next() {
-        synchronized (SEQUENCE) {
-            int next = SEQUENCE.getValue();
-            SEQUENCE.increment();
-            return next;
-        }
+        return SEQUENCE.getAndIncrement();
     }
+
 
 	@Test(timeout = 5 * MINUTES)
 	public void testImageInspection() throws Exception {

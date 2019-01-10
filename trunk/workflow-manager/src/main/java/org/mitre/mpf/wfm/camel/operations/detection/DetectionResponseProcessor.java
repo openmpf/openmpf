@@ -80,18 +80,30 @@ public class DetectionResponseProcessor
 				detectionResponse.getStageName(),
 				detectionResponse.getActionName());
 
-		if(detectionResponse.getError() != DetectionProtobuf.DetectionError.NO_DETECTION_ERROR) {
+		if (detectionResponse.getError() != DetectionProtobuf.DetectionError.NO_DETECTION_ERROR) {
+			DetectionProcessingError detectionProcessingError = new DetectionProcessingError(
+					jobId,
+					detectionResponse.getMediaId(),
+					detectionResponse.getStageIndex(),
+					detectionResponse.getActionIndex(),
+					detectionResponse.getStartIndex(),
+					detectionResponse.getStopIndex(),
+					Objects.toString(detectionResponse.getError()));
+			redis.addDetectionProcessingError(detectionProcessingError);
 
 			// Some error occurred during detection. Store this error.
-			if(detectionResponse.getError() != DetectionProtobuf.DetectionError.REQUEST_CANCELLED) {
-			    log.warn("[{}] Encountered a detection error while processing Media #{} [{}, {}]: {}", logLabel, detectionResponse.getMediaId(), detectionResponse.getStartIndex(), detectionResponse.getStopIndex(), detectionResponse.getError());
-			} else {
-				log.debug("[{}] Encountered a detection error while processing Media #{} [{}, {}]: {}", logLabel, detectionResponse.getMediaId(), detectionResponse.getStartIndex(), detectionResponse.getStopIndex(), detectionResponse.getError());
+			if (detectionResponse.getError() == DetectionProtobuf.DetectionError.REQUEST_CANCELLED) {
+				log.debug("[{}] Encountered a detection error while processing Media #{} [{}, {}]: {}",
+				          logLabel, detectionResponse.getMediaId(), detectionResponse.getStartIndex(),
+				          detectionResponse.getStopIndex(), detectionResponse.getError());
+				redis.setJobStatus(jobId, BatchJobStatusType.CANCELLING);
 			}
-
-			DetectionProcessingError detectionProcessingError = new DetectionProcessingError(jobId, detectionResponse.getMediaId(), detectionResponse.getStageIndex(), detectionResponse.getActionIndex(), detectionResponse.getStartIndex(), detectionResponse.getStopIndex(), Objects.toString(detectionResponse.getError()));
-			redis.addDetectionProcessingError(detectionProcessingError);
-			redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+			else {
+				log.warn("[{}] Encountered a detection error while processing Media #{} [{}, {}]: {}", logLabel,
+				         detectionResponse.getMediaId(), detectionResponse.getStartIndex(),
+				         detectionResponse.getStopIndex(), detectionResponse.getError());
+				redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+			}
 		}
 
 		if (detectionResponse.getAudioResponsesCount() == 0

@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.camel;
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
@@ -50,7 +49,6 @@ public class JobStatusCalculator {
     private static final Logger log = LoggerFactory.getLogger(JobStatusCalculator.class);
 
     @Autowired
-    @Qualifier(RedisImpl.REF)
     private Redis redis;
 
     @Autowired

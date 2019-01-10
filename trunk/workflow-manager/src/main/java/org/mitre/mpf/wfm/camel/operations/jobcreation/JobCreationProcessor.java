@@ -34,7 +34,6 @@ import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
@@ -72,7 +71,6 @@ public class JobCreationProcessor extends WfmProcessor {
     private PropertiesUtil propertiesUtil;
 
     @Autowired
-	@Qualifier(RedisImpl.REF)
 	private Redis redis;
 
 	@Autowired
@@ -157,6 +155,7 @@ public class JobCreationProcessor extends WfmProcessor {
 			if(jobId == null) {
 				// A persistent representation of the object has not yet been created, so do that now.
 				jobRequestEntity = jobRequestBo.initialize(jobRequest);
+				jobId = jobRequestEntity.getId();
 			} else {
 				// The persistent representation already exists - retrieve it.
 				jobRequestEntity = jobRequestDao.findById(jobId);
@@ -187,7 +186,7 @@ public class JobCreationProcessor extends WfmProcessor {
 			}
 
 			BatchJobStatusType jobStatus;
-			if (transientJob.getMedia().stream().anyMatch(m -> m.isFailed())) {
+			if (transientJob.getMedia().stream().anyMatch(TransientMedia::isFailed)) {
 				jobStatus = BatchJobStatusType.ERROR;
 				// allow the job to run since some of the media may be good
 			} else {

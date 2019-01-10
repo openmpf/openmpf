@@ -105,6 +105,8 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 			ContextRefreshedEvent contextRefreshedEvent = (ContextRefreshedEvent) event;
 			ApplicationContext appContext = contextRefreshedEvent.getApplicationContext();
 
+			ThreadUtil.start();
+
 			if (!applicationRefreshed) {
 				log.info("onApplicationEvent: " + appContext.getDisplayName() + " " + appContext.getId()); // DEBUG
 

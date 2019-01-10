@@ -58,12 +58,12 @@ public @interface SpringTestWithMocks {
 
         @Override
         public void beforeTestClass(TestContext testContext) {
-            testContext.markApplicationContextDirty(DirtiesContext.HierarchyMode.EXHAUSTIVE);
+            testContext.markApplicationContextDirty(DirtiesContext.HierarchyMode.CURRENT_LEVEL);
         }
 
         @Override
         public void afterTestClass(TestContext testContext) {
-            testContext.markApplicationContextDirty(DirtiesContext.HierarchyMode.EXHAUSTIVE);
+            testContext.markApplicationContextDirty(DirtiesContext.HierarchyMode.CURRENT_LEVEL);
         }
     }
 }

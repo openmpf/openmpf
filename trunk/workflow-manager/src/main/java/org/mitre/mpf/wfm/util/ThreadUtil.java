@@ -32,7 +32,7 @@ import java.util.function.*;
 
 public class ThreadUtil {
 
-    public static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
+    private static ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
 
     private ThreadUtil() {
     }
@@ -69,6 +69,11 @@ public class ThreadUtil {
         public void run() throws Exception;
     }
 
+    public static void start() {
+        if (THREAD_POOL.isShutdown()) {
+            THREAD_POOL = Executors.newCachedThreadPool();
+        }
+    }
 
     public static void shutdown() {
         try {

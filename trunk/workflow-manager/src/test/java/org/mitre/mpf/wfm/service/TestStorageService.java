@@ -33,10 +33,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
@@ -47,6 +44,7 @@ import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.JniLoader;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
@@ -85,6 +83,12 @@ public class TestStorageService {
     @BeforeClass
     public static void initClass() {
         assertTrue(JniLoader.isLoaded()); // Forces static initializer to run
+        ThreadUtil.start();
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+        ThreadUtil.shutdown();
     }
 
     @Before

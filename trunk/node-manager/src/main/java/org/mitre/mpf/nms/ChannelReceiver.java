@@ -156,12 +156,14 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
                         if (!mgr.doesHostMatch(propertiesUtil.getThisMpfNode())) { // don't warn about self
                             LOG.warn("New node-manager is online that wasn't preconfigured. Treating as a spare node.");
                         }
-                        // Issue the callback
-                        if (notifier != null) {
-                            notifier.newManager(mgr.getHostname());
-                        }
                     }
+                    boolean isNew = !mgr.isAlive(); // if this is a new node-manager, it hasn't been active until now
                     mgr.setLastKnownState(NodeManagerConstants.States.Running);
+                    // Issue the callback
+                    if (notifier != null && isNew) {
+                        // Call this whenever a node-manager becomes available to launch services.
+                        notifier.newManager(mgr.getHostname());
+                    }
                     synchronized (nodeTable) {
                         nodeTable.put(mgrHost, mgr);
                     }

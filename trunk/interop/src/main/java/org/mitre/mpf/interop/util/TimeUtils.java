@@ -26,85 +26,34 @@
 
 package org.mitre.mpf.interop.util;
 
-import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
-
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.Date;
 
 public class TimeUtils {
 
-    // All timestamps in OpenMPF should adhere to this date/time pattern.
-    public static final String TIMESTAMP_PATTERN = "yyyy-MM-dd HH:mm:ss.S";
+    // Example: 2018-12-19T12:12:59.995-05:00
+    private static final DateTimeFormatter timestampFormatter
+            = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault());
 
-    // The timestampFormatter must remain as a static, or the jackson conversion to JSON will no longer work
-    private static final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN);
 
-    /**
-     * Parse the timestamp String into a LocalDateTime using the date/time pattern adhered to by OpenMPF.
-     * @param timestampStr timestamp String, may not be null
-     * @return timestamp as a LocalDateTime
-     * @throws MpfInteropUsageException is thrown if the timestamp String is null. Throws DateTimeParseException if the timestamp String isn't parsable
-     * using the date/time pattern adhered to by OpenMPF.
-     */
-    public static LocalDateTime parseStringAsLocalDateTime(String timestampStr) throws MpfInteropUsageException, DateTimeParseException {
-        if ( timestampStr == null ) {
-            throw new MpfInteropUsageException("Error, timestamp String may not be null");
-        } else {
-            return timestampFormatter.parse(timestampStr, LocalDateTime::from);
-        }
+    private TimeUtils() {
     }
 
-    /**
-     * Format the LocalDateTime as a timestamp String using the date/time pattern adhered to by OpenMPF.
-     * @param timestamp timestamp as a LocalDateTime. May be null.
-     * @return timestamp as a String, will be null if timestamp is null.
-     */
-    public static String getLocalDateTimeAsString(LocalDateTime timestamp) {
-        if ( timestamp == null ) {
-            return null;
-        } else {
-            return timestampFormatter.format(timestamp);
-        }
+    public static String toIsoString(Instant instant) {
+        return instant == null
+                ? null
+                : timestampFormatter.format(instant);
     }
 
-    /**
-     * Parse the timestamp String into a Date using the date/time pattern adhered to by OpenMPF.
-     * @param timestamp timestamp String, may not be null
-     * @return timestamp as a Date
-     * @throws MpfInteropUsageException is thrown if the timestamp String is null. Throws DateTimeParseException if the timestamp String isn't parsable
-     * using the date/time pattern adhered to by OpenMPF.
-     */
-    public static Date parseStringAsDate(String timestamp) throws DateTimeParseException, MpfInteropUsageException {
-        if ( timestamp == null ) {
-            throw new MpfInteropUsageException("Error, timestamp may not be null.");
-        } else {
-            return Date.from(parseStringAsLocalDateTime(timestamp).atZone(ZoneId.systemDefault()).toInstant());
-        }
+    public static String toIsoString(long millis) {
+        return toIsoString(Instant.ofEpochMilli(millis));
     }
 
-    /**
-     * Format the Date as a timestamp String using the date/time pattern adhered to by OpenMPF.
-     * @param date timestamp as a Date. May be null.
-     * @return timestamp as a String in the system time zone, or null if timestamp is null.
-     */
-    public static String getDateAsString(Date date) {
-        if ( date == null ) {
-            return null;
-        } else {
-            LocalDateTime timestamp = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-            return timestampFormatter.format(timestamp);
-        }
-    }
 
-    public static LocalDateTime millisToDateTime(long millis) {
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneId.systemDefault());
-    }
-
-    public static String millisToDateTimeString(long milllis) {
-        return getLocalDateTimeAsString(millisToDateTime(milllis));
+    public static Instant toInstant(String isoString) {
+        return isoString == null
+                ? null
+                : timestampFormatter.parse(isoString, Instant::from);
     }
 }

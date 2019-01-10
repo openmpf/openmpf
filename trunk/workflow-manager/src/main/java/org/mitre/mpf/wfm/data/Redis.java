@@ -34,11 +34,8 @@ import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
 import java.time.DateTimeException;
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
+import java.time.Instant;
+import java.util.*;
 
 @Monitored
 public interface Redis {
@@ -312,15 +309,15 @@ public interface Redis {
 	 */
     boolean isJobTypeStreaming(final long jobId);
 
-    void setStreamingActivity(long jobId, long activityFrameId, LocalDateTime activityTimestamp) throws WfmProcessingException;
+    void setStreamingActivity(long jobId, long activityFrameId, Instant activityTimestamp) throws WfmProcessingException;
 
     String getActivityFrameIdAsString(long jobId) throws WfmProcessingException;
     List<String> getActivityFrameIdsAsStrings(List<Long> jobIds) throws WfmProcessingException;
 
-    LocalDateTime getActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
+    Instant getActivityTimestamp(long jobId) throws WfmProcessingException, DateTimeException;
     String getActivityTimestampAsString(long jobId) throws WfmProcessingException;
 
-    List<LocalDateTime> getActivityTimestamps(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
+    List<Instant> getActivityTimestamps(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
 	List<String> getActivityTimestampsAsStrings(List<Long> jobIds) throws WfmProcessingException, DateTimeException;
 
 	List<Long> getCurrentStreamingJobs(List<Long> jobIds, boolean isActive );
@@ -338,4 +335,14 @@ public interface Redis {
      * @return true if the flag is set and cleanup should be performed; false otherwise
      */
     boolean getDoCleanup(long jobId);
+
+    void addJobWarning(long jobId, String message);
+
+    Set<String> getJobWarnings(long jobId);
+
+    void addJobError(long jobId, String message);
+
+    Set<String> getJobErrors(long jobId);
+
+    TransientDetectionSystemProperties getPropertiesSnapshot(long jobId);
 }

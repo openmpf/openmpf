@@ -26,9 +26,11 @@
 
 package org.mitre.mpf.mvc.controller;
 
- import org.mitre.mpf.mvc.model.PropertyModel;
+import org.mitre.mpf.mvc.model.AtmosphereChannel;
+import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.util.MpfPropertiesConfigurationBuilder;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,6 +141,8 @@ public class AdminPropertySettingsController
             mpfService.deleteStandardSystemMessage("eServerPropertiesChanged");
         }
 
+        AtmosphereController.broadcast(AtmosphereChannel.SSPC_PROPERTIES_CHANGED);
+
         // Get an updated list of property models. Adjust the returned list of PropertyModels so they will indicate
         // whether or not a WFM restart is required to apply a change.
         Set<String> savedProperties = propertyModels.stream()
@@ -157,4 +161,15 @@ public class AdminPropertySettingsController
 	public int getDefaultJobPriority() {
 		return propertiesUtil.getJmsPriority();
 	}
+
+
+	@RequestMapping(value = "/properties/{propertyName:.+}", method = RequestMethod.GET)
+	public ResponseEntity<?> getProperty(@PathVariable String propertyName) {
+        String propertyValue = propertiesUtil.lookup(propertyName);
+        if (propertyValue == null) {
+            return ResponseEntity.notFound().build();
+        }
+        boolean isMutable = MpfPropertiesConfigurationBuilder.isMutableProperty(propertyName);
+        return ResponseEntity.ok(new PropertyModel(propertyName, propertyValue, !isMutable));
+    }
 }

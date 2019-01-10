@@ -27,7 +27,6 @@
 package org.mitre.mpf.wfm;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
@@ -40,6 +39,7 @@ import org.mitre.mpf.rest.api.MpfResponse;
 import org.mitre.mpf.rest.api.StreamingJobCancelResponse;
 import org.mitre.mpf.rest.api.StreamingJobInfo;
 import org.mitre.mpf.wfm.service.component.ComponentRegistrationException;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Spark;
@@ -85,8 +85,7 @@ public class ITWebStreamingReports {
 
     private static final Logger log = LoggerFactory.getLogger(ITWebStreamingReports.class);
 
-    // The health report uses Java8 time, so we need to include the external JavaTimeModule which provides support for Java 8 Time.
-    private static ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private static final ObjectMapper objectMapper = ObjectMapperFactory.customObjectMapper();
 
     private static long postJobId1 = -1L;
     private static long postJobId2 = -1L;

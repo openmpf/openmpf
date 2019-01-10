@@ -28,8 +28,8 @@ package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.*;
 import org.mitre.mpf.interop.util.CompareUtils;
-import org.mitre.mpf.interop.util.TimeUtils;
 
+import java.time.Instant;
 import java.util.*;
 
 import static org.mitre.mpf.interop.util.CompareUtils.nullsFirst;
@@ -53,12 +53,12 @@ public class JsonStreamingTrackOutputObject implements Comparable<JsonStreamingT
 	public int getStopOffsetFrame() { return stopOffsetFrame; }
 
 	@JsonPropertyDescription("The date and time that the beginning of this track was detected")
-	private final String startTimestamp;
-	public String getStartTimestamp() { return startTimestamp; }
+	private final Instant startTimestamp;
+	public Instant getStartTimestamp() { return startTimestamp; }
 
 	@JsonPropertyDescription("The date and time that the end of this track was detected")
-	private final String stopTimestamp;
-	public String getStopTimestamp() { return stopTimestamp; }
+	private final Instant stopTimestamp;
+	public Instant getStopTimestamp() { return stopTimestamp; }
 
 	@JsonPropertyDescription("The type of object associated with this track.")
 	private final String type;
@@ -92,40 +92,14 @@ public class JsonStreamingTrackOutputObject implements Comparable<JsonStreamingT
 	public SortedSet<JsonStreamingDetectionOutputObject> getDetections() { return detections; }
 
 
-	public JsonStreamingTrackOutputObject(
-			String id,
-			int startOffsetFrame,
-			int stopOffsetFrame,
-			long startTimestampMillis,
-			long stopTimestampMillis,
-			String type,
-			/* String source, */
-			float confidence,
-			Map<String, String> trackProperties,
-			JsonStreamingDetectionOutputObject exemplar,
-			Collection<JsonStreamingDetectionOutputObject> detections) {
-
-		this(id,
-		     startOffsetFrame,
-		     stopOffsetFrame,
-		     TimeUtils.millisToDateTimeString(startTimestampMillis),
-		     TimeUtils.millisToDateTimeString(stopTimestampMillis),
-		     type,
-             /* source, */
-             confidence,
-             trackProperties,
-		     exemplar,
-		     detections);
-	}
-
 
 	@JsonCreator
 	public JsonStreamingTrackOutputObject(
 			@JsonProperty("id") String id,
 			@JsonProperty("startOffsetFrame") int startOffsetFrame,
 			@JsonProperty("stopOffsetFrame") int stopOffsetFrame,
-			@JsonProperty("startTimestamp") String startTimestamp,
-			@JsonProperty("stopTimestamp") String stopTimestamp,
+			@JsonProperty("startTimestamp") Instant startTimestamp,
+			@JsonProperty("stopTimestamp") Instant stopTimestamp,
 			@JsonProperty("type") String type,
 			/* @JsonProperty("source") String source, */
             @JsonProperty("confidence") float confidence,

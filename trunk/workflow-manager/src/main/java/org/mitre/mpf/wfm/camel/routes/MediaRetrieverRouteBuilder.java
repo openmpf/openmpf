@@ -28,10 +28,7 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.camel.JobRetrievalProcessor;
-import org.mitre.mpf.wfm.camel.SplitCompletedPredicate;
-import org.mitre.mpf.wfm.camel.StringCountBasedWfmAggregator;
-import org.mitre.mpf.wfm.camel.WfmAggregator;
+import org.mitre.mpf.wfm.camel.*;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -66,7 +63,7 @@ public class MediaRetrieverRouteBuilder extends RouteBuilder {
 	}
 
 	@Override
-	public void configure() throws Exception {
+	public void configure() {
 		from(entryPoint)
 			.routeId(ROUTE_ID)
 				.setExchangePattern(ExchangePattern.InOnly)
@@ -77,7 +74,7 @@ public class MediaRetrieverRouteBuilder extends RouteBuilder {
 				.when(header(MpfHeaders.SPLITTING_ERROR).isEqualTo(Boolean.TRUE))
 					.removeHeader(MpfHeaders.SPLITTING_ERROR)
 					.setHeader(MpfHeaders.JOB_STATUS, constant(BatchJobStatusType.ERROR.name()))
-					.to(JobCompletedRouteBuilder.ENTRY_POINT)
+                    .process(JobCompleteProcessorImpl.REF)
 				.when(header(MpfHeaders.EMPTY_SPLIT).isEqualTo(Boolean.TRUE))
 					.removeHeader(MpfHeaders.EMPTY_SPLIT)
 					.process(JobRetrievalProcessor.REF)

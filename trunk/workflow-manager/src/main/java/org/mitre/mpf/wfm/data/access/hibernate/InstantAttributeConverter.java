@@ -24,25 +24,30 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.interop;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+package org.mitre.mpf.wfm.data.access.hibernate;
 
-@JsonTypeName("OutputObjectSummary")
-public class JsonOutputObjectSummary {
+import javax.persistence.AttributeConverter;
+import javax.persistence.Converter;
+import java.sql.Timestamp;
+import java.time.Instant;
 
-	@JsonProperty("detectionOutputObjectPath")
-	@JsonPropertyDescription("The path to the detection output object for this job.")
-	private String detectionOutputObjectPath;
-	public String getDetectionOutputObjectPath() { return detectionOutputObjectPath; }
+@SuppressWarnings("unused")
+@Converter(autoApply = true)
+// Allows Hibernate entities to have fields of type java.time.Instant which get properly mapped to a database column.
+public class InstantAttributeConverter implements AttributeConverter<Instant, Timestamp> {
 
+    @Override
+    public Timestamp convertToDatabaseColumn(Instant instant) {
+        return instant == null
+                ? null
+                : Timestamp.from(instant);
+    }
 
-
-	@JsonCreator
-	public JsonOutputObjectSummary(@JsonProperty("detectionOutputObjectPath") String detectionOutputObjectPath) {
-		this.detectionOutputObjectPath = detectionOutputObjectPath;
-	}
+    @Override
+    public Instant convertToEntityAttribute(Timestamp timestamp) {
+        return timestamp == null
+                ? null
+                : timestamp.toInstant();
+    }
 }

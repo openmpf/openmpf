@@ -36,8 +36,10 @@ import org.json.simple.parser.JSONParser;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonCallbackBody;
+import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.ui.Utils;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -101,7 +103,7 @@ public class ITWebREST {
 
 	private static final Logger log = LoggerFactory.getLogger(ITWebREST.class);
 
-	private static ObjectMapper objectMapper = new ObjectMapper();
+	private static final ObjectMapper objectMapper = ObjectMapperFactory.customObjectMapper();
 
 	private static long job_created_id = -1L;
 	private static boolean test_ready = true;
@@ -359,9 +361,9 @@ public class ITWebREST {
 		log.debug("[Jobs_Status] job :" + job);
 		if(job.getLong("jobId") == job_created_id){
 			log.info("[Jobs_Status] job found :" + job);
-			Assert.assertTrue(job.getLong("startDate") > 0);
+			Assert.assertTrue(TimeUtils.toInstant(job.getString("startDate")).toEpochMilli() > 0);
 			Assert.assertTrue(job.getInt("jobId") > 0);
-			Assert.assertTrue(job.getLong("endDate") > 0);
+			Assert.assertTrue(TimeUtils.toInstant(job.getString("endDate")).toEpochMilli() > 0);
 			Assert.assertTrue(job.getString("pipelineName").length() > 0);
 			Assert.assertTrue(job.getString("pipelineName").equals(TEST_PIPELINE_NAME));
 			Assert.assertTrue(job.getString("jobStatus").equals("COMPLETE"));

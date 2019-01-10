@@ -84,11 +84,12 @@ public class RemoteMediaProcessor extends WfmProcessor {
 						log.debug("Successfully retrieved {} and saved it to '{}'.", transientMedia.getUri(), transientMedia.getLocalPath());
 						transientMedia.setFailed(false);
 						break;
-					} catch (IOException ioe) { // "javax.net.ssl.SSLException: SSL peer shut down incorrectly" has been observed
-						log.warn("Failed to retrieve {}.", transientMedia.getUri(), ioe);
-						// Try to delete the local file, but do not throw an exception if this operation fails.
-						deleteOrLeakFile(localFile);
-						errorMessage = ioe.toString();
+					} catch (IOException e) { // "javax.net.ssl.SSLException: SSL peer shut down incorrectly" has been observed.
+						errorMessage = handleMediaRetrievalException(transientMedia, localFile, e);
+					} catch (Exception e) { // specifying "http::" will cause an IllegalArgumentException
+						errorMessage = handleMediaRetrievalException(transientMedia, localFile, e);
+						handleMediaRetrievalFailure(exchange, transientMedia, errorMessage);
+						break; // exception is not recoverable
 					}
 
 					if (i < propertiesUtil.getRemoteMediaDownloadRetries()) {
@@ -102,9 +103,7 @@ public class RemoteMediaProcessor extends WfmProcessor {
 							break; // abort download attempt
 						}
 					} else {
-						transientMedia.setFailed(true);
-						transientMedia.setMessage("Error retrieving media and saving it to temp file: " + errorMessage);
-						redis.setJobStatus(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class), BatchJobStatusType.IN_PROGRESS_ERRORS);
+						handleMediaRetrievalFailure(exchange, transientMedia, errorMessage);
 					}
 				}
 
@@ -132,5 +131,18 @@ public class RemoteMediaProcessor extends WfmProcessor {
 		} catch(Exception exception) {
 			log.warn("Failed to delete the local file '{}'. If it exists, it must be deleted manually.", file);
 		}
+	}
+
+	private String handleMediaRetrievalException(TransientMedia transientMedia, File localFile, Exception e) {
+		log.warn("Failed to retrieve {}.", transientMedia.getUri(), e);
+		// Try to delete the local file, but do not throw an exception if this operation fails.
+		deleteOrLeakFile(localFile);
+		return e.toString();
+	}
+
+	private void handleMediaRetrievalFailure(Exchange exchange, TransientMedia transientMedia, String errorMessage) {
+		transientMedia.setFailed(true);
+		transientMedia.setMessage("Error retrieving media and saving it to temp file: " + errorMessage);
+		redis.setJobStatus(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class), BatchJobStatusType.ERROR);
 	}
 }

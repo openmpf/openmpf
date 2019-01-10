@@ -26,10 +26,7 @@
 
 package org.mitre.mpf.interop;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -38,6 +35,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 
 @JsonTypeName("MarkupOutputObject")
+@JsonPropertyOrder({"mediaId", "path", "detectionProcessingErrors"})
 public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> {
 
 	@JsonProperty("mediaId")
@@ -105,7 +103,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	public JsonMediaOutputObject(long mediaId, String path, String mimeType, int length, String sha256, String message,
 								 String status) {
 		this.mediaId = mediaId;
-		this.path = path;
+		this.path = fixPath(path);
 		this.mimeType = mimeType;
 		this.length = length;
 		this.sha256 = sha256;
@@ -190,4 +188,13 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 			return 0;
 		}
 	}
+
+	private String fixPath(String path) {
+	    if (path.startsWith("file:")) {
+	        // Java URIs take form "file:/", but we want "file:///" to represent a blank authority.
+	        // Refer to the syntax: "[scheme:][//authority][path][?query][#fragment]"
+	        return path.replaceFirst("file:(/*)", "file:///");
+        }
+        return path;
+    }
 }

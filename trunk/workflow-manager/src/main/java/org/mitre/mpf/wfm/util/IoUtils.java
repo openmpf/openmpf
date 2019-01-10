@@ -36,12 +36,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.*;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 @Component(IoUtils.REF)
 public class IoUtils {
@@ -249,5 +254,92 @@ public class IoUtils {
      */
     public boolean isApprovedContentType(String contentType) {
         return mediaTypeUtils.parse(contentType) != null;
+    }
+
+
+    public static void closeQuietly(Closeable closeable) {
+        if (closeable == null) {
+            return;
+        }
+        try {
+            closeable.close();
+        }
+        catch (IOException ignored) {
+        }
+    }
+
+
+    public static Optional<Path> toLocalPath(String pathOrUri) {
+        if (pathOrUri == null) {
+            return Optional.empty();
+        }
+        try {
+            URI uri = new URI(pathOrUri);
+            String scheme = uri.getScheme();
+            if (scheme == null) {
+                return Optional.of(Paths.get(pathOrUri));
+            }
+            if ("file".equalsIgnoreCase(scheme)) {
+                return Optional.of(Paths.get(uri));
+            }
+            return Optional.empty();
+        }
+        catch (URISyntaxException ignored) {
+            return Optional.of(Paths.get(pathOrUri));
+        }
+    }
+
+
+    public static URL toUrl(String pathOrUri) {
+        MalformedURLException suppressed;
+        try {
+            return new URL(pathOrUri);
+        }
+        catch (MalformedURLException e) {
+            suppressed = e;
+        }
+
+        try {
+            return Paths.get(pathOrUri).toUri().toURL();
+        }
+        catch (MalformedURLException e) {
+            e.addSuppressed(suppressed);
+            throw new IllegalArgumentException("pathOrUri", e);
+        }
+    }
+
+    public static InputStream openStream(String pathOrUri) throws IOException {
+        Optional<Path> localPath = toLocalPath(pathOrUri);
+        if (localPath.isPresent()) {
+            return Files.newInputStream(localPath.get());
+        }
+        return new URL(pathOrUri).openStream();
+    }
+
+
+    public static void deleteEmptyDirectoriesRecursively(Path startDir) {
+        if (!Files.exists(startDir)) {
+            return;
+        }
+        try {
+            Files.walkFileTree(startDir, new SimpleFileVisitor<Path>() {
+
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    if (isEmpty(dir)) {
+                        Files.delete(dir);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
+        catch (IOException e) {
+            log.warn("IOException while deleting " + startDir, e);
+        }
+    }
+
+    private static boolean isEmpty(Path dir) throws IOException {
+        try (Stream<Path> paths = Files.list(dir)) {
+            return !paths.findAny().isPresent();
+        }
     }
 }

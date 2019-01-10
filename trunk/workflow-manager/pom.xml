@@ -33,7 +33,7 @@
     <parent>
         <groupId>org.mitre.mpf</groupId>
         <artifactId>mpf-project</artifactId>
-        <version>2.1.0</version>
+        <version>3.0.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -262,6 +262,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.springframework.retry</groupId>
+            <artifactId>spring-retry</artifactId>
+            <version>1.1.5.RELEASE</version>
+        </dependency>
+
+        <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
             <version>${commons.codec.version}</version>
@@ -440,12 +446,6 @@
             <artifactId>hibernate-core</artifactId>
             <version>${hibernate.framework.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-c3p0</artifactId>
-            <version>${hibernate.framework.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-envers</artifactId>
@@ -577,12 +577,6 @@
             <groupId>org.jadira.usertype</groupId>
             <artifactId>usertype.core</artifactId>
             <version>${jadira.usertype.core.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.jolbox</groupId>
-            <artifactId>bonecp-spring</artifactId>
-            <version>${bonecp.spring.version}</version>
         </dependency>
 
         <dependency>
@@ -1092,7 +1086,7 @@
                 <configuration>
                     <filesets>
                         <fileset>
-                            <directory>${env.MPF_HOME}/data</directory>
+                            <directory>${env.MPF_HOME}/share/data</directory>
                             <includes>
                                 <include>nodeManagerConfig.xml</include>
                                 <include>nodeServicesPalette.json</include>
@@ -1104,7 +1098,7 @@
                             </includes>
                         </fileset>
                         <fileset>
-                            <directory>${env.MPF_HOME}/config</directory>
+                            <directory>${env.MPF_HOME}/share/config</directory>
                             <includes>
                                 <include>mediaType.properties</include>
                                 <include>mpf-custom.properties</include>

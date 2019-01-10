@@ -31,8 +31,6 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
-import org.mitre.mpf.mvc.controller.AtmosphereController;
-import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.camel.routes.JobCreatorRouteBuilder;
@@ -45,6 +43,7 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.JmsUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
@@ -57,7 +56,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.util.FileSystemUtils;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,6 +110,9 @@ public class JobRequestBoImpl implements JobRequestBo {
     @Autowired
     @Qualifier(HibernateMarkupResultDaoImpl.REF)
     private MarkupResultDao markupResultDao;
+
+    @Autowired
+    private JobStatusBroadcaster jobStatusBroadcaster;
 
     @EndpointInject(uri = JobCreatorRouteBuilder.ENTRY_POINT)
     private ProducerTemplate jobRequestProducerTemplate;
@@ -319,7 +321,7 @@ public class JobRequestBoImpl implements JobRequestBo {
         FileSystemUtils.deleteRecursively(propertiesUtil.getJobMarkupDirectory(jobId));
 
         redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
-        AtmosphereController.broadcast(new JobStatusMessage(jobId, 0, BatchJobStatusType.IN_PROGRESS, null));
+        jobStatusBroadcaster.broadcast(jobId, 0, BatchJobStatusType.IN_PROGRESS);
 
         return runInternal(jobRequest, jsonJobRequest, priority);
     }
@@ -336,7 +338,7 @@ public class JobRequestBoImpl implements JobRequestBo {
     private JobRequest initializeInternal(JobRequest jobRequest, JsonJobRequest jsonJobRequest) throws WfmProcessingException {
         jobRequest.setPriority(jsonJobRequest.getPriority());
         jobRequest.setStatus(BatchJobStatusType.INITIALIZED);
-        jobRequest.setTimeReceived(new Date());
+        jobRequest.setTimeReceived(Instant.now());
         jobRequest.setInputObject(jsonUtils.serialize(jsonJobRequest));
         jobRequest.setPipeline(jsonJobRequest.getPipeline() == null ? null : TextUtils.trimAndUpper(jsonJobRequest.getPipeline().getName()));
 
@@ -348,7 +350,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 
         JobRequest persistedRequest = jobRequestDao.persist(jobRequest);
 
-        AtmosphereController.broadcast(new JobStatusMessage(persistedRequest.getId(), 0, BatchJobStatusType.INITIALIZED, null));
+        jobStatusBroadcaster.broadcast(persistedRequest.getId(), 0, BatchJobStatusType.INITIALIZED);
 
         return persistedRequest;
 

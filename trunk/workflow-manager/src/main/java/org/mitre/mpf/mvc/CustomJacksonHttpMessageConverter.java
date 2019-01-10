@@ -24,19 +24,36 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
-import org.mitre.mpf.frameextractor.FrameExtractor;
-import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
+package org.mitre.mpf.mvc;
 
-import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.stereotype.Component;
 
-public interface ArtifactExtractionProcessorInterface extends WfmProcessorInterface {
+import javax.inject.Inject;
 
-	public Map<Integer, String> processUnsupportedMediaType(ArtifactExtractionRequest request) throws WfmProcessingException;
+// Spring's built-in MappingJackson2HttpMessageConverter does not allow you to configure the ObjectMapper that it uses.
+// Classes annotated with @Controller will use this class. This class ensures that those controllers,
+// and classes that explicitly use ObjectMapper, all use the same ObjectMapper instance.
+@Component
+public class CustomJacksonHttpMessageConverter extends MappingJackson2HttpMessageConverter {
 
-	public String processImageRequest(ArtifactExtractionRequest request);
+    // These classes should use the internal Spring HttpMessageConverters.
+    private static final ImmutableList<Class<?>> BLACKLIST = ImmutableList.of(String.class, Resource.class);
 
-	public Map<Integer, String> processVideoRequest(ArtifactExtractionRequest request, FrameExtractor extractor) throws WfmProcessingException;
+    @Inject
+    CustomJacksonHttpMessageConverter(ObjectMapper objectMapper) {
+        super(objectMapper);
+    }
+
+
+    @Override
+    public boolean canWrite(Class<?> clazz, MediaType mediaType) {
+        return BLACKLIST.stream().noneMatch(blc -> blc.isAssignableFrom(clazz))
+                && super.canWrite(clazz, mediaType);
+    }
 }

@@ -26,19 +26,9 @@
 
 package org.mitre.mpf.wfm.camel.operations.jobcreation;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
 import org.apache.camel.Exchange;
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.interop.JsonAction;
-import org.mitre.mpf.interop.JsonJobRequest;
-import org.mitre.mpf.interop.JsonMediaInputObject;
-import org.mitre.mpf.interop.JsonPipeline;
-import org.mitre.mpf.interop.JsonStage;
-import org.mitre.mpf.mvc.controller.AtmosphereController;
-import org.mitre.mpf.mvc.model.JobStatusMessage;
+import org.mitre.mpf.interop.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
@@ -48,15 +38,11 @@ import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.TextUtils;
@@ -65,6 +51,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * The first step in the Workflow Manager is to translate a JSON job request into an internal
@@ -94,6 +85,9 @@ public class JobCreationProcessor extends WfmProcessor {
 	@Autowired
 	@Qualifier(HibernateJobRequestDaoImpl.REF)
 	private HibernateDao<JobRequest> jobRequestDao;
+
+	@Autowired
+	private JobStatusBroadcaster jobStatusBroadcaster;
 
 	/** Converts a pipeline represented in JSON to a {@link org.mitre.mpf.wfm.data.entities.transients.TransientPipeline} instance. */
 	private TransientPipeline buildPipeline(JsonPipeline jsonPipeline) {
@@ -194,7 +188,7 @@ public class JobCreationProcessor extends WfmProcessor {
 
 			BatchJobStatusType jobStatus;
 			if (transientJob.getMedia().stream().anyMatch(m -> m.isFailed())) {
-				jobStatus = BatchJobStatusType.IN_PROGRESS_ERRORS;
+				jobStatus = BatchJobStatusType.ERROR;
 				// allow the job to run since some of the media may be good
 			} else {
 				jobStatus = BatchJobStatusType.IN_PROGRESS;
@@ -202,7 +196,7 @@ public class JobCreationProcessor extends WfmProcessor {
 
 			jobRequestEntity.setStatus(jobStatus);
 			redis.setJobStatus(jobId, jobStatus);
-			AtmosphereController.broadcast(new JobStatusMessage(jobId, 0, jobStatus, null));
+			jobStatusBroadcaster.broadcast(jobId, 0, jobStatus);
 
 			jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 
@@ -218,7 +212,7 @@ public class JobCreationProcessor extends WfmProcessor {
 					log.warn("Failed to parse the input object for Batch Job #{} due to an exception.", jobRequestEntity.getId(), exception);
 				}
 				jobRequestEntity.setStatus(BatchJobStatusType.JOB_CREATION_ERROR);
-				jobRequestEntity.setTimeCompleted(new Date());
+				jobRequestEntity.setTimeCompleted(Instant.now());
 				jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 			} catch(Exception persistException) {
 				log.warn("Failed to mark Batch Job #{} as failed due to an exception. It will remain it its current state until manually changed.", jobRequestEntity, persistException);

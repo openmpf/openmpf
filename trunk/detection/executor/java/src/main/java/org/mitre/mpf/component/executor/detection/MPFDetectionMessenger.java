@@ -26,22 +26,17 @@
 
 package org.mitre.mpf.component.executor.detection;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
-
-import javax.jms.*;
-
-import org.mitre.mpf.component.api.detection.MPFAudioJob;
-import org.mitre.mpf.component.api.detection.MPFGenericJob;
-import org.mitre.mpf.component.api.detection.MPFImageJob;
-import org.mitre.mpf.component.api.detection.MPFVideoJob;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.mitre.mpf.component.api.detection.*;
-import org.mitre.mpf.component.api.detection.MPFComponentDetectionError;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.jms.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 // TODO: Refactor so that there is one common DetectionMessenger for all Java detection components.
 public class MPFDetectionMessenger extends MPFMessengerBase {
@@ -63,12 +58,16 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
 			Map<String, Object> headerProperties = ProtoUtils.copyMsgProperties(message);
 
 			MPFDetectionBuffer detectionBuffer = new MPFDetectionBuffer(requestBytesMessage);
-			MPFMessageMetadata msgMetadata = detectionBuffer.getMessageMetadata(requestBytesMessage);
+			MPFMessageMetadata msgMetadata = detectionBuffer.getMessageMetadata(message);
             Destination out = message.getJMSReplyTo();
 
             if (msgMetadata != null) {
 
                 LOG.debug("requestId = " + msgMetadata.getRequestId() +
+                          " correlationId = " + msgMetadata.getCorrelationId() +
+                          " breadcrumbId = " + msgMetadata.getBreadcrumbId() +
+                          " splitSize = " + msgMetadata.getSplitSize() +
+                          " jobId = " + msgMetadata.getJobId() +
                           " dataUri = " + msgMetadata.getDataUri() +
                           " mediaId = " + msgMetadata.getMediaId() +
                           " stageName = " + msgMetadata.getStageName() +
@@ -79,9 +78,7 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
                           " size of algorithmProperties = " + msgMetadata.getAlgorithmProperties().size() +
 						  " size of mediaProperties = " + msgMetadata.getMediaProperties().size());
 
-
-
-                LOG.info("Detection request received with requestId " + msgMetadata.getRequestId() +
+                LOG.info("Detection request received with job ID " + msgMetadata.getJobId() +
                          " for media file " + msgMetadata.getDataUri());
 
 				String detectionType = detector.getDetectionType();
@@ -160,7 +157,7 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
                         replyProducer = session.createProducer(out);
                         replyProducer.send(responseBytesMessage);
                         session.commit();
-                        LOG.info("Detection response sent for job ID {}", msgMetadata.getRequestId());
+                        LOG.info("Detection response sent for job ID {}", msgMetadata.getJobId());
                         LOG.debug(responseBytesMessage.toString());
                     } catch (JMSException e) {
                         LOG.error("Failed to send detection response message due to Exception {}", e);
@@ -183,7 +180,7 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
             } else {
                 LOG.error("Could not parse contents of Detection Request message");
             }
-        } catch (JMSException e) {
+        } catch (InvalidProtocolBufferException | JMSException e) {
             LOG.error("Could not process detection request message due to Exception ", e);
         }
     }

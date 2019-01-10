@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.camel.routes;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.buffers.Markup;
-import org.mitre.mpf.wfm.camel.NoOpProcessor;
 import org.mitre.mpf.wfm.camel.operations.markup.MarkupResponseProcessor;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;

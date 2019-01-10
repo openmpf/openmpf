@@ -31,7 +31,6 @@
                            http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <beans>
-        <bean class="com.fasterxml.jackson.databind.ObjectMapper" />
         <bean class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean" />
     </beans>
 </beans>

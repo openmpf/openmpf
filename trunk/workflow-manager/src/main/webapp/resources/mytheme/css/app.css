@@ -176,3 +176,10 @@
 .cursor-normal-arrow {
   cursor: default;
 }
+
+/*-------------------------- Nodes page --------------------------------------------*/
+
+.form-control.add-service,
+.form-control.service-count {
+  display: inline-block;
+}

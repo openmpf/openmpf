@@ -44,9 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.SortedSet;
+import java.util.*;
 
 /**
  * Extracts artifacts from a media file based on the contents of the {@link org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest}
@@ -86,39 +84,20 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
 			// in the results map, the detection's artifact path should be set to 15's extracted frame.
 			SortedSet<Track> tracks = redis.getTracks(request.getJobId(), request.getMediaId(), request.getStageIndex(), actionIndex);
 
-			boolean error = false;
+			List<Integer> missingFrames = new ArrayList();
 			for(Track track : tracks) {
 
-				// An exemplar is a specific detection, so it must also be checked.
-                if(results.containsKey(track.getExemplar().getMediaOffsetFrame())) {
-                    String exemplarMediaOffsetResult = results.get(track.getExemplar().getMediaOffsetFrame());
-                    if(Objects.equals(exemplarMediaOffsetResult,ERROR_PATH)) {
-						track.getExemplar().setArtifactExtractionStatus(ArtifactExtractionStatus.FAILED);
-						track.getExemplar().setArtifactPath(null);
-						error = true;
-					} else if(Objects.equals(exemplarMediaOffsetResult,UNSUPPORTED_PATH)) {
-						track.getExemplar().setArtifactExtractionStatus(ArtifactExtractionStatus.UNSUPPORTED_MEDIA_TYPE);
-						track.getExemplar().setArtifactPath(null);
-					} else {
-						track.getExemplar().setArtifactExtractionStatus(ArtifactExtractionStatus.COMPLETED);
-						track.getExemplar().setArtifactPath(results.get(track.getExemplar().getMediaOffsetFrame()));
-					}
+				// The exemplar is represented separately in the JSON output object.
+				Detection exemplar  = track.getExemplar();
+				String exemplarResult = results.get(exemplar.getMediaOffsetFrame());
+                if (exemplarResult != null) {
+                    handleResult(exemplar, exemplarResult, missingFrames);
 				}
 
 				for(Detection detection : track.getDetections()) {
-					if(results.containsKey(detection.getMediaOffsetFrame())) {
-						String detectionMediaOffsetResult = results.get(detection.getMediaOffsetFrame());
-						if(Objects.equals(detectionMediaOffsetResult,ERROR_PATH)) {
-							detection.setArtifactExtractionStatus(ArtifactExtractionStatus.FAILED);
-							detection.setArtifactPath(null);
-							error = true;
-						} else if(Objects.equals(detectionMediaOffsetResult,UNSUPPORTED_PATH)) {
-							detection.setArtifactExtractionStatus(ArtifactExtractionStatus.UNSUPPORTED_MEDIA_TYPE);
-							detection.setArtifactPath(null);
-						} else {
-							detection.setArtifactExtractionStatus(ArtifactExtractionStatus.COMPLETED);
-							detection.setArtifactPath(results.get(detection.getMediaOffsetFrame()));
-						}
+                	String result = results.get(detection.getMediaOffsetFrame());
+					if (result != null) {
+						handleResult(detection, result, missingFrames);
 					}
 				}
 			}
@@ -127,18 +106,35 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
 			// data store.
 			redis.setTracks(request.getJobId(), request.getMediaId(), request.getStageIndex(), actionIndex, tracks);
 
-			if (error) {
+			if (!missingFrames.isEmpty()) {
 				redis.setJobStatus(request.getJobId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
 
 				TransientMedia transientMedia = redis.getJob(request.getJobId()).getMedia().stream()
 						.filter(m -> m.getId() == request.getMediaId()).findAny().get();
 
-				transientMedia.setMessage("Error extracting frame(s). Check the Workflow Manager log for details.");
+				transientMedia.setMessage("Error extracting frame(s): " + missingFrames);
+				transientMedia.setFailed(true);
 				redis.persistMedia(request.getJobId(), transientMedia);
+				
+				redis.addJobError(request.getJobId(), transientMedia.getUri() + ": " + transientMedia.getMessage()); // DEBUG
 			}
 		}
 
 		exchange.getOut().getHeaders().put(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
 		exchange.getOut().getHeaders().put(MpfHeaders.SPLIT_SIZE, exchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE));
+	}
+
+	private void handleResult(Detection detection, String result, List<Integer> missingFrames) {
+		if (Objects.equals(result, ERROR_PATH)) {
+			detection.setArtifactExtractionStatus(ArtifactExtractionStatus.FAILED);
+			detection.setArtifactPath(null);
+			missingFrames.add(detection.getMediaOffsetFrame());
+		} else if (Objects.equals(result, UNSUPPORTED_PATH)) {
+			detection.setArtifactExtractionStatus(ArtifactExtractionStatus.UNSUPPORTED_MEDIA_TYPE);
+			detection.setArtifactPath(null);
+		} else {
+			detection.setArtifactExtractionStatus(ArtifactExtractionStatus.COMPLETED);
+			detection.setArtifactPath(result);
+		}
 	}
 }

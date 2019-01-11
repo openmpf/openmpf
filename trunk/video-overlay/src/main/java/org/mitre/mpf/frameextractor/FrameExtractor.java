@@ -80,7 +80,8 @@ public class FrameExtractor {
                     log.debug("The collection of frames to extract was empty.");
                     response = 0;
                 } else {
-                    response = executeNative(new File(video).getAbsolutePath(), new File(extractionDirectory).getAbsolutePath(), paths);
+                    // response = executeNative(new File(video).getAbsolutePath(), new File(extractionDirectory).getAbsolutePath(), paths); // DEBUG
+                    response = 7777; // DEBUG
                 }
             } finally {
                 nativeSplit.stop();

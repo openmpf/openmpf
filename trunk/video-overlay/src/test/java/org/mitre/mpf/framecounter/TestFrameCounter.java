@@ -38,13 +38,23 @@ public class TestFrameCounter {
 
     static {
         String libraryFile = new File("install/lib/libmpfopencvjni.so").getAbsolutePath();
-        log.info("Loading libmpfopencvjni library from '{}'.", libraryFile);
-        System.load(libraryFile);
+        try {
+            System.load(libraryFile);
+        }
+        catch (UnsatisfiedLinkError e) {
+            String mpfHome = System.getenv("MPF_HOME");
+            if (mpfHome == null) {
+                throw e;
+            }
+            libraryFile = new File(mpfHome, "lib/libmpfopencvjni.so").getAbsolutePath();
+            System.load(libraryFile);
+        }
+        log.info("Loaded libmpfopencvjni library from '{}'.", libraryFile);
     }
 
     @Test
     public void testFrameCounterOnVideo() {
-        countFrames("video-overlay/src/test/resources/samples/five-second-marathon-clip.mkv", false, 154);
+        countFrames("video-overlay/src/test/resources/samples/five-second-marathon-clip-numbered.mp4", false, 2000);
     }
 
     @Test

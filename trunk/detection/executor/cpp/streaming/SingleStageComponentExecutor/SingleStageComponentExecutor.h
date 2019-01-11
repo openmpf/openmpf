@@ -57,7 +57,8 @@ class SingleStageComponentExecutor {
     MPF::COMPONENT::JobSettings settings_;
     MPF::MPFFrameStore frame_store_;
 
-    MPF::BasicAmqMessageReader<MPFFrameReadyMessage> frame_ready_reader_;
+    MPFMessagingConnection connection_;
+
     MPF::BasicAmqMessageReader<MPFSegmentReadyMessage> segment_ready_reader_;
     MPF::BasicAmqMessageSender msg_sender_;
 
@@ -84,8 +85,9 @@ class SingleStageComponentExecutor {
     void Run();
 
     MPFSegmentReadyMessage GetNextSegmentReadyMsg(std::chrono::milliseconds &timeout_msec);
-    MPFFrameReadyMessage GetNextFrameToProcess(int next_frame_index,
-                                               std::chrono::milliseconds &timeout_msec);
+    MPFFrameReadyMessage GetNextFrameToProcess(MPF::BasicAmqMessageReader<MPFFrameReadyMessage> &reader,
+                                               const int next_frame_index,
+                                               const std::chrono::milliseconds &timeout_msec);
 
     void FixTracks(const VideoSegmentInfo &segment_info,
                    std::vector<MPFVideoTrack> &tracks);

@@ -47,8 +47,8 @@ OcvFrameReader::OcvFrameReader(const log4cxx::LoggerPtr &logger,
         : logger_(logger)
         , log_prefix_(log_prefix)
         , settings_(std::move(settings))
-        , release_frame_reader_(settings_, settings_.release_frame_queue, connection.Get())
-        , msg_sender_(settings_, connection.Get())
+        , release_frame_reader_(settings_.release_frame_queue, connection)
+        , msg_sender_(settings_, connection)
         , frame_store_(settings_)
         , video_capture_(logger_, settings_.stream_uri, job) {}
 

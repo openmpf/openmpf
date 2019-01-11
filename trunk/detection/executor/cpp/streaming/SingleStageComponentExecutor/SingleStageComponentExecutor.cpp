@@ -49,9 +49,9 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
         , log_prefix_(log_prefix)
         , settings_(std::move(settings))
         , frame_store_(settings_)
-        , frame_ready_reader_(settings_, settings_.frame_ready_queue, connection.Get())
-        , segment_ready_reader_(settings_, settings_.segment_ready_queue, connection.Get())
-        , msg_sender_(settings_, connection.Get())
+        , connection_(connection)
+        , segment_ready_reader_(settings_.segment_ready_queue, connection)
+        , msg_sender_(settings_, connection)
         , job_(std::move(job))
         , component_(std::move(component))
         , detection_type_(detection_type)
@@ -127,7 +127,7 @@ void SingleStageComponentExecutor::Run() {
         int frame_interval = std::max(1, DetectionComponentUtils::GetProperty(job_.job_properties,
                                                                               "frameInterval",
                                                                               1));
-        LOG4CXX_DEBUG(logger_, "frame_interval = " << frame_interval);
+        LOG4CXX_DEBUG(logger_, "pid " << getpid() << ": frame_interval = " << frame_interval);
         bool begin_segment_called;
         bool segment_activity_alert_sent;
         bool segment_summary_report_sent;
@@ -148,14 +148,17 @@ void SingleStageComponentExecutor::Run() {
             }
 
             segment_number = seg_msg.segment_number;
-            LOG4CXX_DEBUG(logger_, "segment_number = " << segment_number);
+            LOG4CXX_DEBUG(logger_, "pid " << getpid() <<  ": segment_number = " << segment_number);
 
-            // Create a consumer for this segment and get the
+            // Create a frame ready consumer for this segment and get the
             // first message
             std::string selector = "SEGMENT_NUMBER = " + std::to_string(segment_number);
-            bool got_msg = frame_ready_reader_.RecreateConsumerWithSelector(selector).GetMsgNoWait(frame_msg);
+            LOG4CXX_DEBUG(logger_, "pid " << getpid() <<  ": create consumer for selector " << selector);
+            BasicAmqMessageReader<MPFFrameReadyMessage> frame_ready_reader(settings_.frame_ready_queue, selector, connection_);
+
+            bool got_msg = frame_ready_reader.GetMsgNoWait(frame_msg);
             while (!got_msg) {
-                got_msg = frame_ready_reader_.GetMsgNoWait(frame_msg);
+                got_msg = frame_ready_reader.GetMsgNoWait(frame_msg);
                 std_in_watcher->InterruptibleSleep(timeout_msec);
             }
 
@@ -163,7 +166,7 @@ void SingleStageComponentExecutor::Run() {
             // ready message is the same as the segment number we
             // just received.
             if (frame_msg.segment_number != seg_msg.segment_number) {
-                throw std::runtime_error("Received frame for the wrong correct segment (" + std::to_string(frame_msg.segment_number) + ")");
+                throw std::runtime_error("Received frame for the wrong segment (" + std::to_string(frame_msg.segment_number) + ")");
             }
 
             // Initialize the frame transformer.
@@ -173,11 +176,11 @@ void SingleStageComponentExecutor::Run() {
             }
 
             int segment_end_frame = frame_msg.frame_index + settings_.segment_size - 1;
-            LOG4CXX_DEBUG(logger_, "segment_number = " << segment_number);
-            LOG4CXX_DEBUG(logger_, "frame_number = " << frame_msg.frame_index);
-            LOG4CXX_DEBUG(logger_, "end_frame = " << segment_end_frame);
-            LOG4CXX_DEBUG(logger_, "frame width = " << seg_msg.frame_width);
-            LOG4CXX_DEBUG(logger_, "frame height = " << seg_msg.frame_height);
+            LOG4CXX_DEBUG(logger_, "pid " << getpid() <<  ": segment_number = " << segment_number);
+            LOG4CXX_DEBUG(logger_, "pid " << getpid() <<  ": frame_number = " << frame_msg.frame_index);
+            LOG4CXX_DEBUG(logger_, "pid " << getpid() <<  ": end_frame = " << segment_end_frame);
+            LOG4CXX_DEBUG(logger_, "pid " << getpid() <<  ": frame width = " << seg_msg.frame_width);
+            LOG4CXX_DEBUG(logger_, "pid " << getpid() <<  ": frame height = " << seg_msg.frame_height);
             segment_info = {segment_number,
                             frame_msg.frame_index,
                             segment_end_frame,
@@ -192,7 +195,7 @@ void SingleStageComponentExecutor::Run() {
             // first one just read.
             int num_frames_processed = 0;
             frame_to_process = frame_msg.frame_index;
-            LOG4CXX_DEBUG(logger_, "frame_to_process = " << frame_to_process);
+            LOG4CXX_DEBUG(logger_, "pid " << getpid() <<  ": frame_to_process = " << frame_to_process);
             while (!std_in_watcher->QuitReceived() && (frame_to_process <= segment_end_frame)) {
 
                 frame_timestamps[frame_msg.frame_index] = frame_msg.frame_timestamp;
@@ -209,7 +212,7 @@ void SingleStageComponentExecutor::Run() {
                 // Process the frame in the component
                 bool activity_found = component_.ProcessFrame(frame, frame_msg.frame_index);
                 if (activity_found && !segment_activity_alert_sent) {
-                    LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending new activity alert for frame: " << frame_msg.frame_index);
+                    LOG4CXX_DEBUG(logger_, log_prefix_ <<  ": pid " << getpid() << ": Sending new activity alert for frame: " << frame_msg.frame_index);
                     msg_sender_.SendActivityAlert(frame_msg.frame_index,
                                                   frame_timestamps.at(frame_msg.frame_index));
                     segment_activity_alert_sent = true;
@@ -224,7 +227,9 @@ void SingleStageComponentExecutor::Run() {
                 // yet, then read the next frame
                 if (frame_to_process <= segment_end_frame) {
                     try {
-                        frame_msg = GetNextFrameToProcess(frame_to_process, timeout_msec);
+                        frame_msg = GetNextFrameToProcess(frame_ready_reader,
+                                                          frame_to_process,
+                                                          timeout_msec);
                     }
                     catch  (const InterruptedException &ex) {
                         sleep_interrupted = true;
@@ -238,10 +243,10 @@ void SingleStageComponentExecutor::Run() {
                     // not end up in the DLQ instead.
                     int last_frame_processed = segment_info.start_frame +
                                                (num_frames_processed-1)*frame_interval;
-                    LOG4CXX_DEBUG(logger_, "Last frame processed = " << last_frame_processed);
+                    LOG4CXX_DEBUG(logger_, "pid " << getpid() <<  ": Last frame processed = " << last_frame_processed);
                     for (int i = last_frame_processed+1; i <= segment_end_frame; i++) {
                         try {
-                            frame_msg = GetNextFrameToProcess(i, timeout_msec);
+                            frame_msg = GetNextFrameToProcess(frame_ready_reader, i, timeout_msec);
                             msg_sender_.SendReleaseFrame(frame_msg.frame_index);
                         }
                         catch  (const InterruptedException &ex) {
@@ -254,7 +259,7 @@ void SingleStageComponentExecutor::Run() {
 
             std::vector<MPFVideoTrack> tracks = component_.EndSegment();
             FixTracks(segment_info, tracks);
-            LOG4CXX_DEBUG(logger_, log_prefix_ << "Sending segment summary for " << tracks.size() << " tracks.");
+            LOG4CXX_DEBUG(logger_, log_prefix_ << ": pid " << getpid() << ": Sending segment summary for " << tracks.size() << " tracks.");
             msg_sender_.SendSummaryReport(frame_msg.frame_index,
                                           segment_number, detection_type_,
                                           tracks, frame_timestamps);
@@ -267,7 +272,7 @@ void SingleStageComponentExecutor::Run() {
             // send the summary report if we've started, but have not completed, the next segment
             std::vector<MPFVideoTrack> tracks = component_.EndSegment();
             FixTracks(segment_info, tracks);
-            LOG4CXX_INFO(logger_, log_prefix_ << "Send segment summary for final segment.");
+            LOG4CXX_INFO(logger_, log_prefix_ << ": pid " << getpid() << ": Send segment summary for final segment.");
             msg_sender_.SendSummaryReport(frame_msg.frame_index, segment_number,
                                           detection_type_, tracks, frame_timestamps);
         }
@@ -317,7 +322,7 @@ MPFSegmentReadyMessage SingleStageComponentExecutor::GetNextSegmentReadyMsg(std:
     StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
     while (true) {
         bool got_msg = segment_ready_reader_.GetMsgNoWait(seg_msg);
-        if (got_msg) return (std::move(seg_msg));
+        if (got_msg) return (seg_msg);
         else {
             std_in_watcher->InterruptibleSleep(timeout_msec);
         }
@@ -325,15 +330,18 @@ MPFSegmentReadyMessage SingleStageComponentExecutor::GetNextSegmentReadyMsg(std:
 }
 
 
-MPFFrameReadyMessage SingleStageComponentExecutor::GetNextFrameToProcess(int next_frame_index,
-                                                    std::chrono::milliseconds &timeout_msec) {
+MPFFrameReadyMessage SingleStageComponentExecutor::GetNextFrameToProcess(
+    MPF::BasicAmqMessageReader<MPFFrameReadyMessage> &reader,
+    const int next_frame_index,
+    const std::chrono::milliseconds &timeout_msec) {
+
     MPFFrameReadyMessage frame_msg;
     StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
     while (true) {
-        bool got_msg = frame_ready_reader_.GetMsgNoWait(frame_msg);
+        bool got_msg = reader.GetMsgNoWait(frame_msg);
         if (got_msg) {
             if (frame_msg.frame_index == next_frame_index) {
-                return (std::move(frame_msg));
+                return (frame_msg);
             }
             else {
                 // skipping the frame, so release it.

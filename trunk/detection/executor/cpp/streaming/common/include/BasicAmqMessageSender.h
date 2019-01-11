@@ -38,17 +38,17 @@
 
 #include <MPFDetectionComponent.h>
 
+#include "MPFMessagingConnection.h"
 #include "JobSettings.h"
 
 
 namespace MPF {
 
-    // TODO: Combine with AMQMessenger when adding support for multistage pipelines.
     class BasicAmqMessageSender {
 
     public:
         explicit BasicAmqMessageSender(const MPF::COMPONENT::JobSettings &job_settings,
-                                       std::shared_ptr<cms::Connection> connection_ptr);
+                                       MPFMessagingConnection &connection);
 
         void SendSegmentReady(const int segment_number,
                               const int frame_width,
@@ -82,7 +82,7 @@ namespace MPF {
         const int segment_size_;
 
         std::shared_ptr<cms::Connection> connection_;
-        std::unique_ptr<cms::Session> session_;
+        std::shared_ptr<cms::Session> session_;
 
         std::unique_ptr<cms::MessageProducer> segment_ready_producer_;
         std::unique_ptr<cms::MessageProducer> frame_ready_producer_;

@@ -24,8 +24,6 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include <iostream>
-
 #include <activemq/library/ActiveMQCPP.h>
 #include <activemq/core/ActiveMQConnectionFactory.h>
 
@@ -39,7 +37,8 @@ using activemq::core::ActiveMQConnectionFactory;
 using namespace MPF;
 
 MPFMessagingConnection::MPFMessagingConnection(const MPF::COMPONENT::JobSettings &job_settings) 
-        : connection_(Connect(job_settings.message_broker_uri)) {
+        : connection_(Connect(job_settings.message_broker_uri))
+        , session_(connection_->createSession()) {
 
     connection_->start();
 }
@@ -56,14 +55,16 @@ shared_ptr<cms::Connection> MPFMessagingConnection::Connect(const string &broker
 
 MPFMessagingConnection::~MPFMessagingConnection() {
     try {
-        // This call to stop() will prevent any further events from occurring.
-        connection_->stop();
-        // This call to close() will close any sessions created from
-        // this connection, as well as those sessions' consumers and producers.
-        connection_->close();
+        if (connection_.get() != nullptr) {
+            // This call to stop() will prevent any further events from occurring.
+            connection_->stop();
+            // This call to close() will close any sessions created from
+            // this connection, as well as those sessions' consumers and producers.
+            connection_->close();
+        }
     }
-    catch (const CMSException &e) {
-        e.printStackTrace();
+    catch (...) {
+        return;
     }
 }
 

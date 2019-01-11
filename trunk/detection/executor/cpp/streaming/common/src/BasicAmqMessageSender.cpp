@@ -41,11 +41,11 @@ using namespace MPF;
 using namespace COMPONENT;
 
 BasicAmqMessageSender::BasicAmqMessageSender(const JobSettings &job_settings,
-                                             std::shared_ptr<cms::Connection> connection_ptr)
+                                             MPFMessagingConnection &connection)
         : job_id_(job_settings.job_id)
         , segment_size_(job_settings.segment_size)
-        , connection_(connection_ptr)
-        , session_(connection_->createSession())
+        , connection_(connection.GetConnection())
+        , session_(connection.GetSession())
         , segment_ready_producer_(CreateProducer(job_settings.segment_ready_queue, *session_))
         , frame_ready_producer_(CreateProducer(job_settings.frame_ready_queue, *session_))
         , job_status_producer_(CreateProducer(job_settings.job_status_queue, *session_))

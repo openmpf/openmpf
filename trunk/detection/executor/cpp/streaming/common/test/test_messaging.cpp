@@ -51,7 +51,8 @@ TEST(MessageTests, MessagingConnectionTest) {
 
     MPFMessagingConnection *msg_mgr = new MPFMessagingConnection(settings);
 
-    ASSERT_TRUE(NULL != msg_mgr->Get());
+    ASSERT_TRUE(NULL != msg_mgr->GetConnection());
+    ASSERT_TRUE(NULL != msg_mgr->GetSession());
 
     delete msg_mgr;
 
@@ -68,25 +69,17 @@ class StreamingMessagingTest : public ::testing::Test {
     static std::unique_ptr<BasicAmqMessageReader<MPFSegmentReadyMessage> > segment_ready_reader_;
     static std::unique_ptr<BasicAmqMessageReader<MPFReleaseFrameMessage> > release_frame_reader_;
     static std::unique_ptr<BasicAmqMessageSender> sender_;
-    static log4cxx::LoggerPtr logger_;
     static MPF::COMPONENT::JobSettings settings_;
 
     static void SetUpTestCase() {
-        logger_ = log4cxx::Logger::getRootLogger();
         msg_mgr_.reset(new MPFMessagingConnection(settings_));
-        frame_ready_reader_.reset(new BasicAmqMessageReader<MPFFrameReadyMessage>(
-            settings_,
-            settings_.frame_ready_queue,
-            msg_mgr_->Get()));
         segment_ready_reader_.reset(new BasicAmqMessageReader<MPFSegmentReadyMessage>(
-            settings_,
             settings_.segment_ready_queue,
-            msg_mgr_->Get()));
+            *msg_mgr_.get()));
         release_frame_reader_.reset(new BasicAmqMessageReader<MPFReleaseFrameMessage>(
-            settings_,
             settings_.release_frame_queue,
-            msg_mgr_->Get()));
-        sender_.reset(new BasicAmqMessageSender(settings_, msg_mgr_->Get()));
+            *msg_mgr_.get()));
+        sender_.reset(new BasicAmqMessageSender(settings_, *msg_mgr_.get()));
 }
 
     static void TearDownTestCase() {}
@@ -101,7 +94,6 @@ std::unique_ptr<BasicAmqMessageReader<MPFSegmentReadyMessage> > StreamingMessagi
 std::unique_ptr<BasicAmqMessageReader<MPFReleaseFrameMessage> > StreamingMessagingTest::release_frame_reader_ = NULL;
 std::unique_ptr<BasicAmqMessageSender> StreamingMessagingTest::sender_ = NULL;
 std::unique_ptr<MPFMessagingConnection> StreamingMessagingTest::msg_mgr_ = NULL;
-log4cxx::LoggerPtr StreamingMessagingTest::logger_;
 MPF::COMPONENT::JobSettings StreamingMessagingTest::settings_ = JobSettings::FromIniFile("./data/test.ini");
 
 
@@ -112,7 +104,7 @@ TEST_F(StreamingMessagingTest, TestActivityAlertMessage) {
     // those are only ever read by the WFM. So, to make sure that the
     // message was sent properly, create a consumer for it here.
 
-    std::unique_ptr<cms::Session> session(msg_mgr_->Get()->createSession());
+    std::shared_ptr<cms::Session> session(msg_mgr_->GetSession());
     std::unique_ptr<cms::Queue> queue(session->createQueue(settings_.activity_alert_queue));
     std::unique_ptr<cms::MessageConsumer> consumer(session->createConsumer(queue.get()));
 
@@ -132,7 +124,7 @@ TEST_F(StreamingMessagingTest, TestActivityAlertMessage) {
 
 TEST_F(StreamingMessagingTest, TestJobStatusMessage) {
 
-    std::unique_ptr<cms::Session> session(msg_mgr_->Get()->createSession());
+    std::shared_ptr<cms::Session> session(msg_mgr_->GetSession());
     std::unique_ptr<cms::Queue> queue(session->createQueue(settings_.job_status_queue));
     std::unique_ptr<cms::MessageConsumer> consumer(session->createConsumer(queue.get()));
 
@@ -198,7 +190,9 @@ TEST_F(StreamingMessagingTest, TestFrameReadyMessage) {
     long timestamp = getTimestamp();
 
     std::string selector = "SEGMENT_NUMBER = " + std::to_string(segment_number);
-    ASSERT_NO_THROW(frame_ready_reader_->RecreateConsumerWithSelector(selector));
+    ASSERT_NO_THROW(frame_ready_reader_.reset(new
+        BasicAmqMessageReader<MPFFrameReadyMessage>(settings_.frame_ready_queue,
+                                                    selector, *msg_mgr_.get())));
 
     ASSERT_NO_THROW(sender_->SendFrameReady(segment_number, index, timestamp));
 
@@ -345,7 +339,7 @@ TEST_F(StreamingMessagingTest, TestSegmentSummaryMessage) {
     // those are only ever read by the WFM. So, to make sure that the
     // message was sent properly, create a consumer for it here.
 
-    std::unique_ptr<cms::Session> session(msg_mgr_->Get()->createSession());
+    std::shared_ptr<cms::Session> session(msg_mgr_->GetSession());
     std::unique_ptr<cms::Queue> queue(session->createQueue(settings_.summary_report_queue));
     std::unique_ptr<cms::MessageConsumer> consumer(session->createConsumer(queue.get()));
 

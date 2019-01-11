@@ -28,13 +28,9 @@
 #define MPF_MESSAGING_CONNECTION_H_
 
 #include <memory>
-#include <string>
 
 #include <cms/Connection.h>
 #include <cms/Session.h>
-#include <cms/MessageConsumer.h>
-#include <cms/MessageProducer.h>
-#include <log4cxx/logger.h>
 
 #include "JobSettings.h"
 
@@ -47,13 +43,18 @@ class MPFMessagingConnection {
     
     ~MPFMessagingConnection();
 
-    std::shared_ptr<cms::Connection> Get() {
+    std::shared_ptr<cms::Connection> GetConnection() {
         return connection_;
+    }
+
+    std::shared_ptr<cms::Session> GetSession() {
+        return session_;
     }
 
   private:
 
     std::shared_ptr<cms::Connection> connection_;
+    std::shared_ptr<cms::Session> session_;
     std::shared_ptr<cms::Connection> Connect(const std::string &broker_uri);
 };
 

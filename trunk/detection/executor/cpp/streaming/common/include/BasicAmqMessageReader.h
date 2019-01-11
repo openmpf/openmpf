@@ -30,34 +30,43 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
 
 #include <cms/Connection.h>
 #include <cms/Session.h>
 #include <cms/MessageConsumer.h>
 
-#include "JobSettings.h"
+#include "MPFMessagingConnection.h"
 
 
 namespace MPF {
 
-// Attaches a consumer to a queue. The consumer may recreate itself with a
-// selector if necessary.
+// Creates a consumer of a message type T, with or without a selector.
 template<typename T>
 class BasicAmqMessageReader {
 
   public:
-    BasicAmqMessageReader(const MPF::COMPONENT::JobSettings &job_settings,
-                          const std::string &queue_name,
-                          std::shared_ptr<cms::Connection> connection_ptr)
-        : job_id_(job_settings.job_id)
-        , segment_size_(job_settings.segment_size)
-        , connection_(connection_ptr)
-        , session_(connection_->createSession())
-        , queue_(session_->createQueue(queue_name))
-        , consumer_(session_->createConsumer(queue_.get())) {}
 
-    BasicAmqMessageReader<T> &RecreateConsumerWithSelector(const std::string &selector) {
+    BasicAmqMessageReader(const std::string &queue_name,
+                          MPFMessagingConnection &connection)
+            : session_(connection.GetSession())
+            , queue_(session_->createQueue(queue_name))
+            , consumer_(session_->createConsumer(queue_.get())) {}
+
+    BasicAmqMessageReader(const std::string &queue_name,
+                          const std::string &queue_selector,
+                          MPFMessagingConnection &connection)
+            : session_(connection.GetSession())
+            , queue_(session_->createQueue(queue_name))
+            , consumer_(session_->createConsumer(queue_.get(), queue_selector)) {}
+
+    // Used to recreate the consumer on the fly.
+    BasicAmqMessageReader<T> &CreateConsumer() {
+        consumer_.reset(session_->createConsumer(queue_.get()));
+        return *this;
+    }
+
+    // Used to recreate the consumer with a selector on the fly.
+    BasicAmqMessageReader<T> &CreateConsumerWithSelector(const std::string &selector) {
         consumer_.reset(session_->createConsumer(queue_.get(), selector));
         return *this;
     }
@@ -66,15 +75,12 @@ class BasicAmqMessageReader {
 
   private:
 
-    const long job_id_;
-    const int segment_size_;
-
-    std::shared_ptr<cms::Connection> connection_;
-    std::unique_ptr<cms::Session> session_;
+    std::shared_ptr<cms::Session> session_;
     std::unique_ptr<cms::Queue> queue_;
     std::unique_ptr<cms::MessageConsumer> consumer_;
 };
 }
+
 
 
 #endif //MPF_BASICAMQMESSAGESENDER_H

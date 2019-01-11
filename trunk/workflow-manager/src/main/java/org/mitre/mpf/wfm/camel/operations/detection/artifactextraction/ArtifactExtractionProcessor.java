@@ -84,7 +84,7 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
 			// in the results map, the detection's artifact path should be set to 15's extracted frame.
 			SortedSet<Track> tracks = redis.getTracks(request.getJobId(), request.getMediaId(), request.getStageIndex(), actionIndex);
 
-			List<Integer> missingFrames = new ArrayList();
+			Set<Integer> missingFrames = new HashSet<>();
 			for(Track track : tracks) {
 
 				// The exemplar is represented separately in the JSON output object.
@@ -115,8 +115,6 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
 				transientMedia.setMessage("Error extracting frame(s): " + missingFrames);
 				transientMedia.setFailed(true);
 				redis.persistMedia(request.getJobId(), transientMedia);
-				
-				redis.addJobError(request.getJobId(), transientMedia.getUri() + ": " + transientMedia.getMessage()); // DEBUG
 			}
 		}
 
@@ -124,7 +122,7 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
 		exchange.getOut().getHeaders().put(MpfHeaders.SPLIT_SIZE, exchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE));
 	}
 
-	private void handleResult(Detection detection, String result, List<Integer> missingFrames) {
+	private void handleResult(Detection detection, String result, Set<Integer> missingFrames) {
 		if (Objects.equals(result, ERROR_PATH)) {
 			detection.setArtifactExtractionStatus(ArtifactExtractionStatus.FAILED);
 			detection.setArtifactPath(null);

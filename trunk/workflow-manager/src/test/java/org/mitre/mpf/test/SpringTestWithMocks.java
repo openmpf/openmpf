@@ -27,6 +27,7 @@
 package org.mitre.mpf.test;
 
 import org.springframework.core.Ordered;
+import org.springframework.core.annotation.AliasFor;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestContext;
@@ -47,9 +48,21 @@ import java.lang.annotation.Target;
 @ContextConfiguration
 public @interface SpringTestWithMocks {
 
-    Class<?>[] classes() default {};
+    @AliasFor(attribute = "classes", annotation = ContextConfiguration.class)
+    Class<?>[] value() default {};
 
 
+    // When test classes both require a Spring ApplicationContext and mocks, the mocks need to be added to the
+    // ApplicationContext so the mocks can be @Autowired in to the classes being tested. By default when multiple test
+    // classes run, Spring will reuse the same Application context for each test class.
+    // This can cause issues when some tests mock a service and other don't. If a test class that uses mocks runs first,
+    // all the other test classes will have mocks in their ApplicationContext, even if they are supposed to use the
+    // actual non-mocked service.
+    // The @DirtiesContext is supposed to handle the situation where you don't want the ApplicationContext to be reused.
+    // The issue is that @DirtiesContext can only mark the ApplicationContext either before or after the test class
+    // runs. This class marks the context as dirty both before and after the test class runs.
+    // The class below was the suggested solution of a Spring Test developer on StackOverflow.
+    // https://stackoverflow.com/questions/39277040/make-applicationcontext-dirty-before-and-after-test-class
     static class DirtyContextBeforeAndAfterTestExecutionListener extends AbstractTestExecutionListener {
         @Override
         public int getOrder() {

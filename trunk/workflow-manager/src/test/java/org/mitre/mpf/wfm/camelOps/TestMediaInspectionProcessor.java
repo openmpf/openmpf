@@ -50,7 +50,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-@SpringTestWithMocks(classes = MockRedisConfig.class)
+@SpringTestWithMocks(MockRedisConfig.class)
 @RunWith(SpringJUnit4ClassRunner.class)
 @RunListener.ThreadSafe
 public class TestMediaInspectionProcessor {

@@ -922,7 +922,6 @@ public class RedisImpl implements Redis {
     }
 
 
-
     /** This method is the same as {@link #getExternalId(long)}, it's just adapted for use with Lists.
      * @param jobIds List of jobIds
      * @return List of external ids for the specified jobs. The List may contain nulls for jobs that did not specify an external id.

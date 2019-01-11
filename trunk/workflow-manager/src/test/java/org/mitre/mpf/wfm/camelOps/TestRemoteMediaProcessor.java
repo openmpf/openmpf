@@ -58,7 +58,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@SpringTestWithMocks(classes = MockRedisConfig.class)
+@SpringTestWithMocks(MockRedisConfig.class)
 @RunWith(SpringJUnit4ClassRunner.class)
 public class TestRemoteMediaProcessor {
 	private static final Logger log = LoggerFactory.getLogger(TestRemoteMediaProcessor.class);

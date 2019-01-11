@@ -24,74 +24,30 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api;
 
+package org.mitre.mpf.wfm.data.access.hibernate;
+
+import javax.persistence.AttributeConverter;
+import javax.persistence.Converter;
+import java.sql.Timestamp;
 import java.time.Instant;
 
-public class SingleJobInfo {
-	private Long jobId;
-	private String pipelineName;
-	private int jobPriority = -1;
-	private String jobStatus;
-	private float jobProgress = 0;
-	private Instant startDate;
-	private Instant endDate;
-	private String outputObjectPath;
-	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
-	//to maintain the use of only standard Java in the model.api classes
-	private boolean terminal;	
+@SuppressWarnings("unused")
+@Converter(autoApply = true)
+// Allows Hibernate entities to have fields of type java.time.Instant which get properly mapped to a database column.
+public class InstantAttributeConverter implements AttributeConverter<Instant, Timestamp> {
 
-	public SingleJobInfo() {}
-	
-	public SingleJobInfo(Long jobId, String pipelineName, int jobPriority, String jobStatus, float jobProgress,
-	                     Instant startDate, Instant endDate, String outputObjectPath, boolean terminal) {
-		this.jobId = jobId;
-		this.pipelineName = pipelineName;
-		this.jobPriority = jobPriority;
-		this.jobStatus = jobStatus;
-		this.jobProgress = jobProgress;
-		this.startDate = startDate;
-		this.endDate = endDate;
-		this.outputObjectPath = outputObjectPath;
-		this.terminal = terminal;
-	}
-	
-	public Long getJobId() {
-		return jobId;
-	}
-	
-	public String getPipelineName() {
-		return pipelineName;
-	}
-	
-	public int getJobPriority() {
-		return jobPriority;
-	}
-	
-	public String getJobStatus() {
-		return jobStatus;
-	}
-	
-	public float getJobProgress() {
-		return jobProgress;
-	}
-	public void setJobProgress(float jobProgress) {
-		this.jobProgress = jobProgress;
-	}
-	
-	public Instant getStartDate() {
-		return startDate;
-	}
+    @Override
+    public Timestamp convertToDatabaseColumn(Instant instant) {
+        return instant == null
+                ? null
+                : Timestamp.from(instant);
+    }
 
-	public Instant getEndDate() {
-		return endDate;
-	}
-	
-	public String getOutputObjectPath() {
-		return outputObjectPath;
-	}
-	
-	public boolean isTerminal() {
-		return terminal;
-	}
+    @Override
+    public Instant convertToEntityAttribute(Timestamp timestamp) {
+        return timestamp == null
+                ? null
+                : timestamp.toInstant();
+    }
 }

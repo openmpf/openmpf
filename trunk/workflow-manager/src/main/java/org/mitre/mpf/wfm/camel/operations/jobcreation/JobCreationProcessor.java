@@ -52,8 +52,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -212,7 +212,7 @@ public class JobCreationProcessor extends WfmProcessor {
 					log.warn("Failed to parse the input object for Batch Job #{} due to an exception.", jobRequestEntity.getId(), exception);
 				}
 				jobRequestEntity.setStatus(BatchJobStatusType.JOB_CREATION_ERROR);
-				jobRequestEntity.setTimeCompleted(new Date());
+				jobRequestEntity.setTimeCompleted(Instant.now());
 				jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 			} catch(Exception persistException) {
 				log.warn("Failed to mark Batch Job #{} as failed due to an exception. It will remain it its current state until manually changed.", jobRequestEntity, persistException);

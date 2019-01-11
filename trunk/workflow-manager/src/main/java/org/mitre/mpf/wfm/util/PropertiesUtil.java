@@ -57,7 +57,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 
 import static java.util.stream.Collectors.*;
@@ -318,8 +318,8 @@ public class PropertiesUtil {
      * @return output object File that was created under the specified output objects directory
      * @throws IOException
      */
-    public File createStreamingOutputObjectsFile(LocalDateTime time, File parentDir) throws IOException {
-        String fileName = String.format("summary-report %s.json", TimeUtils.getLocalDateTimeAsString(time));
+    public File createStreamingOutputObjectsFile(Instant time, File parentDir) throws IOException {
+        String fileName = String.format("summary-report %s.json", TimeUtils.toIsoString(time));
         Path path = Paths.get(parentDir.toURI()).resolve(fileName).normalize().toAbsolutePath();
         Files.createDirectories(path.getParent());
         return path.toFile();

@@ -92,6 +92,9 @@ public class TestStreamingJobStartStop {
 	@Autowired
 	private MasterNode _masterNode;
 
+	@Autowired
+	private ObjectMapper _objectMapper;
+
 
 	@Test(timeout = 5 * 60_000)
 	public void testJobStartStop() throws InterruptedException {
@@ -191,7 +194,7 @@ public class TestStreamingJobStartStop {
 
 		URL expectedOutputPath = getClass().getClassLoader()
 				.getResource("output/object/runDarknetDetectVideo.json");
-		JsonOutputObject expectedOutputJson = new ObjectMapper().readValue(expectedOutputPath, JsonOutputObject.class);
+		JsonOutputObject expectedOutputJson = _objectMapper.readValue(expectedOutputPath, JsonOutputObject.class);
 
 		boolean allExpectedTracksFound = expectedOutputJson.getMedia()
 				.stream()

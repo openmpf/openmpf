@@ -51,6 +51,7 @@ import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.rest.client.CustomRestClient;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.ui.Utils;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,6 +70,7 @@ public class ITComponentLifecycle {
     private static final Logger log = LoggerFactory.getLogger(ITComponentLifecycle.class);
     private static RestClient client;
     private static CustomRestClient customClient;
+    private static final ObjectMapper objectMapper = ObjectMapperFactory.customObjectMapper();
     private final int MINUTES = 60 * 1000;  // millisec
 
     // use url with port 8080 for testing with Intellij and 8181 for running mvn verify
@@ -144,9 +146,8 @@ public class ITComponentLifecycle {
             log.error("IOException occurred while getting deployed node manager info");
             e.printStackTrace();
         }
-        ObjectMapper mapper = new ObjectMapper();
         try {
-            model = mapper.treeToValue(node, DeployedNodeManagerModel.class);
+            model = objectMapper.treeToValue(node, DeployedNodeManagerModel.class);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

@@ -29,6 +29,7 @@ package org.mitre.mpf.mvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.atmosphere.config.managed.Encoder;
 import org.mitre.mpf.mvc.model.AtmosphereMessage;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +71,7 @@ public class JacksonEncoder implements Encoder<AtmosphereMessage, String>/*, Dec
 	@PostConstruct //solves the current injection issue
 	private void init() {
 		if(mapper == null) {
-			mapper = new ObjectMapper();
+			mapper = ObjectMapperFactory.customObjectMapper();
 		}
 	}
 }

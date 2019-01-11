@@ -115,15 +115,12 @@ AppDirectives.directive('pipelineSelection', function ($log, PipelinesService, J
             PipelinesService.getAvailablePipelines().then(function (pipelinesList) {
                 if (pipelinesList) {
                     // sort the list first
-                    pipelinesList.pipelines.pipeline = pipelinesList.pipelines.pipeline.sort( function(a,b) {
+                    pipelinesList.sort(function (a, b) {
                         if (a.name.toUpperCase() > b.name.toUpperCase()) { return 1; }
                         if (a.name.toUpperCase() < b.name.toUpperCase()) { return -1; }
                         return 0;
                     });
-                    angular.forEach(pipelinesList.pipelines.pipeline, function (value) {
-                        this.push(value);
-                    }, $scope.pipelinesCollection);
-                    //$log.debug('$scope.pipelinesCollection length', angular.toJson($scope.pipelinesCollection));
+                    $scope.pipelinesCollection = pipelinesList;
                 } else {
                     $log.error("No pipelines retrieved!");
                 }

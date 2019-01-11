@@ -40,6 +40,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import spark.Request;
 import spark.Response;
@@ -71,7 +72,7 @@ public class TestCustomNginxStorageBackend {
 
     private final PropertiesUtil _mockPropertiesUtil = mock(PropertiesUtil.class);
 
-    private static final ObjectMapper _objectMapper = new ObjectMapper();
+    private static final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
 
 
     private final CustomNginxStorageBackend _nginxStorageService

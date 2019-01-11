@@ -63,6 +63,7 @@ import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.*;
 
 
@@ -94,11 +95,13 @@ public class TestWfmEndToEnd {
 	@Qualifier(JobCompleteProcessorImpl.REF)
 	private JobCompleteProcessor jobCompleteProcessor;
 
+	@Autowired
+	private ObjectMapper objectMapper;
+
 	protected static final int MINUTES = 1000 * 60; // 1000 milliseconds/second & 60 seconds/minute.
 
 	protected static final Logger log = LoggerFactory.getLogger(TestWfmEndToEnd.class);
 
-	protected static final ObjectMapper objectMapper = new ObjectMapper();
 
 	protected static boolean hasInitialized = false;
 	protected static int testCtr = 0;
@@ -210,7 +213,7 @@ public class TestWfmEndToEnd {
 
 		JsonOutputObject jsonOutputObject = objectMapper.readValue(outputObjectPath.toFile(), JsonOutputObject.class);
 		Assert.assertEquals(jsonOutputObject.getJobId(), jobId);
-		String start = jsonOutputObject.getTimeStart(),
+		Instant start = jsonOutputObject.getTimeStart(),
 				stop = jsonOutputObject.getTimeStop();
 
 		completedJobs.clear();

@@ -80,7 +80,6 @@ public abstract class TestSystem {
 
 	protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
-	protected static final ObjectMapper objectMapper = new ObjectMapper();
 
 	protected static int testCtr = 0;
 
@@ -117,6 +116,9 @@ public abstract class TestSystem {
 
     @Autowired
     protected PipelineService pipelineService;
+
+    @Autowired
+	protected ObjectMapper objectMapper;
 
 	@Autowired
 	@Qualifier(JobCompleteProcessorImpl.REF)

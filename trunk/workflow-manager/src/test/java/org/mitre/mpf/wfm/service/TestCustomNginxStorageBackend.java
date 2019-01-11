@@ -42,6 +42,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ThreadUtil;
 import spark.Request;
 import spark.Response;
 import spark.Route;
@@ -83,6 +84,7 @@ public class TestCustomNginxStorageBackend {
     @BeforeClass
     public static void initClass() {
         startSpark();
+        ThreadUtil.start();
     }
 
     @AfterClass

@@ -24,43 +24,63 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.framecounter;
+
+package org.mitre.mpf;
 
 import org.junit.Assert;
-import org.junit.Test;
-import org.mitre.mpf.JniTestUtils;
 
 import java.io.File;
-import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
 
-public class TestFrameCounter {
+public class JniTestUtils {
+
+    private static final boolean _jniLibsLoaded;
+
     static {
-        Assert.assertTrue(JniTestUtils.jniLibsLoaded());
-    }
-
-    @Test
-    public void testFrameCounterOnVideo() {
-        countFrames("samples/five-second-marathon-clip-numbered.mp4", false, 2000);
-    }
-
-    @Test
-    public void testFrameCounterOnGif() {
-        countFrames("samples/face-morphing.gif", true, 29);
-    }
-
-
-    private static void countFrames(String filePath, boolean bruteForce, int expectedCount) {
-        try {
-            File sourceFile = new File(JniTestUtils.getFileResource(filePath));
-
-            if (!sourceFile.exists()) {
-                throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
+        String mpfHome = System.getenv("MPF_HOME");
+        List<String> libNames = Arrays.asList("libmpfDetectionComponentApi.so", "libmpfopencvjni.so");
+        for (String libName : libNames) {
+            try {
+                String libraryFile = new File("install/lib", libName).getAbsolutePath();
+                System.load(libraryFile);
             }
+            catch (UnsatisfiedLinkError e) {
+                if (mpfHome == null) {
+                    throw e;
+                }
+                String libraryFile = new File(mpfHome, "lib/" + libName).getAbsolutePath();
+                System.load(libraryFile);
+            }
+        }
+        _jniLibsLoaded = true;
+    }
 
-            FrameCounter counter = new FrameCounter(sourceFile);
-            Assert.assertEquals("Did not count the expected number of frames.", expectedCount, counter.count(bruteForce));
-        } catch (IOException ioe) {
-            Assert.fail(String.format("Encountered an exception when none was expected. %s", ioe));
+
+    private JniTestUtils() {
+
+    }
+
+    /**
+     * This method exists to force the static initializer run when running unit tests. This should always return true.
+     * @return true
+     */
+    public static boolean jniLibsLoaded() {
+        return _jniLibsLoaded;
+    }
+
+
+    public static URI getFileResource(String resourcePath) {
+        try {
+            URL resource = JniTestUtils.class.getClassLoader().getResource(resourcePath);
+            Assert.assertNotNull(resourcePath);
+            return resource.toURI();
+        }
+        catch (URISyntaxException e) {
+            throw new IllegalStateException(e);
         }
     }
 }

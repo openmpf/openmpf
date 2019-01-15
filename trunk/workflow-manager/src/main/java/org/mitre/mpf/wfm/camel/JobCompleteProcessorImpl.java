@@ -250,7 +250,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 						String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), transientAction.getName());
 
 						for (DetectionProcessingError detectionProcessingError : redis.getDetectionProcessingErrors(jobId, transientMedia.getId(), stageIndex, actionIndex)) {
-							hasDetectionProcessingError = true;
+							hasDetectionProcessingError = !MpfConstants.REQUEST_CANCELLED.equals(detectionProcessingError.getError());
 							JsonDetectionProcessingError jsonDetectionProcessingError = new JsonDetectionProcessingError(detectionProcessingError.getStartOffset(), detectionProcessingError.getEndOffset(), detectionProcessingError.getError());
 							if (!mediaOutputObject.getDetectionProcessingErrors().containsKey(stateKey)) {
 								mediaOutputObject.getDetectionProcessingErrors().put(stateKey, new TreeSet<>());

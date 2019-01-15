@@ -49,7 +49,7 @@ import java.lang.annotation.Target;
 public @interface SpringTestWithMocks {
 
     @AliasFor(attribute = "classes", annotation = ContextConfiguration.class)
-    Class<?>[] value() default {};
+    Class<? extends MockFactory>[] value() default {};
 
 
     // When test classes both require a Spring ApplicationContext and mocks, the mocks need to be added to the
@@ -77,6 +77,14 @@ public @interface SpringTestWithMocks {
         @Override
         public void afterTestClass(TestContext testContext) {
             testContext.markApplicationContextDirty(DirtiesContext.HierarchyMode.CURRENT_LEVEL);
+        }
+
+        @Override
+        public void afterTestMethod(TestContext testContext) {
+            testContext.getApplicationContext()
+                    .getBeansOfType(MockFactory.class)
+                    .values()
+                    .forEach(MockFactory::reset);
         }
     }
 }

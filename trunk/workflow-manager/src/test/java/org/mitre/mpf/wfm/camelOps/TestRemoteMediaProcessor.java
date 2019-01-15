@@ -39,9 +39,11 @@ import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.WfmSplitterInterface;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
+import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
@@ -57,6 +59,10 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.mitre.mpf.test.TestUtil.whereArg;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.verify;
 
 @SpringTestWithMocks(MockRedisConfig.class)
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -84,6 +90,9 @@ public class TestRemoteMediaProcessor {
 
 	@Autowired
 	private PropertiesUtil propertiesUtil;
+
+	@Autowired
+	private Redis mockRedis;
 
 	private TransientJob transientJob;
 
@@ -132,12 +141,14 @@ public class TestRemoteMediaProcessor {
 	@Test(timeout = 5 * MINUTES)
 	public void testValidRetrieveRequest() throws Exception {
 		log.info("Starting valid image retrieval request.");
+		long jobId = next();
+		long mediaId = next();
 
-		TransientMedia transientMedia = new TransientMedia(next(), EXT_IMG);
+		TransientMedia transientMedia = new TransientMedia(mediaId, EXT_IMG);
 		transientMedia.setLocalPath(ioUtils.createTemporaryFile().getAbsolutePath());
 
 		Exchange exchange = new DefaultExchange(camelContext);
-		exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
+		exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, jobId);
 		exchange.getIn().setBody(jsonUtils.serialize(transientMedia));
 		remoteMediaProcessor.process(exchange);
 
@@ -153,18 +164,23 @@ public class TestRemoteMediaProcessor {
 						responseTransientMedia.getMessage()),
 				!responseTransientMedia.isFailed());
 
+		verify(mockRedis)
+				.persistMedia(eq(jobId), whereArg(m -> m.getId() == mediaId && !m.isFailed()));
+
 		log.info("Remote valid image retrieval request passed.");
 	}
 
 	@Test(timeout = 5 * MINUTES)
 	public void testInvalidRetrieveRequest() throws Exception {
 		log.info("Starting invalid image retrieval request.");
+		long jobId = next();
+		long mediaId = next();
 
-		TransientMedia transientMedia = new TransientMedia(next(), "https://www.mitre.org/"+UUID.randomUUID().toString());
+		TransientMedia transientMedia = new TransientMedia(mediaId, "https://www.mitre.org/"+UUID.randomUUID().toString());
 		transientMedia.setLocalPath(ioUtils.createTemporaryFile().getAbsolutePath());
 
 		Exchange exchange = new DefaultExchange(camelContext);
-		exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
+		exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, jobId);
 		exchange.getIn().setBody(jsonUtils.serialize(transientMedia));
 		remoteMediaProcessor.process(exchange);
 
@@ -179,6 +195,12 @@ public class TestRemoteMediaProcessor {
 						Boolean.toString(responseTransientMedia.isFailed()),
 						responseTransientMedia.getMessage()),
 				responseTransientMedia.isFailed());
+
+		verify(mockRedis)
+				.setJobStatus(jobId, BatchJobStatusType.ERROR);
+
+		verify(mockRedis)
+				.persistMedia(eq(jobId), whereArg(m -> m.getId() == mediaId && m.isFailed()));
 
 		log.info("Remote invalid image retrieval request passed.");
 	}

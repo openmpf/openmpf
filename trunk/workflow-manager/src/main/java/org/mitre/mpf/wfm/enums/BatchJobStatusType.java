@@ -107,9 +107,9 @@ public enum BatchJobStatusType {
      */
     ERROR(true);
 
-    public static BatchJobStatusType DEFAULT = COMPLETE;
+    private static final BatchJobStatusType DEFAULT = COMPLETE;
 
-    protected boolean terminal;
+    private final boolean terminal;
 
     public boolean isTerminal() {
         return terminal;

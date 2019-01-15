@@ -33,14 +33,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Primary;
 
-import static org.mockito.Mockito.mock;
-
 @Configuration
 @ImportResource("classpath:applicationContext.xml")
-public class MockRedisConfig {
+public class MockRedisConfig extends MockFactory {
     @Bean
     @Primary
     public Redis redis() {
-        return mock(Redis.class);
+        return createMock(Redis.class);
     }
 }

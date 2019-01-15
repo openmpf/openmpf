@@ -38,7 +38,9 @@ import org.mitre.mpf.test.MockRedisConfig;
 import org.mitre.mpf.test.SpringTestWithMocks;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
+import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
@@ -49,6 +51,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.mitre.mpf.test.TestUtil.whereArg;
+import static org.mockito.Mockito.*;
 
 @SpringTestWithMocks(MockRedisConfig.class)
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -70,6 +75,9 @@ public class TestMediaInspectionProcessor {
     @Autowired
     private JsonUtils jsonUtils;
 
+    @Autowired
+    private Redis mockRedis;
+
     private static final AtomicInteger SEQUENCE = new AtomicInteger();
     public int next() {
         return SEQUENCE.getAndIncrement();
@@ -79,10 +87,12 @@ public class TestMediaInspectionProcessor {
 	@Test(timeout = 5 * MINUTES)
 	public void testImageInspection() throws Exception {
 		log.info("Starting image inspection test.");
+		long jobId = next();
+		long mediaId = next();
 
-		TransientMedia transientMedia = new TransientMedia(next(), ioUtils.findFile("/samples/meds1.jpg").toString());
+		TransientMedia transientMedia = new TransientMedia(mediaId, ioUtils.findFile("/samples/meds1.jpg").toString());
 		Exchange exchange = new DefaultExchange(camelContext);
-		exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
+		exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, jobId);
 		exchange.getIn().setBody(jsonUtils.serialize(transientMedia));
 		mediaInspectionProcessor.process(exchange);
 
@@ -110,18 +120,22 @@ public class TestMediaInspectionProcessor {
 		Assert.assertTrue(String.format("The medium's hash should have matched '%s'. Actual: %s.", targetHash, responseTransientMedia.getSha256()),
 				targetHash.equalsIgnoreCase(responseTransientMedia.getSha256()));
 
+        verifyMediaPersisted(jobId, mediaId);
+
 		log.info("Image inspection passed.");
 	}
+
 
 	/** Tests that the results from a video file are sane. */
 	@Test(timeout = 5 * MINUTES)
 	public void testVideoInspection() throws Exception {
 		log.info("Starting video inspection test.");
+        long jobId = next();
+        long mediaId = next();
 
-		TransientMedia transientMedia = new TransientMedia(next(), ioUtils.findFile("/samples/video_01.mp4").toString());
-
+		TransientMedia transientMedia = new TransientMedia(mediaId, ioUtils.findFile("/samples/video_01.mp4").toString());
         Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
+        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, jobId);
         exchange.getIn().setBody(jsonUtils.serialize(transientMedia));
         mediaInspectionProcessor.process(exchange);
 
@@ -148,6 +162,7 @@ public class TestMediaInspectionProcessor {
         String targetHash = "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea"; //`sha256sum video_01.mp4`
         Assert.assertTrue(String.format("The medium's hash should have matched '%s'. Actual: %s.", targetHash, responseTransientMedia.getSha256()),
                 targetHash.equalsIgnoreCase(responseTransientMedia.getSha256()));
+        verifyMediaPersisted(jobId, mediaId);
 
         log.info("Video inspection passed.");
     }
@@ -156,11 +171,12 @@ public class TestMediaInspectionProcessor {
     @Test(timeout = 5 * MINUTES)
     public void testVideoInspectionInvalid() throws Exception {
         log.info("Starting invalid video inspection test.");
+        long jobId = next();
+        long mediaId = next();
 
-        TransientMedia transientMedia = new TransientMedia(next(), ioUtils.findFile("/samples/video_01_invalid.mp4").toString());
-
+        TransientMedia transientMedia = new TransientMedia(mediaId, ioUtils.findFile("/samples/video_01_invalid.mp4").toString());
         Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
+        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, jobId);
         exchange.getIn().setBody(jsonUtils.serialize(transientMedia));
         mediaInspectionProcessor.process(exchange);
 
@@ -178,18 +194,22 @@ public class TestMediaInspectionProcessor {
 
         log.info("Media Inspection correctly handled error on invalid video file.");
 
+        verifyJobStatusSet(jobId, BatchJobStatusType.ERROR);
+        verifyMediaPersistedWithError(jobId, mediaId);
     }
+
 
 	/** Tests that the results from an audio file are sane. */
 	@Test(timeout = 5 * MINUTES)
 	public void testAudioInspection() throws Exception {
 		log.info("Starting audio inspection test.");
+        long jobId = next();
+        long mediaId = next();
 
 		// TODO: Implement test.
-		TransientMedia transientMedia = new TransientMedia(next(), ioUtils.findFile("/samples/green.wav").toString());
-
+		TransientMedia transientMedia = new TransientMedia(mediaId, ioUtils.findFile("/samples/green.wav").toString());
         Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
+        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, jobId);
         exchange.getIn().setBody(jsonUtils.serialize(transientMedia));
         mediaInspectionProcessor.process(exchange);
 
@@ -217,6 +237,8 @@ public class TestMediaInspectionProcessor {
         Assert.assertTrue(String.format("The medium's hash should have matched '%s'. Actual: %s.", targetHash, responseTransientMedia.getSha256()),
                 targetHash.equalsIgnoreCase(responseTransientMedia.getSha256()));
 
+        verifyMediaPersisted(jobId, mediaId);
+
 		log.info("Audio inspection passed.");
 	}
 
@@ -224,11 +246,13 @@ public class TestMediaInspectionProcessor {
 	@Test(timeout = 5 * MINUTES)
 	public void testInaccessibleFileInspection() throws Exception {
 		log.info("Starting inaccessible file inspection test.");
+        long jobId = next();
+        long mediaId = next();
 
 		// TODO: Implement test.
-		TransientMedia transientMedia = new TransientMedia(next(), "file:/asdfasfdasdf124124sadfasdfasdf.bin");
+		TransientMedia transientMedia = new TransientMedia(mediaId, "file:/asdfasfdasdf124124sadfasdfasdf.bin");
         Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
+        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, jobId);
         exchange.getIn().setBody(jsonUtils.serialize(transientMedia));
         mediaInspectionProcessor.process(exchange);
 
@@ -238,6 +262,24 @@ public class TestMediaInspectionProcessor {
         Assert.assertTrue(responseTransientMedia.isFailed());
         Assert.assertNotNull(responseTransientMedia.getMessage());  //failed processing but response handled and message body populated.
 
+        verifyMediaPersistedWithError(jobId, mediaId);
+        verifyJobStatusSet(jobId, BatchJobStatusType.ERROR);
 		log.info("Inaccessible file inspection passed.");
 	}
+
+
+    private void verifyMediaPersisted(long jobId, long mediaId) {
+        verify(mockRedis)
+                .persistMedia(eq(jobId), whereArg(tm -> tm.getId() == mediaId && !tm.isFailed()));
+    }
+
+    private void verifyMediaPersistedWithError(long jobId, long mediaId) {
+        verify(mockRedis)
+                .persistMedia(eq(jobId), whereArg(tm -> tm.getId() == mediaId && tm.isFailed()));
+    }
+
+    private void verifyJobStatusSet(long jobId, BatchJobStatusType statusType) {
+        verify(mockRedis)
+                .setJobStatus(jobId, statusType);
+    }
 }

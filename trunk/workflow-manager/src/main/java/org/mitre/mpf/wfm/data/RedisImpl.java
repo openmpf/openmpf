@@ -138,7 +138,7 @@ public class RedisImpl implements Redis {
         }
         throwIfStreamingJob(detectionProcessingError.getJobId());
         throw new WfmProcessingException(String.format(
-                "Warning, jobId %s is not known to the system. Failed to add the detection processing error.",
+                "JobId %s is not known to the system. Failed to add the detection processing error.",
                 detectionProcessingError.getJobId()));
     }
 
@@ -156,7 +156,7 @@ public class RedisImpl implements Redis {
         }
         throwIfStreamingJob(track.getJobId());
         throw new WfmProcessingException(String.format(
-                "Warning, jobId %s is not known to the system. Failed to add the track.", track.getJobId()));
+                "JobId %s is not known to the system. Failed to add the track.", track.getJobId()));
     }
 
 
@@ -705,15 +705,14 @@ public class RedisImpl implements Redis {
      */
     @Override
     public synchronized void setCurrentTaskIndex(long jobId, int taskIndex) throws WfmProcessingException {
-        if ( isJobTypeBatch(jobId) ) {
-            redisTemplate.boundHashOps(key(BATCH_JOB, jobId)).put(TASK, taskIndex);
-        } else if ( isJobTypeStreaming(jobId) ) {
-            // This method should not be called for a streaming job.
-            throw new WfmProcessingException("Error: This method should not be called for streaming jobs. Rejected this call for streaming job " + jobId);
-        } else {
-            // The specified jobId is not known to the system. This shouldn't happen, but if it does handle it gracefully by logging a warning and ignoring the request.
-            log.warn("Job #{} was not found as a batch or a streaming job so we can't set the current task index", jobId);
+        if (isJobTypeBatch(jobId)) {
+            redisTemplate.boundHashOps(key(BATCH_JOB, jobId))
+                    .put(TASK, taskIndex);
+            return;
         }
+        throwIfStreamingJob(jobId);
+        throw new WfmProcessingException(String.format(
+                "Job #%s was not found as a batch or a streaming job so we can't set the current task index", jobId));
     }
 
     /**

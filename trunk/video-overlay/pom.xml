@@ -57,18 +57,13 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>2.6</version>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.14</version>
                 <configuration>
                     <workingDirectory>../</workingDirectory>
                 </configuration>
             </plugin>
+
             <!-- Build the video-overlay RPM -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

@@ -43,23 +43,39 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
 	private int actionIndex;
 	public int getActionIndex() { return actionIndex; }
 
-	private int startOffset;
-	public int getStartOffset() { return startOffset; }
+	private int startFrame;
+	public int getStartFrame() { return startFrame; }
 
-	private int endOffset;
-	public int getEndOffset() { return endOffset; }
+	private int stopFrame;
+	public int getStopFrame() { return stopFrame; }
+
+	private int startTime;
+	public int getStartTime() { return startTime; }
+
+	private int stopTime;
+	public int getStopTime() { return stopTime; }
 
 	private String error;
 	public String getError() { return error; }
 
 	@JsonCreator
-	public DetectionProcessingError(@JsonProperty("jobId") long jobId, @JsonProperty("mediaId") long mediaId, @JsonProperty("stageIndex") int stageIndex, @JsonProperty("actionIndex") int actionIndex, @JsonProperty("startOffset") int startOffset, @JsonProperty("endOffset") int endOffset, @JsonProperty("error") String error) {
+	public DetectionProcessingError(@JsonProperty("jobId") long jobId,
+									@JsonProperty("mediaId") long mediaId,
+									@JsonProperty("stageIndex") int stageIndex,
+									@JsonProperty("actionIndex") int actionIndex,
+									@JsonProperty("startFrame") int startFrame,
+									@JsonProperty("stopFrame") int stopFrame,
+									@JsonProperty("startTime") int startTime,
+									@JsonProperty("stopTime") int stopTime,
+									@JsonProperty("error") String error) {
 		this.jobId = jobId;
 		this.mediaId = mediaId;
 		this.stageIndex = stageIndex;
 		this.actionIndex = actionIndex;
-		this.startOffset = startOffset;
-		this.endOffset = endOffset;
+		this.startFrame = startFrame;
+		this.stopFrame = stopFrame;
+		this.startTime = startTime;
+		this.stopTime = stopTime;
 		this.error = error;
 	}
 
@@ -70,8 +86,10 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
 		hash = 13 * hash + (int)(mediaId ^ (mediaId >>> 32));
 		hash = 13 * hash + stageIndex;
 		hash = 13 * hash + actionIndex;
-		hash = 13 * hash + startOffset;
-		hash = 13 * hash + endOffset;
+		hash = 13 * hash + startFrame;
+		hash = 13 * hash + stopFrame;
+		hash = 13 * hash + startTime;
+		hash = 13 * hash + stopTime;
 		hash = 13 * hash + TextUtils.nullSafeHashCode(error);
 		return hash;
 	}
@@ -86,16 +104,18 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
 				mediaId == casted.mediaId &&
 				stageIndex == casted.stageIndex &&
 				actionIndex == casted.actionIndex &&
-				startOffset == casted.startOffset &&
-				endOffset == casted.endOffset &&
+				startFrame == casted.startFrame &&
+				stopFrame == casted.stopFrame &&
+				startTime == casted.startTime &&
+				stopTime == casted.stopTime &&
 				TextUtils.nullSafeEquals(error, casted.error);
 		}
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s#<jobId=%d, mediaId=%d, stageIndex=%d, actionIndex=%d, startOffset=%d, endOffset=%d, error='%s'>",
-				this.getClass().getSimpleName(), jobId, mediaId, stageIndex, actionIndex, startOffset, endOffset, error);
+		return String.format("%s#<jobId=%d, mediaId=%d, stageIndex=%d, actionIndex=%d, startFrame=%d, stopFrame=%d, startTime=%d, stopTime=%d, error='%s'>",
+				this.getClass().getSimpleName(), jobId, mediaId, stageIndex, actionIndex, startFrame, stopFrame, startTime, stopTime, error);
 	}
 
 	@Override
@@ -108,8 +128,10 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
 				(comparisonResult = Long.compare(mediaId, other.mediaId)) == 0 &&
 				(comparisonResult = Integer.compare(stageIndex, other.stageIndex)) == 0 &&
 				(comparisonResult = Integer.compare(actionIndex, other.actionIndex)) == 0 &&
-				(comparisonResult = Integer.compare(startOffset, other.startOffset)) == 0 &&
-				(comparisonResult = Integer.compare(endOffset, other.endOffset)) == 0 &&
+				(comparisonResult = Integer.compare(startFrame, other.startFrame)) == 0 &&
+				(comparisonResult = Integer.compare(stopFrame, other.stopFrame)) == 0 &&
+				(comparisonResult = Integer.compare(startTime, other.startTime)) == 0 &&
+				(comparisonResult = Integer.compare(stopTime, other.stopTime)) == 0 &&
 				(comparisonResult = TextUtils.nullSafeCompare(error, other.error)) == 0) {
 				return 0;
 			} else {

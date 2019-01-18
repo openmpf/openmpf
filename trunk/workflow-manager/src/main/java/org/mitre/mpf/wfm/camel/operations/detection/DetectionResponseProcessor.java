@@ -61,71 +61,48 @@ public class DetectionResponseProcessor
 
 	@Override
 	public Object processResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, Map<String, Object> headers) throws WfmProcessingException {
-		String logLabel = String.format("Job %d|%d|%d", jobId, detectionResponse.getStageIndex(), detectionResponse.getActionIndex());
 
-		Float fps = null;
-		TransientMedia media = loadMedia(jobId, detectionResponse.getMediaId());
-		if (DetectionProtobuf.DetectionResponse.DataType.VIDEO.equals(detectionResponse.getDataType())) {
-			if (media.getMetadata("FPS") != null) {
-				fps = Float.valueOf(media.getMetadata("FPS"));
-				log.debug("FPS of {}", fps);
-			}
+		int totalResponses = detectionResponse.getVideoResponsesCount() +
+				detectionResponse.getAudioResponsesCount() +
+				detectionResponse.getImageResponsesCount() +
+				detectionResponse.getGenericResponsesCount();
+
+		if (totalResponses > 1) {
+			throw new WfmProcessingException(
+					String.format("Unsupported operation. More than one DetectionResponse type found for job {}: {}",
+							jobId, detectionResponse)); // TODO: Test this
 		}
 
-		log.debug("[{}] Response received for Media #{} [{}-{}]. Stage: '{}'. Action: '{}'.",
-				logLabel,
-				detectionResponse.getMediaId(),
-				detectionResponse.getStartIndex(),
-				detectionResponse.getStopIndex(),
-				detectionResponse.getStageName(),
-				detectionResponse.getActionName());
+		if (totalResponses > 0) {
 
-		if(detectionResponse.getError() != DetectionProtobuf.DetectionError.NO_DETECTION_ERROR) {
-
-			// Some error occurred during detection. Store this error.
-			if(detectionResponse.getError() != DetectionProtobuf.DetectionError.REQUEST_CANCELLED) {
-			    log.warn("[{}] Encountered a detection error while processing Media #{} [{}, {}]: {}", logLabel, detectionResponse.getMediaId(), detectionResponse.getStartIndex(), detectionResponse.getStopIndex(), detectionResponse.getError());
-			} else {
-				log.debug("[{}] Encountered a detection error while processing Media #{} [{}, {}]: {}", logLabel, detectionResponse.getMediaId(), detectionResponse.getStartIndex(), detectionResponse.getStopIndex(), detectionResponse.getError());
-			}
-
-			DetectionProcessingError detectionProcessingError = new DetectionProcessingError(jobId, detectionResponse.getMediaId(), detectionResponse.getStageIndex(), detectionResponse.getActionIndex(), detectionResponse.getStartIndex(), detectionResponse.getStopIndex(), Objects.toString(detectionResponse.getError()));
-			if(!redis.addDetectionProcessingError(detectionProcessingError)) {
-
-				// We failed to persist the detection error. The user will have no record of this error except this log message.
-				log.warn("[{}] Failed to persist {} in the transient data store. The results of this job are unreliable.", logLabel, detectionProcessingError);
-			}
-
-			redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
-		}
-
-		if (detectionResponse.getAudioResponsesCount() == 0
-				&& detectionResponse.getVideoResponsesCount() == 0
-				&& detectionResponse.getImageResponsesCount() == 0
-				&& detectionResponse.getGenericResponsesCount() == 0  ) {
-
-			// The detector did not find any tracks in the medium between the given range. This isn't an error, but it is worth logging.
-			log.debug("[{}] No tracks were found in Media #{} [{}, {}].", logLabel, detectionResponse.getMediaId(), detectionResponse.getStageIndex(), detectionResponse.getStopIndex());
-
-
-		} else {
 			// Look for a confidence threshold.  If confidence threshold is defined, only return detections above the threshold.
 			ActionDefinition action = pipelineService.getAction(detectionResponse.getActionName());
 			TransientJob job = redis.getJob(jobId, detectionResponse.getMediaId());
+			TransientMedia media = loadMedia(jobId, detectionResponse.getMediaId());
 
 			double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
 
-			// Process each type of response individually.
-			processVideoResponses(jobId, detectionResponse, fps, confidenceThreshold);
-			processAudioResponses(jobId, detectionResponse, confidenceThreshold);
-			processImageResponses(jobId, detectionResponse, confidenceThreshold);
-			processGenericResponses(jobId, detectionResponse, confidenceThreshold);
+			if (detectionResponse.getVideoResponsesCount() != 0) {
+				processVideoResponse(jobId, detectionResponse, detectionResponse.getVideoResponses(0), confidenceThreshold, media);
+
+			} else if (detectionResponse.getAudioResponsesCount() != 0) {
+				processAudioResponse(jobId, detectionResponse, detectionResponse.getAudioResponses(0), confidenceThreshold);
+
+			} else if (detectionResponse.getImageResponsesCount() != 0) {
+				processImageResponse(jobId, detectionResponse, detectionResponse.getImageResponses(0), confidenceThreshold);
+
+			} else {
+				processGenericResponse(jobId, detectionResponse, detectionResponse.getGenericResponses(0), confidenceThreshold);
+			}
+		} else {
+			String mediaLabel = getBasicMediaLabel(detectionResponse);
+			log.debug("[{}] Response received, but no tracks were found for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+			checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
 		}
 
 		return jsonUtils.serialize(new TrackMergingContext(jobId, detectionResponse.getStageIndex()));
 	}
 
-	// transientJob coming from REDIS
 	private double calculateConfidenceThreshold(ActionDefinition action, TransientJob job, TransientMedia media) {
 		double confidenceThreshold = job.getDetectionSystemPropertiesSnapshot().getConfidenceThreshold();
 		String confidenceThresholdProperty = AggregateJobPropertiesUtil.calculateValue(
@@ -153,7 +130,7 @@ public class DetectionResponseProcessor
 		return confidenceThreshold;
 	}
 
-
+	// TODO: Improve efficiency. Get the media from Redis using the jobId and mediaId directly.
 	private TransientMedia loadMedia(long jobId, long mediaId) throws WfmProcessingException {
 		List<TransientMedia> mediaList = redis.getJob(jobId, mediaId).getMedia();
 		for (TransientMedia item : mediaList) {
@@ -161,141 +138,140 @@ public class DetectionResponseProcessor
 				return item;
 			}
 		}
-
 		return null;
 	}
 
-	private void processVideoResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, Float fps, double confidenceThreshold) {
-		// Iterate through the videoResponse
-		for (DetectionProtobuf.DetectionResponse.VideoResponse videoResponse : detectionResponse.getVideoResponsesList()) {
-			// Begin iterating through the tracks that were found by the detector.
-			for (DetectionProtobuf.VideoTrack objectTrack : videoResponse.getVideoTracksList()) {
+	private void processVideoResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse,
+									   DetectionProtobuf.DetectionResponse.VideoResponse videoResponse,
+									   double confidenceThreshold, TransientMedia media) {
 
-				int startOffsetTime = (fps == null ? 0 : Math.round(objectTrack.getStartFrame() * 1000 / fps));
-				int stopOffsetTime  = (fps == null ? 0 : Math.round(objectTrack.getStopFrame()  * 1000 / fps));
-
-				// Create a new Track object.
-				Track track = new Track(
-						jobId,
-						detectionResponse.getMediaId(),
-						detectionResponse.getStageIndex(),
-						detectionResponse.getActionIndex(),
-						objectTrack.getStartFrame(),
-						objectTrack.getStopFrame(),
-						startOffsetTime,
-						stopOffsetTime,
-						videoResponse.getDetectionType(),
-						objectTrack.getConfidence());
-
-				track.getTrackProperties().putAll(toMap(objectTrack.getDetectionPropertiesList()));
-
-
-				// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
-				for (DetectionProtobuf.VideoTrack.FrameLocationMap locationMap : objectTrack.getFrameLocationsList()) {
-					DetectionProtobuf.ImageLocation location = locationMap.getImageLocation();
-
-					if (location.getConfidence() >= confidenceThreshold) {
-
-						int offsetTime = (fps == null ? 0 : Math.round(locationMap.getFrame() * 1000 / fps));
-
-						track.getDetections().add(
-								generateTrack(location, locationMap.getFrame(), offsetTime));
-					}
-				}
-
-				if (!track.getDetections().isEmpty()) {
-					track.setExemplar(findExemplar(track));
-					if(!redis.addTrack(track)) {
-						log.warn("Failed to add the track '{}'.", track);
-					}
-				}
-			}
+		Float fps = null;
+		if (media.getMetadata("FPS") != null) {
+			fps = Float.valueOf(media.getMetadata("FPS"));
 		}
-	}
 
-	private void processAudioResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, double confidenceThreshold) {
-		// Iterate through the audioResponse
-		for (DetectionProtobuf.DetectionResponse.AudioResponse audioResponse : detectionResponse.getAudioResponsesList()) {
-			// Begin iterating through the tracks that were found by the detector.
-			for (DetectionProtobuf.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
-				// Create a new Track object.
-				Track track = new Track(
-						jobId,
-						detectionResponse.getMediaId(),
-						detectionResponse.getStageIndex(),
-						detectionResponse.getActionIndex(),
-						0,
-						0,
-						objectTrack.getStartTime(),
-						objectTrack.getStopTime(),
-						audioResponse.getDetectionType(),
-						objectTrack.getConfidence());
+		int startFrame = videoResponse.getStartFrame();
+		int stopFrame = videoResponse.getStopFrame();
+		int startTime = convertFrameToTime(startFrame, fps);
+		int stopTime = convertFrameToTime(stopFrame, fps);
 
-				SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
-				track.getTrackProperties().putAll(properties);
+		String mediaLabel = String.format("Media #{}, Frames: {}-{}. Stage: '{}', Action: '{}'",
+				detectionResponse.getMediaId(),
+				startFrame,
+				stopFrame,
+				detectionResponse.getStageName(),
+				detectionResponse.getActionName());
+		log.debug("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
 
-                if (objectTrack.getConfidence() >= confidenceThreshold) {
-                    track.getDetections().add(
-                            new Detection(
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    objectTrack.getConfidence(),
-                                    0,
-                                    objectTrack.getStartTime(),
-                                    properties));
-                }
+		checkErrors(jobId, mediaLabel, detectionResponse, startFrame, stopFrame, startTime, stopTime);
 
-				if (!track.getDetections().isEmpty()) {
-					track.setExemplar(findExemplar(track));
-					if(!redis.addTrack(track)) {
-						log.warn("Failed to add the track '{}'.", track);
-					}
-				}
-			}
-		}
-	}
+		// Begin iterating through the tracks that were found by the detector.
+		for (DetectionProtobuf.VideoTrack objectTrack : videoResponse.getVideoTracksList()) {
 
-	private void processImageResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, double confidenceThreshold) {
-		// Iterate through the imageResponse
-		for (DetectionProtobuf.DetectionResponse.ImageResponse imageResponse : detectionResponse.getImageResponsesList()) {
-			// Begin iterating through the tracks that were found by the detector.
+			int startOffsetTime = convertFrameToTime(objectTrack.getStartFrame(), fps);
+			int stopOffsetTime = convertFrameToTime(objectTrack.getStopFrame(), fps);
+
+			// Create a new Track object.
+			Track track = new Track(
+					jobId,
+					detectionResponse.getMediaId(),
+					detectionResponse.getStageIndex(),
+					detectionResponse.getActionIndex(),
+					objectTrack.getStartFrame(),
+					objectTrack.getStopFrame(),
+					startOffsetTime,
+					stopOffsetTime,
+					videoResponse.getDetectionType(),
+					objectTrack.getConfidence());
+
+			track.getTrackProperties().putAll(toMap(objectTrack.getDetectionPropertiesList()));
 
 			// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
-			for (DetectionProtobuf.ImageLocation location : imageResponse.getImageLocationsList()) {
-				if (location.getConfidence() >= confidenceThreshold) {
-					// Create a new Track object.
-					Track track = new Track(
-							jobId,
-							detectionResponse.getMediaId(),
-							detectionResponse.getStageIndex(),
-							detectionResponse.getActionIndex(),
-							0,
-							1,
-							imageResponse.getDetectionType(),
-							location.getConfidence());
+			for (DetectionProtobuf.VideoTrack.FrameLocationMap locationMap : objectTrack.getFrameLocationsList()) {
+				DetectionProtobuf.ImageLocation location = locationMap.getImageLocation();
 
-					track.getTrackProperties().putAll(toMap(location.getDetectionPropertiesList()));
+				if (location.getConfidence() >= confidenceThreshold) {
+
+					int offsetTime = (fps == null ? 0 : Math.round(locationMap.getFrame() * 1000 / fps));
 
 					track.getDetections().add(
-							generateTrack(location, 0, 0));
-					if (!track.getDetections().isEmpty()) {
-						track.setExemplar(findExemplar(track));
-						if(!redis.addTrack(track)) {
-							log.warn("Failed to add the track '{}'.", track);
-						}
-					}
+							generateTrack(location, locationMap.getFrame(), offsetTime));
 				}
+			}
+
+			if (!track.getDetections().isEmpty()) {
+				track.setExemplar(findExemplar(track));
+				redis.addTrack(track);
 			}
 		}
 	}
 
-	private void processGenericResponses(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, double confidenceThreshold) {
-		// Iterate through the genericResponse
-		for (DetectionProtobuf.DetectionResponse.GenericResponse genericResponse : detectionResponse.getGenericResponsesList()) {
-			// Begin iterating through the tracks that were found by the detector.
-			for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
+	private void processAudioResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse,
+									   DetectionProtobuf.DetectionResponse.AudioResponse audioResponse,
+									   double confidenceThreshold) {
+
+		int startTime = audioResponse.getStartTime();
+		int stopTime = audioResponse.getStartTime();
+
+		String mediaLabel = String.format("Media #{}, Time: {}-{}, Stage: '{}', Action: '{}'",
+				detectionResponse.getMediaId(),
+				startTime,
+				stopTime,
+				detectionResponse.getActionName());
+		log.debug("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+
+		checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, startTime, stopTime);
+
+		// Begin iterating through the tracks that were found by the detector.
+		for (DetectionProtobuf.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
+			// Create a new Track object.
+			Track track = new Track(
+					jobId,
+					detectionResponse.getMediaId(),
+					detectionResponse.getStageIndex(),
+					detectionResponse.getActionIndex(),
+					0,
+					0,
+					objectTrack.getStartTime(),
+					objectTrack.getStopTime(),
+					audioResponse.getDetectionType(),
+					objectTrack.getConfidence());
+
+			SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
+			track.getTrackProperties().putAll(properties);
+
+			if (objectTrack.getConfidence() >= confidenceThreshold) {
+				track.getDetections().add(
+						new Detection(
+								0,
+								0,
+								0,
+								0,
+								objectTrack.getConfidence(),
+								0,
+								objectTrack.getStartTime(),
+								properties));
+			}
+
+			if (!track.getDetections().isEmpty()) {
+				track.setExemplar(findExemplar(track));
+				redis.addTrack(track);
+			}
+		}
+	}
+
+	private void processImageResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse,
+									   DetectionProtobuf.DetectionResponse.ImageResponse imageResponse,
+									   double confidenceThreshold) {
+
+		String mediaLabel = getBasicMediaLabel(detectionResponse);
+		log.debug("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+
+		checkErrors(jobId, mediaLabel, detectionResponse, 0, 1, 0, 0);
+
+		// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
+		for (DetectionProtobuf.ImageLocation location : imageResponse.getImageLocationsList()) {
+			if (location.getConfidence() >= confidenceThreshold) {
 				// Create a new Track object.
 				Track track = new Track(
 						jobId,
@@ -303,35 +279,98 @@ public class DetectionResponseProcessor
 						detectionResponse.getStageIndex(),
 						detectionResponse.getActionIndex(),
 						0,
-						0,
-						0,
-						0,
-						genericResponse.getDetectionType(),
-						objectTrack.getConfidence());
+						1,
+						imageResponse.getDetectionType(),
+						location.getConfidence());
 
-				SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
-				track.getTrackProperties().putAll(properties);
+				track.getTrackProperties().putAll(toMap(location.getDetectionPropertiesList()));
 
-				if (objectTrack.getConfidence() >= confidenceThreshold) {
-					track.getDetections().add(
-							new Detection(
-									0,
-									0,
-									0,
-									0,
-									objectTrack.getConfidence(),
-									0,
-									0,
-									properties));
-				}
-
+				track.getDetections().add(
+						generateTrack(location, 0, 0));
 				if (!track.getDetections().isEmpty()) {
 					track.setExemplar(findExemplar(track));
-					if(!redis.addTrack(track)) {
-						log.warn("Failed to add the track '{}'.", track);
-					}
+					redis.addTrack(track);
 				}
 			}
+		}
+}
+
+	private void processGenericResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse,
+										 DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
+										 double confidenceThreshold) {
+
+		String mediaLabel = getBasicMediaLabel(detectionResponse);
+		log.debug("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+
+		checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
+
+		// Begin iterating through the tracks that were found by the detector.
+		for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
+			// Create a new Track object.
+			Track track = new Track(
+					jobId,
+					detectionResponse.getMediaId(),
+					detectionResponse.getStageIndex(),
+					detectionResponse.getActionIndex(),
+					0,
+					0,
+					0,
+					0,
+					genericResponse.getDetectionType(),
+					objectTrack.getConfidence());
+
+			SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
+			track.getTrackProperties().putAll(properties);
+
+			if (objectTrack.getConfidence() >= confidenceThreshold) {
+				track.getDetections().add(
+						new Detection(
+								0,
+								0,
+								0,
+								0,
+								objectTrack.getConfidence(),
+								0,
+								0,
+								properties));
+			}
+
+			if (!track.getDetections().isEmpty()) {
+				track.setExemplar(findExemplar(track));
+				redis.addTrack(track);
+			}
+		}
+	}
+
+	private void checkErrors(long jobId, String mediaLabel, DetectionProtobuf.DetectionResponse detectionResponse,
+							 int startFrame, int stopFrame, int startTime, int stopTime) {
+
+		if (detectionResponse.getError() != DetectionProtobuf.DetectionError.NO_DETECTION_ERROR) {
+			String errorMessage;
+			// Some error occurred during detection. Store this error.
+			if (detectionResponse.getError() == DetectionProtobuf.DetectionError.REQUEST_CANCELLED) {
+				log.debug("[{}] Encountered a detection error while processing {}: {}",
+						getLogLabel(jobId, detectionResponse), mediaLabel, detectionResponse.getError());
+				redis.setJobStatus(jobId, BatchJobStatusType.CANCELLING);
+				errorMessage = MpfConstants.REQUEST_CANCELLED;
+			}
+			else {
+				log.warn("[{}] Encountered a detection error while processing {}: {}",
+						getLogLabel(jobId, detectionResponse), mediaLabel, detectionResponse.getError());
+				redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+				errorMessage = Objects.toString(detectionResponse.getError());
+			}
+
+			redis.addDetectionProcessingError(new DetectionProcessingError(
+					jobId,
+					detectionResponse.getMediaId(),
+					detectionResponse.getStageIndex(),
+					detectionResponse.getActionIndex(),
+					startFrame,
+					stopFrame,
+					startTime,
+					stopTime,
+					errorMessage));
 		}
 	}
 
@@ -362,12 +401,25 @@ public class DetectionResponseProcessor
 				detectionProperties);
 	}
 
-
 	private static SortedMap<String, String> toMap(Collection<DetectionProtobuf.PropertyMap> properties) {
 	    SortedMap<String, String> result = new TreeMap<>();
 	    for (DetectionProtobuf.PropertyMap property : properties) {
 	    	result.put(property.getKey(), property.getValue());
 	    }
 	    return result;
+	}
+
+	private static String getLogLabel(long jobId, DetectionProtobuf.DetectionResponse detectionResponse) {
+		return String.format("Job %d|%d|%d", jobId, detectionResponse.getStageIndex(), detectionResponse.getActionIndex());
+
+	}
+
+	private static String getBasicMediaLabel(DetectionProtobuf.DetectionResponse detectionResponse) {
+		return String.format("Media #{}, Stage: '{}', Action: '{}'",
+				detectionResponse.getMediaId(), detectionResponse.getStageName(), detectionResponse.getActionName());
+	}
+
+	private static int convertFrameToTime(int frame, Float fps) {
+		return fps == null ? 0 : Math.round(frame * 1000 / fps); // in milliseconds
 	}
 }

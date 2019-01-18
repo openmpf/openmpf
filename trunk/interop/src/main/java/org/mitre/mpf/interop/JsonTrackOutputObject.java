@@ -44,12 +44,12 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 	public String getId() { return id; }
 
 	@JsonProperty("startOffsetFrame")
-	@JsonPropertyDescription("The offset in the medium where the track starts.")
+	@JsonPropertyDescription("The frame offset in the medium where the track starts.")
 	private final int startOffsetFrame;
 	public int getStartOffsetFrame() { return startOffsetFrame; }
 
 	@JsonProperty("stopOffsetFrame")
-	@JsonPropertyDescription("The offset in the medium where the track ends.")
+	@JsonPropertyDescription("The frame offset in the medium where the track ends.")
 	private final int stopOffsetFrame;
 	public int getStopOffsetFrame() { return stopOffsetFrame; }
 

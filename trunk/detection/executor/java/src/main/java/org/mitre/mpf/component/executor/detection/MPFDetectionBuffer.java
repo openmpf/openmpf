@@ -218,6 +218,8 @@ public class MPFDetectionBuffer {
     }
 
     public byte[] createAudioResponseMessage(final MPFMessageMetadata msgMetadata,
+                                             final int startTime,
+                                             final int stopTime,
                                              final String detectionType,
                                              final List<MPFAudioTrack> tracks,
                                              final MPFDetectionError msgError) {
@@ -226,6 +228,8 @@ public class MPFDetectionBuffer {
         DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder = packCommonFields(msgMetadata, msgError);
 
         DetectionProtobuf.DetectionResponse.AudioResponse.Builder audioResponseBuilder = detectionResponseBuilder.addAudioResponsesBuilder();
+        audioResponseBuilder.setStartTime(startTime);
+        audioResponseBuilder.setStopTime(stopTime);
         audioResponseBuilder.setDetectionType(detectionType);
 
         if (!tracks.isEmpty()) {
@@ -253,6 +257,8 @@ public class MPFDetectionBuffer {
     }
 
     public byte[] createVideoResponseMessage(final MPFMessageMetadata msgMetadata,
+                                             final int startFrame,
+                                             final int stopFrame,
                                              final String detectionType,
                                              final List<MPFVideoTrack> tracks,
                                              final MPFDetectionError msgError) {
@@ -262,6 +268,8 @@ public class MPFDetectionBuffer {
 
         DetectionProtobuf.DetectionResponse.VideoResponse.Builder videoResponseBuilder =
                 detectionResponseBuilder.addVideoResponsesBuilder();
+        videoResponseBuilder.setStartFrame(startFrame);
+        videoResponseBuilder.setStopFrame(stopFrame);
         videoResponseBuilder.setDetectionType(detectionType);
 
         if (!tracks.isEmpty()) {

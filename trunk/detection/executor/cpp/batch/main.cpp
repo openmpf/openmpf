@@ -346,7 +346,9 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
 
                             // Pack video response
                             detection_response_body = detection_buf.PackVideoResponse(
-                                    tracks, msg_metadata, data_type, detection_type, &response_body_length, rc);
+                                    tracks, msg_metadata, data_type,
+                                    video_request.start_frame, video_request.stop_frame,
+                                    detection_type, &response_body_length, rc);
 
                         } else if (data_type == MPFDetectionDataType::AUDIO) {
                             vector <MPFAudioTrack> tracks;
@@ -384,7 +386,9 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
 
                             // Pack audio response
                             detection_response_body = detection_buf.PackAudioResponse(
-                                    tracks, msg_metadata, data_type, detection_type, &response_body_length, rc);
+                                    tracks, msg_metadata, data_type,
+                                    audio_request.start_time, audio_request.stop_time,
+                                    detection_type, &response_body_length, rc);
 
                         } else if (data_type == MPFDetectionDataType::IMAGE) {
                             vector <MPFImageLocation> locations;

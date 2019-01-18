@@ -188,10 +188,6 @@ message DetectionResponse {
 
     optional DetectionError error = 3;
 
-    optional int32 start_index = 4; // Maps back to the request's start_index.
-
-    optional int32 stop_index = 5; // Maps back to the request's stop_index.
-
     // Copied from the request.
     optional int64 media_id = 400 [default = -1];
 
@@ -218,15 +214,21 @@ message DetectionResponse {
     repeated GenericResponse generic_responses = 500;
 
     message VideoResponse {
-        required string detection_type = 1;
-        repeated VideoTrack video_tracks = 2;
+        optional int32 start_frame = 1 [default = -1];
+        optional int32 stop_frame = 2 [default = -1];
+
+        required string detection_type = 3;
+        repeated VideoTrack video_tracks = 4;
     }
 
     repeated VideoResponse video_responses = 501;
 
     message AudioResponse {
-        required string detection_type = 1;
-        repeated AudioTrack audio_tracks = 2;
+        optional int32 start_time = 1 [default = -1];
+        optional int32 stop_time = 2 [default = -1];
+
+        required string detection_type = 3;
+        repeated AudioTrack audio_tracks = 4;
     }
     repeated AudioResponse audio_responses = 502;
 

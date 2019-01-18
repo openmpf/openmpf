@@ -40,7 +40,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
@@ -98,7 +97,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 	private JsonUtils jsonUtils;
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
 	private Redis redis;
 
 	@Autowired
@@ -252,8 +250,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 						String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), transientAction.getName());
 
 						for (DetectionProcessingError detectionProcessingError : redis.getDetectionProcessingErrors(jobId, transientMedia.getId(), stageIndex, actionIndex)) {
-							hasDetectionProcessingError = true;
-							JsonDetectionProcessingError jsonDetectionProcessingError = new JsonDetectionProcessingError(detectionProcessingError.getStartOffset(), detectionProcessingError.getEndOffset(), detectionProcessingError.getError());
+							hasDetectionProcessingError = !MpfConstants.REQUEST_CANCELLED.equals(detectionProcessingError.getError());
+							JsonDetectionProcessingError jsonDetectionProcessingError = new JsonDetectionProcessingError(
+									detectionProcessingError.getStartFrame(), detectionProcessingError.getStopFrame(),
+									detectionProcessingError.getStartTime(), detectionProcessingError.getStopTime(),
+									detectionProcessingError.getError());
 							if (!mediaOutputObject.getDetectionProcessingErrors().containsKey(stateKey)) {
 								mediaOutputObject.getDetectionProcessingErrors().put(stateKey, new TreeSet<>());
 							}

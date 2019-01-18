@@ -230,6 +230,8 @@ unsigned char *MPFDetectionBuffer::PackVideoResponse(
         const vector<MPFVideoTrack> &tracks,
         const MPFMessageMetadata *const msg_metadata,
         const MPFDetectionDataType data_type,
+        const int start_frame,
+        const int stop_frame,
         const string detection_type,
         int *packed_length,
         const MPFDetectionError error) const {
@@ -239,6 +241,8 @@ unsigned char *MPFDetectionBuffer::PackVideoResponse(
     PackCommonFields(msg_metadata, data_type, error, detection_response);
 
     DetectionResponse_VideoResponse *video_response = detection_response.add_video_responses();
+    video_response->set_start_frame(start_frame);
+    video_response->set_stop_frame(stop_frame);
     video_response->set_detection_type(detection_type);
 
     for (vector<MPFVideoTrack>::const_iterator tracks_iter = tracks.begin(); tracks_iter != tracks.end(); tracks_iter++) {
@@ -283,6 +287,8 @@ unsigned char *MPFDetectionBuffer::PackAudioResponse(
         const vector<MPFAudioTrack> &tracks,
         const MPFMessageMetadata *const msg_metadata,
         const MPFDetectionDataType data_type,
+        const int start_time,
+        const int stop_time,
         const string detection_type,
         int *packed_length,
         const MPFDetectionError error) const {
@@ -292,6 +298,8 @@ unsigned char *MPFDetectionBuffer::PackAudioResponse(
     PackCommonFields(msg_metadata, data_type, error, detection_response);
 
     DetectionResponse_AudioResponse *audio_response = detection_response.add_audio_responses();
+    audio_response->set_start_time(start_time);
+    audio_response->set_stop_time(stop_time);
     audio_response->set_detection_type(detection_type);
 
     for (vector<MPFAudioTrack>::const_iterator tracks_iter = tracks.begin(); tracks_iter != tracks.end(); tracks_iter++) {

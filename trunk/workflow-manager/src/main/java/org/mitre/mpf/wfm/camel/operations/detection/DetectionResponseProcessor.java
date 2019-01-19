@@ -124,7 +124,7 @@ public class DetectionResponseProcessor
 			try {
 				confidenceThreshold = Double.valueOf(confidenceThresholdProperty);
 			} catch (NumberFormatException nfe) {
-				log.warn("Invalid search threshold specified: value should be numeric.  Provided value was: " + confidenceThresholdProperty);
+				log.warn("Invalid search threshold specified. Value should be numeric. Provided value was: " + confidenceThresholdProperty);
 			}
 		}
 		return confidenceThreshold;
@@ -155,7 +155,7 @@ public class DetectionResponseProcessor
 		int startTime = convertFrameToTime(startFrame, fps);
 		int stopTime = convertFrameToTime(stopFrame, fps);
 
-		String mediaLabel = String.format("Media #{}, Frames: {}-{}. Stage: '{}', Action: '{}'",
+		String mediaLabel = String.format("Media #%d, Frames: %d-%d. Stage: '%s', Action: '%s'",
 				detectionResponse.getMediaId(),
 				startFrame,
 				stopFrame,
@@ -213,7 +213,7 @@ public class DetectionResponseProcessor
 		int startTime = audioResponse.getStartTime();
 		int stopTime = audioResponse.getStartTime();
 
-		String mediaLabel = String.format("Media #{}, Time: {}-{}, Stage: '{}', Action: '{}'",
+		String mediaLabel = String.format("Media #%d, Time: %d-%d, Stage: '%s', Action: '%s'",
 				detectionResponse.getMediaId(),
 				startTime,
 				stopTime,
@@ -415,7 +415,7 @@ public class DetectionResponseProcessor
 	}
 
 	private static String getBasicMediaLabel(DetectionProtobuf.DetectionResponse detectionResponse) {
-		return String.format("Media #{}, Stage: '{}', Action: '{}'",
+		return String.format("Media #%d, Stage: '%s', Action: '%s'",
 				detectionResponse.getMediaId(), detectionResponse.getStageName(), detectionResponse.getActionName());
 	}
 

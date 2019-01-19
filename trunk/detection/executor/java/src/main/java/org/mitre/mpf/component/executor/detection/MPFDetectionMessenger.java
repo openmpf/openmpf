@@ -186,9 +186,11 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
 				}
 
             } else {
+                // TODO: Send error message.
                 LOG.error("Could not parse contents of Detection Request message");
             }
         } catch (InvalidProtocolBufferException | JMSException e) {
+            // TODO: Send error message.
             LOG.error("Could not process detection request message due to Exception ", e);
         }
     }

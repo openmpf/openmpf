@@ -77,18 +77,29 @@ public class MockDetectionComponent implements Processor {
 				.setStageIndex(detectionRequest.getStageIndex())
 				.setStageName(detectionRequest.getStageName());
 
-		if (detectionRequest.getDataType()== DetectionProtobuf.DetectionRequest.DataType.AUDIO) {
-			response.setAudioResponses(0,
-					DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
-							.setStartTime(detectionRequest.getAudioRequest().getStartTime())
-							.setStopTime(detectionRequest.getAudioRequest().getStopTime()));
-
-		} else if (detectionRequest.getDataType()== DetectionProtobuf.DetectionRequest.DataType.VIDEO) {
-			response.setVideoResponses(0,
-					DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
-							.setStartFrame(detectionRequest.getVideoRequest().getStartFrame())
-							.setStopFrame(detectionRequest.getVideoRequest().getStopFrame()));
-		}
+		switch (detectionRequest.getDataType()) {
+            case AUDIO:
+                response.addAudioResponses(DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
+						.setDetectionType("MOCK")
+						.setStartTime(detectionRequest.getAudioRequest().getStartTime())
+						.setStopTime(detectionRequest.getAudioRequest().getStopTime()));
+                break;
+            case VIDEO:
+                response.addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
+						.setDetectionType("MOCK")
+						.setStartFrame(detectionRequest.getVideoRequest().getStartFrame())
+						.setStopFrame(detectionRequest.getVideoRequest().getStopFrame()));
+                break;
+            case IMAGE:
+                response.addImageResponses(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder()
+						.setDetectionType("MOCK"));
+                break;
+            case UNKNOWN:
+            default:
+                response.addGenericResponses(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder()
+						.setDetectionType("MOCK"));
+                break;
+        }
 
 		exchange.getOut().setBody(
 				// Build the response...

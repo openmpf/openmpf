@@ -40,34 +40,50 @@ public abstract class BaseDetectionStatusProcessor implements Processor {
 		// Copy the headers from the incoming message to the outgoing message.
 		exchange.getOut().getHeaders().putAll(exchange.getIn().getHeaders());
 
-		DetectionProtobuf.DetectionRequest extractionRequest;
+		DetectionProtobuf.DetectionRequest detectionRequest;
 		Object body = exchange.getIn().getBody();
 
 		if (isDeserialized) {
 			// There is no parseFrom(String) method, so we merge the text with a builder.
 			DetectionProtobuf.DetectionRequest.Builder builder = DetectionProtobuf.DetectionRequest.newBuilder();
 			TextFormat.merge((CharSequence)body, builder);
-			extractionRequest = builder.build();
+			detectionRequest = builder.build();
 		} else {
-			extractionRequest = DetectionProtobuf.DetectionRequest.parseFrom((byte[])body);
+			detectionRequest = DetectionProtobuf.DetectionRequest.parseFrom((byte[])body);
 		}
 
 		// Create a simple response based on the request and indicate that the request was cancelled or there was an error.
-		exchange.getOut().setBody(
-			DetectionProtobuf.DetectionResponse.newBuilder()
-				.setActionIndex(extractionRequest.getActionIndex())
-				.setActionName(extractionRequest.getActionName())
-				.setDataType(DetectionProtobuf.DetectionResponse.DataType.valueOf(extractionRequest.getDataType().name()))
+		DetectionProtobuf.DetectionResponse.Builder builder = DetectionProtobuf.DetectionResponse.newBuilder()
+				.setActionIndex(detectionRequest.getActionIndex())
+				.setActionName(detectionRequest.getActionName())
+				.setDataType(DetectionProtobuf.DetectionResponse.DataType.valueOf(detectionRequest.getDataType().name()))
 				.setError(error)
-				.setMediaId(extractionRequest.getMediaId())
-				.setRequestId(extractionRequest.getRequestId())
-				.setStageIndex(extractionRequest.getStageIndex())
-				.setStageName(extractionRequest.getStageName())
+				.setMediaId(detectionRequest.getMediaId())
+				.setRequestId(detectionRequest.getRequestId())
+				.setStageIndex(detectionRequest.getStageIndex())
+				.setStageName(detectionRequest.getStageName());
 
-				// Build the response...
-				.build()
+        if (detectionRequest.hasVideoRequest()) {
+            builder.addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
+					.setDetectionType(error.toString())
+					.setStartFrame(detectionRequest.getVideoRequest().getStartFrame())
+					.setStopFrame(detectionRequest.getVideoRequest().getStartFrame()));
 
-				// ...then convert it to a byte array.
-				.toByteArray());
+        } else if (detectionRequest.hasAudioRequest()) {
+            builder.addAudioResponses(DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
+					.setDetectionType(error.toString())
+					.setStartTime(detectionRequest.getAudioRequest().getStartTime())
+					.setStopTime(detectionRequest.getAudioRequest().getStartTime()));
+
+        } else if (detectionRequest.hasImageRequest()) {
+            builder.addImageResponses(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder()
+					.setDetectionType(error.toString()));
+
+        } else if (detectionRequest.hasGenericRequest()) {
+            builder.addGenericResponses(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder()
+					.setDetectionType(error.toString()));
+        }
+
+		exchange.getOut().setBody(builder.build().toByteArray());
 	}
 }

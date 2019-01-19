@@ -69,8 +69,8 @@ public class DetectionResponseProcessor
 
 		if (totalResponses > 1) {
 			throw new WfmProcessingException(
-					String.format("Unsupported operation. More than one DetectionResponse type found for job {}: {}",
-							jobId, detectionResponse)); // TODO: Test this
+					// Camel will print out the exchange, including the message body content, in the stack trace.
+					String.format("Unsupported operation. More than one DetectionResponse sub-message found for job %d.", jobId));
 		}
 
 		if (totalResponses > 0) {

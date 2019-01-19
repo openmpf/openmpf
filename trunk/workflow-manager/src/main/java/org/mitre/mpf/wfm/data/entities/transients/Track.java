@@ -185,8 +185,6 @@ public class Track implements Comparable<Track> {
 	                    && compareTo((Track) obj) == 0);
 	}
 
-
-
 	private static final Comparator<Set<Detection>> DETECTION_SET_COMPARATOR = Comparator
 			.nullsFirst(Comparator
 				.<Set<Detection>>comparingInt(Set::size))
@@ -222,8 +220,6 @@ public class Track implements Comparable<Track> {
 	public int compareTo(Track other) {
 		return DEFAULT_COMPARATOR.compare(this, other);
 	}
-
-
 
 	@Override
 	public String toString() {

@@ -266,6 +266,7 @@ public class TestWfmEndToEnd {
 				.setDataType(DetectionProtobuf.DetectionResponse.DataType.IMAGE)
 				.setError(DetectionProtobuf.DetectionError.BAD_FRAME_SIZE)
 				.addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
+						.setDetectionType("UNSOLICITED")
 						.setStartFrame(0)
 						.setStopFrame(100))
 				.setMediaId(id)

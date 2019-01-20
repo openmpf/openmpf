@@ -111,10 +111,12 @@ public class TestDetectionResponseProcessor {
     public void testDetectionResponse() throws Exception {
         final int testJobId = next();
         final long testMediaId = 12345678;
+
         DetectionProtobuf.DetectionResponse response = DetectionProtobuf.DetectionResponse.newBuilder()
             .setError(DetectionProtobuf.DetectionError.NO_DETECTION_ERROR)
             .setMediaId(testMediaId)
             .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
+                    .setDetectionType("TEST")
                     .setStartFrame(0)
                     .setStopFrame(10))
             .setStageName("theWorld")
@@ -143,10 +145,13 @@ public class TestDetectionResponseProcessor {
     public void testSettingErrors() throws WfmProcessingException {
         long jobId = 123123;
         long testMediaId = 234234;
+        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.BOUNDING_BOX_SIZE_ERROR;
+
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
-                .setError(DetectionProtobuf.DetectionError.BOUNDING_BOX_SIZE_ERROR)
+                .setError(error)
                 .setMediaId(testMediaId)
                 .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
+                        .setDetectionType(error.toString())
                         .setStartFrame(0)
                         .setStopFrame(10))
                 .setStageIndex(1)

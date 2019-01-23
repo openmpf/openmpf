@@ -671,7 +671,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      */
     @Override
     public void sendHealthReports() throws WfmProcessingException {
-        inProgressJobs.getJobGroupedByHealthReportUri()
+        inProgressJobs.getJobsGroupedByHealthReportUri()
                 .forEach(callbackUtils::sendHealthReportCallback);
     }
 

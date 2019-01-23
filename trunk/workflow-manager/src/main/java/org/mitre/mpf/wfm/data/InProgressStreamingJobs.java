@@ -36,6 +36,7 @@ import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJobImpl;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -45,12 +46,13 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 @Component
+@Singleton
 public class InProgressStreamingJobs {
 
     private final Map<Long, TransientStreamingJobImpl> _jobs = new HashMap<>();
 
 
-    public TransientStreamingJob addJob(
+    public synchronized TransientStreamingJob addJob(
             long jobId,
             String externalId,
             TransientPipeline pipeline,
@@ -82,7 +84,7 @@ public class InProgressStreamingJobs {
     }
 
 
-    public TransientStreamingJob getJob(long jobId) {
+    public synchronized TransientStreamingJob getJob(long jobId) {
         return getJobImpl(jobId);
     }
 
@@ -96,7 +98,7 @@ public class InProgressStreamingJobs {
     }
 
 
-    public List<TransientStreamingJob> getActiveJobs() {
+    public synchronized List<TransientStreamingJob> getActiveJobs() {
         return _jobs.values()
                 .stream()
                 .filter(j -> !j.getJobStatus().isTerminal())
@@ -104,7 +106,7 @@ public class InProgressStreamingJobs {
     }
 
 
-    public Map<String, List<TransientStreamingJob>> getJobGroupedByHealthReportUri() {
+    public synchronized Map<String, List<TransientStreamingJob>> getJobsGroupedByHealthReportUri() {
         return _jobs.values()
                 .stream()
                 .filter(j -> !j.getJobStatus().isTerminal() && j.getHealthReportCallbackURI() != null)
@@ -113,12 +115,12 @@ public class InProgressStreamingJobs {
     }
 
 
-    public void clearJob(long jobId) {
+    public synchronized void clearJob(long jobId) {
         _jobs.remove(jobId);
     }
 
 
-    public void cancelJob(long jobId, boolean doCleanup) {
+    public synchronized void cancelJob(long jobId, boolean doCleanup) {
         TransientStreamingJobImpl job = getJobImpl(jobId);
         job.setCancelled(true);
         job.setJobStatus(new StreamingJobStatus(StreamingJobStatusType.CANCELLING));
@@ -126,15 +128,15 @@ public class InProgressStreamingJobs {
     }
 
 
-    public void setJobStatus(long jobId, StreamingJobStatusType statusType, String statusMessage) {
+    public synchronized void setJobStatus(long jobId, StreamingJobStatusType statusType, String statusMessage) {
         setJobStatus(jobId, new StreamingJobStatus(statusType, statusMessage));
     }
 
-    public void setJobStatus(long jobId, StreamingJobStatus status) {
+    public synchronized void setJobStatus(long jobId, StreamingJobStatus status) {
         getJobImpl(jobId).setJobStatus(status);
     }
 
-    public void setLastJobActivity(long jobId, long frameId, Instant time) {
+    public synchronized void setLastJobActivity(long jobId, long frameId, Instant time) {
         TransientStreamingJobImpl job = getJobImpl(jobId);
         job.setLastActivityFrame(frameId);
         job.setLastActivityTime(time);

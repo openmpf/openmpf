@@ -35,12 +35,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
 @Component
+@Singleton
 public class InProgressBatchJobsService {
 
     private static final Logger LOG = LoggerFactory.getLogger(InProgressBatchJobsService.class);
@@ -84,7 +86,7 @@ public class InProgressBatchJobsService {
     }
 
 
-    public TransientJob getJob(long jobId) {
+    public synchronized TransientJob getJob(long jobId) {
         return getJobImpl(jobId);
     }
 
@@ -98,7 +100,7 @@ public class InProgressBatchJobsService {
     }
 
 
-    public void clearJob(long jobId) {
+    public synchronized void clearJob(long jobId) {
         TransientJobImpl job = getJobImpl(jobId);
         _redis.clearTracks(job);
         _jobs.remove(jobId);
@@ -116,48 +118,48 @@ public class InProgressBatchJobsService {
         }
     }
 
-    public boolean containsJob(long jobId) {
+    public synchronized boolean containsJob(long jobId) {
         return _jobs.containsKey(jobId);
     }
 
-    public boolean cancelJob(long jobId) {
+    public synchronized boolean cancelJob(long jobId) {
         getJobImpl(jobId).setCancelled(true);
         return true;
     }
 
-    public SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) {
+    public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) {
         return _redis.getTracks(jobId, mediaId, taskIndex, actionIndex);
     }
 
-    public void addTrack(Track track) {
+    public synchronized void addTrack(Track track) {
         _redis.addTrack(track);
     }
 
 
-    public void addJobWarning(long jobId, String message) {
+    public synchronized void addJobWarning(long jobId, String message) {
         getJobImpl(jobId).addWarning(message);
     }
 
 
-    public void addJobError(long jobId, String message) {
+    public synchronized void addJobError(long jobId, String message) {
         getJobImpl(jobId).addError(message);
     }
 
-    public void addDetectionProcessingError(DetectionProcessingError error) {
+    public synchronized void addDetectionProcessingError(DetectionProcessingError error) {
         getJobImpl(error.getJobId()).addDetectionProcessingError(error);
     }
 
-    public void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks) {
+    public synchronized void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks) {
         _redis.setTracks(jobId, mediaId, taskIndex, actionIndex, tracks);
     }
 
 
-    public void setJobStatus(long jobId, BatchJobStatusType batchJobStatusType) {
+    public synchronized void setJobStatus(long jobId, BatchJobStatusType batchJobStatusType) {
         getJobImpl(jobId).setStatus(batchJobStatusType);
     }
 
 
-    public void addMediaError(long jobId, long mediaId, String message) {
+    public synchronized void addMediaError(long jobId, long mediaId, String message) {
         getJob(jobId)
                 .getMedia()
                 .stream()
@@ -170,11 +172,7 @@ public class InProgressBatchJobsService {
     }
 
 
-    public void setCurrentTaskIndex(long jobId, int taskIndex) {
+    public synchronized void setCurrentTaskIndex(long jobId, int taskIndex) {
         getJobImpl(jobId).setCurrentStage(taskIndex);
-    }
-
-    public long nextId() {
-        return IdGenerator.next();
     }
 }

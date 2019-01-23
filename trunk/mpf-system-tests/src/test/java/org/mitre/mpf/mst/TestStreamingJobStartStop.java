@@ -219,11 +219,9 @@ public class TestStreamingJobStartStop {
 		TransientStream stream = new TransientStream(124, videoUrl.toString());
 		stream.setSegmentSize(segmentSize);
 
-		TransientStreamingJob streamingJob = new TransientStreamingJob(
-				jobId, "ext id", pipeline, 1, stallTimeout, false, "mydir",
-				false);
-		streamingJob.setStream(stream);
-		return streamingJob;
+		return new TransientStreamingJobImpl(
+				jobId, "ext id", pipeline, stream, 1, stallTimeout, false, "mydir",
+				null, null, Collections.emptyMap(), Collections.emptyMap());
 	}
 
 

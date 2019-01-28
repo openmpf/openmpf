@@ -26,10 +26,11 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableTable;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 
 import java.time.Instant;
-import java.util.Map;
 
 public interface TransientStreamingJob {
 	public long getId();
@@ -50,9 +51,9 @@ public interface TransientStreamingJob {
 
 	public TransientStream getStream();
 
-	public Map<String, Map<String, String>> getOverriddenAlgorithmProperties();
+	public ImmutableTable<String, String, String> getOverriddenAlgorithmProperties();
 
-	public Map<String, String> getOverriddenJobProperties();
+	public ImmutableMap<String, String> getOverriddenJobProperties();
 
 	public boolean isCancelled();
 

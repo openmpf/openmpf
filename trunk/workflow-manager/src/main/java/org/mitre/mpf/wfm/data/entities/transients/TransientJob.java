@@ -26,11 +26,12 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableTable;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public interface TransientJob {
@@ -48,13 +49,13 @@ public interface TransientJob {
 
 	public boolean isOutputEnabled();
 
-	public Collection<TransientMedia> getMedia();
+	public ImmutableCollection<TransientMedia> getMedia();
 
 	public TransientMedia getMedia(long mediaId);
 
-	public Map<String, Map<String, String>> getOverriddenAlgorithmProperties();
+	public ImmutableTable<String, String, String> getOverriddenAlgorithmProperties();
 
-	public Map<String, String> getOverriddenJobProperties();
+	public ImmutableMap<String, String> getOverriddenJobProperties();
 
 	public boolean isCancelled();
 
@@ -65,7 +66,7 @@ public interface TransientJob {
 	// Detection system properties for this job should be immutable, the detection system property values
 	// shouldn't change once the job is created even if they are changed on the UI by an admin..
 	// The detectionSystemPropertiesSnapshot contains the values of the detection system properties at the time this batch job was created.
-    public TransientDetectionSystemProperties getDetectionSystemPropertiesSnapshot();
+    public SystemPropertiesSnapshot getSystemPropertiesSnapshot();
 
 	public Set<String> getWarnings();
 

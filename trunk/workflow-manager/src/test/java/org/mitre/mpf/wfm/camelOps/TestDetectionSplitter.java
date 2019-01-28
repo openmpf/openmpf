@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
-import com.google.common.collect.Lists;
 import org.apache.camel.Message;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
@@ -84,41 +83,43 @@ public class TestDetectionSplitter {
     public void testDetectionSplitter() {
         final long testId = 12345;
         final String testExternalId = "externID";
-        final TransientPipeline testPipe = new TransientPipeline("testPipe", "testDescr");
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+        SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile("/samples/new_face_video.avi").toString());
         testMedia.setType("video/avi");
         // Video media must have FPS in metadata to support adaptive frame interval processing.
         testMedia.addMetadata("FPS", "30");
-        List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
-        TransientStage testTransientStage = new TransientStage("stageName", "stageDescr", ActionType.DETECTION);
-        testPipe.setStages(Collections.singletonList(testTransientStage));
-        TransientJob testJob = new TransientJobImpl(
-                testId,
-                testExternalId,
-                transientDetectionSystemProperties,
-                testPipe,
-                testPriority,
-                testOutputEnabled,
-                null,
-                null,
-                listMedia,
-                Collections.emptyMap(),
-                Collections.emptyMap());
 
         Map<String, String> mergeProp = new HashMap<>();
         mergeProp.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
         mergeProp.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
         mergeProp.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
         mergeProp.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
-        TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo");
-        detectionAction.setProperties(mergeProp);
-        testTransientStage.getActions().add(detectionAction);
+        TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo", mergeProp);
+
+        TransientStage testTransientStage = new TransientStage(
+                "stageName", "stageDescr", ActionType.DETECTION,
+                Collections.singletonList(detectionAction));
+
+        final TransientPipeline testPipe = new TransientPipeline(
+                "testPipe", "testDescr", Collections.singletonList(testTransientStage));
+        TransientJob testJob = new TransientJobImpl(
+                testId,
+                testExternalId,
+                systemPropertiesSnapshot,
+                testPipe,
+                testPriority,
+                testOutputEnabled,
+                null,
+                null,
+                Collections.singletonList(testMedia),
+                Collections.emptyMap(),
+                Collections.emptyMap());
+
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testTransientStage);
         Assert.assertTrue(responseList.size() == 0);
 
@@ -351,7 +352,8 @@ public class TestDetectionSplitter {
             String mediaType) throws WfmProcessingException {
         final long testId = 12345;
         final String testExternalId = "externID";
-        final TransientPipeline testPipe = new TransientPipeline("testPipe", "testDescr");
+        final TransientPipeline testPipe = new TransientPipeline("testPipe", "testDescr",
+                                                                 Collections.emptyList());
         return createSimpleJobForTest(testId, testExternalId, testPipe, actionProperties, jobProperties, mediaUri, mediaType);
     }
 
@@ -375,7 +377,7 @@ public class TestDetectionSplitter {
         final boolean testOutputEnabled = true;
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+        SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile(mediaUri).toString());
         testMedia.setLength(300);
@@ -385,26 +387,26 @@ public class TestDetectionSplitter {
             testMedia.addMetadata("FPS", "30");
         }
 
-        List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
-        TransientStage testTransientStage = new TransientStage("stageName", "stageDescr", ActionType.DETECTION);
+        TransientAction detectionAction = new TransientAction(
+                "detectionAction", "detectionDescription", "detectionAlgo", actionProperties);
+        TransientStage testTransientStage = new TransientStage(
+                "stageName", "stageDescr", ActionType.DETECTION,
+                Collections.singletonList(detectionAction));
         testPipe.getStages().add(testTransientStage);
 
         TransientJob testJob = new TransientJobImpl(
                 testJobId,
                 testExternalId,
-                transientDetectionSystemProperties,
+                systemPropertiesSnapshot,
                 testPipe,
                 testPriority,
                 testOutputEnabled,
                 null,
                 null,
-                listMedia,
+                Collections.singletonList(testMedia),
                 jobProperties,
                 Collections.emptyMap());
 
-        TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo");
-        detectionAction.setProperties(actionProperties);
-        testTransientStage.getActions().add(detectionAction);
         return testJob;
     }
 
@@ -422,27 +424,28 @@ public class TestDetectionSplitter {
 
         }
 
-        List<TransientMedia> listMedia = Lists.newArrayList(testMedia);
-        TransientPipeline dummyPipeline = new TransientPipeline("OCV FACE DETECTION PIPELINE", "TestDetectionSplitter Pipeline");
-        TransientStage dummyStageDet = new TransientStage("DETECTION", "dummyDetectionDescription", ActionType.DETECTION);
-        TransientAction dummyAction = new TransientAction("FACECV", "dummyDescriptionFACECV", "FACECV");
-        dummyAction.setProperties(actionProperties);
-        dummyStageDet.getActions().add(dummyAction);
-        dummyPipeline.getStages().add(dummyStageDet);
+        TransientAction dummyAction = new TransientAction(
+                "FACECV", "dummyDescriptionFACECV", "FACECV", actionProperties);
+        TransientStage dummyStageDet = new TransientStage(
+                "DETECTION", "dummyDetectionDescription", ActionType.DETECTION,
+                Collections.singleton(dummyAction));
+        TransientPipeline dummyPipeline = new TransientPipeline(
+                "OCV FACE DETECTION PIPELINE", "TestDetectionSplitter Pipeline",
+                Collections.singletonList(dummyStageDet));
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+        SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         return new TransientJobImpl(
                 nextId(),
                 null,
-                transientDetectionSystemProperties,
+                systemPropertiesSnapshot,
                 dummyPipeline,
                 0,
                 false,
                 null,
                 null,
-                listMedia,
+                Collections.singletonList(testMedia),
                 jobProperties,
                 (Map) algorithmProperties);
 

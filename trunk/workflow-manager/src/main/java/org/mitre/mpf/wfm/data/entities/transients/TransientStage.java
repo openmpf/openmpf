@@ -26,37 +26,57 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import org.mitre.mpf.interop.JsonStage;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.util.TextUtils;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
+import static java.util.stream.Collectors.toList;
+
 public class TransientStage {
-	private String name;
+	private final String name;
 	public String getName() { return name; }
 
-	private String description;
+	private final String description;
 	public String getDescription() { return description; }
 
-	private ActionType actionType;
+	private final ActionType actionType;
 	public ActionType getActionType() { return actionType; }
 
-	private List<TransientAction> actions;
-	public List<TransientAction> getActions() { return actions; }
+	private final ImmutableList<TransientAction> actions;
+	public ImmutableList<TransientAction> getActions() { return actions; }
 
-	@JsonCreator
-	public TransientStage(@JsonProperty("name") String name, @JsonProperty("description") String description, @JsonProperty("actionType") ActionType actionType) {
+	public TransientStage(String name, String description, ActionType actionType, Collection<TransientAction> actions) {
 		this.name = TextUtils.trimAndUpper(name);
 		this.description = TextUtils.trim(description);
 		this.actionType = actionType;
-		this.actions = new ArrayList<>();
+		this.actions = ImmutableList.copyOf(actions);
 
 		assert this.name != null : "name must not be null";
 		assert this.actionType != null : "operation must not be null";
 	}
 
-	public String toString() { return String.format("%s#<name='%s', description='%s', actionType='%s'>", this.getClass().getSimpleName(), name, description, actionType); }
+
+	public static TransientStage from(JsonStage stage) {
+		List<TransientAction> actions = stage.getActions()
+				.stream()
+				.map(TransientAction::from)
+				.collect(toList());
+
+		return new TransientStage(
+				stage.getName(),
+                stage.getDescription(),
+				ActionType.valueOf(TextUtils.trimAndUpper(stage.getActionType())),
+				actions);
+	}
+
+
+	@Override
+	public String toString() {
+		return String.format("%s#<name='%s', description='%s', actionType='%s'>", this.getClass().getSimpleName(),
+		                     name, description, actionType);
+	}
 }

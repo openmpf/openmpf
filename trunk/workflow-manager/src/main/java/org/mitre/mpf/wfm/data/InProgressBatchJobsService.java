@@ -60,7 +60,7 @@ public class InProgressBatchJobsService {
     public TransientJob addJob(
             long jobId,
             String externalId,
-            TransientDetectionSystemProperties propertiesSnapshot,
+            SystemPropertiesSnapshot propertiesSnapshot,
             TransientPipeline pipeline,
             int priority,
             boolean outputEnabled,
@@ -69,6 +69,11 @@ public class InProgressBatchJobsService {
             List<TransientMedia> transientMedia,
             Map<String, String> jobProperties,
             Map<String, Map<String, String>> algorithmProperties) {
+
+        if (_jobs.containsKey(jobId)) {
+            throw new IllegalArgumentException(String.format("Job with id %s already exists.", jobId));
+        }
+
         TransientJobImpl job = new TransientJobImpl(
                 jobId,
                 externalId,
@@ -159,20 +164,18 @@ public class InProgressBatchJobsService {
     }
 
 
-    public synchronized void addMediaError(long jobId, long mediaId, String message) {
-        getJob(jobId)
-                .getMedia()
-                .stream()
-                .filter(m -> m.getId() == mediaId)
-                .findAny()
-                .ifPresent(m -> {
-                    m.setFailed(true);
-                    m.setMessage(message);
-                });
-    }
-
 
     public synchronized void setCurrentTaskIndex(long jobId, int taskIndex) {
         getJobImpl(jobId).setCurrentStage(taskIndex);
+    }
+
+
+    public synchronized void addMediaError(long jobId, long mediaId, String message) {
+        TransientMedia media = getJob(jobId).getMedia(mediaId);
+        if (media == null) {
+            throw new IllegalArgumentException(String.format("Job %s does not have media with id %s", jobId, mediaId));
+        }
+        media.setFailed(true);
+        media.setMessage(message);
     }
 }

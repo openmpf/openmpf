@@ -27,12 +27,12 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableTable;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 
@@ -84,14 +84,14 @@ public class TransientStreamingJobImpl implements TransientStreamingJob {
     public TransientStream getStream() { return stream; }
 
 
-    private final Map<String, Map<String, String>> overriddenAlgorithmProperties;
+    private final ImmutableTable<String, String, String> overriddenAlgorithmProperties;
     @Override
-    public Map<String, Map<String, String>> getOverriddenAlgorithmProperties() { return overriddenAlgorithmProperties; }
+    public ImmutableTable<String, String, String> getOverriddenAlgorithmProperties() { return overriddenAlgorithmProperties; }
 
 
-    private final Map<String, String> overriddenJobProperties;
+    private final ImmutableMap<String, String> overriddenJobProperties;
     @Override
-    public Map<String, String> getOverriddenJobProperties() { return overriddenJobProperties; }
+    public ImmutableMap<String, String> getOverriddenJobProperties() { return overriddenJobProperties; }
 
 
     private boolean cancelled;
@@ -151,7 +151,14 @@ public class TransientStreamingJobImpl implements TransientStreamingJob {
         this.outputObjectDirectory = outputObjectDirectory;
         this.healthReportCallbackURI = healthReportCallbackURI;
         this.summaryReportCallbackURI = summaryReportCallbackURI;
-        this.overriddenJobProperties = Collections.unmodifiableMap(new HashMap<>(jobProperties));
-        this.overriddenAlgorithmProperties = Collections.unmodifiableMap(new HashMap<>(algorithmProperties));
+        this.overriddenJobProperties = ImmutableMap.copyOf(jobProperties);
+
+        ImmutableTable.Builder<String, String, String> tableBuilder = ImmutableTable.builder();
+        for (Map.Entry<String, Map<String, String>> algoEntry : algorithmProperties.entrySet()) {
+            for (Map.Entry<String, String> algoProp : algoEntry.getValue().entrySet()) {
+                tableBuilder.put(algoEntry.getKey(), algoProp.getKey(), algoProp.getValue());
+            }
+        }
+        this.overriddenAlgorithmProperties = tableBuilder.build();
     }
 }

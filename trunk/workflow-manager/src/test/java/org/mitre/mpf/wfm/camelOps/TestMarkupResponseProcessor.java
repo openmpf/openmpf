@@ -41,7 +41,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -91,15 +91,16 @@ public class TestMarkupResponseProcessor {
         final int jobId = next();
         final int priority = 5;
         final long mediaId = 0;
-        TransientPipeline dummyPipeline = new TransientPipeline("testMarkupPipeline", "testMarkupPipelineDescription");
+        TransientPipeline dummyPipeline = new TransientPipeline(
+                "testMarkupPipeline", "testMarkupPipelineDescription", Collections.emptyList());
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+        SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         inProgressJobs.addJob(
                 jobId,
                 Long.toString(jobId),
-                transientDetectionSystemProperties,
+                systemPropertiesSnapshot,
                 dummyPipeline,
                 priority,
                 false,

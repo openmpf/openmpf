@@ -39,7 +39,7 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -101,9 +101,9 @@ public class TestStorageService {
         Map<String, String> propertiesMap = new HashMap<>();
         propertiesMap.put("http.object.storage.type", storageType.name());
         propertiesMap.put("http.object.storage.service_uri", SERVICE_URI.toString());
-        TransientDetectionSystemProperties propertiesSnapshot = new TransientDetectionSystemProperties(propertiesMap);
+        SystemPropertiesSnapshot propertiesSnapshot = new SystemPropertiesSnapshot(propertiesMap);
         TransientJob job = mock(TransientJob.class);
-        when(job.getDetectionSystemPropertiesSnapshot())
+        when(job.getSystemPropertiesSnapshot())
                 .thenReturn(propertiesSnapshot);
 
         when(_mockInProgressJobs.getJob(jobId))
@@ -177,9 +177,9 @@ public class TestStorageService {
         Map<String, String> propertiesMap = new HashMap<>();
         propertiesMap.put("http.object.storage.type", "BAD_TYPE");
         propertiesMap.put("http.object.storage.service_uri", SERVICE_URI.toString());
-        TransientDetectionSystemProperties propertiesSnapshot = new TransientDetectionSystemProperties(propertiesMap);
+        SystemPropertiesSnapshot propertiesSnapshot = new SystemPropertiesSnapshot(propertiesMap);
         TransientJob job = mock(TransientJob.class);
-        when(job.getDetectionSystemPropertiesSnapshot())
+        when(job.getSystemPropertiesSnapshot())
                 .thenReturn(propertiesSnapshot);
         when(_mockInProgressJobs.getJob(471))
                 .thenReturn(job);

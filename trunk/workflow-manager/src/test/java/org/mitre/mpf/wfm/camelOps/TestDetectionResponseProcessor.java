@@ -57,7 +57,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.Collections;
-import java.util.HashMap;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -149,16 +148,19 @@ public class TestDetectionResponseProcessor {
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, jobId);
         exchange.getIn().setBody(detectionResponse);
 
-        TransientPipeline detectionPipeline = new TransientPipeline("detectionPipeline", "detectionDescription");
-        TransientStage detectionStageDet = new TransientStage("detectionDetection", "detectionDescription", ActionType.DETECTION);
-        TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo");
-        detectionAction.setProperties(new HashMap<>());
-        detectionStageDet.getActions().add(detectionAction);
+        TransientAction detectionAction = new TransientAction(
+                "detectionAction", "detectionDescription", "detectionAlgo",
+                Collections.emptyMap());
+        TransientStage detectionStageDet = new TransientStage(
+                "detectionDetection", "detectionDescription", ActionType.DETECTION,
+                Collections.singletonList(detectionAction));
 
-        detectionPipeline.getStages().add(detectionStageDet);
+        TransientPipeline detectionPipeline = new TransientPipeline(
+                "detectionPipeline", "detectionDescription",
+                Collections.singletonList(detectionStageDet));
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+        SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         TransientMedia media = new TransientMedia(234234,ioUtils.findFile("/samples/video_01.mp4").toString());
         media.addMetadata("DURATION","3004");
@@ -167,7 +169,7 @@ public class TestDetectionResponseProcessor {
         inProgressJobs.addJob(
                 jobId,
                 "234234",
-                transientDetectionSystemProperties,
+                systemPropertiesSnapshot,
                 detectionPipeline,
                 1,
                 false,

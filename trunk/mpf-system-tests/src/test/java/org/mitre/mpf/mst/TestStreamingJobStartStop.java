@@ -210,11 +210,14 @@ public class TestStreamingJobStartStop {
 	private static TransientStreamingJob createJob(long jobId, String algorithm, String pipelineName,
 	                                               String mediaPath, int segmentSize, int stallTimeout) {
 
-		TransientStage stage1 = new TransientStage("stage1", "description", ActionType.DETECTION);
-		stage1.getActions().add(new TransientAction("Action1", "description", algorithm));
+		TransientStage stage1 = new TransientStage(
+				"stage1",
+				"description",
+				ActionType.DETECTION,
+				Collections.singletonList(new TransientAction("Action1", "description", algorithm, Collections.emptyMap())));
 
-		TransientPipeline pipeline = new TransientPipeline(pipelineName, "desc");
-		pipeline.getStages().add(stage1);
+		TransientPipeline pipeline = new TransientPipeline(pipelineName, "desc",
+		                                                   Collections.singletonList(stage1));
 		URL videoUrl = TestStreamingJobStartStop.class.getResource(mediaPath);
 		TransientStream stream = new TransientStream(124, videoUrl.toString());
 		stream.setSegmentSize(segmentSize);

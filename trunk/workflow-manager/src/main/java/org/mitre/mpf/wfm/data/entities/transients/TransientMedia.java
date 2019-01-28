@@ -26,9 +26,6 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.MediaResource;
@@ -41,14 +38,13 @@ import java.util.Map;
 public class TransientMedia {
 
 	/** The unique identifier for this file. */
-	private long id;
+	private final long id;
 	public long getId() { return id; }
 
-	private MediaResource mediaResource = null;
+	private final MediaResource mediaResource;
 	public String getUri() { return mediaResource.getUri(); }
 
 	/** The URI scheme (protocol) associated with the input URI, as obtained from the media resource. */
-	@JsonIgnore
 	public UriScheme getUriScheme() { return mediaResource == null ? UriScheme.UNDEFINED : mediaResource.getUriScheme(); }
 
 	/** The local file path of the file once it has been retrieved. May be null if the media is not a file, or the file path has not been externally set. */
@@ -88,7 +84,6 @@ public class TransientMedia {
 	public Map<String,String> getMediaSpecificProperties() { return mediaSpecificProperties; }
 	public String getMediaSpecificProperty(String key) { return mediaSpecificProperties.get(key); }
 
-	@JsonIgnore
 	public MediaType getMediaType() {
 	    return MediaTypeUtils.parse(type);
 	}
@@ -107,12 +102,9 @@ public class TransientMedia {
      * @param id unique media id.
      * @param uri URI of the media, used to construct the media resource.
      */
-    @JsonCreator
-	public TransientMedia(@JsonProperty("id") long id, @JsonProperty("uri") String uri) {
+	public TransientMedia(long id, String uri) {
         this.id = id;
 		mediaResource = new MediaResource(uri);
-
-        assert mediaResource != null : "Media resource must not be null, check construction for id=" + id + " and uri=" + uri;
 
         if ( !mediaResource.isSupportedUriScheme() ) {
             failed = true;
@@ -124,6 +116,7 @@ public class TransientMedia {
         }
     }
 
+	@Override
 	public String toString() {
 		return String.format("%s#<id=%d, uri='%s', uriScheme='%s', localPath='%s', failed=%s, message='%s', type='%s', length=%d, sha256='%s'>",
 				this.getClass().getSimpleName(),

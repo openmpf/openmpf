@@ -26,16 +26,17 @@
 
 package org.mitre.mpf.wfm.util;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.mitre.mpf.wfm.enums.ListFilterType;
+import org.mitre.mpf.wfm.enums.UriScheme;
+
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Paths;
 import java.util.List;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.mitre.mpf.wfm.enums.ListFilterType;
-import org.mitre.mpf.wfm.enums.UriScheme;
 
 /**
  * Container for information about a media resource.
@@ -79,17 +80,9 @@ public class MediaResourceContainer {
                 if (resourceUriScheme == UriScheme.FILE) {
                     resourceFile = Paths.get(uriInstance).toAbsolutePath().toFile();
                 }
-            } catch (IllegalArgumentException iae) {
+            } catch (IllegalArgumentException | SecurityException | FileSystemNotFoundException iae) {
                 // an exception occurred while getting the file path, store the error and clear resourceUriScheme
                 resourceErrorMessage = iae.getMessage();
-                resourceUriScheme = UriScheme.UNDEFINED;
-            } catch (FileSystemNotFoundException fsnfe) {
-                // an exception occurred while getting the file path, store the error and clear resourceUriScheme
-                resourceErrorMessage = fsnfe.getMessage();
-                resourceUriScheme = UriScheme.UNDEFINED;
-            } catch (SecurityException se) {
-                // an exception occurred while getting the file path, store the error and clear resourceUriScheme
-                resourceErrorMessage = se.getMessage();
                 resourceUriScheme = UriScheme.UNDEFINED;
             }
 

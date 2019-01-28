@@ -108,29 +108,29 @@ public class TestUtil {
     }
 
     public static TransientJob setupJob(
-            long jobId, TransientDetectionSystemProperties transientDetectionSystemProperties,
+            long jobId, SystemPropertiesSnapshot systemPropertiesSnapshot,
             InProgressBatchJobsService inProgressJobs, IoUtils ioUtils) {
-        return setupJob(jobId, transientDetectionSystemProperties, inProgressJobs, ioUtils, Collections.emptyMap(),
+        return setupJob(jobId, systemPropertiesSnapshot, inProgressJobs, ioUtils, Collections.emptyMap(),
                         Collections.emptyMap());
     }
 
     public static TransientJob setupJob(
-            long jobId, TransientDetectionSystemProperties transientDetectionSystemProperties,
+            long jobId, SystemPropertiesSnapshot systemPropertiesSnapshot,
             InProgressBatchJobsService inProgressJobs, IoUtils ioUtils,
             Map<String, String> jobProperties, Map<String, Map<String, String>> algorithmProperties) {
 
-        TransientPipeline dummyPipeline = new TransientPipeline("dummyPipeline", "dummyDescription");
-        TransientStage dummyStageDet = new TransientStage("dummydummy", "dummyDescription", ActionType.DETECTION);
-        TransientAction dummyAction = new TransientAction("dummyAction", "dummyDescription", "dummyAlgo");
-        dummyAction.setProperties(new HashMap<>());
-        dummyStageDet.getActions().add(dummyAction);
+        TransientAction dummyAction = new TransientAction(
+                "dummyAction", "dummyDescription", "dummyAlgo", Collections.emptyMap());
+        TransientStage dummyStageDet = new TransientStage(
+                "dummydummy", "dummyDescription", ActionType.DETECTION, Collections.singletonList(dummyAction));
 
-        dummyPipeline.getStages().add(dummyStageDet);
+        TransientPipeline dummyPipeline = new TransientPipeline(
+                "dummyPipeline", "dummyDescription", Collections.singletonList(dummyStageDet));
 
         return inProgressJobs.addJob(
                 jobId,
                 "234234",
-                transientDetectionSystemProperties,
+                systemPropertiesSnapshot,
                 dummyPipeline,
                 1,
                 false,

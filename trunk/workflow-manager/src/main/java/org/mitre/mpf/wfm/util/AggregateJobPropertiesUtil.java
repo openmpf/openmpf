@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.util;
 
+import com.google.common.collect.Table;
 import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
@@ -37,7 +38,6 @@ import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinitionRef;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -101,15 +101,10 @@ public class AggregateJobPropertiesUtil {
     private static PropertyInfo calculateValue(String propertyName, Map<String,String> actionProperties,
                                                Map<String, String> jobProperties,
                                                String algorithmNameFromAction,
-                                               Map<String, Map<String, String>> algorithmProperties) {
-
-        if (algorithmNameFromAction != null &&
-                algorithmProperties.containsKey(algorithmNameFromAction) &&
-                algorithmProperties.get(algorithmNameFromAction).containsKey(propertyName) ) {
-            // if the job-algorithm properties includes the algorithm currently being run, then get the property value from
-            // the job-algorithm properties
-            Map<String, String> m = algorithmProperties.get(algorithmNameFromAction);
-            return new PropertyInfo(propertyName, m.get(propertyName), PropertyLevel.ALGORITHM);
+                                               Table<String, String, String> algorithmProperties) {
+        String algoPropValue = algorithmProperties.get(algorithmNameFromAction, propertyName);
+        if (algoPropValue != null) {
+            return new PropertyInfo(propertyName, algoPropValue, PropertyLevel.ALGORITHM);
         }
 
         if (jobProperties.containsKey(propertyName)) {
@@ -138,7 +133,7 @@ public class AggregateJobPropertiesUtil {
     public static PropertyInfo calculateValue(String propertyName, Map<String,String> actionProperties,
                                               Map<String, String> jobProperties,
                                               ActionDefinition actionDefinition,
-                                              Map<String, Map<String, String>> algorithmProperties,
+                                              Table<String, String, String> algorithmProperties,
                                               Map<String, String> mediaProperties) {
 
         if (mediaProperties.containsKey(propertyName)) {
@@ -163,7 +158,7 @@ public class AggregateJobPropertiesUtil {
     public static PropertyInfo calculateValue(String propertyName, Map<String,String> actionProperties,
                                               Map<String, String> jobProperties,
                                               TransientAction transientAction,
-                                              Map<String, Map<String, String>> algorithmProperties,
+                                              Table<String, String, String> algorithmProperties,
                                               Map<String, String> mediaProperties) {
 
         if (mediaProperties.containsKey(propertyName)) {
@@ -188,20 +183,16 @@ public class AggregateJobPropertiesUtil {
     public static PropertyInfo calculateValue(String propertyName, Collection<PropertyDefinitionRef> actionProperties,
                                               Map<String, String> jobProperties,
                                               ActionDefinition actionDefinition,
-                                              Map<String, Map<String, String>> algorithmProperties,
+                                              Table<String, String, String> algorithmProperties,
                                               Map<String, String> mediaProperties) {
 
         if (mediaProperties.containsKey(propertyName)) {
             return new PropertyInfo(propertyName, mediaProperties.get(propertyName), PropertyLevel.MEDIA);
         }
 
-        if (actionDefinition.getAlgorithmRef() != null &&
-                algorithmProperties.containsKey(actionDefinition.getAlgorithmRef()) &&
-                algorithmProperties.get(actionDefinition.getAlgorithmRef()).containsKey(propertyName) ) {
-            // if the algorithm properties includes the algorithm identified in the action definition, then get the property value from
-            // the algorithm properties
-            Map<String,String> m = algorithmProperties.get(actionDefinition.getAlgorithmRef());
-            return new PropertyInfo(propertyName, m.get(propertyName), PropertyLevel.ALGORITHM);
+        String algoPropVal = algorithmProperties.get(actionDefinition.getAlgorithmRef(), propertyName);
+        if (algoPropVal != null) {
+            return new PropertyInfo(propertyName, algoPropVal, PropertyLevel.ALGORITHM);
         }
 
         if (jobProperties.containsKey(propertyName)) {
@@ -267,10 +258,7 @@ public class AggregateJobPropertiesUtil {
                                                                TransientStreamingJob job) {
 
     	Map<String, String> overriddenJobProps = job.getOverriddenJobProperties();
-        Map<String, String> overriddenAlgoProps = job.getOverriddenAlgorithmProperties().get(algorithm.getName());
-        if (overriddenAlgoProps == null) {
-            overriddenAlgoProps = Collections.emptyMap();
-        }
+        Map<String, String> overriddenAlgoProps = job.getOverriddenAlgorithmProperties().row(algorithm.getName());
         Map<String, String> mediaSpecificProps = job.getStream().getMediaProperties();
         return getCombinedJobProperties(algorithm, action, overriddenJobProps, overriddenAlgoProps, mediaSpecificProps);
     }

@@ -29,7 +29,9 @@ package org.mitre.mpf.wfm.businessrules.impl;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.JsonSegmentSummaryReport;
+import org.mitre.mpf.interop.JsonStreamingInputObject;
+import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.IdGenerator;
@@ -38,8 +40,9 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
@@ -126,64 +129,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     @Autowired
     private JobStatusBroadcaster jobStatusBroadcaster;
 
-    /**
-     * Converts a pipeline represented in JSON to a {@link TransientPipeline} instance.
-     */
-    private TransientPipeline buildPipeline(JsonPipeline jsonPipeline) {
-
-        if (jsonPipeline == null) {
-            return null;
-        }
-
-        String name = jsonPipeline.getName();
-        String description = jsonPipeline.getDescription();
-        TransientPipeline transientPipeline = new TransientPipeline(name, description);
-
-        // Iterate through the pipeline's stages and add them to the pipeline protocol buffer.
-        for (JsonStage stage : jsonPipeline.getStages()) {
-            transientPipeline.getStages().add(buildStage(stage));
-        }
-
-        return transientPipeline;
-    }
-
-    /**
-     * Maps a stage (represented in JSON) to a {@link TransientStage} instance.
-     */
-    private TransientStage buildStage(JsonStage stage) {
-        String name = stage.getName();
-        String description = stage.getDescription();
-        String operation = stage.getActionType();
-
-        TransientStage transientStage = new TransientStage(name, description, ActionType.valueOf(TextUtils.trimAndUpper(operation)));
-
-        // Iterate through the stage's actions and add them to the stage protocol buffer.
-        for (JsonAction action : stage.getActions()) {
-            transientStage.getActions().add(buildAction(action));
-        }
-
-        return transientStage;
-    }
-
-    /**
-     * Maps an action (represented in JSON) to a {@link TransientAction} instance.
-     */
-    private TransientAction buildAction(JsonAction action) {
-        String name = action.getName();
-        String description = action.getDescription();
-        String algorithm = action.getAlgorithm();
-
-        TransientAction transientAction = new TransientAction(name, description, algorithm);
-
-        // Finally, iterate through all of the properties in this action and copy them to the protocol buffer.
-        for (Map.Entry<String, String> property : action.getProperties().entrySet()) {
-            if (StringUtils.isNotBlank(property.getKey()) && StringUtils.isNotBlank(property.getValue())) {
-                transientAction.getProperties().put(property.getKey().toUpperCase(), property.getValue());
-            }
-        }
-
-        return transientAction;
-    }
 
     /**
      * Create and initialize a JSON representation of a streaming job request given the raw parameters.
@@ -475,7 +420,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         try {
 
             // persist the pipeline and streaming job in REDIS
-            TransientPipeline transientPipeline = buildPipeline(jsonStreamingJobRequest.getPipeline());
+            TransientPipeline transientPipeline = TransientPipeline.from(jsonStreamingJobRequest.getPipeline());
             TransientStreamingJob transientStreamingJob = buildStreamingJob(jobId, streamingJobRequestEntity, transientPipeline, jsonStreamingJobRequest);
             streamingJobMessageSender.launchJob(transientStreamingJob);
 

@@ -27,6 +27,8 @@
 package org.mitre.mpf.wfm.util;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Maps;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.io.IOUtils;
@@ -35,7 +37,7 @@ import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.EnvVar;
 import org.mitre.mpf.wfm.service.StorageBackend;
@@ -203,14 +205,10 @@ public class PropertiesUtil {
                 .collect(toList());
     }
 
-    public TransientDetectionSystemProperties createDetectionSystemPropertiesSnapshot() {
-        Map<String, String> detMap = new HashMap<>();
-        mpfPropertiesConfig.getKeys().forEachRemaining(key -> {
-            if (MpfPropertiesConfigurationBuilder.propertyRequiresSnapshot(key)) {
-                detMap.put(key, mpfPropertiesConfig.getString(key)); // resolve final value
-            }
-        } );
-        return new TransientDetectionSystemProperties(Collections.unmodifiableMap(detMap));
+    public SystemPropertiesSnapshot createSystemPropertiesSnapshot() {
+        Iterator<String> snapshotProps = Iterators.filter(mpfPropertiesConfig.getKeys(),
+                                                          MpfPropertiesConfigurationBuilder::propertyRequiresSnapshot);
+        return new SystemPropertiesSnapshot(Maps.toMap(snapshotProps, mpfPropertiesConfig::getString));
     }
 
     //

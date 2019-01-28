@@ -76,7 +76,8 @@ public class TestMediaInspectionSplitter {
                 .thenReturn(inMessage);
 
         final String testExternalId = "externID";
-        final TransientPipeline testPipe = new TransientPipeline("testPipe", "testDescr");
+        final TransientPipeline testPipe = new TransientPipeline("testPipe", "testDescr",
+                                                                 Collections.emptyList());
         final long testMediaId = 123456;
         String testURI = TestUtil.findFile("/samples/new_face_video.avi");
         TransientMedia testMedia = new TransientMedia(testMediaId, testURI);

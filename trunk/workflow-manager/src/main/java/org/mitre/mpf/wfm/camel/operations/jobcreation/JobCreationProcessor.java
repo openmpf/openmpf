@@ -27,8 +27,8 @@
 package org.mitre.mpf.wfm.camel.operations.jobcreation;
 
 import org.apache.camel.Exchange;
-import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.JsonJobRequest;
+import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
@@ -38,14 +38,15 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,58 +91,7 @@ public class JobCreationProcessor extends WfmProcessor {
 	@Autowired
 	private JobStatusBroadcaster jobStatusBroadcaster;
 
-	/** Converts a pipeline represented in JSON to a {@link org.mitre.mpf.wfm.data.entities.transients.TransientPipeline} instance. */
-	private TransientPipeline buildPipeline(JsonPipeline jsonPipeline) {
 
-		if(jsonPipeline == null) {
-			return null;
-		}
-
-		String name = jsonPipeline.getName();
-		String description = jsonPipeline.getDescription();
-		TransientPipeline transientPipeline = new TransientPipeline(name, description);
-
-		// Iterate through the pipeline's stages and add them to the pipeline protocol buffer.
-		for(JsonStage stage : jsonPipeline.getStages()) {
-			transientPipeline.getStages().add(buildStage(stage));
-		}
-
-		return transientPipeline;
-	}
-
-	/** Maps a stage (represented in JSON) to a {@link org.mitre.mpf.wfm.data.entities.transients.TransientStage} instance. */
-	private TransientStage buildStage(JsonStage stage) {
-		String name = stage.getName();
-		String description = stage.getDescription();
-		String operation = stage.getActionType();
-
-		TransientStage transientStage = new TransientStage(name, description, ActionType.valueOf(TextUtils.trimAndUpper(operation)));
-
-		// Iterate through the stage's actions and add them to the stage protocol buffer.
-		for(JsonAction action : stage.getActions()) {
-			transientStage.getActions().add(buildAction(action));
-		}
-
-		return transientStage;
-	}
-
-	/** Maps an action (represented in JSON) to a {@link org.mitre.mpf.wfm.data.entities.transients.TransientAction} instance. */
-	private TransientAction buildAction(JsonAction action) {
-		String name = action.getName();
-		String description = action.getDescription();
-		String algorithm = action.getAlgorithm();
-
-		TransientAction transientAction = new TransientAction(name, description, algorithm);
-
-		// Finally, iterate through all of the properties in this action and copy them to the protocol buffer.
-		for(Map.Entry<String, String> property : action.getProperties().entrySet()) {
-			if(StringUtils.isNotBlank(property.getKey()) && StringUtils.isNotBlank(property.getValue())) {
-				transientAction.getProperties().put(property.getKey().toUpperCase(), property.getValue());
-			}
-		}
-
-		return transientAction;
-	}
 
 	@Override
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
@@ -167,14 +117,14 @@ public class JobCreationProcessor extends WfmProcessor {
             // Capture the current state of the detection system properties at the time when this job is created. Since the
             // detection system properties may be changed by an administrator, we must ensure that the job uses a consistent set of detection system
             // properties through all stages of the jobs pipeline by storing these detection system property values in REDIS.
-            TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+            SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
-            TransientPipeline transientPipeline = buildPipeline(jobRequest.getPipeline());
+            TransientPipeline transientPipeline = TransientPipeline.from(jobRequest.getPipeline());
 
 			TransientJob transientJob = inProgressBatchJobs.addJob(
 					jobRequestEntity.getId(),
 					jobRequest.getExternalId(),
-					transientDetectionSystemProperties,
+					systemPropertiesSnapshot,
 					transientPipeline,
 					jobRequest.getPriority(),
 					jobRequest.isOutputObjectEnabled(),

@@ -27,12 +27,10 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
+import com.google.common.collect.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
 import java.util.*;
-import java.util.function.Function;
-
-import static java.util.stream.Collectors.toMap;
 
 public class TransientJobImpl implements TransientJob {
 
@@ -73,23 +71,23 @@ public class TransientJobImpl implements TransientJob {
     public boolean isOutputEnabled() { return outputEnabled; }
 
 
-    private final SortedMap<Long, TransientMedia> media;
+    private final ImmutableSortedMap<Long, TransientMedia> media;
     @Override
-    public Collection<TransientMedia> getMedia() { return media.values(); }
+    public ImmutableCollection<TransientMedia> getMedia() { return media.values(); }
     @Override
     public TransientMedia getMedia(long mediaId) {
         return media.get(mediaId);
     }
 
 
-    private final Map<String, Map<String, String>> overriddenAlgorithmProperties;
+    private final ImmutableTable<String, String, String> overriddenAlgorithmProperties;
     @Override
-    public Map<String, Map<String, String>> getOverriddenAlgorithmProperties() { return overriddenAlgorithmProperties; }
+    public ImmutableTable<String, String, String> getOverriddenAlgorithmProperties() { return overriddenAlgorithmProperties; }
 
 
-    private final Map<String, String> overriddenJobProperties;
+    private final ImmutableMap<String, String> overriddenJobProperties;
     @Override
-    public Map<String, String> getOverriddenJobProperties() { return overriddenJobProperties; }
+    public ImmutableMap<String, String> getOverriddenJobProperties() { return overriddenJobProperties; }
 
 
     private boolean cancelled;
@@ -131,9 +129,9 @@ public class TransientJobImpl implements TransientJob {
     // Detection system properties for this job should be immutable, the detection system property values
     // shouldn't change once the job is created even if they are changed on the UI by an admin..
     // The detectionSystemPropertiesSnapshot contains the values of the detection system properties at the time this batch job was created.
-    private final TransientDetectionSystemProperties detectionSystemPropertiesSnapshot;
+    private final SystemPropertiesSnapshot detectionSystemPropertiesSnapshot;
     @Override
-    public TransientDetectionSystemProperties getDetectionSystemPropertiesSnapshot() { return detectionSystemPropertiesSnapshot; }
+    public SystemPropertiesSnapshot getSystemPropertiesSnapshot() { return detectionSystemPropertiesSnapshot; }
 
 
     private final List<DetectionProcessingError> detectionProcessingErrors = new ArrayList<>();
@@ -149,7 +147,7 @@ public class TransientJobImpl implements TransientJob {
     public TransientJobImpl(
             long id,
             String externalId,
-            TransientDetectionSystemProperties detectionSystemPropertiesSnapshot,
+            SystemPropertiesSnapshot detectionSystemPropertiesSnapshot,
             TransientPipeline pipeline,
             int priority,
             boolean outputEnabled,
@@ -166,12 +164,17 @@ public class TransientJobImpl implements TransientJob {
         this.outputEnabled = outputEnabled;
         this.callbackURL = callbackURL;
         this.callbackMethod = callbackMethod;
-        SortedMap<Long, TransientMedia> tempMedia = media.stream()
-                .collect(toMap(TransientMedia::getId, Function.identity(),
-                               (v1, v2) -> { throw new IllegalStateException("Duplicate media id."); },
-                               TreeMap::new));
-        this.media = Collections.unmodifiableSortedMap(tempMedia);
-        this.overriddenJobProperties = Collections.unmodifiableMap(new HashMap<>(jobProperties));
-        this.overriddenAlgorithmProperties = Collections.unmodifiableMap(new HashMap<>(algorithmProperties));
+
+        this.media = ImmutableSortedMap.copyOf(Maps.uniqueIndex(media, TransientMedia::getId));
+
+        this.overriddenJobProperties = ImmutableMap.copyOf(jobProperties);
+
+        ImmutableTable.Builder<String, String, String> tableBuilder = ImmutableTable.builder();
+        for (Map.Entry<String, Map<String, String>> algoEntry : algorithmProperties.entrySet()) {
+            for (Map.Entry<String, String> algoProp : algoEntry.getValue().entrySet()) {
+                tableBuilder.put(algoEntry.getKey(), algoProp.getKey(), algoProp.getValue());
+            }
+        }
+        this.overriddenAlgorithmProperties = tableBuilder.build();
     }
 }

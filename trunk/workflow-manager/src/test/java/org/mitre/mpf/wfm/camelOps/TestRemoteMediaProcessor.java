@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
@@ -46,7 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -172,7 +172,7 @@ public class TestRemoteMediaProcessor {
 	public void testSplitRequest() throws Exception {
         long mediaId1 = next();
         long mediaId2 = next();
-		List<TransientMedia> media = Arrays.asList(
+		ImmutableList<TransientMedia> media = ImmutableList.of(
 				new TransientMedia(mediaId1, "/some/local/path.jpg"),
 				new TransientMedia(mediaId2, EXT_IMG));
 

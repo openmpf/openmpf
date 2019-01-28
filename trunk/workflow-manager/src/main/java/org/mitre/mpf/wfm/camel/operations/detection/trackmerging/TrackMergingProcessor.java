@@ -136,7 +136,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 							transientJob.getOverriddenAlgorithmProperties(),
 							transientMedia.getMediaSpecificProperties()).getValue();
 
-					TrackMergingPlan trackMergingPlan = createTrackMergingPlan(transientJob.getDetectionSystemPropertiesSnapshot(),
+					TrackMergingPlan trackMergingPlan = createTrackMergingPlan(transientJob.getSystemPropertiesSnapshot(),
 																				samplingInterval, minTrackLength, mergeTracks, minGapBetweenTracks, minTrackOverlap);
 
 					if (trackMergingPlan.isMergeTracks()) {
@@ -173,7 +173,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 	}
 
 	/**
-	 * @param transientDetectionSystemProperties detection system properties whose values were in effect when the transient job was created (will be used as system property default values)
+	 * @param systemPropertiesSnapshot detection system properties whose values were in effect when the transient job was created (will be used as system property default values)
 	 * @param samplingIntervalProperty
 	 * @param minTrackLengthProperty
 	 * @param mergeTracksProperty
@@ -181,14 +181,14 @@ public class TrackMergingProcessor extends WfmProcessor {
 	 * @param minTrackOverlapProperty
 	 * @return track merging plan based upon the specified conditions
 	 */
-	private TrackMergingPlan createTrackMergingPlan(TransientDetectionSystemProperties transientDetectionSystemProperties,
-									String samplingIntervalProperty, String minTrackLengthProperty, String mergeTracksProperty, String minGapBetweenTracksProperty, String minTrackOverlapProperty) {
-		int defaultSamplingInterval = transientDetectionSystemProperties.getSamplingInterval(); // get FRAME_INTERVAL system property, is mutable so it is only captured once.
+	private TrackMergingPlan createTrackMergingPlan(SystemPropertiesSnapshot systemPropertiesSnapshot,
+	                                                String samplingIntervalProperty, String minTrackLengthProperty, String mergeTracksProperty, String minGapBetweenTracksProperty, String minTrackOverlapProperty) {
+		int defaultSamplingInterval = systemPropertiesSnapshot.getSamplingInterval(); // get FRAME_INTERVAL system property, is mutable so it is only captured once.
 		int samplingInterval = defaultSamplingInterval;
-		boolean mergeTracks = transientDetectionSystemProperties.isTrackMerging();
-		int minGapBetweenTracks = transientDetectionSystemProperties.getMinAllowableTrackGap();
-		int minTrackLength = transientDetectionSystemProperties.getMinTrackLength();
-		double minTrackOverlap = transientDetectionSystemProperties.getTrackOverlapThreshold();
+		boolean mergeTracks = systemPropertiesSnapshot.isTrackMerging();
+		int minGapBetweenTracks = systemPropertiesSnapshot.getMinAllowableTrackGap();
+		int minTrackLength = systemPropertiesSnapshot.getMinTrackLength();
+		double minTrackOverlap = systemPropertiesSnapshot.getTrackOverlapThreshold();
 
 		if (samplingIntervalProperty != null) {
 			try {

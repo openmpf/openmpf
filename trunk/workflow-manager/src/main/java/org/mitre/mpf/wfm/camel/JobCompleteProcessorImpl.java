@@ -216,7 +216,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		}
 
 		if (transientJob.getOverriddenAlgorithmProperties() != null) {
-			jsonOutputObject.getAlgorithmProperties().putAll(transientJob.getOverriddenAlgorithmProperties());
+			jsonOutputObject.getAlgorithmProperties().putAll(transientJob.getOverriddenAlgorithmProperties().rowMap());
 		}
 		jsonOutputObject.getJobWarnings().addAll(transientJob.getWarnings());
 		jsonOutputObject.getJobErrors().addAll(transientJob.getErrors());
@@ -364,7 +364,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 		boolean exemplarsOnly;
 		if (exemplarsOnlyProp.getLevel() == AggregateJobPropertiesUtil.PropertyLevel.NONE) {
-			exemplarsOnly = transientJob.getDetectionSystemPropertiesSnapshot().isOutputObjectExemplarOnly();
+			exemplarsOnly = transientJob.getSystemPropertiesSnapshot().isOutputObjectExemplarOnly();
 		}
 		else {
 			exemplarsOnly = Boolean.valueOf(exemplarsOnlyProp.getValue());
@@ -444,7 +444,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			return Boolean.parseBoolean(jobProperty);
 		}
 
-		return transientJob.getDetectionSystemPropertiesSnapshot().isOutputObjectLastStageOnly();
+		return transientJob.getSystemPropertiesSnapshot().isOutputObjectLastStageOnly();
 	}
 
 

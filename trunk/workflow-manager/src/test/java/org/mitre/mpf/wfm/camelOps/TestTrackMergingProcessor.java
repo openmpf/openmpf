@@ -133,9 +133,6 @@ public class TestTrackMergingProcessor {
         Exchange exchange = new DefaultExchange(camelContext);
         TrackMergingContext mergeContext = new TrackMergingContext(jobId, stageIndex);
         exchange.getIn().setBody(jsonUtils.serialize(mergeContext));
-        TransientPipeline trackMergePipeline = new TransientPipeline("trackMergePipeline", "trackMergeDescription");
-
-        TransientStage trackMergeStageDet = new TransientStage("trackMergeDetection", "trackMergeDescription", ActionType.DETECTION);
 
         Map<String, String> mergeProp = new HashMap<>();
         if (samplingInterval != null) {
@@ -150,19 +147,23 @@ public class TestTrackMergingProcessor {
         if (minTrackSize != null) {
             mergeProp.put(MpfConstants.MIN_TRACK_LENGTH, minTrackSize);
         }
-        TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo");
-        detectionAction.setProperties(mergeProp);
-        trackMergeStageDet.getActions().add(detectionAction);
+        TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo", mergeProp);
 
-        trackMergePipeline.getStages().add(trackMergeStageDet);
+        TransientStage trackMergeStageDet = new TransientStage(
+                "trackMergeDetection", "trackMergeDescription", ActionType.DETECTION,
+                Collections.singletonList(detectionAction));
+
+        TransientPipeline trackMergePipeline = new TransientPipeline(
+                "trackMergePipeline", "trackMergeDescription",
+                Collections.singletonList(trackMergeStageDet));
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+        SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         inProgressJobs.addJob(
                 jobId,
                 "999999",
-                transientDetectionSystemProperties,
+                systemPropertiesSnapshot,
                 trackMergePipeline,
                 priority,
                 false,
@@ -229,26 +230,28 @@ public class TestTrackMergingProcessor {
         Exchange exchange = new DefaultExchange(camelContext);
         TrackMergingContext mergeContext = new TrackMergingContext(jobId, stageIndex);
         exchange.getIn().setBody(jsonUtils.serialize(mergeContext));
-        TransientPipeline trackMergePipeline = new TransientPipeline("trackMergePipeline", "trackMergeDescription");
-
-        TransientStage trackMergeStageDet = new TransientStage("trackMergeDetection", "trackMergeDescription", ActionType.DETECTION);
 
         Map<String, String> mergeProp = new HashMap<>();
         mergeProp.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
         mergeProp.put(MpfConstants.MERGE_TRACKS_PROPERTY, "TRUE");
-        TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo");
-        detectionAction.setProperties(mergeProp);
-        trackMergeStageDet.getActions().add(detectionAction);
+        TransientAction detectionAction = new TransientAction(
+                "detectionAction", "detectionDescription", "detectionAlgo", mergeProp);
 
-        trackMergePipeline.getStages().add(trackMergeStageDet);
+        TransientStage trackMergeStageDet = new TransientStage(
+                "trackMergeDetection",
+                "trackMergeDescription", ActionType.DETECTION, Collections.singletonList(detectionAction));
+
+        TransientPipeline trackMergePipeline = new TransientPipeline(
+                "trackMergePipeline", "trackMergeDescription",
+                Collections.singletonList(trackMergeStageDet));
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+        SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         inProgressJobs.addJob(
                 jobId,
                 "999999",
-                transientDetectionSystemProperties,
+                systemPropertiesSnapshot,
                 trackMergePipeline,
                 priority,
                 false,

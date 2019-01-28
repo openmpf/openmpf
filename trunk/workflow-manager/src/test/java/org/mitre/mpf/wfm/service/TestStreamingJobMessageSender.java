@@ -26,6 +26,7 @@
 package org.mitre.mpf.wfm.service;
 
 
+import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.nms.MasterNode;
@@ -104,17 +105,19 @@ public class TestStreamingJobMessageSender {
 				.thenReturn(algoDef);
 
 
-		TransientAction action = new TransientAction("ActionName", "Action description", "TEST ALGO");
-		action.getProperties().put("OVERRIDDEN ACTION PROPERTY", "ACTION VAL");
-		action.getProperties().put("OVERRIDDEN JOB PROPERTY", "Bad Value");
+		TransientAction action = new TransientAction(
+				"ActionName",
+				"Action description",
+				"TEST ALGO",
+				ImmutableMap.of("OVERRIDDEN ACTION PROPERTY", "ACTION VAL",
+				                "OVERRIDDEN JOB PROPERTY", "Bad Value"));
 
 		TransientStage stage = new TransientStage("StageName", "Stage description",
-		                                          ActionType.DETECTION);
-		stage.getActions().add(action);
+		                                          ActionType.DETECTION, Collections.singletonList(action));
 
 		TransientPipeline pipeline = new TransientPipeline("MyStreamingPipeline",
-		                                                   "Pipeline description");
-		pipeline.getStages().add(stage);
+		                                                   "Pipeline description",
+		                                                   Collections.singletonList(stage));
 
 		TransientStream stream = new TransientStream(5234, "stream://myStream");
 		stream.setSegmentSize(543);

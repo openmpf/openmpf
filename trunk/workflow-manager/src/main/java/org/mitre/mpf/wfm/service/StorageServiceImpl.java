@@ -34,7 +34,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactE
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -115,8 +115,8 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public String store(JsonOutputObject outputObject) throws IOException {
-        TransientDetectionSystemProperties propertiesSnapshot
-                = _inProgressJobs.getJob(outputObject.getJobId()).getDetectionSystemPropertiesSnapshot();
+        SystemPropertiesSnapshot propertiesSnapshot
+                = _inProgressJobs.getJob(outputObject.getJobId()).getSystemPropertiesSnapshot();
         try {
             StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
             if (storageBackend != null) {
@@ -147,8 +147,8 @@ public class StorageServiceImpl implements StorageService {
             return;
         }
 
-        TransientDetectionSystemProperties propertiesSnapshot
-                = _inProgressJobs.getJob(markupResult.getJobId()).getDetectionSystemPropertiesSnapshot();
+        SystemPropertiesSnapshot propertiesSnapshot
+                = _inProgressJobs.getJob(markupResult.getJobId()).getSystemPropertiesSnapshot();
         try {
             StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
             if (storageBackend == null) {
@@ -204,8 +204,8 @@ public class StorageServiceImpl implements StorageService {
 
     private String processImageArtifact(ArtifactExtractionRequest request) {
         Path inputMediaPath = Paths.get(request.getPath());
-        TransientDetectionSystemProperties propertiesSnapshot
-                = _inProgressJobs.getJob(request.getJobId()).getDetectionSystemPropertiesSnapshot();
+        SystemPropertiesSnapshot propertiesSnapshot
+                = _inProgressJobs.getJob(request.getJobId()).getSystemPropertiesSnapshot();
         try {
             StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
             if (storageBackend != null) {
@@ -250,8 +250,8 @@ public class StorageServiceImpl implements StorageService {
                 .flatMap(Collection::stream)
                 .collect(toCollection(TreeSet::new));
 
-        TransientDetectionSystemProperties propertiesSnapshot
-                = _inProgressJobs.getJob(request.getJobId()).getDetectionSystemPropertiesSnapshot();
+        SystemPropertiesSnapshot propertiesSnapshot
+                = _inProgressJobs.getJob(request.getJobId()).getSystemPropertiesSnapshot();
         try {
             StorageBackend storageBackend = getStorageBackend(propertiesSnapshot.getHttpObjectStorageType());
             if (storageBackend != null) {

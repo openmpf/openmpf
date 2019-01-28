@@ -26,165 +26,226 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
+import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;
-import org.apache.commons.configuration2.ImmutableConfiguration;
-import org.apache.commons.lang3.mutable.MutableInt;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
 import org.junit.Assert;
-import org.junit.Ignore;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runner.notification.RunListener;
-import org.mitre.mpf.mvc.model.PropertyModel;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.mockito.InjectMocks;
+import org.mockito.Matchers;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
-@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
-@RunWith(SpringJUnit4ClassRunner.class)
-@RunListener.ThreadSafe
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.mockito.Mockito.*;
+
 public class TestDetectionResponseProcessor {
 
-    private static final Logger log = LoggerFactory.getLogger(TestDetectionResponseProcessor.class);
-    private static final int MINUTES = 1000 * 60; // 1000 milliseconds/second & 60 seconds/minute.
+    @Mock
+    private PipelineService mockPipelineService;
 
-    @Autowired
-    private ApplicationContext context;
+    @Mock
+    private Redis mockRedis;
 
-    @Autowired
-    private CamelContext camelContext;
+    @Mock
+    private JsonUtils mockJsonUtils; // used by DetectionResponseProcessor
 
-    @Autowired
-    private JsonUtils jsonUtils;
+    @InjectMocks
+    private DetectionResponseProcessor mockDetectionResponseProcessor;
 
-    @Autowired
-    private IoUtils ioUtils;
+    private static final long JOB_ID = 111;
+    private static final long MEDIA_ID = 222;
+    private static final String DETECTION_RESPONSE_ALG_NAME = "TEST_DETECTION_RESPONSE_ALG";
+    private static final String DETECTION_RESPONSE_ACTION_NAME = "TEST_DETECTION_RESPONSE_ACTION";
+    private static final String DETECTION_RESPONSE_PIPELINE_NAME = "TEST_DETECTION_RESPONSE_PIPELINE";
+    private static final String DETECTION_RESPONSE_STAGE_NAME = "TEST_DETECTION_RESPONSE_STAGE";
 
-    @Autowired
-    private Redis redis;
+    @Before
+    public void init() throws Exception {
 
-    @Autowired
-    private PropertiesUtil propertiesUtil;
+        MockitoAnnotations.initMocks(this);
 
-    @Autowired
-    @Qualifier(DetectionResponseProcessor.REF)
-    private WfmProcessorInterface detectionResponseProcessor;
+        AlgorithmDefinition algorithmDefinition = new AlgorithmDefinition(ActionType.DETECTION,
+                DETECTION_RESPONSE_ALG_NAME, DETECTION_RESPONSE_ALG_NAME + "_DESC", true, false);
 
-    private static final MutableInt SEQUENCE = new MutableInt();
+        when(mockPipelineService.getAlgorithm(algorithmDefinition.getName()))
+                .thenReturn(algorithmDefinition);
 
-    public int next() {
-        synchronized (SEQUENCE) {
-            int next = SEQUENCE.getValue();
-            SEQUENCE.increment();
-            return next;
-        }
+        ActionDefinition actionDefinition = new ActionDefinition(DETECTION_RESPONSE_ACTION_NAME,
+                DETECTION_RESPONSE_ALG_NAME, DETECTION_RESPONSE_ALG_NAME + "_DESC");
+
+        when(mockPipelineService.getAction(actionDefinition.getName()))
+                .thenReturn(actionDefinition);
+
+        when(mockPipelineService.getAlgorithm(actionDefinition))
+                .thenReturn(algorithmDefinition);
+
+        TransientPipeline detectionPipeline = new TransientPipeline(DETECTION_RESPONSE_PIPELINE_NAME,
+                DETECTION_RESPONSE_PIPELINE_NAME + "_DESC");
+
+        TransientStage detectionStage = new TransientStage(DETECTION_RESPONSE_STAGE_NAME,
+                DETECTION_RESPONSE_STAGE_NAME + "_DESC", ActionType.DETECTION);
+
+        TransientAction detectionAction = new TransientAction(actionDefinition.getName(),
+                actionDefinition.getDescription(), actionDefinition.getAlgorithmRef());
+
+        detectionStage.getActions().add(detectionAction);
+        detectionPipeline.getStages().add(detectionStage);
+
+        Map<String, String> propertiesMap = new HashMap<>();
+        propertiesMap.put("detection.confidence.threshold", "-1");
+        TransientDetectionSystemProperties propertiesSnapshot = new TransientDetectionSystemProperties(propertiesMap);
+
+        TransientJob detectionJob = new TransientJob(JOB_ID, "externalId", propertiesSnapshot, detectionPipeline, 0, 1,
+                false, false);
+        TransientMedia media = new TransientMedia(MEDIA_ID, "/some/path");
+        media.addMetadata("DURATION", "3004");
+        media.addMetadata("FPS", "29.97");
+        detectionJob.getMedia().add(media);
+
+        when(mockRedis.containsJob(JOB_ID))
+                .thenReturn(true);
+
+        when(mockRedis.getJob(JOB_ID, MEDIA_ID))
+                .thenReturn(detectionJob);
+
+        when(mockJsonUtils.serialize(any()))
+                .thenCallRealMethod();
+
+        when(mockJsonUtils.deserialize(any(), any()))
+                .thenCallRealMethod();
+
+        Method postConstruct =  JsonUtils.class.getDeclaredMethod("init");
+        postConstruct.setAccessible(true);
+        postConstruct.invoke(mockJsonUtils);
     }
-    //	public Object processResponse(long jobId, Extraction.ExtractionResponse extractionResponse, Map<String, Object> headers) throws WfmProcessingException {
-    @Ignore
-    @Test
-    public void testDetectionResponse() throws Exception {
-        final int testJobId = next();
-        final long testMediaId = 12345678;
 
-        DetectionProtobuf.DetectionResponse response = DetectionProtobuf.DetectionResponse.newBuilder()
-            .setError(DetectionProtobuf.DetectionError.NO_DETECTION_ERROR)
-            .setMediaId(testMediaId)
-            .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
-                    .setDetectionType("TEST")
-                    .setStartFrame(0)
-                    .setStopFrame(10))
-            .setStageName("theWorld")
-            .setStageIndex(1)
-            .setActionName("howLikeAnAngel")
-            .setActionIndex(1)
-            .setRequestId(123456)
-            .build();
 
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, testJobId);
-        exchange.getIn().setBody(response);
+    //	TODO: public Object processResponse(long jobId, Extraction.ExtractionResponse extractionResponse, Map<String, Object> headers) throws WfmProcessingException
 
-        detectionResponseProcessor.process(exchange);
-
-        Object responseBody = exchange.getOut().getBody();
-        TrackMergingContext processorResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
-
-        Assert.assertTrue(processorResponse.getJobId() == testJobId);
-        Assert.assertTrue(processorResponse.getStageIndex() == 1);
-
-        Assert.assertTrue(responseBody != null);
-    }
 
     @Test
-    public void testSettingErrors() throws WfmProcessingException {
-        long jobId = 123123;
-        long testMediaId = 234234;
-        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.BOUNDING_BOX_SIZE_ERROR;
-
+    public void testNoDetectionProcessingError() {
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
-                .setError(error)
-                .setMediaId(testMediaId)
+                .setMediaId(MEDIA_ID)
                 .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
-                        .setDetectionType(error.toString())
+                        .setDetectionType("TEST")
                         .setStartFrame(0)
                         .setStopFrame(10))
+                .setStageName(DETECTION_RESPONSE_STAGE_NAME)
                 .setStageIndex(1)
+                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
                 .setActionIndex(1)
                 .setRequestId(123456)
                 .build();
 
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, jobId);
+        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
+        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
         exchange.getIn().setBody(detectionResponse);
 
-        TransientPipeline detectionPipeline = new TransientPipeline("detectionPipeline", "detectionDescription");
-        TransientStage detectionStageDet = new TransientStage("detectionDetection", "detectionDescription", ActionType.DETECTION);
-        TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo");
-        detectionAction.setProperties(new HashMap<>());
-        detectionStageDet.getActions().add(detectionAction);
+        mockDetectionResponseProcessor.wfmProcess(exchange);
 
-        detectionPipeline.getStages().add(detectionStageDet);
+        Object responseBody = exchange.getOut().getBody();
+        TrackMergingContext processorResponse =
+                mockJsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
 
-        // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+        Assert.assertEquals(JOB_ID, processorResponse.getJobId());
+        Assert.assertEquals(1, processorResponse.getStageIndex());
 
-        TransientJob detectionJob = new TransientJob(jobId, "234234", transientDetectionSystemProperties, detectionPipeline, 0, 1, false, false);
-        TransientMedia media = new TransientMedia(234234,ioUtils.findFile("/samples/video_01.mp4").toString());
-        media.addMetadata("DURATION","3004");
-        media.addMetadata("FPS","29.97");
-        detectionJob.getMedia().add(media);
+        verify(mockRedis, never())
+                .setJobStatus(eq(JOB_ID), any(BatchJobStatusType.class)); // job is already IN_PROGRESS at this point
 
-        redis.persistJob(detectionJob);
+        verify(mockRedis, never())
+                .addDetectionProcessingError(any());
 
-        detectionResponseProcessor.wfmProcess(exchange);
-        Assert.assertEquals(BatchJobStatusType.IN_PROGRESS_ERRORS,redis.getBatchJobStatus(jobId));
+        verify(mockRedis, never())
+                .addDetectionProcessingError(any());
 
+        verify(mockRedis, never())
+                .addJobError(eq(JOB_ID), any());
+
+        verify(mockRedis, never())
+                .addJobWarning(eq(JOB_ID), any());
+    }
+
+    @Test
+    public void testDetectionProcessingError() {
+        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.BOUNDING_BOX_SIZE_ERROR;
+
+        DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
+                .setError(error)
+                .setMediaId(MEDIA_ID)
+                .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
+                        .setDetectionType("TEST")
+                        .setStartFrame(0)
+                        .setStopFrame(10))
+                .setStageName(DETECTION_RESPONSE_STAGE_NAME)
+                .setStageIndex(1)
+                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
+                .setActionIndex(1)
+                .setRequestId(123456)
+                .build();
+
+        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
+        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
+        exchange.getIn().setBody(detectionResponse);
+
+        mockDetectionResponseProcessor.wfmProcess(exchange);
+
+        verify(mockRedis, times(1))
+                .setJobStatus(JOB_ID, BatchJobStatusType.IN_PROGRESS_ERRORS);
+
+        verify(mockRedis, times(1))
+                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error));
+
+        // TODO: https://github.com/openmpf/openmpf/issues/780
+        /*
+        verify(mockRedis, times(1))
+                .addJobError(eq(JOB_ID), any());
+
+        verify(mockRedis, never())
+                .addJobWarning(eq(JOB_ID), any());
+
+        verify(mockRedis, times(1))
+                .setJobStatus(JOB_ID, BatchJobStatusType.COMPLETE_WITH_ERRORS);
+        */
+    }
+
+    private static DetectionProcessingError detectionProcessingError(long jobId, DetectionProtobuf.DetectionError error) {
+        return Matchers.argThat(new BaseMatcher<DetectionProcessingError>() {
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("DetectionProcessingError { jobId = ").appendValue(jobId);
+                if (error != null) {
+                    description.appendText(", error = ").appendValue(error.toString());
+                }
+                description.appendText(" }");
+            }
+
+            @Override
+            public boolean matches(Object obj) {
+                DetectionProcessingError other = (DetectionProcessingError) obj;
+                return jobId == other.getJobId() && (error == null || error.toString().equals(other.getError()));
+            }
+        });
     }
 }
 

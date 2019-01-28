@@ -217,6 +217,7 @@ public class DetectionResponseProcessor
 				detectionResponse.getMediaId(),
 				startTime,
 				stopTime,
+				detectionResponse.getStageName(),
 				detectionResponse.getActionName());
 		log.debug("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
 

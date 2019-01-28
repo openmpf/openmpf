@@ -133,7 +133,7 @@ public class TestDetectionResponseProcessor {
         when(mockJsonUtils.deserialize(any(), any()))
                 .thenCallRealMethod();
 
-        Method postConstruct =  JsonUtils.class.getDeclaredMethod("init");
+        Method postConstruct = JsonUtils.class.getDeclaredMethod("init");
         postConstruct.setAccessible(true);
         postConstruct.invoke(mockJsonUtils);
     }

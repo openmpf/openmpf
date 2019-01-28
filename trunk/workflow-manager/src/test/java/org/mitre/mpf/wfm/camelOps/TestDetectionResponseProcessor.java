@@ -66,10 +66,10 @@ public class TestDetectionResponseProcessor {
     private Redis mockRedis;
 
     @Mock
-    private JsonUtils mockJsonUtils; // used by DetectionResponseProcessor
+    private JsonUtils mockJsonUtils;
 
     @InjectMocks
-    private DetectionResponseProcessor mockDetectionResponseProcessor;
+    private DetectionResponseProcessor detectionResponseProcessor;
 
     private static final long JOB_ID = 111;
     private static final long MEDIA_ID = 222;
@@ -138,18 +138,32 @@ public class TestDetectionResponseProcessor {
         postConstruct.invoke(mockJsonUtils);
     }
 
-
-    //	TODO: public Object processResponse(long jobId, Extraction.ExtractionResponse extractionResponse, Map<String, Object> headers) throws WfmProcessingException
-
-
     @Test
-    public void testNoDetectionProcessingError() {
+    public void testHappyPath() {
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setMediaId(MEDIA_ID)
                 .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
                         .setDetectionType("TEST")
                         .setStartFrame(0)
-                        .setStopFrame(10))
+                        .setStopFrame(10)
+                        .addVideoTracks(DetectionProtobuf.VideoTrack.newBuilder()
+                                .setStartFrame(5)
+                                .setStopFrame(5)
+                                .setConfidence(0.5f)
+                                .addDetectionProperties(DetectionProtobuf.PropertyMap.newBuilder()
+                                        .setKey("TRACK_TEST_PROP_KEY")
+                                        .setValue("TRACK_TEST_PROP_VALUE"))
+                                .addFrameLocations(DetectionProtobuf.VideoTrack.FrameLocationMap.newBuilder()
+                                        .setFrame(5)
+                                        .setImageLocation(DetectionProtobuf.ImageLocation.newBuilder()
+                                                .setConfidence(0.5f)
+                                                .setXLeftUpper(0)
+                                                .setYLeftUpper(10)
+                                                .setHeight(10)
+                                                .setWidth(10)
+                                                .addDetectionProperties(DetectionProtobuf.PropertyMap.newBuilder()
+                                                        .setKey("DETECTION_TEST_PROP_KEY")
+                                                        .setValue("DETECTION_TEST_PROP_VALUE"))))))
                 .setStageName(DETECTION_RESPONSE_STAGE_NAME)
                 .setStageIndex(1)
                 .setActionName(DETECTION_RESPONSE_ACTION_NAME)
@@ -161,7 +175,7 @@ public class TestDetectionResponseProcessor {
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
         exchange.getIn().setBody(detectionResponse);
 
-        mockDetectionResponseProcessor.wfmProcess(exchange);
+        detectionResponseProcessor.wfmProcess(exchange);
 
         Object responseBody = exchange.getOut().getBody();
         TrackMergingContext processorResponse =
@@ -177,13 +191,13 @@ public class TestDetectionResponseProcessor {
                 .addDetectionProcessingError(any());
 
         verify(mockRedis, never())
-                .addDetectionProcessingError(any());
-
-        verify(mockRedis, never())
                 .addJobError(eq(JOB_ID), any());
 
         verify(mockRedis, never())
                 .addJobWarning(eq(JOB_ID), any());
+
+        verify(mockRedis, times(1))
+                .addTrack(track(JOB_ID, 5));
     }
 
     @Test
@@ -208,7 +222,7 @@ public class TestDetectionResponseProcessor {
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
         exchange.getIn().setBody(detectionResponse);
 
-        mockDetectionResponseProcessor.wfmProcess(exchange);
+        detectionResponseProcessor.wfmProcess(exchange);
 
         verify(mockRedis, times(1))
                 .setJobStatus(JOB_ID, BatchJobStatusType.IN_PROGRESS_ERRORS);
@@ -216,16 +230,13 @@ public class TestDetectionResponseProcessor {
         verify(mockRedis, times(1))
                 .addDetectionProcessingError(detectionProcessingError(JOB_ID, error));
 
+        verify(mockRedis, never())
+                .addJobWarning(eq(JOB_ID), any());
+
         // TODO: https://github.com/openmpf/openmpf/issues/780
         /*
         verify(mockRedis, times(1))
                 .addJobError(eq(JOB_ID), any());
-
-        verify(mockRedis, never())
-                .addJobWarning(eq(JOB_ID), any());
-
-        verify(mockRedis, times(1))
-                .setJobStatus(JOB_ID, BatchJobStatusType.COMPLETE_WITH_ERRORS);
         */
     }
 
@@ -244,6 +255,23 @@ public class TestDetectionResponseProcessor {
             public boolean matches(Object obj) {
                 DetectionProcessingError other = (DetectionProcessingError) obj;
                 return jobId == other.getJobId() && (error == null || error.toString().equals(other.getError()));
+            }
+        });
+    }
+
+    private static Track track(long jobId, int startFrame) {
+        return Matchers.argThat(new BaseMatcher<Track>() {
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("Track { jobId = ").appendValue(jobId)
+                        .appendText(", startFrame = ").appendValue(startFrame)
+                        .appendText(" }");
+            }
+
+            @Override
+            public boolean matches(Object obj) {
+                Track other = (Track) obj;
+                return jobId == other.getJobId() && startFrame == other.getStartOffsetFrameInclusive();
             }
         });
     }

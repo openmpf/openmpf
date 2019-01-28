@@ -77,6 +77,9 @@ public class TestTrackMergingProcessor {
     @Autowired
     private PropertiesUtil propertiesUtil;
 
+    private static final long TEST_JOB_ID = 999999;
+
+
     @Test(timeout = 5 * MINUTES)
     public void testTrackMergingOn() throws Exception {
         generateAndRunMerge("1", "TRUE", null, null, 4); // Merges tracks 1 & 2
@@ -126,12 +129,11 @@ public class TestTrackMergingProcessor {
      * Track 5 should never merge.  The other tracks may merge or be dropped based on properties.
      */
     private void generateAndRunMerge(String samplingInterval, String mergeTracks, String minGap, String minTrackSize, int expectedTracks) throws Exception {
-        final long jobId = 999999;
         final long mediaId = 123456;
         final int stageIndex = 0;
         final int priority = 5;
         Exchange exchange = new DefaultExchange(camelContext);
-        TrackMergingContext mergeContext = new TrackMergingContext(jobId, stageIndex);
+        TrackMergingContext mergeContext = new TrackMergingContext(TEST_JOB_ID, stageIndex);
         exchange.getIn().setBody(jsonUtils.serialize(mergeContext));
 
         Map<String, String> mergeProp = new HashMap<>();
@@ -161,7 +163,7 @@ public class TestTrackMergingProcessor {
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         inProgressJobs.addJob(
-                jobId,
+                TEST_JOB_ID,
                 "999999",
                 systemPropertiesSnapshot,
                 trackMergePipeline,
@@ -177,27 +179,27 @@ public class TestTrackMergingProcessor {
         * Create overlapping tracks for testing
         */
         SortedSet<Track> tracks = new TreeSet<Track>();
-        Track track1 = new Track(jobId, mediaId, 0, 0, 0, 199, "VIDEO", 18f);
+        Track track1 = new Track(TEST_JOB_ID, mediaId, 0, 0, 0, 199, "VIDEO", 18f);
         Detection detection1a = new Detection(10,10,52,60,18f,0,0,null);
         Detection detection1b = new Detection(10,10,52,60,18f,199,0,null);
         track1.getDetections().add(detection1a);
         track1.getDetections().add(detection1b);
-        Track track2 = new Track(jobId, mediaId, 0, 0, 200, 399, "VIDEO", 18f);
+        Track track2 = new Track(TEST_JOB_ID, mediaId, 0, 0, 200, 399, "VIDEO", 18f);
         Detection detection2a = new Detection(10,10,52,60,18f,200,0,null);
         Detection detection2b = new Detection(10,10,52,60,18f,399,0,null);
         track2.getDetections().add(detection2a);
         track2.getDetections().add(detection2b);
-        Track track3 = new Track(jobId, mediaId, 0, 0, 470, 477, "VIDEO", 18f);
+        Track track3 = new Track(TEST_JOB_ID, mediaId, 0, 0, 470, 477, "VIDEO", 18f);
         Detection detection3a = new Detection(10,10,52,60,18f,420,0,null);
         Detection detection3b = new Detection(10,10,52,60,18f,599,0,null);
         track3.getDetections().add(detection3a);
         track3.getDetections().add(detection3b);
-        Track track4 = new Track(jobId, mediaId, 0, 0, 480, 599, "VIDEO", 18f);
+        Track track4 = new Track(TEST_JOB_ID, mediaId, 0, 0, 480, 599, "VIDEO", 18f);
         Detection detection4a = new Detection(10,10,52,60,18f,480,0,null);
         Detection detection4b = new Detection(10,10,52,60,18f,599,0,null);
         track4.getDetections().add(detection4a);
         track4.getDetections().add(detection4b);
-        Track track5 = new Track(jobId, mediaId, 0, 0, 600, 610, "VIDEO", 18f);
+        Track track5 = new Track(TEST_JOB_ID, mediaId, 0, 0, 600, 610, "VIDEO", 18f);
         Detection detection5a = new Detection(10,10,89,300,18f,600,0,null);
         Detection detection5b = new Detection(10,10,84,291,18f,610,0,null);
         track5.getDetections().add(detection5a);
@@ -208,7 +210,7 @@ public class TestTrackMergingProcessor {
         tracks.add(track4);
         tracks.add(track5);
 
-        inProgressJobs.setTracks(jobId,mediaId,0,0,tracks);
+        inProgressJobs.setTracks(TEST_JOB_ID,mediaId,0,0,tracks);
 
         trackMergingProcessor.wfmProcess(exchange);
 
@@ -217,18 +219,18 @@ public class TestTrackMergingProcessor {
         Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
         TrackMergingContext contextResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
         Assert.assertTrue(contextResponse.getStageIndex() == stageIndex);
-        Assert.assertTrue(contextResponse.getJobId() == jobId);
-        Assert.assertEquals(expectedTracks, inProgressJobs.getTracks(jobId, mediaId, 0, 0).size());
+        Assert.assertTrue(contextResponse.getJobId() == TEST_JOB_ID);
+        Assert.assertEquals(expectedTracks, inProgressJobs.getTracks(TEST_JOB_ID, mediaId, 0, 0).size());
+        inProgressJobs.clearJob(TEST_JOB_ID);
     }
 
     @Test(timeout = 5 * MINUTES)
     public void testTrackMergingNoTracks() throws Exception {
-        final long jobId = 999999;
         final long mediaId = 123456;
         final int stageIndex = 0;
         final int priority = 5;
         Exchange exchange = new DefaultExchange(camelContext);
-        TrackMergingContext mergeContext = new TrackMergingContext(jobId, stageIndex);
+        TrackMergingContext mergeContext = new TrackMergingContext(TEST_JOB_ID, stageIndex);
         exchange.getIn().setBody(jsonUtils.serialize(mergeContext));
 
         Map<String, String> mergeProp = new HashMap<>();
@@ -249,7 +251,7 @@ public class TestTrackMergingProcessor {
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         inProgressJobs.addJob(
-                jobId,
+                TEST_JOB_ID,
                 "999999",
                 systemPropertiesSnapshot,
                 trackMergePipeline,
@@ -263,7 +265,7 @@ public class TestTrackMergingProcessor {
 
         SortedSet<Track> tracks = new TreeSet<Track>();
 
-        inProgressJobs.setTracks(jobId, mediaId, 0, 0, tracks);
+        inProgressJobs.setTracks(TEST_JOB_ID, mediaId, 0, 0, tracks);
 
         trackMergingProcessor.wfmProcess(exchange);
 
@@ -272,8 +274,9 @@ public class TestTrackMergingProcessor {
         Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
         TrackMergingContext contextResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
         Assert.assertTrue(contextResponse.getStageIndex() == stageIndex);
-        Assert.assertTrue(contextResponse.getJobId() == jobId);
-        Assert.assertEquals(0, inProgressJobs.getTracks(jobId, mediaId, 0, 0).size());
+        Assert.assertTrue(contextResponse.getJobId() == TEST_JOB_ID);
+        Assert.assertEquals(0, inProgressJobs.getTracks(TEST_JOB_ID, mediaId, 0, 0).size());
+        inProgressJobs.clearJob(TEST_JOB_ID);
     }
 
 

@@ -350,11 +350,19 @@ public class TestDetectionSplitter {
             Map<String, String> jobProperties,
             String mediaUri,
             String mediaType) throws WfmProcessingException {
-        final long testId = 12345;
-        final String testExternalId = "externID";
-        final TransientPipeline testPipe = new TransientPipeline("testPipe", "testDescr",
-                                                                 Collections.emptyList());
-        return createSimpleJobForTest(testId, testExternalId, testPipe, actionProperties, jobProperties, mediaUri, mediaType);
+        long testId = 12345;
+        String testExternalId = "externID";
+
+        TransientAction detectionAction = new TransientAction(
+                "detectionAction", "detectionDescription", "detectionAlgo", actionProperties);
+        TransientStage testTransientStage = new TransientStage(
+                "stageName", "stageDescr", ActionType.DETECTION,
+                Collections.singletonList(detectionAction));
+        TransientPipeline testPipe = new TransientPipeline(
+                "testPipe", "testDescr", Collections.singletonList(testTransientStage));
+
+        return createSimpleJobForTest(testId, testExternalId, testPipe, actionProperties, jobProperties,
+                                      mediaUri, mediaType);
     }
 
     private TransientJob createSimpleJobForTest(
@@ -386,13 +394,6 @@ public class TestDetectionSplitter {
         if ( testMedia.getMediaType() == MediaType.VIDEO ) {
             testMedia.addMetadata("FPS", "30");
         }
-
-        TransientAction detectionAction = new TransientAction(
-                "detectionAction", "detectionDescription", "detectionAlgo", actionProperties);
-        TransientStage testTransientStage = new TransientStage(
-                "stageName", "stageDescr", ActionType.DETECTION,
-                Collections.singletonList(detectionAction));
-        testPipe.getStages().add(testTransientStage);
 
         TransientJob testJob = new TransientJobImpl(
                 testJobId,

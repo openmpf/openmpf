@@ -143,7 +143,8 @@ public class TestDetectionSplitter {
         actionProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
         actionProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
         actionProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
-        TransientJob testJob = createSimpleJobForTest(actionProperties, jobProperties, "/samples/new_face_video.avi", "video/avi");
+        TransientJob testJob = createSimpleJobForTest(actionProperties, jobProperties, Collections.emptyMap(),
+                                                      "/samples/new_face_video.avi", "video/avi");
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
 
         Assert.assertEquals(12, responseList.size());
@@ -177,8 +178,9 @@ public class TestDetectionSplitter {
         jobProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
         jobProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
         jobProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
-        TransientJob testJob = createSimpleJobForTest(jobProperties, "/samples/new_face_video.avi", "video/avi");
-        testJob.getMedia().stream().findFirst().get().getMediaSpecificProperties().putAll(mediaProperties);
+        TransientJob testJob = createSimpleJobForTest(
+                Collections.emptyMap(), jobProperties, mediaProperties,
+                "/samples/new_face_video.avi", "video/avi");
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
 
         Assert.assertEquals(12, responseList.size());
@@ -271,8 +273,9 @@ public class TestDetectionSplitter {
         jobProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "20");
         jobProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
         jobProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
-        TransientJob testJob = createSimpleJobForTest(Collections.emptyMap(), jobProperties, "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
-        testJob.getMedia().stream().findFirst().get().getMediaSpecificProperties().putAll(mediaProperties);
+        TransientJob testJob = createSimpleJobForTest(
+                Collections.emptyMap(), jobProperties, mediaProperties,
+                "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
         Assert.assertEquals(1, responseList.size());
         Message message = responseList.get(0);
@@ -302,7 +305,9 @@ public class TestDetectionSplitter {
         actionProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
-        TransientJob testJob = createSimpleJobForTest(actionProperties, jobProperties, "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
+        TransientJob testJob = createSimpleJobForTest(
+                actionProperties, jobProperties, Collections.emptyMap(),
+                "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
         Assert.assertEquals(1, responseList.size());
         Message message = responseList.get(0);
@@ -332,8 +337,9 @@ public class TestDetectionSplitter {
         actionProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
-        TransientJob testJob = createSimpleJobForTest(actionProperties, "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
-        testJob.getMedia().stream().findFirst().get().getMediaSpecificProperties().putAll(mediaProperties);
+        TransientJob testJob = createSimpleJobForTest(
+                actionProperties, Collections.emptyMap(), mediaProperties,
+                "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
         List<Message> responseList = detectionStageSplitter.performSplit(testJob, testJob.getPipeline().getStages().get(0));
         Assert.assertEquals(1, responseList.size());
         Message message = responseList.get(0);
@@ -354,6 +360,7 @@ public class TestDetectionSplitter {
     private TransientJob createSimpleJobForTest(
             Map<String, String> actionProperties,
             Map<String, String> jobProperties,
+            Map<String, String>  mediaProperties,
             String mediaUri,
             String mediaType) throws WfmProcessingException {
         long testId = 12345;
@@ -367,22 +374,17 @@ public class TestDetectionSplitter {
         TransientPipeline testPipe = new TransientPipeline(
                 "testPipe", "testDescr", Collections.singletonList(testTransientStage));
 
-        return createSimpleJobForTest(testId, testExternalId, testPipe, jobProperties,
+        return createSimpleJobForTest(testId, testExternalId, testPipe, jobProperties, mediaProperties,
                                       mediaUri, mediaType);
     }
 
-    private TransientJob createSimpleJobForTest(
-            Map<String, String> actionProperties,
-            String mediaUri,
-            String mediaType) {
-        return createSimpleJobForTest(actionProperties, Collections.emptyMap(), mediaUri, mediaType);
-    }
 
     private TransientJob createSimpleJobForTest(
             long testJobId,
             String testExternalId,
             TransientPipeline testPipe,
             Map<String, String> jobProperties,
+            Map<String, String> mediaProperties,
             String mediaUri,
             String mediaType) {
         final int testStage = 0;
@@ -395,7 +397,7 @@ public class TestDetectionSplitter {
         URI fullMediaUri = ioUtils.findFile(mediaUri);
         TransientMediaImpl testMedia = new TransientMediaImpl(
                 nextId(), fullMediaUri.toString(), UriScheme.get(fullMediaUri), Paths.get(fullMediaUri),
-                Collections.emptyMap(), null);
+                mediaProperties, null);
         testMedia.setLength(300);
         testMedia.setType(mediaType);
         // Video media must have FPS in metadata to support adaptive frame interval processing.

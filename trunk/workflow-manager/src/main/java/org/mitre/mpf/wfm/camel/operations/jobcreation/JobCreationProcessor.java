@@ -33,7 +33,6 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
-import org.mitre.mpf.wfm.data.IdGenerator;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
@@ -53,12 +52,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.time.Instant;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * The first step in the Workflow Manager is to translate a JSON job request into an internal
@@ -176,20 +175,10 @@ public class JobCreationProcessor extends WfmProcessor {
 		}
 	}
 
-	private List<TransientMedia> buildMedia(List<JsonMediaInputObject> inputMedia) throws WfmProcessingException {
-		List<TransientMedia> transientMedia = new ArrayList<>(inputMedia.size());
-		for(JsonMediaInputObject inputObject : inputMedia) {
-			TransientMedia media = new TransientMedia(IdGenerator.next(), inputObject.getMediaUri());
-			media.getMediaSpecificProperties().putAll(inputObject.getProperties());
-
-			if (media.getUriScheme().isRemote()) {
-				String localFilePath = new File(propertiesUtil.getRemoteMediaCacheDirectory(), UUID.randomUUID().toString())
-						.getAbsolutePath();
-				media.setLocalPath(localFilePath);
-			}
-			transientMedia.add(media);
-		}
-		return transientMedia;
+	private List<TransientMedia> buildMedia(Collection<JsonMediaInputObject> inputMedia) {
+		return inputMedia.stream()
+				.map(in -> inProgressBatchJobs.initMedia(in.getMediaUri(), in.getProperties()))
+				.collect(toList());
 	}
 }
 

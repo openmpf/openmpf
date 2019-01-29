@@ -45,59 +45,59 @@ import java.util.Map;
 public class SystemPropertiesSnapshot {
 
     // Map contains a snapshot of the detection.* system property values
-    private final ImmutableMap<String, String> properties;
+    private final ImmutableMap<String, String> _properties;
     public ImmutableMap<String, String> getProperties() {
-        return properties;
+        return _properties;
     }
 
-    public boolean isEmpty() { return properties.isEmpty(); }
+    public boolean isEmpty() { return _properties.isEmpty(); }
 
     public ArtifactExtractionPolicy getArtifactExtractionPolicy() {
-        return ArtifactExtractionPolicy.parse(properties.get("detection.artifact.extraction.policy"));
+        return ArtifactExtractionPolicy.parse(_properties.get("detection.artifact.extraction.policy"));
      }
 
     public int getSamplingInterval() {
-        return Integer.valueOf(properties.get("detection.sampling.interval"));
+        return Integer.valueOf(_properties.get("detection.sampling.interval"));
     }
 
     public int getFrameRateCap() {
-        return Integer.valueOf(properties.get("detection.frame.rate.cap"));
+        return Integer.valueOf(_properties.get("detection.frame.rate.cap"));
     }
 
     public double getConfidenceThreshold() {
-        return Double.valueOf(properties.get("detection.confidence.threshold"));
+        return Double.valueOf(_properties.get("detection.confidence.threshold"));
     }
 
     public int getMinAllowableSegmentGap() {
-        return Integer.valueOf(properties.get("detection.segment.minimum.gap"));
+        return Integer.valueOf(_properties.get("detection.segment.minimum.gap"));
     }
 
     public int getTargetSegmentLength() {
-        return Integer.valueOf(properties.get("detection.segment.target.length"));
+        return Integer.valueOf(_properties.get("detection.segment.target.length"));
     }
 
     public int getMinSegmentLength() {
-        return Integer.valueOf(properties.get("detection.segment.minimum.length"));
+        return Integer.valueOf(_properties.get("detection.segment.minimum.length"));
     }
 
     public boolean isTrackMerging() {
-        return Boolean.valueOf(properties.get("detection.track.merging.enabled"));
+        return Boolean.valueOf(_properties.get("detection.track.merging.enabled"));
     }
 
     public int getMinAllowableTrackGap() {
-        return Integer.valueOf(properties.get("detection.track.min.gap"));
+        return Integer.valueOf(_properties.get("detection.track.min.gap"));
     }
 
     public int getMinTrackLength() {
-        return Integer.valueOf(properties.get("detection.track.minimum.length"));
+        return Integer.valueOf(_properties.get("detection.track.minimum.length"));
     }
 
     public double getTrackOverlapThreshold() {
-        return Double.valueOf(properties.get("detection.track.overlap.threshold"));
+        return Double.valueOf(_properties.get("detection.track.overlap.threshold"));
     }
 
     public StorageBackend.Type getHttpObjectStorageType() throws StorageException {
-        String storageType = properties.get("http.object.storage.type");
+        String storageType = _properties.get("http.object.storage.type");
         try {
             return StorageBackend.Type.valueOf(storageType);
         }
@@ -107,28 +107,28 @@ public class SystemPropertiesSnapshot {
     }
 
     public URI getHttpStorageServiceUri() {
-        return URI.create(properties.get("http.object.storage.service_uri"));
+        return URI.create(_properties.get("http.object.storage.service_uri"));
     }
 
     public boolean isOutputObjectExemplarOnly() {
-        return Boolean.parseBoolean(properties.get("mpf.output.objects.exemplars.only"));
+        return Boolean.parseBoolean(_properties.get("mpf.output.objects.exemplars.only"));
     }
 
     public boolean isOutputObjectLastStageOnly() {
-        return Boolean.parseBoolean(properties.get("mpf.output.objects.last.stage.only"));
+        return Boolean.parseBoolean(_properties.get("mpf.output.objects.last.stage.only"));
     }
 
 
     public String lookup(String propertyName) {
-        return properties.get(propertyName);
+        return _properties.get(propertyName);
     }
 
     public SystemPropertiesSnapshot(Map<String, String> properties) {
-        this.properties = ImmutableMap.copyOf(properties);
+        _properties = ImmutableMap.copyOf(properties);
     }
 
     @Override
     public String toString() {
-        return "SystemPropertiesSnapshot: contains snapshot: " + properties;
+        return "SystemPropertiesSnapshot: contains snapshot: " + _properties;
     }
 }

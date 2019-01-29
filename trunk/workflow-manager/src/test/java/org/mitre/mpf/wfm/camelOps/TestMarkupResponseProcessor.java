@@ -43,14 +43,18 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
@@ -97,6 +101,9 @@ public class TestMarkupResponseProcessor {
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
+        URI mediaUri = URI.create("file:///samples/meds1.jpg");
+        TransientMedia media = new TransientMediaImpl(mediaId, mediaUri.toString(), UriScheme.get(mediaUri),
+                                                      Paths.get(mediaUri), Collections.emptyMap(), null);
         inProgressJobs.addJob(
                 jobId,
                 Long.toString(jobId),
@@ -106,7 +113,7 @@ public class TestMarkupResponseProcessor {
                 false,
                 null,
                 null,
-                Collections.singletonList(new TransientMedia(mediaId, "/samples/meds1.jpg")),
+                Collections.singletonList(media),
                 Collections.emptyMap(),
                 Collections.emptyMap());
         Markup.MarkupResponse.Builder builder = Markup.MarkupResponse.newBuilder();

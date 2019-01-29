@@ -66,7 +66,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -166,7 +165,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 	private void callback(TransientJob transientJob) throws WfmProcessingException {
 		long jobId = transientJob.getId();
-		String jsonCallbackURL = transientJob.getCallbackURL();
+		String jsonCallbackURL = transientJob.getCallbackUrl();
 		String jsonCallbackMethod = transientJob.getCallbackMethod();
 		if(jsonCallbackURL != null && jsonCallbackMethod != null && (jsonCallbackMethod.equals("POST") || jsonCallbackMethod.equals("GET"))) {
 			log.debug("Starting {} callback to {} for job id {}.", jsonCallbackMethod, jsonCallbackURL, jobId);
@@ -486,7 +485,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		for(TransientMedia transientMedia : transientJob.getMedia()) {
 			if(transientMedia.getUriScheme().isRemote() && transientMedia.getLocalPath() != null) {
 				try {
-					Files.deleteIfExists(Paths.get(transientMedia.getLocalPath()));
+					Files.deleteIfExists(transientMedia.getLocalPath());
 				} catch(Exception exception) {
 					log.warn("[{}|*|*] Failed to delete locally cached file '{}' due to an exception. This file must be manually deleted.", transientJob.getId(), transientMedia.getLocalPath());
 				}

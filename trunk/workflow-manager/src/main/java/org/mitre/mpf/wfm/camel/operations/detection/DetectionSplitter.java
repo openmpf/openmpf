@@ -231,8 +231,9 @@ public class DetectionSplitter implements StageSplitter {
 
                         // Note that single-frame gifs are treated like videos, but have no native frame rate
                         double fps = 1.0;
-                        if (transientMedia.containsMetadata("FPS")) {
-                            fps = Double.valueOf(transientMedia.getMetadata("FPS"));
+                        String fpsFromMetadata = transientMedia.getMetadata("FPS");
+                        if (fpsFromMetadata != null) {
+                            fps = Double.valueOf(fpsFromMetadata);
                         }
 
                         String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(

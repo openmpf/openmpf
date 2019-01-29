@@ -119,10 +119,12 @@ public class TestStreamingJobMessageSender {
 		                                                   "Pipeline description",
 		                                                   Collections.singletonList(stage));
 
-		TransientStream stream = new TransientStream(5234, "stream://myStream");
-		stream.setSegmentSize(543);
-		stream.addMetadata("mediaProp1", "mediaVal1");
-		stream.addMediaProperty("OVERRIDDEN STREAM PROPERTY", "Stream Specific Value");
+		TransientStream stream = new TransientStream(
+				5234,
+				"stream://myStream",
+				543,
+				ImmutableMap.of("OVERRIDDEN STREAM PROPERTY", "Stream Specific Value"),
+				ImmutableMap.of("mediaProp1", "mediaVal1"));
 
 		long jobId = 1234;
 		TransientStreamingJob job = new TransientStreamingJobImpl(

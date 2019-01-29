@@ -29,6 +29,8 @@ package org.mitre.mpf.mst;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
 import org.jgroups.Address;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,6 +59,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.assertEquals;
@@ -120,8 +123,8 @@ public class TestStreamingJobStartStop {
 
 
 		verify(_mockStreamingJobRequestBo, timeout(30_000))
-				.handleJobStatusChange(eq(jobId), or(eq(new StreamingJobStatus(StreamingJobStatusType.TERMINATED)),
-				                                     eq(new StreamingJobStatus(StreamingJobStatusType.CANCELLED))),
+				.handleJobStatusChange(eq(jobId),
+				                       hasStatus(StreamingJobStatusType.TERMINATED, StreamingJobStatusType.CANCELLED),
 				                       gt(test_start_time));
 
 		ArgumentCaptor<JsonSegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(JsonSegmentSummaryReport.class);
@@ -173,8 +176,8 @@ public class TestStreamingJobStartStop {
 
 
 		verify(_mockStreamingJobRequestBo, timeout(60_000))
-				.handleJobStatusChange(eq(jobId), or(eq(new StreamingJobStatus(StreamingJobStatusType.TERMINATED)),
-				                                     eq(new StreamingJobStatus(StreamingJobStatusType.CANCELLED))),
+				.handleJobStatusChange(eq(jobId),
+				                       hasStatus(StreamingJobStatusType.TERMINATED, StreamingJobStatusType.CANCELLED),
 				                       gt(test_start_time));
 
 
@@ -207,6 +210,25 @@ public class TestStreamingJobStartStop {
 	}
 
 
+	private static StreamingJobStatus hasStatus(StreamingJobStatusType... statuses) {
+		return argThat(new BaseMatcher<StreamingJobStatus>() {
+			@Override
+			public boolean matches(Object item) {
+				if (!(item instanceof StreamingJobStatus)) {
+					return false;
+				}
+				StreamingJobStatus status = (StreamingJobStatus) item;
+				return Stream.of(statuses)
+						.anyMatch(t -> status.getType() == t);
+			}
+			@Override
+			public void describeTo(Description description) {
+				description.appendValueList("", " or ", "", statuses);
+
+			}
+		});
+	}
+
 	private static TransientStreamingJob createJob(long jobId, String algorithm, String pipelineName,
 	                                               String mediaPath, int segmentSize, int stallTimeout) {
 
@@ -219,8 +241,7 @@ public class TestStreamingJobStartStop {
 		TransientPipeline pipeline = new TransientPipeline(pipelineName, "desc",
 		                                                   Collections.singletonList(stage1));
 		URL videoUrl = TestStreamingJobStartStop.class.getResource(mediaPath);
-		TransientStream stream = new TransientStream(124, videoUrl.toString());
-		stream.setSegmentSize(segmentSize);
+		TransientStream stream = new TransientStream(124, videoUrl.toString(), segmentSize, Collections.emptyMap());
 
 		return new TransientStreamingJobImpl(
 				jobId, "ext id", pipeline, stream, 1, stallTimeout, false, "mydir",

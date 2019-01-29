@@ -35,8 +35,15 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.enums.UriScheme;
 
-import java.util.*;
+import java.net.URI;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -145,7 +152,10 @@ public class TestAudioMediaSegmenter {
 
 
 	private static TransientMedia createTestMedia() {
-		TransientMedia media = new TransientMedia(1, "file:///example.wav");
+		URI mediaUri = URI.create("file:///example.wav");
+		TransientMediaImpl media = new TransientMediaImpl(
+				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+				null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;

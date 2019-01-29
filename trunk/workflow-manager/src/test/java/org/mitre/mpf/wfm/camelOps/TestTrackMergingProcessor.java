@@ -40,6 +40,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -48,6 +49,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -162,6 +165,11 @@ public class TestTrackMergingProcessor {
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
+        URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
+        TransientMedia media = new TransientMediaImpl(
+                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+                null);
+
         inProgressJobs.addJob(
                 TEST_JOB_ID,
                 "999999",
@@ -171,7 +179,7 @@ public class TestTrackMergingProcessor {
                 false,
                 null,
                 null,
-                Collections.singletonList(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString())),
+                Collections.singletonList(media),
                 Collections.emptyMap(),
                 Collections.emptyMap());
 
@@ -249,6 +257,10 @@ public class TestTrackMergingProcessor {
 
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
+        URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
+        TransientMedia media = new TransientMediaImpl(
+                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+                null);
 
         inProgressJobs.addJob(
                 TEST_JOB_ID,
@@ -259,7 +271,7 @@ public class TestTrackMergingProcessor {
                 false,
                 null,
                 null,
-                Collections.singletonList(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString())),
+                Collections.singletonList(media),
                 Collections.emptyMap(),
                 Collections.emptyMap());
 

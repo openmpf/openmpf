@@ -37,26 +37,27 @@ import java.util.List;
 import static java.util.stream.Collectors.toList;
 
 public class TransientStage {
-	private final String name;
-	public String getName() { return name; }
+	private final String _name;
+	public String getName() { return _name; }
 
-	private final String description;
-	public String getDescription() { return description; }
+	private final String _description;
+	public String getDescription() { return _description; }
 
-	private final ActionType actionType;
-	public ActionType getActionType() { return actionType; }
+	private final ActionType _actionType;
+	public ActionType getActionType() { return _actionType; }
 
-	private final ImmutableList<TransientAction> actions;
-	public ImmutableList<TransientAction> getActions() { return actions; }
+	private final ImmutableList<TransientAction> _actions;
+	public ImmutableList<TransientAction> getActions() { return _actions; }
+
 
 	public TransientStage(String name, String description, ActionType actionType, Collection<TransientAction> actions) {
-		this.name = TextUtils.trimAndUpper(name);
-		this.description = TextUtils.trim(description);
-		this.actionType = actionType;
-		this.actions = ImmutableList.copyOf(actions);
+		_name = TextUtils.trimAndUpper(name);
+		_description = TextUtils.trim(description);
+		_actionType = actionType;
+		_actions = ImmutableList.copyOf(actions);
 
-		assert this.name != null : "name must not be null";
-		assert this.actionType != null : "operation must not be null";
+		assert _name != null : "name must not be null";
+		assert _actionType != null : "operation must not be null";
 	}
 
 
@@ -76,7 +77,7 @@ public class TransientStage {
 
 	@Override
 	public String toString() {
-		return String.format("%s#<name='%s', description='%s', actionType='%s'>", this.getClass().getSimpleName(),
-		                     name, description, actionType);
+		return String.format("%s#<name='%s', description='%s', actionType='%s'>", getClass().getSimpleName(),
+		                     _name, _description, _actionType);
 	}
 }

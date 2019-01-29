@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.data.access.hibernate;
 
 import org.hibernate.Query;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +49,7 @@ public class HibernateStreamingJobRequestDaoImpl extends AbstractHibernateDao<St
 				createQuery("UPDATE StreamingJobRequest set status = :status, status_detail = :statusDetail where status in (:nonTerminalStatuses)");
 		query.setParameter("status", StreamingJobStatusType.CANCELLED_BY_SHUTDOWN);
 		query.setParameter("statusDetail", "Job cancelled due to Workflow Manager shutdown.");
-		query.setParameterList("nonTerminalStatuses", StreamingJobStatus.getNonTerminalStatuses());
+		query.setParameterList("nonTerminalStatuses", StreamingJobStatusType.getNonTerminalStatuses());
 		int updatedRows = query.executeUpdate();
 		if ( updatedRows >= 0 ) {
 			log.warn("{} streaming jobs were in a non-terminal state and have been marked as {}", updatedRows, StreamingJobStatusType.CANCELLED_BY_SHUTDOWN);

@@ -496,12 +496,13 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     private static TransientStream buildTransientStream(JsonStreamingInputObject jsonInputStream) {
-        TransientStream transientStream = new TransientStream(IdGenerator.next(),
-                                                              jsonInputStream.getStreamUri());
-        transientStream.setSegmentSize(jsonInputStream.getSegmentSize());
-        transientStream.setMediaProperties(jsonInputStream.getMediaProperties());
-        return transientStream;
+        return new TransientStream(
+                IdGenerator.next(),
+                jsonInputStream.getStreamUri(),
+                jsonInputStream.getSegmentSize(),
+                jsonInputStream.getMediaProperties());
     }
+    
 
     /**
      * Complete a streaming job by updating the job in the persistent database(s), make any final callbacks for the job.

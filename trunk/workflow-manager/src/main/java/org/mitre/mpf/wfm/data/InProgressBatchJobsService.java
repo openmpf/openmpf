@@ -30,6 +30,8 @@ package org.mitre.mpf.wfm.data;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -37,9 +39,15 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+
+import static java.util.stream.Collectors.toList;
 
 @Component
 @Singleton
@@ -47,12 +55,16 @@ public class InProgressBatchJobsService {
 
     private static final Logger LOG = LoggerFactory.getLogger(InProgressBatchJobsService.class);
 
+    private final PropertiesUtil _propertiesUtil;
+
     private final Redis _redis;
 
     private final Map<Long, TransientJobImpl> _jobs = new HashMap<>();
 
+
     @Inject
-    InProgressBatchJobsService(Redis redis) {
+    InProgressBatchJobsService(PropertiesUtil propertiesUtil, Redis redis) {
+        _propertiesUtil = propertiesUtil;
         _redis = redis;
     }
 
@@ -74,6 +86,10 @@ public class InProgressBatchJobsService {
             throw new IllegalArgumentException(String.format("Job with id %s already exists.", jobId));
         }
 
+        List<TransientMediaImpl> mediaImpls = transientMedia.stream()
+                .map(TransientMediaImpl::toTransientMediaImpl)
+                .collect(toList());
+
         TransientJobImpl job = new TransientJobImpl(
                 jobId,
                 externalId,
@@ -83,12 +99,13 @@ public class InProgressBatchJobsService {
                 outputEnabled,
                 callbackUrl,
                 callbackMethod,
-                transientMedia,
+                mediaImpls,
                 jobProperties,
                 algorithmProperties);
         _jobs.put(jobId, job);
         return job;
     }
+
 
 
     public synchronized TransientJob getJob(long jobId) {
@@ -112,7 +129,7 @@ public class InProgressBatchJobsService {
         for (TransientMedia media : job.getMedia()) {
             if (media.getUriScheme().isRemote()) {
                 try {
-                    Files.deleteIfExists(Paths.get(media.getLocalPath()));
+                    Files.deleteIfExists(media.getLocalPath());
                 }
                 catch (IOException e) {
                     LOG.warn(String.format(
@@ -170,12 +187,83 @@ public class InProgressBatchJobsService {
     }
 
 
+
+    private static final Set<UriScheme> SUPPORTED_URI_SCHEMES = EnumSet.of(UriScheme.FILE, UriScheme.HTTP,
+                                                                           UriScheme.HTTPS);
+    private static final String NOT_DEFINED_URI_SCHEME = "URI scheme not defined";
+    private static final String NOT_SUPPORTED_URI_SCHEME = "Unsupported URI scheme";
+    private static final String LOCAL_FILE_DOES_NOT_EXIST = "File does not exist";
+    private static final String LOCAL_FILE_NOT_READABLE = "File is not readable";
+
+
+    public synchronized TransientMedia initMedia(String uriStr, Map<String, String> mediaSpecificProperties) {
+        try {
+            URI uri = new URI(uriStr);
+            UriScheme uriScheme = UriScheme.parse(uri.getScheme());
+
+            Path localPath;
+            if (uriScheme == UriScheme.FILE) {
+                localPath = Paths.get(uri).toAbsolutePath();
+            }
+            else {
+                localPath = _propertiesUtil.getRemoteMediaCacheDirectory()
+                        .toPath()
+                        .resolve(UUID.randomUUID().toString())
+                        .toAbsolutePath();
+            }
+
+            String errorMessage = null;
+
+            if (uriScheme == UriScheme.UNDEFINED) {
+                errorMessage = NOT_DEFINED_URI_SCHEME;
+            }
+            else if (!SUPPORTED_URI_SCHEMES.contains(uriScheme)) {
+                errorMessage = NOT_SUPPORTED_URI_SCHEME;
+            }
+            else if (localPath != null && Files.notExists(localPath)) {
+                errorMessage = LOCAL_FILE_DOES_NOT_EXIST;
+            }
+            else if (localPath != null && !Files.isReadable(localPath)) {
+                errorMessage = LOCAL_FILE_NOT_READABLE;
+            }
+            return new TransientMediaImpl(IdGenerator.next(), uriStr, uriScheme, localPath, mediaSpecificProperties,
+                                          errorMessage);
+        }
+        catch (URISyntaxException | IllegalArgumentException | FileSystemNotFoundException e) {
+            return new TransientMediaImpl(IdGenerator.next(), uriStr, UriScheme.UNDEFINED, null,
+                                          mediaSpecificProperties, e.getMessage());
+        }
+    }
+
+
+    public synchronized void addMediaInspectionInfo(
+            long jobId, long mediaId, String sha256, String mimeType, int length,
+            Map<String, String> metadata) {
+
+        TransientMediaImpl media = getMediaImpl(jobId, mediaId);
+        media.setSha256(sha256);
+        media.setType(mimeType);
+        media.setLength(length);
+        media.addMetadata(metadata);
+    }
+
+
     public synchronized void addMediaError(long jobId, long mediaId, String message) {
-        TransientMedia media = getJob(jobId).getMedia(mediaId);
+        TransientMediaImpl media = getMediaImpl(jobId, mediaId);
+        media.setFailed(true);
+        media.setMessage(message);
+    }
+
+    public synchronized void clearMediaError(long jobId, long mediaId) {
+        getMediaImpl(jobId, mediaId).setFailed(false);
+    }
+
+
+    private TransientMediaImpl getMediaImpl(long jobId, long mediaId) {
+        TransientMediaImpl media = getJobImpl(jobId).getMedia(mediaId);
         if (media == null) {
             throw new IllegalArgumentException(String.format("Job %s does not have media with id %s", jobId, mediaId));
         }
-        media.setFailed(true);
-        media.setMessage(message);
+        return media;
     }
 }

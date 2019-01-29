@@ -49,7 +49,7 @@ public interface TransientJob {
 
 	public boolean isOutputEnabled();
 
-	public ImmutableCollection<TransientMedia> getMedia();
+	public ImmutableCollection<? extends TransientMedia> getMedia();
 
 	public TransientMedia getMedia(long mediaId);
 
@@ -59,7 +59,7 @@ public interface TransientJob {
 
 	public boolean isCancelled();
 
-	public String getCallbackURL();
+	public String getCallbackUrl();
 
 	public String getCallbackMethod();
 

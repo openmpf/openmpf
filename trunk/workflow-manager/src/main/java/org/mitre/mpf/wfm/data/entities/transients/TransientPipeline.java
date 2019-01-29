@@ -36,21 +36,22 @@ import java.util.List;
 import static java.util.stream.Collectors.toList;
 
 public class TransientPipeline {
-	private final String name;
-	public String getName() { return name; }
+	private final String _name;
+	public String getName() { return _name; }
 
-	private final String description;
-	public String getDescription() { return description; }
+	private final String _description;
+	public String getDescription() { return _description; }
 
-	private final ImmutableList<TransientStage> stages;
-	public ImmutableList<TransientStage> getStages() { return stages; }
+	private final ImmutableList<TransientStage> _stages;
+	public ImmutableList<TransientStage> getStages() { return _stages; }
+
 
 	public TransientPipeline(String name, String description, Collection<TransientStage> stages) {
-		this.name = TextUtils.trimAndUpper(name);
-		this.description = TextUtils.trim(description);
-		this.stages = ImmutableList.copyOf(stages);
+		_name = TextUtils.trimAndUpper(name);
+		_description = TextUtils.trim(description);
+		_stages = ImmutableList.copyOf(stages);
 
-		assert this.name != null : "name cannot be null";
+		assert _name != null : "name cannot be null";
 	}
 
 
@@ -66,6 +67,6 @@ public class TransientPipeline {
 
 	@Override
 	public String toString() {
-		return String.format("%s#<name='%s', description='%s'>", this.getClass().getSimpleName(), name, description);
+		return String.format("%s#<name='%s', description='%s'>", getClass().getSimpleName(), _name, _description);
 	}
 }

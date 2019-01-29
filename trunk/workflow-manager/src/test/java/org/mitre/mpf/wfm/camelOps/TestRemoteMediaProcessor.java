@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
@@ -36,9 +37,10 @@ import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -47,6 +49,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -126,8 +130,9 @@ public class TestRemoteMediaProcessor {
 		long jobId = next();
 		long mediaId = next();
 
-		TransientMedia transientMedia = new TransientMedia(mediaId, EXT_IMG);
-		transientMedia.setLocalPath(tempFolder.newFile().getAbsolutePath());
+		TransientMediaImpl transientMedia = new TransientMediaImpl(
+				mediaId, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)), tempFolder.newFile().toPath(),
+				Collections.emptyMap(), null);
 
 		Exchange exchange = setupExchange(jobId, transientMedia);
 		remoteMediaProcessor.process(exchange);
@@ -149,8 +154,9 @@ public class TestRemoteMediaProcessor {
 		long jobId = next();
 		long mediaId = next();
 
-		TransientMedia transientMedia = new TransientMedia(mediaId, "https://www.mitre.org/"+UUID.randomUUID().toString());
-		transientMedia.setLocalPath(tempFolder.newFile().getAbsolutePath());
+		TransientMediaImpl transientMedia = new TransientMediaImpl(
+				mediaId, "https://www.mitre.org/"+UUID.randomUUID().toString(), UriScheme.HTTPS,
+				tempFolder.newFile().toPath(), Collections.emptyMap(), null);
 
 		Exchange exchange = setupExchange(jobId, transientMedia);
 		remoteMediaProcessor.process(exchange);
@@ -172,15 +178,17 @@ public class TestRemoteMediaProcessor {
 	public void testSplitRequest() throws Exception {
         long mediaId1 = next();
         long mediaId2 = next();
-		ImmutableList<TransientMedia> media = ImmutableList.of(
-				new TransientMedia(mediaId1, "/some/local/path.jpg"),
-				new TransientMedia(mediaId2, EXT_IMG));
+		ImmutableCollection<TransientMediaImpl> media = ImmutableList.of(
+				new TransientMediaImpl(mediaId1, "/some/local/path.jpg", UriScheme.FILE,
+				                   Paths.get("/some/local/path.jpg"), Collections.emptyMap(), null),
+				new TransientMediaImpl(mediaId2, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)),
+				                   tempFolder.newFile().toPath(), Collections.emptyMap(), null));
 
 		TransientJob job = mock(TransientJob.class);
 		when(job.isCancelled())
 				.thenReturn(false);
 		when(job.getMedia())
-				.thenReturn(media);
+                .thenAnswer(i -> media);
 
 		long jobId = next();
 		when(mockInProgressJobs.getJob(jobId))
@@ -203,7 +211,7 @@ public class TestRemoteMediaProcessor {
 	}
 
 
-	private Exchange setupExchange(long jobId, TransientMedia media) {
+	private Exchange setupExchange(long jobId, TransientMediaImpl media) {
 		return MediaTestUtil.setupExchange(jobId, media, mockInProgressJobs);
 	}
 }

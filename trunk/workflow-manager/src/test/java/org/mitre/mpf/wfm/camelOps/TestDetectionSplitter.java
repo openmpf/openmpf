@@ -41,6 +41,7 @@ import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -49,6 +50,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -89,7 +92,10 @@ public class TestDetectionSplitter {
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
-        TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile("/samples/new_face_video.avi").toString());
+        URI mediaUri = ioUtils.findFile("/samples/new_face_video.avi");
+        TransientMediaImpl testMedia = new TransientMediaImpl(
+                nextId(), mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+                null);
         testMedia.setType("video/avi");
         // Video media must have FPS in metadata to support adaptive frame interval processing.
         testMedia.addMetadata("FPS", "30");
@@ -361,7 +367,7 @@ public class TestDetectionSplitter {
         TransientPipeline testPipe = new TransientPipeline(
                 "testPipe", "testDescr", Collections.singletonList(testTransientStage));
 
-        return createSimpleJobForTest(testId, testExternalId, testPipe, actionProperties, jobProperties,
+        return createSimpleJobForTest(testId, testExternalId, testPipe, jobProperties,
                                       mediaUri, mediaType);
     }
 
@@ -376,7 +382,6 @@ public class TestDetectionSplitter {
             long testJobId,
             String testExternalId,
             TransientPipeline testPipe,
-            Map<String, String> actionProperties,
             Map<String, String> jobProperties,
             String mediaUri,
             String mediaType) {
@@ -387,7 +392,10 @@ public class TestDetectionSplitter {
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
-        TransientMedia testMedia = new TransientMedia(nextId(), ioUtils.findFile(mediaUri).toString());
+        URI fullMediaUri = ioUtils.findFile(mediaUri);
+        TransientMediaImpl testMedia = new TransientMediaImpl(
+                nextId(), fullMediaUri.toString(), UriScheme.get(fullMediaUri), Paths.get(fullMediaUri),
+                Collections.emptyMap(), null);
         testMedia.setLength(300);
         testMedia.setType(mediaType);
         // Video media must have FPS in metadata to support adaptive frame interval processing.
@@ -418,12 +426,11 @@ public class TestDetectionSplitter {
         Map<String, String> actionProperties, Map<String, String> jobProperties,
         Map<String, Map> algorithmProperties, Map<String,String> mediaProperties) {
 
-        TransientMedia testMedia = new TransientMedia(nextId(), "/path/to/dummy/media");
+        URI mediaUri = URI.create("file:///path/to/dummy/media");
+        TransientMediaImpl testMedia = new TransientMediaImpl(
+                nextId(), mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), mediaProperties,
+                null);
         testMedia.setType("mime/dummy");
-        for ( Map.Entry mediaProperty : mediaProperties.entrySet() ) {
-            testMedia.addMediaSpecificProperty((String)mediaProperty.getKey(), (String)mediaProperty.getValue());
-
-        }
 
         TransientAction dummyAction = new TransientAction(
                 "FACECV", "dummyDescriptionFACECV", "FACECV", actionProperties);

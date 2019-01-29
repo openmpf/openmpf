@@ -34,15 +34,15 @@ import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJobImpl;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
@@ -79,8 +79,10 @@ public class TestMediaInspectionSplitter {
         final TransientPipeline testPipe = new TransientPipeline("testPipe", "testDescr",
                                                                  Collections.emptyList());
         final long testMediaId = 123456;
-        String testURI = TestUtil.findFile("/samples/new_face_video.avi");
-        TransientMedia testMedia = new TransientMedia(testMediaId, testURI);
+        URI testURI = TestUtil.findFile("/samples/new_face_video.avi");
+        TransientMediaImpl testMedia = new TransientMediaImpl(
+                testMediaId, testURI.toString(), UriScheme.FILE, Paths.get(testURI), Collections.emptyMap(),
+                null);
 
         TransientJob testJob = new TransientJobImpl(
                 jobId,

@@ -45,6 +45,7 @@ import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -56,6 +57,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.Collections;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
@@ -162,9 +165,12 @@ public class TestDetectionResponseProcessor {
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
-        TransientMedia media = new TransientMedia(234234,ioUtils.findFile("/samples/video_01.mp4").toString());
-        media.addMetadata("DURATION","3004");
-        media.addMetadata("FPS","29.97");
+        URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
+        TransientMediaImpl media = new TransientMediaImpl(
+                234234, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
+                Collections.emptyMap(), null);
+        media.addMetadata("DURATION", "3004");
+        media.addMetadata("FPS", "29.97");
 
         inProgressJobs.addJob(
                 jobId,

@@ -32,16 +32,17 @@ import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mitre.mpf.test.TestUtil.nonBlank;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 public class MediaTestUtil {
 
 
-    public static Exchange setupExchange(long jobId, TransientMedia media,
+    public static Exchange setupExchange(long jobId, TransientMediaImpl media,
                                          InProgressBatchJobsService mockInProgressJobs) {
         TransientJob job = mock(TransientJob.class);
         when(job.getMedia(media.getId()))
@@ -60,6 +61,12 @@ public class MediaTestUtil {
                 .thenReturn(inMessage);
         when(exchange.getOut())
                 .thenReturn(outMessage);
+
+        doAnswer(invocation -> {
+            media.setFailed(true);
+            return null;
+        }).when(mockInProgressJobs)
+                .addMediaError(eq(jobId), eq(media.getId()), nonBlank());
 
         return exchange;
     }

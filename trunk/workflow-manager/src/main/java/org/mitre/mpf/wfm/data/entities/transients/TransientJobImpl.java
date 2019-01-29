@@ -34,140 +34,141 @@ import java.util.*;
 
 public class TransientJobImpl implements TransientJob {
 
-    private final long id;
+    private final long _id;
     @Override
-    public long getId() { return id; }
+    public long getId() { return _id; }
 
 
-    private BatchJobStatusType status = BatchJobStatusType.INITIALIZED;
+    private BatchJobStatusType _status = BatchJobStatusType.INITIALIZED;
     @Override
-    public BatchJobStatusType getStatus() { return status; }
-    public void setStatus(BatchJobStatusType status) { this.status = status; }
+    public BatchJobStatusType getStatus() { return _status; }
+    public void setStatus(BatchJobStatusType status) { _status = status; }
 
 
-    private final TransientPipeline pipeline;
+    private final TransientPipeline _pipeline;
     @Override
-    public TransientPipeline getPipeline() { return pipeline; }
+    public TransientPipeline getPipeline() { return _pipeline; }
 
 
-    private int currentStage;
+    private int _currentStage;
     @Override
-    public int getCurrentStage() { return currentStage; }
-    public void setCurrentStage(int currentStage) { this.currentStage = currentStage; }
+    public int getCurrentStage() { return _currentStage; }
+    public void setCurrentStage(int currentStage) { _currentStage = currentStage; }
 
 
-    private final String externalId;
+    private final String _externalId;
     @Override
-    public String getExternalId() { return externalId; }
+    public String getExternalId() { return _externalId; }
 
 
-    private final int priority;
+    private final int _priority;
     @Override
-    public int getPriority() { return  priority; }
+    public int getPriority() { return _priority; }
 
 
-    private final boolean outputEnabled;
+    private final boolean _outputEnabled;
     @Override
-    public boolean isOutputEnabled() { return outputEnabled; }
+    public boolean isOutputEnabled() { return _outputEnabled; }
 
 
-    private final ImmutableSortedMap<Long, TransientMedia> media;
+    private final ImmutableSortedMap<Long, TransientMediaImpl> _media;
     @Override
-    public ImmutableCollection<TransientMedia> getMedia() { return media.values(); }
+    public ImmutableCollection<TransientMediaImpl> getMedia() { return _media.values(); }
     @Override
-    public TransientMedia getMedia(long mediaId) {
-        return media.get(mediaId);
+    public TransientMediaImpl getMedia(long mediaId) {
+        return _media.get(mediaId);
     }
 
 
-    private final ImmutableTable<String, String, String> overriddenAlgorithmProperties;
+    private final ImmutableTable<String, String, String> _overriddenAlgorithmProperties;
     @Override
-    public ImmutableTable<String, String, String> getOverriddenAlgorithmProperties() { return overriddenAlgorithmProperties; }
+    public ImmutableTable<String, String, String> getOverriddenAlgorithmProperties() {
+        return _overriddenAlgorithmProperties;
+    }
 
 
-    private final ImmutableMap<String, String> overriddenJobProperties;
+    private final ImmutableMap<String, String> _overriddenJobProperties;
     @Override
-    public ImmutableMap<String, String> getOverriddenJobProperties() { return overriddenJobProperties; }
+    public ImmutableMap<String, String> getOverriddenJobProperties() { return _overriddenJobProperties; }
 
 
-    private boolean cancelled;
+    private boolean _cancelled;
     @Override
-    public boolean isCancelled() { return cancelled; }
-    public void setCancelled(boolean isCancelled) { this.cancelled = isCancelled; }
+    public boolean isCancelled() { return _cancelled; }
+    public void setCancelled(boolean isCancelled) { _cancelled = isCancelled; }
 
 
-    private final String callbackURL;
+    private final String _callbackUrl;
     @Override
-    public String getCallbackURL() { return callbackURL; }
+    public String getCallbackUrl() { return _callbackUrl; }
 
 
-    private final String callbackMethod;
+    private final String _callbackMethod;
     @Override
-    public String getCallbackMethod() { return callbackMethod; }
+    public String getCallbackMethod() { return _callbackMethod; }
 
 
-    private final Set<String> errors = new HashSet<>();
+    private final Set<String> _errors = new HashSet<>();
     @Override
     public Set<String> getErrors() {
-        return Collections.unmodifiableSet(errors);
+        return Collections.unmodifiableSet(_errors);
     }
     public void addError(String errorMsg) {
-        errors.add(errorMsg);
+        _errors.add(errorMsg);
     }
 
 
-    private final Set<String> warnings = new HashSet<>();
+    private final Set<String> _warnings = new HashSet<>();
     @Override
     public Set<String> getWarnings() {
-        return Collections.unmodifiableSet(warnings);
+        return Collections.unmodifiableSet(_warnings);
     }
     public void addWarning(String warningMsg) {
-        warnings.add(warningMsg);
+        _warnings.add(warningMsg);
     }
 
 
-    // Detection system properties for this job should be immutable, the detection system property values
-    // shouldn't change once the job is created even if they are changed on the UI by an admin..
-    // The detectionSystemPropertiesSnapshot contains the values of the detection system properties at the time this batch job was created.
-    private final SystemPropertiesSnapshot detectionSystemPropertiesSnapshot;
+    // Contains values of system properties at the time the job was created so that if the properties are changed
+    // during the execution of the job, the job will still have access to the original property values.
+    private final SystemPropertiesSnapshot _systemPropertiesSnapshot;
     @Override
-    public SystemPropertiesSnapshot getSystemPropertiesSnapshot() { return detectionSystemPropertiesSnapshot; }
+    public SystemPropertiesSnapshot getSystemPropertiesSnapshot() { return _systemPropertiesSnapshot; }
 
 
-    private final List<DetectionProcessingError> detectionProcessingErrors = new ArrayList<>();
+    private final List<DetectionProcessingError> _detectionProcessingErrors = new ArrayList<>();
     @Override
     public List<DetectionProcessingError> getDetectionProcessingErrors() {
-        return Collections.unmodifiableList(detectionProcessingErrors);
+        return Collections.unmodifiableList(_detectionProcessingErrors);
     }
     public void addDetectionProcessingError(DetectionProcessingError error) {
-        detectionProcessingErrors.add(error);
+        _detectionProcessingErrors.add(error);
     }
 
 
     public TransientJobImpl(
             long id,
             String externalId,
-            SystemPropertiesSnapshot detectionSystemPropertiesSnapshot,
+            SystemPropertiesSnapshot systemPropertiesSnapshot,
             TransientPipeline pipeline,
             int priority,
             boolean outputEnabled,
-            String callbackURL,
+            String callbackUrl,
             String callbackMethod,
-            List<TransientMedia> media,
+            List<TransientMediaImpl> media,
             Map<String, String> jobProperties,
             Map<String, Map<String, String>> algorithmProperties) {
-        this.id = id;
-        this.externalId = externalId;
-        this.detectionSystemPropertiesSnapshot = detectionSystemPropertiesSnapshot;
-        this.pipeline = pipeline;
-        this.priority = priority;
-        this.outputEnabled = outputEnabled;
-        this.callbackURL = callbackURL;
-        this.callbackMethod = callbackMethod;
+        _id = id;
+        _externalId = externalId;
+        _systemPropertiesSnapshot = systemPropertiesSnapshot;
+        _pipeline = pipeline;
+        _priority = priority;
+        _outputEnabled = outputEnabled;
+        _callbackUrl = callbackUrl;
+        _callbackMethod = callbackMethod;
 
-        this.media = ImmutableSortedMap.copyOf(Maps.uniqueIndex(media, TransientMedia::getId));
+        _media = ImmutableSortedMap.copyOf(Maps.uniqueIndex(media, TransientMedia::getId));
 
-        this.overriddenJobProperties = ImmutableMap.copyOf(jobProperties);
+        _overriddenJobProperties = ImmutableMap.copyOf(jobProperties);
 
         ImmutableTable.Builder<String, String, String> tableBuilder = ImmutableTable.builder();
         for (Map.Entry<String, Map<String, String>> algoEntry : algorithmProperties.entrySet()) {
@@ -175,6 +176,6 @@ public class TransientJobImpl implements TransientJob {
                 tableBuilder.put(algoEntry.getKey(), algoProp.getKey(), algoProp.getValue());
             }
         }
-        this.overriddenAlgorithmProperties = tableBuilder.build();
+        _overriddenAlgorithmProperties = tableBuilder.build();
     }
 }

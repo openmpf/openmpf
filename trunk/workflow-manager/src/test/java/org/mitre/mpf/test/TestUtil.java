@@ -30,11 +30,14 @@ import org.hamcrest.Description;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -69,6 +72,10 @@ public class TestUtil {
 
     public static <T, C extends Collection<T>> C nonEmptyCollection() {
         return CustomMatcher.of("Non-empty Collection", c -> !c.isEmpty());
+    }
+
+    public static <K, V, M extends Map<K, V>> M nonEmptyMap() {
+        return CustomMatcher.of("Non-empty Map", m -> !m.isEmpty());
     }
 
 
@@ -126,6 +133,9 @@ public class TestUtil {
 
         TransientPipeline dummyPipeline = new TransientPipeline(
                 "dummyPipeline", "dummyDescription", Collections.singletonList(dummyStageDet));
+        URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
+        TransientMedia media = new TransientMediaImpl(
+                234234, mediaUri.toString(), UriScheme.FILE, Paths.get(mediaUri), Collections.emptyMap(), null);
 
         return inProgressJobs.addJob(
                 jobId,
@@ -136,7 +146,7 @@ public class TestUtil {
                 false,
                 null,
                 null,
-                Collections.singletonList(new TransientMedia(234234, ioUtils.findFile("/samples/video_01.mp4").toString())),
+                Collections.singletonList(media),
                 jobProperties,
                 algorithmProperties);
     }
@@ -152,9 +162,9 @@ public class TestUtil {
     }
 
 
-    public static String findFile(String path) {
+    public static URI findFile(String path) {
         try {
-            return TestUtil.class.getResource(path).toURI().toString();
+            return TestUtil.class.getResource(path).toURI();
         }
         catch (URISyntaxException e) {
             throw new IllegalArgumentException(e);

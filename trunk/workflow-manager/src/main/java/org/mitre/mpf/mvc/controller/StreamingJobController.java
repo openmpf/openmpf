@@ -33,11 +33,11 @@ import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.StreamResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -202,7 +202,7 @@ public class StreamingJobController {
             if ( !streamingJobCreationRequest.isValidRequest() ) {
                 // The streaming job failed the API syntax check, the job request is malformed. Reject the job and send an error response.
                 return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(), "malformed request");
-            } else if ( !StreamResource.isSupportedUriScheme(streamingJobCreationRequest.getStream().getStreamUri()) ) {
+            } else if ( !TransientStream.isSupportedUriScheme(streamingJobCreationRequest.getStream().getStreamUri()) ) {
                 // The streaming job failed the check for supported stream protocol check, so OpenMPF can't process the requested stream URI.
                 // Reject the job and send an error response.
                 return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),

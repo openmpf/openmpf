@@ -36,27 +36,27 @@ import java.util.Map;
 import static java.util.stream.Collectors.toMap;
 
 public class TransientAction {
-	private final String name;
-	public String getName() { return name; }
+	private final String _name;
+	public String getName() { return _name; }
 
-	private final String description;
-	public String getDescription() { return description; }
+	private final String _description;
+	public String getDescription() { return _description; }
 
-	private final String algorithm;
-	public String getAlgorithm() { return algorithm; }
+	private final String _algorithm;
+	public String getAlgorithm() { return _algorithm; }
 
-	private final ImmutableMap<String, String> properties;
-	public ImmutableMap<String, String> getProperties() { return properties; }
+	private final ImmutableMap<String, String> _properties;
+	public ImmutableMap<String, String> getProperties() { return _properties; }
 
 
 	public TransientAction(String name, String description, String algorithm, Map<String, String> properties) {
-		this.name = TextUtils.trimAndUpper(name);
-		this.description = TextUtils.trim(description);
-		this.algorithm = TextUtils.trimAndUpper(algorithm);
-		this.properties = ImmutableMap.copyOf(properties);
+		_name = TextUtils.trimAndUpper(name);
+		_description = TextUtils.trim(description);
+		_algorithm = TextUtils.trimAndUpper(algorithm);
+		_properties = ImmutableMap.copyOf(properties);
 
-		assert this.name != null : "name must not be null";
-		assert this.algorithm != null : "algorithm must not be null";
+		assert _name != null : "name must not be null";
+		assert _algorithm != null : "algorithm must not be null";
 	}
 
 

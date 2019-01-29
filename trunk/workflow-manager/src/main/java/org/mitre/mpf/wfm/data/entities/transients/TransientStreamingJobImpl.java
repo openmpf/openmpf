@@ -38,94 +38,96 @@ import java.util.Map;
 
 public class TransientStreamingJobImpl implements TransientStreamingJob {
 
-    private final long id;
+    private final long _id;
     @Override
-    public long getId() { return id; }
+    public long getId() { return _id; }
 
 
-    private StreamingJobStatus jobStatus = new StreamingJobStatus(StreamingJobStatusType.INITIALIZING, null);
+    private StreamingJobStatus _jobStatus = new StreamingJobStatus(StreamingJobStatusType.INITIALIZING);
     @Override
-    public StreamingJobStatus getJobStatus() { return jobStatus; }
-    public void setJobStatus(StreamingJobStatus jobStatus) { this.jobStatus = jobStatus; }
+    public StreamingJobStatus getJobStatus() { return _jobStatus; }
+    public void setJobStatus(StreamingJobStatus jobStatus) { _jobStatus = jobStatus; }
 
 
-    private final TransientPipeline pipeline;
+    private final TransientPipeline _pipeline;
     @Override
-    public TransientPipeline getPipeline() { return pipeline; }
+    public TransientPipeline getPipeline() { return _pipeline; }
 
 
-    private final String externalId;
+    private final String _externalId;
     @Override
-    public String getExternalId() { return externalId; }
+    public String getExternalId() { return _externalId; }
 
 
-    private final int priority;
+    private final int _priority;
     @Override
-    public int getPriority() { return  priority; }
+    public int getPriority() { return _priority; }
 
 
-    private final long stallTimeout;
+    private final long _stallTimeout;
     @Override
-    public long getStallTimeout() { return stallTimeout; }
+    public long getStallTimeout() { return _stallTimeout; }
 
 
-    private final boolean outputEnabled;
+    private final boolean _outputEnabled;
     @Override
-    public boolean isOutputEnabled() { return outputEnabled; }
+    public boolean isOutputEnabled() { return _outputEnabled; }
 
 
-    private final String outputObjectDirectory;
+    private final String _outputObjectDirectory;
     @Override
-    public String getOutputObjectDirectory() { return outputObjectDirectory; }
+    public String getOutputObjectDirectory() { return _outputObjectDirectory; }
 
 
-    private final TransientStream stream;
+    private final TransientStream _stream;
     @Override
-    public TransientStream getStream() { return stream; }
+    public TransientStream getStream() { return _stream; }
 
 
-    private final ImmutableTable<String, String, String> overriddenAlgorithmProperties;
+    private final ImmutableTable<String, String, String> _overriddenAlgorithmProperties;
     @Override
-    public ImmutableTable<String, String, String> getOverriddenAlgorithmProperties() { return overriddenAlgorithmProperties; }
+    public ImmutableTable<String, String, String> getOverriddenAlgorithmProperties() {
+        return _overriddenAlgorithmProperties;
+    }
 
 
-    private final ImmutableMap<String, String> overriddenJobProperties;
+    private final ImmutableMap<String, String> _overriddenJobProperties;
     @Override
-    public ImmutableMap<String, String> getOverriddenJobProperties() { return overriddenJobProperties; }
+    public ImmutableMap<String, String> getOverriddenJobProperties() { return _overriddenJobProperties; }
 
 
-    private boolean cancelled;
+    private boolean _cancelled;
     @Override
-    public boolean isCancelled() { return cancelled; }
-    public void setCancelled(boolean isCancelled) { this.cancelled = isCancelled; }
+    public boolean isCancelled() { return _cancelled; }
+    public void setCancelled(boolean isCancelled) { _cancelled = isCancelled; }
 
 
-    private final String healthReportCallbackURI;
+    private final String _healthReportCallbackURI;
     @Override
-    public String getHealthReportCallbackURI() { return healthReportCallbackURI; }
+    public String getHealthReportCallbackURI() { return _healthReportCallbackURI; }
 
 
-    private final String summaryReportCallbackURI;
+    private final String _summaryReportCallbackURI;
     @Override
-    public String getSummaryReportCallbackURI() { return summaryReportCallbackURI; }
+    public String getSummaryReportCallbackURI() { return _summaryReportCallbackURI; }
 
 
-    private long lastActivityFrame = -1;
+    private long _lastActivityFrame = -1;
     @Override
-    public long getLastActivityFrame() { return lastActivityFrame; }
-    public void setLastActivityFrame(long frame) { lastActivityFrame = frame; }
+    public long getLastActivityFrame() { return _lastActivityFrame; }
+    public void setLastActivityFrame(long frame) { _lastActivityFrame = frame; }
 
 
-    private Instant lastActivityTime;
+    private Instant _lastActivityTime;
     @Override
-    public Instant getLastActivityTime() { return lastActivityTime; }
-    public void setLastActivityTime(Instant time) { lastActivityTime = time; }
+    public Instant getLastActivityTime() { return _lastActivityTime; }
+    public void setLastActivityTime(Instant time) { _lastActivityTime = time; }
 
 
-    private boolean cleanupEnabled;
+    private boolean _cleanupEnabled;
     @Override
-    public boolean isCleanupEnabled() { return cleanupEnabled; }
-    public void setCleanupEnabled(boolean cleanupEnabled) { this.cleanupEnabled = cleanupEnabled; }
+    public boolean isCleanupEnabled() { return _cleanupEnabled; }
+    public void setCleanupEnabled(boolean cleanupEnabled) { _cleanupEnabled = cleanupEnabled; }
 
 
     public TransientStreamingJobImpl(
@@ -141,17 +143,17 @@ public class TransientStreamingJobImpl implements TransientStreamingJob {
             String summaryReportCallbackURI,
             Map<String, String> jobProperties,
             Map<String, Map<String, String>> algorithmProperties) {
-        this.id = id;
-        this.externalId = externalId;
-        this.pipeline = pipeline;
-        this.stream = stream;
-        this.priority = priority;
-        this.stallTimeout = stallTimeout;
-        this.outputEnabled = outputEnabled;
-        this.outputObjectDirectory = outputObjectDirectory;
-        this.healthReportCallbackURI = healthReportCallbackURI;
-        this.summaryReportCallbackURI = summaryReportCallbackURI;
-        this.overriddenJobProperties = ImmutableMap.copyOf(jobProperties);
+        _id = id;
+        _externalId = externalId;
+        _pipeline = pipeline;
+        _stream = stream;
+        _priority = priority;
+        _stallTimeout = stallTimeout;
+        _outputEnabled = outputEnabled;
+        _outputObjectDirectory = outputObjectDirectory;
+        _healthReportCallbackURI = healthReportCallbackURI;
+        _summaryReportCallbackURI = summaryReportCallbackURI;
+        _overriddenJobProperties = ImmutableMap.copyOf(jobProperties);
 
         ImmutableTable.Builder<String, String, String> tableBuilder = ImmutableTable.builder();
         for (Map.Entry<String, Map<String, String>> algoEntry : algorithmProperties.entrySet()) {
@@ -159,6 +161,6 @@ public class TransientStreamingJobImpl implements TransientStreamingJob {
                 tableBuilder.put(algoEntry.getKey(), algoProp.getKey(), algoProp.getValue());
             }
         }
-        this.overriddenAlgorithmProperties = tableBuilder.build();
+        _overriddenAlgorithmProperties = tableBuilder.build();
     }
 }

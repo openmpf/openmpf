@@ -65,7 +65,7 @@ public class EndOfStageProcessor extends WfmProcessor {
 				job.getCurrentStage(),
 				job.getPipeline().getStages().size());
 
-		inProgressBatchJobs.setCurrentTaskIndex(job.getId(), job.getCurrentStage() + 1);
+		inProgressBatchJobs.incrementStage(job.getId());
 
 		if(job.getCurrentStage() >= job.getPipeline().getStages().size()) {
 			long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);

@@ -85,6 +85,7 @@ public class InProgressBatchJobsService {
             throw new IllegalArgumentException(String.format("Job with id %s already exists.", jobId));
         }
 
+        LOG.info("Initializing batch job {} which will run the \"{}\" pipeline", jobId, pipeline.getName());
         List<TransientMediaImpl> mediaImpls = transientMedia.stream()
                 .map(TransientMediaImpl::toTransientMediaImpl)
                 .collect(ImmutableList.toImmutableList());
@@ -122,6 +123,7 @@ public class InProgressBatchJobsService {
 
 
     public synchronized void clearJob(long jobId) {
+        LOG.info("Clearing all job information for job: {}", jobId);
         TransientJobImpl job = getJobImpl(jobId);
         _redis.clearTracks(job);
         _jobs.remove(jobId);
@@ -144,6 +146,7 @@ public class InProgressBatchJobsService {
     }
 
     public synchronized boolean cancelJob(long jobId) {
+        LOG.info("Marking job {} as cancelled.", jobId);
         getJobImpl(jobId).setCancelled(true);
         return true;
     }
@@ -152,37 +155,50 @@ public class InProgressBatchJobsService {
         return _redis.getTracks(jobId, mediaId, taskIndex, actionIndex);
     }
 
+
     public synchronized void addTrack(Track track) {
+        LOG.debug("Storing new track for job {}'s media {}.", track.getJobId(), track.getMediaId());
         _redis.addTrack(track);
+    }
+
+    public synchronized void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex,
+                                       Collection<Track> tracks) {
+        LOG.info("Replacing tracks for job {}'s media {}", jobId, mediaId);
+        _redis.setTracks(jobId, mediaId, taskIndex, actionIndex, tracks);
     }
 
 
     public synchronized void addJobWarning(long jobId, String message) {
+        LOG.info("Adding the following warning to job {}: {}", jobId, message);
         getJobImpl(jobId).addWarning(message);
     }
 
 
     public synchronized void addJobError(long jobId, String message) {
+        LOG.info("Adding the following error to job {}: {}", jobId, message);
         getJobImpl(jobId).addError(message);
     }
 
     public synchronized void addDetectionProcessingError(DetectionProcessingError error) {
+        LOG.info("Adding detection processing error for job {}'s media {} with message: ",
+                 error.getJobId(), error.getMediaId(), error.getError());
         getJobImpl(error.getJobId()).addDetectionProcessingError(error);
     }
 
-    public synchronized void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks) {
-        _redis.setTracks(jobId, mediaId, taskIndex, actionIndex, tracks);
-    }
 
 
     public synchronized void setJobStatus(long jobId, BatchJobStatusType batchJobStatusType) {
+        LOG.info("Setting status of job {} to {}", jobId, batchJobStatusType);
         getJobImpl(jobId).setStatus(batchJobStatusType);
     }
 
 
-
-    public synchronized void setCurrentTaskIndex(long jobId, int taskIndex) {
-        getJobImpl(jobId).setCurrentStage(taskIndex);
+    public synchronized void incrementStage(long jobId) {
+        TransientJobImpl job = getJobImpl(jobId);
+        int currentStage = job.getCurrentStage();
+        int nextStage = currentStage + 1;
+        LOG.info("Changing job {}'s current stage from {} to {}", jobId, currentStage, nextStage);
+        job.setCurrentStage(nextStage);
     }
 
 
@@ -196,6 +212,8 @@ public class InProgressBatchJobsService {
 
 
     public synchronized TransientMedia initMedia(String uriStr, Map<String, String> mediaSpecificProperties) {
+        long mediaId = IdGenerator.next();
+        LOG.info("Initializing media from {} with id {}", uriStr, mediaId);
         try {
             URI uri = new URI(uriStr);
             UriScheme uriScheme = UriScheme.parse(uri.getScheme());
@@ -225,11 +243,11 @@ public class InProgressBatchJobsService {
             else if (localPath != null && !Files.isReadable(localPath)) {
                 errorMessage = LOCAL_FILE_NOT_READABLE;
             }
-            return new TransientMediaImpl(IdGenerator.next(), uriStr, uriScheme, localPath, mediaSpecificProperties,
+            return new TransientMediaImpl(mediaId, uriStr, uriScheme, localPath, mediaSpecificProperties,
                                           errorMessage);
         }
         catch (URISyntaxException | IllegalArgumentException | FileSystemNotFoundException e) {
-            return new TransientMediaImpl(IdGenerator.next(), uriStr, UriScheme.UNDEFINED, null,
+            return new TransientMediaImpl(mediaId, uriStr, UriScheme.UNDEFINED, null,
                                           mediaSpecificProperties, e.getMessage());
         }
     }
@@ -238,7 +256,7 @@ public class InProgressBatchJobsService {
     public synchronized void addMediaInspectionInfo(
             long jobId, long mediaId, String sha256, String mimeType, int length,
             Map<String, String> metadata) {
-
+        LOG.info("Adding media inspections results to job {}'s media {}.", jobId, mediaId);
         TransientMediaImpl media = getMediaImpl(jobId, mediaId);
         media.setSha256(sha256);
         media.setType(mimeType);
@@ -248,12 +266,14 @@ public class InProgressBatchJobsService {
 
 
     public synchronized void addMediaError(long jobId, long mediaId, String message) {
+        LOG.info("Adding the following error message to job {}'s media {}: {}", jobId, mediaId, message);
         TransientMediaImpl media = getMediaImpl(jobId, mediaId);
         media.setFailed(true);
         media.setMessage(message);
     }
 
     public synchronized void clearMediaError(long jobId, long mediaId) {
+        LOG.info("Clearing error from job {}'s media {}", jobId, mediaId);
         getMediaImpl(jobId, mediaId).setFailed(false);
     }
 

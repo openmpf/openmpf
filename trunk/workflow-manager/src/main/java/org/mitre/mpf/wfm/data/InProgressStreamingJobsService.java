@@ -27,6 +27,7 @@
 
 package org.mitre.mpf.wfm.data;
 
+import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
@@ -34,6 +35,8 @@ import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJobImpl;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Singleton;
@@ -47,7 +50,9 @@ import static java.util.stream.Collectors.toList;
 
 @Component
 @Singleton
-public class InProgressStreamingJobs {
+public class InProgressStreamingJobsService {
+
+    private static final Logger LOG = LoggerFactory.getLogger(InProgressStreamingJobsService.class);
 
     private final Map<Long, TransientStreamingJobImpl> _jobs = new HashMap<>();
 
@@ -65,6 +70,12 @@ public class InProgressStreamingJobs {
             String summaryReportCallbackURI,
             Map<String, String> jobProperties,
             Map<String, Map<String, String>> algorithmProperties) {
+
+        if (_jobs.containsKey(jobId)) {
+            throw new IllegalArgumentException(String.format("Job with id %s already exists.", jobId));
+        }
+
+        LOG.info("Initializing streaming job {} which will run the \"{}\" pipeline", jobId, pipeline.getName());
 
         TransientStreamingJobImpl job = new TransientStreamingJobImpl(
                 jobId,
@@ -116,11 +127,13 @@ public class InProgressStreamingJobs {
 
 
     public synchronized void clearJob(long jobId) {
+        LOG.info("Clearing all job information for job: {}", jobId);
         _jobs.remove(jobId);
     }
 
 
     public synchronized void cancelJob(long jobId, boolean doCleanup) {
+        LOG.info("Marking job {} as cancelled.", jobId);
         TransientStreamingJobImpl job = getJobImpl(jobId);
         job.setCancelled(true);
         job.setJobStatus(new StreamingJobStatus(StreamingJobStatusType.CANCELLING));
@@ -133,10 +146,13 @@ public class InProgressStreamingJobs {
     }
 
     public synchronized void setJobStatus(long jobId, StreamingJobStatus status) {
+        LOG.info("Setting status of job {} to {}.", jobId, status);
         getJobImpl(jobId).setJobStatus(status);
     }
 
     public synchronized void setLastJobActivity(long jobId, long frameId, Instant time) {
+        LOG.info("Setting last activity of job {} to frame {} at time {}",
+                 jobId, frameId, TimeUtils.toIsoString(time));
         TransientStreamingJobImpl job = getJobImpl(jobId);
         job.setLastActivityFrame(frameId);
         job.setLastActivityTime(time);

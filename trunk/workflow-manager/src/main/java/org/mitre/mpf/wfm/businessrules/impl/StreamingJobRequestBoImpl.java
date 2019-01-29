@@ -35,7 +35,7 @@ import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.IdGenerator;
-import org.mitre.mpf.wfm.data.InProgressStreamingJobs;
+import org.mitre.mpf.wfm.data.InProgressStreamingJobsService;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
@@ -111,7 +111,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     private JsonUtils jsonUtils;
 
     @Autowired
-    private InProgressStreamingJobs inProgressJobs;
+    private InProgressStreamingJobsService inProgressJobs;
 
     @Autowired
     @Qualifier(HibernateStreamingJobRequestDaoImpl.REF)

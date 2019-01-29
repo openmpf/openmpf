@@ -25,21 +25,32 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.util;
+package org.mitre.mpf.interop.util;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.mitre.mpf.interop.util.InstantJsonModule;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import com.fasterxml.jackson.databind.deser.DefaultDeserializationContext;
+import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 
-@Configuration
-public class ObjectMapperFactory {
+public class MpfObjectMapper extends ObjectMapper {
 
-    @Bean
-    public static ObjectMapper customObjectMapper() {
-        return Jackson2ObjectMapperBuilder.json()
-                .modules(new InstantJsonModule())
-                .build();
+    public MpfObjectMapper() {
+        registerInstantModule();
     }
+
+    public MpfObjectMapper(JsonFactory jsonFactory) {
+        super(jsonFactory);
+        registerInstantModule();
+    }
+
+    public MpfObjectMapper(JsonFactory jsonFactory, DefaultSerializerProvider serializerProvider,
+                           DefaultDeserializationContext deserializationContext) {
+        super(jsonFactory, serializerProvider, deserializationContext);
+        registerInstantModule();
+    }
+
+    private void registerInstantModule() {
+        registerModule(new InstantJsonModule());
+    }
+
 }

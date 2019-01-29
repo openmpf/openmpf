@@ -33,8 +33,6 @@ import org.mitre.mpf.wfm.util.TextUtils;
 import java.util.Collection;
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
-
 public class TransientPipeline {
 	private final String _name;
 	public String getName() { return _name; }
@@ -59,7 +57,7 @@ public class TransientPipeline {
 		List<TransientStage> stages = pipeline.getStages()
 				.stream()
 				.map(TransientStage::from)
-				.collect(toList());
+				.collect(ImmutableList.toImmutableList());
 
 		return new TransientPipeline(pipeline.getName(), pipeline.getDescription(), stages);
 	}

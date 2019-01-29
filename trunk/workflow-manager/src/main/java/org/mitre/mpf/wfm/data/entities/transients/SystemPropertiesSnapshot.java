@@ -123,6 +123,7 @@ public class SystemPropertiesSnapshot {
         return _properties.get(propertyName);
     }
 
+
     public SystemPropertiesSnapshot(Map<String, String> properties) {
         _properties = ImmutableMap.copyOf(properties);
     }

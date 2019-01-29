@@ -27,6 +27,7 @@
 
 package org.mitre.mpf.wfm.data;
 
+import com.google.common.collect.ImmutableList;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -46,8 +47,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-
-import static java.util.stream.Collectors.toList;
 
 @Component
 @Singleton
@@ -88,7 +87,7 @@ public class InProgressBatchJobsService {
 
         List<TransientMediaImpl> mediaImpls = transientMedia.stream()
                 .map(TransientMediaImpl::toTransientMediaImpl)
-                .collect(toList());
+                .collect(ImmutableList.toImmutableList());
 
         TransientJobImpl job = new TransientJobImpl(
                 jobId,

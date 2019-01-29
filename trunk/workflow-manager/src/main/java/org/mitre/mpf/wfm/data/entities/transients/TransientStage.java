@@ -34,8 +34,6 @@ import org.mitre.mpf.wfm.util.TextUtils;
 import java.util.Collection;
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
-
 public class TransientStage {
 	private final String _name;
 	public String getName() { return _name; }
@@ -65,7 +63,7 @@ public class TransientStage {
 		List<TransientAction> actions = stage.getActions()
 				.stream()
 				.map(TransientAction::from)
-				.collect(toList());
+				.collect(ImmutableList.toImmutableList());
 
 		return new TransientStage(
 				stage.getName(),

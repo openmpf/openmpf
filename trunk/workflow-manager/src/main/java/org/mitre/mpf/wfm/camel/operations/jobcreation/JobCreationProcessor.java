@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.camel.operations.jobcreation;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.camel.Exchange;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
@@ -56,8 +57,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * The first step in the Workflow Manager is to translate a JSON job request into an internal
@@ -178,7 +177,7 @@ public class JobCreationProcessor extends WfmProcessor {
 	private List<TransientMedia> buildMedia(Collection<JsonMediaInputObject> inputMedia) {
 		return inputMedia.stream()
 				.map(in -> inProgressBatchJobs.initMedia(in.getMediaUri(), in.getProperties()))
-				.collect(toList());
+				.collect(ImmutableList.toImmutableList());
 	}
 }
 

@@ -31,6 +31,7 @@ import com.google.common.collect.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
 import java.util.*;
+import java.util.function.Function;
 
 public class TransientJobImpl implements TransientJob {
 
@@ -166,7 +167,11 @@ public class TransientJobImpl implements TransientJob {
         _callbackUrl = callbackUrl;
         _callbackMethod = callbackMethod;
 
-        _media = ImmutableSortedMap.copyOf(Maps.uniqueIndex(media, TransientMedia::getId));
+        _media = media.stream()
+                .collect(ImmutableSortedMap.toImmutableSortedMap(
+                        Comparator.naturalOrder(),
+                        TransientMediaImpl::getId,
+                        Function.identity()));
 
         _overriddenJobProperties = ImmutableMap.copyOf(jobProperties);
 

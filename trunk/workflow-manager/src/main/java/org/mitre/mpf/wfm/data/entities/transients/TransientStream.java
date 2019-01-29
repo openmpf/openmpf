@@ -88,7 +88,6 @@ public class TransientStream {
 
 	public TransientStream(long id, String uri, int segmentSize, Map<String, String> mediaProperties,
 	                       Map<String, String> mediaMetadata) {
-
 		_id = id;
 		_uri = uri;
 

@@ -33,8 +33,6 @@ import org.mitre.mpf.wfm.util.TextUtils;
 
 import java.util.Map;
 
-import static java.util.stream.Collectors.toMap;
-
 public class TransientAction {
 	private final String _name;
 	public String getName() { return _name; }
@@ -65,7 +63,7 @@ public class TransientAction {
 				.entrySet()
 				.stream()
 				.filter(p -> StringUtils.isNotBlank(p.getKey()) && StringUtils.isNotBlank(p.getValue()))
-				.collect(toMap(p -> p.getKey().toUpperCase(), Map.Entry::getValue));
+				.collect(ImmutableMap.toImmutableMap(p -> p.getKey().toUpperCase(), Map.Entry::getValue));
 
 		return new TransientAction(
                 action.getName(),

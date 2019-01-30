@@ -30,7 +30,6 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
@@ -105,15 +104,15 @@ public class TestJobCreationProcessor {
         Exchange exchange = new DefaultExchange(camelContext);
         exchange.getIn().setBody(jsonUtils.serialize(jobRequest));
         JobRequest returnedRequest = jobRequestBo.initialize(jobRequest);
-        returnedRequest.getId();
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, returnedRequest.getId());
         jobCreationProcessor.process(exchange);
 
         assertEquals("Job ID headers must be set.", returnedRequest.getId(), exchange.getOut().getHeader(MpfHeaders.JOB_ID));
         JobRequest returnedResponse = jobRequestDao.findById(returnedRequest.getId());
         TransientJob tjob = inProgressJobs.getJob(returnedResponse.getId());
-        Assert.assertTrue(tjob.getExternalId().equals(Long.toString(testId)));
+        assertEquals(Long.toString(testId), tjob.getExternalId().get());
 
         jobRequestDao.deleteById(returnedRequest.getId());
+        inProgressJobs.clearJob(tjob.getId());
     }
 }

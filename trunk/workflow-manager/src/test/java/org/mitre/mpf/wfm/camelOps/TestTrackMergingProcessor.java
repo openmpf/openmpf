@@ -38,6 +38,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingPro
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
@@ -166,7 +167,11 @@ public class TestTrackMergingProcessor {
         TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
         TransientJob trackMergeJob = new TransientJob(jobId, "999999", transientDetectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
-        trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
+
+        TransientMedia transientMedia = new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString());
+        transientMedia.setType("video/mp4");
+
+        trackMergeJob.getMedia().add(transientMedia);
 
         redis.persistJob(trackMergeJob);
 

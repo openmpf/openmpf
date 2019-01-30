@@ -517,10 +517,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
         TransientStreamingJob transientJob = inProgressJobs.getJob(jobId);
 
-        String healthReportCallbackUri = transientJob.getHealthReportCallbackURI();
-        if (healthReportCallbackUri != null) {
-            callbackUtils.sendHealthReportCallback(healthReportCallbackUri, Collections.singletonList(transientJob));
-        }
+        transientJob.getHealthReportCallbackURI()
+                .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, Collections.singletonList(transientJob)));
 
 
         StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
@@ -569,25 +567,22 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     public void handleNewActivityAlert(long jobId, long frameId, long timestamp) {
         inProgressJobs.setLastJobActivity(jobId, frameId, Instant.ofEpochMilli(timestamp));
         TransientStreamingJob job = inProgressJobs.getJob(jobId);
-        String healthReportCallbackUri = job.getHealthReportCallbackURI();
-        if (healthReportCallbackUri != null) {
-            callbackUtils.sendHealthReportCallback(healthReportCallbackUri, Collections.singletonList(job));
-        }
+        job.getHealthReportCallbackURI()
+                .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, Collections.singletonList(job)));
     }
 
     @Override
     public void handleNewSummaryReport(JsonSegmentSummaryReport summaryReport) {
         TransientStreamingJob transientStreamingJob = inProgressJobs.getJob(summaryReport.getJobId());
-        String summaryReportCallbackUri = transientStreamingJob.getSummaryReportCallbackURI();
 
         // Include the externalId as obtained from REDIS in the summary report. Note that we should
         // set the externalId even if the summaryReport isn't sent, because the summaryReport may be written to disk after it is
         // optionally sent.
-        summaryReport.setExternalId(transientStreamingJob.getExternalId());
+        transientStreamingJob.getExternalId()
+                .ifPresent(summaryReport::setExternalId);
 
-        if (summaryReportCallbackUri != null) {
-            callbackUtils.sendSummaryReportCallback(summaryReport, summaryReportCallbackUri);
-        }
+        transientStreamingJob.getSummaryReportCallbackURI()
+                .ifPresent(uri -> callbackUtils.sendSummaryReportCallback(summaryReport, uri));
 
         if (transientStreamingJob.isOutputEnabled()) {
             try {

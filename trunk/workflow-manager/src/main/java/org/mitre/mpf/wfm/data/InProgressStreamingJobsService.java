@@ -120,9 +120,8 @@ public class InProgressStreamingJobsService {
     public synchronized Map<String, List<TransientStreamingJob>> getJobsGroupedByHealthReportUri() {
         return _jobs.values()
                 .stream()
-                .filter(j -> !j.getJobStatus().isTerminal() && j.getHealthReportCallbackURI() != null)
-                .collect(groupingBy(TransientStreamingJob::getHealthReportCallbackURI));
-
+                .filter(j -> !j.getJobStatus().isTerminal() && j.getHealthReportCallbackURI().isPresent())
+                .collect(groupingBy(j -> j.getHealthReportCallbackURI().get()));
     }
 
 

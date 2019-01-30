@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableTable;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface TransientJob {
@@ -43,7 +44,7 @@ public interface TransientJob {
 
 	public int getCurrentStage();
 
-	public String getExternalId();
+	public Optional<String> getExternalId();
 
 	public int getPriority();
 
@@ -59,9 +60,9 @@ public interface TransientJob {
 
 	public boolean isCancelled();
 
-	public String getCallbackUrl();
+	public Optional<String> getCallbackUrl();
 
-	public String getCallbackMethod();
+	public Optional<String> getCallbackMethod();
 
 	// Detection system properties for this job should be immutable, the detection system property values
 	// shouldn't change once the job is created even if they are changed on the UI by an admin..

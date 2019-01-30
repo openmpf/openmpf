@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableTable;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 
 import java.time.Instant;
+import java.util.Optional;
 
 public interface TransientStreamingJob {
 	public long getId();
@@ -39,7 +40,7 @@ public interface TransientStreamingJob {
 
 	public TransientPipeline getPipeline();
 
-	public String getExternalId();
+	public Optional<String> getExternalId();
 
 	public int getPriority();
 
@@ -57,9 +58,9 @@ public interface TransientStreamingJob {
 
 	public boolean isCancelled();
 
-	public String getHealthReportCallbackURI();
+	public Optional<String> getHealthReportCallbackURI();
 
-	public String getSummaryReportCallbackURI();
+	public Optional<String> getSummaryReportCallbackURI();
 
 	public long getLastActivityFrame();
 

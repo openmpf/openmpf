@@ -165,18 +165,26 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 	private void callback(TransientJob transientJob) throws WfmProcessingException {
 		long jobId = transientJob.getId();
-		String jsonCallbackURL = transientJob.getCallbackUrl();
-		String jsonCallbackMethod = transientJob.getCallbackMethod();
-		if(jsonCallbackURL != null && jsonCallbackMethod != null && (jsonCallbackMethod.equals("POST") || jsonCallbackMethod.equals("GET"))) {
-			log.debug("Starting {} callback to {} for job id {}.", jsonCallbackMethod, jsonCallbackURL, jobId);
-			try {
-				JsonCallbackBody jsonBody = new JsonCallbackBody(jobId, transientJob.getExternalId());
-				new Thread(new CallbackThread(jsonCallbackURL, jsonCallbackMethod, jsonBody)).start();
-			} catch (IOException ioe) {
-				log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
-				                       jsonCallbackMethod, jsonCallbackURL, jobId), ioe);
-			}
+		String jsonCallbackURL = transientJob.getCallbackUrl().orElse(null);
+		if (jsonCallbackURL == null) {
+			return;
 		}
+		String jsonCallbackMethod = transientJob.getCallbackMethod()
+				.filter(cbm -> cbm.equalsIgnoreCase("POST") || cbm.equalsIgnoreCase("GET"))
+				.orElse(null);
+		if (jsonCallbackMethod == null) {
+			return;
+		}
+
+
+        log.debug("Starting {} callback to {} for job id {}.", jsonCallbackMethod, jsonCallbackURL, jobId);
+        try {
+            JsonCallbackBody jsonBody = new JsonCallbackBody(jobId, transientJob.getExternalId().orElse(null));
+            new Thread(new CallbackThread(jsonCallbackURL, jsonCallbackMethod, jsonBody)).start();
+        } catch (IOException ioe) {
+            log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
+                                   jsonCallbackMethod, jsonCallbackURL, jobId), ioe);
+        }
 	}
 
 	private void markJobStatus(long jobId, BatchJobStatusType jobStatus) {
@@ -205,7 +213,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 				jsonUtils.convert(transientJob.getPipeline()),
 				transientJob.getPriority(),
 				propertiesUtil.getSiteId(),
-				transientJob.getExternalId(),
+				transientJob.getExternalId().orElse(null),
 				jobRequest.getTimeReceived(),
 				jobRequest.getTimeCompleted(),
 				jobStatus.getValue().toString());

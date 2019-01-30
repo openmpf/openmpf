@@ -59,7 +59,7 @@ public class TransientJobImpl implements TransientJob {
 
     private final String _externalId;
     @Override
-    public String getExternalId() { return _externalId; }
+    public Optional<String> getExternalId() { return Optional.ofNullable(_externalId); }
 
 
     private final int _priority;
@@ -101,12 +101,12 @@ public class TransientJobImpl implements TransientJob {
 
     private final String _callbackUrl;
     @Override
-    public String getCallbackUrl() { return _callbackUrl; }
+    public Optional<String> getCallbackUrl() { return Optional.ofNullable(_callbackUrl); }
 
 
     private final String _callbackMethod;
     @Override
-    public String getCallbackMethod() { return _callbackMethod; }
+    public Optional<String> getCallbackMethod() { return Optional.ofNullable(_callbackMethod); }
 
 
     private final Set<String> _errors = new HashSet<>();

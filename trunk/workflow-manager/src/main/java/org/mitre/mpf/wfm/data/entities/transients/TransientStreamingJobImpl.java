@@ -34,6 +34,7 @@ import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 
 
 public class TransientStreamingJobImpl implements TransientStreamingJob {
@@ -56,7 +57,7 @@ public class TransientStreamingJobImpl implements TransientStreamingJob {
 
     private final String _externalId;
     @Override
-    public String getExternalId() { return _externalId; }
+    public Optional<String> getExternalId() { return Optional.ofNullable(_externalId); }
 
 
     private final int _priority;
@@ -104,12 +105,14 @@ public class TransientStreamingJobImpl implements TransientStreamingJob {
 
     private final String _healthReportCallbackURI;
     @Override
-    public String getHealthReportCallbackURI() { return _healthReportCallbackURI; }
+    public Optional<String> getHealthReportCallbackURI() {
+        return Optional.ofNullable(_healthReportCallbackURI);
+    }
 
 
     private final String _summaryReportCallbackURI;
     @Override
-    public String getSummaryReportCallbackURI() { return _summaryReportCallbackURI; }
+    public Optional<String> getSummaryReportCallbackURI() { return Optional.ofNullable(_summaryReportCallbackURI); }
 
 
     private long _lastActivityFrame = -1;

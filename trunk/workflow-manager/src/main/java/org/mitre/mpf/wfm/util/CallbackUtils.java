@@ -112,7 +112,7 @@ public class CallbackUtils {
         List<JsonHealthReportCollection.JsonHealthReport> reports = jobs
                 .stream()
                 .map(job -> new JsonHealthReportCollection.JsonHealthReport(
-                        job.getId(), job.getExternalId(), job.getJobStatus().getType().name(),
+                        job.getId(), job.getExternalId().orElse(null), job.getJobStatus().getType().name(),
                         job.getJobStatus().getDetail(), String.valueOf(job.getLastActivityFrame()),
                         job.getLastActivityTime()))
                 .collect(toList());

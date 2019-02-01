@@ -87,6 +87,11 @@ public class TestStorageService {
         ThreadUtil.start();
     }
 
+    @AfterClass
+    public static void tearDownClass() {
+        ThreadUtil.shutdown();
+    }
+
 
     @Before
     public void init() {

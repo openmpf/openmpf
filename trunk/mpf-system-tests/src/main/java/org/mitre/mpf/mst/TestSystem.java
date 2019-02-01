@@ -61,7 +61,6 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -74,7 +73,6 @@ import java.net.URL;
 import java.util.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ActiveProfiles("jenkins")
 @DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
 public abstract class TestSystem {
 

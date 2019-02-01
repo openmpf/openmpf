@@ -592,7 +592,9 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 jsonUtils.serialize(summaryReport, outputFile);
             }
             catch (IOException e) {
-                throw new UncheckedIOException(e);
+                String message = String.format("Failed to write the JSON summary report for job '%s' due to: %s",
+                                               summaryReport.getJobId(), e.getMessage());
+                throw new UncheckedIOException(message, e);
             }
         }
     }

@@ -51,7 +51,7 @@ public class TransientJobImpl implements TransientJob {
     public TransientPipeline getPipeline() { return _pipeline; }
 
 
-    private int _currentStage;
+    private int _currentStage = 0;
     @Override
     public int getCurrentStage() { return _currentStage; }
     public void setCurrentStage(int currentStage) { _currentStage = currentStage; }

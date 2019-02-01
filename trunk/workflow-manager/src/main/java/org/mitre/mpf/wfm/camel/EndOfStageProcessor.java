@@ -57,18 +57,18 @@ public class EndOfStageProcessor extends WfmProcessor {
 
 	@Override
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
-		TransientJob job = inProgressBatchJobs.getJob(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class));
+		long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+		inProgressBatchJobs.incrementStage(jobId);
+		TransientJob job = inProgressBatchJobs.getJob(jobId);
 
 		log.info("[Job {}|{}|*] Stage Complete! Progress is now {}/{}.",
-				exchange.getIn().getHeader(MpfHeaders.JOB_ID),
+				jobId,
 				job.getCurrentStage() - 1,
 				job.getCurrentStage(),
 				job.getPipeline().getStages().size());
 
-		inProgressBatchJobs.incrementStage(job.getId());
 
 		if(job.getCurrentStage() >= job.getPipeline().getStages().size()) {
-			long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
 			//notify of completion - use
 			if(!job.isOutputEnabled()) {
 				jobStatusBroadcaster.broadcast(
@@ -81,7 +81,7 @@ public class EndOfStageProcessor extends WfmProcessor {
 				jobStatusBroadcaster.broadcast(jobId, 99, BatchJobStatusType.BUILDING_OUTPUT_OBJECT, Instant.now());
 				jobProgressStore.setJobProgress(jobId, 99.0f);
 			}			
-			log.debug("[Job {}|*|*] All stages have completed. Setting the {} flag.", exchange.getIn().getHeader(MpfHeaders.JOB_ID), MpfHeaders.JOB_COMPLETE);
+			log.debug("[Job {}|*|*] All stages have completed. Setting the {} flag.", jobId, MpfHeaders.JOB_COMPLETE);
 			exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, Boolean.TRUE);
 		}
 

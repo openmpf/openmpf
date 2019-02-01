@@ -56,6 +56,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mitre.mpf.test.TestUtil.nonBlank;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
@@ -163,6 +164,7 @@ public class TestRemoteMediaProcessor {
 
 		assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
 		assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+		assertTrue(transientMedia.isFailed());
 
         verify(mockInProgressJobs)
 		        .setJobStatus(jobId, BatchJobStatusType.ERROR);

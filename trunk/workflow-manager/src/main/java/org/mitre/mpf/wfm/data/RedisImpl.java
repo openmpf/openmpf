@@ -99,17 +99,6 @@ public class RedisImpl implements Redis {
     }
 
 
-    /**
-     * Set the tracks for the specified batch job
-     * Note: to be consistent with legacy unit test processing, this method assumes that the job is a batch job.  This method should not be called for streaming jobs
-     * This method will check to see if the specified jobId has been stored in REDIS and is associated with a streaming job.  If this is the case,
-     * it will just log the warning
-     * @param jobId The OpenMPF-assigned ID of the batch job, must be unique
-     * @param mediaId The OpenMPF-assigned media ID.
-     * @param taskIndex The index of the task which created the tracks in the job's pipeline.
-     * @param actionIndex The index of the action in the job's pipeline's task which generated the tracks.
-     * @param tracks The collection of tracks to associate with the (job, media, task, action) 4-ple.
-     */
     @Override
     public synchronized void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex,
                                        Collection<Track> tracks) {

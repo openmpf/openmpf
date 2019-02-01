@@ -153,7 +153,7 @@ public class TransientMediaImpl implements TransientMedia {
 
 
     private static String createErrorMessage(long id, String uri, String genericError) {
-		return String.format("An error occurred will processing media with _id \"%s\" and _uri \"%s\": %s", id, uri,
+		return String.format("An error occurred while processing media with _id \"%s\" and _uri \"%s\": %s", id, uri,
 		                     genericError);
     }
 

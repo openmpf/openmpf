@@ -42,15 +42,5 @@ public interface Redis {
 
 	SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex);
 
-
-	/**
-	 * Updates the collection of tracks associated with a given (job, media, task, action) 4-ple using to the provided collection of tracks.
-	 * @param jobId The MPF-assigned ID of the job.
-	 * @param mediaId The MPF-assigned media ID.
-	 * @param taskIndex The index of the task which created the tracks in the job's pipeline.
-	 * @param actionIndex The index of the action in the job's pipeline's task which generated the tracks.
-	 * @param tracks The collection of tracks to associate with the (job, media, task, action) 4-ple.
-	 */
 	void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks);
-
 }

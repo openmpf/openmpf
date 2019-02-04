@@ -214,11 +214,7 @@ void SingleStageComponentExecutor::Run() {
                 // Process the frame in the component
                 bool activity_found = component_.ProcessFrame(frame, frame_msg.frame_index);
                 if (activity_found && !segment_activity_alert_sent) {
-                    LOG4CXX_DEBUG(logger_, log_prefix_ <<  ": pid " << getpid() << ": Sending new activity alert for frame: " << frame_msg.frame_index);
-                    MPFActivityAlertMessage msg(settings_.job_id,
-                                                frame_msg.frame_index,
-                                                frame_timestamps.at(frame_msg.frame_index));
-                    activity_alert_sender_.SendMsg(msg);
+                    RespondToActivity(frame_msg, frame_timestamps[frame_msg.frame_index]);
                     segment_activity_alert_sent = true;
                 }
                 num_frames_processed++;
@@ -262,14 +258,7 @@ void SingleStageComponentExecutor::Run() {
             } // End of segment
 
             std::vector<MPFVideoTrack> tracks = component_.EndSegment();
-            FixTracks(segment_info, tracks);
-            LOG4CXX_DEBUG(logger_, log_prefix_ << ": pid " << getpid() << ": Sending segment summary for " << tracks.size() << " tracks.");
-            MPFSegmentSummaryMessage summary_msg(settings_.job_id, segment_info.segment_number,
-                                                 segment_info.start_frame,
-                                                 segment_info.end_frame, detection_type_,
-                                                 "",  // no error message
-                                                 tracks, frame_timestamps);
-            summary_report_sender_.SendMsg(summary_msg);
+            ConcludeSegment(tracks, segment_info, frame_timestamps, "");
             segment_summary_report_sent = true;
             frame_timestamps.clear();
             if (sleep_interrupted) break;
@@ -278,14 +267,7 @@ void SingleStageComponentExecutor::Run() {
         if (begin_segment_called && !segment_summary_report_sent) {
             // send the summary report if we've started, but have not completed, the next segment
             std::vector<MPFVideoTrack> tracks = component_.EndSegment();
-            FixTracks(segment_info, tracks);
-            LOG4CXX_INFO(logger_, log_prefix_ << ": pid " << getpid() << ": Send segment summary for final segment.");
-            MPFSegmentSummaryMessage summary_msg(settings_.job_id, segment_info.segment_number,
-                                                 segment_info.start_frame,
-                                                 segment_info.end_frame, detection_type_,
-                                                 "",  // no error message
-                                                 tracks, frame_timestamps);
-            summary_report_sender_.SendMsg(summary_msg);
+            ConcludeSegment(tracks, segment_info, frame_timestamps, "");
         }
     }
     catch (const FatalError &ex) {
@@ -295,17 +277,41 @@ void SingleStageComponentExecutor::Run() {
         std::vector<MPFVideoTrack> tracks;
         if (begin_segment_called) {
             tracks = TryGetRemainingTracks();
-            FixTracks(segment_info, tracks);
+            // FixTracks(segment_info, tracks);
         }
-        MPFSegmentSummaryMessage summary_msg(settings_.job_id, segment_info.segment_number,
-                                             segment_info.start_frame,
-                                             segment_info.end_frame, detection_type_,
-                                             ex.what(),  // error message
-                                             tracks, frame_timestamps);
-        summary_report_sender_.SendMsg(summary_msg);
+        try {
+            ConcludeSegment(tracks, segment_info, frame_timestamps, ex.what());
+        } catch (...) {
+            LOG4CXX_ERROR(logger_, "Exception caught in ConcludeSegment while handling FatalError");
+        }
         throw;
     }
 }
+
+
+void SingleStageComponentExecutor::RespondToActivity(MPFFrameReadyMessage &frame_msg,
+                                                     long frame_timestamp) {
+    LOG4CXX_DEBUG(logger_, log_prefix_ <<  ": pid " << getpid() << ": Sending new activity alert for frame: " << frame_msg.frame_index);
+    MPFActivityAlertMessage alert_msg(settings_.job_id,
+                                      frame_msg.frame_index,
+                                      frame_timestamp);
+    activity_alert_sender_.SendMsg(alert_msg);
+}
+
+
+void SingleStageComponentExecutor::ConcludeSegment(std::vector<MPFVideoTrack> &tracks,
+                                                   VideoSegmentInfo &segment_info,
+                                                   std::unordered_map<int,long> &frame_timestamps,
+                                                   std::string message) {
+    FixTracks(segment_info, tracks);
+    LOG4CXX_DEBUG(logger_, log_prefix_ << ": pid " << getpid() << ": Sending segment summary for " << tracks.size() << " tracks.");
+    MPFSegmentSummaryMessage summary_msg(settings_.job_id, segment_info.segment_number,
+                                         segment_info.start_frame,
+                                         segment_info.end_frame, detection_type_,
+                                         message, tracks, frame_timestamps);
+    summary_report_sender_.SendMsg(summary_msg);
+}
+
 
 
 void SingleStageComponentExecutor::FixTracks(const VideoSegmentInfo &segment_info,

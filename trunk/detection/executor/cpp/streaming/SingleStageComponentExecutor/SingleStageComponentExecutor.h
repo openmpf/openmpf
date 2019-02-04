@@ -74,10 +74,6 @@ class SingleStageComponentExecutor {
 
     IFrameTransformer::Ptr frame_transformer_;
 
-    // void RespondToActivity(MPFFrameReadyMessage &msg, long frame_timestamp);
-    // void ConcludeSegment(std::vector<MPFVideoTrack> &tracks, VideoSegmentInfo &seg_info,
-    //                      std::unordered_map<int, long> &frame_timestamps);
-
     SingleStageComponentExecutor(
         const log4cxx::LoggerPtr &logger,
         const std::string &log_prefix,
@@ -93,6 +89,12 @@ class SingleStageComponentExecutor {
     MPFFrameReadyMessage GetNextFrameToProcess(MPF::BasicAmqMessageReader<MPFFrameReadyMessage> &reader,
                                                const int next_frame_index,
                                                const std::chrono::milliseconds &timeout_msec);
+
+    void RespondToActivity(MPFFrameReadyMessage &msg, long frame_timestamp);
+    void ConcludeSegment(std::vector<MPFVideoTrack> &tracks,
+                         VideoSegmentInfo &seg_info,
+                         std::unordered_map<int,long> &frame_timestamps,
+                         std::string status_message);
 
     void FixTracks(const VideoSegmentInfo &segment_info,
                    std::vector<MPFVideoTrack> &tracks);

@@ -30,70 +30,36 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
 
-#include <cms/Connection.h>
 #include <cms/Session.h>
 #include <cms/MessageProducer.h>
 
 #include <MPFDetectionComponent.h>
 
 #include "MPFMessagingConnection.h"
-#include "JobSettings.h"
 
 
 namespace MPF {
+// Creates a producer of a message type T.
+template<typename T>
+class BasicAmqMessageSender {
 
-    class BasicAmqMessageSender {
+  public:
+    explicit BasicAmqMessageSender(const std::string &queue_name,
+                                   MPFMessagingConnection &connection)
+            : session_(connection.GetSession())
+            , queue_(session_->createQueue(queue_name))
+            , producer_(session_->createProducer(queue_.get())) {}
 
-    public:
-        explicit BasicAmqMessageSender(const MPF::COMPONENT::JobSettings &job_settings,
-                                       MPFMessagingConnection &connection);
+    void SendMsg(const T &msg);
 
-        void SendSegmentReady(const int segment_number,
-                              const int frame_width,
-                              const int frame_height,
-                              const int cvType,
-                              const int bytes_per_pixel);
 
-        void SendFrameReady(const int segment_number,
-                            const int frame_index,
-                            const long frame_timestamp);
+  private:
+    std::shared_ptr<cms::Session> session_;
+    std::unique_ptr<cms::Queue> queue_;
+    std::unique_ptr<cms::MessageProducer> producer_;
 
-        void SendJobStatus(const std::string &job_status, long timestamp);
-
-        void SendStallAlert(long timestamp);
-
-        void SendInProgressNotification(long timestamp);
-
-        void SendActivityAlert(int frame_number, long timestamp);
-
-        void SendSummaryReport(const int frame_index,
-                               const int segment_number,
-                               const std::string &detection_type,
-                               const std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks,
-                               const std::unordered_map<int, long> &frame_timestamps,
-                               const std::string &error_message = {});
-
-        void SendReleaseFrame(const int frame_index);
-
-    private:
-        const long job_id_;
-        const int segment_size_;
-
-        std::shared_ptr<cms::Connection> connection_;
-        std::shared_ptr<cms::Session> session_;
-
-        std::unique_ptr<cms::MessageProducer> segment_ready_producer_;
-        std::unique_ptr<cms::MessageProducer> frame_ready_producer_;
-        std::unique_ptr<cms::MessageProducer> job_status_producer_;
-        std::unique_ptr<cms::MessageProducer> activity_alert_producer_;
-        std::unique_ptr<cms::MessageProducer> summary_report_producer_;
-        std::unique_ptr<cms::MessageProducer> release_frame_producer_;
-
-        static std::unique_ptr<cms::MessageProducer>
-        CreateProducer(const std::string &queue_name, cms::Session &session);
-    };
+};
 }
 
 #endif //MPF_BASICAMQMESSAGESENDER_H

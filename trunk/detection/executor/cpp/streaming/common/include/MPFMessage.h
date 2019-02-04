@@ -124,18 +124,27 @@ struct MPFFrameReadyMessage {
     int segment_number;
     int frame_index;
     long frame_timestamp;
+    bool process_this_frame;
     MPFFrameReadyMessage() = default;
+
     MPFFrameReadyMessage(const long job_id,
                          const int seg_num,
                          const int index,
-                         const long timestamp)
+                         const long timestamp,
+                         const bool process_frame_flag)
             : job_id(job_id)
             , segment_number(seg_num)
             , frame_index(index)
-            , frame_timestamp(timestamp) {}
+            , frame_timestamp(timestamp)
+            , process_this_frame(process_frame_flag) {}
+
     ~MPFFrameReadyMessage() = default;
 };  
 
+
+#if 0
+//TODO: For future use. Untested.
+// Not used in single process, single pipeline stage, architecture
 
 struct MPFReleaseFrameMessage {
     long job_id;
@@ -149,9 +158,6 @@ struct MPFReleaseFrameMessage {
     ~MPFReleaseFrameMessage() = default;
 };
 
-#if 0
-//TODO: For future use. Untested.
-// Not used in single process, single pipeline stage, architecture
 struct MPFVideoWrittenMessage {
     long job_id;
     int segment_number;

@@ -60,7 +60,9 @@ class SingleStageComponentExecutor {
     MPFMessagingConnection connection_;
 
     MPF::BasicAmqMessageReader<MPFSegmentReadyMessage> segment_ready_reader_;
-    MPF::BasicAmqMessageSender msg_sender_;
+    MPF::BasicAmqMessageSender<MPFFrameReadyMessage> release_frame_sender_;
+    MPF::BasicAmqMessageSender<MPFActivityAlertMessage> activity_alert_sender_;
+    MPF::BasicAmqMessageSender<MPFSegmentSummaryMessage> summary_report_sender_;
 
     MPF::COMPONENT::MPFStreamingVideoJob job_;
 
@@ -72,6 +74,9 @@ class SingleStageComponentExecutor {
 
     IFrameTransformer::Ptr frame_transformer_;
 
+    // void RespondToActivity(MPFFrameReadyMessage &msg, long frame_timestamp);
+    // void ConcludeSegment(std::vector<MPFVideoTrack> &tracks, VideoSegmentInfo &seg_info,
+    //                      std::unordered_map<int, long> &frame_timestamps);
 
     SingleStageComponentExecutor(
         const log4cxx::LoggerPtr &logger,

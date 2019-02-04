@@ -51,7 +51,9 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
         , frame_store_(settings_)
         , connection_(connection)
         , segment_ready_reader_(settings_.segment_ready_queue, connection)
-        , msg_sender_(settings_, connection)
+        , release_frame_sender_(settings_.release_frame_queue, connection)
+        , activity_alert_sender_(settings_.activity_alert_queue, connection)
+        , summary_report_sender_(settings_.summary_report_queue, connection)
         , job_(std::move(job))
         , component_(std::move(component))
         , detection_type_(detection_type)
@@ -154,7 +156,7 @@ void SingleStageComponentExecutor::Run() {
             // first message
             std::string selector = "SEGMENT_NUMBER = " + std::to_string(segment_number);
             LOG4CXX_DEBUG(logger_, "pid " << getpid() <<  ": create consumer for selector " << selector);
-            BasicAmqMessageReader<MPFFrameReadyMessage> frame_ready_reader(settings_.frame_ready_queue, selector, connection_);
+            BasicAmqMessageReader<MPFFrameReadyMessage> frame_ready_reader(settings_.frame_ready_queue_stage1, selector, connection_);
 
             bool got_msg = frame_ready_reader.GetMsgNoWait(frame_msg);
             while (!got_msg) {
@@ -213,15 +215,17 @@ void SingleStageComponentExecutor::Run() {
                 bool activity_found = component_.ProcessFrame(frame, frame_msg.frame_index);
                 if (activity_found && !segment_activity_alert_sent) {
                     LOG4CXX_DEBUG(logger_, log_prefix_ <<  ": pid " << getpid() << ": Sending new activity alert for frame: " << frame_msg.frame_index);
-                    msg_sender_.SendActivityAlert(frame_msg.frame_index,
-                                                  frame_timestamps.at(frame_msg.frame_index));
+                    MPFActivityAlertMessage msg(settings_.job_id,
+                                                frame_msg.frame_index,
+                                                frame_timestamps.at(frame_msg.frame_index));
+                    activity_alert_sender_.SendMsg(msg);
                     segment_activity_alert_sent = true;
                 }
                 num_frames_processed++;
                 frame_to_process += frame_interval;
 
-                // Send release frame message
-                msg_sender_.SendReleaseFrame(frame_msg.frame_index);
+                // Send this frame message to the release frame queue
+                release_frame_sender_.SendMsg(frame_msg);
 
                 // If we haven't reached the end of the segment
                 // yet, then read the next frame
@@ -247,7 +251,7 @@ void SingleStageComponentExecutor::Run() {
                     for (int i = last_frame_processed+1; i <= segment_end_frame; i++) {
                         try {
                             frame_msg = GetNextFrameToProcess(frame_ready_reader, i, timeout_msec);
-                            msg_sender_.SendReleaseFrame(frame_msg.frame_index);
+                            release_frame_sender_.SendMsg(frame_msg);
                         }
                         catch  (const InterruptedException &ex) {
                             sleep_interrupted = true;
@@ -260,9 +264,12 @@ void SingleStageComponentExecutor::Run() {
             std::vector<MPFVideoTrack> tracks = component_.EndSegment();
             FixTracks(segment_info, tracks);
             LOG4CXX_DEBUG(logger_, log_prefix_ << ": pid " << getpid() << ": Sending segment summary for " << tracks.size() << " tracks.");
-            msg_sender_.SendSummaryReport(frame_msg.frame_index,
-                                          segment_number, detection_type_,
-                                          tracks, frame_timestamps);
+            MPFSegmentSummaryMessage summary_msg(settings_.job_id, segment_info.segment_number,
+                                                 segment_info.start_frame,
+                                                 segment_info.end_frame, detection_type_,
+                                                 "",  // no error message
+                                                 tracks, frame_timestamps);
+            summary_report_sender_.SendMsg(summary_msg);
             segment_summary_report_sent = true;
             frame_timestamps.clear();
             if (sleep_interrupted) break;
@@ -273,8 +280,12 @@ void SingleStageComponentExecutor::Run() {
             std::vector<MPFVideoTrack> tracks = component_.EndSegment();
             FixTracks(segment_info, tracks);
             LOG4CXX_INFO(logger_, log_prefix_ << ": pid " << getpid() << ": Send segment summary for final segment.");
-            msg_sender_.SendSummaryReport(frame_msg.frame_index, segment_number,
-                                          detection_type_, tracks, frame_timestamps);
+            MPFSegmentSummaryMessage summary_msg(settings_.job_id, segment_info.segment_number,
+                                                 segment_info.start_frame,
+                                                 segment_info.end_frame, detection_type_,
+                                                 "",  // no error message
+                                                 tracks, frame_timestamps);
+            summary_report_sender_.SendMsg(summary_msg);
         }
     }
     catch (const FatalError &ex) {
@@ -286,8 +297,12 @@ void SingleStageComponentExecutor::Run() {
             tracks = TryGetRemainingTracks();
             FixTracks(segment_info, tracks);
         }
-        msg_sender_.SendSummaryReport(frame_msg.frame_index, segment_number,
-                                      detection_type_,tracks, frame_timestamps, ex.what());
+        MPFSegmentSummaryMessage summary_msg(settings_.job_id, segment_info.segment_number,
+                                             segment_info.start_frame,
+                                             segment_info.end_frame, detection_type_,
+                                             ex.what(),  // error message
+                                             tracks, frame_timestamps);
+        summary_report_sender_.SendMsg(summary_msg);
         throw;
     }
 }
@@ -345,7 +360,7 @@ MPFFrameReadyMessage SingleStageComponentExecutor::GetNextFrameToProcess(
             }
             else {
                 // skipping the frame, so release it.
-                msg_sender_.SendReleaseFrame(frame_msg.frame_index);
+                release_frame_sender_.SendMsg(frame_msg);
             }
         }
         else {

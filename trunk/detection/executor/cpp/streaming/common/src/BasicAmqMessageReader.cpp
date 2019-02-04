@@ -25,9 +25,6 @@
  ******************************************************************************/
 
 #include "BasicAmqMessageReader.h"
-// #include <memory>
-// #include <unordered_map>
-
 #include "MPFMessage.h"
 
 namespace MPF {
@@ -58,19 +55,7 @@ bool BasicAmqMessageReader<MPFFrameReadyMessage>::GetMsgNoWait(MPFFrameReadyMess
         msg.segment_number = tmp_msg->getIntProperty("SEGMENT_NUMBER");
         msg.frame_index = tmp_msg->getIntProperty("FRAME_INDEX");
         msg.frame_timestamp = tmp_msg->getLongProperty("FRAME_READ_TIMESTAMP");
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-
-template<>
-bool BasicAmqMessageReader<MPFReleaseFrameMessage>::GetMsgNoWait(MPFReleaseFrameMessage &msg) {
-    std::unique_ptr<cms::Message> tmp_msg(consumer_->receiveNoWait());
-    if (NULL != tmp_msg.get()) {
-        msg.job_id = tmp_msg->getLongProperty("JOB_ID");
-        msg.frame_index = tmp_msg->getIntProperty("FRAME_INDEX");
+        msg.process_this_frame = tmp_msg->getBooleanProperty("PROCESS_FRAME_FLAG");
         return true;
     }
     else {

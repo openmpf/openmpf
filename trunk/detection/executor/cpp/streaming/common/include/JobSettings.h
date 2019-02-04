@@ -46,6 +46,8 @@ namespace MPF { namespace COMPONENT {
     struct JobSettings {
         const long job_id;
         const std::string stream_uri;
+        const int num_pipeline_stages;    // must be 1 or 2
+        const int pipeline_stage_number;  // must be 1 or 2
         const int segment_size;
         const RetryStrategy retry_strategy;
         const std::chrono::milliseconds stall_timeout;
@@ -60,7 +62,8 @@ namespace MPF { namespace COMPONENT {
         const std::string activity_alert_queue;
         const std::string summary_report_queue;
         const std::string segment_ready_queue;
-        const std::string frame_ready_queue;
+        const std::string frame_ready_queue_stage1;
+        const std::string frame_ready_queue_stage2;
         const std::string release_frame_queue;
 
         const std::map<std::string, std::string> job_properties;

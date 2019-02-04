@@ -68,8 +68,11 @@ class OcvFrameReader {
     log4cxx::LoggerPtr logger_;
     std::string log_prefix_;
     MPF::COMPONENT::JobSettings settings_;
-    MPF::BasicAmqMessageReader<MPFReleaseFrameMessage> release_frame_reader_;
-    MPF::BasicAmqMessageSender msg_sender_;
+    MPF::BasicAmqMessageReader<MPFFrameReadyMessage> release_frame_reader_;
+
+    MPF::BasicAmqMessageSender<MPFJobStatusMessage> job_status_sender_;
+    MPF::BasicAmqMessageSender<MPFSegmentReadyMessage> segment_ready_sender_;
+    MPF::BasicAmqMessageSender<MPFFrameReadyMessage> frame_ready_sender_;
     MPF::MPFFrameStore frame_store_;
     MPF::COMPONENT::StreamingVideoCapture video_capture_;
 

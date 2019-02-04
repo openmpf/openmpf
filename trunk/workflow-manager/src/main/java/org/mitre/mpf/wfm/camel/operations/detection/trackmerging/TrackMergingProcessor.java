@@ -46,6 +46,8 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
+import static java.util.stream.Collectors.toCollection;
+
 /**
  * Merges tracks in a video. Also, prunes short video tracks.
  *
@@ -112,33 +114,25 @@ public class TrackMergingProcessor extends WfmProcessor {
 					continue;
 				}
 
-				SortedSet<Track> newTracks;
-
 				if (mergeRequested) {
-					newTracks = new TreeSet<>(combine(tracks, trackMergingPlan));
+					int initialSize = tracks.size();
+					tracks = new TreeSet<>(combine(tracks, trackMergingPlan));
 
 					log.debug("[Job {}|{}|{}] Merging {} tracks down to {} in Media {}.",
 							trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex,
-							tracks.size(), newTracks.size(), transientMedia.getId());
-
-					tracks = newTracks;
+							initialSize, tracks.size(), transientMedia.getId());
 				}
 
 				if (pruneRequested) {
-					newTracks = new TreeSet<>();
-					for (Track track : tracks) {
-						// Since both offset frames are inclusive, the actual track length is one greater than the delta.
-						if (track.getEndOffsetFrameInclusive() - track.getStartOffsetFrameInclusive() >= trackMergingPlan.getMinTrackLength() - 1) {
-							newTracks.add(track);
-						}
-					}
+					int initialSize = tracks.size();
+					int minTrackLength = trackMergingPlan.getMinTrackLength();
+					tracks = tracks.stream()
+							.filter(t -> t.getEndOffsetFrameInclusive() - t.getStartOffsetFrameInclusive() >= minTrackLength - 1)
+							.collect(toCollection(TreeSet::new));
 
 					log.debug("[Job {}|{}|{}] Pruning {} tracks down to {} tracks at least {} frames long in Media {}.",
 							trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex,
-							tracks.size(), newTracks.size(), trackMergingPlan.getMinTrackLength(),
-							transientMedia.getId());
-
-					tracks = newTracks;
+							initialSize, tracks.size(), minTrackLength, transientMedia.getId());
 				}
 
 				redis.setTracks(trackMergingContext.getJobId(), transientMedia.getId(),
@@ -228,15 +222,13 @@ public class TrackMergingProcessor extends WfmProcessor {
 		return new TrackMergingPlan(mergeTracks, minGapBetweenTracks, minTrackLength, minTrackOverlap);
 	}
 
-	private static Set<Track> combine(Set<Track> sourceTracks, TrackMergingPlan plan) {
+	private static Set<Track> combine(SortedSet<Track> sourceTracks, TrackMergingPlan plan) {
 		// Do not attempt to merge an empty or null set.
 		if (sourceTracks.isEmpty()) {
 			return sourceTracks;
 		}
 
 		List<Track> tracks = new LinkedList<>(sourceTracks);
-		Collections.sort(tracks);
-
 		List<Track> mergedTracks = new LinkedList<>();
 
 		while (tracks.size() > 0) {

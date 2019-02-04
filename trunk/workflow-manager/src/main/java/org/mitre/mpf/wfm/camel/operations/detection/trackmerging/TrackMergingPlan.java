@@ -26,12 +26,7 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.trackmerging;
 
-import org.mitre.mpf.interop.JsonTrackOutputObject;
-
-import java.util.Comparator;
-import java.util.Objects;
-
-public class TrackMergingPlan implements Comparable<TrackMergingPlan> {
+public class TrackMergingPlan {
 	// Indicates whether to merge tracks. If track merging is turned off, minGapBetweenTracks is invalid,
 	// but minTrackLength is still respected.
 	private final boolean mergeTracks;
@@ -64,30 +59,6 @@ public class TrackMergingPlan implements Comparable<TrackMergingPlan> {
 		this.minGapBetweenTracks = minGapBetweenTracks;
 		this.minTrackLength = minTrackLength;
 		this.minTrackOverlap = minTrackOverlap;
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(mergeTracks, minGapBetweenTracks, minTrackLength, minTrackOverlap);
-	}
-
-	@Override
-	public boolean equals(Object other) {
-		return this == other
-				|| (other instanceof JsonTrackOutputObject
-				&& compareTo((TrackMergingPlan) other) == 0);
-	}
-
-	private static final Comparator<TrackMergingPlan> DEFAULT_COMPARATOR = Comparator
-			.nullsFirst(Comparator
-					.comparing(TrackMergingPlan::isMergeTracks)
-					.thenComparingInt(TrackMergingPlan::getMinGapBetweenTracks)
-					.thenComparingInt(TrackMergingPlan::getMinTrackLength)
-					.thenComparingDouble(TrackMergingPlan::getMinTrackOverlap));
-
-	@Override
-	public int compareTo(TrackMergingPlan other) {
-		return DEFAULT_COMPARATOR.compare(this, other);
 	}
 
 	@Override

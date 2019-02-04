@@ -77,7 +77,7 @@ public class InProgressBatchJobsService {
             boolean outputEnabled,
             String callbackUrl,
             String callbackMethod,
-            List<TransientMedia> transientMedia,
+            Collection<TransientMedia> transientMedia,
             Map<String, String> jobProperties,
             Map<String, Map<String, String>> algorithmProperties) {
 

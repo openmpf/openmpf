@@ -217,10 +217,8 @@ public class TestMediaSegmenter {
 				.max(Comparator.comparing(Detection::getConfidence))
 				.get();
 
-		Track track = new Track(1, 1, 1, 0, start, stop, "type",
-		                        exemplar.getConfidence());
-		track.getDetections().addAll(detectionList);
-		track.setExemplar(exemplar);
+		Track track = new Track(1, 1, 1, 0, start, stop, 0, 0, "type",
+		                        exemplar.getConfidence(), detectionList, Collections.emptyMap());
 		return track;
 	}
 

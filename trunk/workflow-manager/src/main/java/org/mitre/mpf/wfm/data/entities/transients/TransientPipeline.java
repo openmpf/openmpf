@@ -30,7 +30,6 @@ import com.google.common.collect.ImmutableList;
 import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.wfm.util.TextUtils;
 
-import java.util.Collection;
 import java.util.List;
 
 public class TransientPipeline {
@@ -44,7 +43,7 @@ public class TransientPipeline {
 	public ImmutableList<TransientStage> getStages() { return _stages; }
 
 
-	public TransientPipeline(String name, String description, Collection<TransientStage> stages) {
+	public TransientPipeline(String name, String description, Iterable<TransientStage> stages) {
 		_name = TextUtils.trimAndUpper(name);
 		_description = TextUtils.trim(description);
 		_stages = ImmutableList.copyOf(stages);

@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.Message;
 import org.junit.Test;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -157,15 +158,13 @@ public class TestDefaultMediaSegmenter {
 	private static Set<Track> createTestTracks() {
 		Detection detection1 = createDetection(0.00f);
 		Track track1 = new Track(1, 1, 0, 0, 0,
-		                         -1, 0, 0, "", 0);
-		track1.setExemplar(detection1);
-		track1.getDetections().add(detection1);
+		                         -1, 0, 0, "", 0,
+		                         ImmutableSortedSet.of(detection1), Collections.emptyMap());
 
 		Detection detection2 = createDetection(0.10f);
 		Track track2 = new Track(1, 1, 0, 0, 0,
-		                         -1, 0, 0, "", 0.10f);
-		track2.setExemplar(detection2);
-		track2.getDetections().add(detection2);
+		                         -1, 0, 0, "", 0.10f,
+		                         ImmutableSortedSet.of(detection2), Collections.emptyMap());
 
 		return ImmutableSet.of(track1, track2);
 	}

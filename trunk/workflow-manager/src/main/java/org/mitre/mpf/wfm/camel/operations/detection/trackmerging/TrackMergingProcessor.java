@@ -26,6 +26,8 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.trackmerging;
 
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.Exchange;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -44,6 +46,7 @@ import org.springframework.stereotype.Component;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * Merges tracks in a video.
@@ -275,24 +278,32 @@ public class TrackMergingProcessor extends WfmProcessor {
 
 	/** Combines two tracks. This is a destructive method. The contents of track1 reflect the merged track. */
 	public static Track merge(Track track1, Track track2){
-		Track merged = new Track(track1.getJobId(), track1.getMediaId(), track1.getStageIndex(), track1.getActionIndex(),
-				track1.getStartOffsetFrameInclusive(), track2.getEndOffsetFrameInclusive(),
-				track1.getStartOffsetTimeInclusive(), track2.getEndOffsetTimeInclusive(), track1.getType(),
-                 Math.max(track1.getConfidence(), track2.getConfidence()));
 
-		merged.getDetections().addAll(track1.getDetections());
-		merged.getDetections().addAll(track2.getDetections());
+		Collection<Detection> detections = Stream.of(track1, track2)
+				.flatMap(t -> t.getDetections().stream())
+				.collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
 
-        merged.getTrackProperties().putAll(track1.getTrackProperties());
-		for (Map.Entry<String, String> entry : track2.getTrackProperties().entrySet()) {
-			merged.getTrackProperties()
-					.merge(entry.getKey(), entry.getValue(), (v1, v2) -> v1.equals(v2) ? v1 : v1 + "; " + v2);
-        }
+		ImmutableSortedMap<String, String> properties = Stream.of(track1, track2)
+				.flatMap(t -> t.getTrackProperties().entrySet().stream())
+				.collect(ImmutableSortedMap.toImmutableSortedMap(
+						Comparator.naturalOrder(),
+						Map.Entry::getKey,
+						Map.Entry::getValue,
+						(v1, v2) -> v1.equals(v2) ? v1 : v1 + "; " + v2));
 
-		merged.getDetections()
-				.stream()
-				.max(Comparator.comparingDouble(Detection::getConfidence))
-				.ifPresent(merged::setExemplar);
+		Track merged = new Track(
+				track1.getJobId(),
+				track1.getMediaId(),
+				track1.getStageIndex(),
+				track1.getActionIndex(),
+				track1.getStartOffsetFrameInclusive(),
+				track2.getEndOffsetFrameInclusive(),
+				track1.getStartOffsetTimeInclusive(),
+				track2.getEndOffsetTimeInclusive(),
+				track1.getType(),
+				Math.max(track1.getConfidence(), track2.getConfidence()),
+				detections,
+				properties);
 		return merged;
 	}
 

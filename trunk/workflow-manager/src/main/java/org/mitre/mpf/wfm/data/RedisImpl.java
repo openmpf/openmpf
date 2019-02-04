@@ -126,7 +126,7 @@ public class RedisImpl implements Redis {
 
     @Override
     public void clearTracks(TransientJob job) {
-        List<String> trackKeys = new ArrayList<>();
+        Collection<String> trackKeys = new ArrayList<>();
         int taskCount = job.getPipeline().getStages().size();
         for (TransientMedia media : job.getMedia()) {
             for (int taskIndex = 0; taskIndex < taskCount; taskIndex++) {

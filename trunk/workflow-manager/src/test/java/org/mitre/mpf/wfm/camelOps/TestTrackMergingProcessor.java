@@ -26,6 +26,8 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
@@ -186,32 +188,33 @@ public class TestTrackMergingProcessor {
         /*
         * Create overlapping tracks for testing
         */
+        Map<String, String> noProps = Collections.emptyMap();
         SortedSet<Track> tracks = new TreeSet<Track>();
-        Track track1 = new Track(TEST_JOB_ID, mediaId, 0, 0, 0, 199, "VIDEO", 18f);
-        Detection detection1a = new Detection(10,10,52,60,18f,0,0,null);
-        Detection detection1b = new Detection(10,10,52,60,18f,199,0,null);
-        track1.getDetections().add(detection1a);
-        track1.getDetections().add(detection1b);
-        Track track2 = new Track(TEST_JOB_ID, mediaId, 0, 0, 200, 399, "VIDEO", 18f);
-        Detection detection2a = new Detection(10,10,52,60,18f,200,0,null);
-        Detection detection2b = new Detection(10,10,52,60,18f,399,0,null);
-        track2.getDetections().add(detection2a);
-        track2.getDetections().add(detection2b);
-        Track track3 = new Track(TEST_JOB_ID, mediaId, 0, 0, 470, 477, "VIDEO", 18f);
-        Detection detection3a = new Detection(10,10,52,60,18f,420,0,null);
-        Detection detection3b = new Detection(10,10,52,60,18f,599,0,null);
-        track3.getDetections().add(detection3a);
-        track3.getDetections().add(detection3b);
-        Track track4 = new Track(TEST_JOB_ID, mediaId, 0, 0, 480, 599, "VIDEO", 18f);
-        Detection detection4a = new Detection(10,10,52,60,18f,480,0,null);
-        Detection detection4b = new Detection(10,10,52,60,18f,599,0,null);
-        track4.getDetections().add(detection4a);
-        track4.getDetections().add(detection4b);
-        Track track5 = new Track(TEST_JOB_ID, mediaId, 0, 0, 600, 610, "VIDEO", 18f);
-        Detection detection5a = new Detection(10,10,89,300,18f,600,0,null);
-        Detection detection5b = new Detection(10,10,84,291,18f,610,0,null);
-        track5.getDetections().add(detection5a);
-        track5.getDetections().add(detection5b);
+        Detection detection1a = new Detection(10, 10, 52, 60, 18f, 0, 0, noProps);
+        Detection detection1b = new Detection(10, 10, 52, 60, 18f, 199, 0, noProps);
+        Track track1 = new Track(TEST_JOB_ID, mediaId, 0, 0, 0, 199, 0, 0, "VIDEO", 18f,
+                                 ImmutableSortedSet.of(detection1a, detection1b), noProps);
+
+        Detection detection2a = new Detection(10, 10, 52, 60, 18f, 200, 0, noProps);
+        Detection detection2b = new Detection(10, 10, 52, 60, 18f, 399, 0, noProps);
+        Track track2 = new Track(TEST_JOB_ID, mediaId, 0, 0, 200, 399, 0, 0, "VIDEO", 18f,
+                                 ImmutableSortedSet.of(detection2a, detection2b), noProps);
+
+        Detection detection3a = new Detection(10, 10, 52, 60, 18f, 420, 0, noProps);
+        Detection detection3b = new Detection(10, 10, 52, 60, 18f, 599, 0, noProps);
+        Track track3 = new Track(TEST_JOB_ID, mediaId, 0, 0, 470, 477, 0, 0, "VIDEO", 18f,
+                                 ImmutableSortedSet.of(detection3a, detection3b), noProps);
+
+        Detection detection4a = new Detection(10, 10, 52, 60, 18f, 480, 0, noProps);
+        Detection detection4b = new Detection(10, 10, 52, 60, 18f, 599, 0, noProps);
+        Track track4 = new Track(TEST_JOB_ID, mediaId, 0, 0, 480, 599, 0, 0, "VIDEO", 18f,
+                                 ImmutableSortedSet.of(detection4a, detection4b), noProps);
+
+        Detection detection5a = new Detection(10, 10, 89, 300, 18f, 600, 0, noProps);
+        Detection detection5b = new Detection(10, 10, 84, 291, 18f, 610, 0, noProps);
+        Track track5 = new Track(TEST_JOB_ID, mediaId, 0, 0, 600, 610, 0, 0, "VIDEO", 18f,
+                                 ImmutableSortedSet.of(detection5a, detection5b), noProps);
+
         tracks.add(track1);
         tracks.add(track2);
         tracks.add(track3);
@@ -294,18 +297,20 @@ public class TestTrackMergingProcessor {
 
     @Test
     public void testTrackLevelInfoRetainedAfterMerge() {
-        Track track1 = new Track(123, 1, 1, 1, 1, 1, "type", 0.25f);
-        track1.getTrackProperties().put("track1_only_prop", "track1_only_val");
-        track1.getTrackProperties().put("same_value_prop", "same_value_val");
-        track1.getTrackProperties().put("diff_value_prop", "diff_value_val1");
+        Map<String, String> track1Props = ImmutableSortedMap.of(
+                "track1_only_prop", "track1_only_val",
+                "same_value_prop", "same_value_val",
+                "diff_value_prop", "diff_value_val1");
+        Track track1 = new Track(123, 1, 1, 1, 1, 1, 0, 0, "type", 0.25f, Collections.emptyList(), track1Props);
 
-        Track track2 = new Track(123, 1, 1, 1, 1, 1, "type", 0.75f);
-        track2.getTrackProperties().put("track2_only_prop", "track2_only_val");
-        track2.getTrackProperties().put("same_value_prop", "same_value_val");
-        track2.getTrackProperties().put("diff_value_prop", "diff_value_val2");
+        Map<String, String> track2Props = ImmutableSortedMap.of(
+                "track2_only_prop", "track2_only_val",
+                "same_value_prop", "same_value_val",
+                "diff_value_prop", "diff_value_val2");
+        Track track2 = new Track(123, 1, 1, 1, 1, 1, 0, 0, "type", 0.75f, Collections.emptyList(), track2Props);
 
         Track merged = TrackMergingProcessor.merge(track1, track2);
-        assertEquals(merged.getConfidence(), 0.75, 0.01);
+        assertEquals(0.75, merged.getConfidence(), 0.01);
 
         SortedMap<String, String> mergedProps = merged.getTrackProperties();
         assertEquals("track1_only_val", mergedProps.get("track1_only_prop"));

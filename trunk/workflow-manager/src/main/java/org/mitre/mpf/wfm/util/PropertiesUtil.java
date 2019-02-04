@@ -64,13 +64,11 @@ import java.util.*;
 
 import static java.util.stream.Collectors.*;
 
-@Component(PropertiesUtil.REF)
+@Component
 @Monitored
 public class PropertiesUtil {
 
     private static final Logger log = LoggerFactory.getLogger(PropertiesUtil.class);
-    public static final String REF = "propertiesUtil";
-
 
     @Autowired
     private ApplicationContext appContext;

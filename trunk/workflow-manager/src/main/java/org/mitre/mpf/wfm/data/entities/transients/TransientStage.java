@@ -31,7 +31,6 @@ import org.mitre.mpf.interop.JsonStage;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.util.TextUtils;
 
-import java.util.Collection;
 import java.util.List;
 
 public class TransientStage {
@@ -48,7 +47,7 @@ public class TransientStage {
 	public ImmutableList<TransientAction> getActions() { return _actions; }
 
 
-	public TransientStage(String name, String description, ActionType actionType, Collection<TransientAction> actions) {
+	public TransientStage(String name, String description, ActionType actionType, Iterable<TransientAction> actions) {
 		_name = TextUtils.trimAndUpper(name);
 		_description = TextUtils.trim(description);
 		_actionType = actionType;

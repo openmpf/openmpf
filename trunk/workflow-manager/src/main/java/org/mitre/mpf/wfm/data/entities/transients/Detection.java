@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.data.entities.transients;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSortedMap;
 import org.mitre.mpf.interop.util.CompareUtils;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.util.TextUtils;
@@ -46,38 +47,38 @@ import java.util.*;
  */
 public class Detection implements Comparable<Detection> {
 
-	private final int x;
-	public int getX() { return x; }
+	private final int _x;
+	public int getX() { return _x; }
 
-	private final int y;
-	public int getY() { return y; }
+	private final int _y;
+	public int getY() { return _y; }
 
-	private final int width;
-	public int getWidth() { return width; }
+	private final int _width;
+	public int getWidth() { return _width; }
 
-	private final int height;
-	public int getHeight() { return height; }
+	private final int _height;
+	public int getHeight() { return _height; }
 
-	private final float confidence;
-	public float getConfidence() { return confidence; }
+	private final float _confidence;
+	public float getConfidence() { return _confidence; }
 
-	private final int mediaOffsetFrame;
-	public int getMediaOffsetFrame() { return mediaOffsetFrame; }
+	private final int _mediaOffsetFrame;
+	public int getMediaOffsetFrame() { return _mediaOffsetFrame; }
 
-	private final int mediaOffsetTime;
-	public int getMediaOffsetTime() { return mediaOffsetTime; }
+	private final int _mediaOffsetTime;
+	public int getMediaOffsetTime() { return _mediaOffsetTime; }
 
-	private final SortedMap<String,String> detectionProperties;
-	public SortedMap<String,String> getDetectionProperties() { return detectionProperties; }
+	private final ImmutableSortedMap<String,String> _detectionProperties;
+	public ImmutableSortedMap<String,String> getDetectionProperties() { return _detectionProperties; }
 
-	private String artifactPath;
-	public String getArtifactPath() { return artifactPath; }
-	public void setArtifactPath(String artifactPath) { this.artifactPath = artifactPath; }
+	private String _artifactPath;
+	public String getArtifactPath() { return _artifactPath; }
+	public void setArtifactPath(String artifactPath) { _artifactPath = artifactPath; }
 
-	private ArtifactExtractionStatus artifactExtractionStatus = ArtifactExtractionStatus.NOT_ATTEMPTED;
-	public ArtifactExtractionStatus getArtifactExtractionStatus() { return artifactExtractionStatus; }
+	private ArtifactExtractionStatus _artifactExtractionStatus = ArtifactExtractionStatus.NOT_ATTEMPTED;
+	public ArtifactExtractionStatus getArtifactExtractionStatus() { return _artifactExtractionStatus; }
 	public void setArtifactExtractionStatus(ArtifactExtractionStatus artifactExtractionStatus) {
-		this.artifactExtractionStatus = artifactExtractionStatus;
+		_artifactExtractionStatus = artifactExtractionStatus;
 	}
 
 	@JsonCreator
@@ -89,29 +90,26 @@ public class Detection implements Comparable<Detection> {
 			@JsonProperty("confidence") float confidence,
 			@JsonProperty("mediaOffsetFrame") int mediaOffsetFrame,
 			@JsonProperty("mediaOffsetTime") int mediaOffsetTime,
-			@JsonProperty("detectionProperties") SortedMap<String, String> detectionProperties) {
-		this.x = x;
-		this.y = y;
-		this.width = width;
-		this.height = height;
-		this.confidence = confidence;
-		this.mediaOffsetFrame = mediaOffsetFrame;
-		this.mediaOffsetTime = mediaOffsetTime;
-		this.detectionProperties = detectionProperties;
+			@JsonProperty("detectionProperties") Map<String, String> detectionProperties) {
+		_x = x;
+		_y = y;
+		_width = width;
+		_height = height;
+		_confidence = confidence;
+		_mediaOffsetFrame = mediaOffsetFrame;
+		_mediaOffsetTime = mediaOffsetTime;
+		_detectionProperties = ImmutableSortedMap.copyOf(detectionProperties);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(x, y, width, height, confidence, mediaOffsetFrame, mediaOffsetTime, detectionProperties);
+		return Objects.hash(_mediaOffsetFrame, _mediaOffsetTime, _x, _y, _width, _height, _confidence,
+		                    _detectionProperties);
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof Detection)) {
-			return false;
-		}
-		Detection casted = (Detection) obj;
-		return compareTo(casted) == 0;
+		return obj instanceof Detection && compareTo((Detection) obj) == 0;
 	}
 
 
@@ -124,7 +122,6 @@ public class Detection implements Comparable<Detection> {
 			.thenComparingInt(Detection::getWidth)
 			.thenComparingInt(Detection::getHeight)
 			.thenComparingDouble(Detection::getConfidence)
-			.thenComparing(Detection::getArtifactPath, TextUtils::nullSafeCompare)
 			.thenComparing(Detection::getDetectionProperties, CompareUtils.MAP_COMPARATOR));
 
 	/**
@@ -135,20 +132,22 @@ public class Detection implements Comparable<Detection> {
 	 */
 	@Override
 	public int compareTo(Detection other) {
-		return DEFAULT_COMPARATOR.compare(this, other);
+		//noinspection ObjectEquality - just an optimization
+		return this == other ? 0 : DEFAULT_COMPARATOR.compare(this, other);
 	}
 
+	@Override
 	public String toString() {
 		return String.format(
 			"%s#<bounds=(%d, %d, %d, %d), confidence=%f, mediaOffsetFrame=%d, mediaOffsetTime=%d, detection properties='%s'>",
 			getClass().getName(),
-			x,
-			y,
-			(x + width),
-			(y + width),
-			confidence,
-			mediaOffsetFrame,
-			mediaOffsetTime,
-			TextUtils.mapToStringValues(detectionProperties));
+			_x,
+			_y,
+			(_x + _width),
+			(_y + _width),
+			_confidence,
+			_mediaOffsetFrame,
+			_mediaOffsetTime,
+			TextUtils.mapToStringValues(_detectionProperties));
 	}
 }

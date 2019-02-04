@@ -26,6 +26,8 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection;
 
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.ResponseProcessor;
@@ -184,37 +186,27 @@ public class DetectionResponseProcessor
 				int startOffsetTime = (fps == null ? 0 : Math.round(objectTrack.getStartFrame() * 1000 / fps));
 				int stopOffsetTime  = (fps == null ? 0 : Math.round(objectTrack.getStopFrame()  * 1000 / fps));
 
-				// Create a new Track object.
-				Track track = new Track(
-						jobId,
-						detectionResponse.getMediaId(),
-						detectionResponse.getStageIndex(),
-						detectionResponse.getActionIndex(),
-						objectTrack.getStartFrame(),
-						objectTrack.getStopFrame(),
-						startOffsetTime,
-						stopOffsetTime,
-						videoResponse.getDetectionType(),
-						objectTrack.getConfidence());
+				ImmutableSortedSet<Detection> detections = objectTrack.getFrameLocationsList()
+						.stream()
+						.filter(flm -> flm.getImageLocation().getConfidence() >= confidenceThreshold)
+						.map(flm -> toDetection(flm, fps))
+						.collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
 
-				track.getTrackProperties().putAll(toMap(objectTrack.getDetectionPropertiesList()));
+				if (!detections.isEmpty()) {
+					Track track = new Track(
+							jobId,
+							detectionResponse.getMediaId(),
+							detectionResponse.getStageIndex(),
+							detectionResponse.getActionIndex(),
+							objectTrack.getStartFrame(),
+							objectTrack.getStopFrame(),
+							startOffsetTime,
+							stopOffsetTime,
+							videoResponse.getDetectionType(),
+							objectTrack.getConfidence(),
+							detections,
+							toMap(objectTrack.getDetectionPropertiesList()));
 
-
-				// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
-				for (DetectionProtobuf.VideoTrack.FrameLocationMap locationMap : objectTrack.getFrameLocationsList()) {
-					DetectionProtobuf.ImageLocation location = locationMap.getImageLocation();
-
-					if (location.getConfidence() >= confidenceThreshold) {
-
-						int offsetTime = (fps == null ? 0 : Math.round(locationMap.getFrame() * 1000 / fps));
-
-						track.getDetections().add(
-								generateTrack(location, locationMap.getFrame(), offsetTime));
-					}
-				}
-
-				if (!track.getDetections().isEmpty()) {
-					track.setExemplar(findExemplar(track));
 					inProgressJobs.addTrack(track);
 				}
 			}
@@ -226,37 +218,31 @@ public class DetectionResponseProcessor
 		for (DetectionProtobuf.DetectionResponse.AudioResponse audioResponse : detectionResponse.getAudioResponsesList()) {
 			// Begin iterating through the tracks that were found by the detector.
 			for (DetectionProtobuf.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
-				// Create a new Track object.
-				Track track = new Track(
-						jobId,
-						detectionResponse.getMediaId(),
-						detectionResponse.getStageIndex(),
-						detectionResponse.getActionIndex(),
-						0,
-						0,
-						objectTrack.getStartTime(),
-						objectTrack.getStopTime(),
-						audioResponse.getDetectionType(),
-						objectTrack.getConfidence());
+				if (objectTrack.getConfidence() >= confidenceThreshold) {
+					SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
+					Detection detection = new Detection(
+							0,
+							0,
+							0,
+							0,
+							objectTrack.getConfidence(),
+							0,
+							objectTrack.getStartTime(),
+							properties);
 
-				SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
-				track.getTrackProperties().putAll(properties);
-
-                if (objectTrack.getConfidence() >= confidenceThreshold) {
-                    track.getDetections().add(
-                            new Detection(
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    objectTrack.getConfidence(),
-                                    0,
-                                    objectTrack.getStartTime(),
-                                    properties));
-                }
-
-				if (!track.getDetections().isEmpty()) {
-					track.setExemplar(findExemplar(track));
+					Track track = new Track(
+							jobId,
+							detectionResponse.getMediaId(),
+							detectionResponse.getStageIndex(),
+							detectionResponse.getActionIndex(),
+							0,
+							0,
+							objectTrack.getStartTime(),
+							objectTrack.getStopTime(),
+							audioResponse.getDetectionType(),
+							objectTrack.getConfidence(),
+							ImmutableSortedSet.of(detection),
+							properties);
 					inProgressJobs.addTrack(track);
 				}
 			}
@@ -271,7 +257,6 @@ public class DetectionResponseProcessor
 			// Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
 			for (DetectionProtobuf.ImageLocation location : imageResponse.getImageLocationsList()) {
 				if (location.getConfidence() >= confidenceThreshold) {
-					// Create a new Track object.
 					Track track = new Track(
 							jobId,
 							detectionResponse.getMediaId(),
@@ -279,17 +264,13 @@ public class DetectionResponseProcessor
 							detectionResponse.getActionIndex(),
 							0,
 							1,
+							0,
+							0,
 							imageResponse.getDetectionType(),
-							location.getConfidence());
-
-					track.getTrackProperties().putAll(toMap(location.getDetectionPropertiesList()));
-
-					track.getDetections().add(
-							generateTrack(location, 0, 0));
-					if (!track.getDetections().isEmpty()) {
-						track.setExemplar(findExemplar(track));
-						inProgressJobs.addTrack(track);
-					}
+							location.getConfidence(),
+							ImmutableSortedSet.of(toDetection(location, 0, 0)),
+							toMap(location.getDetectionPropertiesList()));
+					inProgressJobs.addTrack(track);
 				}
 			}
 		}
@@ -300,58 +281,47 @@ public class DetectionResponseProcessor
 		for (DetectionProtobuf.DetectionResponse.GenericResponse genericResponse : detectionResponse.getGenericResponsesList()) {
 			// Begin iterating through the tracks that were found by the detector.
 			for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
-				// Create a new Track object.
-				Track track = new Track(
-						jobId,
-						detectionResponse.getMediaId(),
-						detectionResponse.getStageIndex(),
-						detectionResponse.getActionIndex(),
-						0,
-						0,
-						0,
-						0,
-						genericResponse.getDetectionType(),
-						objectTrack.getConfidence());
-
-				SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
-				track.getTrackProperties().putAll(properties);
-
 				if (objectTrack.getConfidence() >= confidenceThreshold) {
-					track.getDetections().add(
-							new Detection(
-									0,
-									0,
-									0,
-									0,
-									objectTrack.getConfidence(),
-									0,
-									0,
-									properties));
-				}
+					SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
 
-				if (!track.getDetections().isEmpty()) {
-					track.setExemplar(findExemplar(track));
-					inProgressJobs.addTrack(track);
+					Detection detection = new Detection(
+							0,
+							0,
+							0,
+							0,
+							objectTrack.getConfidence(),
+							0,
+							0,
+							properties);
+
+					Track track1 = new Track(
+							jobId,
+							detectionResponse.getMediaId(),
+							detectionResponse.getStageIndex(),
+							detectionResponse.getActionIndex(),
+							0,
+							0,
+							0,
+							0,
+							genericResponse.getDetectionType(),
+							objectTrack.getConfidence(),
+							ImmutableSortedSet.of(detection),
+							properties);
+					inProgressJobs.addTrack(track1);
+
 				}
 			}
 		}
 	}
 
-	private static Detection findExemplar(Track track) {
-		// Iterate through all of the detections in the track. Find the index of the one that has the greatest confidence.
-		Detection exemplar = null;
 
-		for (Detection detection : track.getDetections()) {
-			if (exemplar == null) {
-				exemplar = detection;
-			} else if (exemplar.getConfidence() < detection.getConfidence()) {
-				exemplar = detection;
-			}
-		}
-		return exemplar;
+	private static Detection toDetection(DetectionProtobuf.VideoTrack.FrameLocationMap frameLocationMap, Float fps) {
+		int time = fps == null ? 0 : Math.round(frameLocationMap.getFrame() * 1000 / fps);
+		return toDetection(frameLocationMap.getImageLocation(), frameLocationMap.getFrame(), time);
 	}
 
-	private static Detection generateTrack(DetectionProtobuf.ImageLocation location, int frameNumber, int time) {
+
+	private static Detection toDetection(DetectionProtobuf.ImageLocation location, int frameNumber, int time) {
 		SortedMap<String, String> detectionProperties = toMap(location.getDetectionPropertiesList());
 		return new Detection(
 				location.getXLeftUpper(),
@@ -366,10 +336,10 @@ public class DetectionResponseProcessor
 
 
 	private static SortedMap<String, String> toMap(Collection<DetectionProtobuf.PropertyMap> properties) {
-	    SortedMap<String, String> result = new TreeMap<>();
-	    for (DetectionProtobuf.PropertyMap property : properties) {
-	    	result.put(property.getKey(), property.getValue());
-	    }
-	    return result;
+		return properties.stream()
+				.collect(ImmutableSortedMap.toImmutableSortedMap(
+						Comparator.naturalOrder(),
+						DetectionProtobuf.PropertyMap::getKey,
+						DetectionProtobuf.PropertyMap::getValue));
 	}
 }

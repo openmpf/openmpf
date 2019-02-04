@@ -155,7 +155,7 @@ public class TransientJobImpl implements TransientJob {
             boolean outputEnabled,
             String callbackUrl,
             String callbackMethod,
-            List<TransientMediaImpl> media,
+            Collection<TransientMediaImpl> media,
             Map<String, String> jobProperties,
             Map<String, Map<String, String>> algorithmProperties) {
         _id = id;

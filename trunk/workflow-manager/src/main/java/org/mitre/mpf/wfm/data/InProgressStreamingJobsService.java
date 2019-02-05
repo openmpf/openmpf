@@ -118,6 +118,7 @@ public class InProgressStreamingJobsService {
 
 
     public synchronized Map<String, List<TransientStreamingJob>> getJobsGroupedByHealthReportUri() {
+        //noinspection OptionalGetWithoutIsPresent - False positive, isPresent checked in .filter
         return _jobs.values()
                 .stream()
                 .filter(j -> !j.getJobStatus().isTerminal() && j.getHealthReportCallbackURI().isPresent())
@@ -126,7 +127,7 @@ public class InProgressStreamingJobsService {
 
 
     public synchronized void clearJob(long jobId) {
-        LOG.info("Clearing all job information for job: {}", jobId);
+        LOG.info("Clearing all job information for job {}", jobId);
         _jobs.remove(jobId);
     }
 

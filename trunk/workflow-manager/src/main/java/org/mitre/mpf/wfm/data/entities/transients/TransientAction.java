@@ -52,9 +52,6 @@ public class TransientAction {
 		_description = TextUtils.trim(description);
 		_algorithm = TextUtils.trimAndUpper(algorithm);
 		_properties = ImmutableMap.copyOf(properties);
-
-		assert _name != null : "name must not be null";
-		assert _algorithm != null : "algorithm must not be null";
 	}
 
 

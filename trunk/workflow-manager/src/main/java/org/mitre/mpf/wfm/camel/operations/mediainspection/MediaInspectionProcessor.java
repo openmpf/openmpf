@@ -96,7 +96,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
 					log.debug("Calculating hash for '{}'.", localPath);
                     sha = DigestUtils.sha256Hex(inputStream);
 				} catch(IOException ioe) {
-					String errorMessage = "Could not calculate the SHA-256 hash for the file due to IOException.";
+					String errorMessage = "Could not calculate the SHA-256 hash for the file due to IOException: "
+                                            + ioe;
 					inProgressJobs.addMediaError(jobId, mediaId, errorMessage);
 					log.error(errorMessage, ioe);
 				}
@@ -104,7 +105,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
 				try {
 					mimeType = ioUtils.getMimeType(localPath);
 				} catch(IOException ioe) {
-					String errorMessage = "Could not determine the MIME type for the media due to IOException.";
+					String errorMessage = "Could not determine the MIME type for the media due to IOException: "
+                                            + ioe;
 					inProgressJobs.addMediaError(jobId, mediaId, errorMessage);
                     log.error(errorMessage, ioe);
 				}

@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.data;
 
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
@@ -40,10 +39,11 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
-import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toCollection;
 
 
@@ -68,41 +68,17 @@ public class RedisImpl implements Redis {
         });
     }
 
-    // The following constants are provided to avoid making typographical errors when formulating keys.
-    private static final String
-            BATCH_JOB = "BATCH_JOB",
-            MEDIA = "MEDIA",
-            TRACK = "TRACK";
-
-    /**
-     * Creates a "key" from one or more components. This is a convenience method for creating
-     * keys like BATCH_JOB:1:MEDIA:15:DETECTION_ERRORS or STREAMING_JOB:1:STREAM:15
-     * @param component The required, non-null and non-empty root of the key.
-     * @param components The optional collection of additional components in the key.
-     * @return A single string built from the concatenation of all of the specified parameters and joined by a delimiter.
-     */
-    private static String key(Object component, Object... components) {
-        return Stream.concat(Stream.of(component), Stream.of(components))
-                .map(Object::toString)
-                .collect(joining(":"));
-    }
-
 
     @Override
-    public void addTrack(Track track) throws WfmProcessingException {
-        String key = key(BATCH_JOB, track.getJobId(),
-                         MEDIA, track.getMediaId(),
-                         TRACK, track.getStageIndex(),
-                         track.getActionIndex());
-        redisTemplate.boundListOps(key)
+    public void addTrack(Track track) {
+        redisTemplate.boundListOps(createTrackKey(track))
                 .rightPush(jsonUtils.serialize(track));
     }
 
-
     @Override
-    public synchronized void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex,
+    public synchronized void setTracks(long jobId, long mediaId, int stageIndex, int actionIndex,
                                        Collection<Track> tracks) {
-        String key = key(BATCH_JOB, jobId, MEDIA, mediaId, TRACK, taskIndex, actionIndex);
+        String key = createTrackKey(jobId, mediaId, stageIndex, actionIndex);
         redisTemplate.delete(key);
         BoundListOperations<String, Object> redisTracks = redisTemplate.boundListOps(key);
         for (Track track : tracks) {
@@ -112,10 +88,9 @@ public class RedisImpl implements Redis {
 
 
     @Override
-    public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) {
-        String key = key(BATCH_JOB, jobId, MEDIA, mediaId, TRACK, taskIndex, actionIndex);
+    public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int stageIndex, int actionIndex) {
         return redisTemplate
-                .boundListOps(key)
+                .boundListOps(createTrackKey(jobId, mediaId, stageIndex, actionIndex))
                 .range(0, -1)
                 .stream()
                 .map(o -> jsonUtils.deserialize((byte[]) o, Track.class))
@@ -123,20 +98,29 @@ public class RedisImpl implements Redis {
     }
 
 
-
     @Override
     public void clearTracks(TransientJob job) {
         Collection<String> trackKeys = new ArrayList<>();
-        int taskCount = job.getPipeline().getStages().size();
+        int stageCount = job.getPipeline().getStages().size();
         for (TransientMedia media : job.getMedia()) {
-            for (int taskIndex = 0; taskIndex < taskCount; taskIndex++) {
-                int actionCount = job.getPipeline().getStages().get(taskIndex).getActions().size();
+            for (int stageIndex = 0; stageIndex < stageCount; stageIndex++) {
+                int actionCount = job.getPipeline().getStages().get(stageIndex).getActions().size();
                 for (int actionIndex = 0; actionIndex < actionCount; actionIndex++) {
-                    trackKeys.add(key(BATCH_JOB, job.getId(), MEDIA, media.getId(), TRACK, taskIndex, actionIndex));
+                    trackKeys.add(createTrackKey(job.getId(), media.getId(), stageIndex, actionIndex));
                 }
             }
         }
         redisTemplate.delete(trackKeys);
     }
 
+
+    private static String createTrackKey(Track track) {
+        return createTrackKey(track.getJobId(), track.getMediaId(), track.getStageIndex(), track.getActionIndex());
+
+    }
+
+    private static String createTrackKey(long jobId, long mediaId, int stageIndex, int actionIndex) {
+        return String.format("BATCH_JOB:%s:MEDIA:%s:STAGE:%s:ACTION:%s:TRACKS",
+                             jobId, mediaId, stageIndex, actionIndex);
+    }
 }

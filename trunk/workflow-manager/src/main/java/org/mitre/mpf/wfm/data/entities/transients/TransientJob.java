@@ -66,9 +66,6 @@ public interface TransientJob {
 
 	public Optional<String> getCallbackMethod();
 
-	// Detection system properties for this job should be immutable, the detection system property values
-	// shouldn't change once the job is created even if they are changed on the UI by an admin..
-	// The detectionSystemPropertiesSnapshot contains the values of the detection system properties at the time this batch job was created.
     public SystemPropertiesSnapshot getSystemPropertiesSnapshot();
 
 	public Set<String> getWarnings();

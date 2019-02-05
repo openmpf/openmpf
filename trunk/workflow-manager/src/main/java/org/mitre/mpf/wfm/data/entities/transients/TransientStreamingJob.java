@@ -52,6 +52,8 @@ public interface TransientStreamingJob {
 
 	public TransientStream getStream();
 
+	// The table's row key is the algorithm name, the column key is the property name,
+	// and the value is the property value.
 	public ImmutableTable<String, String, String> getOverriddenAlgorithmProperties();
 
 	public ImmutableMap<String, String> getOverriddenJobProperties();

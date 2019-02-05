@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.data.entities.transients;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
@@ -130,7 +131,9 @@ public class TransientMediaImpl implements TransientMedia {
     	_uriScheme = uriScheme;
     	_localPath = localPath;
     	_mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
-    	_message = createErrorMessage(id, uri, errorMessage);
+    	if (StringUtils.isNotEmpty(errorMessage)) {
+		    _message = createErrorMessage(id, uri, errorMessage);
+	    }
     }
 
 
@@ -153,7 +156,7 @@ public class TransientMediaImpl implements TransientMedia {
 
 
     private static String createErrorMessage(long id, String uri, String genericError) {
-		return String.format("An error occurred while processing media with _id \"%s\" and _uri \"%s\": %s", id, uri,
+		return String.format("An error occurred while processing media with id \"%s\" and uri \"%s\": %s", id, uri,
 		                     genericError);
     }
 

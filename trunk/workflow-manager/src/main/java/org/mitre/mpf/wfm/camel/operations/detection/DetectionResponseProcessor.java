@@ -147,7 +147,7 @@ public class DetectionResponseProcessor
 		return jsonUtils.serialize(new TrackMergingContext(jobId, detectionResponse.getStageIndex()));
 	}
 
-	// transientJob coming from REDIS
+
 	private double calculateConfidenceThreshold(ActionDefinition action, TransientJob job, TransientMedia media) {
 		double confidenceThreshold = job.getSystemPropertiesSnapshot().getConfidenceThreshold();
 		String confidenceThresholdProperty = AggregateJobPropertiesUtil.calculateValue(

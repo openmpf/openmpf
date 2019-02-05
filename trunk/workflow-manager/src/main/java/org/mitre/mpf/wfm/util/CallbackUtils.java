@@ -103,12 +103,6 @@ public class CallbackUtils {
     // Send the health report to the URI identified by callbackUri, using the HTTP POST method.
     public void sendHealthReportCallback(String callbackUri, List<TransientStreamingJob> jobs) {
 
-        // Get information from REDIS about these streaming jobs. Do this before spawning a thread to avoid
-        // a race condition where the job may be cleared from REDIS before this information can be retrieved.
-
-        // TODO: Consider refactoring this so that Redis only needs to be queried once per job,
-        // instead of multiple times per job to get each of the following pieces of data.
-
         List<JsonHealthReportCollection.JsonHealthReport> reports = jobs
                 .stream()
                 .map(job -> new JsonHealthReportCollection.JsonHealthReport(

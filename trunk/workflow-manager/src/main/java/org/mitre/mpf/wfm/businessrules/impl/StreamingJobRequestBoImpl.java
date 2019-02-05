@@ -229,7 +229,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     /**
-     * Marks a streaming job as CANCELLING in both REDIS and in the long-term database.
+     * Marks a streaming job as CANCELLING in both the TransientStreamingJob and in the long-term database.
      * @param jobId     The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
      * @param doCleanup if true, delete the streaming job files from disk as part of cancelling the streaming job.
      * @exception JobAlreadyCancellingWfmProcessingException may be thrown if the streaming job has already been cancelled or
@@ -409,17 +409,12 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * @throws WfmProcessingException Exception thrown if there is a failure while creating transient objects
      */
     private StreamingJobRequest runInternal(StreamingJobRequest streamingJobRequestEntity, JsonStreamingJobRequest jsonStreamingJobRequest, int priority) throws WfmProcessingException {
-
-        // First, create the Transient objects (i.e. storage in REDIS). This code was formerly in the job creation processor (Camel) software
-        // get the unique job id that has been assigned for this streaming job.
         long jobId = streamingJobRequestEntity.getId();
         log.info("[Streaming Job {}|*|*] is running at priority {}.", streamingJobRequestEntity.getId(), priority);
 
         String errorMessage = null;
         Exception errorException = null; // If an exception error is caught, save it so it can be provided as root cause for the WfmProcessingException
         try {
-
-            // persist the pipeline and streaming job in REDIS
             TransientPipeline transientPipeline = TransientPipeline.from(jsonStreamingJobRequest.getPipeline());
             TransientStreamingJob transientStreamingJob = buildStreamingJob(jobId, streamingJobRequestEntity, transientPipeline, jsonStreamingJobRequest);
             streamingJobMessageSender.launchJob(transientStreamingJob);
@@ -455,13 +450,13 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     /**
-     * Build a TransientStreamingJob that is persisted in REDIS.
+     * Builds a TransientStreamingJob.
      *
      * @param jobId                     unique id that is assigned to this job
      * @param streamingJobRequestEntity the streaming job request as persisted in the long term database (mysql)
-     * @param transientPipeline         pipeline that has been created for this streaming job that has been persisted in REDIS
+     * @param transientPipeline         pipeline that has been created for this streaming job
      * @param jsonStreamingJobRequest   JSON representation of the streaming job request
-     * @return TransientStreamingJob that is persisted in REDIS
+     * @return TransientStreamingJob
      * @throws InvalidPipelineObjectWfmProcessingException InvalidPipelineObjectWfmProcessingException is thrown if the requested pipeline is invalid.
      */
     private TransientStreamingJob buildStreamingJob(long jobId, StreamingJobRequest streamingJobRequestEntity, TransientPipeline transientPipeline,
@@ -575,9 +570,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     public void handleNewSummaryReport(JsonSegmentSummaryReport summaryReport) {
         TransientStreamingJob transientStreamingJob = inProgressJobs.getJob(summaryReport.getJobId());
 
-        // Include the externalId as obtained from REDIS in the summary report. Note that we should
-        // set the externalId even if the summaryReport isn't sent, because the summaryReport may be written to disk after it is
-        // optionally sent.
         transientStreamingJob.getExternalId()
                 .ifPresent(summaryReport::setExternalId);
 
@@ -603,17 +595,12 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     /**
      * Send health reports to the health report callbacks associated with the streaming jobs.
      * Note that OpenMPF supports sending periodic health reports that contain health for all streaming jobs who have
-     * defined the same HealthReportCallbackUri. This method will filter out jobIds for any jobs which are not current streaming jobs,
-     * plus will optionally filter out streaming jobs that have been terminated.
+     * defined the same HealthReportCallbackUri.
      * Note that out-of-cycle health reports that may have been sent due to a change in job status will not
      * delay sending of the periodic (i.e. scheduled) health report.
-     * @param jobIds unique ids for the streaming jobs to be reported on. Must not be null or empty.
-     * @param isActive If true, then streaming jobs which have terminal JobStatus will be
-     * filtered out. Otherwise, all current streaming jobs will be processed.
-     * @throws WfmProcessingException thrown if an error occurs
      */
     @Override
-    public void sendHealthReports() throws WfmProcessingException {
+    public void sendHealthReports() {
         inProgressJobs.getJobsGroupedByHealthReportUri()
                 .forEach(callbackUtils::sendHealthReportCallback);
     }

@@ -34,17 +34,15 @@ import org.mitre.mpf.wfm.service.StorageException;
 import java.net.URI;
 import java.util.Map;
 
-// Wrapper class for the detection.* system property values that should have been captured in a
-// ImmutableConfiguration object when a batch job is created. The detection.* system property values will be
-// stored in REDIS so that the system property values applicable to a job will remain
+// Wrapper class for the system property values that should have been captured in a
+// ImmutableConfiguration object when a batch job is created. The system property values will be
+// stored in a TransientJob so that the system property values applicable to a job will remain
 // consistent throughout all pipeline stages of a batch job, even if the system property values are changed on the
 // UI while the job is being processed. This processing is not implemented for streaming jobs, since
 // streaming jobs may only be single stage at this time.
-// Use of this wrapper class is necessary for two reasons: (1) ImmutableConfiguration isn't Serializable
-// (2) use of the wrapper class means that we can add getter methods for the detection properties.
 public class SystemPropertiesSnapshot {
 
-    // Map contains a snapshot of the detection.* system property values
+    // Map contains a snapshot of the necessary system property values
     private final ImmutableMap<String, String> _properties;
     public ImmutableMap<String, String> getProperties() {
         return _properties;

@@ -80,16 +80,9 @@ public class TrackMergingProcessor extends WfmProcessor {
 
 	@Override
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
-		assert exchange.getIn().getBody() != null : "The body must not be null.";
-		assert exchange.getIn().getBody(byte[].class) != null : "The body must be convertible to a String.";
-
 		TrackMergingContext trackMergingContext = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TrackMergingContext.class);
 
-		assert trackMergingContext != null : "The TrackMergingContext instance must never be null.";
-
 		TransientJob transientJob = inProgressJobs.getJob(trackMergingContext.getJobId());
-
-		assert transientJob != null : String.format("Redis failed to retrieve a job with ID %d.", trackMergingContext.getJobId());
 
 		TransientStage transientStage = transientJob.getPipeline().getStages().get(trackMergingContext.getStageIndex());
 		for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {

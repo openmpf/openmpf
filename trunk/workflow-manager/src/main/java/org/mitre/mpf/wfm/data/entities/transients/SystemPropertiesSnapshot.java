@@ -79,19 +79,19 @@ public class SystemPropertiesSnapshot {
     }
 
     public boolean isTrackMerging() {
-        return Boolean.valueOf(_properties.get("detection.track.merging.enabled"));
+        return Boolean.valueOf(_properties.get("detection.video.track.merging.enabled"));
     }
 
     public int getMinAllowableTrackGap() {
-        return Integer.valueOf(_properties.get("detection.track.min.gap"));
+        return Integer.valueOf(_properties.get("detection.video.track.min.gap"));
     }
 
     public int getMinTrackLength() {
-        return Integer.valueOf(_properties.get("detection.track.minimum.length"));
+        return Integer.valueOf(_properties.get("detection.video.track.min.length"));
     }
 
     public double getTrackOverlapThreshold() {
-        return Double.valueOf(_properties.get("detection.track.overlap.threshold"));
+        return Double.valueOf(_properties.get("detection.video.track.overlap.threshold"));
     }
 
     public StorageBackend.Type getHttpObjectStorageType() throws StorageException {

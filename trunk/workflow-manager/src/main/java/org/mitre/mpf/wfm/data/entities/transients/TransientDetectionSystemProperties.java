@@ -101,22 +101,22 @@ public class TransientDetectionSystemProperties {
 
     @JsonIgnore
     public boolean isTrackMerging() {
-        return Boolean.valueOf(detectionSystemPropertiesSnapshot.get("detection.track.merging.enabled"));
+        return Boolean.valueOf(detectionSystemPropertiesSnapshot.get("detection.video.track.merging.enabled"));
     }
 
     @JsonIgnore
     public int getMinAllowableTrackGap() {
-        return Integer.valueOf(detectionSystemPropertiesSnapshot.get("detection.track.min.gap"));
+        return Integer.valueOf(detectionSystemPropertiesSnapshot.get("detection.video.track.min.gap"));
     }
 
     @JsonIgnore
     public int getMinTrackLength() {
-        return Integer.valueOf(detectionSystemPropertiesSnapshot.get("detection.track.minimum.length"));
+        return Integer.valueOf(detectionSystemPropertiesSnapshot.get("detection.video.track.min.length"));
     }
 
     @JsonIgnore
     public double getTrackOverlapThreshold() {
-        return Double.valueOf(detectionSystemPropertiesSnapshot.get("detection.track.overlap.threshold"));
+        return Double.valueOf(detectionSystemPropertiesSnapshot.get("detection.video.track.overlap.threshold"));
     }
 
     @JsonIgnore

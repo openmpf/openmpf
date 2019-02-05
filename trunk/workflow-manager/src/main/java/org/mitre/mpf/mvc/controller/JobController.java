@@ -99,16 +99,20 @@ public class JobController {
     //EXTERNAL
     @RequestMapping(value = {"/rest/jobs"}, method = RequestMethod.POST)
     @ApiOperation(value = "Creates and submits a job using a JSON JobCreationRequest object as the request body.",
-            notes = "The pipelineName should be one of the values in 'rest/pipelines'. The media array should contain objects with a valid mediaUri.  " +
-                    "For example: http://localhost/images/image.png. Another example: file:///home/user/images/image.jpg." +
-                    " A callbackURL (optional) and callbackMethod (GET or POST) may be added. When the job completes, the callback will perform a GET or POST to the callbackURL with " +
-                    "the parameters 'jobId' and 'externalId' of the completed job." +
-                    " For example, on a GET to a callbackURL: /api.example.com/foo?jobId=1&externalId=1. Another example: /api.example.com/foo?someparam=something&jobId=1&externalId=1." +
-                    " Example when no externalId is provided: /api.example.com/foo?jobId=1. The body of a POST callback will always include the 'jobId' and 'externalId', even if the latter is 'null'." +
+            notes = "The pipelineName should be one of the values in 'rest/pipelines'. The media array should contain objects with a valid mediaUri." +
+                    " For example: http://localhost/images/image.png. Another example: file:///home/user/images/image.jpg." +
+                    " A callbackURL (optional) and callbackMethod (GET or POST) may be added." +
+                    " When the job completes, the callback will perform a GET or POST to the callbackURL with the 'jobId' and 'externalId' parameters." +
+                    " For example, if the callbackURL provided is 'http://api.example.com/foo', the jobId is '1', and the externalId is 'someid'," +
+                    " then a GET callback will be: http://api.example.com/foo?jobId=1&externalId=someid. If callbackURL ends in 'foo?someparam=something'," +
+                    " then a GET callback will be: http://api.example.com/foo?someparam=something&jobId=1&externalId=someid. If no externalId is provided," +
+                    " then a GET callback will be: http://api.example.com/foo?jobId=1." +
+                    " The body of a POST callback will always include the 'jobId' and 'externalId', even if the latter is 'null'." +
                     " An optional jobProperties object contains String key-value pairs which override the pipeline's job properties for this job." +
-                    " An optional algorithmProperties object containing <String,Map> key-value pairs can override jobProperties for a specific algorithm defined in the pipeline.  "+
-                    "For algorithmProperties, the key should be the algorithm name, and the value should be a Map of String key-value pairs representing properties specific to the named algorithm. "+
-                    "Note that the batch jobs and streaming jobs share a range of valid job ids.  OpenMPF guarantees that the ids of a streaming job and a batch job will be unique.",
+                    " An optional algorithmProperties object containing <String,Map> key-value pairs can override jobProperties for a specific algorithm defined in the pipeline." +
+                    " For algorithmProperties, the key should be the algorithm name, and the value should be a Map of String key-value pairs representing properties specific to the named algorithm." +
+                    " Note that the batch jobs and streaming jobs share a range of valid job ids. OpenMPF guarantees that the ids of a streaming job and a batch job will be unique." +
+                    " Also, note that all provided URIs must be properly encoded.",
             produces = "application/json", response = JobCreationResponse.class)
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "Job created"),

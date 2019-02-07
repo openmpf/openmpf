@@ -593,7 +593,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
 
     /**
-     * Send health reports to the health report callbacks associated with the streaming jobs.
+     * Send health reports to the health report callbacks associated with the active streaming jobs.
      * Note that OpenMPF supports sending periodic health reports that contain health for all streaming jobs who have
      * defined the same HealthReportCallbackUri.
      * Note that out-of-cycle health reports that may have been sent due to a change in job status will not

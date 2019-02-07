@@ -133,6 +133,7 @@ public class TransientMediaImpl implements TransientMedia {
     	_mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
     	if (StringUtils.isNotEmpty(errorMessage)) {
 		    _message = createErrorMessage(id, uri, errorMessage);
+		    _failed = true;
 	    }
     }
 
@@ -156,7 +157,7 @@ public class TransientMediaImpl implements TransientMedia {
 
 
     private static String createErrorMessage(long id, String uri, String genericError) {
-		return String.format("An error occurred while processing media with id \"%s\" and uri \"%s\": %s", id, uri,
+		return String.format("An error occurred while processing media with id %s and uri %s : %s", id, uri,
 		                     genericError);
     }
 

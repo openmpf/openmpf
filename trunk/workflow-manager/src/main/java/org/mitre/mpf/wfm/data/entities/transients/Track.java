@@ -95,8 +95,8 @@ public class Track implements Comparable<Track> {
 	 * The natural ordered (by start index) collection of detections which correspond to the position of the object
 	 * as it moves through the track.
 	 */
-	private final SortedSet<Detection> _detections;
-	public SortedSet<Detection> getDetections() { return _detections; }
+	private final ImmutableSortedSet<Detection> _detections;
+	public ImmutableSortedSet<Detection> getDetections() { return _detections; }
 
 	/** The detection with the highest confidence in the track. */
 	private final Detection _exemplar;
@@ -206,7 +206,7 @@ public class Track implements Comparable<Track> {
 
 	@Override
 	public int compareTo(Track other) {
-		//noinspection ObjectEquality - just an optimization
+		//noinspection ObjectEquality - Just an optimization to avoid comparing all fields when compared to itself.
 		return this == other ? 0 : DEFAULT_COMPARATOR.compare(this, other);
 	}
 

@@ -124,15 +124,9 @@ public class Detection implements Comparable<Detection> {
 			.thenComparingDouble(Detection::getConfidence)
 			.thenComparing(Detection::getDetectionProperties, CompareUtils.MAP_COMPARATOR));
 
-	/**
-	 * Define natural order Comparable for Detections to be sorted by (1) ascending media frame offset, (2) ascending
-	 * media time offset
-	 *
-	 * @param other Detection to be compared to this Detection
-	 */
 	@Override
 	public int compareTo(Detection other) {
-		//noinspection ObjectEquality - just an optimization
+		//noinspection ObjectEquality - Just an optimization to avoid comparing all fields when compared to itself.
 		return this == other ? 0 : DEFAULT_COMPARATOR.compare(this, other);
 	}
 

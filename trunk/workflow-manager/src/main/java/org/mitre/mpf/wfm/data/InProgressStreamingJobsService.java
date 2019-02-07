@@ -118,7 +118,7 @@ public class InProgressStreamingJobsService {
 
 
     public synchronized Map<String, List<TransientStreamingJob>> getJobsGroupedByHealthReportUri() {
-        //noinspection OptionalGetWithoutIsPresent - False positive, isPresent checked in .filter
+        //noinspection OptionalGetWithoutIsPresent - False positive because .isPresent() checked in call to .filter().
         return _jobs.values()
                 .stream()
                 .filter(j -> !j.getJobStatus().isTerminal() && j.getHealthReportCallbackURI().isPresent())

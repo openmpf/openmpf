@@ -214,13 +214,22 @@ public class InProgressBatchJobsService {
     public synchronized TransientMedia initMedia(String uriStr, Map<String, String> mediaSpecificProperties) {
         long mediaId = IdGenerator.next();
         LOG.info("Initializing media from {} with id {}", uriStr, mediaId);
+
         try {
             URI uri = new URI(uriStr);
             UriScheme uriScheme = UriScheme.parse(uri.getScheme());
+            String errorMessage = null;
+            Path localPath = null;
 
-            Path localPath;
-            if (uriScheme == UriScheme.FILE) {
+            if (uriScheme == UriScheme.UNDEFINED) {
+                errorMessage = NOT_DEFINED_URI_SCHEME;
+            }
+            else if (!SUPPORTED_URI_SCHEMES.contains(uriScheme)) {
+                errorMessage = NOT_SUPPORTED_URI_SCHEME;
+            }
+            else if (uriScheme == UriScheme.FILE) {
                 localPath = Paths.get(uri).toAbsolutePath();
+                errorMessage = checkForLocalFileError(localPath);
             }
             else {
                 localPath = _propertiesUtil.getRemoteMediaCacheDirectory()
@@ -229,20 +238,6 @@ public class InProgressBatchJobsService {
                         .toAbsolutePath();
             }
 
-            String errorMessage = null;
-
-            if (uriScheme == UriScheme.UNDEFINED) {
-                errorMessage = NOT_DEFINED_URI_SCHEME;
-            }
-            else if (!SUPPORTED_URI_SCHEMES.contains(uriScheme)) {
-                errorMessage = NOT_SUPPORTED_URI_SCHEME;
-            }
-            else if (localPath != null && Files.notExists(localPath)) {
-                errorMessage = LOCAL_FILE_DOES_NOT_EXIST;
-            }
-            else if (localPath != null && !Files.isReadable(localPath)) {
-                errorMessage = LOCAL_FILE_NOT_READABLE;
-            }
             return new TransientMediaImpl(mediaId, uriStr, uriScheme, localPath, mediaSpecificProperties,
                                           errorMessage);
         }
@@ -250,6 +245,16 @@ public class InProgressBatchJobsService {
             return new TransientMediaImpl(mediaId, uriStr, UriScheme.UNDEFINED, null,
                                           mediaSpecificProperties, e.getMessage());
         }
+    }
+
+    private static String checkForLocalFileError(Path path) {
+        if (Files.notExists(path)) {
+            return LOCAL_FILE_DOES_NOT_EXIST;
+        }
+        if (!Files.isReadable(path)) {
+            return LOCAL_FILE_NOT_READABLE;
+        }
+        return null;
     }
 
 

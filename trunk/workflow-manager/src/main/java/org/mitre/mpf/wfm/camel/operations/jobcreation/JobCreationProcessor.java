@@ -114,7 +114,7 @@ public class JobCreationProcessor extends WfmProcessor {
 
             // Capture the current state of the detection system properties at the time when this job is created.
 			// Since the detection system properties may be changed by an administrator, we must ensure that the job
-			// uses a consistent set of detection system properties through all stages of the jobs pipeline.
+			// uses a consistent set of detection system properties through all stages of the job's pipeline.
             SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
             TransientPipeline transientPipeline = TransientPipeline.from(jobRequest.getPipeline());

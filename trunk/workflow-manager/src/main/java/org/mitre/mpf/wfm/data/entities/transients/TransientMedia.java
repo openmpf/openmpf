@@ -46,7 +46,6 @@ public interface TransientMedia {
 
 	/** The local file path of the file once it has been retrieved. May be null if the media is not a file, or the file path has not been externally set. */
 	public Path getLocalPath();
-	// Note: need to support the setLocalPath method for RemoteMediaSplitter
 
 	/** A flag indicating if the medium has encountered an error during processing. Will be false if no error occurred. */
 	public boolean isFailed();

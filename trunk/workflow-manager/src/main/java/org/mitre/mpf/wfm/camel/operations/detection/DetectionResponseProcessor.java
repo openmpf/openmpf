@@ -182,6 +182,9 @@ public class DetectionResponseProcessor
 		for (DetectionProtobuf.DetectionResponse.VideoResponse videoResponse : detectionResponse.getVideoResponsesList()) {
 			// Begin iterating through the tracks that were found by the detector.
 			for (DetectionProtobuf.VideoTrack objectTrack : videoResponse.getVideoTracksList()) {
+				if (objectTrack.getConfidence() < confidenceThreshold) {
+					continue;
+				}
 
 				int startOffsetTime = (fps == null ? 0 : Math.round(objectTrack.getStartFrame() * 1000 / fps));
 				int stopOffsetTime  = (fps == null ? 0 : Math.round(objectTrack.getStopFrame()  * 1000 / fps));

@@ -139,7 +139,7 @@ public class JobCreationProcessor extends WfmProcessor {
 
 			BatchJobStatusType jobStatus;
 			if (transientJob.getMedia().stream().anyMatch(TransientMedia::isFailed)) {
-				jobStatus = BatchJobStatusType.ERROR;
+				jobStatus = BatchJobStatusType.IN_PROGRESS_ERRORS;
 				// allow the job to run since some of the media may be good
 			} else {
 				jobStatus = BatchJobStatusType.IN_PROGRESS;

@@ -84,13 +84,13 @@ class StreamingMessagingTest : public ::testing::Test {
             settings_.frame_ready_queue_stage1,
             *msg_mgr_.get()));
         segment_ready_reader_.reset(new BasicAmqMessageReader<MPFSegmentReadyMessage>(
-            settings_.segment_ready_queue,
+            settings_.segment_ready_queue_stage1,
             *msg_mgr_.get()));
         release_frame_reader_.reset(new BasicAmqMessageReader<MPFFrameReadyMessage>(
             settings_.release_frame_queue,
             *msg_mgr_.get()));
 
-        segment_ready_sender_.reset(new BasicAmqMessageSender<MPFSegmentReadyMessage>(settings_.segment_ready_queue,
+        segment_ready_sender_.reset(new BasicAmqMessageSender<MPFSegmentReadyMessage>(settings_.segment_ready_queue_stage1,
                                                                                       *msg_mgr_.get()));
         frame_ready_sender_.reset(new BasicAmqMessageSender<MPFFrameReadyMessage>(settings_.frame_ready_queue_stage1,
                                                                                   *msg_mgr_.get()));

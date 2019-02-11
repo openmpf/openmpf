@@ -49,7 +49,8 @@ OcvFrameReader::OcvFrameReader(const log4cxx::LoggerPtr &logger,
         , settings_(std::move(settings))
         , release_frame_reader_(settings_.release_frame_queue, connection)
         , job_status_sender_(settings_.job_status_queue, connection)
-        , segment_ready_sender_(settings_.segment_ready_queue, connection)
+        , stage1_segment_ready_sender_(settings_.segment_ready_queue_stage1, connection)
+        , stage2_segment_ready_sender_(settings_.segment_ready_queue_stage2, connection)
         , frame_ready_sender_(settings_.frame_ready_queue_stage1, connection)
         , frame_store_(settings_)
         , video_capture_(logger_, settings_.stream_uri, job) {}
@@ -133,7 +134,10 @@ void OcvFrameReader::Run() {
             segment_number++;
             MPFSegmentReadyMessage msg(settings_.job_id, segment_number, frame.cols, frame.rows,
                                        frame.type(), frame_byte_size);
-            segment_ready_sender_.SendMsg(msg);
+            stage1_segment_ready_sender_.SendMsg(msg);
+            if (settings_.num_pipeline_stages == 2) {
+                stage2_segment_ready_sender_.SendMsg(msg);
+            }
         }
 
         try {

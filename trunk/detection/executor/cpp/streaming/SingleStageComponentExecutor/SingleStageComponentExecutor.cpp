@@ -50,8 +50,13 @@ SingleStageComponentExecutor::SingleStageComponentExecutor(
         , settings_(std::move(settings))
         , frame_store_(settings_)
         , connection_(connection)
-        , segment_ready_reader_(settings_.segment_ready_queue, connection)
-        , release_frame_sender_(settings_.release_frame_queue, connection)
+        , segment_ready_reader_(((settings_.pipeline_stage_number == 1) ?
+                                 settings_.segment_ready_queue_stage1 :
+                                 settings_.segment_ready_queue_stage2), connection)
+        , release_frame_sender_((((settings_.pipeline_stage_number == 1) &&
+                                 (settings_.num_pipeline_stages == 2)) ?
+                                 settings_.frame_ready_queue_stage2 :
+                                 settings_.release_frame_queue), connection)
         , activity_alert_sender_(settings_.activity_alert_queue, connection)
         , summary_report_sender_(settings_.summary_report_queue, connection)
         , job_(std::move(job))
@@ -122,6 +127,13 @@ void SingleStageComponentExecutor::Run() {
     VideoSegmentInfo segment_info(0, 0, 0, 0, 0);
     MPFFrameReadyMessage frame_msg;
 
+    bool final_stage = false;
+    LOG4CXX_DEBUG(logger_, "pid " << getpid() << ": num_pipeline_stages = " << settings_.num_pipeline_stages << " pipeline_stage_number = " << settings_.pipeline_stage_number);
+    if (settings_.pipeline_stage_number == settings_.num_pipeline_stages) {
+        final_stage = true;
+        LOG4CXX_DEBUG(logger_, "pid " << getpid() <<  ": Setting up for final stage processing");
+    }
+
     try {
 
         StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
@@ -156,7 +168,12 @@ void SingleStageComponentExecutor::Run() {
             // first message
             std::string selector = "SEGMENT_NUMBER = " + std::to_string(segment_number);
             LOG4CXX_DEBUG(logger_, "pid " << getpid() <<  ": create consumer for selector " << selector);
-            BasicAmqMessageReader<MPFFrameReadyMessage> frame_ready_reader(settings_.frame_ready_queue_stage1, selector, connection_);
+            BasicAmqMessageReader<MPFFrameReadyMessage> frame_ready_reader(
+                ((settings_.pipeline_stage_number == 1) ?
+                 settings_.frame_ready_queue_stage1 :
+                 settings_.frame_ready_queue_stage2),
+                selector,
+                connection_);
 
             bool got_msg = frame_ready_reader.GetMsgNoWait(frame_msg);
             while (!got_msg) {
@@ -190,6 +207,7 @@ void SingleStageComponentExecutor::Run() {
                             seg_msg.frame_height
             };
 
+            LOG4CXX_DEBUG(logger_, "pid " << getpid() <<  ": Calling BeginSegment");
             component_.BeginSegment(segment_info);
             begin_segment_called = true;
 
@@ -197,30 +215,55 @@ void SingleStageComponentExecutor::Run() {
             // first one just read.
             int num_frames_processed = 0;
             frame_to_process = frame_msg.frame_index;
-            LOG4CXX_DEBUG(logger_, "pid " << getpid() <<  ": frame_to_process = " << frame_to_process);
-            while (!std_in_watcher->QuitReceived() && (frame_to_process <= segment_end_frame)) {
 
-                frame_timestamps[frame_msg.frame_index] = frame_msg.frame_timestamp;
+            while (!std_in_watcher->QuitReceived() &&
+                   (frame_to_process <= segment_end_frame)) {
+                // If we are processing stage 1, the
+                // process_this_frame flag will always be true,
+                // because the frame reader sets that flag to true for
+                // every frame. The flag will be changed to false if
+                // there is no activity found, and then stage 2 will
+                // not process it.
+                if (frame_msg.process_this_frame) {
+                    if (settings_.pipeline_stage_number == 2) {
+                        LOG4CXX_DEBUG(logger_, "Stage " << settings_.pipeline_stage_number
+                                      <<  ": processing frame = " << frame_msg.frame_index);
+                        frame_timestamps[frame_msg.frame_index] = frame_msg.frame_timestamp;
+                    }
+                    // Read the frame out of the frame store
+                    cv::Mat frame(seg_msg.frame_height,
+                                  seg_msg.frame_width,
+                                  seg_msg.cvType);
+                    frame_store_.GetFrame(frame, frame_msg.frame_index);
 
-                // Read the frame out of the frame store
-                cv::Mat frame(seg_msg.frame_height,
-                              seg_msg.frame_width,
-                              seg_msg.cvType);
-                frame_store_.GetFrame(frame, frame_msg.frame_index);
+                    // Apply transformations
+                    frame_transformer_->TransformFrame(frame, frame_msg.frame_index);
 
-                 // Apply transformations
-                frame_transformer_->TransformFrame(frame, frame_msg.frame_index);
-
-                // Process the frame in the component
-                bool activity_found = component_.ProcessFrame(frame, frame_msg.frame_index);
-                if (activity_found && !segment_activity_alert_sent) {
-                    RespondToActivity(frame_msg, frame_timestamps[frame_msg.frame_index]);
-                    segment_activity_alert_sent = true;
+                    // Process the frame in the component
+                    bool activity_found = component_.ProcessFrame(frame, frame_msg.frame_index);
+                    LOG4CXX_DEBUG(logger_, "Stage " << settings_.pipeline_stage_number
+                                  << " frame " << frame_msg.frame_index
+                                  << " activity " << ((activity_found) ? "true" : "false"));
+                    // set the process frame flag, since the frame may be
+                    // passed to another processing stage.
+                    frame_msg.process_this_frame = activity_found;
+                    if (final_stage) {
+                        if (activity_found && !segment_activity_alert_sent) {
+                            RespondToActivity(frame_msg, frame_timestamps[frame_msg.frame_index]);
+                            segment_activity_alert_sent = true;
+                        }
+                    }
                 }
                 num_frames_processed++;
                 frame_to_process += frame_interval;
 
-                // Send this frame message to the release frame queue
+                // Send this frame message to the release frame queue.
+                // In stage 1, it is sending to the frame input queue
+                // for stage 2.
+                if ((settings_.pipeline_stage_number == 1) && frame_msg.process_this_frame) {
+                    LOG4CXX_DEBUG(logger_, "Stage " << settings_.pipeline_stage_number
+                                  << ": forwarding frame " << frame_msg.frame_index);
+                }
                 release_frame_sender_.SendMsg(frame_msg);
 
                 // If we haven't reached the end of the segment
@@ -247,6 +290,7 @@ void SingleStageComponentExecutor::Run() {
                     for (int i = last_frame_processed+1; i <= segment_end_frame; i++) {
                         try {
                             frame_msg = GetNextFrameToProcess(frame_ready_reader, i, timeout_msec);
+                            frame_msg.process_this_frame = false;
                             release_frame_sender_.SendMsg(frame_msg);
                         }
                         catch  (const InterruptedException &ex) {
@@ -255,19 +299,25 @@ void SingleStageComponentExecutor::Run() {
                         }
                     }
                 }
-            } // End of segment
+            }// End of segment
 
             std::vector<MPFVideoTrack> tracks = component_.EndSegment();
-            ConcludeSegment(tracks, segment_info, frame_timestamps, "");
-            segment_summary_report_sent = true;
+            if (final_stage) {
+                ConcludeSegment(tracks, segment_info, frame_timestamps, "");
+                segment_summary_report_sent = true;
+            }
             frame_timestamps.clear();
             if (sleep_interrupted) break;
         }
+
         // Here if the quit signal was received
-        if (begin_segment_called && !segment_summary_report_sent) {
-            // send the summary report if we've started, but have not completed, the next segment
+        if (begin_segment_called) {
+            // send the summary report if we've started, but have not
+            // completed, the next segment.
             std::vector<MPFVideoTrack> tracks = component_.EndSegment();
-            ConcludeSegment(tracks, segment_info, frame_timestamps, "");
+            if (final_stage && !segment_summary_report_sent) {
+                ConcludeSegment(tracks, segment_info, frame_timestamps, "");
+            }
         }
     }
     catch (const FatalError &ex) {
@@ -277,12 +327,13 @@ void SingleStageComponentExecutor::Run() {
         std::vector<MPFVideoTrack> tracks;
         if (begin_segment_called) {
             tracks = TryGetRemainingTracks();
-            // FixTracks(segment_info, tracks);
         }
-        try {
-            ConcludeSegment(tracks, segment_info, frame_timestamps, ex.what());
-        } catch (...) {
-            LOG4CXX_ERROR(logger_, "Exception caught in ConcludeSegment while handling FatalError");
+        if (final_stage) {
+            try {
+                ConcludeSegment(tracks, segment_info, frame_timestamps, ex.what());
+            } catch (...) {
+                LOG4CXX_ERROR(logger_, "Exception caught in ConcludeSegment while handling FatalError");
+            }
         }
         throw;
     }
@@ -366,6 +417,7 @@ MPFFrameReadyMessage SingleStageComponentExecutor::GetNextFrameToProcess(
             }
             else {
                 // skipping the frame, so release it.
+                frame_msg.process_this_frame = false;
                 release_frame_sender_.SendMsg(frame_msg);
             }
         }

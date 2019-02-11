@@ -71,7 +71,8 @@ class OcvFrameReader {
     MPF::BasicAmqMessageReader<MPFFrameReadyMessage> release_frame_reader_;
 
     MPF::BasicAmqMessageSender<MPFJobStatusMessage> job_status_sender_;
-    MPF::BasicAmqMessageSender<MPFSegmentReadyMessage> segment_ready_sender_;
+    MPF::BasicAmqMessageSender<MPFSegmentReadyMessage> stage1_segment_ready_sender_;
+    MPF::BasicAmqMessageSender<MPFSegmentReadyMessage> stage2_segment_ready_sender_;
     MPF::BasicAmqMessageSender<MPFFrameReadyMessage> frame_ready_sender_;
     MPF::MPFFrameStore frame_store_;
     MPF::COMPONENT::StreamingVideoCapture video_capture_;

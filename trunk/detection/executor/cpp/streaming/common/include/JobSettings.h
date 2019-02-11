@@ -61,7 +61,8 @@ namespace MPF { namespace COMPONENT {
         const std::string job_status_queue;
         const std::string activity_alert_queue;
         const std::string summary_report_queue;
-        const std::string segment_ready_queue;
+        const std::string segment_ready_queue_stage1;
+        const std::string segment_ready_queue_stage2;
         const std::string frame_ready_queue_stage1;
         const std::string frame_ready_queue_stage2;
         const std::string release_frame_queue;

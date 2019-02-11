@@ -399,19 +399,19 @@ public class PropertiesUtil {
     }
 
     public boolean isTrackMerging() {
-        return mpfPropertiesConfig.getBoolean("detection.track.merging.enabled");
+        return mpfPropertiesConfig.getBoolean("detection.video.track.merging.enabled");
     }
 
     public int getMinAllowableTrackGap() {
-        return mpfPropertiesConfig.getInt("detection.track.min.gap");
+        return mpfPropertiesConfig.getInt("detection.video.track.min.gap");
     }
 
     public int getMinTrackLength() {
-        return mpfPropertiesConfig.getInt("detection.track.minimum.length");
+        return mpfPropertiesConfig.getInt("detection.video.track.min.length");
     }
 
     public double getTrackOverlapThreshold() {
-        return mpfPropertiesConfig.getDouble("detection.track.overlap.threshold");
+        return mpfPropertiesConfig.getDouble("detection.video.track.overlap.threshold");
     }
 
     //

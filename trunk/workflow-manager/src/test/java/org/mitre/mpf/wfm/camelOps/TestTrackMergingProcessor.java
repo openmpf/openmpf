@@ -38,6 +38,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingPro
 import org.mitre.mpf.wfm.data.Redis;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
@@ -84,39 +85,60 @@ public class TestTrackMergingProcessor {
     private PropertiesUtil propertiesUtil;
 
     @Test(timeout = 5 * MINUTES)
-    public void testTrackMergingOn() throws Exception {
+    public void testTrackMergingEnabled() {
         generateAndRunMerge("1", "TRUE", null, null, 4); // Merges tracks 1 & 2
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void testTrackMergingOnGap3() throws Exception {
-        generateAndRunMerge("1", "TRUE", "3", null, 4); // Merges tracks 1 & 2; 3 frame gap still does not merge 3 & 4
-    }
-
-    @Test(timeout = 5 * MINUTES)
-    public void testTrackMergingOnGap4() throws Exception {
-        generateAndRunMerge("1", "TRUE", "4", null, 3); // Merges tracks 1 & 2; merges tracks 3 & 4
-    }
-
-    @Test(timeout = 5 * MINUTES)
-    public void testTrackMergingOff() throws Exception {
+    public void testTrackMergingDisabled() {
         generateAndRunMerge("1", "FALSE", null, null, 5); // No merging
         generateAndRunMerge("1", "FALSE", "200", null, 5); // No merging even with gap set high
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void testMinTrackSizeNoMerge() throws Exception {
+    public void testTrackMergingWithGap3() {
+        generateAndRunMerge("1", "TRUE", "3", null, 4); // Merges tracks 1 & 2; 3 frame gap still does not merge 3 & 4
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void testTrackMergingWithGap4() {
+        generateAndRunMerge("1", "TRUE", "4", null, 3); // Merges tracks 1 & 2; merges tracks 3 & 4
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void testMinTrackSizeNoMerge() {
         generateAndRunMerge("1", "FALSE", null, "100", 3); // Drops tracks 3 & 5
         generateAndRunMerge("1", "FALSE", null, "200", 2); // Drops tracks 3, 4, & 5
         generateAndRunMerge("1", "FALSE", null, "201", 0); // Drops all tracks
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void testMinTrackSizeWithMerge() throws Exception {
+    public void testMinTrackSizeWithMerge() {
         generateAndRunMerge("1", "TRUE", null, "100", 2); // Merges tracks 1 & 2, drops tracks 3 & 5
         generateAndRunMerge("1", "TRUE", null, "300", 1); // Merges tracks 1 & 2 (new track 400 frames), drops tracks 3, 4, & 5
         generateAndRunMerge("1", "TRUE", "3", "130", 1); // Merges tracks 1 & 2, drops tracks 3, 4, & 5
         generateAndRunMerge("1", "TRUE", "4", "130", 2); // Merges tracks 1 & 2, 3 & 4 (new track 130 frames) drops track 5
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void testTrackMergingOnImage() {
+        generateAndRunMerge("/samples/meds1.jpg", "image/jpeg", "1", "TRUE", "1000", "1000", 5); // No tracks merged or dropped
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void testTrackMergingOnAudio() {
+        generateAndRunMerge("/samples/green.wav", "audio/wave", "1", "TRUE", "1000", "1000", 5); // No tracks merged or dropped
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void testTrackMergingOnGenericMedia() {
+        generateAndRunMerge("/samples/NOTICE", "text/plain", "1", "TRUE", "1000", "1000", 5); // No tracks merged or dropped
+    }
+
+    private void generateAndRunMerge(String samplingInterval, String mergeTracks, String minGap, String minTrackSize,
+                                     int expectedTracks) {
+        generateAndRunMerge("/samples/video_01.mp4", "video/mp4", samplingInterval, mergeTracks, minGap, minTrackSize,
+                expectedTracks);
     }
 
     /**
@@ -131,7 +153,8 @@ public class TestTrackMergingProcessor {
      *
      * Track 5 should never merge.  The other tracks may merge or be dropped based on properties.
      */
-    private void generateAndRunMerge(String samplingInterval, String mergeTracks, String minGap, String minTrackSize, int expectedTracks) throws Exception {
+    private void generateAndRunMerge(String filePath, String mediaType, String samplingInterval, String mergeTracks,
+                                     String minGap, String minTrackSize, int expectedTracks) {
         final long jobId = 999999;
         final long mediaId = 123456;
         final int stageIndex = 0;
@@ -166,35 +189,39 @@ public class TestTrackMergingProcessor {
         TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
 
         TransientJob trackMergeJob = new TransientJob(jobId, "999999", transientDetectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
-        trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
+
+        TransientMedia transientMedia = new TransientMedia(mediaId, ioUtils.findFile(filePath).toString());
+        transientMedia.setType(mediaType);
+
+        trackMergeJob.getMedia().add(transientMedia);
 
         redis.persistJob(trackMergeJob);
 
         /*
         * Create overlapping tracks for testing
         */
-        SortedSet<Track> tracks = new TreeSet<Track>();
-        Track track1 = new Track(jobId, mediaId, 0, 0, 0, 199, "VIDEO", 18f);
+        SortedSet<Track> tracks = new TreeSet<>();
+        Track track1 = new Track(jobId, mediaId, 0, 0, 0, 199, "TEST", 18f);
         Detection detection1a = new Detection(10,10,52,60,18f,0,0,null);
         Detection detection1b = new Detection(10,10,52,60,18f,199,0,null);
         track1.getDetections().add(detection1a);
         track1.getDetections().add(detection1b);
-        Track track2 = new Track(jobId, mediaId, 0, 0, 200, 399, "VIDEO", 18f);
+        Track track2 = new Track(jobId, mediaId, 0, 0, 200, 399, "TEST", 18f);
         Detection detection2a = new Detection(10,10,52,60,18f,200,0,null);
         Detection detection2b = new Detection(10,10,52,60,18f,399,0,null);
         track2.getDetections().add(detection2a);
         track2.getDetections().add(detection2b);
-        Track track3 = new Track(jobId, mediaId, 0, 0, 470, 477, "VIDEO", 18f);
+        Track track3 = new Track(jobId, mediaId, 0, 0, 470, 477, "TEST", 18f);
         Detection detection3a = new Detection(10,10,52,60,18f,420,0,null);
         Detection detection3b = new Detection(10,10,52,60,18f,599,0,null);
         track3.getDetections().add(detection3a);
         track3.getDetections().add(detection3b);
-        Track track4 = new Track(jobId, mediaId, 0, 0, 480, 599, "VIDEO", 18f);
+        Track track4 = new Track(jobId, mediaId, 0, 0, 480, 599, "TEST", 18f);
         Detection detection4a = new Detection(10,10,52,60,18f,480,0,null);
         Detection detection4b = new Detection(10,10,52,60,18f,599,0,null);
         track4.getDetections().add(detection4a);
         track4.getDetections().add(detection4b);
-        Track track5 = new Track(jobId, mediaId, 0, 0, 600, 610, "VIDEO", 18f);
+        Track track5 = new Track(jobId, mediaId, 0, 0, 600, 610, "TEST", 18f);
         Detection detection5a = new Detection(10,10,89,300,18f,600,0,null);
         Detection detection5b = new Detection(10,10,84,291,18f,610,0,null);
         track5.getDetections().add(detection5a);
@@ -219,7 +246,7 @@ public class TestTrackMergingProcessor {
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void testTrackMergingNoTracks() throws Exception {
+    public void testTrackMergingNoTracks() {
         final long jobId = 999999;
         final long mediaId = 123456;
         final int stageIndex = 0;
@@ -247,7 +274,7 @@ public class TestTrackMergingProcessor {
         trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
 
         redis.persistJob(trackMergeJob);
-        SortedSet<Track> tracks = new TreeSet<Track>();
+        SortedSet<Track> tracks = new TreeSet<>();
 
         redis.setTracks(jobId, mediaId, 0, 0, tracks);
 
@@ -261,7 +288,6 @@ public class TestTrackMergingProcessor {
         Assert.assertTrue(contextResponse.getJobId() == jobId);
         Assert.assertEquals(0, redis.getTracks(jobId, mediaId, 0, 0).size());
     }
-
 
     @Test
     public void testTrackLevelInfoRetainedAfterMerge() {

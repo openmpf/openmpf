@@ -137,17 +137,29 @@ public class JobCreationProcessor extends WfmProcessor {
 				throw new WfmProcessingException(INVALID_PIPELINE_MESSAGE);
 			}
 
+			long failedMediaCount = transientJob
+					.getMedia()
+					.stream()
+					.filter(TransientMedia::isFailed)
+					.count();
 			BatchJobStatusType jobStatus;
-			if (transientJob.getMedia().stream().anyMatch(TransientMedia::isFailed)) {
-				jobStatus = BatchJobStatusType.IN_PROGRESS_ERRORS;
-				// allow the job to run since some of the media may be good
-			} else {
-				jobStatus = BatchJobStatusType.IN_PROGRESS;
+			if (failedMediaCount == 0) {
+			    jobStatus = BatchJobStatusType.IN_PROGRESS;
 			}
+			else if (failedMediaCount == transientJob.getMedia().size()) {
+				jobStatus = BatchJobStatusType.ERROR;
+				exchange.getOut().setHeader(MpfHeaders.JOB_CREATION_ERROR, true);
+			}
+			else {
+				jobStatus = BatchJobStatusType.IN_PROGRESS_ERRORS;
+			}
+
 
 			jobRequestEntity.setStatus(jobStatus);
 			inProgressBatchJobs.setJobStatus(jobId, jobStatus);
-			jobStatusBroadcaster.broadcast(jobId, 0, jobStatus);
+			if (!jobStatus.isTerminal()) {
+				jobStatusBroadcaster.broadcast(jobId, 0, jobStatus);
+			}
 
 			jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 

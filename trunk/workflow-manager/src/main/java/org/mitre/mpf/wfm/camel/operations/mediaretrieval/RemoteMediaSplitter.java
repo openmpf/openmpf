@@ -29,22 +29,19 @@ package org.mitre.mpf.wfm.camel.operations.mediaretrieval;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /** Retrieves a remote HTTP or HTTPS media file. */
 @Component(RemoteMediaSplitter.REF)
@@ -53,20 +50,15 @@ public class RemoteMediaSplitter extends WfmSplitter {
 	public static final String REF = "remoteMediaSplitter";
 
 	@Autowired
-	private PropertiesUtil propertiesUtil;
-
-	@Autowired
-	private JsonUtils jsonUtils;
+	private InProgressBatchJobsService inProgressJobs;
 
 	@Override
 	public String getSplitterName() { return REF; }
 
-	public List<Message> wfmSplit(Exchange exchange) throws Exception {
-		assert exchange.getIn().getBody() != null : "The body must not be null.";
-		assert exchange.getIn().getBody(byte[].class) != null : "The body must be convertible to String.";
-
-		// Extract the TransientJob from the body of the incoming message on this exchange.
-		TransientJob transientJob = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TransientJob.class);
+	@Override
+	public List<Message> wfmSplit(Exchange exchange) {
+	    long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+		TransientJob transientJob = inProgressJobs.getJob(jobId);
 		log.debug("Message received. Job ID: {}. Media Count: {}.", transientJob.getId(), transientJob.getMedia().size());
 
 		// Initialize a collection of work units produced by the splitter.
@@ -79,7 +71,7 @@ public class RemoteMediaSplitter extends WfmSplitter {
 
 				// Check that the media has not previously failed. This will happen if the input URIs are invalid.
 				if (!transientMedia.isFailed() && transientMedia.getUriScheme() != UriScheme.FILE && transientMedia.getUriScheme() != UriScheme.UNDEFINED) {
-					messages.add(createMessage(transientMedia));
+					messages.add(createMessage(jobId, transientMedia));
 				}
 			}
 		} else {
@@ -89,13 +81,11 @@ public class RemoteMediaSplitter extends WfmSplitter {
 		return messages;
 	}
 
-	private Message createMessage(TransientMedia sourceMessage) throws WfmProcessingException {
-		String localFilePath = new File(propertiesUtil.getRemoteMediaCacheDirectory(), UUID.randomUUID().toString()).getAbsolutePath();
-		log.debug("The remote file '{}' will be downloaded and stored to '{}'.", sourceMessage.getUri(), localFilePath);
+	private static Message createMessage(long jobId, TransientMedia sourceMessage) {
+        Message message = new DefaultMessage();
+        message.setHeader(MpfHeaders.MEDIA_ID, sourceMessage.getId());
+        message.setHeader(MpfHeaders.JOB_ID, jobId);
+        return message;
 
-		Message message = new DefaultMessage();
-		sourceMessage.setLocalPath(localFilePath);
-		message.setBody(jsonUtils.serialize(sourceMessage));
-		return message;
 	}
 }

@@ -24,7 +24,54 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
 
-/** Enumeration allows for more clearly defining a list passed to a method as in inclusion filter or an exclusion filter. */
-public enum ListFilterType { INCLUSION_LIST, EXCLUSION_LIST };
+package org.mitre.mpf.wfm.camelOps;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultMessage;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
+
+import static org.mitre.mpf.test.TestUtil.nonBlank;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
+
+public class MediaTestUtil {
+
+
+    public static Exchange setupExchange(long jobId, TransientMediaImpl media,
+                                         InProgressBatchJobsService mockInProgressJobs) {
+        TransientJob job = mock(TransientJob.class);
+        when(job.getMedia(media.getId()))
+                .thenReturn(media);
+        when(mockInProgressJobs.getJob(jobId))
+                .thenReturn(job);
+
+        Message inMessage = new DefaultMessage();
+        inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
+        inMessage.setHeader(MpfHeaders.MEDIA_ID, media.getId());
+
+        Message outMessage = new DefaultMessage();
+
+        Exchange exchange = mock(Exchange.class);
+        when(exchange.getIn())
+                .thenReturn(inMessage);
+        when(exchange.getOut())
+                .thenReturn(outMessage);
+
+        doAnswer(invocation -> {
+            media.setFailed(true);
+            return null;
+        }).when(mockInProgressJobs)
+                .addMediaError(eq(jobId), eq(media.getId()), nonBlank());
+
+        return exchange;
+    }
+
+
+    private MediaTestUtil() {
+    }
+}

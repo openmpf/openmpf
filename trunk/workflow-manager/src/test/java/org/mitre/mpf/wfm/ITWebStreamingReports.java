@@ -165,7 +165,7 @@ public class ITWebStreamingReports {
                 Thread.sleep(3000);
             } while (streamingJobInfo2 == null); // test will eventually timeout
 
-            // After running the POST test, clear the streaming jobs from REDIS with doCleanup enabled.
+            // After running the POST test, clear the streaming jobs with doCleanup enabled.
             List<NameValuePair> cancelParams = new ArrayList<NameValuePair>();
             cancelParams.add(new BasicNameValuePair("doCleanup", "true"));
 

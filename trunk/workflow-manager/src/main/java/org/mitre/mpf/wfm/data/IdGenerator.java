@@ -24,54 +24,18 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.entities.transients;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.mitre.mpf.wfm.util.TextUtils;
+package org.mitre.mpf.wfm.data;
 
-public class Candidate implements Comparable<Candidate> {
-	private String candidateId;
-	public String getCandidateId() { return candidateId; }
+import java.util.concurrent.atomic.AtomicLong;
 
-	private int rank;
-	public int getRank() { return rank; }
+public class IdGenerator {
+    private static final AtomicLong LAST_ID = new AtomicLong(0);
 
-	private double score;
-	public double getScore() { return score; }
+    public static long next() {
+        return LAST_ID.incrementAndGet();
+    }
 
-	@JsonCreator
-	public Candidate(@JsonProperty("candidateId") String candidateId,
-	                 @JsonProperty("rank") int rank,
-	                 @JsonProperty("score") double score) {
-		this.candidateId = candidateId;
-		this.rank = rank;
-		this.score = score;
-	}
-
-	public int hashCode() {  return rank; }
-	public boolean equals(Object other) {
-		if(other == null || !(other instanceof Candidate)) {
-			return false;
-		} else {
-			Candidate casted = (Candidate)other;
-			return TextUtils.nullSafeEquals(candidateId, casted.candidateId) && rank == casted.rank && Double.compare(score, casted.score) == 0;
-		}
-	}
-	public int compareTo(Candidate other) {
-		int result;
-		if(other == null) {
-			return 1;
-		} else if((result = TextUtils.nullSafeCompare(candidateId, other.candidateId)) != 0 ||
-				(result = Integer.compare(rank, other.rank)) != 0 ||
-				(result = Double.compare(score, other.score)) != 0) {
-			return result;
-		} else {
-			return 0;
-		}
-	}
-
-	public String toString() {
-		return String.format("%s#<candidateId='%s', rank=%d, score=%f>", this.getClass().getSimpleName(), candidateId, rank, score);
-	}
+    private IdGenerator() {
+    }
 }

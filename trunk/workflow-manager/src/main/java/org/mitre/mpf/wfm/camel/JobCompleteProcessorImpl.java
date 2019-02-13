@@ -39,8 +39,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
@@ -67,7 +66,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -98,8 +96,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 	private JsonUtils jsonUtils;
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
-	private Redis redis;
+	private InProgressBatchJobsService inProgressBatchJobs;
 
 	@Autowired
 	private JobProgress jobProgressStore;
@@ -124,11 +121,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			String statusString = exchange.getIn().getHeader(MpfHeaders.JOB_STATUS, String.class);
 			Mutable<BatchJobStatusType> jobStatus = new MutableObject<>(BatchJobStatusType.parse(statusString, BatchJobStatusType.UNKNOWN));
 
+			TransientJob transientJob = inProgressBatchJobs.getJob(jobId);
 			try {
 				markJobStatus(jobId, BatchJobStatusType.BUILDING_OUTPUT_OBJECT);
 
 				// NOTE: jobStatus is mutable - it __may__ be modified in createOutputObject!
-				createOutputObject(jobId, jobStatus);
+				createOutputObject(transientJob, jobStatus);
 			} catch (Exception exception) {
 				log.warn("Failed to create the output object for Job {} due to an exception.", jobId, exception);
 				jobStatus.setValue(BatchJobStatusType.ERROR);
@@ -137,14 +135,14 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			markJobStatus(jobId, jobStatus.getValue());
 
 			try {
-				callback(jobId);
+				callback(transientJob);
 			} catch (Exception exception) {
 				log.warn("Failed to make callback (if appropriate) for Job #{}.", jobId);
 			}
 
 			// Tear down the job.
 			try {
-				destroy(jobId);
+				destroy(transientJob);
 			} catch (Exception exception) {
 				log.warn("Failed to clean up Job {} due to an exception. Data for this job will remain in the transient data store, but the status of the job has not been affected by this failure.", jobId, exception);
 			}
@@ -165,19 +163,28 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		}
 	}
 
-	private void callback(long jobId) throws WfmProcessingException {
-		final String jsonCallbackURL = redis.getCallbackURL(jobId);
-		final String jsonCallbackMethod = redis.getCallbackMethod(jobId);
-		if(jsonCallbackURL != null && jsonCallbackMethod != null && (jsonCallbackMethod.equals("POST") || jsonCallbackMethod.equals("GET"))) {
-			log.debug("Starting {} callback to {} for job id {}.", jsonCallbackMethod, jsonCallbackURL, jobId);
-			try {
-				JsonCallbackBody jsonBody =new JsonCallbackBody(jobId, redis.getExternalId(jobId));
-				new Thread(new CallbackThread(jsonCallbackURL, jsonCallbackMethod, jsonBody)).start();
-			} catch (IOException ioe) {
-				log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
-				                       jsonCallbackMethod, jsonCallbackURL, jobId), ioe);
-			}
+	private void callback(TransientJob transientJob) throws WfmProcessingException {
+		long jobId = transientJob.getId();
+		String jsonCallbackURL = transientJob.getCallbackUrl().orElse(null);
+		if (jsonCallbackURL == null) {
+			return;
 		}
+		String jsonCallbackMethod = transientJob.getCallbackMethod()
+				.filter(cbm -> cbm.equalsIgnoreCase("POST") || cbm.equalsIgnoreCase("GET"))
+				.orElse(null);
+		if (jsonCallbackMethod == null) {
+			return;
+		}
+
+
+        log.debug("Starting {} callback to {} for job id {}.", jsonCallbackMethod, jsonCallbackURL, jobId);
+        try {
+            JsonCallbackBody jsonBody = new JsonCallbackBody(jobId, transientJob.getExternalId().orElse(null));
+            new Thread(new CallbackThread(jsonCallbackURL, jsonCallbackMethod, jsonBody)).start();
+        } catch (IOException ioe) {
+            log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
+                                   jsonCallbackMethod, jsonCallbackURL, jobId), ioe);
+        }
 	}
 
 	private void markJobStatus(long jobId, BatchJobStatusType jobStatus) {
@@ -192,8 +199,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 	}
 
 	@Override
-	public void createOutputObject(long jobId, Mutable<BatchJobStatusType> jobStatus) {
-		TransientJob transientJob = redis.getJob(jobId);
+	public void createOutputObject(TransientJob transientJob, Mutable<BatchJobStatusType> jobStatus) {
+		long jobId = transientJob.getId();
 		JobRequest jobRequest = jobRequestDao.findById(jobId);
 
 		if(transientJob.isCancelled()) {
@@ -206,7 +213,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 				jsonUtils.convert(transientJob.getPipeline()),
 				transientJob.getPriority(),
 				propertiesUtil.getSiteId(),
-				transientJob.getExternalId(),
+				transientJob.getExternalId().orElse(null),
 				jobRequest.getTimeReceived(),
 				jobRequest.getTimeCompleted(),
 				jobStatus.getValue().toString());
@@ -216,10 +223,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		}
 
 		if (transientJob.getOverriddenAlgorithmProperties() != null) {
-			jsonOutputObject.getAlgorithmProperties().putAll(transientJob.getOverriddenAlgorithmProperties());
+			jsonOutputObject.getAlgorithmProperties().putAll(transientJob.getOverriddenAlgorithmProperties().rowMap());
 		}
-		jsonOutputObject.getJobWarnings().addAll(redis.getJobWarnings(jobId));
-		jsonOutputObject.getJobErrors().addAll(redis.getJobErrors(jobId));
+		jsonOutputObject.getJobWarnings().addAll(transientJob.getWarnings());
+		jsonOutputObject.getJobErrors().addAll(transientJob.getErrors());
+
 
 		IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
 
@@ -251,8 +259,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 						TransientAction transientAction = transientStage.getActions().get(actionIndex);
 						String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), transientAction.getName());
 
-						for (DetectionProcessingError detectionProcessingError : redis.getDetectionProcessingErrors(jobId, transientMedia.getId(), stageIndex, actionIndex)) {
-							hasDetectionProcessingError = true;
+						for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(transientJob, transientMedia.getId(), stageIndex, actionIndex)) {
+							hasDetectionProcessingError = !MpfConstants.REQUEST_CANCELLED.equals(detectionProcessingError.getError());
 							JsonDetectionProcessingError jsonDetectionProcessingError = new JsonDetectionProcessingError(detectionProcessingError.getStartOffset(), detectionProcessingError.getEndOffset(), detectionProcessingError.getError());
 							if (!mediaOutputObject.getDetectionProcessingErrors().containsKey(stateKey)) {
 								mediaOutputObject.getDetectionProcessingErrors().put(stateKey, new TreeSet<>());
@@ -266,7 +274,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 							}
 						}
 
-						Collection<Track> tracks = redis.getTracks(jobId, transientMedia.getId(), stageIndex, actionIndex);
+						Collection<Track> tracks = inProgressBatchJobs.getTracks(jobId, transientMedia.getId(),
+						                                                         stageIndex, actionIndex);
 						if(tracks.isEmpty()) {
 							// Always include detection actions in the output object, even if they do not generate any results.
 							addMissingTrackInfo(JsonActionOutputObject.NO_TRACKS_TYPE, stateKey, mediaOutputObject);
@@ -335,6 +344,17 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		}
 	}
 
+
+	private static List<DetectionProcessingError> getDetectionProcessingErrors(
+			TransientJob job, long mediaId, int stageIndex, int actionIndex) {
+		return job.getDetectionProcessingErrors()
+				.stream()
+				.filter(d -> d.getMediaId() == mediaId && d.getStageIndex() == stageIndex
+						&& d.getActionIndex() == actionIndex)
+				.collect(toList());
+	}
+
+
 	private static JsonTrackOutputObject createTrackOutputObject(Track track, String stateKey,
 	                                                             TransientAction transientAction,
 	                                                             TransientMedia transientMedia,
@@ -351,7 +371,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 		boolean exemplarsOnly;
 		if (exemplarsOnlyProp.getLevel() == AggregateJobPropertiesUtil.PropertyLevel.NONE) {
-			exemplarsOnly = transientJob.getDetectionSystemPropertiesSnapshot().isOutputObjectExemplarOnly();
+			exemplarsOnly = transientJob.getSystemPropertiesSnapshot().isOutputObjectExemplarOnly();
 		}
 		else {
 			exemplarsOnly = Boolean.valueOf(exemplarsOnlyProp.getValue());
@@ -431,7 +451,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 			return Boolean.parseBoolean(jobProperty);
 		}
 
-		return transientJob.getDetectionSystemPropertiesSnapshot().isOutputObjectLastStageOnly();
+		return transientJob.getSystemPropertiesSnapshot().isOutputObjectLastStageOnly();
 	}
 
 
@@ -469,18 +489,17 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 	@Autowired
 	private JmsUtils jmsUtils;
 
-	private void destroy(long jobId) throws WfmProcessingException {
-		TransientJob transientJob = redis.getJob(jobId);
+	private void destroy(TransientJob transientJob) throws WfmProcessingException {
 		for(TransientMedia transientMedia : transientJob.getMedia()) {
 			if(transientMedia.getUriScheme().isRemote() && transientMedia.getLocalPath() != null) {
 				try {
-					Files.deleteIfExists(Paths.get(transientMedia.getLocalPath()));
+					Files.deleteIfExists(transientMedia.getLocalPath());
 				} catch(Exception exception) {
 					log.warn("[{}|*|*] Failed to delete locally cached file '{}' due to an exception. This file must be manually deleted.", transientJob.getId(), transientMedia.getLocalPath());
 				}
 			}
 		}
-		redis.clearJob(jobId);
+		inProgressBatchJobs.clearJob(transientJob.getId());
 	}
 
 	@Override

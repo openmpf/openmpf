@@ -26,32 +26,44 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.wfm.util.TextUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class TransientPipeline {
-	private String name;
-	public String getName() { return name; }
+	private final String _name;
+	public String getName() { return _name; }
 
-	private String description;
-	public String getDescription() { return description; }
+	private final String _description;
+	public String getDescription() { return _description; }
 
-	private List<TransientStage> stages;
-	public List<TransientStage> getStages() { return stages; }
-	public void setStages(List<TransientStage> stages) { this.stages = stages; }
+	private final ImmutableList<TransientStage> _stages;
+	public ImmutableList<TransientStage> getStages() { return _stages; }
 
-	@JsonCreator
-	public TransientPipeline(@JsonProperty("name") String name, @JsonProperty("description") String description) {
-		this.name = TextUtils.trimAndUpper(name);
-		this.description = TextUtils.trim(description);
-		this.stages = new ArrayList<>();
 
-		assert this.name != null : "name cannot be null";
+	public TransientPipeline(String name, String description, Iterable<TransientStage> stages) {
+		_name = TextUtils.trimAndUpper(name);
+		_description = TextUtils.trim(description);
+		_stages = ImmutableList.copyOf(stages);
+
+		assert _name != null : "name cannot be null";
 	}
 
-	public String toString() { return String.format("%s#<name='%s', description='%s'>", this.getClass().getSimpleName(), name, description); }
+
+	public static TransientPipeline from(JsonPipeline pipeline) {
+		List<TransientStage> stages = pipeline.getStages()
+				.stream()
+				.map(TransientStage::from)
+				.collect(ImmutableList.toImmutableList());
+
+		return new TransientPipeline(pipeline.getName(), pipeline.getDescription(), stages);
+	}
+
+
+	@Override
+	public String toString() {
+		return String.format("%s#<name='%s', description='%s'>", getClass().getSimpleName(), _name, _description);
+	}
 }

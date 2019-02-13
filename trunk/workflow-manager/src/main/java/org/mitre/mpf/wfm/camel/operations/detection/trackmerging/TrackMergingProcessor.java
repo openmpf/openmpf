@@ -26,25 +26,27 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.trackmerging;
 
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.Exchange;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.awt.*;
-import java.util.*;
 import java.util.List;
+import java.util.*;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toCollection;
 
@@ -73,19 +75,16 @@ public class TrackMergingProcessor extends WfmProcessor {
 	private static final Logger log = LoggerFactory.getLogger(TrackMergingProcessor.class);
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
-	private Redis redis;
+	private JsonUtils jsonUtils;
+
+	@Autowired
+	private InProgressBatchJobsService inProgressJobs;
 
 	@Override
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
-		assert exchange.getIn().getBody() != null : "The body must not be null.";
-		assert exchange.getIn().getBody(byte[].class) != null : "The body must be convertible to a String.";
-
 		TrackMergingContext trackMergingContext = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TrackMergingContext.class);
-		assert trackMergingContext != null : "The TrackMergingContext instance must never be null.";
 
-		TransientJob transientJob = redis.getJob(trackMergingContext.getJobId());
-		assert transientJob != null : String.format("Redis failed to retrieve a job with ID %d.", trackMergingContext.getJobId());
+		TransientJob transientJob = inProgressJobs.getJob(trackMergingContext.getJobId());
 
 		TransientStage transientStage = transientJob.getPipeline().getStages().get(trackMergingContext.getStageIndex());
 		for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
@@ -107,8 +106,9 @@ public class TrackMergingProcessor extends WfmProcessor {
 					continue; // nothing to do
 				}
 
-				SortedSet<Track> tracks = redis.getTracks(trackMergingContext.getJobId(), transientMedia.getId(),
-						trackMergingContext.getStageIndex(), actionIndex);
+				SortedSet<Track> tracks = inProgressJobs.getTracks(
+						trackMergingContext.getJobId(), transientMedia.getId(), trackMergingContext.getStageIndex(),
+						actionIndex);
 
 				if (tracks.isEmpty() || !isEligibleForFixup(tracks)) {
 					continue;
@@ -135,8 +135,8 @@ public class TrackMergingProcessor extends WfmProcessor {
 							initialSize, tracks.size(), minTrackLength, transientMedia.getId());
 				}
 
-				redis.setTracks(trackMergingContext.getJobId(), transientMedia.getId(),
-						trackMergingContext.getStageIndex(), actionIndex, tracks);
+				inProgressJobs.setTracks(trackMergingContext.getJobId(), transientMedia.getId(),
+				                         trackMergingContext.getStageIndex(), actionIndex, tracks);
 			}
 		}
 
@@ -180,8 +180,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 				transientJob.getOverriddenAlgorithmProperties(),
 				transientMedia.getMediaSpecificProperties()).getValue();
 
-		TransientDetectionSystemProperties transientDetectionSystemProperties =
-				transientJob.getDetectionSystemPropertiesSnapshot();
+		SystemPropertiesSnapshot transientDetectionSystemProperties = transientJob.getSystemPropertiesSnapshot();
 
 		boolean mergeTracks = transientDetectionSystemProperties.isTrackMerging();
 		int minGapBetweenTracks = transientDetectionSystemProperties.getMinAllowableTrackGap();
@@ -267,24 +266,32 @@ public class TrackMergingProcessor extends WfmProcessor {
 
 	/** Combines two tracks. This is a destructive method. The contents of track1 reflect the merged track. */
 	public static Track merge(Track track1, Track track2){
-		Track merged = new Track(track1.getJobId(), track1.getMediaId(), track1.getStageIndex(), track1.getActionIndex(),
-				track1.getStartOffsetFrameInclusive(), track2.getEndOffsetFrameInclusive(),
-				track1.getStartOffsetTimeInclusive(), track2.getEndOffsetTimeInclusive(), track1.getType(),
-                 Math.max(track1.getConfidence(), track2.getConfidence()));
 
-		merged.getDetections().addAll(track1.getDetections());
-		merged.getDetections().addAll(track2.getDetections());
+		Collection<Detection> detections = Stream.of(track1, track2)
+				.flatMap(t -> t.getDetections().stream())
+				.collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
 
-        merged.getTrackProperties().putAll(track1.getTrackProperties());
-		for (Map.Entry<String, String> entry : track2.getTrackProperties().entrySet()) {
-			merged.getTrackProperties()
-					.merge(entry.getKey(), entry.getValue(), (v1, v2) -> v1.equals(v2) ? v1 : v1 + "; " + v2);
-        }
+		ImmutableSortedMap<String, String> properties = Stream.of(track1, track2)
+				.flatMap(t -> t.getTrackProperties().entrySet().stream())
+				.collect(ImmutableSortedMap.toImmutableSortedMap(
+						Comparator.naturalOrder(),
+						Map.Entry::getKey,
+						Map.Entry::getValue,
+						(v1, v2) -> v1.equals(v2) ? v1 : v1 + "; " + v2));
 
-		merged.getDetections()
-				.stream()
-				.max(Comparator.comparingDouble(Detection::getConfidence))
-				.ifPresent(merged::setExemplar);
+		Track merged = new Track(
+				track1.getJobId(),
+				track1.getMediaId(),
+				track1.getStageIndex(),
+				track1.getActionIndex(),
+				track1.getStartOffsetFrameInclusive(),
+				track2.getEndOffsetFrameInclusive(),
+				track1.getStartOffsetTimeInclusive(),
+				track2.getEndOffsetTimeInclusive(),
+				track1.getType(),
+				Math.max(track1.getConfidence(), track2.getConfidence()),
+				detections,
+				properties);
 		return merged;
 	}
 

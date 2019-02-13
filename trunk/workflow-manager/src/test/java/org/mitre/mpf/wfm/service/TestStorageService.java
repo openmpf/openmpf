@@ -33,20 +33,19 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
-import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.JniLoader;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
@@ -70,7 +69,7 @@ public class TestStorageService {
 
     private final PropertiesUtil _mockPropertiesUtil = mock(PropertiesUtil.class);
 
-    private final Redis _mockRedis = mock(Redis.class);
+    private final InProgressBatchJobsService _mockInProgressJobs = mock(InProgressBatchJobsService.class);
 
     private final ObjectMapper _mockObjectMapper = mock(ObjectMapper.class);
 
@@ -85,14 +84,21 @@ public class TestStorageService {
     @BeforeClass
     public static void initClass() {
         assertTrue(JniLoader.isLoaded()); // Forces static initializer to run
+        ThreadUtil.start();
     }
+
+    @AfterClass
+    public static void tearDownClass() {
+        ThreadUtil.shutdown();
+    }
+
 
     @Before
     public void init() {
         when(_mockStorageBackend.getType())
                 .thenReturn(StorageBackend.Type.CUSTOM_NGINX);
 
-        _storageService = new StorageServiceImpl(_mockPropertiesUtil, _mockRedis, _mockObjectMapper,
+        _storageService = new StorageServiceImpl(_mockPropertiesUtil, _mockInProgressJobs, _mockObjectMapper,
                                                  Collections.singletonList(_mockStorageBackend));
     }
 
@@ -100,16 +106,20 @@ public class TestStorageService {
         Map<String, String> propertiesMap = new HashMap<>();
         propertiesMap.put("http.object.storage.type", storageType.name());
         propertiesMap.put("http.object.storage.service_uri", SERVICE_URI.toString());
-        TransientDetectionSystemProperties propertiesSnapshot = new TransientDetectionSystemProperties(propertiesMap);
-        when(_mockRedis.getPropertiesSnapshot(jobId))
+        SystemPropertiesSnapshot propertiesSnapshot = new SystemPropertiesSnapshot(propertiesMap);
+        TransientJob job = mock(TransientJob.class);
+        when(job.getSystemPropertiesSnapshot())
                 .thenReturn(propertiesSnapshot);
+
+        when(_mockInProgressJobs.getJob(jobId))
+                .thenReturn(job);
     }
 
 
     @Test(expected = IllegalStateException.class)
     @SuppressWarnings("ResultOfObjectAllocationIgnored")
     public void throwsExceptionWhenNotAllStorageTypesConfigured() {
-        new StorageServiceImpl(_mockPropertiesUtil, _mockRedis, _mockObjectMapper, Collections.emptyList());
+        new StorageServiceImpl(_mockPropertiesUtil, _mockInProgressJobs, _mockObjectMapper, Collections.emptyList());
     }
 
 
@@ -120,7 +130,7 @@ public class TestStorageService {
         when(mockBadBackend.getType())
                 .thenReturn(StorageBackend.Type.CUSTOM_NGINX);
 
-        new StorageServiceImpl(_mockPropertiesUtil, _mockRedis, _mockObjectMapper,
+        new StorageServiceImpl(_mockPropertiesUtil, _mockInProgressJobs, _mockObjectMapper,
                                Arrays.asList(_mockStorageBackend, mockBadBackend));
     }
 
@@ -143,7 +153,7 @@ public class TestStorageService {
                 .writeValue(any(File.class), any());
 
         assertEquals(expectedUrl, actualUrl);
-        verifyNoRedisWarning();
+        verifyNoJobWarning();
     }
 
 
@@ -153,7 +163,7 @@ public class TestStorageService {
         verifyOutputObjectStoredLocally();
         verify(_mockStorageBackend, never())
                 .storeAsJson(any(), any());
-        verifyNoRedisWarning();
+        verifyNoJobWarning();
     }
 
 
@@ -163,7 +173,7 @@ public class TestStorageService {
         doThrow(StorageException.class)
                 .when(_mockStorageBackend).storeAsJson(any(), any());
         verifyOutputObjectStoredLocally();
-        verifyNoRedisWarning();
+        verifyNoJobWarning();
     }
 
 
@@ -172,12 +182,15 @@ public class TestStorageService {
         Map<String, String> propertiesMap = new HashMap<>();
         propertiesMap.put("http.object.storage.type", "BAD_TYPE");
         propertiesMap.put("http.object.storage.service_uri", SERVICE_URI.toString());
-        TransientDetectionSystemProperties propertiesSnapshot = new TransientDetectionSystemProperties(propertiesMap);
-        when(_mockRedis.getPropertiesSnapshot(471))
+        SystemPropertiesSnapshot propertiesSnapshot = new SystemPropertiesSnapshot(propertiesMap);
+        TransientJob job = mock(TransientJob.class);
+        when(job.getSystemPropertiesSnapshot())
                 .thenReturn(propertiesSnapshot);
+        when(_mockInProgressJobs.getJob(471))
+                .thenReturn(job);
 
         verifyOutputObjectStoredLocally();
-        verifyNoRedisWarning();
+        verifyNoJobWarning();
     }
 
 
@@ -231,7 +244,7 @@ public class TestStorageService {
             expectedSha = DigestUtils.sha256(is);
         }
         assertArrayEquals(expectedSha, actualSha.getValue());
-        verifyNoRedisWarning();
+        verifyNoJobWarning();
     }
 
 
@@ -241,7 +254,7 @@ public class TestStorageService {
         verifyImageArtifactStoredLocally();
         verify(_mockStorageBackend, never())
                 .store(any(), any(InputStream.class));
-        verifyNoRedisWarning();
+        verifyNoJobWarning();
     }
 
 
@@ -251,7 +264,7 @@ public class TestStorageService {
         doThrow(StorageException.class)
                 .when(_mockStorageBackend).store(any(), any(Path.class));
         verifyImageArtifactStoredLocally();
-        verifyRedisWarning(434);
+        verifyJobWarning(434);
     }
 
 
@@ -313,7 +326,7 @@ public class TestStorageService {
         assertArrayEquals(expectedHashes.get(5), actualHashes.get(1));
         assertArrayEquals(expectedHashes.get(9), actualHashes.get(2));
 
-        verifyNoRedisWarning();
+        verifyNoJobWarning();
     }
 
 
@@ -343,7 +356,7 @@ public class TestStorageService {
         verifyVideoArtifactsStoredLocally();
         verify(_mockStorageBackend, never())
                 .store(any(), any(InputStream.class));
-        verifyNoRedisWarning();
+        verifyNoJobWarning();
     }
 
 
@@ -353,7 +366,7 @@ public class TestStorageService {
         doThrow(StorageException.class)
                 .when(_mockStorageBackend).store(any(), any(Path.class));
         verifyVideoArtifactsStoredLocally();
-        verifyRedisWarning(436);
+        verifyJobWarning(436);
     }
 
 
@@ -412,7 +425,7 @@ public class TestStorageService {
         assertEquals(expectedUploadUri, markupResult.getMarkupUri());
         assertFalse(Files.exists(fakeMarkup));
 
-        verifyNoRedisWarning();
+        verifyNoJobWarning();
     }
 
 
@@ -427,7 +440,7 @@ public class TestStorageService {
         assertEquals(MarkupStatus.COMPLETE, markupResult.getMarkupStatus());
         assertTrue(markupResult.getMessage() == null || markupResult.getMessage().isEmpty());
 
-        verifyNoRedisWarning();
+        verifyNoJobWarning();
     }
 
 
@@ -441,7 +454,7 @@ public class TestStorageService {
         assertEquals(MarkupStatus.COMPLETE_WITH_WARNING, markupResult.getMarkupStatus());
         assertTrue(markupResult.getMessage() != null && !markupResult.getMessage().isEmpty());
 
-        verifyRedisWarning(1337);
+        verifyJobWarning(1337);
     }
 
 
@@ -466,13 +479,13 @@ public class TestStorageService {
         return markupResult;
     }
 
-    private void verifyNoRedisWarning() {
-        verify(_mockRedis, never())
+    private void verifyNoJobWarning() {
+        verify(_mockInProgressJobs, never())
                 .addJobWarning(anyLong(), any());
     }
 
-    private void verifyRedisWarning(long jobId) {
-        verify(_mockRedis)
+    private void verifyJobWarning(long jobId) {
+        verify(_mockInProgressJobs)
                 .addJobWarning(eq(jobId), anyNonNull());
     }
 }

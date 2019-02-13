@@ -28,7 +28,6 @@ package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.*;
 import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
-import org.mitre.mpf.interop.util.TimeUtils;
 
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -42,7 +41,7 @@ import java.util.stream.Collectors;
 public class JsonHealthReportCollection {
 
     @JsonTypeName("HealthReport")
-    static class JsonHealthReport {
+    public static class JsonHealthReport {
 
         @JsonProperty("jobId")
         @JsonPropertyDescription("The unique identifier assigned to this job by the system.")

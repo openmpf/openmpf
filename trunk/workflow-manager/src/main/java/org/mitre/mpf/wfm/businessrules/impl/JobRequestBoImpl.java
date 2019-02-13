@@ -34,8 +34,7 @@ import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.camel.routes.JobCreatorRouteBuilder;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
@@ -100,8 +99,7 @@ public class JobRequestBoImpl implements JobRequestBo {
     private JmsUtils jmsUtils;
 
     @Autowired
-    @Qualifier(RedisImpl.REF)
-    private Redis redis;
+    private InProgressBatchJobsService inProgressJobs;
 
     @Autowired
     @Qualifier(HibernateJobRequestDaoImpl.REF)
@@ -243,8 +241,9 @@ public class JobRequestBoImpl implements JobRequestBo {
 
     /**
      * Will cancel a batch job.
-     * This method will mark the job as cancelled in both REDIS and in the long-term database. The job cancel request will also be sent
-     * along to the components via ActiveMQ using the JobCreatorRouteBuilder.ENTRY_POINT.
+     * This method will mark the job as cancelled in both the TransientJob and in the long-term database.
+     * The job cancel request will also be sent along to the components via ActiveMQ using the
+     * JobCreatorRouteBuilder.ENTRY_POINT.
      *
      * @param jobId
      * @return true if the job was successfully cancelled, false otherwise
@@ -268,8 +267,8 @@ public class JobRequestBoImpl implements JobRequestBo {
         } else {
             log.info("[Job {}:*:*] Cancelling job.", jobId);
 
-            // Mark the job as cancelled in Redis so that future steps in the workflow will know not to continue processing.
-            if (redis.cancel(jobId)) {
+
+            if (inProgressJobs.cancelJob(jobId)) {
                 try {
                     // Try to move any pending work items on the queues to the appropriate cancellation queues.
                     // If this operation fails, any remaining pending items will continue to process, but
@@ -282,7 +281,6 @@ public class JobRequestBoImpl implements JobRequestBo {
                 jobRequest.setStatus(BatchJobStatusType.CANCELLING);
                 jobRequestDao.persist(jobRequest);
             } else {
-                // Warn of the race condition where Redis and the persistent database reflect different states.
                 log.warn("[Job {}:*:*] The job is not in progress and cannot be cancelled at this time.", jobId);
             }
             return true;
@@ -319,9 +317,6 @@ public class JobRequestBoImpl implements JobRequestBo {
         FileSystemUtils.deleteRecursively(propertiesUtil.getJobArtifactsDirectory(jobId));
         FileSystemUtils.deleteRecursively(propertiesUtil.getJobOutputObjectsDirectory(jobId));
         FileSystemUtils.deleteRecursively(propertiesUtil.getJobMarkupDirectory(jobId));
-
-        redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
-        jobStatusBroadcaster.broadcast(jobId, 0, BatchJobStatusType.IN_PROGRESS);
 
         return runInternal(jobRequest, jsonJobRequest, priority);
     }

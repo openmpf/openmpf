@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camel;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
@@ -36,7 +37,7 @@ import org.mitre.mpf.wfm.event.NotificationProducer;
 
 @Monitored
 public interface JobCompleteProcessor extends WfmProcessorInterface, NotificationProducer<JobCompleteNotification> {
-	void createOutputObject(long jobId, Mutable<BatchJobStatusType> jobStatus) throws WfmProcessingException;
+	void createOutputObject(TransientJob transientJob, Mutable<BatchJobStatusType> jobStatus) throws WfmProcessingException;
 	void subscribe(NotificationConsumer<JobCompleteNotification> consumer);
 	void unsubscribe(NotificationConsumer<JobCompleteNotification> consumer);
 }

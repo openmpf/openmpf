@@ -33,8 +33,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -45,10 +44,11 @@ import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.SortedSet;
 
 @Component(ArtifactExtractionSplitterImpl.REF)
 public class ArtifactExtractionSplitterImpl extends WfmSplitter {
@@ -62,8 +62,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 	public String getSplitterName() { return REF; }
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
-	private Redis redis;
+	private InProgressBatchJobsService inProgressBatchJobs;
 
 	@Autowired
 	private PropertiesUtil propertiesUtil;
@@ -85,13 +84,14 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 		return StringUtils.equalsIgnoreCase(type, "MOTION") || StringUtils.equalsIgnoreCase(type, "SPEECH");
 	}
 
-	public List<Message> wfmSplit(Exchange exchange) throws Exception {
+	@Override
+	public List<Message> wfmSplit(Exchange exchange) {
 		assert exchange.getIn().getBody() != null : "The body must not be null.";
 		assert exchange.getIn().getBody(byte[].class) != null : "The body must be convertible to a String.";
 
 		List<Message> messages = new ArrayList<>();
 		TrackMergingContext trackMergingContext = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TrackMergingContext.class);
-		TransientJob transientJob = redis.getJob(trackMergingContext.getJobId());
+		TransientJob transientJob = inProgressBatchJobs.getJob(trackMergingContext.getJobId());
 
 		if(!transientJob.isCancelled()) {
 			// Allocate at least enough room for each of the media in the job so we don't have to resize the list.
@@ -131,7 +131,9 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 							continue;
 						}
 
-						SortedSet<Track> tracks = redis.getTracks(trackMergingContext.getJobId(), transientMedia.getId(), trackMergingContext.getStageIndex(), actionIndex);
+						SortedSet<Track> tracks = inProgressBatchJobs.getTracks(
+								trackMergingContext.getJobId(), transientMedia.getId(),
+								trackMergingContext.getStageIndex(), actionIndex);
 
 						for (Track track : tracks) {
 
@@ -144,14 +146,14 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 							}
 
 							if (transientMedia.getMediaType() == MediaType.IMAGE) {
-								plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath(), transientMedia.getMediaType(), actionIndex, 0);
+								plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, 0);
 							} else if (transientMedia.getMediaType() == MediaType.VIDEO) {
 								if (artifactExtractionPolicy == ArtifactExtractionPolicy.ALL_VISUAL_DETECTIONS || artifactExtractionPolicy == ArtifactExtractionPolicy.ALL_DETECTIONS) {
 									for (Detection detection : track.getDetections()) {
-										plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath(), transientMedia.getMediaType(), actionIndex, detection.getMediaOffsetFrame());
+										plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, detection.getMediaOffsetFrame());
 									}
 								} else {
-									plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath(), transientMedia.getMediaType(), actionIndex, track.getExemplar().getMediaOffsetFrame());
+									plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, track.getExemplar().getMediaOffsetFrame());
 								}
 							} else {
 								log.warn("Media {} with type {} was not expected at this time. None of the detections in this track will be extracted.", transientMedia.getId(), transientMedia.getType());

@@ -41,7 +41,6 @@ import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.WritableResource;
 
 import java.io.IOException;
@@ -58,7 +57,6 @@ public class NodeManagerServiceImpl implements NodeManagerService {
     public static final Logger log = LoggerFactory.getLogger(NodeManagerService.class);
 
     @Autowired
-    @Qualifier(PropertiesUtil.REF)
     private PropertiesUtil propertiesUtil;
 
     @Autowired

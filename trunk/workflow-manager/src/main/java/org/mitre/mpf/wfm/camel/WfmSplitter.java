@@ -29,14 +29,12 @@ package org.mitre.mpf.wfm.camel;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,8 +53,7 @@ public abstract class WfmSplitter implements WfmSplitterInterface {
 	private static final Logger log = LoggerFactory.getLogger(WfmSplitter.class);
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
-	private Redis redis;
+	private InProgressBatchJobsService inProgressJobs;
 
 	/**
 	 * In an implementing class, returns the list of work units which are to be performed.
@@ -89,7 +86,7 @@ public abstract class WfmSplitter implements WfmSplitterInterface {
 			// The split operation failed. The job cannot continue.
 			// Print out the stack trace since no details will be reported in the JSON output.
 			log.error("Failed to complete the split operation for Job {} due to an exception.", jobId, exception);
-			redis.setJobStatus(jobId, BatchJobStatusType.ERROR);
+			inProgressJobs.setJobStatus(jobId, BatchJobStatusType.ERROR);
 			failed = true;
 		}
 

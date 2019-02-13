@@ -36,7 +36,6 @@ import org.junit.runner.RunWith;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
@@ -50,12 +49,10 @@ import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -76,17 +73,11 @@ public class TestWfmEndToEnd {
 
 	@Autowired
 	@Qualifier(IoUtils.REF)
-	protected IoUtils ioUtils;
-
-	@Autowired
-	protected PropertiesUtil propertiesUtil;
-
-	@Autowired
-	protected ApplicationContext context;
+	private IoUtils ioUtils;
 
 	@Autowired
 	@Qualifier(JobRequestBoImpl.REF)
-	protected JobRequestBo jobRequestBo;
+	private JobRequestBo jobRequestBo;
 
 	@Autowired
 	private MpfService mpfService;
@@ -103,16 +94,16 @@ public class TestWfmEndToEnd {
 	protected static final Logger log = LoggerFactory.getLogger(TestWfmEndToEnd.class);
 
 
-	protected static boolean hasInitialized = false;
-	protected static int testCtr = 0;
-	protected static Set<Long> completedJobs = new HashSet<>();
-	protected static Object lock = new Object();
+	private static boolean hasInitialized = false;
+	private static int testCtr = 0;
+	private static Set<Long> completedJobs = new HashSet<>();
+	private static final Object lock = new Object();
 
 	@PostConstruct
-	private void init() throws Exception {
+	private void init() {
 		synchronized (lock) {
 			if (!hasInitialized) {
-				completedJobs = new HashSet<Long>();
+				completedJobs = new HashSet<>();
 				jobCompleteProcessor.subscribe(new NotificationConsumer<JobCompleteNotification>() {
 					@Override
 					public void onNotification(Object source, JobCompleteNotification notification) {
@@ -131,7 +122,7 @@ public class TestWfmEndToEnd {
 		}
 	}
 
-	protected List<JsonMediaInputObject> toMediaObjectList(URI... uris) {
+	private static List<JsonMediaInputObject> toMediaObjectList(URI... uris) {
 		List<JsonMediaInputObject> media = new ArrayList<>(uris.length);
 		for (URI uri : uris) {
 			media.add(new JsonMediaInputObject(uri.toString()));
@@ -139,17 +130,8 @@ public class TestWfmEndToEnd {
 		return media;
 	}
 
-	protected long runPipelineOnMedia(JsonPipeline jsonPipeline, final List<JsonMediaInputObject> media, boolean buildOutput, int priority) throws Exception {
-		JsonJobRequest jsonJobRequest = new JsonJobRequest(UUID.randomUUID().toString(), buildOutput, jsonPipeline, priority) {{
-			getMedia().addAll(media);
-		}};
 
-		long jobRequestId = mpfService.submitJob(jsonJobRequest);
-		Assert.assertTrue(waitFor(jobRequestId));
-		return jobRequestId;
-	}
-
-	public boolean waitFor(long jobRequestId) {
+	private static boolean waitFor(long jobRequestId) {
 		synchronized (lock) {
 			while (!completedJobs.contains(jobRequestId)) {
 				try {
@@ -166,17 +148,9 @@ public class TestWfmEndToEnd {
 		}
 	}
 
-	// is this running on Jenkins and/or is output checking desired?
-	private static boolean jenkins = false;
 
-	static {
-		String prop = System.getProperty("jenkins");
-		if (prop != null) {
-			jenkins = Boolean.valueOf(prop);
-		}
-	}
-
-	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, Map<String,String> jobProperties, boolean buildOutput, int priority) throws Exception {
+	private long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media,
+	                                Map<String, String> jobProperties, boolean buildOutput, int priority) {
 		JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media,
 				Collections.emptyMap(), jobProperties, buildOutput, priority);
 		long jobRequestId = mpfService.submitJob(jsonJobRequest);
@@ -184,15 +158,6 @@ public class TestWfmEndToEnd {
 		return jobRequestId;
 	}
 
-	protected long runPipelineOnMediaAndCancelAfter(String pipelineName, List<JsonMediaInputObject> media, Map<String,String> jobProperties, boolean buildOutput, int priority, int timeout) throws Exception {
-		JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media,
-				Collections.emptyMap(), jobProperties, buildOutput, priority);
-		long jobRequestId = mpfService.submitJob(jsonJobRequest);
-		Thread.sleep(timeout);
-		mpfService.cancel(jobRequestId);
-		Assert.assertTrue(waitFor(jobRequestId));
-		return jobRequestId;
-	}
 
 	@Test(timeout = 5 * MINUTES)
 	public void testResubmission() throws Exception {
@@ -259,7 +224,7 @@ public class TestWfmEndToEnd {
 		log.info("Finished testUnsolicitedResponse()");
 	}
 
-	private DetectionProtobuf.DetectionResponse createUnsolicitedResponse(long id) {
+	private static DetectionProtobuf.DetectionResponse createUnsolicitedResponse(long id) {
 		return DetectionProtobuf.DetectionResponse.newBuilder()
 				.setStageIndex(0)
 				.setActionIndex(0)

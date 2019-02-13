@@ -27,7 +27,10 @@
 package org.mitre.mpf.wfm.data.entities.transients;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.util.CompareUtils;
 import org.mitre.mpf.wfm.util.TextUtils;
@@ -47,85 +50,59 @@ import java.util.*;
 public class Track implements Comparable<Track> {
 
 	/** The numeric identifier for the job with which this track is associated. */
-	private final long jobId;
-	public long getJobId() { return jobId; }
+	private final long _jobId;
+	public long getJobId() { return _jobId; }
 
 	/** The numeric identifier for the media with which this track is associated. */
-	private final long mediaId;
-	public long getMediaId() { return mediaId; }
+	private final long _mediaId;
+	public long getMediaId() { return _mediaId; }
 
 	/** The zero-based stage index in the pipeline containing the action which produced this track. */
-	private final int stageIndex;
-	public int getStageIndex() { return stageIndex; }
+	private final int _stageIndex;
+	public int getStageIndex() { return _stageIndex; }
 
 	/** The zero-based action index in the stage of the pipeline which produced this track. */
-	private final int actionIndex;
-	public int getActionIndex() { return actionIndex; }
+	private final int _actionIndex;
+	public int getActionIndex() { return _actionIndex; }
 
 	/** The zero-based index where the track begins in the medium, given in frames. */
-	private final int startOffsetFrameInclusive;
-	public int getStartOffsetFrameInclusive() { return startOffsetFrameInclusive; }
+	private final int _startOffsetFrameInclusive;
+	public int getStartOffsetFrameInclusive() { return _startOffsetFrameInclusive; }
 
 	/** The zero-based and inclusive final index where the track ends in the medium, given in frames. */
-	private final int endOffsetFrameInclusive;
-	public int getEndOffsetFrameInclusive() { return endOffsetFrameInclusive; }
+	private final int _endOffsetFrameInclusive;
+	public int getEndOffsetFrameInclusive() { return _endOffsetFrameInclusive; }
 
 	/** The zero-based index where the track begins in the medium, given in milliseconds. */
-	private final int startOffsetTimeInclusive;
-	public int getStartOffsetTimeInclusive() { return startOffsetTimeInclusive; }
+	private final int _startOffsetTimeInclusive;
+	public int getStartOffsetTimeInclusive() { return _startOffsetTimeInclusive; }
 
 	/** The zero-based and inclusive final index where the track ends in the medium, given in milliseconds. */
-	private final int endOffsetTimeInclusive;
-	public int getEndOffsetTimeInclusive() { return endOffsetTimeInclusive; }
+	private final int _endOffsetTimeInclusive;
+	public int getEndOffsetTimeInclusive() { return _endOffsetTimeInclusive; }
 
 	/** The type of object associated with this track (for example, FACE). */
-	private final String type;
-	public String getType() { return type; }
+	private final String _type;
+	public String getType() { return _type; }
 
-	private final float confidence;
-	public float getConfidence() { return confidence; }
+	private final float _confidence;
+	public float getConfidence() { return _confidence; }
 
-	private final SortedMap<String, String> trackProperties;
-	public SortedMap<String, String> getTrackProperties() { return trackProperties; }
+	private final ImmutableSortedMap<String, String> _trackProperties;
+	public ImmutableSortedMap<String, String> getTrackProperties() { return _trackProperties; }
 
 	/**
 	 * The natural ordered (by start index) collection of detections which correspond to the position of the object
 	 * as it moves through the track.
 	 */
-	private final SortedSet<Detection> detections;
-	public SortedSet<Detection> getDetections() { return detections; }
+	private final ImmutableSortedSet<Detection> _detections;
+	public ImmutableSortedSet<Detection> getDetections() { return _detections; }
 
 	/** The detection with the highest confidence in the track. */
-	private Detection exemplar;
-	public Detection getExemplar() { return exemplar; }
-	public void setExemplar(Detection exemplar) { this.exemplar = exemplar; }
+	private final Detection _exemplar;
+	@JsonIgnore
+	public Detection getExemplar() { return _exemplar; }
 
-	/**
-	 * Creates a new track instance with the given immutable parameters.
-	 *
-	 * @param jobId The job with which this track is associated.
-	 * @param mediaId The medium with which this track is associated.
-	 * @param stageIndex The stage of the pipeline containing the action with which this track is associated.
-	 * @param actionIndex The index of the action in the stage of the pipeline which created this track.
-	 * @param startOffsetFrameInclusive The zero-based index where the track begins in the medium.
-	 *                                     Frame number is relevant for image and video files.
-	 * @param endOffsetFrameInclusive The zero-based and inclusive stop index where the track ends in the medium.
-	 *                                     Frame number is relevant for image and video files.
-	 * @param type The type of object associated with this track. This value is trimmed (to null)
-	 *                  and converted to uppercase for convenience.
-	 */
-	public Track(
-			long jobId,
-			long mediaId,
-			int stageIndex,
-			int actionIndex,
-			int startOffsetFrameInclusive,
-			int endOffsetFrameInclusive,
-			String type,
-			float confidence) {
-		this(jobId, mediaId, stageIndex, actionIndex, startOffsetFrameInclusive, endOffsetFrameInclusive,
-		     0, 0, type, confidence);
-	}
 
 	/**
 	 * Creates a new track instance with the given immutable parameters.
@@ -144,6 +121,10 @@ public class Track implements Comparable<Track> {
 	 *                                      Time is given in milliseconds, and is relevant for video and audio files.
 	 * @param type The type of object associated with this track.
 	 *                  This value is trimmed (to null) and converted to uppercase for convenience.
+     * @param confidence The track confidence
+	 * @param detections The collection of detections which correspond to the position of the object as it
+	 *                   moves through the track.
+	 * @param trackProperties Map containing the track level properties.
 	 */
 	@JsonCreator
 	public Track(
@@ -156,33 +137,38 @@ public class Track implements Comparable<Track> {
 			@JsonProperty("startOffsetTimeInclusive") int startOffsetTimeInclusive,
 			@JsonProperty("endOffsetTimeInclusive") int endOffsetTimeInclusive,
 			@JsonProperty("type") String type,
-			@JsonProperty("confidence") float confidence) {
-		this.jobId = jobId;
-		this.mediaId = mediaId;
-		this.stageIndex = stageIndex;
-		this.actionIndex = actionIndex;
-		this.startOffsetFrameInclusive = startOffsetFrameInclusive;
-		this.endOffsetFrameInclusive = endOffsetFrameInclusive;
-		this.startOffsetTimeInclusive = startOffsetTimeInclusive;
-		this.endOffsetTimeInclusive = endOffsetTimeInclusive;
-		this.type = StringUtils.upperCase(StringUtils.trimToNull(type));
-		this.confidence = confidence;
-		trackProperties = new TreeMap<>();
-		detections = new TreeSet<>();
+			@JsonProperty("confidence") float confidence,
+			@JsonProperty("detections") Iterable<Detection> detections,
+			@JsonProperty("trackProperties") Map<String, String> trackProperties) {
+		_jobId = jobId;
+		_mediaId = mediaId;
+		_stageIndex = stageIndex;
+		_actionIndex = actionIndex;
+		_startOffsetFrameInclusive = startOffsetFrameInclusive;
+		_endOffsetFrameInclusive = endOffsetFrameInclusive;
+		_startOffsetTimeInclusive = startOffsetTimeInclusive;
+		_endOffsetTimeInclusive = endOffsetTimeInclusive;
+		_type = StringUtils.upperCase(StringUtils.trimToNull(type));
+		_confidence = confidence;
+		_detections = ImmutableSortedSet.copyOf(detections);
+		_trackProperties = ImmutableSortedMap.copyOf(trackProperties);
+		_exemplar = _detections.stream()
+				.max(Comparator.comparingDouble(Detection::getConfidence))
+                .orElse(null);
 	}
+
+
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(jobId, mediaId, stageIndex, actionIndex, startOffsetFrameInclusive, endOffsetFrameInclusive,
-		                    startOffsetTimeInclusive, endOffsetTimeInclusive, TextUtils.nullSafeHashCode(type),
-		                    confidence, trackProperties, exemplar, detections);
+		return Objects.hash(_jobId, _mediaId, _stageIndex, _actionIndex, _startOffsetFrameInclusive,
+		                    _endOffsetFrameInclusive, _startOffsetTimeInclusive, _endOffsetTimeInclusive,
+		                    TextUtils.nullSafeHashCode(_type), _confidence, _trackProperties, _exemplar, _detections);
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-	    return this == obj
-			    || (obj instanceof Track
-	                    && compareTo((Track) obj) == 0);
+	    return obj instanceof Track && compareTo((Track) obj) == 0;
 	}
 
 
@@ -220,7 +206,8 @@ public class Track implements Comparable<Track> {
 
 	@Override
 	public int compareTo(Track other) {
-		return DEFAULT_COMPARATOR.compare(this, other);
+		//noinspection ObjectEquality - Just an optimization to avoid comparing all fields when compared to itself.
+		return this == other ? 0 : DEFAULT_COMPARATOR.compare(this, other);
 	}
 
 
@@ -230,9 +217,9 @@ public class Track implements Comparable<Track> {
 		return String.format(
 			"%s#<startOffsetFrameInclusive=%d, endOffsetFrameInclusive=%d>#<startOffsetTimeInclusive=%d, endOffsetTimeInclusive=%d>",
 			getClass().getSimpleName(),
-			startOffsetFrameInclusive,
-			endOffsetFrameInclusive,
-			startOffsetTimeInclusive,
-			endOffsetTimeInclusive);
+			_startOffsetFrameInclusive,
+			_endOffsetFrameInclusive,
+			_startOffsetTimeInclusive,
+			_endOffsetTimeInclusive);
 	}
 }

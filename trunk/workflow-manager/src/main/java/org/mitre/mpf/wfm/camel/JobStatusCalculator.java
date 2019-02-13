@@ -28,17 +28,11 @@ package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
-import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /**
@@ -47,18 +41,9 @@ import org.springframework.stereotype.Component;
 @Component(JobStatusCalculator.REF)
 public class JobStatusCalculator {
     public static final String REF = "jobStatusCalculator";
-    private static final Logger log = LoggerFactory.getLogger(JobStatusCalculator.class);
 
     @Autowired
-    @Qualifier(RedisImpl.REF)
-    private Redis redis;
-
-    @Autowired
-    @Qualifier(HibernateMarkupResultDaoImpl.REF)
-    private MarkupResultDao markupResultDao;
-
-    @Autowired
-    private JsonUtils jsonUtils;
+    private InProgressBatchJobsService inProgressJobs;
 
     /**
      * Calculates the terminal status of a batch job
@@ -67,29 +52,29 @@ public class JobStatusCalculator {
      * @throws WfmProcessingException
      */
     public BatchJobStatusType calculateStatus(Exchange exchange) throws WfmProcessingException {
-        TransientJob job = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TransientJob.class);
+        TransientJob job = inProgressJobs.getJob(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class));
+        BatchJobStatusType initialStatus = job.getStatus();
+        BatchJobStatusType newStatus = nextStatus(initialStatus);
+        inProgressJobs.setJobStatus(job.getId(), newStatus);
+        return newStatus;
+    }
 
-        BatchJobStatusType statusFromRedis = redis.getBatchJobStatus(job.getId());
 
-        if (statusFromRedis.equals(BatchJobStatusType.ERROR) ||
-                statusFromRedis.equals(BatchJobStatusType.UNKNOWN) ||
-                statusFromRedis.equals(BatchJobStatusType.COMPLETE_WITH_ERRORS) ||
-                statusFromRedis.equals(BatchJobStatusType.COMPLETE_WITH_WARNINGS)) {
-            return statusFromRedis;
+    private static BatchJobStatusType nextStatus(BatchJobStatusType initialStatus) {
+        switch (initialStatus) {
+            case ERROR:
+            case UNKNOWN:
+            case COMPLETE_WITH_ERRORS:
+            case COMPLETE_WITH_WARNINGS:
+                return initialStatus;
+            case IN_PROGRESS_WARNINGS:
+                return BatchJobStatusType.COMPLETE_WITH_WARNINGS;
+            case IN_PROGRESS_ERRORS:
+                return BatchJobStatusType.COMPLETE_WITH_ERRORS;
+            case CANCELLING:
+                return BatchJobStatusType.CANCELLED;
+            default:
+                return BatchJobStatusType.COMPLETE;
         }
-
-        if (statusFromRedis.equals(BatchJobStatusType.IN_PROGRESS_WARNINGS)) {
-            redis.setJobStatus(job.getId(), BatchJobStatusType.COMPLETE_WITH_WARNINGS);
-            return BatchJobStatusType.COMPLETE_WITH_WARNINGS;
-        }
-
-        if (statusFromRedis.equals(BatchJobStatusType.IN_PROGRESS_ERRORS)) {
-            redis.setJobStatus(job.getId(), BatchJobStatusType.COMPLETE_WITH_ERRORS);
-            return BatchJobStatusType.COMPLETE_WITH_ERRORS;
-        }
-
-        // default
-        redis.setJobStatus(job.getId(), BatchJobStatusType.COMPLETE);
-        return BatchJobStatusType.COMPLETE;
     }
 }

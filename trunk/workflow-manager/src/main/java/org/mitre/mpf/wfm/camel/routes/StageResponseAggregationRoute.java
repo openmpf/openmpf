@@ -62,14 +62,13 @@ public class StageResponseAggregationRoute extends RouteBuilder {
 	}
 
 	@Override
-	public void configure() throws Exception {
+	public void configure() {
 		from(entryPoint)
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
 			.aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)
 			.completionPredicate(new SplitCompletedPredicate())
 			.removeHeader(MpfHeaders.SPLIT_COMPLETED)
-			.process(JobRetrievalProcessor.REF)
 			.process(EndOfStageProcessor.REF)
 			.to(exitPoint);
 	}

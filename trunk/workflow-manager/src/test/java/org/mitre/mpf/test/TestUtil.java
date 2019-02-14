@@ -26,6 +26,9 @@
 
 package org.mitre.mpf.test;
 
+import org.apache.camel.Exchange;
+import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultMessage;
 import org.hamcrest.Description;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
@@ -38,8 +41,14 @@ import org.mockito.Mockito;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TestUtil {
 
@@ -169,6 +178,19 @@ public class TestUtil {
         catch (URISyntaxException e) {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    public static Exchange createTestExchange() {
+        return createTestExchange(new DefaultMessage(), new DefaultMessage());
+    }
+
+    public static Exchange createTestExchange(Message inMessage, Message outMessage) {
+        Exchange exchange = mock(Exchange.class);
+        when(exchange.getIn())
+                .thenReturn(inMessage);
+        when(exchange.getOut())
+                .thenReturn(outMessage);
+        return exchange;
     }
 }
 

@@ -27,10 +27,13 @@
 package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mitre.mpf.wfm.enums.MediaType;
 
 import java.util.*;
+
+import static java.util.stream.Collectors.toCollection;
 
 public class ArtifactExtractionRequest {
 	/** The identifier of the medium associated with this request. */
@@ -57,6 +60,15 @@ public class ArtifactExtractionRequest {
 	private Map<Integer, Set<Integer>> actionIndexToMediaIndexes;
 	public Map<Integer, Set<Integer>> getActionIndexToMediaIndexes() { return actionIndexToMediaIndexes; }
 	public void setActionIndexToMediaIndexes(Map<Integer, Set<Integer>> actionIndexToMediaIndexes) { this.actionIndexToMediaIndexes = actionIndexToMediaIndexes; }
+
+	@JsonIgnore
+	public Set<Integer> getFrameNumbers() {
+		return actionIndexToMediaIndexes
+				.values()
+				.stream()
+				.flatMap(Collection::stream)
+				.collect(toCollection(TreeSet::new));
+	}
 
 	@JsonCreator
 	public ArtifactExtractionRequest(@JsonProperty("jobId") long jobId, @JsonProperty("mediaId") long mediaId, @JsonProperty("path") String path, @JsonProperty("mediaType") MediaType mediaType, @JsonProperty("stageIndex") int stageIndex) {

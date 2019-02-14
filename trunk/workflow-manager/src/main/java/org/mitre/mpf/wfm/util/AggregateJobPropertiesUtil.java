@@ -26,20 +26,20 @@
 
 package org.mitre.mpf.wfm.util;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Table;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
 import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinitionRef;
+import org.mitre.mpf.wfm.service.PipelineService;
+import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import javax.inject.Inject;
+import java.util.*;
+import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -50,8 +50,16 @@ import static java.util.stream.Collectors.toMap;
 // and should be used to set the scope for which algorithmProperty (key: AlgorithmName) is to be used to
 // check for the propertyName being provided
 
-
+@Component
 public class AggregateJobPropertiesUtil {
+
+    private final PipelineService _pipelineService;
+
+    @Inject
+    public AggregateJobPropertiesUtil(PipelineService pipelineService) {
+        _pipelineService = pipelineService;
+    }
+
 
     public enum PropertyLevel { NONE, SYSTEM, ACTION, JOB, ALGORITHM, MEDIA }; // in order of precedence
 
@@ -345,5 +353,66 @@ public class AggregateJobPropertiesUtil {
 
         int calcFrameInterval = (int) Math.max(1, Math.floor(mediaFPS / frameRateCapPropInfo.getNumericValue()));
         return Integer.toString(calcFrameInterval);
+    }
+
+
+
+    public static Function<String, String> getCombinedProperties(TransientJob job, TransientMedia media) {
+        List<Map<String, String>> propertyMaps = Arrays.asList(
+                media.getMediaSpecificProperties(),
+                job.getOverriddenJobProperties());
+
+        return k -> getPropertyValue(k, propertyMaps);
+    }
+
+
+    public Function<String, String> getCombinedProperties(TransientJob job, long mediaId, int stageIndex,
+                                                          int actionIndex) {
+        TransientMedia media = job.getMedia(mediaId);
+        TransientStage stage = job.getPipeline().getStages().get(stageIndex);
+        TransientAction action = stage.getActions().get(actionIndex);
+        String algoName = action.getAlgorithm();
+        ImmutableMap<String, String> overriddenAlgoProps = job.getOverriddenAlgorithmProperties().row(algoName);
+
+        List<Map<String, String>> propertyMaps = Arrays.asList(
+                media.getMediaSpecificProperties(),
+                overriddenAlgoProps,
+                job.getOverriddenJobProperties(),
+                action.getProperties());
+
+        return k -> getPropertyValue(k, propertyMaps, algoName);
+    }
+
+
+
+    private static String getPropertyValue(String key, Iterable<Map<String, String>> propertyMaps) {
+        return getPropertyValue(key, propertyMaps, x -> null);
+    }
+
+
+    private String getPropertyValue(String key, Iterable<Map<String, String>> propertyMaps,
+                                    String algoName) {
+        return getPropertyValue(key, propertyMaps, pName -> lookupAlgorithmProperty(algoName, pName));
+    }
+
+
+    private String lookupAlgorithmProperty(String algoName, String propName) {
+        return Optional.ofNullable(_pipelineService.getAlgorithm(algoName))
+                .map(a -> a.getProvidesCollection().getAlgorithmProperty(propName))
+                .map(PropertyDefinition::getDefaultValue)
+                .orElse(null);
+    }
+
+
+    private static String getPropertyValue(String key, Iterable<Map<String, String>> propertyMaps,
+                                           Function<String, String> lowestPriorityLookup) {
+        for (Map<String, String> propertyMap : propertyMaps) {
+            String value = propertyMap.get(key);
+            // If value is null, it is either missing or actually mapped to null.
+            if (value != null || propertyMap.containsKey(key)) {
+                return value;
+            }
+        }
+        return lowestPriorityLookup.apply(key);
     }
 }

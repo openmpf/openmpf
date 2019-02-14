@@ -27,33 +27,28 @@
 
 package org.mitre.mpf.wfm.service;
 
+import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.Map;
 
 public interface StorageBackend {
 
-    public String store(URI serviceUri, InputStream content) throws StorageException;
-
-    public String storeAsJson(URI serviceUri, Object content) throws StorageException;
-
-    public default String store(URI serviceUri, Path path) throws IOException, StorageException {
-        try (InputStream is = Files.newInputStream(path)) {
-            return store(serviceUri, is);
-        }
-    }
-
-    public default String store(URI serviceUri, URL content) throws IOException, StorageException {
-        try (InputStream is = content.openStream()) {
-            return store(serviceUri, is);
-        }
-    }
+    public boolean canStore(JsonOutputObject outputObject);
+    public URI store(JsonOutputObject outputObject) throws StorageException, IOException;
 
 
-    public Type getType();
+    public boolean canStore(ArtifactExtractionRequest request);
+    public URI storeImageArtifact(ArtifactExtractionRequest request) throws IOException, StorageException;
+
+    public Map<Integer, URI> storeVideoArtifacts(ArtifactExtractionRequest request) throws IOException, StorageException;
+
+    public boolean canStore(MarkupResult markupResult);
+    public void store(MarkupResult markupResult) throws IOException, StorageException;
+
 
     public enum Type {
         NONE,

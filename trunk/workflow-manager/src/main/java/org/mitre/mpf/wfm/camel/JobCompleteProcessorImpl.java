@@ -65,6 +65,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
@@ -328,8 +329,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		}
 
 		try {
-			String outputLocation = storageService.store(jsonOutputObject);
-			jobRequest.setOutputObjectPath(outputLocation);
+			URI outputLocation = storageService.store(jsonOutputObject);
+			jobRequest.setOutputObjectPath(outputLocation.toString());
 			jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
 			checkErrorMessages(jsonOutputObject, jobStatus);
 			jobRequestDao.persist(jobRequest);

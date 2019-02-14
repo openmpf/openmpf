@@ -42,7 +42,10 @@ import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.exceptions.InvalidPipelineObjectWfmProcessingException;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.service.S3StorageBackend;
+import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,6 +94,12 @@ public class JobController {
 
     @Autowired
     private PipelineService pipelineService;
+
+    @Autowired
+    private JsonUtils jsonUtils;
+
+    @Autowired
+    private S3StorageBackend s3StorageBackend;
 
     /*
      *	POST /jobs
@@ -308,13 +317,26 @@ public class JobController {
             return ResponseEntity.notFound().build();
         }
         try {
-            InputStreamResource inputStreamResource
-                    = new InputStreamResource(IoUtils.openStream(jobRequest.getOutputObjectPath()));
+            JsonJobRequest jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
+            InputStreamResource inputStreamResource;
+            if (S3StorageBackend.requiresS3ResultUpload(jsonJobRequest.getJobProperties()::get)) {
+                inputStreamResource = new InputStreamResource(
+                        s3StorageBackend.getFromS3(jobRequest.getOutputObjectPath(),
+                                                   jsonJobRequest.getJobProperties()::get));
+            }
+            else {
+                inputStreamResource = new InputStreamResource(IoUtils.openStream(jobRequest.getOutputObjectPath()));
+            }
             return ResponseEntity.ok(inputStreamResource);
         }
         catch (NoSuchFileException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(String.format("The output object for job %s does not exist.", jobId));
+        }
+        catch (StorageException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(String.format("An error occurred while trying to access the output object for job %s: %s",
+                                        jobId, e));
         }
     }
 

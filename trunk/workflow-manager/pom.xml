@@ -780,6 +780,12 @@
             <artifactId>commons-configuration2</artifactId>
             <version>${commons.configuration2.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-s3</artifactId>
+            <version>1.11.487</version>
+        </dependency>
     </dependencies>
 
     <!-- NOTE: profile tags override non-profile tags -->

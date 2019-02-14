@@ -31,15 +31,25 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 import com.google.common.io.ByteStreams;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.HttpHostConnectException;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.util.JniLoader;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
@@ -53,6 +63,10 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -61,7 +75,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
@@ -69,17 +82,28 @@ import static org.mockito.Mockito.when;
 
 public class TestCustomNginxStorageBackend {
 
+    private static final long TEST_JOB_ID = 62343245;
+
+    private static final String TEST_FILE = "/samples/video_01.mp4";
+
+    private static final String TEST_FILE_SHA = "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea";
+
     private static final URI SERVICE_URI = URI.create("http://127.0.0.1:5000");
 
     private final PropertiesUtil _mockPropertiesUtil = mock(PropertiesUtil.class);
 
+    private final InProgressBatchJobsService _mockInProgressJobs = mock(InProgressBatchJobsService.class);
+
     private static final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
 
 
-    private final CustomNginxStorageBackend _nginxStorageService
-            = new CustomNginxStorageBackend(_mockPropertiesUtil, _objectMapper);
+    private final StorageBackend _nginxStorageService
+            = new CustomNginxStorageBackend(_mockPropertiesUtil, _objectMapper, _mockInProgressJobs);
 
     private static final AtomicInteger BAD_PATH_POST_COUNT = new AtomicInteger();
+
+    @Rule
+    public TemporaryFolder _tempFolder = new TemporaryFolder();
 
     @BeforeClass
     public static void initClass() {
@@ -94,13 +118,7 @@ public class TestCustomNginxStorageBackend {
     }
 
     @Before
-    public void init() {
-        when(_mockPropertiesUtil.getHttpObjectStorageType())
-                .thenReturn(StorageBackend.Type.CUSTOM_NGINX);
-
-        when(_mockPropertiesUtil.getHttpStorageServiceUri())
-                .thenReturn(URI.create("http://127.0.0.1:5000"));
-
+    public void init() throws StorageException {
         when(_mockPropertiesUtil.getHttpStorageUploadThreadCount())
                 .thenReturn(2);
 
@@ -110,81 +128,148 @@ public class TestCustomNginxStorageBackend {
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
                 .thenReturn(2);
 
+        setStorageUri(SERVICE_URI.toString());
 
         BAD_PATH_POST_COUNT.set(0);
     }
 
 
+    private void setStorageUri(String uri) throws StorageException {
+        SystemPropertiesSnapshot propertiesSnapshot = mock(SystemPropertiesSnapshot.class);
+        when(propertiesSnapshot.getHttpObjectStorageType())
+                .thenReturn(StorageBackend.Type.CUSTOM_NGINX);
+        when(propertiesSnapshot.getHttpStorageServiceUri())
+                .thenReturn(URI.create(uri));
+
+        TransientJob job = mock(TransientJob.class);
+        when(job.getSystemPropertiesSnapshot())
+                .thenReturn(propertiesSnapshot);
+
+        when(_mockInProgressJobs.getJob(TEST_JOB_ID))
+                .thenReturn(job);
+    }
+
+    private MarkupResult createMarkupResult() throws IOException {
+        MarkupResult markup = new MarkupResult();
+        markup.setJobId(TEST_JOB_ID);
+        markup.setMarkupUri(getTestFile().toUri().toString());
+        return markup;
+    }
+
+    private Path getTestFile() throws IOException {
+        URI testFileUri = TestUtil.findFile(TEST_FILE);
+        Path filePath = _tempFolder.newFolder().toPath().resolve("temp_file");
+        Files.copy(Paths.get(testFileUri), filePath);
+        return filePath;
+    }
+
+    private static URI getExpectedUri(String sha) throws URISyntaxException {
+        return new URIBuilder(SERVICE_URI)
+                .setPath("/fs/" + sha)
+                .build();
+    }
 
     @Test
-    public void throwsExceptionWhenConnectionRefused() {
+    public void throwsExceptionWhenConnectionRefused() throws IOException {
+        URI localUri = null;
         try {
-            _nginxStorageService.storeAsJson(URI.create("http://127.0.0.1:12345"), getSampleData());
+            setStorageUri("http://127.0.0.1:12345");
+            MarkupResult markup = createMarkupResult();
+            localUri = URI.create(markup.getMarkupUri());
+            _nginxStorageService.store(markup);
             fail("Expected exception not thrown");
         }
         catch (StorageException e) {
             assertTrue(e.getCause() instanceof HttpHostConnectException);
+            assertNotNull(localUri);
+            assertTrue(Files.exists(Paths.get(localUri)));
         }
     }
 
 
     @Test
-    public void throwsExceptionWhenBadStatus() {
+    public void throwsExceptionWhenBadStatus() throws IOException {
+        URI localUri = null;
         try {
-            _nginxStorageService.storeAsJson(URI.create("http://127.0.0.1:5000/badpath"), getSampleData());
+            setStorageUri("http://127.0.0.1:5000/badpath");
+            MarkupResult markup = createMarkupResult();
+            localUri = URI.create(markup.getMarkupUri());
+            _nginxStorageService.store(markup);
             fail("Expected exception");
         }
         catch (StorageException e) {
             assertEquals(3, BAD_PATH_POST_COUNT.intValue());
+            assertNotNull(localUri);
+            assertTrue(Files.exists(Paths.get(localUri)));
         }
     }
 
 
     @Test
-    public void canUploadContent() throws StorageException {
-        String location = _nginxStorageService.storeAsJson(SERVICE_URI, getSampleData());
-        assertEquals(
-                "http://127.0.0.1:5000/fs/d0d8582bd03ef1efd8ad2891c132f84a095fe167c50e3c503eebee0548f02016",
-                location);
+    public void canUploadContent() throws StorageException, IOException, URISyntaxException {
+        MarkupResult markup = createMarkupResult();
+        URI localUri = URI.create(markup.getMarkupUri());
+        _nginxStorageService.store(markup);
+        String remoteLocation = markup.getMarkupUri();
+
+        assertEquals(getExpectedUri(TEST_FILE_SHA), URI.create(remoteLocation));
+        assertFalse(Files.exists(Paths.get(localUri)));
     }
 
     @Test
-    public void testInvalidJson() {
+    public void testInvalidJson() throws IOException {
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
                 .thenReturn(0);
         when(_mockPropertiesUtil.getHttpStorageUploadThreadCount())
                 .thenReturn(1);
         try {
-            _nginxStorageService.storeAsJson(SERVICE_URI, new Object() { });
+            JsonOutputObject outputObject = mock(JsonOutputObject.class);
+            when(outputObject.getJobId())
+                    .thenReturn(TEST_JOB_ID);
+            _nginxStorageService.store(outputObject);
             fail("Expected exception not thrown.");
         }
         catch (StorageException e) {
             assertTrue(e.getCause() instanceof JsonProcessingException);
         }
-
     }
 
+    @Test
+    public void canStoreVideoArtifactRemotely() throws IOException, StorageException, URISyntaxException {
+        assertTrue(JniLoader.isLoaded());
+        ImmutableMap<Integer, URI> expectedResults = ImmutableMap.of(
+                0, getExpectedUri("29373037d0551330acbde76c797cf6b2dadf635dc8c73b09b77ec7dec256abf6"),
+                5, getExpectedUri("759574570cf9741a55cb2509ea117d01d42d3d7a01cacc3d5db6541f9730f657"),
+                9, getExpectedUri("6036ecde5fe96e9fba9a56593d5bb64605dbc8f1c6ce07f7126b5efda63c05d3"));
+
+        Path testFile = getTestFile();
+        ArtifactExtractionRequest request = new ArtifactExtractionRequest(TEST_JOB_ID, 0, testFile.toString(),
+                                                                          MediaType.VIDEO, 0);
+        request.getActionIndexToMediaIndexes().put(0, Sets.newHashSet(0, 5));
+        request.getActionIndexToMediaIndexes().put(1, Sets.newHashSet(5, 9));
+        Map<Integer, URI> results = _nginxStorageService.storeVideoArtifacts(request);
+        assertEquals(expectedResults, results);
+    }
 
     private static final AtomicBoolean CAUSE_INIT_FAILURE = new AtomicBoolean();
     private static final AtomicBoolean CAUSE_SEGMENT_FAILURE = new AtomicBoolean();
     private static final AtomicBoolean CAUSE_UPLOAD_COMPLETE_FAILURE = new AtomicBoolean();
 
     @Test
-    public void testRetry() throws StorageException {
+    public void testRetry() throws StorageException, IOException, URISyntaxException {
         CAUSE_INIT_FAILURE.set(true);
         CAUSE_SEGMENT_FAILURE.set(true);
         CAUSE_UPLOAD_COMPLETE_FAILURE.set(true);
-        String location = _nginxStorageService.storeAsJson(SERVICE_URI, getSampleData());
-        assertEquals(
-                "http://127.0.0.1:5000/fs/d0d8582bd03ef1efd8ad2891c132f84a095fe167c50e3c503eebee0548f02016",
-                location);
+
+        MarkupResult markup = createMarkupResult();
+        URI localUri = URI.create(markup.getMarkupUri());
+
+        _nginxStorageService.store(markup);
+        String remoteLocation = markup.getMarkupUri();
+        assertEquals(getExpectedUri(TEST_FILE_SHA), URI.create(remoteLocation));
+        assertFalse(Files.exists(Paths.get(localUri)));
     }
 
-
-
-    private static Iterable<Integer> getSampleData() {
-        return () -> IntStream.range(0, 1024 * 1024).iterator();
-    }
 
 
     private static void startSpark() {

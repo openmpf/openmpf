@@ -229,9 +229,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		jsonOutputObject.getJobWarnings().addAll(transientJob.getWarnings());
 		jsonOutputObject.getJobErrors().addAll(transientJob.getErrors());
 
-
-		IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
-
 		boolean hasDetectionProcessingError = false;
 
 		int mediaIndex = 0;
@@ -337,6 +334,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 		} catch(IOException | WfmProcessingException wpe) {
 			log.error("Failed to create the JSON detection output object for '{}' due to an exception.", jobId, wpe);
 		}
+		IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
+		IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobArtifactsDirectory(jobId).toPath());
+		IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobOutputObjectsDirectory(jobId).toPath());
 
 		try {
 			jmsUtils.destroyCancellationRoutes(jobId);

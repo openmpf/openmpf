@@ -31,7 +31,6 @@
 #include <memory>
 #include <string>
 
-#include <cms/Connection.h>
 #include <cms/Session.h>
 #include <cms/MessageConsumer.h>
 

@@ -33,6 +33,7 @@ import org.mitre.mpf.wfm.camel.WfmSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +72,9 @@ public class MediaInspectionSplitter extends WfmSplitter {
 				} else {
 					log.warn("Skipping '{}' ({}). It is in an error state.", transientMedia.getUri(), transientMedia.getId());
 				}
+			}
+			if (messages.isEmpty()) {
+				inProgressJobs.setJobStatus(transientJob.getId(), BatchJobStatusType.ERROR);
 			}
 		} else {
 			log.warn("[Job {}|*|*] Media inspection will not be performed because this job has been cancelled.", transientJob.getId());

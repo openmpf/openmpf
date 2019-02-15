@@ -53,6 +53,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -60,7 +61,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
@@ -318,6 +321,11 @@ public class JobController {
             return ResponseEntity.notFound().build();
         }
         try {
+            URI outputObjectUri = URI.create(jobRequest.getOutputObjectPath());
+            if ("file".equalsIgnoreCase(outputObjectUri.getScheme())) {
+                return ResponseEntity.ok(new FileSystemResource(new File(outputObjectUri)));
+            }
+
             JsonJobRequest jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
             InputStreamResource inputStreamResource;
             if (S3StorageBackend.requiresS3ResultUpload(jsonJobRequest.getJobProperties()::get)) {

@@ -167,6 +167,6 @@ public class RemoteMediaProcessor extends WfmProcessor {
 	                                         String errorMessage) {
 		inProgressJobs.addMediaError(jobId, transientMedia.getId(),
 		                             "Error retrieving media and saving it to temp file: " + errorMessage);
-		inProgressJobs.setJobStatus(jobId, BatchJobStatusType.ERROR);
+		inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
 	}
 }

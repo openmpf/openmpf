@@ -425,7 +425,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 
 	private static void checkErrorMessages(JsonOutputObject outputObject, Mutable<BatchJobStatusType> jobStatus) {
-		if (jobStatus.getValue() == BatchJobStatusType.COMPLETE_WITH_ERRORS) {
+		if (jobStatus.getValue() == BatchJobStatusType.COMPLETE_WITH_ERRORS
+				|| jobStatus.getValue() == BatchJobStatusType.ERROR) {
 	    	return;
 	    }
 		if (!outputObject.getJobErrors().isEmpty()) {

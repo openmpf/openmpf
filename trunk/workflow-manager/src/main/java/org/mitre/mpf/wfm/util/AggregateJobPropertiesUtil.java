@@ -28,12 +28,13 @@ package org.mitre.mpf.wfm.util;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Table;
+import org.mitre.mpf.interop.*;
+import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
+import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinitionRef;
+import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.springframework.stereotype.Component;
 
@@ -55,9 +56,18 @@ public class AggregateJobPropertiesUtil {
 
     private final PipelineService _pipelineService;
 
+    private final HibernateJobRequestDao _jobRequestDao;
+
+    private final JsonUtils _jsonUtils;
+
     @Inject
-    public AggregateJobPropertiesUtil(PipelineService pipelineService) {
+    public AggregateJobPropertiesUtil(
+            PipelineService pipelineService,
+            HibernateJobRequestDao jobRequestDao,
+            JsonUtils jsonUtils) {
         _pipelineService = pipelineService;
+        _jobRequestDao = jobRequestDao;
+        _jsonUtils = jsonUtils;
     }
 
 
@@ -362,7 +372,7 @@ public class AggregateJobPropertiesUtil {
                 media.getMediaSpecificProperties(),
                 job.getOverriddenJobProperties());
 
-        return k -> getPropertyValue(k, propertyMaps);
+        return propName -> getPropertyValue(propName, propertyMaps);
     }
 
 
@@ -380,19 +390,21 @@ public class AggregateJobPropertiesUtil {
                 job.getOverriddenJobProperties(),
                 action.getProperties());
 
-        return k -> getPropertyValue(k, propertyMaps, algoName);
+        return propName -> getPropertyValue(propName, propertyMaps, algoName);
     }
 
 
 
-    private static String getPropertyValue(String key, Iterable<Map<String, String>> propertyMaps) {
-        return getPropertyValue(key, propertyMaps, x -> null);
+
+
+    private static String getPropertyValue(String propName, Iterable<Map<String, String>> propertyMaps) {
+        return getPropertyValue(propName, propertyMaps, x -> null);
     }
 
 
-    private String getPropertyValue(String key, Iterable<Map<String, String>> propertyMaps,
+    private String getPropertyValue(String propName, Iterable<Map<String, String>> propertyMaps,
                                     String algoName) {
-        return getPropertyValue(key, propertyMaps, pName -> lookupAlgorithmProperty(algoName, pName));
+        return getPropertyValue(propName, propertyMaps, pName -> lookupAlgorithmProperty(algoName, pName));
     }
 
 
@@ -404,15 +416,114 @@ public class AggregateJobPropertiesUtil {
     }
 
 
-    private static String getPropertyValue(String key, Iterable<Map<String, String>> propertyMaps,
+    private static String getPropertyValue(String propName, Iterable<Map<String, String>> propertyMaps,
                                            Function<String, String> lowestPriorityLookup) {
         for (Map<String, String> propertyMap : propertyMaps) {
-            String value = propertyMap.get(key);
+            String value = propertyMap.get(propName);
             // If value is null, it is either missing or actually mapped to null.
-            if (value != null || propertyMap.containsKey(key)) {
+            if (value != null || propertyMap.containsKey(propName)) {
                 return value;
             }
         }
-        return lowestPriorityLookup.apply(key);
+        return lowestPriorityLookup.apply(propName);
+    }
+
+
+    public Function<String, String> getCombinedPropertiesAfterJobCompletion(MarkupResult markup) {
+        JsonJobRequest jsonJobRequest = Optional.ofNullable(_jobRequestDao.findById(markup.getJobId()))
+                .map(JobRequest::getInputObject)
+                .map(b -> _jsonUtils.deserialize(b, JsonJobRequest.class))
+                .orElse(null);
+
+        if (jsonJobRequest == null) {
+           return propName -> null;
+        }
+        else {
+            Map<String, String> mediaProperties = jsonJobRequest.getMedia()
+                    .stream()
+                    .filter(m -> m.getMediaUri().equals(markup.getSourceUri()))
+                    .map(JsonMediaInputObject::getProperties)
+                    .findAny()
+                    .orElseGet(Collections::emptyMap);
+
+            return propName -> getPropertyValueAfterJobCompletion(propName, markup, mediaProperties, jsonJobRequest);
+        }
+    }
+
+
+    private String getPropertyValueAfterJobCompletion(
+            String propName, MarkupResult markup, Map<String, String> mediaProperties, JsonJobRequest jobRequest)  {
+
+        String mediaPropVal = mediaProperties.get(propName);
+        // If value is null, it is either missing or actually mapped to null.
+        if (mediaPropVal != null || mediaProperties.containsKey(propName)) {
+            return mediaPropVal;
+        }
+        JsonAction jsonAction = getAction(jobRequest.getPipeline(), markup.getTaskIndex(), markup.getActionIndex());
+        if (jsonAction != null) {
+            // Check overridden algorithm properties
+            Map<?, ?> overriddenAlgoProps = jobRequest.getAlgorithmProperties().get(jsonAction.getName());
+            if (overriddenAlgoProps != null) {
+                Object overriddenAlgoPropVal = overriddenAlgoProps.get(propName);
+                if (overriddenAlgoPropVal != null) {
+                    return overriddenAlgoPropVal.toString();
+                }
+                if (overriddenAlgoProps.containsKey(propName)) {
+                    return null;
+                }
+            }
+        }
+
+        // Job Properties
+        String jobPropVal = jobRequest.getJobProperties().get(propName);
+        if (jobPropVal != null || jobRequest.getJobProperties().containsKey(propName)) {
+            return jobPropVal;
+        }
+
+        if (jsonAction == null) {
+            return null;
+        }
+
+        // Overridden Action Properties
+        String actionPropVal = jsonAction.getProperties().get(propName);
+        if (actionPropVal != null || jsonAction.getProperties().containsKey(propName)) {
+            return actionPropVal;
+        }
+
+        // Default Action Properties
+        ActionDefinition actionDef = _pipelineService.getAction(jsonAction.getName());
+        if (actionDef != null) {
+            PropertyDefinitionRef propDefRef = actionDef.getProperties()
+                    .stream()
+                    .filter(ap -> propName.equals(ap.getName()))
+                    .findAny()
+                    .orElse(null);
+            if (propDefRef != null) {
+                return propDefRef.getValue();
+            }
+        }
+
+        // Default Algorithm Properties
+        AlgorithmDefinition algorithm = _pipelineService.getAlgorithm(jsonAction.getName());
+        if (algorithm == null) {
+            return null;
+        }
+        PropertyDefinition algorithmProperty = algorithm.getProvidesCollection().getAlgorithmProperty(propName);
+        if (algorithmProperty != null) {
+            return algorithmProperty.getDefaultValue();
+        }
+        return null;
+    }
+
+
+    private static JsonAction getAction(JsonPipeline pipeline, int taskIndex, int actionIndex) {
+        if (pipeline.getStages().size() <= taskIndex) {
+            return null;
+        }
+        JsonStage stage = pipeline.getStages().get(taskIndex);
+        if (stage.getActions().size() <= actionIndex) {
+            return null;
+        }
+        return stage.getActions().get(actionIndex);
     }
 }

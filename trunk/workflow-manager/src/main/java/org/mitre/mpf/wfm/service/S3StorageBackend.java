@@ -37,6 +37,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
@@ -204,13 +205,13 @@ public class S3StorageBackend implements StorageBackend {
         }
     }
 
-    public InputStream getFromS3(String uri, Function<String, String> properties) throws StorageException {
+    public S3Object getFromS3(String uri, Function<String, String> properties) throws StorageException {
         try {
             AmazonS3 s3Client = getS3DownloadClient(uri, properties);
             String[] pathParts = splitBucketAndObjectKey(uri);
             String bucket = pathParts[0];
             String objectKey = pathParts[1];
-            return s3Client.getObject(bucket, objectKey).getObjectContent();
+            return s3Client.getObject(bucket, objectKey);
         }
         catch (SdkClientException e) {
             throw new StorageException(String.format("Failed to download \"%s\" due to %s", uri, e),

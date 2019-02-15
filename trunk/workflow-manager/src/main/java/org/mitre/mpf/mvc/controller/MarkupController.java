@@ -26,6 +26,8 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.S3Object;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.io.FileUtils;
@@ -42,6 +44,9 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.service.MpfService;
+import org.mitre.mpf.wfm.service.S3StorageBackend;
+import org.mitre.mpf.wfm.service.StorageException;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
@@ -70,6 +75,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 @Api(value = "Markup", description = "Access the information of marked up media")
 @Controller
@@ -83,6 +89,12 @@ public class MarkupController {
 
     @Autowired
     private JsonUtils jsonUtils;
+
+    @Autowired
+    private S3StorageBackend s3StorageBackend;
+
+    @Autowired
+    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
     private List<MarkupResultModel> getMarkupResultsJson(Long jobId) {
         //all MarkupResult objects
@@ -218,12 +230,25 @@ public class MarkupController {
 
 
     @RequestMapping(value = "/markup/download", method = RequestMethod.GET)
-    public void getFile(@RequestParam(value = "id", required = true) long id, HttpServletResponse response) throws IOException {
+    public void getFile(@RequestParam("id") long id, HttpServletResponse response) throws IOException, StorageException {
         MarkupResult mediaMarkupResult = mpfService.getMarkupResult(id);
         if (mediaMarkupResult == null) {
             log.debug("server download file failed for markup id = " +id);
             response.setStatus(404);
             response.flushBuffer();
+            return;
+        }
+
+        Function<String, String> combinedProperties = aggregateJobPropertiesUtil
+                .getCombinedPropertiesAfterJobCompletion(mediaMarkupResult);
+
+        if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
+            S3Object s3Object = s3StorageBackend.getFromS3(mediaMarkupResult.getMarkupUri(), combinedProperties);
+            try (InputStream inputStream = s3Object.getObjectContent()) {
+                ObjectMetadata metadata = s3Object.getObjectMetadata();
+                writeFileToResponse(metadata.getContentType(), s3Object.getKey(), metadata.getContentLength(),
+                                    inputStream, response);
+            }
             return;
         }
 

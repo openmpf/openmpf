@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import com.amazonaws.services.s3.model.S3Object;
 import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.*;
 import org.mitre.mpf.interop.JsonJobRequest;
@@ -320,9 +321,9 @@ public class JobController {
             JsonJobRequest jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
             InputStreamResource inputStreamResource;
             if (S3StorageBackend.requiresS3ResultUpload(jsonJobRequest.getJobProperties()::get)) {
-                inputStreamResource = new InputStreamResource(
-                        s3StorageBackend.getFromS3(jobRequest.getOutputObjectPath(),
-                                                   jsonJobRequest.getJobProperties()::get));
+                S3Object s3Object = s3StorageBackend.getFromS3(jobRequest.getOutputObjectPath(),
+                                                               jsonJobRequest.getJobProperties()::get);
+                inputStreamResource = new InputStreamResource(s3Object.getObjectContent());
             }
             else {
                 inputStreamResource = new InputStreamResource(IoUtils.openStream(jobRequest.getOutputObjectPath()));

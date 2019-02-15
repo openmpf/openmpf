@@ -72,7 +72,7 @@ public class TestS3StorageBackend {
 
     private final S3StorageBackend _s3StorageBackend = new S3StorageBackend(
             _mockPropertiesUtil, _mockLocalStorageBackend, _mockInProgressJobs,
-            new AggregateJobPropertiesUtil(_mockPipelineService));
+            new AggregateJobPropertiesUtil(_mockPipelineService, null, null));
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();

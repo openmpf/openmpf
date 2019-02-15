@@ -27,6 +27,8 @@
 package org.mitre.mpf.wfm.util;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Maps;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.io.IOUtils;
@@ -35,7 +37,7 @@ import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.EnvVar;
 import org.mitre.mpf.wfm.service.StorageBackend;
@@ -62,13 +64,11 @@ import java.util.*;
 
 import static java.util.stream.Collectors.*;
 
-@Component(PropertiesUtil.REF)
+@Component
 @Monitored
 public class PropertiesUtil {
 
     private static final Logger log = LoggerFactory.getLogger(PropertiesUtil.class);
-    public static final String REF = "propertiesUtil";
-
 
     @Autowired
     private ApplicationContext appContext;
@@ -203,14 +203,10 @@ public class PropertiesUtil {
                 .collect(toList());
     }
 
-    public TransientDetectionSystemProperties createDetectionSystemPropertiesSnapshot() {
-        Map<String, String> detMap = new HashMap<>();
-        mpfPropertiesConfig.getKeys().forEachRemaining(key -> {
-            if (MpfPropertiesConfigurationBuilder.propertyRequiresSnapshot(key)) {
-                detMap.put(key, mpfPropertiesConfig.getString(key)); // resolve final value
-            }
-        } );
-        return new TransientDetectionSystemProperties(Collections.unmodifiableMap(detMap));
+    public SystemPropertiesSnapshot createSystemPropertiesSnapshot() {
+        Iterator<String> snapshotProps = Iterators.filter(mpfPropertiesConfig.getKeys(),
+                                                          MpfPropertiesConfigurationBuilder::propertyRequiresSnapshot);
+        return new SystemPropertiesSnapshot(Maps.toMap(snapshotProps, mpfPropertiesConfig::getString));
     }
 
     //
@@ -359,11 +355,19 @@ public class PropertiesUtil {
         return new File(markupDirectory, String.valueOf(jobId));
     }
 
-    public Path createMarkupPath(long jobId, long mediaId, String extension) throws IOException {
-        Path path = Paths.get(markupDirectory.toURI()).resolve(String.format("%d/%d/%s%s", jobId, mediaId,
-                UUID.randomUUID(), TextUtils.trimToEmpty(extension))).normalize().toAbsolutePath();
-        Files.createDirectories(path.getParent());
-        return Files.createFile(path);
+
+    public Path createMarkupPath(long jobId, long mediaId, String extension) {
+        try {
+            Path path = Paths.get(markupDirectory.toURI())
+                    .resolve(String.format("%d/%d/%s%s", jobId, mediaId, UUID.randomUUID(), TextUtils.trimToEmpty(extension)))
+                    .normalize()
+                    .toAbsolutePath();
+            Files.createDirectories(path.getParent());
+            return Files.createFile(path);
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     //
@@ -399,19 +403,19 @@ public class PropertiesUtil {
     }
 
     public boolean isTrackMerging() {
-        return mpfPropertiesConfig.getBoolean("detection.track.merging.enabled");
+        return mpfPropertiesConfig.getBoolean("detection.video.track.merging.enabled");
     }
 
     public int getMinAllowableTrackGap() {
-        return mpfPropertiesConfig.getInt("detection.track.min.gap");
+        return mpfPropertiesConfig.getInt("detection.video.track.min.gap");
     }
 
     public int getMinTrackLength() {
-        return mpfPropertiesConfig.getInt("detection.track.minimum.length");
+        return mpfPropertiesConfig.getInt("detection.video.track.min.length");
     }
 
     public double getTrackOverlapThreshold() {
-        return mpfPropertiesConfig.getDouble("detection.track.overlap.threshold");
+        return mpfPropertiesConfig.getDouble("detection.video.track.overlap.threshold");
     }
 
     //

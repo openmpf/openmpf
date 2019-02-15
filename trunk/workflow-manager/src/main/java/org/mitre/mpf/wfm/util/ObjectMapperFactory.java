@@ -28,6 +28,7 @@
 package org.mitre.mpf.wfm.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.mitre.mpf.interop.util.InstantJsonModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;

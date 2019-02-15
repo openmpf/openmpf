@@ -24,54 +24,49 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.entities.transients;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.mitre.mpf.wfm.util.TextUtils;
+package org.mitre.mpf.interop.util;
 
-public class Candidate implements Comparable<Candidate> {
-	private String candidateId;
-	public String getCandidateId() { return candidateId; }
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
-	private int rank;
-	public int getRank() { return rank; }
+import java.io.IOException;
+import java.time.Instant;
 
-	private double score;
-	public double getScore() { return score; }
+public final class InstantJsonModule extends SimpleModule {
 
-	@JsonCreator
-	public Candidate(@JsonProperty("candidateId") String candidateId,
-	                 @JsonProperty("rank") int rank,
-	                 @JsonProperty("score") double score) {
-		this.candidateId = candidateId;
-		this.rank = rank;
-		this.score = score;
-	}
+    public InstantJsonModule() {
+        addSerializer(new InstantSerializer());
+        addDeserializer(Instant.class, new InstantDeserializer());
+    }
 
-	public int hashCode() {  return rank; }
-	public boolean equals(Object other) {
-		if(other == null || !(other instanceof Candidate)) {
-			return false;
-		} else {
-			Candidate casted = (Candidate)other;
-			return TextUtils.nullSafeEquals(candidateId, casted.candidateId) && rank == casted.rank && Double.compare(score, casted.score) == 0;
-		}
-	}
-	public int compareTo(Candidate other) {
-		int result;
-		if(other == null) {
-			return 1;
-		} else if((result = TextUtils.nullSafeCompare(candidateId, other.candidateId)) != 0 ||
-				(result = Integer.compare(rank, other.rank)) != 0 ||
-				(result = Double.compare(score, other.score)) != 0) {
-			return result;
-		} else {
-			return 0;
-		}
-	}
 
-	public String toString() {
-		return String.format("%s#<candidateId='%s', rank=%d, score=%f>", this.getClass().getSimpleName(), candidateId, rank, score);
-	}
+    private static class InstantSerializer extends StdSerializer<Instant> {
+        public InstantSerializer() {
+            super(Instant.class);
+        }
+
+        @Override
+        public void serialize(Instant value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+            gen.writeString(TimeUtils.toIsoString(value));
+        }
+    }
+
+
+    private static class InstantDeserializer extends StdDeserializer<Instant> {
+        public InstantDeserializer() {
+            super(Instant.class);
+        }
+
+        @Override
+        public Instant deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
+            String text = parser.getText();
+            return TimeUtils.toInstant(text);
+        }
+    }
 }

@@ -25,50 +25,17 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.util;
+package org.mitre.mpf.wfm.data;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import org.mitre.mpf.interop.util.TimeUtils;
+import java.util.concurrent.atomic.AtomicLong;
 
-import java.io.IOException;
-import java.time.Instant;
+public class IdGenerator {
+    private static final AtomicLong LAST_ID = new AtomicLong(0);
 
-
-public final class InstantJsonModule extends SimpleModule {
-
-    public InstantJsonModule() {
-        addSerializer(new InstantSerializer());
-        addDeserializer(Instant.class, new InstantDeserializer());
+    public static long next() {
+        return LAST_ID.incrementAndGet();
     }
 
-
-    private static class InstantSerializer extends StdSerializer<Instant> {
-        public InstantSerializer() {
-            super(Instant.class);
-        }
-
-        @Override
-        public void serialize(Instant value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-            gen.writeString(TimeUtils.toIsoString(value));
-        }
-    }
-
-
-    private static class InstantDeserializer extends StdDeserializer<Instant> {
-        public InstantDeserializer() {
-            super(Instant.class);
-        }
-
-        @Override
-        public Instant deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
-            String text = parser.getText();
-            return TimeUtils.toInstant(text);
-        }
+    private IdGenerator() {
     }
 }

@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.Message;
 import org.junit.Test;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -35,8 +36,15 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.enums.UriScheme;
 
-import java.util.*;
+import java.net.URI;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -145,7 +153,10 @@ public class TestAudioMediaSegmenter {
 
 
 	private static TransientMedia createTestMedia() {
-		TransientMedia media = new TransientMedia(1, "file:///example.wav");
+		URI mediaUri = URI.create("file:///example.wav");
+		TransientMediaImpl media = new TransientMediaImpl(
+				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+				null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;
@@ -155,15 +166,13 @@ public class TestAudioMediaSegmenter {
 	private static Set<Track> createTestTracks() {
 		Detection detection1 = createDetection(5, 5);
 		Track track1 = new Track(1, 1, 0, 0, 0,
-		                         -1, 5, 10, "", 5);
-		track1.setExemplar(detection1);
-		track1.getDetections().add(detection1);
+		                         -1, 5, 10, "", 5,
+		                         ImmutableSortedSet.of(detection1), Collections.emptyMap());
 
 		Detection detection2 = createDetection(15, 15);
 		Track track2 = new Track(1, 1, 0, 0, 0,
-		                         -1, 15, 30, "", 15);
-		track2.setExemplar(detection2);
-		track2.getDetections().add(detection2);
+		                         -1, 15, 30, "", 15,
+		                         ImmutableSortedSet.of(detection2), Collections.emptyMap());
 
 		return ImmutableSet.of(track1, track2);
 	}

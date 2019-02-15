@@ -323,7 +323,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>18.0</version>
+            <version>27.0.1-jre</version>
         </dependency>
 
         <!-- using slf4j as logger -->

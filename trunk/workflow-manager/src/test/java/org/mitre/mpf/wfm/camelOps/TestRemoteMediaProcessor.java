@@ -26,92 +26,71 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
-import java.net.URI;
-import java.util.List;
-import java.util.UUID;
-import javax.annotation.PostConstruct;
-import org.apache.camel.CamelContext;
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
-import org.mitre.mpf.wfm.camel.WfmSplitterInterface;
+import org.apache.camel.impl.DefaultMessage;
+import org.junit.*;
+import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
-@RunWith(SpringJUnit4ClassRunner.class)
+import java.net.URI;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mitre.mpf.test.TestUtil.nonBlank;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
+
 public class TestRemoteMediaProcessor {
 	private static final Logger log = LoggerFactory.getLogger(TestRemoteMediaProcessor.class);
 	private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 	private static final String EXT_IMG = "https://raw.githubusercontent.com/openmpf/openmpf/master/trunk/mpf-system-tests/src/test/resources/samples/face/meds-aa-S001-01.jpg";
 
+	@InjectMocks
+	private RemoteMediaProcessor remoteMediaProcessor;
 
-	@Autowired
-	private ApplicationContext context;
+	@InjectMocks
+	private RemoteMediaSplitter remoteMediaSplitter;
 
-	@Autowired
-	private CamelContext camelContext;
+	@Mock
+	private InProgressBatchJobsService mockInProgressJobs;
 
-	@Autowired
-	@Qualifier(RemoteMediaProcessor.REF)
-	private WfmProcessorInterface remoteMediaProcessor;
+	@Mock
+	private PropertiesUtil mockPropertiesUtil;
 
-	@Autowired
-	@Qualifier(RemoteMediaSplitter.REF)
-	private WfmSplitterInterface remoteMediaSplitter;
+	@Rule
+	public TemporaryFolder tempFolder = new TemporaryFolder();
 
-	@Autowired
-	private IoUtils ioUtils;
 
-	@Autowired
-	private JsonUtils jsonUtils;
-
-	@Autowired
-	private PropertiesUtil propertiesUtil;
-
-	private TransientJob transientJob;
-
-	private static final MutableInt SEQUENCE = new MutableInt();
-	public int next() {
-		synchronized (SEQUENCE) {
-			int next = SEQUENCE.getValue();
-			SEQUENCE.increment();
-			return next;
-		}
+	private static final AtomicInteger SEQUENCE = new AtomicInteger();
+	private static int next() {
+		return SEQUENCE.incrementAndGet();
 	}
 
-	@PostConstruct
-	public void init() throws Exception {
+	@BeforeClass
+	public static void initClass() {
 		setHttpProxies();
-
-		// Capture a snapshot of the detection system property settings when the job is created.
-		TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
-
-		transientJob = new TransientJob(next(), null, transientDetectionSystemProperties, null, 0, 0, false, false) {{
-			getMedia().add(new TransientMedia(next(), ioUtils.findFile("/samples/meds1.jpg").toString()));
-			getMedia().add(new TransientMedia(next(), EXT_IMG));
-		}};
 	}
-
 
 	private static void setHttpProxies() {
 		// When running the tests through Maven, the system properties set in the "JAVA_OPTS" environment variable
@@ -135,79 +114,106 @@ public class TestRemoteMediaProcessor {
 		}
 	}
 
+	@Before
+	public void init() {
+		MockitoAnnotations.initMocks(this);
+		when(mockPropertiesUtil.getRemoteMediaDownloadRetries())
+				.thenReturn(3);
+
+		when(mockPropertiesUtil.getRemoteMediaDownloadSleep())
+				.thenReturn(200);
+	}
+
 
 	@Test(timeout = 5 * MINUTES)
 	public void testValidRetrieveRequest() throws Exception {
 		log.info("Starting valid image retrieval request.");
+		long jobId = next();
+		long mediaId = next();
 
-		TransientMedia transientMedia = new TransientMedia(next(), EXT_IMG);
-		transientMedia.setLocalPath(ioUtils.createTemporaryFile().getAbsolutePath());
+		TransientMediaImpl transientMedia = new TransientMediaImpl(
+				mediaId, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)), tempFolder.newFile().toPath(),
+				Collections.emptyMap(), null);
 
-		Exchange exchange = new DefaultExchange(camelContext);
-		exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
-		exchange.getIn().setBody(jsonUtils.serialize(transientMedia));
+		Exchange exchange = setupExchange(jobId, transientMedia);
 		remoteMediaProcessor.process(exchange);
 
-		Object responseBody = exchange.getOut().getBody();
-		Assert.assertTrue("A response body must be set.", responseBody != null);
-		Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
+		assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
+		assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
-		// Implied assertion: Deserialization works.
-		TransientMedia responseTransientMedia = jsonUtils.deserialize((byte[])responseBody, TransientMedia.class);
-
-		Assert.assertTrue(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-						Boolean.toString(responseTransientMedia.isFailed()),
-						responseTransientMedia.getMessage()),
-				!responseTransientMedia.isFailed());
-
+		Assert.assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
+						Boolean.toString(transientMedia.isFailed()),
+						                transientMedia.getMessage()),
+		                   transientMedia.isFailed());
 		log.info("Remote valid image retrieval request passed.");
 	}
+
 
 	@Test(timeout = 5 * MINUTES)
 	public void testInvalidRetrieveRequest() throws Exception {
 		log.info("Starting invalid image retrieval request.");
+		long jobId = next();
+		long mediaId = next();
 
-		TransientMedia transientMedia = new TransientMedia(next(), "https://www.mitre.org/"+UUID.randomUUID().toString());
-		transientMedia.setLocalPath(ioUtils.createTemporaryFile().getAbsolutePath());
+		TransientMediaImpl transientMedia = new TransientMediaImpl(
+				mediaId, "https://www.mitre.org/"+UUID.randomUUID().toString(), UriScheme.HTTPS,
+				tempFolder.newFile().toPath(), Collections.emptyMap(), null);
 
-		Exchange exchange = new DefaultExchange(camelContext);
-		exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
-		exchange.getIn().setBody(jsonUtils.serialize(transientMedia));
+		Exchange exchange = setupExchange(jobId, transientMedia);
 		remoteMediaProcessor.process(exchange);
 
-		Object responseBody = exchange.getOut().getBody();
-		Assert.assertTrue("A response body must be set.", responseBody != null);
-		Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
+		assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
+		assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+		assertTrue(transientMedia.isFailed());
 
-		// Implied assertion: Deserialization works.
-		TransientMedia responseTransientMedia = jsonUtils.deserialize((byte[])responseBody, TransientMedia.class);
-
-		Assert.assertTrue(String.format("The response entity must fail. Actual: %s. Message: %s.",
-						Boolean.toString(responseTransientMedia.isFailed()),
-						responseTransientMedia.getMessage()),
-				responseTransientMedia.isFailed());
+        verify(mockInProgressJobs)
+		        .setJobStatus(jobId, BatchJobStatusType.ERROR);
+        verify(mockInProgressJobs)
+		        .addMediaError(eq(jobId), eq(mediaId), nonBlank());
 
 		log.info("Remote invalid image retrieval request passed.");
 	}
 
+
+
 	@Test(timeout = 5 * MINUTES)
 	public void testSplitRequest() throws Exception {
-		Exchange exchange = new DefaultExchange(camelContext);
-		exchange.getIn().setHeader(MpfHeaders.JOB_ID, next());
-		exchange.getIn().setBody(jsonUtils.serialize(transientJob));
+        long mediaId1 = next();
+        long mediaId2 = next();
+		ImmutableCollection<TransientMediaImpl> media = ImmutableList.of(
+				new TransientMediaImpl(mediaId1, "/some/local/path.jpg", UriScheme.FILE,
+				                   Paths.get("/some/local/path.jpg"), Collections.emptyMap(), null),
+				new TransientMediaImpl(mediaId2, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)),
+				                   tempFolder.newFile().toPath(), Collections.emptyMap(), null));
+
+		TransientJob job = mock(TransientJob.class);
+		when(job.isCancelled())
+				.thenReturn(false);
+		when(job.getMedia())
+                .thenAnswer(i -> media);
+
+		long jobId = next();
+		when(mockInProgressJobs.getJob(jobId))
+				.thenReturn(job);
+
+		Message inMessage = new DefaultMessage();
+		inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
+
+		Exchange exchange = mock(Exchange.class);
+		when(exchange.getIn())
+				.thenReturn(inMessage);
 
 		List<Message> messages = remoteMediaSplitter.split(exchange);
 
 		int targetMessageCount = 1;
-		Assert.assertTrue(String.format("The splitter must return %d message. Actual: %d.", targetMessageCount, messages.size()),
-				targetMessageCount == messages.size());
+		assertEquals(String.format("The splitter must return %d message. Actual: %d.",
+		                           targetMessageCount,
+		                           messages.size()), targetMessageCount, messages.size());
+		assertEquals(mediaId2, (long) messages.get(0).getHeader(MpfHeaders.MEDIA_ID, Long.class));
+	}
 
-		Object messageBody = messages.get(0).getBody();
-		Assert.assertTrue("The splitter must assign a body value to the message it created.", messageBody != null);
-		Assert.assertTrue("The request body for the message must be a byte[].", messageBody instanceof byte[]);
 
-		TransientMedia transientMedia = jsonUtils.deserialize((byte[])(messageBody), TransientMedia.class);
-		Assert.assertTrue("The local path must not begin with 'file:'.", !transientMedia.getLocalPath().startsWith("file:"));
-		Assert.assertTrue("The transient file must not be marked as failed.", !transientMedia.isFailed());
+	private Exchange setupExchange(long jobId, TransientMediaImpl media) {
+		return MediaTestUtil.setupExchange(jobId, media, mockInProgressJobs);
 	}
 }

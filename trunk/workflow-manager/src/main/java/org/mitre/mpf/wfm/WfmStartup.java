@@ -105,6 +105,8 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 			ContextRefreshedEvent contextRefreshedEvent = (ContextRefreshedEvent) event;
 			ApplicationContext appContext = contextRefreshedEvent.getApplicationContext();
 
+			ThreadUtil.start();
+
 			if (!applicationRefreshed) {
 				log.info("onApplicationEvent: " + appContext.getDisplayName() + " " + appContext.getId()); // DEBUG
 
@@ -151,8 +153,7 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
         healthReportExecutorService = Executors.newSingleThreadScheduledExecutor();
         Runnable task = () -> {
             try {
-                boolean isActive = true; // only send periodic health reports for streaming jobs that are current and active.
-                mpfService.sendStreamingJobHealthReports(isActive);
+                mpfService.sendStreamingJobHealthReports();
             } catch (Exception e) {
                 log.error("startHealthReporting: Exception occurred while sending scheduled health report",e);
             }

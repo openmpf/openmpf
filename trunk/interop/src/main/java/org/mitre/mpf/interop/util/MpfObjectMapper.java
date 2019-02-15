@@ -24,7 +24,33 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
 
-/** Enumeration allows for more clearly defining a list passed to a method as in inclusion filter or an exclusion filter. */
-public enum ListFilterType { INCLUSION_LIST, EXCLUSION_LIST };
+package org.mitre.mpf.interop.util;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.deser.DefaultDeserializationContext;
+import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
+
+public class MpfObjectMapper extends ObjectMapper {
+
+    public MpfObjectMapper() {
+        registerInstantModule();
+    }
+
+    public MpfObjectMapper(JsonFactory jsonFactory) {
+        super(jsonFactory);
+        registerInstantModule();
+    }
+
+    public MpfObjectMapper(JsonFactory jsonFactory, DefaultSerializerProvider serializerProvider,
+                           DefaultDeserializationContext deserializationContext) {
+        super(jsonFactory, serializerProvider, deserializationContext);
+        registerInstantModule();
+    }
+
+    private void registerInstantModule() {
+        registerModule(new InstantJsonModule());
+    }
+
+}

@@ -34,7 +34,6 @@ import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
@@ -68,7 +67,6 @@ public class AdminLogsController
     private Map<String, Map<String, File>> nodesAndLogFiles = new HashMap<String, Map<String, File>>();
 
     @Autowired
-    @Qualifier(PropertiesUtil.REF)
     private PropertiesUtil propertiesUtil;
 
 	@RequestMapping(value = "/adminLogs", method = RequestMethod.GET)

@@ -24,57 +24,54 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel;
+
+package org.mitre.mpf.wfm.camelOps;
 
 import org.apache.camel.Exchange;
-import org.mitre.mpf.wfm.WfmProcessingException;
+import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-/**
- * The Job Status Calculator is a tool to calculate the terminal status of a job.
- */
-@Component(JobStatusCalculator.REF)
-public class JobStatusCalculator {
-    public static final String REF = "jobStatusCalculator";
+import static org.mitre.mpf.test.TestUtil.nonBlank;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
-    @Autowired
-    private InProgressBatchJobsService inProgressJobs;
+public class MediaTestUtil {
 
-    /**
-     * Calculates the terminal status of a batch job
-     * @param exchange  An incoming job exchange
-     * @return  The terminal JobStatus for the batch job.
-     * @throws WfmProcessingException
-     */
-    public BatchJobStatusType calculateStatus(Exchange exchange) throws WfmProcessingException {
-        TransientJob job = inProgressJobs.getJob(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class));
-        BatchJobStatusType initialStatus = job.getStatus();
-        BatchJobStatusType newStatus = nextStatus(initialStatus);
-        inProgressJobs.setJobStatus(job.getId(), newStatus);
-        return newStatus;
+
+    public static Exchange setupExchange(long jobId, TransientMediaImpl media,
+                                         InProgressBatchJobsService mockInProgressJobs) {
+        TransientJob job = mock(TransientJob.class);
+        when(job.getMedia(media.getId()))
+                .thenReturn(media);
+        when(mockInProgressJobs.getJob(jobId))
+                .thenReturn(job);
+
+        Message inMessage = new DefaultMessage();
+        inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
+        inMessage.setHeader(MpfHeaders.MEDIA_ID, media.getId());
+
+        Message outMessage = new DefaultMessage();
+
+        Exchange exchange = mock(Exchange.class);
+        when(exchange.getIn())
+                .thenReturn(inMessage);
+        when(exchange.getOut())
+                .thenReturn(outMessage);
+
+        doAnswer(invocation -> {
+            media.setFailed(true);
+            return null;
+        }).when(mockInProgressJobs)
+                .addMediaError(eq(jobId), eq(media.getId()), nonBlank());
+
+        return exchange;
     }
 
 
-    private static BatchJobStatusType nextStatus(BatchJobStatusType initialStatus) {
-        switch (initialStatus) {
-            case ERROR:
-            case UNKNOWN:
-            case COMPLETE_WITH_ERRORS:
-            case COMPLETE_WITH_WARNINGS:
-                return initialStatus;
-            case IN_PROGRESS_WARNINGS:
-                return BatchJobStatusType.COMPLETE_WITH_WARNINGS;
-            case IN_PROGRESS_ERRORS:
-                return BatchJobStatusType.COMPLETE_WITH_ERRORS;
-            case CANCELLING:
-                return BatchJobStatusType.CANCELLED;
-            default:
-                return BatchJobStatusType.COMPLETE;
-        }
+    private MediaTestUtil() {
     }
 }

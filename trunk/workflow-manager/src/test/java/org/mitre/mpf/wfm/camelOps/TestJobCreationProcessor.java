@@ -30,7 +30,6 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
@@ -41,21 +40,21 @@ import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.jobcreation.JobCreationProcessor;
-import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import static org.junit.Assert.assertEquals;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -63,9 +62,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class TestJobCreationProcessor {
     private static final Logger log = LoggerFactory.getLogger(TestJobCreationProcessor.class);
     private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
-
-    @Autowired
-    private ApplicationContext context;
 
     @Autowired
     private CamelContext camelContext;
@@ -83,13 +79,10 @@ public class TestJobCreationProcessor {
     private HibernateDao<JobRequest> jobRequestDao;
 
     @Autowired
-    private IoUtils ioUtils;
-
-    @Autowired
     private JsonUtils jsonUtils;
 
     @Autowired
-    private Redis redis;
+    private InProgressBatchJobsService inProgressJobs;
 
     private static final MutableInt SEQUENCE = new MutableInt();
     public int next() {
@@ -111,17 +104,15 @@ public class TestJobCreationProcessor {
         Exchange exchange = new DefaultExchange(camelContext);
         exchange.getIn().setBody(jsonUtils.serialize(jobRequest));
         JobRequest returnedRequest = jobRequestBo.initialize(jobRequest);
-        returnedRequest.getId();
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, returnedRequest.getId());
         jobCreationProcessor.process(exchange);
 
-        Object responseBody = exchange.getOut().getBody();
-        Assert.assertTrue("A response body must be set.", responseBody != null);
-        Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
+        assertEquals("Job ID headers must be set.", returnedRequest.getId(), exchange.getOut().getHeader(MpfHeaders.JOB_ID));
         JobRequest returnedResponse = jobRequestDao.findById(returnedRequest.getId());
-        TransientJob tjob = redis.getJob(returnedResponse.getId());
-        Assert.assertTrue(tjob.getExternalId().equals(Long.toString(testId)));
+        TransientJob tjob = inProgressJobs.getJob(returnedResponse.getId());
+        assertEquals(Long.toString(testId), tjob.getExternalId().get());
 
         jobRequestDao.deleteById(returnedRequest.getId());
+        inProgressJobs.clearJob(tjob.getId());
     }
 }

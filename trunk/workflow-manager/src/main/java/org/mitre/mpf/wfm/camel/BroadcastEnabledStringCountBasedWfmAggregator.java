@@ -27,11 +27,11 @@
 package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Exchange;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
@@ -47,8 +47,7 @@ public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBa
 	public static final String REF = "broadcastEnabledStringCountBasedWfmAggregator";
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
-	private Redis redis;
+	private InProgressBatchJobsService inProgressBatchJobs;
 
 	@Autowired
 	@Qualifier(HibernateJobRequestDaoImpl.REF)
@@ -60,6 +59,7 @@ public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBa
 	@Autowired
 	private JobStatusBroadcaster jobStatusBroadcaster;
 
+	@Override
 	public void onResponse(Exchange newExchange) {
 		super.onResponse(newExchange);
 		if(!Boolean.TRUE.equals(newExchange.getIn().getHeader(MpfHeaders.SUPPRESS_BROADCAST))) {
@@ -67,9 +67,10 @@ public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBa
 				int aggregateCount = newExchange.getOut().getHeader(MpfHeaders.AGGREGATED_COUNT, Integer.class);
 				int splitSize = newExchange.getOut().getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
 				long jobId = newExchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class);
-				if (redis.getTaskCountForJob(jobId) != 0) {
-					int currentStage = 1 + redis.getCurrentTaskIndexForJob(jobId);
-					int totalStages = redis.getTaskCountForJob(jobId);
+				TransientJob job = inProgressBatchJobs.getJob(jobId);
+				if (!job.getPipeline().getStages().isEmpty()) {
+					int currentStage = 1 + job.getCurrentStage();
+					int totalStages = job.getPipeline().getStages().size();
 					float progressPerStage = 1 / (1f * totalStages) * 100f;
 
 					float taskProgress = (((float) aggregateCount) / ((float) splitSize));

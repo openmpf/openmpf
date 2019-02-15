@@ -26,93 +26,51 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.ArrayList;
-import java.util.HashMap;
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableTable;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
-public class TransientJob {
-	private long id;
-	public long getId() { return id; }
+public interface TransientJob {
+	public long getId();
 
-	private TransientPipeline pipeline;
-	public TransientPipeline getPipeline() { return pipeline; }
+	public BatchJobStatusType getStatus();
 
-	private int currentStage;
-	public int getCurrentStage() { return currentStage; }
-	public void setCurrentStage(int currentStage) { this.currentStage = currentStage; }
+	public TransientPipeline getPipeline();
 
-	private String externalId;
-	public String getExternalId() { return externalId; }
+	public int getCurrentStage();
 
-	private int priority;
-	public int getPriority() { return  priority; }
+	public Optional<String> getExternalId();
 
-	private boolean outputEnabled;
-	public boolean isOutputEnabled() { return outputEnabled; }
+	public int getPriority();
 
-	private List<TransientMedia> media;
-	public List<TransientMedia> getMedia() { return  media; }
-	public void setMedia(List<TransientMedia> media) { this.media = media; }
+	public boolean isOutputEnabled();
 
-	private Map<String, Map> overriddenAlgorithmProperties;
-	public Map<String, Map> getOverriddenAlgorithmProperties() { return overriddenAlgorithmProperties; }
-	public void setOverriddenAlgorithmProperties(Map<String, Map> overriddenAlgorithmProperties) { this.overriddenAlgorithmProperties = overriddenAlgorithmProperties; }
+	public ImmutableCollection<? extends TransientMedia> getMedia();
 
-	private Map<String, String> overriddenJobProperties;
-	public Map<String, String> getOverriddenJobProperties() { return overriddenJobProperties; }
+	public TransientMedia getMedia(long mediaId);
 
-    private boolean cancelled;
-	public boolean isCancelled() { return cancelled; }
+	// The table's row key is the algorithm name, the column key is the property name,
+	// and the value is the property value.
+	public ImmutableTable<String, String, String> getOverriddenAlgorithmProperties();
 
-	private String callbackURL;
-	public String getCallbackURL() { return callbackURL; }
+	public ImmutableMap<String, String> getOverriddenJobProperties();
 
-	private String callbackMethod;
-	public String getCallbackMethod() { return callbackMethod; }
+	public boolean isCancelled();
 
-	// Detection system properties for this job should be immutable, the detection system property values
-	// shouldn't change once the job is created even if they are changed on the UI by an admin..
-	// The detectionSystemPropertiesSnapshot contains the values of the detection system properties at the time this batch job was created.
-    private TransientDetectionSystemProperties detectionSystemPropertiesSnapshot;
-    public TransientDetectionSystemProperties getDetectionSystemPropertiesSnapshot() { return this.detectionSystemPropertiesSnapshot; }
+	public Optional<String> getCallbackUrl();
 
-	public TransientJob(long id,
-						String externalId,
-						TransientDetectionSystemProperties detectionSystemPropertiesSnapshot,
-						TransientPipeline pipeline,
-						int currentStage,
-						int priority,
-						boolean outputEnabled,
-						boolean cancelled) {
-		this.id = id;
-		this.externalId = externalId;
-		this.pipeline = pipeline;
-		this.detectionSystemPropertiesSnapshot = detectionSystemPropertiesSnapshot;
-		this.currentStage = currentStage;
-		this.priority = priority;
-		this.outputEnabled = outputEnabled;
-		this.cancelled = cancelled;
-		this.media = new ArrayList<>();
-		this.overriddenAlgorithmProperties = new HashMap<>();
-		this.overriddenJobProperties = new HashMap<>();
-	}
+	public Optional<String> getCallbackMethod();
 
-	@JsonCreator
-	public TransientJob(@JsonProperty("id") long id,
-	                    @JsonProperty("externalId") String externalId,
-                        @JsonProperty("detectionSystemPropertiesSnapshot") TransientDetectionSystemProperties detectionSystemPropertiesSnapshot,
-                        @JsonProperty("pipeline") TransientPipeline pipeline,
-	                    @JsonProperty("currentStage") int currentStage,
-	                    @JsonProperty("priority") int priority,
-	                    @JsonProperty("outputEnabled") boolean outputEnabled,
-	                    @JsonProperty("cancelled") boolean cancelled,
-						@JsonProperty("callbackURL") String callbackURL,
-						@JsonProperty("callbackMethod") String callbackMethod) {
-		this(id,externalId,detectionSystemPropertiesSnapshot,pipeline,currentStage,priority,outputEnabled,cancelled);
-		this.callbackURL = callbackURL;
-		this.callbackMethod = callbackMethod;
-	}
+    public SystemPropertiesSnapshot getSystemPropertiesSnapshot();
+
+	public Set<String> getWarnings();
+
+	public Set<String> getErrors();
+
+	public List<DetectionProcessingError> getDetectionProcessingErrors();
 }

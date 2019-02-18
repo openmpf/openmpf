@@ -101,13 +101,18 @@ public class SystemPropertiesSnapshot {
         if (StringUtils.isBlank(uriString)) {
             return Optional.empty();
         }
+
+        String errorMessage = String.format(
+                "Expected the \"http.object.storage.nginx.service_uri\" property to either be a valid URI or an empty string but it was \"%s\".", uriString);
         try {
-            return Optional.of(new URI(uriString));
+            URI uri = new URI(uriString);
+            if (StringUtils.isBlank(uri.getScheme())) {
+                throw new StorageException(errorMessage);
+            }
+            return Optional.of(uri);
         }
         catch (URISyntaxException e) {
-            throw new StorageException(String.format(
-                "Expected the \"http.object.storage.nginx.service_uri\" property to either be a valid URI or an empty string but it was \"%s\"",
-                uriString), e);
+            throw new StorageException(errorMessage, e);
         }
     }
 

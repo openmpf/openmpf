@@ -401,11 +401,11 @@ public class AggregateJobPropertiesUtil {
 
     private String getPropertyValue(String propName, Iterable<Map<String, String>> propertyMaps,
                                     String algoName) {
-        return getPropertyValue(propName, propertyMaps, pName -> lookupAlgorithmProperty(algoName, pName));
+        return getPropertyValue(propName, propertyMaps, pName -> getDefaultAlgorithmProperty(algoName, pName));
     }
 
 
-    private String lookupAlgorithmProperty(String algoName, String propName) {
+    private String getDefaultAlgorithmProperty(String algoName, String propName) {
         return Optional.ofNullable(_pipelineService.getAlgorithm(algoName))
                 .map(a -> a.getProvidesCollection().getAlgorithmProperty(propName))
                 .map(PropertyDefinition::getDefaultValue)
@@ -416,16 +416,17 @@ public class AggregateJobPropertiesUtil {
     private static String getPropertyValue(String propName, Iterable<Map<String, String>> propertyMaps,
                                            Function<String, String> lowestPriorityLookup) {
         for (Map<String, String> propertyMap : propertyMaps) {
-            String value = propertyMap.get(propName);
-            // If value is null, it is either missing or actually mapped to null.
-            if (value != null || propertyMap.containsKey(propName)) {
-                return value;
+            if (propertyMap.containsKey(propName)) {
+                return propertyMap.get(propName);
             }
         }
         return lowestPriorityLookup.apply(propName);
     }
 
 
+    // Best effort attempt to recover as many job properties as possible after a job has already completed.
+    // Since a component could have been un-registered since the job completed, some pipeline elements may not
+    // be present. Any missing pipeline elements will be skipped.
     public Function<String, String> getCombinedPropertiesAfterJobCompletion(MarkupResult markup) {
         JsonJobRequest jsonJobRequest = Optional.ofNullable(_jobRequestDao.findById(markup.getJobId()))
                 .map(JobRequest::getInputObject)
@@ -435,46 +436,42 @@ public class AggregateJobPropertiesUtil {
         if (jsonJobRequest == null) {
            return propName -> null;
         }
-        else {
-            Map<String, String> mediaProperties = jsonJobRequest.getMedia()
-                    .stream()
-                    .filter(m -> m.getMediaUri().equals(markup.getSourceUri()))
-                    .map(JsonMediaInputObject::getProperties)
-                    .findAny()
-                    .orElseGet(Collections::emptyMap);
 
-            return propName -> getPropertyValueAfterJobCompletion(propName, markup, mediaProperties, jsonJobRequest);
-        }
+        Map<String, String> mediaProperties = jsonJobRequest.getMedia()
+                .stream()
+                .filter(m -> m.getMediaUri().equals(markup.getSourceUri()))
+                .map(JsonMediaInputObject::getProperties)
+                .findAny()
+                .orElseGet(Collections::emptyMap);
+
+        return propName -> getPropertyValueAfterJobCompletion(propName, markup, mediaProperties, jsonJobRequest);
     }
 
 
     private String getPropertyValueAfterJobCompletion(
             String propName, MarkupResult markup, Map<String, String> mediaProperties, JsonJobRequest jobRequest)  {
 
-        String mediaPropVal = mediaProperties.get(propName);
-        // If value is null, it is either missing or actually mapped to null.
-        if (mediaPropVal != null || mediaProperties.containsKey(propName)) {
-            return mediaPropVal;
+        if (mediaProperties.containsKey(propName)) {
+            return mediaProperties.get(propName);
         }
+
         JsonAction jsonAction = getAction(jobRequest.getPipeline(), markup.getTaskIndex(), markup.getActionIndex());
         if (jsonAction != null) {
             // Check overridden algorithm properties
-            Map<?, ?> overriddenAlgoProps = jobRequest.getAlgorithmProperties().get(jsonAction.getName());
-            if (overriddenAlgoProps != null) {
-                Object overriddenAlgoPropVal = overriddenAlgoProps.get(propName);
-                if (overriddenAlgoPropVal != null) {
-                    return overriddenAlgoPropVal.toString();
-                }
+            if (jobRequest.getAlgorithmProperties().containsKey(jsonAction.getName())) {
+                Map<?, ?> overriddenAlgoProps = jobRequest.getAlgorithmProperties().get(jsonAction.getName());
                 if (overriddenAlgoProps.containsKey(propName)) {
-                    return null;
+                    Object overriddenAlgoPropVal = overriddenAlgoProps.get(propName);
+                    return overriddenAlgoPropVal == null
+                            ? null
+                            : overriddenAlgoPropVal.toString();
                 }
             }
         }
 
         // Job Properties
-        String jobPropVal = jobRequest.getJobProperties().get(propName);
-        if (jobPropVal != null || jobRequest.getJobProperties().containsKey(propName)) {
-            return jobPropVal;
+        if (jobRequest.getJobProperties().containsKey(propName)) {
+            return jobRequest.getJobProperties().get(propName);
         }
 
         if (jsonAction == null) {
@@ -482,9 +479,8 @@ public class AggregateJobPropertiesUtil {
         }
 
         // Overridden Action Properties
-        String actionPropVal = jsonAction.getProperties().get(propName);
-        if (actionPropVal != null || jsonAction.getProperties().containsKey(propName)) {
-            return actionPropVal;
+        if (jsonAction.getProperties().containsKey(propName)) {
+            return jsonAction.getProperties().get(propName);
         }
 
         // Default Action Properties

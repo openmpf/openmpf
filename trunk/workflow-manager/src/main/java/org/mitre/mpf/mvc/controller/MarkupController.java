@@ -239,19 +239,6 @@ public class MarkupController {
             return;
         }
 
-        Function<String, String> combinedProperties = aggregateJobPropertiesUtil
-                .getCombinedPropertiesAfterJobCompletion(mediaMarkupResult);
-
-        if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
-            S3Object s3Object = s3StorageBackend.getFromS3(mediaMarkupResult.getMarkupUri(), combinedProperties);
-            try (InputStream inputStream = s3Object.getObjectContent()) {
-                ObjectMetadata metadata = s3Object.getObjectMetadata();
-                writeFileToResponse(metadata.getContentType(), s3Object.getKey(), metadata.getContentLength(),
-                                    inputStream, response);
-            }
-            return;
-        }
-
         Path localPath = IoUtils.toLocalPath(mediaMarkupResult.getMarkupUri()).orElse(null);
         if (localPath != null) {
             if (!Files.exists(localPath)) {
@@ -263,6 +250,19 @@ public class MarkupController {
             try (InputStream inputStream = Files.newInputStream(localPath)) {
                 writeFileToResponse(Files.probeContentType(localPath), localPath.getFileName().toString(),
                                     Files.size(localPath), inputStream, response);
+            }
+            return;
+        }
+
+        Function<String, String> combinedProperties = aggregateJobPropertiesUtil
+                .getCombinedPropertiesAfterJobCompletion(mediaMarkupResult);
+
+        if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
+            S3Object s3Object = s3StorageBackend.getFromS3(mediaMarkupResult.getMarkupUri(), combinedProperties);
+            try (InputStream inputStream = s3Object.getObjectContent()) {
+                ObjectMetadata metadata = s3Object.getObjectMetadata();
+                writeFileToResponse(metadata.getContentType(), s3Object.getKey(), metadata.getContentLength(),
+                                    inputStream, response);
             }
             return;
         }

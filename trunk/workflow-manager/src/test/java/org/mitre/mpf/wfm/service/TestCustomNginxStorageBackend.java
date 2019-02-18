@@ -70,10 +70,7 @@ import java.nio.file.Paths;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -151,11 +148,11 @@ public class TestCustomNginxStorageBackend {
     private MarkupResult createMarkupResult() throws IOException {
         MarkupResult markup = new MarkupResult();
         markup.setJobId(TEST_JOB_ID);
-        markup.setMarkupUri(getTestFile().toUri().toString());
+        markup.setMarkupUri(getTestFileCopy().toUri().toString());
         return markup;
     }
 
-    private Path getTestFile() throws IOException {
+    private Path getTestFileCopy() throws IOException {
         URI testFileUri = TestUtil.findFile(TEST_FILE);
         Path filePath = _tempFolder.newFolder().toPath().resolve("temp_file");
         Files.copy(Paths.get(testFileUri), filePath);
@@ -167,6 +164,48 @@ public class TestCustomNginxStorageBackend {
                 .setPath("/fs/" + sha)
                 .build();
     }
+
+
+    @Test
+    public void canParseServiceUri() throws StorageException {
+        String uriString = "http://example.com";
+        SystemPropertiesSnapshot snapshot = new SystemPropertiesSnapshot(
+                Collections.singletonMap("http.object.storage.nginx.service_uri", uriString));
+
+        assertEquals(URI.create(uriString), snapshot.getNginxStorageServiceUri().get());
+    }
+
+
+    @Test
+    public void canHandleBadServiceUri() throws StorageException {
+        assertFalse(new SystemPropertiesSnapshot(Collections.emptyMap()).getNginxStorageServiceUri()
+                            .isPresent());
+
+        List<String> expectingNone = Arrays.asList("", " ", "  ", "\t", "\t ");
+        for (String testString : expectingNone) {
+            SystemPropertiesSnapshot snapshot = new SystemPropertiesSnapshot(
+                    Collections.singletonMap("http.object.storage.nginx.service_uri", testString));
+            assertFalse(snapshot.getNginxStorageServiceUri().isPresent());
+        }
+
+        List<String> expectingException = Arrays.asList(
+                "hello",
+                "qaz/wsx",
+                "://asdf/adsf",
+                "http//:://asdf/adsf");
+
+        for (String testString : expectingException) {
+            try {
+                SystemPropertiesSnapshot snapshot = new SystemPropertiesSnapshot(
+                        Collections.singletonMap("http.object.storage.nginx.service_uri", testString));
+                snapshot.getNginxStorageServiceUri();
+                fail("Expected StorageException");
+            }
+            catch (StorageException expected) {
+            }
+        }
+    }
+
 
     @Test
     public void throwsExceptionWhenConnectionRefused() throws IOException {
@@ -241,7 +280,7 @@ public class TestCustomNginxStorageBackend {
                 5, getExpectedUri("759574570cf9741a55cb2509ea117d01d42d3d7a01cacc3d5db6541f9730f657"),
                 9, getExpectedUri("6036ecde5fe96e9fba9a56593d5bb64605dbc8f1c6ce07f7126b5efda63c05d3"));
 
-        Path testFile = getTestFile();
+        Path testFile = getTestFileCopy();
         ArtifactExtractionRequest request = new ArtifactExtractionRequest(TEST_JOB_ID, 0, testFile.toString(),
                                                                           MediaType.VIDEO, 0);
         request.getActionIndexToMediaIndexes().put(0, Sets.newHashSet(0, 5));

@@ -117,7 +117,7 @@ public class TestS3StorageBackend {
         return properties;
     }
 
-    private Path getTestFile() throws IOException {
+    private Path getTestFileCopy() throws IOException {
         return copyTestFile("/samples/video_01.mp4");
     }
 
@@ -279,7 +279,7 @@ public class TestS3StorageBackend {
 
 
     private void verifyThrowsExceptionWhenStoring(Map<String, String> s3Properties) throws IOException {
-        Path filePath = getTestFile();
+        Path filePath = getTestFileCopy();
 
         try {
             JsonOutputObject outputObject = mock(JsonOutputObject.class);
@@ -303,7 +303,7 @@ public class TestS3StorageBackend {
     public void canStoreImageArtifacts() throws IOException, StorageException {
         ArtifactExtractionRequest request = createArtifactExtractionRequest();
 
-        Path filePath = getTestFile();
+        Path filePath = getTestFileCopy();
         when(_mockLocalStorageBackend.storeImageArtifact(request))
                 .thenReturn(filePath.toUri());
 
@@ -321,7 +321,7 @@ public class TestS3StorageBackend {
     public void canStoreVideoArtifacts() throws IOException {
         ArtifactExtractionRequest request = createArtifactExtractionRequest();
 
-        Path filePath0 = getTestFile();
+        Path filePath0 = getTestFileCopy();
         Path filePath1 = copyTestFile("/samples/meds1.jpg");
         when(_mockLocalStorageBackend.storeVideoArtifacts(request))
                 .thenReturn(ImmutableSortedMap.of(0, filePath0.toUri(), 1, filePath1.toUri()));
@@ -380,7 +380,7 @@ public class TestS3StorageBackend {
     public void canStoreMarkupRequest() throws IOException, StorageException {
         long jobId = 534;
         long mediaId = 421;
-        Path filePath = getTestFile();
+        Path filePath = getTestFileCopy();
 
         MarkupResult markupResult = mock(MarkupResult.class);
         TransientJob job = mock(TransientJob.class, RETURNS_DEEP_STUBS);
@@ -438,7 +438,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void canStoreJsonOutputObject() throws IOException, StorageException {
-        Path filePath = getTestFile();
+        Path filePath = getTestFileCopy();
 
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
         when(outputObject.getJobProperties())
@@ -456,7 +456,7 @@ public class TestS3StorageBackend {
 
     @Test
     public void doesNotStoreDuplicateOutputObject() throws IOException, StorageException {
-        Path filePath = getTestFile();
+        Path filePath = getTestFileCopy();
 
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.put(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + BUCKET_WITH_EXISTING_OBJECT);
@@ -479,7 +479,7 @@ public class TestS3StorageBackend {
     public void canHandleConnectionRefused() throws IOException {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.put(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, "http://localhost:5001/" + RESULTS_BUCKET);
-        Path filePath = getTestFile();
+        Path filePath = getTestFileCopy();
 
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
         when(outputObject.getJobProperties())
@@ -505,7 +505,7 @@ public class TestS3StorageBackend {
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
                 .thenReturn(retryCount);
 
-        Path filePath = getTestFile();
+        Path filePath = getTestFileCopy();
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.put(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + "BAD_BUCKET");
 

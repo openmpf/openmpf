@@ -48,10 +48,4 @@ public interface StorageBackend {
 
     public boolean canStore(MarkupResult markupResult) throws StorageException;
     public void store(MarkupResult markupResult) throws IOException, StorageException;
-
-
-    public enum Type {
-        NONE,
-        CUSTOM_NGINX
-    }
 }

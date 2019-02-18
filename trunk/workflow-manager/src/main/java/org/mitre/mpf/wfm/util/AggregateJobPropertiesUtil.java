@@ -394,9 +394,6 @@ public class AggregateJobPropertiesUtil {
     }
 
 
-
-
-
     private static String getPropertyValue(String propName, Iterable<Map<String, String>> propertyMaps) {
         return getPropertyValue(propName, propertyMaps, x -> null);
     }

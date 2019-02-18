@@ -47,8 +47,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 import static org.mitre.mpf.test.TestUtil.nonBlank;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
@@ -113,7 +112,7 @@ public class TestStorageService {
     }
 
     @Test
-    public void canStoreOutputObjectLocally() throws IOException {
+    public void canStoreOutputObjectLocally() throws IOException, StorageException {
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
         when(_mockLocalBackend.store(outputObject))
                 .thenReturn(TEST_URI);
@@ -153,6 +152,59 @@ public class TestStorageService {
 
 
     @Test
+    public void outputObjectGetsStoredLocallyWhenCanStoreFails() throws StorageException, IOException {
+        SortedSet<String> warnings = new TreeSet<>();
+        JsonOutputObject outputObject = mock(JsonOutputObject.class);
+        when(outputObject.getJobWarnings())
+                .thenReturn(warnings);
+
+        doThrow(StorageException.class)
+                .when(_mockNginxBackend).canStore(outputObject);
+
+        when(_mockLocalBackend.store(outputObject))
+                .thenReturn(TEST_URI);
+
+        URI result = _storageService.store(outputObject);
+        assertEquals(TEST_URI, result);
+
+        verifyNoInProgressJobWarnings();
+        assertEquals(1, warnings.size());
+        assertFalse(StringUtils.isBlank(warnings.first()));
+
+        verify(_mockNginxBackend, never())
+                .store(any(JsonOutputObject.class));
+    }
+
+
+    @Test
+    public void throwsExceptionWhenFailsToStoreLocally() throws IOException, StorageException {
+        SortedSet<String> warnings = new TreeSet<>();
+        JsonOutputObject outputObject = mock(JsonOutputObject.class);
+        when(outputObject.getJobWarnings())
+                .thenReturn(warnings);
+
+        when(_mockS3Backend.canStore(outputObject))
+                .thenReturn(true);
+
+        doThrow(StorageException.class)
+                .when(_mockS3Backend).store(outputObject);
+
+        doThrow(new IOException("test"))
+                .when(_mockLocalBackend).store(outputObject);
+
+        try {
+            _storageService.store(outputObject);
+            fail("Expected IOException");
+        }
+        catch (IOException e) {
+            assertTrue(e.getSuppressed()[0] instanceof StorageException);
+            assertEquals(1, warnings.size());
+            assertFalse(StringUtils.isBlank(warnings.first()));
+        }
+    }
+
+
+    @Test
     public void canStoreImageArtifactsRemotely() throws IOException, StorageException {
         ArtifactExtractionRequest request = mock(ArtifactExtractionRequest.class);
         when(request.getMediaType())
@@ -172,7 +224,7 @@ public class TestStorageService {
 
 
     @Test
-    public void canStoreImageArtifactsLocally() throws IOException {
+    public void canStoreImageArtifactsLocally() throws IOException, StorageException {
         ArtifactExtractionRequest request = mock(ArtifactExtractionRequest.class);
         when(request.getMediaType())
                 .thenReturn(MediaType.IMAGE);
@@ -239,7 +291,7 @@ public class TestStorageService {
 
 
     @Test
-    public void canStoreVideoArtifactLocally() throws IOException {
+    public void canStoreVideoArtifactLocally() throws IOException, StorageException {
         ArtifactExtractionRequest request = mock(ArtifactExtractionRequest.class);
         when(request.getMediaType())
                 .thenReturn(MediaType.VIDEO);

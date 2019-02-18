@@ -27,12 +27,14 @@
 package org.mitre.mpf.wfm.data.entities.transients;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
-import org.mitre.mpf.wfm.service.StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Map;
+import java.util.Optional;
 
 // Wrapper class for the system property values that should have been captured in a
 // ImmutableConfiguration object when a batch job is created. The system property values will be
@@ -94,18 +96,19 @@ public class SystemPropertiesSnapshot {
         return Double.valueOf(_properties.get("detection.video.track.overlap.threshold"));
     }
 
-    public StorageBackend.Type getHttpObjectStorageType() throws StorageException {
-        String storageType = _properties.get("http.object.storage.type");
+    public Optional<URI> getNginxStorageServiceUri() throws StorageException {
+        String uriString = _properties.get("http.object.storage.nginx.service_uri");
+        if (StringUtils.isBlank(uriString)) {
+            return Optional.empty();
+        }
         try {
-            return StorageBackend.Type.valueOf(storageType);
+            return Optional.of(new URI(uriString));
         }
-        catch (IllegalArgumentException e) {
-            throw new StorageException("Invalid storage type: " + storageType, e);
+        catch (URISyntaxException e) {
+            throw new StorageException(String.format(
+                "Expected the \"http.object.storage.nginx.service_uri\" property to either be a valid URI or an empty string but it was \"%s\"",
+                uriString), e);
         }
-    }
-
-    public URI getHttpStorageServiceUri() {
-        return URI.create(_properties.get("http.object.storage.service_uri"));
     }
 
     public boolean isOutputObjectExemplarOnly() {

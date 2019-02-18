@@ -40,7 +40,6 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.EnvVar;
-import org.mitre.mpf.wfm.service.StorageBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -737,20 +736,16 @@ public class PropertiesUtil {
         }
     }
 
-    public StorageBackend.Type getHttpObjectStorageType() {
-        return mpfPropertiesConfig.get(StorageBackend.Type.class, "http.object.storage.type");
+    public URI getNginxStorageServiceUri() {
+        return mpfPropertiesConfig.get(URI.class, "http.object.storage.nginx.service_uri");
     }
 
-    public URI getHttpStorageServiceUri() {
-        return mpfPropertiesConfig.get(URI.class, "http.object.storage.service_uri");
+    public int getNginxStorageUploadThreadCount() {
+        return mpfPropertiesConfig.getInt("http.object.storage.nginx.upload.thread.count");
     }
 
-    public int getHttpStorageUploadThreadCount() {
-        return mpfPropertiesConfig.getInt("http.object.storage.upload.thread.count");
-    }
-
-    public int getHttpStorageUploadSegmentSize() {
-        return mpfPropertiesConfig.getInt("http.object.storage.upload.segment.size");
+    public int getNginxStorageUploadSegmentSize() {
+        return mpfPropertiesConfig.getInt("http.object.storage.nginx.upload.segment.size");
     }
 
     public int getHttpStorageUploadRetryCount() {

@@ -43,7 +43,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 
 @Service
 public class StorageService {
@@ -70,28 +69,31 @@ public class StorageService {
 
 
     public URI store(JsonOutputObject outputObject) throws IOException {
-        StorageBackend remoteBackend = getRemoteBackend(b -> b.canStore(outputObject));
-        if (remoteBackend == null) {
-            return _localBackend.store(outputObject);
+        Exception remoteException = null;
+        try {
+            for (StorageBackend remoteBackend : _remoteBackends) {
+                if (remoteBackend.canStore(outputObject)) {
+                    return remoteBackend.store(outputObject);
+                }
+            }
+        }
+        catch (StorageException ex) {
+            remoteException = ex;
+            LOG.warn(String.format(
+                    "Failed to remotely store output object for job id %s. It will be stored locally instead.",
+                    outputObject.getJobId()), ex);
+            outputObject.getJobWarnings().add(
+                    "This output object was stored locally because storing it remotely failed due to: " + ex);
         }
 
         try {
-            return remoteBackend.store(outputObject);
+            return _localBackend.store(outputObject);
         }
-        catch (IOException | StorageException outerEx) {
-            LOG.warn(String.format(
-                    "Failed to remotely store output object for job id %s. It will be stored locally instead.",
-                    outputObject.getJobId()), outerEx);
-            outputObject.getJobWarnings().add(
-                    "This output object was stored locally because storing it remotely failed due to: " + outerEx);
-
-            try {
-                return _localBackend.store(outputObject);
+        catch (IOException localException) {
+            if (remoteException != null) {
+                localException.addSuppressed(remoteException);
             }
-            catch (IOException innerEx) {
-                innerEx.addSuppressed(outerEx);
-                throw innerEx;
-            }
+            throw localException;
         }
     }
 
@@ -101,23 +103,27 @@ public class StorageService {
             throw new IllegalArgumentException("Expected media type of VIDEO, but it was " + request.getMediaType());
         }
 
-        StorageBackend remoteBackend = getRemoteBackend(b -> b.canStore(request));
-        if (remoteBackend == null) {
-            return _localBackend.storeVideoArtifacts(request);
+        Exception remoteException = null;
+        try {
+            for (StorageBackend remoteBackend : _remoteBackends) {
+                if (remoteBackend.canStore(request)) {
+                    return remoteBackend.storeVideoArtifacts(request);
+                }
+            }
+        }
+        catch (IOException | StorageException ex) {
+            remoteException = ex;
+            handleRemoteStorageFailure(request, remoteException);
         }
 
         try {
-            return remoteBackend.storeVideoArtifacts(request);
+            return _localBackend.storeVideoArtifacts(request);
         }
-        catch (IOException | StorageException remoteException) {
-            handleRemoteStorageFailure(request, remoteException);
-            try {
-                return _localBackend.storeVideoArtifacts(request);
-            }
-            catch (IOException localException) {
+        catch (IOException localException) {
+            if (remoteException != null) {
                 localException.addSuppressed(remoteException);
-                throw localException;
             }
+            throw localException;
         }
     }
 
@@ -127,23 +133,27 @@ public class StorageService {
             throw new IllegalArgumentException("Expected media type of IMAGE, but it was " + request.getMediaType());
         }
 
-        StorageBackend remoteBackend = getRemoteBackend(b -> b.canStore(request));
-        if (remoteBackend == null) {
-            return _localBackend.storeImageArtifact(request);
+        Exception remoteException = null;
+        try {
+            for (StorageBackend remoteBackend : _remoteBackends) {
+                if (remoteBackend.canStore(request)) {
+                    return remoteBackend.storeImageArtifact(request);
+                }
+            }
+        }
+        catch (IOException | StorageException ex) {
+            remoteException = ex;
+            handleRemoteStorageFailure(request, remoteException);
         }
 
         try {
-            return remoteBackend.storeImageArtifact(request);
+            return _localBackend.storeImageArtifact(request);
         }
-        catch (IOException | StorageException remoteException) {
-            handleRemoteStorageFailure(request, remoteException);
-            try {
-                return _localBackend.storeImageArtifact(request);
-            }
-            catch (IOException localException) {
+        catch (IOException localException) {
+            if (remoteException != null) {
                 localException.addSuppressed(remoteException);
-                throw localException;
             }
+            throw localException;
         }
     }
 
@@ -158,22 +168,21 @@ public class StorageService {
 
 
     public void store(MarkupResult markupResult) {
-        StorageBackend remoteBackend = getRemoteBackend(b -> b.canStore(markupResult));
-        if (remoteBackend == null) {
-            _localBackend.store(markupResult);
-            return;
-        }
         try {
-            remoteBackend.store(markupResult);
+            for (StorageBackend remoteBackend : _remoteBackends) {
+                if (remoteBackend.canStore(markupResult)) {
+                    remoteBackend.store(markupResult);
+                    return;
+                }
+            }
         }
-        catch (StorageException | IOException e) {
+        catch (IOException | StorageException ex) {
             LOG.warn(String.format(
                     "Failed to remotely store markup for job id %s. It will be stored locally instead.",
-                    markupResult.getJobId()), e);
+                    markupResult.getJobId()), ex);
 
-            _localBackend.store(markupResult);
 
-            String message = "Markup was stored locally because storing it remotely failed due to: " + e;
+            String message = "Markup was stored locally because storing it remotely failed due to: " + ex;
             String existingMessage = markupResult.getMessage();
             if (existingMessage != null && !existingMessage.isEmpty()) {
                 message = existingMessage + "; " + message;
@@ -182,13 +191,6 @@ public class StorageService {
             markupResult.setMarkupStatus(MarkupStatus.COMPLETE_WITH_WARNING);
             _inProgressJobs.addJobWarning(markupResult.getJobId(), message);
         }
-    }
-
-
-    private StorageBackend getRemoteBackend(Predicate<StorageBackend> canStorePred) {
-        return _remoteBackends.stream()
-                .filter(canStorePred)
-                .findFirst()
-                .orElse(null);
+        _localBackend.store(markupResult);
     }
 }

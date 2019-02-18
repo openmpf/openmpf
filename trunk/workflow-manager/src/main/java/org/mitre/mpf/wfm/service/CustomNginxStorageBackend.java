@@ -46,7 +46,6 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PipeStream;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -101,20 +100,15 @@ public class CustomNginxStorageBackend implements StorageBackend {
 
 
     @Override
-    public boolean canStore(JsonOutputObject outputObject) {
+    public boolean canStore(JsonOutputObject outputObject) throws StorageException {
         return canStore(outputObject.getJobId());
     }
 
-    private boolean canStore(long jobId) {
-        SystemPropertiesSnapshot propertiesSnapshot = _inProgressBatchJobs.getJob(jobId)
-                .getSystemPropertiesSnapshot();
-        try {
-            return propertiesSnapshot.getHttpObjectStorageType() == StorageBackend.Type.CUSTOM_NGINX;
-        }
-        catch (StorageException e) {
-            log.warn(String.format("Job %s had an invalid storage type.", jobId), e);
-            return false;
-        }
+    private boolean canStore(long jobId) throws StorageException {
+        return _inProgressBatchJobs.getJob(jobId)
+                .getSystemPropertiesSnapshot()
+                .getNginxStorageServiceUri()
+                .isPresent();
     }
 
     @Override
@@ -126,7 +120,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
     }
 
     @Override
-    public boolean canStore(MarkupResult markupResult) {
+    public boolean canStore(MarkupResult markupResult) throws StorageException {
         return canStore(markupResult.getJobId());
     }
 
@@ -145,7 +139,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
 
 
     @Override
-    public boolean canStore(ArtifactExtractionRequest request) {
+    public boolean canStore(ArtifactExtractionRequest request) throws StorageException {
         return canStore(request.getJobId());
     }
 
@@ -166,10 +160,13 @@ public class CustomNginxStorageBackend implements StorageBackend {
         return StreamableFrameExtractor.run(request, inStream -> store(serviceUri, inStream));
     }
 
-    private URI getServiceUri(long jobId) {
+
+    private URI getServiceUri(long jobId) throws StorageException {
         return _inProgressBatchJobs.getJob(jobId)
                 .getSystemPropertiesSnapshot()
-                .getHttpStorageServiceUri();
+                .getNginxStorageServiceUri()
+                // The URI should always be present at this point since it was checked in canStore().
+                .orElseThrow(() -> new StorageException(String.format("Unable to store job %s in Nginx.", jobId)));
     }
 
 
@@ -212,8 +209,8 @@ public class CustomNginxStorageBackend implements StorageBackend {
     private List<FilePartETag> sendContent(RetryingHttpClient client, URI serviceUri, String uploadId,
                                            InputStream content) throws StorageException {
         try {
-            int uploadThreadCount = _propertiesUtil.getHttpStorageUploadThreadCount();
-            int uploadSegmentSize = _propertiesUtil.getHttpStorageUploadSegmentSize();
+            int uploadThreadCount = _propertiesUtil.getNginxStorageUploadThreadCount();
+            int uploadSegmentSize = _propertiesUtil.getNginxStorageUploadSegmentSize();
 
             Dispatcher dispatcher = new Dispatcher(client, serviceUri, uploadId, content);
 
@@ -470,7 +467,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
         private final RetryTemplate _retryTemplate;
 
         public RetryingHttpClient(PropertiesUtil propertiesUtil) {
-            int threadCount = propertiesUtil.getHttpStorageUploadThreadCount();
+            int threadCount = propertiesUtil.getNginxStorageUploadThreadCount();
             _client = HttpClients.custom()
                     .setMaxConnTotal(threadCount)
                     .setMaxConnPerRoute(threadCount)

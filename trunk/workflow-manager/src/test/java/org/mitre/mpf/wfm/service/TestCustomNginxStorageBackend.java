@@ -72,6 +72,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -119,10 +120,10 @@ public class TestCustomNginxStorageBackend {
 
     @Before
     public void init() throws StorageException {
-        when(_mockPropertiesUtil.getHttpStorageUploadThreadCount())
+        when(_mockPropertiesUtil.getNginxStorageUploadThreadCount())
                 .thenReturn(2);
 
-        when(_mockPropertiesUtil.getHttpStorageUploadSegmentSize())
+        when(_mockPropertiesUtil.getNginxStorageUploadSegmentSize())
                 .thenReturn(2 * 1024 * 1024);
 
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
@@ -136,10 +137,8 @@ public class TestCustomNginxStorageBackend {
 
     private void setStorageUri(String uri) throws StorageException {
         SystemPropertiesSnapshot propertiesSnapshot = mock(SystemPropertiesSnapshot.class);
-        when(propertiesSnapshot.getHttpObjectStorageType())
-                .thenReturn(StorageBackend.Type.CUSTOM_NGINX);
-        when(propertiesSnapshot.getHttpStorageServiceUri())
-                .thenReturn(URI.create(uri));
+        when(propertiesSnapshot.getNginxStorageServiceUri())
+                .thenReturn(Optional.of(URI.create(uri)));
 
         TransientJob job = mock(TransientJob.class);
         when(job.getSystemPropertiesSnapshot())
@@ -220,7 +219,7 @@ public class TestCustomNginxStorageBackend {
     public void testInvalidJson() throws IOException {
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
                 .thenReturn(0);
-        when(_mockPropertiesUtil.getHttpStorageUploadThreadCount())
+        when(_mockPropertiesUtil.getNginxStorageUploadThreadCount())
                 .thenReturn(1);
         try {
             JsonOutputObject outputObject = mock(JsonOutputObject.class);

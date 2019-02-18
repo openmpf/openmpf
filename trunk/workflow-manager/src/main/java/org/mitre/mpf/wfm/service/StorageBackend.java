@@ -37,16 +37,16 @@ import java.util.Map;
 
 public interface StorageBackend {
 
-    public boolean canStore(JsonOutputObject outputObject);
+    public boolean canStore(JsonOutputObject outputObject) throws StorageException;
     public URI store(JsonOutputObject outputObject) throws StorageException, IOException;
 
 
-    public boolean canStore(ArtifactExtractionRequest request);
+    public boolean canStore(ArtifactExtractionRequest request) throws StorageException;
     public URI storeImageArtifact(ArtifactExtractionRequest request) throws IOException, StorageException;
 
     public Map<Integer, URI> storeVideoArtifacts(ArtifactExtractionRequest request) throws IOException, StorageException;
 
-    public boolean canStore(MarkupResult markupResult);
+    public boolean canStore(MarkupResult markupResult) throws StorageException;
     public void store(MarkupResult markupResult) throws IOException, StorageException;
 
 

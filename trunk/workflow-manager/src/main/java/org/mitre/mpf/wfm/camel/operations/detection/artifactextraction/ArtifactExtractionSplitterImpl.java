@@ -81,7 +81,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 	}
 
 	private boolean isNonVisualObjectType(String type) {
-		return StringUtils.equalsIgnoreCase(type, "MOTION") || StringUtils.equalsIgnoreCase(type, "SPEECH");
+		return StringUtils.equalsIgnoreCase(type, "MOTION") || StringUtils.equalsIgnoreCase(type, "SPEECH") || StringUtils.equalsIgnoreCase(type, "SCENE");
 	}
 
 	@Override

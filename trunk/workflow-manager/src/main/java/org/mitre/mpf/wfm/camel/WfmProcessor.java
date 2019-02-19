@@ -27,14 +27,8 @@
 package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
-import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * The Workflow Manager relies on certain headers. When a message passes through a processor,
@@ -46,16 +40,12 @@ import org.springframework.beans.factory.annotation.Autowired;
  * overrides and seals the process method. Any subclass must instead override the wfmProcess method.
  */
 public abstract class WfmProcessor implements WfmProcessorInterface {
-	private static final Logger log = LoggerFactory.getLogger(WfmProcessor.class);
 
-	// For convenience, an instance of this class is accessible to all subclasses.
-	@Autowired
-	protected JsonUtils jsonUtils;
-
+	@Override
 	public abstract void wfmProcess(Exchange exchange) throws WfmProcessingException;
 
 	@Override
-	public void process(Exchange exchange) throws Exception {
+	public void process(Exchange exchange) {
 		// Assertions
 		assert exchange.getIn().getHeaders().containsKey(MpfHeaders.JOB_ID) : String.format("The '%s' header must be set on messages handled by this processor.", MpfHeaders.JOB_ID);
 		assert exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class) != null : String.format("The '%s' header (value=%s) header be convertible to Long.", MpfHeaders.JOB_ID, exchange.getIn().getHeader(MpfHeaders.JOB_ID));
@@ -65,12 +55,9 @@ public abstract class WfmProcessor implements WfmProcessorInterface {
 		exchange.getOut().getHeaders().put(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
 
 		// Execute the processor.
-		try {
-			wfmProcess(exchange);
-		} catch(WfmProcessingException wpe) {
-			throw wpe;
-		}
+		wfmProcess(exchange);
 	}
+
 
 	@Override
 	public String toString() {

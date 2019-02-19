@@ -26,26 +26,27 @@
 
 package org.mitre.mpf.wfm.camel.operations.jobcreation;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.camel.Exchange;
-import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.JsonJobRequest;
+import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +54,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -71,9 +72,8 @@ public class JobCreationProcessor extends WfmProcessor {
     @Autowired
     private PropertiesUtil propertiesUtil;
 
-    @Autowired
-	@Qualifier(RedisImpl.REF)
-	private Redis redis;
+	@Autowired
+	private InProgressBatchJobsService inProgressBatchJobs;
 
 	@Autowired
 	private JsonUtils jsonUtils;
@@ -89,58 +89,7 @@ public class JobCreationProcessor extends WfmProcessor {
 	@Autowired
 	private JobStatusBroadcaster jobStatusBroadcaster;
 
-	/** Converts a pipeline represented in JSON to a {@link org.mitre.mpf.wfm.data.entities.transients.TransientPipeline} instance. */
-	private TransientPipeline buildPipeline(JsonPipeline jsonPipeline) {
 
-		if(jsonPipeline == null) {
-			return null;
-		}
-
-		String name = jsonPipeline.getName();
-		String description = jsonPipeline.getDescription();
-		TransientPipeline transientPipeline = new TransientPipeline(name, description);
-
-		// Iterate through the pipeline's stages and add them to the pipeline protocol buffer.
-		for(JsonStage stage : jsonPipeline.getStages()) {
-			transientPipeline.getStages().add(buildStage(stage));
-		}
-
-		return transientPipeline;
-	}
-
-	/** Maps a stage (represented in JSON) to a {@link org.mitre.mpf.wfm.data.entities.transients.TransientStage} instance. */
-	private TransientStage buildStage(JsonStage stage) {
-		String name = stage.getName();
-		String description = stage.getDescription();
-		String operation = stage.getActionType();
-
-		TransientStage transientStage = new TransientStage(name, description, ActionType.valueOf(TextUtils.trimAndUpper(operation)));
-
-		// Iterate through the stage's actions and add them to the stage protocol buffer.
-		for(JsonAction action : stage.getActions()) {
-			transientStage.getActions().add(buildAction(action));
-		}
-
-		return transientStage;
-	}
-
-	/** Maps an action (represented in JSON) to a {@link org.mitre.mpf.wfm.data.entities.transients.TransientAction} instance. */
-	private TransientAction buildAction(JsonAction action) {
-		String name = action.getName();
-		String description = action.getDescription();
-		String algorithm = action.getAlgorithm();
-
-		TransientAction transientAction = new TransientAction(name, description, algorithm);
-
-		// Finally, iterate through all of the properties in this action and copy them to the protocol buffer.
-		for(Map.Entry<String, String> property : action.getProperties().entrySet()) {
-			if(StringUtils.isNotBlank(property.getKey()) && StringUtils.isNotBlank(property.getValue())) {
-				transientAction.getProperties().put(property.getKey().toUpperCase(), property.getValue());
-			}
-		}
-
-		return transientAction;
-	}
 
 	@Override
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
@@ -157,50 +106,63 @@ public class JobCreationProcessor extends WfmProcessor {
 			if(jobId == null) {
 				// A persistent representation of the object has not yet been created, so do that now.
 				jobRequestEntity = jobRequestBo.initialize(jobRequest);
+				jobId = jobRequestEntity.getId();
 			} else {
 				// The persistent representation already exists - retrieve it.
 				jobRequestEntity = jobRequestDao.findById(jobId);
 			}
 
-            // Capture the current state of the detection system properties at the time when this job is created. Since the
-            // detection system properties may be changed by an administrator, we must ensure that the job uses a consistent set of detection system
-            // properties through all stages of the jobs pipeline by storing these detection system property values in REDIS.
-            TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+            // Capture the current state of the detection system properties at the time when this job is created.
+			// Since the detection system properties may be changed by an administrator, we must ensure that the job
+			// uses a consistent set of detection system properties through all stages of the job's pipeline.
+            SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
-            TransientPipeline transientPipeline = buildPipeline(jobRequest.getPipeline());
+            TransientPipeline transientPipeline = TransientPipeline.from(jobRequest.getPipeline());
 
-			TransientJob transientJob = new TransientJob(jobRequestEntity.getId(), jobRequest.getExternalId(), transientDetectionSystemProperties, transientPipeline,
-                                                0, jobRequest.getPriority(), jobRequest.isOutputObjectEnabled(), false,jobRequest.getCallbackURL(),jobRequest.getCallbackMethod());
-
-			transientJob.getOverriddenJobProperties().putAll(jobRequest.getJobProperties());
-
-			// algorithm properties should override any previously set properties (note: priority scheme enforced in DetectionSplitter)
-			transientJob.getOverriddenAlgorithmProperties().putAll(jobRequest.getAlgorithmProperties());
-
-			transientJob.getMedia().addAll(buildMedia(jobRequest.getMedia()));
-
-            redis.persistJob(transientJob);
+			TransientJob transientJob = inProgressBatchJobs.addJob(
+					jobRequestEntity.getId(),
+					jobRequest.getExternalId(),
+					systemPropertiesSnapshot,
+					transientPipeline,
+					jobRequest.getPriority(),
+					jobRequest.isOutputObjectEnabled(),
+					jobRequest.getCallbackURL(),
+					jobRequest.getCallbackMethod(),
+					buildMedia(jobRequest.getMedia()),
+					jobRequest.getJobProperties(),
+					(Map) jobRequest.getAlgorithmProperties());
 
 			if (transientPipeline == null) {
-				redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+				inProgressBatchJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
 				throw new WfmProcessingException(INVALID_PIPELINE_MESSAGE);
 			}
 
+			long failedMediaCount = transientJob
+					.getMedia()
+					.stream()
+					.filter(TransientMedia::isFailed)
+					.count();
 			BatchJobStatusType jobStatus;
-			if (transientJob.getMedia().stream().anyMatch(m -> m.isFailed())) {
+			if (failedMediaCount == 0) {
+			    jobStatus = BatchJobStatusType.IN_PROGRESS;
+			}
+			else if (failedMediaCount == transientJob.getMedia().size()) {
 				jobStatus = BatchJobStatusType.ERROR;
-				// allow the job to run since some of the media may be good
-			} else {
-				jobStatus = BatchJobStatusType.IN_PROGRESS;
+				exchange.getOut().setHeader(MpfHeaders.JOB_CREATION_ERROR, true);
+			}
+			else {
+				jobStatus = BatchJobStatusType.IN_PROGRESS_ERRORS;
 			}
 
+
 			jobRequestEntity.setStatus(jobStatus);
-			redis.setJobStatus(jobId, jobStatus);
-			jobStatusBroadcaster.broadcast(jobId, 0, jobStatus);
+			inProgressBatchJobs.setJobStatus(jobId, jobStatus);
+			if (!jobStatus.isTerminal()) {
+				jobStatusBroadcaster.broadcast(jobId, 0, jobStatus);
+			}
 
 			jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 
-			exchange.getOut().setBody(jsonUtils.serialize(transientJob));
 			exchange.getOut().getHeaders().put(MpfHeaders.JOB_ID, jobRequestEntity.getId());
 
 		} catch(WfmProcessingException exception) {
@@ -224,14 +186,10 @@ public class JobCreationProcessor extends WfmProcessor {
 		}
 	}
 
-	private List<TransientMedia> buildMedia(List<JsonMediaInputObject> inputMedia) throws WfmProcessingException {
-		List<TransientMedia> transientMedia = new ArrayList<>(inputMedia.size());
-		for(JsonMediaInputObject inputObject : inputMedia) {
-			TransientMedia media = new TransientMedia(redis.getNextSequenceValue(), inputObject.getMediaUri());
-			media.getMediaSpecificProperties().putAll(inputObject.getProperties());
-			transientMedia.add(media);
-		}
-		return transientMedia;
+	private List<TransientMedia> buildMedia(Collection<JsonMediaInputObject> inputMedia) {
+		return inputMedia.stream()
+				.map(in -> inProgressBatchJobs.initMedia(in.getMediaUri(), in.getProperties()))
+				.collect(ImmutableList.toImmutableList());
 	}
 }
 

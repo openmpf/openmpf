@@ -24,13 +24,8 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
-//TODO: All functions in this file are for future use and are untested.
-// Not used in single process, single pipeline stage, architecture
-
-
-#ifndef OPENMPF_OCVFRAMEREADER_H
-#define OPENMPF_OCVFRAMEREADER_H
+#ifndef OPENMPF_OCV_FRAME_READER_H
+#define OPENMPF_OCV_FRAME_READER_H
 
 #include <map>
 #include <string>
@@ -41,52 +36,59 @@
 
 #include <log4cxx/logger.h>
 
-#include "MPFFrameReader.h"
+#include <MPFStreamingDetectionComponent.h>
+#include "ExecutorErrors.h"
+#include "JobSettings.h"
+#include "StreamingVideoCapture.h"
+#include "MPFMessagingConnection.h"
+#include "MPFMessage.h"
+#include "BasicAmqMessageReader.h"
+#include "BasicAmqMessageSender.h"
+#include "MPFFrameStore.h"
 
-namespace MPF { namespace COMPONENT {
+namespace MPF {
+namespace COMPONENT {
 
-class OcvFrameReader : public MPFFrameReader {
+class OcvFrameReader {
 
   public:
-    OcvFrameReader(log4cxx::LoggerPtr &logger) : logger_(logger) {}
-    ~OcvFrameReader() {
-        CloseFrameStore();
-    }
+    OcvFrameReader(const log4cxx::LoggerPtr &logger,
+                   const std::string &log_prefix,
+                   MPF::MPFMessagingConnection &connection,
+                   const MPF::COMPONENT::MPFStreamingVideoJob &job,
+                   MPF::COMPONENT::JobSettings &&settings);
 
-    virtual MPFFrameReaderError AttachToStream(
-                              const MPFFrameReaderJob &job,
-                              Properties &stream_properties) override;
-    virtual MPFFrameReaderError OpenFrameStore(
-                              MPFFrameReaderJob &job,
-                              Properties &stream_properties) override;
-    virtual MPFFrameReaderError CloseFrameStore() override;
-    virtual MPFFrameReaderError ReadAndStoreFrame(MPFFrameReaderJob &job,
-                                                  const size_t offset) override;
+    ~OcvFrameReader() = default;
+
+    MPF::COMPONENT::ExitCode RunJob();
 
 
   private:
-    cv::VideoCapture video_capture_;
+
     log4cxx::LoggerPtr logger_;
-    int segment_length_;        // number of frames per processing
-                                // segment.
-    int num_segments_;          // This together with segment_length
-                                // determines the total frame capacity
-                                // of the frame storage buffer.
-    uint8_t *frame_buffer_start_addr_;  // virtual address of the
-                                        // start of the frame buffer.
-    int frame_buffer_segment_capacity_; // how many segments can be
-                                        // stored in the frame buffer
-                                        // before we need to start
-                                        // reusing storage.
-    int frame_num_rows_;
-    int frame_num_cols_;
-    int frame_type_; // Corresponds to the OpenCV type, e.g., CV_8UC3
-    size_t frame_byte_size_;     // Size of each frame in bytes
-    size_t frame_buffer_byte_size_;  // Total size of the frame store;
-                                     // needed for mapping the shared
-                                     // storage file into memory.
-    int frame_buffer_file_descriptor_;
+    std::string log_prefix_;
+    MPF::COMPONENT::JobSettings settings_;
+    MPF::BasicAmqMessageReader<MPFFrameReadyMessage> release_frame_reader_;
+
+    MPF::BasicAmqMessageSender<MPFJobStatusMessage> job_status_sender_;
+    MPF::BasicAmqMessageSender<MPFSegmentReadyMessage> stage1_segment_ready_sender_;
+    MPF::BasicAmqMessageSender<MPFSegmentReadyMessage> stage2_segment_ready_sender_;
+    MPF::BasicAmqMessageSender<MPFFrameReadyMessage> frame_ready_sender_;
+    MPF::MPFFrameStore frame_store_;
+    MPF::COMPONENT::StreamingVideoCapture video_capture_;
+
+    template <MPF::COMPONENT::RetryStrategy RETRY_STRATEGY>
+    void Run();
+
+    template <MPF::COMPONENT::RetryStrategy RETRY_STRATEGY>
+    void ReadFrame(cv::Mat &frame);
+
+    bool ReleaseFrames();
+
+    long GetTimestampMillis();
+
 };
 }}
 
-#endif //OPENMPF_OCVFRAMEREADER_H
+
+#endif //OPENMPF_OCV_FRAME_READER_H

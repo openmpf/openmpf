@@ -34,8 +34,8 @@ import org.mitre.mpf.videooverlay.BoundingBox;
 import org.mitre.mpf.videooverlay.BoundingBoxMap;
 import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.camel.StageSplitter;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.IdGenerator;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.transients.*;
@@ -51,9 +51,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.awt.*;
-import java.io.File;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.stream.DoubleStream;
 
 @Component(MarkupStageSplitter.REF)
@@ -62,8 +61,7 @@ public class MarkupStageSplitter implements StageSplitter {
 	private static final Logger log = LoggerFactory.getLogger(MarkupStageSplitter.class);
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
-	private Redis redis;
+	private InProgressBatchJobsService inProgressJobs;
 
 	@Autowired
 	private PropertiesUtil propertiesUtil;
@@ -95,7 +93,7 @@ public class MarkupStageSplitter implements StageSplitter {
 		BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
 		long mediaId = media.getId();
 		for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
-			SortedSet<Track> tracks = redis.getTracks(job.getId(), mediaId, stageIndex, actionIndex);
+			SortedSet<Track> tracks = inProgressJobs.getTracks(job.getId(), mediaId, stageIndex, actionIndex);
 			for (Track track : tracks) {
 				addTrackToBoundingBoxMap(track, boundingBoxMap);
 			}
@@ -161,7 +159,7 @@ public class MarkupStageSplitter implements StageSplitter {
 
 
 	@Override
-	public final List<Message> performSplit(TransientJob transientJob, TransientStage transientStage) throws Exception {
+	public final List<Message> performSplit(TransientJob transientJob, TransientStage transientStage) {
 		List<Message> messages = new ArrayList<>();
 
 		int lastDetectionStageIndex = findLastDetectionStageIndex(transientJob.getPipeline());
@@ -170,8 +168,9 @@ public class MarkupStageSplitter implements StageSplitter {
 
 		for(int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
 			TransientAction transientAction = transientStage.getActions().get(actionIndex);
-			for (int mediaIndex = 0; mediaIndex < transientJob.getMedia().size(); mediaIndex++) {
-				TransientMedia transientMedia = transientJob.getMedia().get(mediaIndex);
+			int mediaIndex = -1;
+			for (TransientMedia transientMedia : transientJob.getMedia()) {
+				mediaIndex++;
 				if (transientMedia.isFailed()) {
 					log.debug("Skipping '{}' - it is in an error state.", transientMedia.getId(), transientMedia.getLocalPath());
 				} else if(!StringUtils.startsWith(transientMedia.getType(), "image") && !StringUtils.startsWith(transientMedia.getType(), "video")) {
@@ -184,8 +183,8 @@ public class MarkupStageSplitter implements StageSplitter {
 							.setActionIndex(actionIndex)
 							.setMediaId(transientMedia.getId())
 							.setMediaType(Markup.MediaType.valueOf(transientMedia.getMediaType().toString().toUpperCase()))
-							.setRequestId(redis.getNextSequenceValue())
-							.setSourceUri(new File(transientMedia.getLocalPath()).getAbsoluteFile().toPath().toUri().toString())
+							.setRequestId(IdGenerator.next())
+							.setSourceUri(transientMedia.getLocalPath().toUri().toString())
 							.setDestinationUri(boundingBoxMapEntryList.size() > 0 ?
 									propertiesUtil.createMarkupPath(transientJob.getId(), transientMedia.getId(), getMarkedUpMediaExtensionForMediaType(transientMedia.getMediaType())).toUri().toString() :
 									propertiesUtil.createMarkupPath(transientJob.getId(), transientMedia.getId(), getFileExtension(transientMedia.getType())).toUri().toString())

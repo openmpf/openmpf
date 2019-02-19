@@ -125,7 +125,7 @@ public class BoundingBoxWriter {
         }
 
         if(response != 0) {
-            throw new VideoOverlayJniException(String.format("Native method invocation returned the error code %d.", response), response);
+            throw new VideoOverlayJniException(response);
         }
 
     }

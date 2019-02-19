@@ -35,7 +35,11 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.enums.UriScheme;
 
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -237,7 +241,10 @@ public class TestVideoMediaSegmenter {
 
 
 	private static TransientMedia createTestMedia() {
-		TransientMedia media = new TransientMedia(1, "file:///example.avi");
+		URI mediaUri = URI.create("file:///example.avi");
+		TransientMediaImpl media = new TransientMediaImpl(
+				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+				null);
 		media.setLength(50);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;

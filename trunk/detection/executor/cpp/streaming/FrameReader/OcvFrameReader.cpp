@@ -24,139 +24,236 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-//TODO: All functions in this file are for future use and are untested.
-// Not used in single process, single pipeline stage, architecture
-
+#include <iostream>
 #include "OcvFrameReader.h"
+#include "JobSettings.h"
 #include "detectionComponentUtils.h"
+#include "StandardInWatcher.h"
 
-using namespace MPF;
-using namespace COMPONENT;
 using std::string;
 using namespace cv;
+using MPF::COMPONENT::ExitCode;
+using MPF::COMPONENT::FatalError;
+using MPF::COMPONENT::RetryStrategy;
 
-MPFFrameReaderError OcvFrameReader::AttachToStream(
-    const MPFFrameReaderJob &job,
-    Properties &stream_properties) {
+namespace MPF {
+namespace COMPONENT {
 
-    bool success;
-    string stream_uri = DetectionComponentUtils::GetProperty<string>(job.job_properties,
-                                                                     "STREAM_URI", "");
-    if (stream_uri.empty()) {
-        return FRAME_READER_INVALID_VIDEO_URI;
+OcvFrameReader::OcvFrameReader(const log4cxx::LoggerPtr &logger,
+                               const std::string &log_prefix,
+                               MPF::MPFMessagingConnection &connection,
+                               const MPF::COMPONENT::MPFStreamingVideoJob &job,
+                               MPF::COMPONENT::JobSettings &&settings) 
+        : logger_(logger)
+        , log_prefix_(log_prefix)
+        , settings_(std::move(settings))
+        , release_frame_reader_(settings_.release_frame_queue, connection)
+        , job_status_sender_(settings_.job_status_queue, connection)
+        , stage1_segment_ready_sender_(settings_.segment_ready_queue_stage1, connection)
+        , stage2_segment_ready_sender_(settings_.segment_ready_queue_stage2, connection)
+        , frame_ready_sender_(settings_.frame_ready_queue_stage1, connection)
+        , frame_store_(settings_)
+        , video_capture_(logger_, settings_.stream_uri, job) {}
+
+
+
+ExitCode OcvFrameReader::RunJob() {
+    try {
+
+        RetryStrategy retry_config = settings_.retry_strategy;
+
+        switch (retry_config) {
+            case RetryStrategy::NEVER_RETRY:
+                Run<RetryStrategy::NEVER_RETRY>();
+                break;
+            case RetryStrategy::NO_ALERT_NO_TIMEOUT:
+                Run<RetryStrategy::NO_ALERT_NO_TIMEOUT>();
+                break;
+            case RetryStrategy::NO_ALERT_WITH_TIMEOUT:
+                Run<RetryStrategy::NO_ALERT_WITH_TIMEOUT>();
+                break;
+            case RetryStrategy::ALERT_NO_TIMEOUT:
+                Run<RetryStrategy::ALERT_NO_TIMEOUT>();
+                break;
+            case RetryStrategy::ALERT_WITH_TIMEOUT:
+                Run<RetryStrategy::ALERT_WITH_TIMEOUT>();
+                break;
+        }
+
+        LOG4CXX_INFO(logger_, log_prefix_ << "Job has successfully completed because the quit command was received.");
+        return ExitCode::SUCCESS;
     }
-    
-    success = video_capture_.open(stream_uri);
-    if (!success || !video_capture_.isOpened()) {
-        return FRAME_READER_COULD_NOT_OPEN_STREAM;
+    catch (const cms::CMSException &ex) {
+        LOG4CXX_ERROR(logger_, log_prefix_ << "Exiting due to message broker error: " << ex.what());
+        return ExitCode::MESSAGE_BROKER_ERROR;
     }
-
-    stream_properties["STREAM_POSITION_MSEC"] = video_capture_.get(CAP_PROP_POS_MSEC);
-    stream_properties["STREAM_FRAMES_PER_SEC"] = video_capture_.get(CAP_PROP_FPS);
-
-    Mat first;
-    success = video_capture_.read(first);
-    if (!success) {
-        return FRAME_READER_COULD_NOT_READ_STREAM;
+    catch (const FatalError &ex) {
+        LOG4CXX_ERROR(logger_, log_prefix_ << "Exiting due to error: " << ex.what());
+        return ex.GetExitCode();
     }
-    stream_properties["FRAME_ROWS"] = std::to_string(first.rows);
-    stream_properties["FRAME_COLS"] = std::to_string(first.cols);
-    stream_properties["FRAME_NUM_PIXELS"] = std::to_string(first.total());
-    stream_properties["FRAME_PIXEL_SIZE"] = std::to_string(first.elemSize());
-    stream_properties["FRAME_PIXEL_TYPE"] = std::to_string(first.type());
-    stream_properties["FRAME_IS_CONTINUOUS"] = first.isContinuous() ? "true" : "false";
-
-    return FRAME_READER_SUCCESS;
+    catch (const std::exception &ex) {
+        LOG4CXX_ERROR(logger_, log_prefix_ << "Exiting due to error: " << ex.what());
+        return ExitCode::UNEXPECTED_ERROR;
+    }
+    catch (...) {
+        LOG4CXX_ERROR(logger_, log_prefix_ << "Exiting due to error.");
+        return ExitCode::UNEXPECTED_ERROR;
+    }
 }
 
 
-MPFFrameReaderError OcvFrameReader::OpenFrameStore(MPFFrameReaderJob &job,
-                                                   Properties &stream_properties){
+template <RetryStrategy RETRY_STRATEGY>
+void OcvFrameReader::Run() {
+    int frame_index = -1;
+    int segment_number = -1;
+    long frame_byte_size = 0;
 
-    string store_name = DetectionComponentUtils::GetProperty<string>(job.job_properties,
-                                                               "FRAME_STORE_NAME", "");
-    if (store_name.empty()) {
-        return FRAME_READER_INVALID_PROPERTY;
+    MPFJobStatusMessage msg(settings_.job_id, "IN_PROGRESS", GetTimestampMillis());
+    job_status_sender_.SendMsg(msg);
+
+    StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
+    std::chrono::milliseconds timeout_msec = settings_.message_receive_retry_interval;
+
+    while (!std_in_watcher->QuitReceived()) {
+
+        cv::Mat frame;
+        try {
+            ReadFrame<RETRY_STRATEGY>(frame);
+        }
+        catch (const InterruptedException &ex) {
+            // Quit was received while trying to read frame.
+            break;
+        }
+        long timestamp = GetTimestampMillis();
+
+        frame_byte_size = frame.rows * frame.cols * frame.elemSize();
+        frame_index++;
+        if (frame_index % settings_.segment_size == 0) {
+            // Increment the segment number and send the segment ready
+            // message.
+            segment_number++;
+            MPFSegmentReadyMessage msg(settings_.job_id, segment_number, frame.cols, frame.rows,
+                                       frame.type(), frame_byte_size);
+            stage1_segment_ready_sender_.SendMsg(msg);
+            if (settings_.num_pipeline_stages == 2) {
+                stage2_segment_ready_sender_.SendMsg(msg);
+            }
+        }
+
+        try {
+            // Put the frame into the frame store.
+            LOG4CXX_DEBUG(logger_, "Storing frame number " << frame_index);
+            frame_store_.StoreFrame(frame, frame_index);
+        }
+        catch (const std::runtime_error &e) {
+            throw FatalError(ExitCode::FRAME_STORE_ERROR, "Failed when trying to store a frame: " + std::string(e.what()));
+        }
+
+        // Send the frame ready message. Set process_this_frame to true.
+        MPFFrameReadyMessage msg(settings_.job_id, segment_number, frame_index, timestamp, true);
+        frame_ready_sender_.SendMsg(msg);
+
+        // Try to release as many frames as we can.
+        bool frames_released = ReleaseFrames();
+
+        // If we haven't been able to release enough frames, we may
+        // have reached capacity in the frame store. If that is the
+        // case, then we need to block until we can release at least
+        // one.
+        while (frame_store_.AtCapacity() && !frames_released) {
+            LOG4CXX_INFO(logger_, "Frame Store at capacity, releasing more frames");
+            frames_released = ReleaseFrames();
+        }
     }
-
-    num_segments_ = 
-            DetectionComponentUtils::GetProperty<int>(job.job_properties,
-                                                      "NUM_SEGMENTS", 0);
-    if (num_segments_ == 0) {
-        return FRAME_READER_INVALID_PROPERTY;
-    }
-
-
-    frame_num_rows_ = 
-            DetectionComponentUtils::GetProperty<int>(stream_properties,
-                                                      "FRAME_ROWS", 0);
-    if (frame_num_rows_ == 0) {
-        return FRAME_READER_BAD_FRAME_SIZE;
-    }
-
-    int frame_num_cols_ = 
-            DetectionComponentUtils::GetProperty<int>(stream_properties,
-                                                      "FRAME_COLS", 0);
-    if (frame_num_cols_ == 0) {
-        return FRAME_READER_BAD_FRAME_SIZE;
-    }
-
-    int elem_size = 
-            DetectionComponentUtils::GetProperty<int>(stream_properties,
-                                                      "FRAME_PIXEL_SIZE", 0);
-    if (elem_size == 0) {
-        return FRAME_READER_BAD_FRAME_SIZE;
-    }
-
-    frame_byte_size_ = frame_num_cols_*frame_num_rows_*elem_size;
-    frame_buffer_byte_size_ = frame_byte_size_*num_segments_;
-
-    string err_str;
-    frame_store_.Create(store_name, frame_byte_size_, err_str);
-    if (!err_str.empty()) {
-        return FRAME_READER_MEMORY_ALLOCATION_FAILED;
-    }
-    return FRAME_READER_SUCCESS;
 }
 
-MPFFrameReaderError OcvFrameReader::CloseFrameStore() {
-    string err_str;
-    frame_store_.Close(err_str);
-    if (!err_str.empty()) {
-        return FRAME_READER_COULD_NOT_CLOSE_STREAM;
+bool OcvFrameReader::ReleaseFrames() {
+    MPFFrameReadyMessage msg;
+    std::vector<size_t> frame_indices;
+    StandardInWatcher *std_in_watcher = StandardInWatcher::GetInstance();
+    bool got_msg = true;
+
+    // Read messages from the release frame queue until we have no
+    // more of them. Save the index in each message to a vector, then
+    // delete them as a group.
+    while (got_msg && !std_in_watcher->QuitReceived()) {
+        got_msg = release_frame_reader_.GetMsgNoWait(msg);
+        if (got_msg) {
+            LOG4CXX_DEBUG(logger_, "release frame " << msg.frame_index);
+            frame_indices.push_back(msg.frame_index);
+        }
     }
-    return FRAME_READER_SUCCESS;
+    if (!frame_indices.empty()) {
+        LOG4CXX_DEBUG(logger_, "Releasing " << frame_indices.size() << " frames");
+        try {
+            frame_store_.DeleteMultipleFrames(frame_indices);
+        }
+        catch (const std::runtime_error &e) {
+            throw FatalError(ExitCode::FRAME_STORE_ERROR, "Failed when trying to delete multiple frames: " + std::string(e.what()));
+        }
+    }
+    return (!frame_indices.empty());
+}
+
+template<>
+void OcvFrameReader::ReadFrame<MPF::COMPONENT::RetryStrategy::NEVER_RETRY>(cv::Mat &frame) {
+    if (!video_capture_.Read(frame)) {
+        throw FatalError(ExitCode::STREAM_STALLED, "It is no longer possible to read frames.");
+    }
+}
+
+template<>
+void OcvFrameReader::ReadFrame<MPF::COMPONENT::RetryStrategy::NO_ALERT_NO_TIMEOUT>(cv::Mat &frame) {
+    video_capture_.ReadWithRetry(frame);
 }
 
 
-MPFFrameReaderError OcvFrameReader::ReadAndStoreFrame(MPFFrameReaderJob &job,
-                                                      const size_t offset)
-{
-    int failcount = 0;
-    string err_string;
-    uint8_t* frame_addr = frame_store_.GetFrameAddress(offset,
-                                                       frame_byte_size_,
-                                                       err_string);
-    if (err_string.empty()) {
-        return FRAME_READER_BAD_OFFSET;
+template<>
+void OcvFrameReader::ReadFrame<MPF::COMPONENT::RetryStrategy::NO_ALERT_WITH_TIMEOUT>(cv::Mat &frame) {
+    if (!video_capture_.ReadWithRetry(frame, settings_.stall_timeout)) {
+        throw FatalError(ExitCode::STREAM_STALLED, "It is no longer possible to read frames.");
     }
-    Mat new_mat(frame_num_rows_, frame_num_cols_, frame_type_, frame_addr);
-    bool success = video_capture_.read(new_mat);
-
-    float stall_timeout = 
-            DetectionComponentUtils::GetProperty<float>(job.job_properties,
-                                                        "STALL_DETECTION_THRESHOLD",
-                                                        0.0);
-    if (frame_num_rows_ == 0) {
-        return FRAME_READER_BAD_FRAME_SIZE;
-    }
-    while(!success) {
-        // TODO: This is where we need to keep track of a timeout
-        failcount++;
-        success = video_capture_.read(new_mat);
-    }
-
-    return FRAME_READER_SUCCESS;
-    
 }
+
+
+template<>
+void OcvFrameReader::ReadFrame<MPF::COMPONENT::RetryStrategy::ALERT_NO_TIMEOUT>(cv::Mat &frame) {
+    if (video_capture_.ReadWithRetry(frame, settings_.stall_alert_threshold)) {
+        return;
+    }
+    MPFJobStatusMessage stall_msg(settings_.job_id, "STALLED", GetTimestampMillis());
+    job_status_sender_.SendMsg(stall_msg);
+
+    video_capture_.ReadWithRetry(frame);
+    MPFJobStatusMessage progress_msg(settings_.job_id, "IN_PROGRESS",
+                                     GetTimestampMillis());
+    job_status_sender_.SendMsg(progress_msg);
+
+}
+
+template<>
+void OcvFrameReader::ReadFrame<MPF::COMPONENT::RetryStrategy::ALERT_WITH_TIMEOUT>(cv::Mat &frame) {
+    if (video_capture_.ReadWithRetry(frame, settings_.stall_alert_threshold)) {
+        return;
+    }
+    MPFJobStatusMessage stall_msg(settings_.job_id, "STALLED", GetTimestampMillis());
+    job_status_sender_.SendMsg(stall_msg);
+
+    if (video_capture_.ReadWithRetry(frame, settings_.stall_timeout)) {
+        MPFJobStatusMessage progress_msg(settings_.job_id, "IN_PROGRESS",
+                                         GetTimestampMillis());
+        job_status_sender_.SendMsg(progress_msg);
+        return;
+    }
+    throw FatalError(ExitCode::STREAM_STALLED, "It is no longer possible to read frames.");
+}
+
+
+long OcvFrameReader::GetTimestampMillis() {
+    using namespace std::chrono;
+    auto time_since_epoch = system_clock::now().time_since_epoch();
+    return duration_cast<milliseconds>(time_since_epoch).count();
+}
+
+}}
 

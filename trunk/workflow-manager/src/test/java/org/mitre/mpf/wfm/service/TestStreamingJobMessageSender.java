@@ -26,6 +26,7 @@
 package org.mitre.mpf.wfm.service;
 
 
+import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.nms.MasterNode;
@@ -104,29 +105,41 @@ public class TestStreamingJobMessageSender {
 				.thenReturn(algoDef);
 
 
-		TransientAction action = new TransientAction("ActionName", "Action description", "TEST ALGO");
-		action.getProperties().put("OVERRIDDEN ACTION PROPERTY", "ACTION VAL");
-		action.getProperties().put("OVERRIDDEN JOB PROPERTY", "Bad Value");
+		TransientAction action = new TransientAction(
+				"ActionName",
+				"Action description",
+				"TEST ALGO",
+				ImmutableMap.of("OVERRIDDEN ACTION PROPERTY", "ACTION VAL",
+				                "OVERRIDDEN JOB PROPERTY", "Bad Value"));
 
 		TransientStage stage = new TransientStage("StageName", "Stage description",
-		                                          ActionType.DETECTION);
-		stage.getActions().add(action);
+		                                          ActionType.DETECTION, Collections.singletonList(action));
 
 		TransientPipeline pipeline = new TransientPipeline("MyStreamingPipeline",
-		                                                   "Pipeline description");
-		pipeline.getStages().add(stage);
+		                                                   "Pipeline description",
+		                                                   Collections.singletonList(stage));
 
-		TransientStream stream = new TransientStream(5234, "stream://myStream");
-		stream.setSegmentSize(543);
-		stream.addMetadata("mediaProp1", "mediaVal1");
-		stream.addMediaProperty("OVERRIDDEN STREAM PROPERTY", "Stream Specific Value");
+		TransientStream stream = new TransientStream(
+				5234,
+				"stream://myStream",
+				543,
+				ImmutableMap.of("OVERRIDDEN STREAM PROPERTY", "Stream Specific Value"),
+				ImmutableMap.of("mediaProp1", "mediaVal1"));
 
 		long jobId = 1234;
-		TransientStreamingJob job = new TransientStreamingJob(
-				jobId, "external id", pipeline, 5, 100, true,
-				"output-dir", false);
-		job.setStream(stream);
-		job.getOverriddenJobProperties().put("OVERRIDDEN JOB PROPERTY", "Job Overridden Value");
+		TransientStreamingJob job = new TransientStreamingJobImpl(
+				jobId,
+				"external id",
+				pipeline,
+				stream,
+				5,
+				100,
+				true,
+				"output-dir",
+				null,
+				null,
+				Collections.singletonMap("OVERRIDDEN JOB PROPERTY", "Job Overridden Value"),
+				Collections.emptyMap());
 
 		ArgumentCaptor<LaunchStreamingJobMessage> msgCaptor = ArgumentCaptor.forClass(LaunchStreamingJobMessage.class);
 

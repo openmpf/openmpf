@@ -43,6 +43,8 @@ public class MpfHeaders {
 		JOB_ID = "JobId",
 		JOB_STATUS = "JobStatus",
 
+		MEDIA_ID = "MediaId",
+
 		RECIPIENT_QUEUE = "QueueName",
 
 		SPLIT_COMPLETED = "SplitCompleted",
@@ -51,4 +53,8 @@ public class MpfHeaders {
 		SUPPRESS_BROADCAST = "SuppressBroadcast",
 
 		UNSOLICITED = "Unsolicited";
+
+
+	private MpfHeaders() {
+	}
 }

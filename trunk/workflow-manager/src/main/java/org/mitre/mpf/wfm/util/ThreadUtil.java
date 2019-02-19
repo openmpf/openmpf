@@ -32,13 +32,13 @@ import java.util.function.*;
 
 public class ThreadUtil {
 
-    public static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
+    private static ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
 
     private ThreadUtil() {
     }
 
 
-    public static CustomCompletableFuture<Void> runAsync(ThrowingRunnable task) {
+    public static synchronized CustomCompletableFuture<Void> runAsync(ThrowingRunnable task) {
         return callAsync(() -> {
             task.run();
             return null;
@@ -46,7 +46,7 @@ public class ThreadUtil {
     }
 
 
-    public static <T> CustomCompletableFuture<T> callAsync(Callable<T> task) {
+    public static synchronized <T> CustomCompletableFuture<T> callAsync(Callable<T> task) {
         CompletableFuture<T> completableFuture = new CompletableFuture<>();
         Future<T> cancellableFuture = THREAD_POOL.submit(() -> {
             try {
@@ -63,14 +63,19 @@ public class ThreadUtil {
     }
 
 
-
     @FunctionalInterface
     public interface ThrowingRunnable {
         public void run() throws Exception;
     }
 
 
-    public static void shutdown() {
+    public static synchronized void start() {
+        if (THREAD_POOL.isShutdown()) {
+            THREAD_POOL = Executors.newCachedThreadPool();
+        }
+    }
+
+    public static synchronized void shutdown() {
         try {
             THREAD_POOL.shutdown();
             THREAD_POOL.awaitTermination(1, TimeUnit.SECONDS);

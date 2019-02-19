@@ -33,11 +33,11 @@ import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.StreamResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,15 +80,16 @@ public class StreamingJobController {
     //EXTERNAL
     @RequestMapping(value = {"/rest/streaming/jobs"}, method = RequestMethod.POST)
     @ApiOperation(value = "Creates and submits a streaming job using a JSON StreamingJobCreationRequest object as the request body.",
-            notes = "The pipelineName should be one of the values in 'rest/pipelines'. The stream should contain a valid streamUri, " +
-                    "for example: rtsp://example.com/media.mp4.  Optional segmentSize, mediaProperties, "+
-                    "stallTimeout and stallCallbackUri may also be defined for the stream. " +
-                    "Additional streaming job options include summaryReportCallbackUri and healthReportCallbackUri. Health and summary reports " +
-                    "will always be sent to the callback URIs using the HTTP POST method. " +
-                    "Other streaming job options include jobProperties object which contains String key-value pairs which override the pipeline's job properties for this streaming job. " +
-                    "An optional algorithmProperties object containing <String,Map> key-value pairs can override jobProperties for a specific algorithm defined in the pipeline.  "+
-                    "For algorithmProperties, the key should be the algorithm name, and the value should be a Map of String key-value pairs representing properties specific to the named algorithm. "+
-                    "Note that the batch jobs and streaming jobs share a range of valid job ids.  OpenMPF guarantees that the ids of a streaming job and a batch job will be unique.",
+            notes = " The pipelineName should be one of the values in 'rest/pipelines'. The stream should contain a valid streamUri," +
+                    " for example: rtsp://example.com/media.mp4.  Optional segmentSize, mediaProperties,"+
+                    " stallTimeout and stallCallbackUri may also be defined for the stream." +
+                    " Additional streaming job options include summaryReportCallbackUri and healthReportCallbackUri. Health and summary reports" +
+                    " will always be sent to the callback URIs using the HTTP POST method." +
+                    " Other streaming job options include jobProperties object which contains String key-value pairs which override the pipeline's job properties for this streaming job." +
+                    " An optional algorithmProperties object containing <String,Map> key-value pairs can override jobProperties for a specific algorithm defined in the pipeline." +
+                    " For algorithmProperties, the key should be the algorithm name, and the value should be a Map of String key-value pairs representing properties specific to the named algorithm." +
+                    " Note that the batch jobs and streaming jobs share a range of valid job ids.  OpenMPF guarantees that the ids of a streaming job and a batch job will be unique." +
+                    " Also, note that all provided URIs must be properly encoded.",
             produces = "application/json", response = StreamingJobCreationResponse.class)
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "Streaming Job created"),
@@ -202,7 +203,7 @@ public class StreamingJobController {
             if ( !streamingJobCreationRequest.isValidRequest() ) {
                 // The streaming job failed the API syntax check, the job request is malformed. Reject the job and send an error response.
                 return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(), "malformed request");
-            } else if ( !StreamResource.isSupportedUriScheme(streamingJobCreationRequest.getStream().getStreamUri()) ) {
+            } else if ( !TransientStream.isSupportedUriScheme(streamingJobCreationRequest.getStream().getStreamUri()) ) {
                 // The streaming job failed the check for supported stream protocol check, so OpenMPF can't process the requested stream URI.
                 // Reject the job and send an error response.
                 return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),
@@ -318,7 +319,7 @@ public class StreamingJobController {
                     streamingJobRequest.getOutputObjectDirectory(), doCleanup,
                     MpfResponse.RESPONSE_CODE_SUCCESS, null);
             } catch (WfmProcessingException e) {
-                log.error("Streaming job with id {} couldn't be cancelled, error is '{}'", jobId, e.getMessage());
+                log.error(String.format("Streaming job with id %s couldn't be cancelled.", jobId), e);
                 cancelResponse = new StreamingJobCancelResponse(jobId,
                     streamingJobRequest.getOutputObjectDirectory(), doCleanup,
                     MpfResponse.RESPONSE_CODE_ERROR, e.getMessage());

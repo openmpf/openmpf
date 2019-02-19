@@ -97,22 +97,26 @@ public class SystemPropertiesSnapshot {
     }
 
     public Optional<URI> getNginxStorageServiceUri() throws StorageException {
-        String uriString = _properties.get("http.object.storage.nginx.service_uri");
+        String uriString = _properties.get("http.object.storage.nginx.service.uri");
         if (StringUtils.isBlank(uriString)) {
             return Optional.empty();
         }
 
-        String errorMessage = String.format(
-                "Expected the \"http.object.storage.nginx.service_uri\" property to either be a valid URI or an empty string but it was \"%s\".", uriString);
         try {
             URI uri = new URI(uriString);
             if (StringUtils.isBlank(uri.getScheme())) {
-                throw new StorageException(errorMessage);
+                throw new StorageException(String.format(
+                        "Expected the \"http.object.storage.nginx.service.uri\" property to either be " +
+                                "a valid URI or an empty string but it was \"%s\" which is missing the URI scheme.",
+                        uriString));
             }
             return Optional.of(uri);
         }
         catch (URISyntaxException e) {
-            throw new StorageException(errorMessage, e);
+            throw new StorageException(String.format(
+                    "Expected the \"http.object.storage.nginx.service.uri\" property to either be " +
+                            "a valid URI or an empty string but it was \"%s\" which is invalid due to: %s",
+                    uriString, e), e);
         }
     }
 

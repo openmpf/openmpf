@@ -80,20 +80,20 @@ public class RemoteMediaProcessor extends WfmProcessor {
 				break;
 			case HTTP:
 			case HTTPS:
-				Function<String, String> combinedProperties = AggregateJobPropertiesUtil
-						.getCombinedProperties(job, transientMedia);
-				if (S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
-					try {
-						s3Service.downloadFromS3(transientMedia, combinedProperties);
-					}
-					catch (StorageException e) {
-						String message = handleMediaRetrievalException(
-								transientMedia, transientMedia.getLocalPath().toFile(), e);
-						handleMediaRetrievalFailure(jobId, transientMedia, message);
-					}
+				try {
+					Function<String, String> combinedProperties = AggregateJobPropertiesUtil
+							.getCombinedProperties(job, transientMedia);
+				    if (S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
+				    	s3Service.downloadFromS3(transientMedia, combinedProperties);
+				    }
+				    else {
+					    downloadFile(jobId, transientMedia);
+				    }
 				}
-				else {
-					downloadFile(jobId, transientMedia);
+				catch (StorageException e) {
+					String message = handleMediaRetrievalException(
+							transientMedia, transientMedia.getLocalPath().toFile(), e);
+					handleMediaRetrievalFailure(jobId, transientMedia, message);
 				}
 				break;
 			default:

@@ -92,7 +92,7 @@ public class S3StorageBackend implements StorageBackend {
 
 
     @Override
-    public boolean canStore(JsonOutputObject outputObject) {
+    public boolean canStore(JsonOutputObject outputObject) throws StorageException {
         return requiresS3ResultUpload(outputObject.getJobProperties()::get);
     }
 
@@ -104,7 +104,7 @@ public class S3StorageBackend implements StorageBackend {
 
 
     @Override
-    public boolean canStore(ArtifactExtractionRequest request) {
+    public boolean canStore(ArtifactExtractionRequest request) throws StorageException {
         TransientJob job = _inProgressJobs.getJob(request.getJobId());
         TransientMedia media = job.getMedia(request.getMediaId());
         Function<String, String> combinedProperties = AggregateJobPropertiesUtil.getCombinedProperties(job, media);
@@ -140,11 +140,13 @@ public class S3StorageBackend implements StorageBackend {
 
         }
         catch (StorageException | IOException e) {
-            LOG.error(String.format("An error occurred while uploading artifacts for job %s and media %s. They will be stored locally instead.",
-                                    request.getJobId(), request.getMediaId()), e);
+            LOG.error(String.format(
+                    "An error occurred while uploading artifacts for job %s and media %s. " +
+                            "They will be stored locally instead.",
+                    request.getJobId(), request.getMediaId()), e);
             _inProgressJobs.addJobWarning(
                     request.getJobId(),
-                    "Artifacts were stored locally because storing them remotely failed due to: " + e);
+                    "Some artifacts were stored locally because storing them remotely failed due to: " + e);
             for (Map.Entry<Integer, URI> localEntry : localResults.entrySet()) {
                 remoteResults.putIfAbsent(localEntry.getKey(), localEntry.getValue());
             }
@@ -154,7 +156,7 @@ public class S3StorageBackend implements StorageBackend {
 
 
     @Override
-    public boolean canStore(MarkupResult markupResult) {
+    public boolean canStore(MarkupResult markupResult) throws StorageException {
         TransientJob job = _inProgressJobs.getJob(markupResult.getJobId());
         Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
                 job, markupResult.getMediaId(), markupResult.getTaskIndex(), markupResult.getActionIndex());
@@ -175,15 +177,50 @@ public class S3StorageBackend implements StorageBackend {
     }
 
 
-    public static boolean requiresS3MediaDownload(Function<String, String> properties) {
-        return !Boolean.parseBoolean(properties.apply(MpfConstants.S3_UPLOAD_ONLY_PROPERTY))
-                && hasS3Keys(properties);
+    public static boolean requiresS3MediaDownload(Function<String, String> properties) throws StorageException {
+        boolean uploadOnly = Boolean.parseBoolean(properties.apply(MpfConstants.S3_UPLOAD_ONLY_PROPERTY));
+        if (!uploadOnly) {
+            checkMissingS3Keys(properties);
+            return true;
+        }
+        return false;
     }
 
-    public static boolean requiresS3ResultUpload(Function<String, String> properties) {
-        return StringUtils.isNotBlank(properties.apply(MpfConstants.S3_RESULTS_BUCKET_PROPERTY))
-                && hasS3Keys(properties);
+
+    public static boolean requiresS3ResultUpload(Function<String, String> properties) throws StorageException {
+        if (StringUtils.isNotBlank(properties.apply(MpfConstants.S3_RESULTS_BUCKET_PROPERTY))) {
+            checkMissingS3Keys(properties);
+            return true;
+        }
+        return false;
     }
+
+
+    private static void checkMissingS3Keys(Function<String, String> properties) throws StorageException {
+        boolean hasAccessKey = StringUtils.isNotBlank(properties.apply(MpfConstants.S3_ACCESS_KEY_PROPERTY));
+        boolean hasSecretKey = StringUtils.isNotBlank(properties.apply(MpfConstants.S3_SECRET_KEY_PROPERTY));
+        if (hasAccessKey && hasSecretKey) {
+            return;
+        }
+
+        if (!hasAccessKey && !hasSecretKey) {
+            throw new StorageException(String.format(
+                    "The %s property was set, but the %s and %s properties were not.",
+                    MpfConstants.S3_RESULTS_BUCKET_PROPERTY, MpfConstants.S3_ACCESS_KEY_PROPERTY,
+                    MpfConstants.S3_SECRET_KEY_PROPERTY));
+        }
+        if (hasAccessKey) {
+            throw new StorageException(String.format(
+                    "The %s and %s properties were set, but the %s property was not",
+                    MpfConstants.S3_RESULTS_BUCKET_PROPERTY, MpfConstants.S3_ACCESS_KEY_PROPERTY,
+                    MpfConstants.S3_SECRET_KEY_PROPERTY));
+        }
+        throw new StorageException(String.format(
+                "The %s and %s properties were set, but the %s property was not",
+                MpfConstants.S3_RESULTS_BUCKET_PROPERTY, MpfConstants.S3_SECRET_KEY_PROPERTY,
+                MpfConstants.S3_ACCESS_KEY_PROPERTY));
+    }
+
 
     private static boolean hasS3Keys(Function<String, String> properties) {
         return StringUtils.isNotBlank(properties.apply(MpfConstants.S3_ACCESS_KEY_PROPERTY))
@@ -191,7 +228,8 @@ public class S3StorageBackend implements StorageBackend {
     }
 
 
-    public void downloadFromS3(TransientMedia media, Function<String, String> combinedProperties) throws StorageException {
+    public void downloadFromS3(TransientMedia media, Function<String, String> combinedProperties)
+            throws StorageException {
         try {
             AmazonS3 s3Client = getS3DownloadClient(media.getUri(), combinedProperties);
             String[] pathParts = splitBucketAndObjectKey(media.getUri());
@@ -246,7 +284,8 @@ public class S3StorageBackend implements StorageBackend {
             AmazonS3 s3Client = getS3UploadClient(properties);
             boolean alreadyExists = s3Client.doesObjectExist(resultsBucket, objectName);
             if (alreadyExists) {
-                LOG.info("Did not to upload \"{}\" to S3 bucket {} and object key {} because a file with the same SHA-256 hash was already there.",
+                LOG.info("Did not to upload \"{}\" to S3 bucket \"{}\" and object key \"{}\" " +
+                                 "because a file with the same SHA-256 hash was already there.",
                          path, bucketUri, objectName);
             }
             else {

@@ -268,7 +268,7 @@ public class TestStorageService {
 
 
     @Test
-    public void canStoreVideoArtifactRemotely() throws IOException {
+    public void canStoreVideoArtifactRemotely() throws IOException, StorageException {
         ArtifactExtractionRequest request = mock(ArtifactExtractionRequest.class);
         when(request.getMediaType())
                 .thenReturn(MediaType.VIDEO);

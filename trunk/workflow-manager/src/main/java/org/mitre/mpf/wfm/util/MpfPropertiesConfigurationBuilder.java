@@ -56,7 +56,7 @@ public class MpfPropertiesConfigurationBuilder {
 
     private static final Collection<String> SNAPSHOT_PREFIXES = ImmutableList.of(
             "detection.",
-            "http.object.storage.nginx.service_uri",
+            "http.object.storage.nginx.service.uri",
             "mpf.output.objects.exemplars.only",
             "mpf.output.objects.last.stage.only");
 

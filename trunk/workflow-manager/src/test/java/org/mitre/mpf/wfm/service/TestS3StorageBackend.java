@@ -130,74 +130,74 @@ public class TestS3StorageBackend {
 
 
     @Test
-    public void downloadsFromS3WhenHasKeys() {
+    public void downloadsFromS3WhenHasKeys() throws StorageException {
         assertTrue(S3StorageBackend.requiresS3MediaDownload(getS3Properties()::get));
     }
 
     @Test
-    public void downloadsFromS3WhenResultsBucketMissing() {
+    public void downloadsFromS3WhenResultsBucketMissing() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.remove(MpfConstants.S3_RESULTS_BUCKET_PROPERTY);
         assertTrue(S3StorageBackend.requiresS3MediaDownload(getS3Properties()::get));
     }
 
     @Test
-    public void downloadsFromS3WhenUploadOnlyFalse() {
+    public void downloadsFromS3WhenUploadOnlyFalse() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.put(MpfConstants.S3_UPLOAD_ONLY_PROPERTY, "false");
         assertTrue(S3StorageBackend.requiresS3MediaDownload(s3Properties::get));
     }
 
     @Test
-    public void doesNotDownloadFromS3WhenUploadOnlyTrue() {
+    public void doesNotDownloadFromS3WhenUploadOnlyTrue() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.put(MpfConstants.S3_UPLOAD_ONLY_PROPERTY, "true");
         assertFalse(S3StorageBackend.requiresS3MediaDownload(s3Properties::get));
     }
 
-    @Test
-    public void doesNotDownloadFromS3WhenNoKeys() {
+    @Test(expected = StorageException.class)
+    public void doesNotDownloadFromS3WhenNoKeys() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.remove(MpfConstants.S3_SECRET_KEY_PROPERTY);
         s3Properties.remove(MpfConstants.S3_ACCESS_KEY_PROPERTY);
-        assertFalse(S3StorageBackend.requiresS3MediaDownload(s3Properties::get));
+        S3StorageBackend.requiresS3MediaDownload(s3Properties::get);
     }
 
-    @Test
-    public void doesNotDownloadFromS3WhenNoAccessKey() {
+    @Test(expected = StorageException.class)
+    public void doesNotDownloadFromS3WhenNoAccessKey() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.remove(MpfConstants.S3_ACCESS_KEY_PROPERTY);
-        assertFalse(S3StorageBackend.requiresS3MediaDownload(s3Properties::get));
+        S3StorageBackend.requiresS3MediaDownload(s3Properties::get);
     }
 
-    @Test
-    public void doesNotDownloadFromS3WhenNoSecretKey() {
+    @Test(expected = StorageException.class)
+    public void doesNotDownloadFromS3WhenNoSecretKey() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.remove(MpfConstants.S3_SECRET_KEY_PROPERTY);
-        assertFalse(S3StorageBackend.requiresS3MediaDownload(s3Properties::get));
+        S3StorageBackend.requiresS3MediaDownload(s3Properties::get);
     }
 
     @Test
-    public void uploadsToS3WhenHasKeysAndResultsBucket() {
+    public void uploadsToS3WhenHasKeysAndResultsBucket() throws StorageException {
         assertCanUpload(getS3Properties());
     }
 
     @Test
-    public void doesNotUploadToS3WhenResultsBucketMissing() {
+    public void doesNotUploadToS3WhenResultsBucketMissing() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.remove(MpfConstants.S3_RESULTS_BUCKET_PROPERTY);
         assertCanNotUpload(s3Properties);
     }
 
     @Test
-    public void uploadsToS3WhenUploadOnlyFalse() {
+    public void uploadsToS3WhenUploadOnlyFalse() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.put(MpfConstants.S3_UPLOAD_ONLY_PROPERTY, "false");
         assertCanUpload(s3Properties);
     }
 
     @Test
-    public void uploadsToS3WhenUploadOnlyTrue() {
+    public void uploadsToS3WhenUploadOnlyTrue() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.put(MpfConstants.S3_UPLOAD_ONLY_PROPERTY, "true");
         assertCanUpload(s3Properties);
@@ -209,35 +209,47 @@ public class TestS3StorageBackend {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.remove(MpfConstants.S3_SECRET_KEY_PROPERTY);
         s3Properties.remove(MpfConstants.S3_ACCESS_KEY_PROPERTY);
-        assertCanNotUpload(s3Properties);
+        assertThrowsWhenCallingCanStore(s3Properties);
     }
 
     @Test
-    public void doesNotUploadToS3WhenNoAccessKey() {
+    public void doesNotUploadToS3WhenNoAccessKey() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.remove(MpfConstants.S3_ACCESS_KEY_PROPERTY);
-        assertCanNotUpload(s3Properties);
+        assertThrowsWhenCallingCanStore(s3Properties);
     }
 
     @Test
-    public void doesNotUploadToS3WhenNoSecretKey() {
+    public void doesNotUploadToS3WhenNoSecretKey() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.remove(MpfConstants.S3_SECRET_KEY_PROPERTY);
-        assertCanNotUpload(s3Properties);
+        assertThrowsWhenCallingCanStore(s3Properties);
     }
 
-    private void assertCanUpload(Map<String, String> properties) {
+    private void assertCanUpload(Map<String, String> properties) throws StorageException {
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
         when(outputObject.getJobProperties())
                 .thenReturn(properties);
         assertTrue(_s3StorageBackend.canStore(outputObject));
     }
 
-    private void assertCanNotUpload(Map<String, String> properties) {
+    private void assertCanNotUpload(Map<String, String> properties) throws StorageException {
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
         when(outputObject.getJobProperties())
                 .thenReturn(properties);
         assertFalse(_s3StorageBackend.canStore(outputObject));
+    }
+
+    private void assertThrowsWhenCallingCanStore(Map<String, String> properties) {
+        try {
+            JsonOutputObject outputObject = mock(JsonOutputObject.class);
+            when(outputObject.getJobProperties())
+                    .thenReturn(properties);
+            _s3StorageBackend.canStore(outputObject);
+            fail("Expected StorageException");
+        }
+        catch (StorageException expected) {
+        }
     }
 
 
@@ -318,7 +330,7 @@ public class TestS3StorageBackend {
 
 
     @Test
-    public void canStoreVideoArtifacts() throws IOException {
+    public void canStoreVideoArtifacts() throws IOException, StorageException {
         ArtifactExtractionRequest request = createArtifactExtractionRequest();
 
         Path filePath0 = getTestFileCopy();
@@ -500,7 +512,7 @@ public class TestS3StorageBackend {
 
 
     @Test
-    public void canRetryWhenServerError() throws IOException {
+    public void canRetryUploadWhenServerError() throws IOException {
         int retryCount = 2;
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
                 .thenReturn(retryCount);
@@ -531,7 +543,6 @@ public class TestS3StorageBackend {
     }
 
 
-
     @Test
     public void canDownloadFromS3() throws IOException, StorageException {
         Map<String, String> s3Properties = getS3Properties();
@@ -554,7 +565,6 @@ public class TestS3StorageBackend {
         }
         assertEquals(EXPECTED_HASH, sha);
     }
-
 
 
     @Test

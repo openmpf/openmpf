@@ -737,7 +737,7 @@ public class PropertiesUtil {
     }
 
     public URI getNginxStorageServiceUri() {
-        return mpfPropertiesConfig.get(URI.class, "http.object.storage.nginx.service_uri");
+        return mpfPropertiesConfig.get(URI.class, "http.object.storage.nginx.service.uri");
     }
 
     public int getNginxStorageUploadThreadCount() {

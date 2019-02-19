@@ -170,7 +170,7 @@ public class TestCustomNginxStorageBackend {
     public void canParseServiceUri() throws StorageException {
         String uriString = "http://example.com";
         SystemPropertiesSnapshot snapshot = new SystemPropertiesSnapshot(
-                Collections.singletonMap("http.object.storage.nginx.service_uri", uriString));
+                Collections.singletonMap("http.object.storage.nginx.service.uri", uriString));
 
         assertEquals(URI.create(uriString), snapshot.getNginxStorageServiceUri().get());
     }
@@ -184,7 +184,7 @@ public class TestCustomNginxStorageBackend {
         List<String> expectingNone = Arrays.asList("", " ", "  ", "\t", "\t ");
         for (String testString : expectingNone) {
             SystemPropertiesSnapshot snapshot = new SystemPropertiesSnapshot(
-                    Collections.singletonMap("http.object.storage.nginx.service_uri", testString));
+                    Collections.singletonMap("http.object.storage.nginx.service.uri", testString));
             assertFalse(snapshot.getNginxStorageServiceUri().isPresent());
         }
 
@@ -197,7 +197,7 @@ public class TestCustomNginxStorageBackend {
         for (String testString : expectingException) {
             try {
                 SystemPropertiesSnapshot snapshot = new SystemPropertiesSnapshot(
-                        Collections.singletonMap("http.object.storage.nginx.service_uri", testString));
+                        Collections.singletonMap("http.object.storage.nginx.service.uri", testString));
                 snapshot.getNginxStorageServiceUri();
                 fail("Expected StorageException");
             }

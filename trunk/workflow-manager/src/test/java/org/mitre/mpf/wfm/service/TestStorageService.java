@@ -69,7 +69,9 @@ public class TestStorageService {
     @Mock
     private LocalStorageBackend _mockLocalBackend;
 
-    private static final URI TEST_URI = URI.create("http://somehost");
+    private static final URI TEST_REMOTE_URI = URI.create("http://somehost.xyz/path");
+
+    private static final URI TEST_LOCAL_URI = URI.create("file:///path");
 
     @Before
     public void init() {
@@ -102,10 +104,10 @@ public class TestStorageService {
                 .thenReturn(true);
 
         when(_mockS3Backend.store(outputObject))
-                .thenReturn(TEST_URI);
+                .thenReturn(TEST_REMOTE_URI);
 
         URI result = _storageService.store(outputObject);
-        assertEquals(TEST_URI, result);
+        assertEquals(TEST_REMOTE_URI, result);
 
         verifyZeroInteractions(_mockLocalBackend);
         verifyNoInProgressJobWarnings();
@@ -115,11 +117,11 @@ public class TestStorageService {
     public void canStoreOutputObjectLocally() throws IOException, StorageException {
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
         when(_mockLocalBackend.store(outputObject))
-                .thenReturn(TEST_URI);
+                .thenReturn(TEST_LOCAL_URI);
 
         URI result = _storageService.store(outputObject);
 
-        assertEquals(TEST_URI, result);
+        assertEquals(TEST_LOCAL_URI, result);
         verifyNoInProgressJobWarnings();
         verify(_mockS3Backend)
                 .canStore(outputObject);
@@ -140,10 +142,10 @@ public class TestStorageService {
                 .when(_mockS3Backend).store(outputObject);
 
         when(_mockLocalBackend.store(outputObject))
-                .thenReturn(TEST_URI);
+                .thenReturn(TEST_LOCAL_URI);
 
         URI result = _storageService.store(outputObject);
-        assertEquals(TEST_URI, result);
+        assertEquals(TEST_LOCAL_URI, result);
 
         verifyNoInProgressJobWarnings();
         assertEquals(1, warnings.size());
@@ -162,10 +164,10 @@ public class TestStorageService {
                 .when(_mockNginxBackend).canStore(outputObject);
 
         when(_mockLocalBackend.store(outputObject))
-                .thenReturn(TEST_URI);
+                .thenReturn(TEST_LOCAL_URI);
 
         URI result = _storageService.store(outputObject);
-        assertEquals(TEST_URI, result);
+        assertEquals(TEST_LOCAL_URI, result);
 
         verifyNoInProgressJobWarnings();
         assertEquals(1, warnings.size());
@@ -213,10 +215,10 @@ public class TestStorageService {
         when(_mockNginxBackend.canStore(request))
                 .thenReturn(true);
         when(_mockNginxBackend.storeImageArtifact(request))
-                .thenReturn(TEST_URI);
+                .thenReturn(TEST_REMOTE_URI);
 
         URI result = _storageService.storeImageArtifact(request);
-        assertEquals(TEST_URI, result);
+        assertEquals(TEST_REMOTE_URI, result);
 
         verifyZeroInteractions(_mockLocalBackend);
         verifyNoInProgressJobWarnings();
@@ -231,10 +233,10 @@ public class TestStorageService {
 
 
         when(_mockLocalBackend.storeImageArtifact(request))
-                .thenReturn(TEST_URI);
+                .thenReturn(TEST_REMOTE_URI);
 
         URI result = _storageService.storeImageArtifact(request);
-        assertEquals(TEST_URI, result);
+        assertEquals(TEST_REMOTE_URI, result);
 
         verifyNoInProgressJobWarnings();
         verify(_mockS3Backend)
@@ -258,10 +260,10 @@ public class TestStorageService {
                 .when(_mockNginxBackend).storeImageArtifact(request);
 
         when(_mockLocalBackend.storeImageArtifact(request))
-                .thenReturn(TEST_URI);
+                .thenReturn(TEST_LOCAL_URI);
 
         URI result = _storageService.storeImageArtifact(request);
-        assertEquals(TEST_URI, result);
+        assertEquals(TEST_LOCAL_URI, result);
 
         verifyJobWarning(jobId);
     }
@@ -274,7 +276,7 @@ public class TestStorageService {
                 .thenReturn(MediaType.VIDEO);
 
         Map<Integer, URI> expectedResults = ImmutableMap.of(
-                0, TEST_URI,
+                0, TEST_REMOTE_URI,
                 5, URI.create("http://example"));
 
         when(_mockS3Backend.canStore(request))
@@ -297,8 +299,8 @@ public class TestStorageService {
                 .thenReturn(MediaType.VIDEO);
 
         Map<Integer, URI> expectedResults = ImmutableMap.of(
-                0, TEST_URI,
-                5, URI.create("http://example"));
+                0, TEST_LOCAL_URI,
+                5, URI.create("file:///example"));
 
         when(_mockLocalBackend.storeVideoArtifacts(request))
                 .thenReturn(expectedResults);
@@ -329,8 +331,8 @@ public class TestStorageService {
                 .when(_mockNginxBackend).storeVideoArtifacts(request);
 
         Map<Integer, URI> expectedResults = ImmutableMap.of(
-                0, TEST_URI,
-                5, URI.create("http://example"));
+                0, TEST_LOCAL_URI,
+                5, URI.create("file:///example"));
 
         when(_mockLocalBackend.storeVideoArtifacts(request))
                 .thenReturn(expectedResults);
@@ -412,5 +414,4 @@ public class TestStorageService {
         verify(_mockInProgressJobs)
                 .addJobWarning(eq(jobId), nonBlank());
     }
-
 }

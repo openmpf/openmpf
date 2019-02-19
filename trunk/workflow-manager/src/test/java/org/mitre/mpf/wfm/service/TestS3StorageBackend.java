@@ -56,6 +56,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntUnaryOperator;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -89,9 +90,13 @@ public class TestS3StorageBackend {
 
     private static final String BUCKET_WITH_EXISTING_OBJECT = "EXISTING_OBJECT_BUCKET";
 
-    private static final Collection<String> OBJECTS_POSTED = new ArrayList<>();
+    private static final Collection<String> OBJECTS_POSTED = Collections.synchronizedList(new ArrayList<>());
 
     private static final AtomicInteger GET_COUNT = new AtomicInteger(0);
+
+    private static final AtomicInteger REQUESTED_GET_FAILURES = new AtomicInteger(0);
+
+    private static final AtomicInteger REQUESTED_PUT_FAILURES = new AtomicInteger(0);
 
     @BeforeClass
     public static void initClass() {
@@ -107,6 +112,8 @@ public class TestS3StorageBackend {
     public void init() {
         OBJECTS_POSTED.clear();
         GET_COUNT.set(0);
+        REQUESTED_GET_FAILURES.set(0);
+        REQUESTED_PUT_FAILURES.set(0);
     }
 
     private static Map<String, String> getS3Properties() {
@@ -512,7 +519,7 @@ public class TestS3StorageBackend {
 
 
     @Test
-    public void canRetryUploadWhenServerError() throws IOException {
+    public void canRetryUploadAndFailWhenServerError() throws IOException {
         int retryCount = 2;
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
                 .thenReturn(retryCount);
@@ -544,6 +551,35 @@ public class TestS3StorageBackend {
 
 
     @Test
+    public void canRetryUploadAndRecoverWhenServerError() throws IOException, StorageException {
+        REQUESTED_PUT_FAILURES.set(2);
+        when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
+                .thenReturn(2);
+
+        Path filePath = getTestFileCopy();
+
+        JsonOutputObject outputObject = mock(JsonOutputObject.class);
+        when(outputObject.getJobProperties())
+                .thenReturn(getS3Properties());
+
+        when(_mockLocalStorageBackend.store(outputObject))
+                .thenReturn(filePath.toUri());
+
+        URI remoteUri = _s3StorageBackend.store(outputObject);
+        assertEquals(EXPECTED_URI, remoteUri);
+        assertFalse(Files.exists(filePath));
+
+        // two failures one success
+        assertEquals(3, OBJECTS_POSTED.size());
+
+        String expectedObject = RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY;
+        boolean allCorrectObject = OBJECTS_POSTED.stream()
+                .allMatch(expectedObject::equals);
+        assertTrue(allCorrectObject);
+    }
+
+
+    @Test
     public void canDownloadFromS3() throws IOException, StorageException {
         Map<String, String> s3Properties = getS3Properties();
         Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
@@ -564,6 +600,60 @@ public class TestS3StorageBackend {
             sha = DigestUtils.sha256Hex(is);
         }
         assertEquals(EXPECTED_HASH, sha);
+    }
+
+
+    @Test
+    public void canRetryDownloadAndFailWhenServerError() throws IOException {
+        int retryCount = 2;
+        when(_mockPropertiesUtil.getRemoteMediaDownloadRetries())
+                .thenReturn(retryCount);
+
+        Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
+
+        TransientMedia media = mock(TransientMedia.class);
+        when(media.getUri())
+                .thenReturn(S3_HOST + "BAD_BUCKET/12/34/1234567");
+        when(media.getLocalPath())
+                .thenReturn(localPath);
+
+        try {
+            _s3StorageBackend.downloadFromS3(media, getS3Properties()::get);
+            fail("Expected StorageException");
+        }
+        catch (StorageException e) {
+            assertFalse(Files.exists(localPath));
+            assertEquals(retryCount + 1, GET_COUNT.get());
+        }
+    }
+
+
+    @Test
+    public void canRetryDownloadAndRecoverWhenServerError() throws IOException, StorageException {
+        REQUESTED_GET_FAILURES.set(2);
+        when(_mockPropertiesUtil.getRemoteMediaDownloadRetries())
+                .thenReturn(2);
+
+        Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
+        TransientMedia media = mock(TransientMedia.class);
+        when(media.getUri())
+                .thenReturn(EXPECTED_URI.toString());
+        when(media.getLocalPath())
+                .thenReturn(localPath);
+
+        assertFalse(Files.exists(localPath));
+
+        _s3StorageBackend.downloadFromS3(media, getS3Properties()::get);
+
+        assertTrue(Files.exists(localPath));
+        String sha;
+        try (InputStream is = Files.newInputStream(localPath)) {
+            sha = DigestUtils.sha256Hex(is);
+        }
+        assertEquals(EXPECTED_HASH, sha);
+
+        // Two failed attempts and one successful
+        assertEquals(3, GET_COUNT.get());
     }
 
 
@@ -589,6 +679,7 @@ public class TestS3StorageBackend {
 
     private static void startSpark() {
         Spark.port(5000);
+        IntUnaryOperator decrementUntilZero = i -> Math.max(i - 1, 0);
 
         // S3 client uses the HTTP HEAD method to check if object exists.
         Spark.head("/:bucket/*", (req, resp) -> {
@@ -603,10 +694,13 @@ public class TestS3StorageBackend {
 
         Spark.get("/:bucket/*", (req, resp) -> {
             GET_COUNT.incrementAndGet();
+
             String bucket = req.params(":bucket");
             String key = req.splat()[0];
-            if (!RESULTS_BUCKET.equals(bucket) || !EXPECTED_OBJECT_KEY.equals(key)) {
-                Spark.halt(404);
+            if (REQUESTED_GET_FAILURES.getAndUpdate(decrementUntilZero) > 0
+                    || !RESULTS_BUCKET.equals(bucket)
+                    || !EXPECTED_OBJECT_KEY.equals(key)) {
+                Spark.halt(500);
             }
             Path path = Paths.get(TestUtil.findFile("/samples/video_01.mp4"));
             long fileSize = Files.size(path);
@@ -623,7 +717,10 @@ public class TestS3StorageBackend {
             String bucket = req.params(":bucket");
             String key = req.splat()[0];
             OBJECTS_POSTED.add(bucket + '/' + key);
-            if (!RESULTS_BUCKET.equals(bucket) || !EXPECTED_OBJECT_KEY.equals(key)) {
+
+            if (REQUESTED_PUT_FAILURES.getAndUpdate(decrementUntilZero) > 0
+                    || !RESULTS_BUCKET.equals(bucket)
+                    || !EXPECTED_OBJECT_KEY.equals(key)) {
                 Spark.halt(500);
             }
             try (InputStream is = req.raw().getInputStream()) {

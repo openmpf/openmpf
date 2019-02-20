@@ -39,7 +39,7 @@ import java.io.IOException;
 
 @Monitored
 public interface JobCompleteProcessor extends WfmProcessorInterface, NotificationProducer<JobCompleteNotification> {
-	void createOutputObject(TransientJob transientJob, Mutable<BatchJobStatusType> jobStatus) throws WfmProcessingException, IOException;
-	void subscribe(NotificationConsumer<JobCompleteNotification> consumer);
-	void unsubscribe(NotificationConsumer<JobCompleteNotification> consumer);
+    void createOutputObject(TransientJob transientJob, Mutable<BatchJobStatusType> jobStatus) throws WfmProcessingException, IOException;
+    void subscribe(NotificationConsumer<JobCompleteNotification> consumer);
+    void unsubscribe(NotificationConsumer<JobCompleteNotification> consumer);
 }

@@ -30,10 +30,7 @@ package org.mitre.mpf.wfm.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
-import com.google.common.collect.Table;
+import com.google.common.collect.*;
 import com.google.common.io.ByteStreams;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
@@ -281,10 +278,17 @@ public class TestCustomNginxStorageBackend {
                 9, getExpectedUri("6036ecde5fe96e9fba9a56593d5bb64605dbc8f1c6ce07f7126b5efda63c05d3"));
 
         Path testFile = getTestFileCopy();
-        ArtifactExtractionRequest request = new ArtifactExtractionRequest(TEST_JOB_ID, 0, testFile.toString(),
-                                                                          MediaType.VIDEO, 0);
-        request.getActionIndexToMediaIndexes().put(0, Sets.newHashSet(0, 5));
-        request.getActionIndexToMediaIndexes().put(1, Sets.newHashSet(5, 9));
+
+        ArtifactExtractionRequest request = new ArtifactExtractionRequest(
+                TEST_JOB_ID,
+                0,
+                testFile.toString(),
+                MediaType.VIDEO,
+                0,
+                ImmutableMap.of(
+                        0, ImmutableSet.of(0, 5),
+                        1, ImmutableSet.of(5, 9)
+                ));
         Map<Integer, URI> results = _nginxStorageService.storeVideoArtifacts(request);
         assertEquals(expectedResults, results);
     }

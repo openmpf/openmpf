@@ -133,6 +133,18 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 				jobStatus.setValue(BatchJobStatusType.ERROR);
 			}
 
+			IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
+			IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobArtifactsDirectory(jobId).toPath());
+			IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobOutputObjectsDirectory(jobId).toPath());
+
+			try {
+				jmsUtils.destroyCancellationRoutes(jobId);
+			}
+			catch (Exception exception) {
+				log.warn("Failed to destroy the cancellation routes associated with {}. If this job is resubmitted, it will likely not complete again!",
+				         jobId, exception);
+			}
+
 			markJobStatus(jobId, jobStatus.getValue());
 
 			try {
@@ -200,7 +212,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 	}
 
 	@Override
-	public void createOutputObject(TransientJob transientJob, Mutable<BatchJobStatusType> jobStatus) {
+	public void createOutputObject(TransientJob transientJob, Mutable<BatchJobStatusType> jobStatus) throws IOException {
 		long jobId = transientJob.getId();
 		JobRequest jobRequest = jobRequestDao.findById(jobId);
 
@@ -325,24 +337,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 					.add("Some components had errors for some media. Refer to the detectionProcessingErrors fields.");
 		}
 
-		try {
-			URI outputLocation = storageService.store(jsonOutputObject);
-			jobRequest.setOutputObjectPath(outputLocation.toString());
-			jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
-			checkErrorMessages(jsonOutputObject, jobStatus);
-			jobRequestDao.persist(jobRequest);
-		} catch(IOException | WfmProcessingException wpe) {
-			log.error("Failed to create the JSON detection output object for '{}' due to an exception.", jobId, wpe);
-		}
-		IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
-		IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobArtifactsDirectory(jobId).toPath());
-		IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobOutputObjectsDirectory(jobId).toPath());
-
-		try {
-			jmsUtils.destroyCancellationRoutes(jobId);
-		} catch (Exception exception) {
-			log.warn("Failed to destroy the cancellation routes associated with {}. If this job is resubmitted, it will likely not complete again!", jobId, exception);
-		}
+		URI outputLocation = storageService.store(jsonOutputObject);
+		jobRequest.setOutputObjectPath(outputLocation.toString());
+		jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
+		checkErrorMessages(jsonOutputObject, jobStatus);
+		jobRequestDao.persist(jobRequest);
 	}
 
 

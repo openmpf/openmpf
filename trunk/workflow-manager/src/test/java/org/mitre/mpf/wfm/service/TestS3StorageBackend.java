@@ -162,12 +162,11 @@ public class TestS3StorageBackend {
         assertFalse(S3StorageBackend.requiresS3MediaDownload(s3Properties::get));
     }
 
-    @Test(expected = StorageException.class)
     public void doesNotDownloadFromS3WhenNoKeys() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.remove(MpfConstants.S3_SECRET_KEY_PROPERTY);
         s3Properties.remove(MpfConstants.S3_ACCESS_KEY_PROPERTY);
-        S3StorageBackend.requiresS3MediaDownload(s3Properties::get);
+        assertFalse(S3StorageBackend.requiresS3MediaDownload(s3Properties::get));
     }
 
     @Test(expected = StorageException.class)

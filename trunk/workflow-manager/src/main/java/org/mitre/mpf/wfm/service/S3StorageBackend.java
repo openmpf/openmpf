@@ -179,28 +179,43 @@ public class S3StorageBackend implements StorageBackend {
 
     public static boolean requiresS3MediaDownload(Function<String, String> properties) throws StorageException {
         boolean uploadOnly = Boolean.parseBoolean(properties.apply(MpfConstants.S3_UPLOAD_ONLY_PROPERTY));
-        if (!uploadOnly) {
-            checkMissingS3Keys(properties);
-            return true;
+        if (uploadOnly) {
+            return false;
         }
-        return false;
-    }
 
-
-    public static boolean requiresS3ResultUpload(Function<String, String> properties) throws StorageException {
-        if (StringUtils.isNotBlank(properties.apply(MpfConstants.S3_RESULTS_BUCKET_PROPERTY))) {
-            checkMissingS3Keys(properties);
-            return true;
-        }
-        return false;
-    }
-
-
-    private static void checkMissingS3Keys(Function<String, String> properties) throws StorageException {
         boolean hasAccessKey = StringUtils.isNotBlank(properties.apply(MpfConstants.S3_ACCESS_KEY_PROPERTY));
         boolean hasSecretKey = StringUtils.isNotBlank(properties.apply(MpfConstants.S3_SECRET_KEY_PROPERTY));
         if (hasAccessKey && hasSecretKey) {
-            return;
+            return true;
+        }
+        if (!hasAccessKey && !hasSecretKey) {
+            return false;
+        }
+
+        String presentProperty;
+        String missingProperty;
+        if (hasAccessKey) {
+            presentProperty = MpfConstants.S3_ACCESS_KEY_PROPERTY;
+            missingProperty = MpfConstants.S3_SECRET_KEY_PROPERTY;
+        }
+        else {
+            presentProperty = MpfConstants.S3_SECRET_KEY_PROPERTY;
+            missingProperty = MpfConstants.S3_ACCESS_KEY_PROPERTY;
+        }
+        throw new StorageException(String.format("The %s property was set, but the %s property was not.",
+                                                 presentProperty, missingProperty));
+    }
+
+
+
+    public static boolean requiresS3ResultUpload(Function<String, String> properties) throws StorageException {
+        if (StringUtils.isBlank(properties.apply(MpfConstants.S3_RESULTS_BUCKET_PROPERTY))) {
+            return false;
+        }
+        boolean hasAccessKey = StringUtils.isNotBlank(properties.apply(MpfConstants.S3_ACCESS_KEY_PROPERTY));
+        boolean hasSecretKey = StringUtils.isNotBlank(properties.apply(MpfConstants.S3_SECRET_KEY_PROPERTY));
+        if (hasAccessKey && hasSecretKey) {
+            return true;
         }
 
         if (!hasAccessKey && !hasSecretKey) {
@@ -209,22 +224,20 @@ public class S3StorageBackend implements StorageBackend {
                     MpfConstants.S3_RESULTS_BUCKET_PROPERTY, MpfConstants.S3_ACCESS_KEY_PROPERTY,
                     MpfConstants.S3_SECRET_KEY_PROPERTY));
         }
+
+        String presentProperty;
+        String missingProperty;
         if (hasAccessKey) {
-            throw new StorageException(String.format(
-                    "The %s and %s properties were set, but the %s property was not",
-                    MpfConstants.S3_RESULTS_BUCKET_PROPERTY, MpfConstants.S3_ACCESS_KEY_PROPERTY,
-                    MpfConstants.S3_SECRET_KEY_PROPERTY));
+            presentProperty = MpfConstants.S3_ACCESS_KEY_PROPERTY;
+            missingProperty = MpfConstants.S3_SECRET_KEY_PROPERTY;
+        }
+        else {
+            presentProperty = MpfConstants.S3_SECRET_KEY_PROPERTY;
+            missingProperty = MpfConstants.S3_ACCESS_KEY_PROPERTY;
         }
         throw new StorageException(String.format(
                 "The %s and %s properties were set, but the %s property was not",
-                MpfConstants.S3_RESULTS_BUCKET_PROPERTY, MpfConstants.S3_SECRET_KEY_PROPERTY,
-                MpfConstants.S3_ACCESS_KEY_PROPERTY));
-    }
-
-
-    private static boolean hasS3Keys(Function<String, String> properties) {
-        return StringUtils.isNotBlank(properties.apply(MpfConstants.S3_ACCESS_KEY_PROPERTY))
-                && StringUtils.isNotBlank(properties.apply(MpfConstants.S3_SECRET_KEY_PROPERTY));
+                MpfConstants.S3_RESULTS_BUCKET_PROPERTY, presentProperty, missingProperty));
     }
 
 
@@ -242,6 +255,7 @@ public class S3StorageBackend implements StorageBackend {
                                        e);
         }
     }
+
 
     public S3Object getFromS3(String uri, Function<String, String> properties) throws StorageException {
         try {

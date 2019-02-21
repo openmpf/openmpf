@@ -34,11 +34,16 @@ import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.pipeline.xml.*;
+import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
+import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinitionRef;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Function;
 
@@ -275,7 +280,7 @@ public class AggregateJobPropertiesUtil {
                                                                TransientAction action,
                                                                TransientStreamingJob job) {
 
-    	Map<String, String> overriddenJobProps = job.getOverriddenJobProperties();
+        Map<String, String> overriddenJobProps = job.getOverriddenJobProperties();
         Map<String, String> overriddenAlgoProps = job.getOverriddenAlgorithmProperties().row(algorithm.getName());
         Map<String, String> mediaSpecificProps = job.getStream().getMediaProperties();
         return getCombinedJobProperties(algorithm, action, overriddenJobProps, overriddenAlgoProps, mediaSpecificProps);
@@ -288,12 +293,12 @@ public class AggregateJobPropertiesUtil {
                                                                Map<String, String> overriddenAlgorithmProperties,
                                                                Map<String, String> mediaSpecificProperties) {
 
-    	Map<String, String> combined = getAlgorithmProperties(algorithm);
-    	combined.putAll(action.getProperties());
-    	combined.putAll(overriddenJobProperties);
-    	combined.putAll(overriddenAlgorithmProperties);
-    	combined.putAll(mediaSpecificProperties);
-    	return combined;
+        Map<String, String> combined = getAlgorithmProperties(algorithm);
+        combined.putAll(action.getProperties());
+        combined.putAll(overriddenJobProperties);
+        combined.putAll(overriddenAlgorithmProperties);
+        combined.putAll(mediaSpecificProperties);
+        return combined;
     }
 
 
@@ -391,6 +396,26 @@ public class AggregateJobPropertiesUtil {
                 action.getProperties());
 
         return propName -> getPropertyValue(propName, propertyMaps, algoName);
+    }
+
+
+    public static Function<String, String> getCombinedProperties(JsonJobRequest jobRequest, URI mediaUri) {
+        Map<String, String> mediaProperties = Collections.emptyMap();
+        for (JsonMediaInputObject media : jobRequest.getMedia()) {
+            try {
+                if (mediaUri.equals(new URI(media.getMediaUri()))) {
+                    mediaProperties = media.getProperties();
+                    break;
+                }
+            }
+            catch (URISyntaxException ignored) {
+                // Continue searching for matching media since a job could have a combination of good and bad media.
+            }
+        }
+
+        List<Map<String, String>> propertyMaps = Arrays.asList(mediaProperties, jobRequest.getJobProperties());
+
+        return propName -> getPropertyValue(propName, propertyMaps);
     }
 
 

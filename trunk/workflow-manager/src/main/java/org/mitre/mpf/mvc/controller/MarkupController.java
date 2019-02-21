@@ -31,7 +31,6 @@ import com.amazonaws.services.s3.model.S3Object;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
@@ -60,18 +59,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -157,17 +155,18 @@ public class MarkupController {
                 model.setSourceUri(med.getMediaUri());
                 model.setSourceFileAvailable(false);
                 if (med.getMediaUri() != null) {
-                    try {
-                        String nonUrlPath = med.getMediaUri();
-                        File f = new File(URI.create(nonUrlPath));
-                        if (f.exists()) {
-                            model.setSourceURIContentType(NIOUtils.getPathContentType(Paths.get(URI.create(nonUrlPath))));
-                            model.setSourceImgUrl("server/node-image?nodeFullPath=" + Paths.get(URI.create(nonUrlPath)));
-                            model.setSourceDownloadUrl("server/download?fullPath=" + Paths.get(URI.create(nonUrlPath)));
-                            model.setSourceFileAvailable(true);
-                        }
-                    } catch (IllegalArgumentException e) {
-                        // URI has an authority component or URI scheme is not "file"
+                    Path path = IoUtils.toLocalPath(med.getMediaUri()).orElse(null);
+                    if (path == null || Files.exists(path)) {
+                        String downloadUrl = UriComponentsBuilder.fromPath("server/download")
+                                .queryParam("sourceUri", med.getMediaUri())
+                                .queryParam("jobId", jobId)
+                                .toUriString();
+                        model.setSourceDownloadUrl(downloadUrl);
+                        model.setSourceFileAvailable(true);
+                    }
+                    if (path != null && Files.exists(path)) {
+                        model.setSourceURIContentType(NIOUtils.getPathContentType(path));
+                        model.setSourceImgUrl("server/node-image?nodeFullPath=" + path);
                     }
                 }
                 //add to the list
@@ -247,10 +246,7 @@ public class MarkupController {
                 response.flushBuffer();
                 return;
             }
-            try (InputStream inputStream = Files.newInputStream(localPath)) {
-                writeFileToResponse(Files.probeContentType(localPath), localPath.getFileName().toString(),
-                                    Files.size(localPath), inputStream, response);
-            }
+            IoUtils.writeFileAsAttachment(localPath, response);
             return;
         }
 
@@ -261,8 +257,8 @@ public class MarkupController {
             S3Object s3Object = s3StorageBackend.getFromS3(mediaMarkupResult.getMarkupUri(), combinedProperties);
             try (InputStream inputStream = s3Object.getObjectContent()) {
                 ObjectMetadata metadata = s3Object.getObjectMetadata();
-                writeFileToResponse(metadata.getContentType(), s3Object.getKey(), metadata.getContentLength(),
-                                    inputStream, response);
+                IoUtils.writeContentAsAttachment(inputStream, response, s3Object.getKey(), metadata.getContentType(),
+                                                 metadata.getContentLength());
             }
             return;
         }
@@ -275,26 +271,8 @@ public class MarkupController {
         }
         URLConnection urlConnection = mediaUrl.openConnection();
         try (InputStream inputStream = urlConnection.getInputStream()) {
-            writeFileToResponse(urlConnection.getContentType(), fileName, urlConnection.getContentLength(),
-                                inputStream, response);
+            IoUtils.writeContentAsAttachment(inputStream, response, fileName, urlConnection.getContentType(),
+                                             urlConnection.getContentLength());
         }
-    }
-
-
-    private static void writeFileToResponse(String mimeType, String fileName, long contentLength,
-                                            InputStream inputStream, HttpServletResponse response) throws IOException {
-        if (mimeType == null) {
-            response.setContentType("application/octet-stream");
-        }
-        else {
-            response.setContentType(mimeType);
-        }
-        response.setHeader("Content-Disposition", String.format("attachment; filename=\"%s\"", fileName));
-        if (contentLength > 0 && contentLength < Integer.MAX_VALUE) {
-            response.setContentLength((int) contentLength);
-        }
-
-        IOUtils.copy(inputStream, response.getOutputStream());
-        response.flushBuffer();
     }
 }

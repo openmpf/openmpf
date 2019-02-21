@@ -263,7 +263,7 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
             $("#jobStatusCell" + job.id).html(job.jobStatus);
 
             //keep the job progress val at 99% until it is complete or cancelled
-            if (job.jobStatus.startsWith('COMPLETE') || job.jobStatus.startsWith('CANCELLED') 
+            if (job.jobStatus.startsWith('COMPLETE') || job.jobStatus.startsWith('CANCELLED')
 			|| job.jobStatus.startsWith('ERROR') || job.jobStatus.startsWith('UNKNOWN')) {
                 jobTable.ajax.reload(null, false);
             } else if (progress > 99) {
@@ -385,8 +385,8 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
                 {
                     data: "sourceDownload",
                     render: function (data, type, obj) {
-                        if (obj.sourceDownload) {
-                            return '<a href="' + obj.sourceDownload + '" download="' + obj.sourceUri + '" class="btn btn-default" role="button" title="Download"><i class="fa fa-download"></i></a>';
+                        if (obj.sourceDownloadUrl) {
+                            return '<a href="' + obj.sourceDownloadUrl + '" download="' + obj.sourceUri + '" class="btn btn-default" role="button" title="Download"><i class="fa fa-download"></i></a>';
                         } else {
                             return '<p class="text-muted">Source file remotely hosted or not available</p>';
                         }

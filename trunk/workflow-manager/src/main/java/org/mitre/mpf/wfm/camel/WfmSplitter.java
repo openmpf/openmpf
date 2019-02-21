@@ -62,9 +62,9 @@ public abstract class WfmSplitter implements WfmSplitterInterface {
      * @return A collection of work units to be performed.
      * @throws Exception
      */
-    public abstract List<Message> wfmSplit(Exchange exchange) throws Exception;
+    protected abstract List<Message> wfmSplit(Exchange exchange) throws Exception;
 
-    public abstract String getSplitterName();
+    protected abstract String getSplitterName();
 
 
     @Override

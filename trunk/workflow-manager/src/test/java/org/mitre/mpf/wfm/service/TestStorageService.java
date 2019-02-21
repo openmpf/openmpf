@@ -233,10 +233,10 @@ public class TestStorageService {
 
 
         when(_mockLocalBackend.storeImageArtifact(request))
-                .thenReturn(TEST_REMOTE_URI);
+                .thenReturn(TEST_LOCAL_URI);
 
         URI result = _storageService.storeImageArtifact(request);
-        assertEquals(TEST_REMOTE_URI, result);
+        assertEquals(TEST_LOCAL_URI, result);
 
         verifyNoInProgressJobWarnings();
         verify(_mockS3Backend)

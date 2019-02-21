@@ -236,7 +236,7 @@ public class S3StorageBackend implements StorageBackend {
             missingProperty = MpfConstants.S3_ACCESS_KEY_PROPERTY;
         }
         throw new StorageException(String.format(
-                "The %s and %s properties were set, but the %s property was not",
+                "The %s and %s properties were set, but the %s property was not.",
                 MpfConstants.S3_RESULTS_BUCKET_PROPERTY, presentProperty, missingProperty));
     }
 

@@ -151,7 +151,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
 
     private static void processTracks(
-            Table<Long, Integer, Set<Integer>> mediaAndActionToFrame,
+            Table<Long, Integer, Set<Integer>> mediaAndActionToFrames,
             Iterable<Track> tracks,
             TransientMedia media,
             int actionIndex,
@@ -165,7 +165,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                     }
                     // fall through
                 case EXEMPLARS_ONLY:
-                    addFrame(mediaAndActionToFrame, media.getId(), actionIndex,
+                    addFrame(mediaAndActionToFrames, media.getId(), actionIndex,
                              track.getExemplar().getMediaOffsetFrame());
                     break;
                 case ALL_VISUAL_DETECTIONS:
@@ -175,19 +175,19 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                     // fall through
                 case ALL_DETECTIONS:
                     for (Detection detection : track.getDetections()) {
-                        addFrame(mediaAndActionToFrame, media.getId(), actionIndex, detection.getMediaOffsetFrame());
+                        addFrame(mediaAndActionToFrames, media.getId(), actionIndex, detection.getMediaOffsetFrame());
                     }
             }
         }
     }
 
 
-    private static void addFrame(Table<Long, Integer, Set<Integer>> table, long mediaId, int actionIndex,
-                                 int frameNumber) {
-        Set<Integer> frameNumbers = table.get(mediaId, actionIndex);
+    private static void addFrame(Table<Long, Integer, Set<Integer>> mediaAndActionToFrames,
+                                 long mediaId, int actionIndex, int frameNumber) {
+        Set<Integer> frameNumbers = mediaAndActionToFrames.get(mediaId, actionIndex);
         if (frameNumbers == null) {
             frameNumbers = new HashSet<>();
-            table.put(mediaId, actionIndex, frameNumbers);
+            mediaAndActionToFrames.put(mediaId, actionIndex, frameNumbers);
         }
         frameNumbers.add(frameNumber);
     }

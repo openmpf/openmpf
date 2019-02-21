@@ -29,6 +29,7 @@ package org.mitre.mpf.mvc.controller;
 import com.amazonaws.services.s3.model.S3Object;
 import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
@@ -40,11 +41,13 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.event.JobProgress;
-import org.mitre.mpf.wfm.exceptions.InvalidPipelineObjectWfmProcessingException;
+import org.mitre.mpf.wfm.exceptions.InvalidPropertyWfmProcessingException;
+import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -66,10 +69,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
@@ -104,6 +104,9 @@ public class JobController {
 
     @Autowired
     private S3StorageBackend s3StorageBackend;
+
+    @Autowired
+    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
     /*
      *	POST /jobs
@@ -435,45 +438,50 @@ public class JobController {
         return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
     }
 
+
     private JobCreationResponse createJobInternal(JobCreationRequest jobCreationRequest, boolean useSession) {
         try {
+            if (!pipelineService.pipelineSupportsBatch(jobCreationRequest.getPipelineName())) {
+                return createJobCreationErrorResponse(jobCreationRequest.getExternalId(),
+                                                      "Requested pipeline doesn't support batch jobs");
+            }
+            checkProperties(jobCreationRequest);
 
-            if ( !pipelineService.pipelineSupportsBatch(jobCreationRequest.getPipelineName()) ) {
-                // The batch job failed the pipeline check. The requested pipeline doesn't support batch.
-                // Reject the job and send an error response.
-                return createJobCreationErrorResponse(jobCreationRequest.getExternalId(), "Requested pipeline doesn't support batch jobs");
+            boolean buildOutput = Optional.ofNullable(jobCreationRequest.getBuildOutput())
+                    .orElseGet(propertiesUtil::isOutputObjectsEnabled);
 
-            } else {
+            int priority = Optional.ofNullable(jobCreationRequest.getPriority())
+                    .orElseGet(propertiesUtil::getJmsPriority);
 
-                boolean buildOutput = propertiesUtil.isOutputObjectsEnabled();
-                if (jobCreationRequest.getBuildOutput() != null) {
-                    buildOutput = jobCreationRequest.getBuildOutput();
-                }
-
-                int priority = propertiesUtil.getJmsPriority();
-                if (jobCreationRequest.getPriority() != null) {
-                    priority = jobCreationRequest.getPriority();
-                }
-
-                JsonJobRequest jsonJobRequest;
-                List<JsonMediaInputObject> media = new ArrayList<>();
-                // Iterate over all media in the batch job creation request.  If for any media, the media protocol check fails, then
-                // that media will be ignored from the batch job
-                for (JobCreationMediaData mediaRequest : jobCreationRequest.getMedia()) {
-                    JsonMediaInputObject medium = new JsonMediaInputObject(
-                        mediaRequest.getMediaUri());
-                    if (mediaRequest.getProperties() != null) {
-                        for (Map.Entry<String, String> property : mediaRequest.getProperties()
-                            .entrySet()) {
-                            medium.getProperties()
-                                .put(property.getKey().toUpperCase(), property.getValue());
-                        }
+            List<JsonMediaInputObject> media = new ArrayList<>();
+            // Iterate over all media in the batch job creation request.  If for any media, the media protocol check fails, then
+            // that media will be ignored from the batch job
+            for (JobCreationMediaData mediaRequest : jobCreationRequest.getMedia()) {
+                JsonMediaInputObject medium = new JsonMediaInputObject(mediaRequest.getMediaUri());
+                if (mediaRequest.getProperties() != null) {
+                    for (Map.Entry<String, String> property : mediaRequest.getProperties().entrySet()) {
+                        medium.getProperties()
+                            .put(property.getKey().toUpperCase(), property.getValue());
                     }
-                    media.add(medium);
                 }
-                if (jobCreationRequest.getCallbackURL() != null
-                    && jobCreationRequest.getCallbackURL().length() > 0) {
-                    jsonJobRequest = mpfService.createJob(media,
+                media.add(medium);
+            }
+
+            JsonJobRequest jsonJobRequest;
+            if (StringUtils.isEmpty(jobCreationRequest.getCallbackURL())) {
+                jsonJobRequest = mpfService.createJob(
+                        media,
+                        jobCreationRequest.getAlgorithmProperties(),
+                        jobCreationRequest.getJobProperties(),
+                        jobCreationRequest.getPipelineName(),
+                        jobCreationRequest.getExternalId(),  //TODO: what do we do with this from the UI?
+                        buildOutput,  // Use the buildOutput value if it is provided, otherwise use the default value from the properties file.,
+                        priority); // Use the priority value if it is provided, otherwise use the default value from the properties file.);
+
+            }
+            else {
+                jsonJobRequest = mpfService.createJob(
+                        media,
                         jobCreationRequest.getAlgorithmProperties(),
                         jobCreationRequest.getJobProperties(),
                         jobCreationRequest.getPipelineName(),
@@ -482,30 +490,23 @@ public class JobController {
                         priority,     // Use the priority value if it is provided, otherwise use the default value from the properties file.
                         jobCreationRequest.getCallbackURL(),
                         jobCreationRequest.getCallbackMethod());
-
-                } else {
-                    jsonJobRequest = mpfService.createJob(media,
-                        jobCreationRequest.getAlgorithmProperties(),
-                        jobCreationRequest.getJobProperties(),
-                        jobCreationRequest.getPipelineName(),
-                        jobCreationRequest.getExternalId(),  //TODO: what do we do with this from the UI?
-                        buildOutput,  // Use the buildOutput value if it is provided, otherwise use the default value from the properties file.,
-                        priority); // Use the priority value if it is provided, otherwise use the default value from the properties file.);
-                }
-                long jobId = mpfService.submitJob(jsonJobRequest);
-                log.debug("Successful creation of batch JobId: {}", jobId);
-
-                if (useSession) {
-                    sessionModel.getSessionJobs().add(jobId);
-                }
-                // the job request has been successfully parsed, construct the job creation response
-                return new JobCreationResponse(jobId);
             }
-        } catch (InvalidPipelineObjectWfmProcessingException ex) {
+
+            long jobId = mpfService.submitJob(jsonJobRequest);
+            log.debug("Successful creation of batch JobId: {}", jobId);
+
+            if (useSession) {
+                sessionModel.getSessionJobs().add(jobId);
+            }
+            // the job request has been successfully parsed, construct the job creation response
+            return new JobCreationResponse(jobId);
+        }
+        catch (WfmProcessingException ex) {
             String err = createErrorString(jobCreationRequest, ex.getMessage());
             log.error(err, ex);
             return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
-        } catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
+        }
+        catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
             String err = createErrorString(jobCreationRequest, null);
             log.error(err, ex);
             // the job request did not parse successfully, construct the job creation response describing the error that occurred.
@@ -570,5 +571,30 @@ public class JobController {
                 + "Also consider checking the server logs for more information on this error.";
         log.error(errorStr);
         return new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
+    }
+
+
+    private void checkProperties(JobCreationRequest jobCreationRequest) {
+        try {
+            List<ActionDefinition> actions = pipelineService.getPipeline(jobCreationRequest.getPipelineName())
+                    .getTaskRefs()
+                    .stream()
+                    .map(pipelineService::getTask)
+                    .flatMap(t -> t.getActions().stream())
+                    .map(pipelineService::getAction)
+                    .collect(toList());
+
+            for (JobCreationMediaData media : jobCreationRequest.getMedia()) {
+                for (ActionDefinition action : actions) {
+                    Function<String, String> combinedProperties
+                            = aggregateJobPropertiesUtil.getCombinedProperties(jobCreationRequest, media, action);
+                    S3StorageBackend.requiresS3MediaDownload(combinedProperties);
+                    S3StorageBackend.requiresS3ResultUpload(combinedProperties);
+                }
+            }
+        }
+        catch (StorageException e) {
+            throw new InvalidPropertyWfmProcessingException("Property validation failed due to: " + e, e);
+        }
     }
 }

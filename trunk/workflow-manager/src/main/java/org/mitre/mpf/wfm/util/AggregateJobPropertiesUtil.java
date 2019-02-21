@@ -29,6 +29,8 @@ package org.mitre.mpf.wfm.util;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Table;
 import org.mitre.mpf.interop.*;
+import org.mitre.mpf.rest.api.JobCreationMediaData;
+import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
@@ -395,7 +397,7 @@ public class AggregateJobPropertiesUtil {
                 job.getOverriddenJobProperties(),
                 action.getProperties());
 
-        return propName -> getPropertyValue(propName, propertyMaps, algoName);
+        return propName -> getPropertyValue(propName, propertyMaps, action.getName());
     }
 
 
@@ -419,19 +421,55 @@ public class AggregateJobPropertiesUtil {
     }
 
 
+    public Function<String, String> getCombinedProperties(
+            JobCreationRequest jobCreationRequest,
+            JobCreationMediaData media,
+            ActionDefinition action) {
+
+        Map<String, String> overriddenAlgoProps
+                = jobCreationRequest.getAlgorithmProperties().get(action.getAlgorithmRef());
+
+        List<Map<String, String>>  propertyMaps;
+        if (overriddenAlgoProps == null) {
+            propertyMaps = Arrays.asList(media.getProperties(),
+                                         jobCreationRequest.getJobProperties());
+        }
+        else {
+            propertyMaps = Arrays.asList(media.getProperties(),
+                                         overriddenAlgoProps,
+                                         jobCreationRequest.getJobProperties());
+        }
+        return propName -> getPropertyValue(propName, propertyMaps, action.getName());
+    }
+
+
     private static String getPropertyValue(String propName, Iterable<Map<String, String>> propertyMaps) {
         return getPropertyValue(propName, propertyMaps, x -> null);
     }
 
 
     private String getPropertyValue(String propName, Iterable<Map<String, String>> propertyMaps,
-                                    String algoName) {
-        return getPropertyValue(propName, propertyMaps, pName -> getDefaultAlgorithmProperty(algoName, pName));
+                                    String actionName) {
+        return getPropertyValue(propName, propertyMaps, pName -> getDefaultActionProperty(pName, actionName));
     }
 
 
-    private String getDefaultAlgorithmProperty(String algoName, String propName) {
-        return Optional.ofNullable(_pipelineService.getAlgorithm(algoName))
+    private String getDefaultActionProperty(String propName, String actionName) {
+        ActionDefinition action = _pipelineService.getAction(actionName);
+        if (action == null) {
+            return null;
+        }
+
+        PropertyDefinitionRef propDefRef = action.getProperties()
+                .stream()
+                .filter(ap -> propName.equals(ap.getName()))
+                .findAny()
+                .orElse(null);
+        if (propDefRef != null) {
+            return propDefRef.getValue();
+        }
+
+        return Optional.ofNullable(_pipelineService.getAlgorithm(action.getAlgorithmRef()))
                 .map(a -> a.getProvidesCollection().getAlgorithmProperty(propName))
                 .map(PropertyDefinition::getDefaultValue)
                 .orElse(null);
@@ -484,12 +522,9 @@ public class AggregateJobPropertiesUtil {
         if (jsonAction != null) {
             // Check overridden algorithm properties
             if (jobRequest.getAlgorithmProperties().containsKey(jsonAction.getName())) {
-                Map<?, ?> overriddenAlgoProps = jobRequest.getAlgorithmProperties().get(jsonAction.getName());
+                Map<String, String> overriddenAlgoProps = jobRequest.getAlgorithmProperties().get(jsonAction.getName());
                 if (overriddenAlgoProps.containsKey(propName)) {
-                    Object overriddenAlgoPropVal = overriddenAlgoProps.get(propName);
-                    return overriddenAlgoPropVal == null
-                            ? null
-                            : overriddenAlgoPropVal.toString();
+                    return overriddenAlgoProps.get(propName);
                 }
             }
         }

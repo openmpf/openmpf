@@ -129,7 +129,7 @@ public class JobRequestBoImpl implements JobRequestBo {
      * @return
      */
     @Override
-    public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String, Map> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority) {
+    public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String, Map<String, String>> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority) {
 
         JsonJobRequest jsonJobRequest = new JsonJobRequest(TextUtils.trim(externalId), buildOutput, pipelineService.createJsonPipeline(pipelineName), priority);
         if (media != null) {
@@ -139,7 +139,7 @@ public class JobRequestBoImpl implements JobRequestBo {
         // update to add the job algorithm-specific-properties, supporting the priority:
         // action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
         if (algorithmProperties != null) {
-            for (Map.Entry<String, Map> property : algorithmProperties.entrySet()) {
+            for (Map.Entry<String, Map<String, String>> property : algorithmProperties.entrySet()) {
                 jsonJobRequest.getAlgorithmProperties().put(property.getKey().toUpperCase(), property.getValue());
             }
         }
@@ -168,7 +168,7 @@ public class JobRequestBoImpl implements JobRequestBo {
      * @return JSON representation of the job request
      */
     @Override
-    public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String, Map> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority, String callbackURL, String callbackMethod) {
+    public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String, Map<String, String>> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority, String callbackURL, String callbackMethod) {
         log.debug("[createRequest] externalId:" + externalId + " pipeline:" + pipelineName + " buildOutput:" + buildOutput + " priority:" + priority + " callbackURL:" + callbackURL + " callbackMethod:" + callbackMethod);
         String jsonCallbackURL = "";
         String jsonCallbackMethod = "GET";
@@ -187,7 +187,7 @@ public class JobRequestBoImpl implements JobRequestBo {
         // Putting algorithm properties in here supports the priority scheme (from lowest to highest):
         // action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
         if (algorithmProperties != null) {
-            for (Map.Entry<String, Map> property : algorithmProperties.entrySet()) {
+            for (Map.Entry<String, Map<String, String>> property : algorithmProperties.entrySet()) {
                 jsonJobRequest.getAlgorithmProperties().put(property.getKey().toUpperCase(), property.getValue());
             }
         }

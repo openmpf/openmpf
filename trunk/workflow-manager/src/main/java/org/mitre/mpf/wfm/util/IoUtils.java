@@ -343,12 +343,6 @@ public class IoUtils {
     }
 
 
-    public static void writeContentAsAttachment(InputStream inputStream, HttpServletResponse response,
-                                                String fileName) throws IOException {
-        writeContentAsAttachment(inputStream, response, fileName, null, -1);
-    }
-
-
     public static void writeFileAsAttachment(Path path, HttpServletResponse response) throws IOException {
         try (InputStream inputStream = Files.newInputStream(path)) {
             writeContentAsAttachment(inputStream, response, path.getFileName().toString(),
@@ -370,11 +364,19 @@ public class IoUtils {
             response.setContentType(mimeType);
         }
         response.setHeader("Content-Disposition", String.format("attachment; filename=\"%s\"", fileName));
-        if (contentLength > 0) {
-            response.setContentLengthLong(contentLength);
+        if (contentLength > 0 && contentLength < Integer.MAX_VALUE) {
+            response.setContentLength((int) contentLength);
         }
 
         IOUtils.copy(inputStream, response.getOutputStream());
         response.flushBuffer();
+    }
+
+
+    public static String normalizeUri(String uriString) {
+        if (uriString.startsWith("file:/") && !uriString.startsWith("file:///")) {
+            return Paths.get(URI.create(uriString)).toUri().toString();
+        }
+        return uriString;
     }
 }

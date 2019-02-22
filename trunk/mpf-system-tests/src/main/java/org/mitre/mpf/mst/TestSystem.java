@@ -76,119 +76,119 @@ import java.util.*;
 @DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
 public abstract class TestSystem {
 
-	protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
+    protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
 
-	protected static int testCtr = 0;
+    protected static int testCtr = 0;
 
-	// is this running on Jenkins and/or is output checking desired?
-	protected static boolean jenkins = false;
-	static {
-		String prop = System.getProperty("jenkins");
-		if (prop != null){
-			jenkins = Boolean.valueOf(prop);
-		}
-	}
+    // is this running on Jenkins and/or is output checking desired?
+    protected static boolean jenkins = false;
+    static {
+        String prop = System.getProperty("jenkins");
+        if (prop != null){
+            jenkins = Boolean.valueOf(prop);
+        }
+    }
 
-	private static final Logger log = LoggerFactory.getLogger(TestSystem.class);
-    
+    private static final Logger log = LoggerFactory.getLogger(TestSystem.class);
 
-	@Autowired
+
+    @Autowired
     @Qualifier(IoUtils.REF)
     protected IoUtils ioUtils;
 
     @Autowired
     protected PropertiesUtil propertiesUtil;
 
-	@Autowired
-	@Qualifier(JobRequestBoImpl.REF)
-	protected JobRequestBo jobRequestBo;
-
-	@Autowired
-	@Qualifier(StreamingJobRequestBoImpl.REF)
-	protected StreamingJobRequestBo streamingJobRequestBo;
+    @Autowired
+    @Qualifier(JobRequestBoImpl.REF)
+    protected JobRequestBo jobRequestBo;
 
     @Autowired
-	protected MpfService mpfService;
+    @Qualifier(StreamingJobRequestBoImpl.REF)
+    protected StreamingJobRequestBo streamingJobRequestBo;
+
+    @Autowired
+    protected MpfService mpfService;
 
     @Autowired
     protected PipelineService pipelineService;
 
     @Autowired
-	protected ObjectMapper objectMapper;
+    protected ObjectMapper objectMapper;
 
-	@Autowired
-	@Qualifier(JobCompleteProcessorImpl.REF)
-	private JobCompleteProcessor jobCompleteProcessor;
-
-
-	@Rule
-	public TestName testName = new TestName();
-
-	@Rule
-	public MpfErrorCollector errorCollector = new MpfErrorCollector();
+    @Autowired
+    @Qualifier(JobCompleteProcessorImpl.REF)
+    private JobCompleteProcessor jobCompleteProcessor;
 
 
-	private OutputChecker outputChecker = new OutputChecker(errorCollector);
-	private Set<Long> completedJobs = new HashSet<>();
-	private Object lock = new Object();
-	private boolean hasInitialized = false;
+    @Rule
+    public TestName testName = new TestName();
+
+    @Rule
+    public MpfErrorCollector errorCollector = new MpfErrorCollector();
 
 
-	@PostConstruct
-	private void init() throws Exception {
-		synchronized (lock) {
-			if (!hasInitialized) {
-				completedJobs = new HashSet<Long>();
-				jobCompleteProcessor.subscribe(new NotificationConsumer<JobCompleteNotification>() {
-					@Override
-					public void onNotification(Object source, JobCompleteNotification notification) {
-						log.info("JobCompleteProcessorSubscriber: Source={}, Notification={}", source, notification);
-						synchronized (lock) {
-							completedJobs.add(notification.getJobId());
-							lock.notifyAll();
-						}
-						log.info("JobCompleteProcessorSubscriber COMPLETE");
-					}
-				});
-
-				log.info("Starting the tests from _setupContext");
-				hasInitialized = true;
-			}
-		}
-	}
+    private OutputChecker outputChecker = new OutputChecker(errorCollector);
+    private Set<Long> completedJobs = new HashSet<>();
+    private Object lock = new Object();
+    private boolean hasInitialized = false;
 
 
-	protected void addAction(String actionName, String algorithmName, Map<String, String> propertySettings) {
-		if (!pipelineService.getActionNames().contains(actionName)) {
-			ActionDefinition actionDef = new ActionDefinition(actionName, algorithmName, actionName);
-			for (Map.Entry<String, String> entry : propertySettings.entrySet()) {
-				actionDef.getProperties().add(new PropertyDefinitionRef(entry.getKey(), entry.getValue()));
-			}
-			pipelineService.saveAction(actionDef);
-		}
-	}
+    @PostConstruct
+    private void init() throws Exception {
+        synchronized (lock) {
+            if (!hasInitialized) {
+                completedJobs = new HashSet<Long>();
+                jobCompleteProcessor.subscribe(new NotificationConsumer<JobCompleteNotification>() {
+                    @Override
+                    public void onNotification(Object source, JobCompleteNotification notification) {
+                        log.info("JobCompleteProcessorSubscriber: Source={}, Notification={}", source, notification);
+                        synchronized (lock) {
+                            completedJobs.add(notification.getJobId());
+                            lock.notifyAll();
+                        }
+                        log.info("JobCompleteProcessorSubscriber COMPLETE");
+                    }
+                });
+
+                log.info("Starting the tests from _setupContext");
+                hasInitialized = true;
+            }
+        }
+    }
 
 
-	protected void addTask(String taskName, String... actions) {
-		if (!pipelineService.getTaskNames().contains(taskName)) {
-			TaskDefinition taskDef = new TaskDefinition(taskName, taskName);
-			for (String actionName : actions) {
-				taskDef.getActions().add(new ActionDefinitionRef(actionName));
-			}
-			pipelineService.saveTask(taskDef);
-		}
-	}
+    protected void addAction(String actionName, String algorithmName, Map<String, String> propertySettings) {
+        if (!pipelineService.getActionNames().contains(actionName)) {
+            ActionDefinition actionDef = new ActionDefinition(actionName, algorithmName, actionName);
+            for (Map.Entry<String, String> entry : propertySettings.entrySet()) {
+                actionDef.getProperties().add(new PropertyDefinitionRef(entry.getKey(), entry.getValue()));
+            }
+            pipelineService.saveAction(actionDef);
+        }
+    }
 
-	protected void addPipeline(String pipelineName, String... tasks) {
-		if (!pipelineService.getPipelineNames().contains(pipelineName)) {
-			PipelineDefinition pipelineDef = new PipelineDefinition(pipelineName, pipelineName);
-			for (String taskName : tasks) {
-				pipelineDef.getTaskRefs().add(new TaskDefinitionRef(taskName));
-			}
-			pipelineService.savePipeline(pipelineDef);
-		}
-	}
+
+    protected void addTask(String taskName, String... actions) {
+        if (!pipelineService.getTaskNames().contains(taskName)) {
+            TaskDefinition taskDef = new TaskDefinition(taskName, taskName);
+            for (String actionName : actions) {
+                taskDef.getActions().add(new ActionDefinitionRef(actionName));
+            }
+            pipelineService.saveTask(taskDef);
+        }
+    }
+
+    protected void addPipeline(String pipelineName, String... tasks) {
+        if (!pipelineService.getPipelineNames().contains(pipelineName)) {
+            PipelineDefinition pipelineDef = new PipelineDefinition(pipelineName, pipelineName);
+            for (String taskName : tasks) {
+                pipelineDef.getTaskRefs().add(new TaskDefinitionRef(taskName));
+            }
+            pipelineService.savePipeline(pipelineDef);
+        }
+    }
 
     /*
      * This method simply checks that the number of media in the input matches the number of media in the output
@@ -201,149 +201,149 @@ public abstract class TestSystem {
         log.debug("Deserializing actual output {}", actualOutputPath);
 
         JsonOutputObject actualOutput = objectMapper.readValue(actualOutputPath.toURL(), JsonOutputObject.class);
-	    Assert.assertTrue(String.format("Actual output size=%d doesn't match number of input media=%d",
-			    actualOutput.getMedia().size(), numInputMedia), actualOutput.getMedia().size() == numInputMedia);
+        Assert.assertTrue(String.format("Actual output size=%d doesn't match number of input media=%d",
+                                        actualOutput.getMedia().size(), numInputMedia), actualOutput.getMedia().size() == numInputMedia);
     }
 
-	protected List<JsonMediaInputObject> toMediaObjectList(URI... uris) {
-		List<JsonMediaInputObject> media = new ArrayList<>(uris.length);
-		for (URI uri : uris) {
-			media.add(new JsonMediaInputObject(uri.toString()));
-		}
-		return media;
-	}
+    protected List<JsonMediaInputObject> toMediaObjectList(URI... uris) {
+        List<JsonMediaInputObject> media = new ArrayList<>(uris.length);
+        for (URI uri : uris) {
+            media.add(new JsonMediaInputObject(uri.toString()));
+        }
+        return media;
+    }
 
-	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media) {
-		return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), true,
-		                          propertiesUtil.getJmsPriority());
-	}
-
-
-	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, boolean buildOutput,
-	                                  int priority) {
-		return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), buildOutput, priority);
-	}
+    protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media) {
+        return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), true,
+                                  propertiesUtil.getJmsPriority());
+    }
 
 
-	protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, Map<String, String> jobProperties, boolean buildOutput, int priority) {
-		JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media, Collections.emptyMap(), jobProperties,
-                buildOutput, priority);
+    protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, boolean buildOutput,
+                                      int priority) {
+        return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), buildOutput, priority);
+    }
+
+
+    protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, Map<String, String> jobProperties, boolean buildOutput, int priority) {
+        JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media, Collections.emptyMap(), jobProperties,
+                                                                   buildOutput, priority);
         long jobRequestId = mpfService.submitJob(jsonJobRequest);
         Assert.assertTrue(waitFor(jobRequestId));
-		return jobRequestId;
-	}
+        return jobRequestId;
+    }
 
-	protected long runPipelineOnStream(String pipelineName, JsonStreamingInputObject stream, Map<String, String> jobProperties, boolean buildOutput, int priority,
-									   long stallTimeout) throws Exception {
-		JsonStreamingJobRequest jsonStreamingJobRequest = streamingJobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, stream,
-				Collections.emptyMap(), jobProperties,
-				buildOutput, priority,
-				stallTimeout,
-				null,null);
-		long jobRequestId = mpfService.submitJob(jsonStreamingJobRequest);
-		Assert.assertTrue(waitFor(jobRequestId));
-		return jobRequestId;
-	}
+    protected long runPipelineOnStream(String pipelineName, JsonStreamingInputObject stream, Map<String, String> jobProperties, boolean buildOutput, int priority,
+                                       long stallTimeout) throws Exception {
+        JsonStreamingJobRequest jsonStreamingJobRequest = streamingJobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, stream,
+                                                                                              Collections.emptyMap(), jobProperties,
+                                                                                              buildOutput, priority,
+                                                                                              stallTimeout,
+                                                                                              null,null);
+        long jobRequestId = mpfService.submitJob(jsonStreamingJobRequest);
+        Assert.assertTrue(waitFor(jobRequestId));
+        return jobRequestId;
+    }
 
-	public boolean waitFor(long jobRequestId) {
-		synchronized (lock) {
-			while (!completedJobs.contains(jobRequestId)) {
-				try {
-					lock.wait();
-				} catch (Exception exception) {
-					log.warn("Exception occurred while waiting. Assuming that the job has completed (but failed)", exception);
-					completedJobs.add(jobRequestId);
+    public boolean waitFor(long jobRequestId) {
+        synchronized (lock) {
+            while (!completedJobs.contains(jobRequestId)) {
+                try {
+                    lock.wait();
+                } catch (Exception exception) {
+                    log.warn("Exception occurred while waiting. Assuming that the job has completed (but failed)", exception);
+                    completedJobs.add(jobRequestId);
                     return false;
-				}
-				log.info("Woken up. Checking to see if {} has completed", jobRequestId);
-			}
-			log.info("{} has completed!", jobRequestId);
+                }
+                log.info("Woken up. Checking to see if {} has completed", jobRequestId);
+            }
+            log.info("{} has completed!", jobRequestId);
             return true;
-		}
-	}
+        }
+    }
 
-	protected void runSystemTest(String pipelineName, String expectedOutputJsonPath, String... testMediaFiles) throws Exception {
-		testCtr++;
-		log.info("Beginning test #{} {}()", testCtr, testName.getMethodName());
-		List<JsonMediaInputObject> mediaPaths = new LinkedList<>();
-		for (String filePath : testMediaFiles) {
-			mediaPaths.add(new JsonMediaInputObject(ioUtils.findFile(filePath).toString()));
-		}
+    protected void runSystemTest(String pipelineName, String expectedOutputJsonPath, String... testMediaFiles) throws Exception {
+        testCtr++;
+        log.info("Beginning test #{} {}()", testCtr, testName.getMethodName());
+        List<JsonMediaInputObject> mediaPaths = new LinkedList<>();
+        for (String filePath : testMediaFiles) {
+            mediaPaths.add(new JsonMediaInputObject(ioUtils.findFile(filePath).toString()));
+        }
 
-		long jobId = runPipelineOnMedia(pipelineName, mediaPaths, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(),
-				propertiesUtil.getJmsPriority());
-		if (jenkins) {
-			URL expectedOutputPath = getClass().getClassLoader().getResource(expectedOutputJsonPath);
-			log.info("Deserializing expected output {} and actual output for job {}", expectedOutputPath, jobId);
+        long jobId = runPipelineOnMedia(pipelineName, mediaPaths, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(),
+                                        propertiesUtil.getJmsPriority());
+        if (jenkins) {
+            URL expectedOutputPath = getClass().getClassLoader().getResource(expectedOutputJsonPath);
+            log.info("Deserializing expected output {} and actual output for job {}", expectedOutputPath, jobId);
 
-			JsonOutputObject expectedOutputJson = objectMapper.readValue(expectedOutputPath, JsonOutputObject.class);
-			JsonOutputObject actualOutputJson = getJobOutputObject(jobId);
+            JsonOutputObject expectedOutputJson = objectMapper.readValue(expectedOutputPath, JsonOutputObject.class);
+            JsonOutputObject actualOutputJson = getJobOutputObject(jobId);
 
-			outputChecker.compareJsonOutputObjects(expectedOutputJson, actualOutputJson, pipelineName);
-		}
-		log.info("Finished test {}()", testName.getMethodName());
-	}
-
-
-	protected JsonOutputObject getJobOutputObject(long jobId) {
-    	try {
-		    File outputObjectFile = propertiesUtil.createDetectionOutputObjectFile(jobId);
-		    return objectMapper.readValue(outputObjectFile, JsonOutputObject.class);
-	    }
-	    catch (IOException e) {
-    		throw new UncheckedIOException(e);
-	    }
-	}
+            outputChecker.compareJsonOutputObjects(expectedOutputJson, actualOutputJson, pipelineName);
+        }
+        log.info("Finished test {}()", testName.getMethodName());
+    }
 
 
-	/**
-	 * This class loads the workflow manager's applicationContext.xml and adds an additional properties file
-	 * to the application context.
-	 *
-	 * Note that the {@link ContextConfiguration#locations()} annotation parameter allows you to
-	 * specify an XML file through the annotation, but there is no way to specify that file should be loaded
-	 * from a different class's class path. Thus, we don't use that annotation.
-	 *
-	 * Subclasses of this class must provide a no-arg constructor since they will be used in
-	 * {@link ContextConfiguration#initializers()}, which doesn't allow constructor parameters.
-	 */
-	protected static class BaseAppCtxInit implements ApplicationContextInitializer<GenericApplicationContext> {
-
-		private final String _additionalPropertiesFile;
+    protected JsonOutputObject getJobOutputObject(long jobId) {
+        try {
+            File outputObjectFile = propertiesUtil.createDetectionOutputObjectFile(jobId).toFile();
+            return objectMapper.readValue(outputObjectFile, JsonOutputObject.class);
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 
 
-		protected BaseAppCtxInit(String additionalPropertiesFile) {
-			_additionalPropertiesFile = additionalPropertiesFile;
-		}
+    /**
+     * This class loads the workflow manager's applicationContext.xml and adds an additional properties file
+     * to the application context.
+     *
+     * Note that the {@link ContextConfiguration#locations()} annotation parameter allows you to
+     * specify an XML file through the annotation, but there is no way to specify that file should be loaded
+     * from a different class's class path. Thus, we don't use that annotation.
+     *
+     * Subclasses of this class must provide a no-arg constructor since they will be used in
+     * {@link ContextConfiguration#initializers()}, which doesn't allow constructor parameters.
+     */
+    protected static class BaseAppCtxInit implements ApplicationContextInitializer<GenericApplicationContext> {
 
-		@Override
-		public final void initialize(GenericApplicationContext applicationContext) {
-			addWfmAppCtx(applicationContext);
-			addPropertiesFile(applicationContext, _additionalPropertiesFile);
-		}
-
-
-		private static void addWfmAppCtx(GenericApplicationContext applicationCtx) {
-			Resource wfmAppCtx = new ClassPathResource(
-					"/applicationContext.xml",
-					// Passes reference to a workflow manager class to ensure the that workflow manager's
-					// applicationContext.xml is used.
-					// Any class that is part of the workflow manager project will work.
-					WfmStartup.class);
-			BeanDefinitionReader xmlReader = new XmlBeanDefinitionReader(applicationCtx);
-			xmlReader.loadBeanDefinitions(wfmAppCtx);
-		}
+        private final String _additionalPropertiesFile;
 
 
-		private static void addPropertiesFile(GenericApplicationContext applicationCtx, String additionalPropsFile) {
-			BeanDefinition propFilesDef = applicationCtx.getBeanDefinition("propFiles");
-			MutablePropertyValues propertyValues = propFilesDef.getPropertyValues();
-			List<Object> sourceList = (List<Object>) propertyValues.get("sourceList");
+        protected BaseAppCtxInit(String additionalPropertiesFile) {
+            _additionalPropertiesFile = additionalPropertiesFile;
+        }
 
-			// add new file to the front of the list so it overrides other files
-			sourceList.add(0, new TypedStringValue(additionalPropsFile, Resource.class.getName()));
-		}
-	}
+        @Override
+        public final void initialize(GenericApplicationContext applicationContext) {
+            addWfmAppCtx(applicationContext);
+            addPropertiesFile(applicationContext, _additionalPropertiesFile);
+        }
+
+
+        private static void addWfmAppCtx(GenericApplicationContext applicationCtx) {
+            Resource wfmAppCtx = new ClassPathResource(
+                    "/applicationContext.xml",
+                    // Passes reference to a workflow manager class to ensure the that workflow manager's
+                    // applicationContext.xml is used.
+                    // Any class that is part of the workflow manager project will work.
+                    WfmStartup.class);
+            BeanDefinitionReader xmlReader = new XmlBeanDefinitionReader(applicationCtx);
+            xmlReader.loadBeanDefinitions(wfmAppCtx);
+        }
+
+
+        private static void addPropertiesFile(GenericApplicationContext applicationCtx, String additionalPropsFile) {
+            BeanDefinition propFilesDef = applicationCtx.getBeanDefinition("propFiles");
+            MutablePropertyValues propertyValues = propFilesDef.getPropertyValues();
+            List<Object> sourceList = (List<Object>) propertyValues.get("sourceList");
+
+            // add new file to the front of the list so it overrides other files
+            sourceList.add(0, new TypedStringValue(additionalPropsFile, Resource.class.getName()));
+        }
+    }
 }
 
 

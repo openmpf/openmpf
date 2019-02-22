@@ -36,7 +36,6 @@ import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -70,9 +69,9 @@ public class LocalStorageBackend implements StorageBackend {
 
     @Override
     public URI store(JsonOutputObject outputObject) throws IOException {
-        File outputFile = _propertiesUtil.createDetectionOutputObjectFile(outputObject.getJobId());
-        _objectMapper.writeValue(outputFile, outputObject);
-        return outputFile.getAbsoluteFile().toURI();
+        Path outputPath = _propertiesUtil.createDetectionOutputObjectFile(outputObject.getJobId());
+        _objectMapper.writeValue(outputPath.toFile(), outputObject);
+        return outputPath.toUri();
     }
 
 
@@ -99,9 +98,9 @@ public class LocalStorageBackend implements StorageBackend {
         Path artifactFile = _propertiesUtil.createArtifactFile(request.getJobId(),
                                                                request.getMediaId(),
                                                                request.getStageIndex(),
-                                                               inputMediaPath.getFileName().toString()).toPath();
+                                                               inputMediaPath.getFileName().toString());
         Files.copy(inputMediaPath, artifactFile, StandardCopyOption.REPLACE_EXISTING);
-        return artifactFile.toAbsolutePath().toUri();
+        return artifactFile.toUri();
     }
 
 

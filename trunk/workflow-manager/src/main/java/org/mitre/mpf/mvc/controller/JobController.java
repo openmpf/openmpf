@@ -457,7 +457,8 @@ public class JobController {
             // Iterate over all media in the batch job creation request.  If for any media, the media protocol check fails, then
             // that media will be ignored from the batch job
             for (JobCreationMediaData mediaRequest : jobCreationRequest.getMedia()) {
-                JsonMediaInputObject medium = new JsonMediaInputObject(mediaRequest.getMediaUri());
+                JsonMediaInputObject medium
+                        = new JsonMediaInputObject(IoUtils.normalizeUri(mediaRequest.getMediaUri()));
                 if (mediaRequest.getProperties() != null) {
                     for (Map.Entry<String, String> property : mediaRequest.getProperties().entrySet()) {
                         medium.getProperties()

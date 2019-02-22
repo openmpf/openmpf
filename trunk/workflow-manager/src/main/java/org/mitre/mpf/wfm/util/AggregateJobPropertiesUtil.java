@@ -502,7 +502,7 @@ public class AggregateJobPropertiesUtil {
 
         Map<String, String> mediaProperties = jsonJobRequest.getMedia()
                 .stream()
-                .filter(m -> m.getMediaUri().equals(markup.getSourceUri()))
+                .filter(m -> URI.create(m.getMediaUri()).equals(URI.create(markup.getMarkupUri())))
                 .map(JsonMediaInputObject::getProperties)
                 .findAny()
                 .orElseGet(Collections::emptyMap);
@@ -518,24 +518,23 @@ public class AggregateJobPropertiesUtil {
             return mediaProperties.get(propName);
         }
 
-        JsonAction jsonAction = getAction(jobRequest.getPipeline(), markup.getTaskIndex(), markup.getActionIndex());
-        if (jsonAction != null) {
-            // Check overridden algorithm properties
-            if (jobRequest.getAlgorithmProperties().containsKey(jsonAction.getName())) {
-                Map<String, String> overriddenAlgoProps = jobRequest.getAlgorithmProperties().get(jsonAction.getName());
-                if (overriddenAlgoProps.containsKey(propName)) {
-                    return overriddenAlgoProps.get(propName);
-                }
+        JsonAction jsonAction = jobRequest.getPipeline()
+                .getStages()
+                .get(markup.getTaskIndex())
+                .getActions()
+                .get(markup.getActionIndex());
+
+        // Check overridden algorithm properties
+        if (jobRequest.getAlgorithmProperties().containsKey(jsonAction.getName())) {
+            Map<String, String> overriddenAlgoProps = jobRequest.getAlgorithmProperties().get(jsonAction.getName());
+            if (overriddenAlgoProps.containsKey(propName)) {
+                return overriddenAlgoProps.get(propName);
             }
         }
 
         // Job Properties
         if (jobRequest.getJobProperties().containsKey(propName)) {
             return jobRequest.getJobProperties().get(propName);
-        }
-
-        if (jsonAction == null) {
-            return null;
         }
 
         // Overridden Action Properties
@@ -566,17 +565,5 @@ public class AggregateJobPropertiesUtil {
             return algorithmProperty.getDefaultValue();
         }
         return null;
-    }
-
-
-    private static JsonAction getAction(JsonPipeline pipeline, int taskIndex, int actionIndex) {
-        if (pipeline.getStages().size() <= taskIndex) {
-            return null;
-        }
-        JsonStage stage = pipeline.getStages().get(taskIndex);
-        if (stage.getActions().size() <= actionIndex) {
-            return null;
-        }
-        return stage.getActions().get(actionIndex);
     }
 }

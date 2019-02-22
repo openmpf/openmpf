@@ -268,10 +268,10 @@ public class PropertiesUtil {
         Files.createDirectories(path);
         return path.toFile();
     }
-    public File createArtifactFile(long jobId, long mediaId, int stageIndex, String name) throws IOException {
+    public Path createArtifactFile(long jobId, long mediaId, int stageIndex, String name) throws IOException {
         Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d/%s", jobId, mediaId, stageIndex, name)).normalize().toAbsolutePath();
         Files.createDirectories(path.getParent());
-        return path.toFile();
+        return path;
     }
 
     private File outputObjectsDirectory;
@@ -289,7 +289,7 @@ public class PropertiesUtil {
      * @return directory that was created under the output objects directory for storage of detection files from this batch job
      * @throws IOException
      */
-    public File createDetectionOutputObjectFile(long jobId) throws IOException {
+    public Path createDetectionOutputObjectFile(long jobId) throws IOException {
         return createOutputObjectsFile(jobId, "detection");
     }
 
@@ -326,7 +326,7 @@ public class PropertiesUtil {
      * @return File to be used for storing an output object for this job
      * @throws IOException
      */
-    private File createOutputObjectsFile(long jobId, String outputObjectType) throws IOException {
+    private Path createOutputObjectsFile(long jobId, String outputObjectType) throws IOException {
         return createOutputObjectsFile(jobId,outputObjectsDirectory,outputObjectType);
     }
 
@@ -337,11 +337,11 @@ public class PropertiesUtil {
      * @return File to be used for storing an output object for this job
      * @throws IOException
      */
-    private File createOutputObjectsFile(long jobId, File parentDir, String outputObjectType) throws IOException {
+    private static Path createOutputObjectsFile(long jobId, File parentDir, String outputObjectType) throws IOException {
         String fileName = String.format("%d/%s.json", jobId, TextUtils.trimToEmpty(outputObjectType));
         Path path = Paths.get(parentDir.toURI()).resolve(fileName).normalize().toAbsolutePath();
         Files.createDirectories(path.getParent());
-        return path.toFile();
+        return path;
     }
 
     private File remoteMediaCacheDirectory;

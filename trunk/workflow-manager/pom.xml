@@ -479,11 +479,12 @@
         </dependency>
 
         <dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>javax.servlet-api</artifactId>
-            <version>${servlet.api.version}</version>
-            <type>jar</type>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-servlet-api</artifactId>
+            <version>7.0.72</version>
+            <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
@@ -581,7 +582,7 @@
 
         <dependency>
          <groupId>org.aspectj</groupId>
-			<artifactId>aspectjweaver</artifactId>
+            <artifactId>aspectjweaver</artifactId>
             <version>${aspectjweaver.version}</version>
         </dependency>
 
@@ -720,28 +721,11 @@
             <version>${xml-apis.xml-apis.version}</version>
         </dependency>
 
-        <!-- added for atmosphere -->
         <dependency>
             <groupId>org.atmosphere</groupId>
             <artifactId>atmosphere-runtime</artifactId>
             <version>${atmosphere.runtime.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.geronimo.specs</groupId>
-            <artifactId>geronimo-servlet_3.0_spec</artifactId>
-            <version>${org.apache.geronimo.specs.geronimo-servlet_3.0_spec.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.atmosphere</groupId>
-            <artifactId>atmosphere-jersey</artifactId>
-            <version>${atmosphere.jersey.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-json</artifactId>
-            <version>${jersey.json.version}</version>
-        </dependency>
-        <!-- / added for atmosphere -->
 
         <dependency>
             <groupId>org.springframework.integration</groupId>

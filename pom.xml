@@ -157,6 +157,8 @@
         <!-- added props mpf-markup -->
         <junit.version>4.12</junit.version>
 
+        <tomcat.servlet.api.version>7.0.72</tomcat.servlet.api.version>
+
         <!-- added props for REST web service -->
         <g00dnatur3.http-rest-client-version>1.0.21</g00dnatur3.http-rest-client-version>
         <com.googlecode.json-simple.json-simple.version>1.1</com.googlecode.json-simple.json-simple.version>

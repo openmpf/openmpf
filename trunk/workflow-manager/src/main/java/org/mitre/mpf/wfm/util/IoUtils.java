@@ -370,8 +370,8 @@ public class IoUtils {
             response.setContentType(mimeType);
         }
         response.setHeader("Content-Disposition", String.format("attachment; filename=\"%s\"", fileName));
-        if (contentLength > 0 && contentLength < Integer.MAX_VALUE) {
-            response.setContentLength((int) contentLength);
+        if (contentLength > 0) {
+            response.setContentLengthLong(contentLength);
         }
 
         IOUtils.copy(inputStream, response.getOutputStream());

@@ -167,7 +167,7 @@ public class TestRemoteMediaProcessor {
 		assertTrue(transientMedia.isFailed());
 
         verify(mockInProgressJobs)
-		        .setJobStatus(jobId, BatchJobStatusType.ERROR);
+		        .setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
         verify(mockInProgressJobs)
 		        .addMediaError(eq(jobId), eq(mediaId), nonBlank());
 

@@ -66,7 +66,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
 
         String pipelineName = addDefaultMotionMogPipeline();
         long jobId = runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
-        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
+        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, media.size());
         log.info("Finished test runMotionMogDetectVideo()");
     }
@@ -80,7 +80,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
         // 28MG
         List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/speech/obamastateoftheunion2015.mp3"));
         long jobId = runPipelineOnMedia("SPHINX SPEECH DETECTION PIPELINE", media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
-        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
+        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, 1);
         log.info("Finished test runSpeechSphinxDetectAudio()");
     }
@@ -107,7 +107,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
         }
         long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
-        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
+        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, i);
         log.info("Finished test runFaceOcvDetectImage()");
     }
@@ -131,7 +131,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
 
         long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
-        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
+        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, media.size());
         log.info("Finished test runFaceOcvDetectVideo()");
     }
@@ -154,7 +154,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
 
         long jobId = runPipelineOnMedia("OCV PERSON DETECTION PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
-        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
+        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, media.size());
         log.info("Finished test runPersonOcvDetectVideo()");
     }

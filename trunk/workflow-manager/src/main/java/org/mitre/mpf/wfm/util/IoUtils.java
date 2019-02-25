@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.util;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.tika.Tika;
@@ -36,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -338,5 +340,43 @@ public class IoUtils {
         try (Stream<Path> paths = Files.list(dir)) {
             return !paths.findAny().isPresent();
         }
+    }
+
+
+    public static void writeFileAsAttachment(Path path, HttpServletResponse response) throws IOException {
+        try (InputStream inputStream = Files.newInputStream(path)) {
+            writeContentAsAttachment(inputStream, response, path.getFileName().toString(),
+                                     Files.probeContentType(path), Files.size(path));
+        }
+    }
+
+    public static void writeContentAsAttachment(
+            InputStream inputStream,
+            HttpServletResponse response,
+            String fileName,
+            String mimeType,
+            long contentLength)
+                throws IOException {
+        if (mimeType == null) {
+            response.setContentType("application/octet-stream");
+        }
+        else {
+            response.setContentType(mimeType);
+        }
+        response.setHeader("Content-Disposition", String.format("attachment; filename=\"%s\"", fileName));
+        if (contentLength > 0 && contentLength < Integer.MAX_VALUE) {
+            response.setContentLength((int) contentLength);
+        }
+
+        IOUtils.copy(inputStream, response.getOutputStream());
+        response.flushBuffer();
+    }
+
+
+    public static String normalizeUri(String uriString) {
+        if (uriString.startsWith("file:/") && !uriString.startsWith("file:///")) {
+            return Paths.get(URI.create(uriString)).toUri().toString();
+        }
+        return uriString;
     }
 }

@@ -83,14 +83,14 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                 "/samples/face/meds-aa-S001-01.jpg",
                 "/samples/face/meds-aa-S029-01.jpg");
     }
-    
+
     @Test(timeout = 5*MINUTES)
     public void runFaceCombinedDetectImage() throws Exception {
-    	String taskName = "TEST CVFACE DLIB COMBINED TASK";
-    	addTask(taskName, "OCV FACE DETECTION ACTION", "DLIB FACE DETECTION ACTION");
+        String taskName = "TEST CVFACE DLIB COMBINED TASK";
+        addTask(taskName, "OCV FACE DETECTION ACTION", "DLIB FACE DETECTION ACTION");
 
-    	String pipelineName = "TEST CVFACE DLIB COMBINED PIPELINE";
-    	addPipeline(pipelineName, taskName);
+        String pipelineName = "TEST CVFACE DLIB COMBINED PIPELINE";
+        addPipeline(pipelineName, taskName);
 
         runSystemTest(pipelineName, "output/face/runFaceCombinedDetectImage.json",
                 "/samples/face/meds-aa-S001-01.jpg",
@@ -162,7 +162,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                 ioUtils.findFile("/samples/motion/ocv_motion_video.avi"));
         long jobId = runPipelineOnMedia("OCV PERSON DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
-        URI outputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
+        URI outputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
 //        JsonOutputObject outputObject = objectMapper.readValue(Files.readAllBytes(Paths.get(outputPath)), JsonOutputObject.class);
         JsonOutputObject outputObject = jsonUtils.deserializeFromText(FileUtils.readFileToByteArray(new File(outputPath)), JsonOutputObject.class);
         for(JsonMediaOutputObject mediaOutputObject : outputObject.getMedia()) {
@@ -193,7 +193,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-aa-S001-01.tif"));
         long jobId = runPipelineOnMedia("OCV FACE DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
-        URI outputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
+        URI outputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
 //        JsonOutputObject outputObject = objectMapper.readValue(Files.readAllBytes(Paths.get(outputPath)), JsonOutputObject.class)
         JsonOutputObject outputObject = jsonUtils.deserializeFromText(FileUtils.readFileToByteArray(new File(outputPath)), JsonOutputObject.class);
         for(JsonMediaOutputObject mediaOutputObject : outputObject.getMedia()) {
@@ -205,7 +205,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         }
         log.info("Finished test testTiffImageMarkup()");
     }
-    
+
 // This test can also be verified manually (and visually) by running the comparable default pipeline with markup, and a comparable
 // custom pipeline with min face size = 100 and markup. The chokepoint video gets 16 faces detected with the default pipeline
 // and 14 with the custom pipeline
@@ -225,7 +225,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         String taskName = "TEST OCV FACE MIN FACE SIZE 100 TASK";
         addTask(taskName, actionName);
 
-        String pipelineName = "TEST OCV FACE MIN FACE SIZE 100 PIPELINE"; 
+        String pipelineName = "TEST OCV FACE MIN FACE SIZE 100 PIPELINE";
         addPipeline(pipelineName, taskName);
 
         List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/person/video_02.mp4"));

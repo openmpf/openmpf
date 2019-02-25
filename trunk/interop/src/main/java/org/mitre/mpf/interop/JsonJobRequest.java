@@ -48,8 +48,8 @@ public class JsonJobRequest {
 
 	@JsonProperty("algorithmProperties")
 	@JsonPropertyDescription("Properties to apply to this job's algorithms overriding default, job and pipeline properties.")
-	private Map<String, Map> algorithmProperties;
-	public Map<String, Map> getAlgorithmProperties() { return algorithmProperties; }
+	private Map<String, Map<String, String>> algorithmProperties;
+	public Map<String, Map<String, String>> getAlgorithmProperties() { return algorithmProperties; }
 
 	@JsonProperty("jobProperties")
 	@JsonPropertyDescription("Properties to apply to this job, overriding default and pipeline properties.")
@@ -106,7 +106,7 @@ public class JsonJobRequest {
 										 @JsonProperty("callbackURL") String callbackURL,
 										 @JsonProperty("callbackMethod") String callbackMethod,
 	                                     @JsonProperty("media") List<JsonMediaInputObject> media,
-										 @JsonProperty("algorithmProperties") Map<String, Map> algorithmProperties,
+										 @JsonProperty("algorithmProperties") Map<String, Map<String, String>> algorithmProperties,
 										 @JsonProperty("jobProperties") Map<String, String> jobProperties) {
 		JsonJobRequest jsonJobRequest = new JsonJobRequest(externalId, outputObjectEnabled, pipeline, priority,callbackURL,callbackMethod);
 		if(media != null) {

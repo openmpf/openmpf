@@ -927,9 +927,14 @@ public class ITWebREST {
 		// create a JobCreationRequest
 		JSONObject params = new JSONObject();
 		params.put("pipelineName", TEST_PIPELINE_NAME);
-		JSONObject params_media_urls = new JSONObject();
-		params_media_urls.put(Utils.IMG_URL, new JSONObject());
-		params.put("mediaUris", params_media_urls);
+
+		JSONArray mediaList = new JSONArray();
+		JSONObject mediaEntry = new JSONObject();
+		mediaList.put(mediaEntry);
+		mediaEntry.put("mediaUri", Utils.IMG_URL);
+		mediaEntry.put("properties", new JSONObject());
+        params.put("media", mediaList);
+
 		params.put("externalId", "external id");
 		params.put("buildOutput", true);
 		params.put("priority", 9);

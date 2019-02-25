@@ -34,7 +34,5 @@ import java.util.List;
 
 @Monitored
 public interface WfmSplitterInterface {
-	String getSplitterName();
 	List<Message> split(Exchange exchange) throws Exception;
-	List<Message> wfmSplit(Exchange exchange) throws Exception;
 }

@@ -26,10 +26,11 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.S3Object;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
@@ -42,6 +43,9 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.service.MpfService;
+import org.mitre.mpf.wfm.service.S3StorageBackend;
+import org.mitre.mpf.wfm.service.StorageException;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
@@ -55,21 +59,21 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 @Api(value = "Markup", description = "Access the information of marked up media")
 @Controller
@@ -83,6 +87,12 @@ public class MarkupController {
 
     @Autowired
     private JsonUtils jsonUtils;
+
+    @Autowired
+    private S3StorageBackend s3StorageBackend;
+
+    @Autowired
+    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
     private List<MarkupResultModel> getMarkupResultsJson(Long jobId) {
         //all MarkupResult objects
@@ -145,17 +155,18 @@ public class MarkupController {
                 model.setSourceUri(med.getMediaUri());
                 model.setSourceFileAvailable(false);
                 if (med.getMediaUri() != null) {
-                    try {
-                        String nonUrlPath = med.getMediaUri();
-                        File f = new File(URI.create(nonUrlPath));
-                        if (f.exists()) {
-                            model.setSourceURIContentType(NIOUtils.getPathContentType(Paths.get(URI.create(nonUrlPath))));
-                            model.setSourceImgUrl("server/node-image?nodeFullPath=" + Paths.get(URI.create(nonUrlPath)));
-                            model.setSourceDownloadUrl("server/download?fullPath=" + Paths.get(URI.create(nonUrlPath)));
-                            model.setSourceFileAvailable(true);
-                        }
-                    } catch (IllegalArgumentException e) {
-                        // URI has an authority component or URI scheme is not "file"
+                    Path path = IoUtils.toLocalPath(med.getMediaUri()).orElse(null);
+                    if (path == null || Files.exists(path)) {
+                        String downloadUrl = UriComponentsBuilder.fromPath("server/download")
+                                .queryParam("sourceUri", med.getMediaUri())
+                                .queryParam("jobId", jobId)
+                                .toUriString();
+                        model.setSourceDownloadUrl(downloadUrl);
+                        model.setSourceFileAvailable(true);
+                    }
+                    if (path != null && Files.exists(path)) {
+                        model.setSourceURIContentType(NIOUtils.getPathContentType(path));
+                        model.setSourceImgUrl("server/node-image?nodeFullPath=" + path);
                     }
                 }
                 //add to the list
@@ -218,7 +229,7 @@ public class MarkupController {
 
 
     @RequestMapping(value = "/markup/download", method = RequestMethod.GET)
-    public void getFile(@RequestParam(value = "id", required = true) long id, HttpServletResponse response) throws IOException {
+    public void getFile(@RequestParam("id") long id, HttpServletResponse response) throws IOException, StorageException {
         MarkupResult mediaMarkupResult = mpfService.getMarkupResult(id);
         if (mediaMarkupResult == null) {
             log.debug("server download file failed for markup id = " +id);
@@ -235,9 +246,19 @@ public class MarkupController {
                 response.flushBuffer();
                 return;
             }
-            try (InputStream inputStream = Files.newInputStream(localPath)) {
-                writeFileToResponse(Files.probeContentType(localPath), localPath.getFileName().toString(),
-                                    Files.size(localPath), inputStream, response);
+            IoUtils.writeFileAsAttachment(localPath, response);
+            return;
+        }
+
+        Function<String, String> combinedProperties = aggregateJobPropertiesUtil
+                .getCombinedPropertiesAfterJobCompletion(mediaMarkupResult);
+
+        if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
+            S3Object s3Object = s3StorageBackend.getFromS3(mediaMarkupResult.getMarkupUri(), combinedProperties);
+            try (InputStream inputStream = s3Object.getObjectContent()) {
+                ObjectMetadata metadata = s3Object.getObjectMetadata();
+                IoUtils.writeContentAsAttachment(inputStream, response, s3Object.getKey(), metadata.getContentType(),
+                                                 metadata.getContentLength());
             }
             return;
         }
@@ -250,26 +271,8 @@ public class MarkupController {
         }
         URLConnection urlConnection = mediaUrl.openConnection();
         try (InputStream inputStream = urlConnection.getInputStream()) {
-            writeFileToResponse(urlConnection.getContentType(), fileName, urlConnection.getContentLength(),
-                                inputStream, response);
+            IoUtils.writeContentAsAttachment(inputStream, response, fileName, urlConnection.getContentType(),
+                                             urlConnection.getContentLength());
         }
-    }
-
-
-    private static void writeFileToResponse(String mimeType, String fileName, long contentLength,
-                                            InputStream inputStream, HttpServletResponse response) throws IOException {
-        if (mimeType == null) {
-            response.setContentType("application/octet-stream");
-        }
-        else {
-            response.setContentType(mimeType);
-        }
-        response.setHeader("Content-Disposition", String.format("attachment; filename=\"%s\"", fileName));
-        if (contentLength > 0 && contentLength < Integer.MAX_VALUE) {
-            response.setContentLength((int) contentLength);
-        }
-
-        IOUtils.copy(inputStream, response.getOutputStream());
-        response.flushBuffer();
     }
 }

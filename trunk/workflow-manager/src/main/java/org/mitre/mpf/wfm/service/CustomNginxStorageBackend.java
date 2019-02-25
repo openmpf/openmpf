@@ -42,6 +42,10 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PipeStream;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -60,10 +64,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -80,36 +84,97 @@ public class CustomNginxStorageBackend implements StorageBackend {
 
     private final ObjectMapper _objectMapper;
 
+    private final InProgressBatchJobsService _inProgressBatchJobs;
+
 
     @Inject
     CustomNginxStorageBackend(
             PropertiesUtil propertiesUtil,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            InProgressBatchJobsService inProgressBatchJobs) {
 
         _propertiesUtil = propertiesUtil;
         _objectMapper = objectMapper;
+        _inProgressBatchJobs = inProgressBatchJobs;
+    }
+
+
+    @Override
+    public boolean canStore(JsonOutputObject outputObject) throws StorageException {
+        return canStore(outputObject.getJobId());
+    }
+
+    private boolean canStore(long jobId) throws StorageException {
+        return _inProgressBatchJobs.getJob(jobId)
+                .getSystemPropertiesSnapshot()
+                .getNginxStorageServiceUri()
+                .isPresent();
     }
 
     @Override
-    public Type getType() {
-        return Type.CUSTOM_NGINX;
+    public URI store(JsonOutputObject outputObject) throws StorageException {
+        URI serviceUri = getServiceUri(outputObject.getJobId());
+        try (PipeStream inputStream = createJsonInputStream(outputObject)) {
+            return store(serviceUri, inputStream);
+        }
     }
 
     @Override
-    public String storeAsJson(URI serviceUri, Object content) throws StorageException {
-        try (PipeStream inputStream = createJsonInputStream(content)) {
+    public boolean canStore(MarkupResult markupResult) throws StorageException {
+        return canStore(markupResult.getJobId());
+    }
+
+
+    @Override
+    public void store(MarkupResult markupResult) throws IOException, StorageException {
+        Path localPath = Paths.get(URI.create(markupResult.getMarkupUri()));
+        URI serviceUri = getServiceUri(markupResult.getJobId());
+        URI newLocation;
+        try (InputStream inputStream = Files.newInputStream(localPath)) {
+            newLocation = store(serviceUri, inputStream);
+        }
+        markupResult.setMarkupUri(newLocation.toString());
+        Files.delete(localPath);
+    }
+
+
+    @Override
+    public boolean canStore(ArtifactExtractionRequest request) throws StorageException {
+        return canStore(request.getJobId());
+    }
+
+
+    @Override
+    public URI storeImageArtifact(ArtifactExtractionRequest request) throws IOException, StorageException {
+        URI serviceUri = getServiceUri(request.getJobId());
+        Path requestPath = Paths.get(request.getPath());
+        try (InputStream inputStream = Files.newInputStream(requestPath)) {
             return store(serviceUri, inputStream);
         }
     }
 
 
     @Override
-    public String store(URI serviceUri, InputStream content) throws StorageException {
+    public Map<Integer, URI> storeVideoArtifacts(ArtifactExtractionRequest request) throws IOException, StorageException {
+        URI serviceUri = getServiceUri(request.getJobId());
+        return StreamableFrameExtractor.run(request, inStream -> store(serviceUri, inStream));
+    }
+
+
+    private URI getServiceUri(long jobId) throws StorageException {
+        return _inProgressBatchJobs.getJob(jobId)
+                .getSystemPropertiesSnapshot()
+                .getNginxStorageServiceUri()
+                // The URI should always be present at this point since it was checked in canStore().
+                .orElseThrow(() -> new StorageException(String.format("Unable to store job %s in Nginx.", jobId)));
+    }
+
+
+    public URI store(URI serviceUri, InputStream content) throws StorageException {
         try (RetryingHttpClient client = new RetryingHttpClient(_propertiesUtil)) {
             String uploadId = initUpload(client, serviceUri);
             List<FilePartETag> filePartETags = sendContent(client, serviceUri, uploadId, content);
-            URI storedLocation = completeUpload(client, serviceUri, uploadId, filePartETags);
-            return storedLocation.toString();
+            return completeUpload(client, serviceUri, uploadId, filePartETags);
         }
     }
 
@@ -144,8 +209,8 @@ public class CustomNginxStorageBackend implements StorageBackend {
     private List<FilePartETag> sendContent(RetryingHttpClient client, URI serviceUri, String uploadId,
                                            InputStream content) throws StorageException {
         try {
-            int uploadThreadCount = _propertiesUtil.getHttpStorageUploadThreadCount();
-            int uploadSegmentSize = _propertiesUtil.getHttpStorageUploadSegmentSize();
+            int uploadThreadCount = _propertiesUtil.getNginxStorageUploadThreadCount();
+            int uploadSegmentSize = _propertiesUtil.getNginxStorageUploadSegmentSize();
 
             Dispatcher dispatcher = new Dispatcher(client, serviceUri, uploadId, content);
 
@@ -402,7 +467,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
         private final RetryTemplate _retryTemplate;
 
         public RetryingHttpClient(PropertiesUtil propertiesUtil) {
-            int threadCount = propertiesUtil.getHttpStorageUploadThreadCount();
+            int threadCount = propertiesUtil.getNginxStorageUploadThreadCount();
             _client = HttpClients.custom()
                     .setMaxConnTotal(threadCount)
                     .setMaxConnPerRoute(threadCount)

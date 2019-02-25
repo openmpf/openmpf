@@ -63,7 +63,7 @@ public interface MpfService {
      * @return A {@link org.mitre.mpf.interop.JsonJobRequest} which summarizes this request.
      */
     public JsonJobRequest createJob(List<JsonMediaInputObject> media,
-        Map<String, Map> algorithmProperties, Map<String, String> jobProperties,
+        Map<String, Map<String, String>> algorithmProperties, Map<String, String> jobProperties,
         String pipelineName, String externalId, boolean buildOutput, int priority);
 
     /**
@@ -86,7 +86,7 @@ public interface MpfService {
      * @return A {@link org.mitre.mpf.interop.JsonJobRequest} which summarizes this request.
      */
     public JsonJobRequest createJob(List<JsonMediaInputObject> media,
-        Map<String, Map> algorithmProperties, Map<String, String> jobProperties,
+        Map<String, Map<String, String>> algorithmProperties, Map<String, String> jobProperties,
         String pipelineName, String externalId, boolean buildOutput, int priority, String callback,
         String method);
 

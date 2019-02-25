@@ -26,118 +26,166 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
-import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runner.notification.RunListener;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.buffers.Markup;
-import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.markup.MarkupResponseProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.mitre.mpf.wfm.service.StorageService;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.List;
 
-@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
-@RunWith(SpringJUnit4ClassRunner.class)
-@RunListener.ThreadSafe
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+
 public class TestMarkupResponseProcessor {
-    private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
-    @Autowired
-    private CamelContext camelContext;
+    @InjectMocks
+    private MarkupResponseProcessor _markupResponseProcessor;
 
-    @Autowired
-    @Qualifier(MarkupResponseProcessor.REF)
-    private WfmProcessorInterface markupResponseProcessor;
+    @Mock
+    private InProgressBatchJobsService _mockInProgressJobs;
 
-    @Autowired
-    @Qualifier(HibernateMarkupResultDaoImpl.REF)
-    private MarkupResultDao markupResultDao;
+    @Mock
+    private MarkupResultDao _mockMarkupResultDao;
 
-    @Autowired
-    private InProgressBatchJobsService inProgressJobs;
+    @Mock
+    private StorageService _mockStorageService;
 
-    @Autowired
-    private PropertiesUtil propertiesUtil;
+    private static final long TEST_JOB_ID = 1236;
 
-    private static final MutableInt SEQUENCE = new MutableInt();
-    public int next() {
-        synchronized (SEQUENCE) {
-            int next = SEQUENCE.getValue();
-            SEQUENCE.increment();
-            return next;
-        }
+    @Before
+    public void init() {
+        MockitoAnnotations.initMocks(this);
     }
 
-    @Test(timeout = 5 * MINUTES)
-    public void testMarkupResponse() throws Exception {
-        final int jobId = next();
-        final int priority = 5;
-        final long mediaId = 0;
-        TransientPipeline dummyPipeline = new TransientPipeline(
-                "testMarkupPipeline", "testMarkupPipelineDescription", Collections.emptyList());
+    @Test
+    public void testMarkupResponse() {
+        Markup.MarkupResponse.Builder responseBuilder = Markup.MarkupResponse.newBuilder()
+                .setHasError(false)
+                .clearErrorMessage();
+        MarkupResult markupResult = runMarkupProcessor(responseBuilder);
+        assertNull(markupResult.getMessage());
+        assertEquals(MarkupStatus.COMPLETE, markupResult.getMarkupStatus());
 
-        // Capture a snapshot of the detection system property settings when the job is created.
-        SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
+        verify(_mockInProgressJobs, never())
+                .setJobStatus(anyLong(), any());
+    }
+
+
+    @Test
+    public void canHandleMarkupError() {
+        String errorMessage = "errorMessage1";
+        Markup.MarkupResponse.Builder responseBuilder = Markup.MarkupResponse.newBuilder()
+                .setHasError(true)
+                .setErrorMessage(errorMessage);
+
+        MarkupResult markupResult = runMarkupProcessor(responseBuilder);
+        assertEquals(errorMessage, markupResult.getMessage());
+        assertEquals(MarkupStatus.FAILED, markupResult.getMarkupStatus());
+
+        verify(_mockInProgressJobs)
+                .setJobStatus(TEST_JOB_ID, BatchJobStatusType.IN_PROGRESS_ERRORS);
+    }
+
+
+    @Test
+    public void canHandleMarkupWarning() {
+        doAnswer(invocation -> {
+            invocation.getArgumentAt(0, MarkupResult.class)
+                    .setMarkupStatus(MarkupStatus.COMPLETE_WITH_WARNING);
+            return null;
+        }).when(_mockStorageService).store(any(MarkupResult.class));
+
+        Markup.MarkupResponse.Builder responseBuilder = Markup.MarkupResponse.newBuilder()
+                .setHasError(false);
+
+        MarkupResult markupResult = runMarkupProcessor(responseBuilder);
+        assertEquals(MarkupStatus.COMPLETE_WITH_WARNING, markupResult.getMarkupStatus());
+
+        verify(_mockInProgressJobs)
+                .setJobStatus(TEST_JOB_ID, BatchJobStatusType.IN_PROGRESS_WARNINGS);
+    }
+
+
+    private MarkupResult runMarkupProcessor(Markup.MarkupResponse.Builder markupResponseBuilder) {
+        long mediaId = 1532;
+        int mediaIndex = 2;
+        int taskIndex = 4;
+        int actionIndex = 6;
+
+        Markup.MarkupResponse markupResponse = markupResponseBuilder
+                .setMediaId(mediaId)
+                .setMediaIndex(mediaIndex)
+                .setTaskIndex(taskIndex)
+                .setActionIndex(actionIndex)
+                .setRequestId(mediaId)
+                .setOutputFileUri("output.txt")
+                .build();
+
+
+        TransientPipeline dummyPipeline = new TransientPipeline(
+                "TEST_MARKUP_PIPELINE", "testMarkupPipelineDescription", Collections.emptyList());
 
         URI mediaUri = URI.create("file:///samples/meds1.jpg");
         TransientMedia media = new TransientMediaImpl(mediaId, mediaUri.toString(), UriScheme.get(mediaUri),
                                                       Paths.get(mediaUri), Collections.emptyMap(), null);
-        inProgressJobs.addJob(
-                jobId,
-                Long.toString(jobId),
-                systemPropertiesSnapshot,
-                dummyPipeline,
-                priority,
-                false,
-                null,
-                null,
-                Collections.singletonList(media),
-                Collections.emptyMap(),
-                Collections.emptyMap());
-        Markup.MarkupResponse.Builder builder = Markup.MarkupResponse.newBuilder();
-        builder.setMediaId(mediaId);
-        builder.setMediaIndex(0);
-        builder.setTaskIndex(0);
-        builder.setActionIndex(0);
-        builder.setRequestId(mediaId);
-        builder.setHasError(false);
-        builder.setOutputFileUri("output.txt");
-        builder.clearErrorMessage();
-        Markup.MarkupResponse response = builder.build();
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, jobId);
-        exchange.getIn().setBody(response);
+        TransientJob job = mock(TransientJob.class);
+        when(job.getId())
+                .thenReturn(TEST_JOB_ID);
+        when(job.getPipeline())
+                .thenReturn(dummyPipeline);
+        when(job.getMedia(mediaId))
+                .thenReturn(media);
 
-        markupResponseProcessor.process(exchange);
+        when(_mockInProgressJobs.containsJob(TEST_JOB_ID))
+                .thenReturn(true);
+        when(_mockInProgressJobs.getJob(TEST_JOB_ID))
+                .thenReturn(job);
 
-        List<MarkupResult> markupResults = markupResultDao.findByJobId(jobId);
-        MarkupResult markupResult = markupResults.get(0);
-        Assert.assertTrue(markupResult.getJobId() == jobId);//markup result is not null and is correctly found
-        Assert.assertTrue(markupResult.getMarkupUri().equals("output.txt"));
-        Assert.assertNull(markupResult.getMessage());//error message
+        Exchange exchange = TestUtil.createTestExchange();
+        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, TEST_JOB_ID);
+        exchange.getIn().setBody(markupResponse);
 
-        markupResultDao.deleteByJobId(jobId);
+        _markupResponseProcessor.process(exchange);
+
+        ArgumentCaptor<MarkupResult> markupCaptor1 = ArgumentCaptor.forClass(MarkupResult.class);
+        verify(_mockStorageService)
+                .store(markupCaptor1.capture());
+
+        ArgumentCaptor<MarkupResult> markupCaptor2 = ArgumentCaptor.forClass(MarkupResult.class);
+        verify(_mockMarkupResultDao)
+                .persist(markupCaptor2.capture());
+
+        MarkupResult markupResult = markupCaptor2.getValue();
+        assertSame(markupResult, markupCaptor1.getValue());
+        assertEquals(TEST_JOB_ID, markupResult.getJobId());
+        assertEquals("output.txt", markupResult.getMarkupUri());
+        assertEquals(taskIndex, markupResult.getTaskIndex());
+        assertEquals(actionIndex, markupResult.getActionIndex());
+        assertEquals(mediaId, markupResult.getMediaId());
+        assertEquals(mediaIndex, markupResult.getMediaIndex());
+        assertEquals(mediaUri.toString(), markupResult.getSourceUri());
+        assertEquals("TEST_MARKUP_PIPELINE", markupResult.getPipeline());
+
+        return markupResult;
     }
 }

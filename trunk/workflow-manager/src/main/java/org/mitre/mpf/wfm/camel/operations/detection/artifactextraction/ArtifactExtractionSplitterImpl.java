@@ -26,11 +26,12 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -43,152 +44,167 @@ import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.SortedSet;
+import javax.inject.Inject;
+import java.util.*;
+import java.util.function.Function;
 
 @Component(ArtifactExtractionSplitterImpl.REF)
 public class ArtifactExtractionSplitterImpl extends WfmSplitter {
-	private static final Logger log = LoggerFactory.getLogger(ArtifactExtractionSplitterImpl.class);
-	public static final String REF = "detectionExtractionSplitter";
+    public static final String REF = "detectionExtractionSplitter";
 
-	@Autowired
-	private JsonUtils jsonUtils;
+    private static final Logger LOG = LoggerFactory.getLogger(ArtifactExtractionSplitterImpl.class);
 
-	@Override
-	public String getSplitterName() { return REF; }
+    private final JsonUtils _jsonUtils;
 
-	@Autowired
-	private InProgressBatchJobsService inProgressBatchJobs;
+    private final InProgressBatchJobsService _inProgressBatchJobs;
 
-	@Autowired
-	private PropertiesUtil propertiesUtil;
+    private final PropertiesUtil _propertiesUtil;
 
-	/**
-	 * Uses a String value to look up the appropriate {@link org.mitre.mpf.wfm.enums.MpfConstants#ARTIFACT_EXTRACTION_POLICY_PROPERTY};
-	 * if the property is not found, or if the provided property value doesn't make sense, the {@link org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy#DEFAULT}
-	 * value is used.
-	 */
-	private ArtifactExtractionPolicy getDetectionExtractionPolicy(String extractionPolicyProperty) {
-		ArtifactExtractionPolicy artifactExtractionPolicy = propertiesUtil.getArtifactExtractionPolicy();
-		if (extractionPolicyProperty != null) {
-			artifactExtractionPolicy = ArtifactExtractionPolicy.parse(extractionPolicyProperty, artifactExtractionPolicy);
-		}
-		return artifactExtractionPolicy;
-	}
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
-	private boolean isNonVisualObjectType(String type) {
-		return StringUtils.equalsIgnoreCase(type, "MOTION") || StringUtils.equalsIgnoreCase(type, "SPEECH");
-	}
 
-	@Override
-	public List<Message> wfmSplit(Exchange exchange) {
-		assert exchange.getIn().getBody() != null : "The body must not be null.";
-		assert exchange.getIn().getBody(byte[].class) != null : "The body must be convertible to a String.";
+    @Inject
+    ArtifactExtractionSplitterImpl(
+            JsonUtils jsonUtils,
+            InProgressBatchJobsService inProgressBatchJobs,
+            PropertiesUtil propertiesUtil,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
+        _jsonUtils = jsonUtils;
+        _inProgressBatchJobs = inProgressBatchJobs;
+        _propertiesUtil = propertiesUtil;
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+    }
 
-		List<Message> messages = new ArrayList<>();
-		TrackMergingContext trackMergingContext = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TrackMergingContext.class);
-		TransientJob transientJob = inProgressBatchJobs.getJob(trackMergingContext.getJobId());
 
-		if(!transientJob.isCancelled()) {
-			// Allocate at least enough room for each of the media in the job so we don't have to resize the list.
-			((ArrayList)messages).ensureCapacity(transientJob.getMedia().size());
+    @Override
+    public String getSplitterName() {
+        return REF;
+    }
 
-			TransientStage transientStage = transientJob.getPipeline().getStages().get(trackMergingContext.getStageIndex());
-			StageArtifactExtractionPlan plan = new StageArtifactExtractionPlan(transientJob.getId(), trackMergingContext.getStageIndex());
 
-			for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
-				TransientAction transientAction = transientStage.getActions().get(actionIndex);
+    @Override
+    public List<Message> wfmSplit(Exchange exchange) {
+        TrackMergingContext trackMergingContext = _jsonUtils.deserialize(exchange.getIn().getBody(byte[].class),
+                                                                         TrackMergingContext.class);
+        TransientJob job = _inProgressBatchJobs.getJob(trackMergingContext.getJobId());
 
-				// Iterate through the media and process as indicated.
-				for (TransientMedia transientMedia : transientJob.getMedia()) {
+        if (job.isCancelled()) {
+            LOG.warn("[Job {}|*|*] Artifact extraction will not be performed because this job has been cancelled.",
+                     job.getId());
+            return Collections.emptyList();
+        }
 
-					String extractionPolicyProperty = AggregateJobPropertiesUtil.calculateValue(
-							MpfConstants.ARTIFACT_EXTRACTION_POLICY_PROPERTY,
-							transientAction.getProperties(),
-							transientJob.getOverriddenJobProperties(),
-							transientAction,
-							transientJob.getOverriddenAlgorithmProperties(),
-							transientMedia.getMediaSpecificProperties()).getValue();
-					ArtifactExtractionPolicy artifactExtractionPolicy = getDetectionExtractionPolicy(extractionPolicyProperty);
+        Table<Long, Integer, Set<Integer>> mediaAndActionToFrames
+                = getFrameNumbersGroupedByMediaAndAction(job, trackMergingContext.getStageIndex());
 
-					if (artifactExtractionPolicy != ArtifactExtractionPolicy.NONE) {
-						// The user either wants to extract all detections or the user wants to detect only the exemplar
-						// detections for a given track. Therefore, build a collection of detection extraction requests.
+        List<Message> messages = new ArrayList<>(mediaAndActionToFrames.size());
+        for (long mediaId : mediaAndActionToFrames.rowKeySet()) {
+            Map<Integer, Set<Integer>> actionToFrameNumbers = mediaAndActionToFrames.row(mediaId);
 
-						// If the Media is in an error condition, it can be safely skipped.
-						if (transientMedia.isFailed()) {
-							continue;
-						}
+            TransientMedia media = job.getMedia(mediaId);
+            ArtifactExtractionRequest request = new ArtifactExtractionRequest(
+                    job.getId(),
+                    mediaId,
+                    media.getLocalPath().toString(),
+                    media.getMediaType(),
+                    trackMergingContext.getStageIndex(),
+                    actionToFrameNumbers);
 
-						// Explicitly check that the medium is not an audio file. If it is, then we can continue
-						// to the next medium without retrieving the tracks collection.
-						if (transientMedia.getMediaType() == MediaType.AUDIO) {
-							log.debug("Extracting detections from an audio file is not supported at this time.");
-							continue;
-						}
+            Message message = new DefaultMessage();
+            message.setBody(_jsonUtils.serialize(request));
+            messages.add(message);
+        }
+        return messages;
+    }
 
-						SortedSet<Track> tracks = inProgressBatchJobs.getTracks(
-								trackMergingContext.getJobId(), transientMedia.getId(),
-								trackMergingContext.getStageIndex(), actionIndex);
 
-						for (Track track : tracks) {
+    private Table<Long, Integer, Set<Integer>> getFrameNumbersGroupedByMediaAndAction(
+            TransientJob job, int stageIndex) {
 
-							// Determine if the track is a non-visual object type (e.g., SPEECH).
-							boolean isNonVisualObjectType = isNonVisualObjectType(track.getType());
+        Table<Long, Integer, Set<Integer>> mediaAndActionToFrames = HashBasedTable.create();
+        TransientStage stage = job.getPipeline().getStages().get(stageIndex);
 
-							if (isNonVisualObjectType && (artifactExtractionPolicy == ArtifactExtractionPolicy.ALL_VISUAL_DETECTIONS || artifactExtractionPolicy == ArtifactExtractionPolicy.VISUAL_EXEMPLARS_ONLY)) {
-								// We are not interested in non-visual object types. This track can be ignored.
-								continue;
-							}
+        for (int actionIndex = 0; actionIndex < stage.getActions().size(); actionIndex++) {
 
-							if (transientMedia.getMediaType() == MediaType.IMAGE) {
-								plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, 0);
-							} else if (transientMedia.getMediaType() == MediaType.VIDEO) {
-								if (artifactExtractionPolicy == ArtifactExtractionPolicy.ALL_VISUAL_DETECTIONS || artifactExtractionPolicy == ArtifactExtractionPolicy.ALL_DETECTIONS) {
-									for (Detection detection : track.getDetections()) {
-										plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, detection.getMediaOffsetFrame());
-									}
-								} else {
-									plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, track.getExemplar().getMediaOffsetFrame());
-								}
-							} else {
-								log.warn("Media {} with type {} was not expected at this time. None of the detections in this track will be extracted.", transientMedia.getId(), transientMedia.getType());
-							}
-						}
-					}
-				}
-			}
+            for (TransientMedia media : job.getMedia()) {
+                if (media.isFailed()
+                        || (media.getMediaType() != MediaType.IMAGE
+                            && media.getMediaType() != MediaType.VIDEO)) {
+                    continue;
+                }
 
-			messages.addAll(createMessages(plan));
-		} else {
-			log.warn("[Job {}|*|*] Artifact extraction will not be performed because this job has been cancelled.", transientJob.getId());
-		}
+                ArtifactExtractionPolicy extractionPolicy = getExtractionPolicy(job, media, stageIndex, actionIndex);
+                if (extractionPolicy == ArtifactExtractionPolicy.NONE) {
+                    continue;
+                }
 
-		return messages;
-	}
+                Collection<Track> tracks
+                        = _inProgressBatchJobs.getTracks(job.getId(), media.getId(), stageIndex, actionIndex);
+                processTracks(mediaAndActionToFrames, tracks, media, actionIndex, extractionPolicy);
+            }
+        }
 
-	private List<Message> createMessages(StageArtifactExtractionPlan plan) throws WfmProcessingException {
-		List<Message> messages = new ArrayList<Message>();
+        return mediaAndActionToFrames;
+    }
 
-		for(long mediaId : plan.getMediaIdToArtifactExtractionPlanMap().keySet()) {
-			ArtifactExtractionPlan mediaPlan = plan.getMediaIdToArtifactExtractionPlanMap().get(mediaId);
-			ArtifactExtractionRequest request = new ArtifactExtractionRequest(plan.getJobId(), mediaId, mediaPlan.getPath(), mediaPlan.getMediaType(), plan.getStageIndex());
-			for(int actionIndex : mediaPlan.getActionIndexToExtractionOffsetsMap().keySet()) {
-				request.add(actionIndex, mediaPlan.getActionIndexToExtractionOffsetsMap().get(actionIndex));
-			}
 
-			try {
-				Message message = new DefaultMessage();
-				message.setBody(jsonUtils.serialize(request));
-				messages.add(message);
-			} catch (WfmProcessingException wpe) {
-				log.error("Failed to create a message for '{}'. Attempting to continue without it...", request);
-			}
-		}
-		return messages;
-	}
+    private static void processTracks(
+            Table<Long, Integer, Set<Integer>> mediaAndActionToFrames,
+            Iterable<Track> tracks,
+            TransientMedia media,
+            int actionIndex,
+            ArtifactExtractionPolicy policy) {
+
+        for (Track track : tracks) {
+            switch (policy) {
+                case VISUAL_EXEMPLARS_ONLY:
+                    if (isNonVisualObjectType(track.getType())) {
+                        break;
+                    }
+                    // fall through
+                case EXEMPLARS_ONLY:
+                    addFrame(mediaAndActionToFrames, media.getId(), actionIndex,
+                             track.getExemplar().getMediaOffsetFrame());
+                    break;
+                case ALL_VISUAL_DETECTIONS:
+                    if (isNonVisualObjectType(track.getType())) {
+                        break;
+                    }
+                    // fall through
+                case ALL_DETECTIONS:
+                    for (Detection detection : track.getDetections()) {
+                        addFrame(mediaAndActionToFrames, media.getId(), actionIndex, detection.getMediaOffsetFrame());
+                    }
+            }
+        }
+    }
+
+
+    private static void addFrame(Table<Long, Integer, Set<Integer>> mediaAndActionToFrames,
+                                 long mediaId, int actionIndex, int frameNumber) {
+        Set<Integer> frameNumbers = mediaAndActionToFrames.get(mediaId, actionIndex);
+        if (frameNumbers == null) {
+            frameNumbers = new HashSet<>();
+            mediaAndActionToFrames.put(mediaId, actionIndex, frameNumbers);
+        }
+        frameNumbers.add(frameNumber);
+    }
+
+
+    private ArtifactExtractionPolicy getExtractionPolicy(TransientJob job, TransientMedia media,
+                                                         int stageIndex, int actionIndex) {
+        Function<String, String> combinedProperties
+                = _aggregateJobPropertiesUtil.getCombinedProperties(job, media.getId(), stageIndex, actionIndex);
+        String extractionPolicyString = combinedProperties.apply(MpfConstants.ARTIFACT_EXTRACTION_POLICY_PROPERTY);
+
+        ArtifactExtractionPolicy defaultPolicy = _propertiesUtil.getArtifactExtractionPolicy();
+        return ArtifactExtractionPolicy.parse(extractionPolicyString, defaultPolicy);
+    }
+
+
+    private static boolean isNonVisualObjectType(String type) {
+        return StringUtils.equalsIgnoreCase(type, "MOTION") || StringUtils.equalsIgnoreCase(type, "SPEECH");
+    }
 }

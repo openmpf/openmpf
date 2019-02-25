@@ -27,6 +27,7 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
@@ -47,6 +48,8 @@ public class MediaTestUtil {
         TransientJob job = mock(TransientJob.class);
         when(job.getMedia(media.getId()))
                 .thenReturn(media);
+        when(job.getOverriddenJobProperties())
+                .thenReturn(ImmutableMap.of());
         when(mockInProgressJobs.getJob(jobId))
                 .thenReturn(job);
 

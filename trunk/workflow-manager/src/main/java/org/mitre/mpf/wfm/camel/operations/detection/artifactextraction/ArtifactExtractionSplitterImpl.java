@@ -30,6 +30,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.apache.commons.lang3.StringUtils;
+import com.google.common.collect.ImmutableSortedSet;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
@@ -49,6 +50,10 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
+import java.util.Collections;
+import java.util.Comparator;
+import java.lang.Float;
+
 
 @Component(ArtifactExtractionSplitterImpl.REF)
 public class ArtifactExtractionSplitterImpl extends WfmSplitter {
@@ -140,7 +145,8 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 							// Determine if the track is a non-visual object type (e.g., SPEECH).
 							boolean isNonVisualObjectType = isNonVisualObjectType(track.getType());
 
-							if (isNonVisualObjectType && (artifactExtractionPolicy == ArtifactExtractionPolicy.ALL_VISUAL_DETECTIONS || artifactExtractionPolicy == ArtifactExtractionPolicy.VISUAL_EXEMPLARS_ONLY)) {
+							if (isNonVisualObjectType &&
+                                                            (artifactExtractionPolicy == ArtifactExtractionPolicy.VISUAL_ONLY)) {
 								// We are not interested in non-visual object types. This track can be ignored.
 								continue;
 							}
@@ -148,12 +154,49 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 							if (transientMedia.getMediaType() == MediaType.IMAGE) {
 								plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, 0);
 							} else if (transientMedia.getMediaType() == MediaType.VIDEO) {
-								if (artifactExtractionPolicy == ArtifactExtractionPolicy.ALL_VISUAL_DETECTIONS || artifactExtractionPolicy == ArtifactExtractionPolicy.ALL_DETECTIONS) {
+								if (artifactExtractionPolicy == ArtifactExtractionPolicy.ALL_FRAMES) {
 									for (Detection detection : track.getDetections()) {
 										plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, detection.getMediaOffsetFrame());
 									}
 								} else {
+                                                                    if (propertiesUtil.isArtifactExtractionPolicyExemplarFrame()) {
 									plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, track.getExemplar().getMediaOffsetFrame());
+                                                                    }
+                                                                    if (propertiesUtil.isArtifactExtractionPolicyFirstFrame()) {
+                                                                        plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, track.getDetections().first().getMediaOffsetFrame());
+                                                                    }
+                                                                    if (propertiesUtil.isArtifactExtractionPolicyLastFrame()) {
+                                                                        plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, track.getDetections().last().getMediaOffsetFrame());
+                                                                    }
+                                                                    if (propertiesUtil.isArtifactExtractionPolicyMiddleFrame()) {
+                                                                        // The goal here is to find the detection in the track that is closest to the "middle"
+                                                                        // frame. The middle frame is the frame that is equally distant from the start and stop
+                                                                        // frames, but that frame does not necessarily contain a detection in this track, so we
+                                                                        // search for the detection in the track that is closest to that middle frame.
+                                                                        int middle_index = (track.getDetections().last().getMediaOffsetFrame() + track.getDetections().first().getMediaOffsetFrame())/2;
+                                                                        int smallest_distance = Integer.MAX_VALUE;
+                                                                        int middle_frame = 0;
+                                                                        for (Detection detection : track.getDetections()) {
+                                                                            int distance = Math.abs(detection.getMediaOffsetFrame() - middle_index);
+                                                                            if (distance < smallest_distance) {
+                                                                                smallest_distance = distance;
+                                                                                middle_frame = detection.getMediaOffsetFrame();
+                                                                            }
+                                                                        }
+                                                                        plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, middle_frame);
+                                                                    }
+                                                                    if (propertiesUtil.getArtifactExtractionPolicyTopConfidenceCount() > 0) {
+                                                                        List<Detection> detections_copy = new ArrayList(track.getDetections());
+                                                                        // Sort the detections by confidence, then by frame number, if two detections have equal
+                                                                        // confidence. The sort by confidence is reversed so that the N highest confidence
+                                                                        // detections are at the start of the list.
+                                                                        detections_copy.sort(Comparator.comparing(Detection::getConfidence).reversed().thenComparing(Detection::getMediaOffsetFrame));
+                                                                        for (int i = 0; i < propertiesUtil.getArtifactExtractionPolicyTopConfidenceCount(); i++) {
+                                                                            log.debug("frame #{} confidence = {}", detections_copy.get(i).getMediaOffsetFrame(), detections_copy.get(i).getConfidence());
+                                                                            plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, detections_copy.get(i).getMediaOffsetFrame());
+                                                                        }
+                                                                    }
+                                                                    
 								}
 							} else {
 								log.warn("Media {} with type {} was not expected at this time. None of the detections in this track will be extracted.", transientMedia.getId(), transientMedia.getType());

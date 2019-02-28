@@ -254,7 +254,7 @@
                             <repackJars>false</repackJars>
                             <needarch>false</needarch>
                             <vendor>The MITRE Corporation</vendor>
-                            <license>Copyright 2019 MITRE CORPORATION, all rights reserved.</license>
+                            <license>COPYRIGHT 2019 MITRE CORPORATION, all rights reserved.</license>
                             <distribution>MPF</distribution>
                             <group>Application</group>
                             <version>${project.version}</version>

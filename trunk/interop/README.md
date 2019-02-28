@@ -1,6 +1,6 @@
 Deserializing Objects with Timestamps
 -----------------
-OpenMPF serializes all time fields in the ISO-8601 with offset format. For example, `2019-12-19T12:12:59.995-05:00`.
+OpenMPF serializes all time fields in the ISO-8601 with offset format. For example, `2018-12-19T12:12:59.995-05:00`.
 In order to properly deserialize these fields you can:
 1. Use `org.mitre.mpf.interop.util.MpfObjectMapper`
 2. If you would like to use your own Jackson ObjectMapper, then you will need to register the 

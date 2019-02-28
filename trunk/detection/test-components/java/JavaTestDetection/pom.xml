@@ -5,11 +5,11 @@
   ~ under contract, and is subject to the Rights in Data-General Clause       ~
   ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
   ~                                                                           ~
-  ~ Copyright 2018 The MITRE Corporation. All Rights Reserved.                ~
+  ~ Copyright 2019 The MITRE Corporation. All Rights Reserved.                ~
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright 2018 The MITRE Corporation                                      ~
+  ~ Copyright 2019 The MITRE Corporation                                      ~
   ~                                                                           ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
   ~ you may not use this file except in compliance with the License.          ~
@@ -32,7 +32,7 @@
     <parent>
         <artifactId>mpf-java-test-components</artifactId>
         <groupId>org.mitre.mpf</groupId>
-        <version>3.0.0</version>
+        <version>4.0.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -43,7 +43,7 @@
         <dependency>
             <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-java-component-api</artifactId>
-            <version>3.0.0</version>
+            <version>4.0.0</version>
         </dependency>
     </dependencies>
 

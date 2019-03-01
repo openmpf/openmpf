@@ -86,7 +86,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 	}
 
 	private boolean isNonVisualObjectType(String type) {
-		return StringUtils.equalsIgnoreCase(type, "MOTION") || StringUtils.equalsIgnoreCase(type, "SPEECH") || StringUtils.equalsIgnoreCase(type, "SCENE");
+                return (propertiesUtil.getArtifactExtractionNonvisualTypesList().contains(type));
 	}
 
 	@Override
@@ -159,13 +159,30 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 										plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, detection.getMediaOffsetFrame());
 									}
 								} else {
-                                                                    if (propertiesUtil.isArtifactExtractionPolicyExemplarFrame()) {
-									plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, track.getExemplar().getMediaOffsetFrame());
+                                                                    if (propertiesUtil.getArtifactExtractionPolicyExemplarFramePlus() >= 0) {
+                                                                        Detection exemplar = track.getExemplar();
+                                                                        int exemplar_frame = exemplar.getMediaOffsetFrame();
+                                                                        log.debug("Extracting frame {}", exemplar_frame);
+                                                                        plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, exemplar_frame);
+                                                                        int extract_count = propertiesUtil.getArtifactExtractionPolicyExemplarFramePlus();
+                                                                        while (extract_count > 0) {
+                                                                            if ((exemplar_frame - extract_count) >= 0) {
+                                                                                log.debug("Extracting frame {}", exemplar_frame-extract_count);
+                                                                                plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, exemplar_frame-extract_count);
+                                                                            }
+                                                                            if ((exemplar_frame + extract_count) <= (transientMedia.getLength() - 1)) {
+                                                                                log.debug("Extracting frame {}", exemplar_frame+extract_count);
+                                                                                plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, exemplar_frame+extract_count);
+                                                                            }
+                                                                            extract_count--;
+                                                                        }
                                                                     }
                                                                     if (propertiesUtil.isArtifactExtractionPolicyFirstFrame()) {
+                                                                        log.debug("Extracting frame {}", track.getDetections().first().getMediaOffsetFrame());
                                                                         plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, track.getDetections().first().getMediaOffsetFrame());
                                                                     }
                                                                     if (propertiesUtil.isArtifactExtractionPolicyLastFrame()) {
+                                                                        log.debug("Extracting frame {}", track.getDetections().last().getMediaOffsetFrame());
                                                                         plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, track.getDetections().last().getMediaOffsetFrame());
                                                                     }
                                                                     if (propertiesUtil.isArtifactExtractionPolicyMiddleFrame()) {
@@ -183,6 +200,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                                                                                 middle_frame = detection.getMediaOffsetFrame();
                                                                             }
                                                                         }
+                                                                        log.debug("Extracting frame {}", middle_frame);
                                                                         plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, middle_frame);
                                                                     }
                                                                     if (propertiesUtil.getArtifactExtractionPolicyTopConfidenceCount() > 0) {
@@ -196,7 +214,6 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                                                                             plan.addIndexToMediaExtractionPlan(transientMedia.getId(), transientMedia.getLocalPath().toString(), transientMedia.getMediaType(), actionIndex, detections_copy.get(i).getMediaOffsetFrame());
                                                                         }
                                                                     }
-                                                                    
 								}
 							} else {
 								log.warn("Media {} with type {} was not expected at this time. None of the detections in this track will be extracted.", transientMedia.getId(), transientMedia.getType());

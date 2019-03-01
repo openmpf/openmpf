@@ -253,30 +253,6 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getBoolean("mpf.output.objects.last.stage.only");
     }
 
-    public boolean isArtifactExtractionPolicyExemplarFrame() {
-        return mpfPropertiesConfig.getBoolean("detection.artifact.extraction.policy.exemplar.frame");
-    }
-
-    public boolean isArtifactExtractionPolicyFirstFrame() {
-        return mpfPropertiesConfig.getBoolean("detection.artifact.extraction.policy.first.frame");
-    }
-
-    public boolean isArtifactExtractionPolicyMiddleFrame() {
-        return mpfPropertiesConfig.getBoolean("detection.artifact.extraction.policy.middle.frame");
-    }
-
-    public boolean isArtifactExtractionPolicyLastFrame() {
-        return mpfPropertiesConfig.getBoolean("detection.artifact.extraction.policy.last.frame");
-    }
-
-    public int getArtifactExtractionPolicyTopConfidenceCount() {
-        return mpfPropertiesConfig.getInt("detection.artifact.extraction.policy.top.confidence.count");
-    }
-
-    public int getArtifactExtractionPolicyBeforeAfterCount() {
-        return mpfPropertiesConfig.getInt("detection.artifact.extraction.policy.before.after.count");
-    }
-
     public String getSharePath() {
         return mpfPropertiesConfig.getString("mpf.share.path");
     }
@@ -400,6 +376,30 @@ public class PropertiesUtil {
 
     public ArtifactExtractionPolicy getArtifactExtractionPolicy() {
         return mpfPropertiesConfig.get(ArtifactExtractionPolicy.class, "detection.artifact.extraction.policy");
+    }
+
+    public Set<String> getArtifactExtractionNonvisualTypesList() {
+        return new HashSet<>(mpfPropertiesConfig.getList(String.class, "detection.artifact.extraction.nonvisual.types"));
+    }
+
+    public int getArtifactExtractionPolicyExemplarFramePlus() {
+        return mpfPropertiesConfig.getInt("detection.artifact.extraction.policy.exemplar.frame.plus");
+    }
+
+    public boolean isArtifactExtractionPolicyFirstFrame() {
+        return mpfPropertiesConfig.getBoolean("detection.artifact.extraction.policy.first.frame");
+    }
+
+    public boolean isArtifactExtractionPolicyMiddleFrame() {
+        return mpfPropertiesConfig.getBoolean("detection.artifact.extraction.policy.middle.frame");
+    }
+
+    public boolean isArtifactExtractionPolicyLastFrame() {
+        return mpfPropertiesConfig.getBoolean("detection.artifact.extraction.policy.last.frame");
+    }
+
+    public int getArtifactExtractionPolicyTopConfidenceCount() {
+        return mpfPropertiesConfig.getInt("detection.artifact.extraction.policy.top.confidence.count");
     }
 
     public int getSamplingInterval() {

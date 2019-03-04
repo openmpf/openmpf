@@ -26,8 +26,6 @@
 
 package org.mitre.mpf.component.executor.detection;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.core.util.StatusPrinter;
 import org.mitre.mpf.component.api.detection.MPFDetectionComponentBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,10 +65,6 @@ public class MPFDetectionMain {
             }
             LOG.info("ACTIVE_MQ_BROKER_URI = " + ACTIVEMQHOST);
 
-            LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
-
-            // print logback's internal status
-            StatusPrinter.print(lc);
             System.out.println("Started, now running until 'q' is entered on stdin...");
 
             try {

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -103,7 +103,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	public JsonMediaOutputObject(long mediaId, String path, String mimeType, int length, String sha256, String message,
 								 String status) {
 		this.mediaId = mediaId;
-		this.path = fixPath(path);
+		this.path = path;
 		this.mimeType = mimeType;
 		this.length = length;
 		this.sha256 = sha256;
@@ -188,13 +188,4 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 			return 0;
 		}
 	}
-
-	private String fixPath(String path) {
-	    if (path.startsWith("file:")) {
-	        // Java URIs take form "file:/", but we want "file:///" to represent a blank authority.
-	        // Refer to the syntax: "[scheme:][//authority][path][?query][#fragment]"
-	        return path.replaceFirst("file:(/*)", "file:///");
-        }
-        return path;
-    }
 }

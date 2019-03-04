@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -66,7 +66,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
 
         String pipelineName = addDefaultMotionMogPipeline();
         long jobId = runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
-        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
+        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, media.size());
         log.info("Finished test runMotionMogDetectVideo()");
     }
@@ -80,7 +80,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
         // 28MG
         List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/speech/obamastateoftheunion2015.mp3"));
         long jobId = runPipelineOnMedia("SPHINX SPEECH DETECTION PIPELINE", media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
-        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
+        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, 1);
         log.info("Finished test runSpeechSphinxDetectAudio()");
     }
@@ -107,7 +107,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
         }
         long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
-        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
+        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, i);
         log.info("Finished test runFaceOcvDetectImage()");
     }
@@ -131,7 +131,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
 
         long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
-        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
+        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, media.size());
         log.info("Finished test runFaceOcvDetectVideo()");
     }
@@ -154,7 +154,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
 
         long jobId = runPipelineOnMedia("OCV PERSON DETECTION PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
-        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toURI();
+        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, media.size());
         log.info("Finished test runPersonOcvDetectVideo()");
     }

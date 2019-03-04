@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -90,21 +90,20 @@ public class MarkupStageSplitter implements StageSplitter {
 
 	/** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
 	private BoundingBoxMap createMap(TransientJob job, TransientMedia media, int stageIndex, TransientStage transientStage) {
+		Iterator<Color> trackColors = getTrackColors();
 		BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
 		long mediaId = media.getId();
 		for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
 			SortedSet<Track> tracks = inProgressJobs.getTracks(job.getId(), mediaId, stageIndex, actionIndex);
 			for (Track track : tracks) {
-				addTrackToBoundingBoxMap(track, boundingBoxMap);
+				addTrackToBoundingBoxMap(track, boundingBoxMap, trackColors.next());
 			}
 		}
 		return boundingBoxMap;
 	}
 
 
-	private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap) {
-		Color trackColor = getRandomColor();
-
+	private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor) {
 		List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
 		Collections.sort(orderedDetections);
 		for (int i = 0; i < orderedDetections.size(); i++) {
@@ -232,14 +231,9 @@ public class MarkupStageSplitter implements StageSplitter {
 	// Uses method described in https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
 	// to create an infinite iterator of randomish colors.
 	// The article says to use the HSV color space, but HSB is identical.
-	private static final Iterator<Color> COLORS = DoubleStream
-			.iterate(Math.random(),
-			         x -> (x + GOLDEN_RATIO_CONJUGATE) % 1)
-			.mapToObj(x -> Color.getHSBColor((float) x, 0.5f, 0.95f))
-			.iterator();
-
-
-	private static Color getRandomColor() {
-		return COLORS.next();
+	private static Iterator<Color> getTrackColors() {
+		return DoubleStream.iterate(0.5, x -> (x + GOLDEN_RATIO_CONJUGATE) % 1)
+				.mapToObj(x -> Color.getHSBColor((float) x, 0.5f, 0.95f))
+				.iterator();
 	}
 }

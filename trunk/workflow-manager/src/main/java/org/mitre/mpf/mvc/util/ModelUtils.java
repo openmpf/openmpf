@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -39,10 +39,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.File;
-import java.net.URI;
-import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -101,18 +100,19 @@ public class ModelUtils {
             }
         }
 
-        if(markupResult.getSourceUri() != null) {
-            try {
-                String nonUrlPath = markupResult.getSourceUri();
-                sourceUriContentType = NIOUtils.getPathContentType(Paths.get(URI.create(nonUrlPath)));
-                File f = new File(URI.create(nonUrlPath));
-                if (f != null && f.exists()){
-                    sourceFileAvailable = true;
-                    sourceImgUrl = "server/node-image?nodeFullPath=" + Paths.get(URI.create(nonUrlPath));
-                    sourceDownloadUrl = "server/download?fullPath=" + Paths.get(URI.create(nonUrlPath));
-                }
-            } catch(IllegalArgumentException | FileSystemNotFoundException e) {
-                // URI has an authority component or URI scheme is not "file"
+        if (markupResult.getSourceUri() != null) {
+            Path path = IoUtils.toLocalPath(markupResult.getSourceUri()).orElse(null);
+            if (path == null || Files.exists(path)) {
+                sourceDownloadUrl = UriComponentsBuilder
+                        .fromPath("server/download")
+                        .queryParam("sourceUri", markupResult.getSourceUri())
+                        .queryParam("jobId", markupResult.getJobId())
+                        .toUriString();
+                sourceFileAvailable = true;
+            }
+            if (path != null && Files.exists(path))  {
+                sourceUriContentType = NIOUtils.getPathContentType(path);
+                sourceImgUrl = "server/node-image?nodeFullPath=" + path;
             }
         }
 
@@ -142,14 +142,14 @@ public class ModelUtils {
                 streamingJobRequest.getPipeline(),
                 streamingJobRequest.getPriority(),
                 streamingJobRequest.getStatus().name(),
-				streamingJobRequest.getStatusDetail(),
-				jobContainerProgress,
-				streamingJobRequest.getTimeReceived(),
+                streamingJobRequest.getStatusDetail(),
+                jobContainerProgress,
+                streamingJobRequest.getTimeReceived(),
                 streamingJobRequest.getTimeCompleted(),
                 streamingJobRequest.getOutputObjectDirectory(),
                 streamingJobRequest.getStreamUri(),
-				streamingJobRequest.getActivityFrameId(),
-				streamingJobRequest.getActivityTimestamp(),
+                streamingJobRequest.getActivityFrameId(),
+                streamingJobRequest.getActivityTimestamp(),
                 isTerminal);
     }
 

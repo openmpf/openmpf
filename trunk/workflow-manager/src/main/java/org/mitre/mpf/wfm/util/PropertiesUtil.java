@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -40,7 +40,6 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.EnvVar;
-import org.mitre.mpf.wfm.service.StorageBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -269,10 +268,10 @@ public class PropertiesUtil {
         Files.createDirectories(path);
         return path.toFile();
     }
-    public File createArtifactFile(long jobId, long mediaId, int stageIndex, String name) throws IOException {
+    public Path createArtifactFile(long jobId, long mediaId, int stageIndex, String name) throws IOException {
         Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d/%s", jobId, mediaId, stageIndex, name)).normalize().toAbsolutePath();
         Files.createDirectories(path.getParent());
-        return path.toFile();
+        return path;
     }
 
     private File outputObjectsDirectory;
@@ -290,7 +289,7 @@ public class PropertiesUtil {
      * @return directory that was created under the output objects directory for storage of detection files from this batch job
      * @throws IOException
      */
-    public File createDetectionOutputObjectFile(long jobId) throws IOException {
+    public Path createDetectionOutputObjectFile(long jobId) throws IOException {
         return createOutputObjectsFile(jobId, "detection");
     }
 
@@ -327,7 +326,7 @@ public class PropertiesUtil {
      * @return File to be used for storing an output object for this job
      * @throws IOException
      */
-    private File createOutputObjectsFile(long jobId, String outputObjectType) throws IOException {
+    private Path createOutputObjectsFile(long jobId, String outputObjectType) throws IOException {
         return createOutputObjectsFile(jobId,outputObjectsDirectory,outputObjectType);
     }
 
@@ -338,11 +337,11 @@ public class PropertiesUtil {
      * @return File to be used for storing an output object for this job
      * @throws IOException
      */
-    private File createOutputObjectsFile(long jobId, File parentDir, String outputObjectType) throws IOException {
+    private static Path createOutputObjectsFile(long jobId, File parentDir, String outputObjectType) throws IOException {
         String fileName = String.format("%d/%s.json", jobId, TextUtils.trimToEmpty(outputObjectType));
         Path path = Paths.get(parentDir.toURI()).resolve(fileName).normalize().toAbsolutePath();
         Files.createDirectories(path.getParent());
-        return path.toFile();
+        return path;
     }
 
     private File remoteMediaCacheDirectory;
@@ -761,20 +760,16 @@ public class PropertiesUtil {
         }
     }
 
-    public StorageBackend.Type getHttpObjectStorageType() {
-        return mpfPropertiesConfig.get(StorageBackend.Type.class, "http.object.storage.type");
+    public URI getNginxStorageServiceUri() {
+        return mpfPropertiesConfig.get(URI.class, "http.object.storage.nginx.service.uri");
     }
 
-    public URI getHttpStorageServiceUri() {
-        return mpfPropertiesConfig.get(URI.class, "http.object.storage.service_uri");
+    public int getNginxStorageUploadThreadCount() {
+        return mpfPropertiesConfig.getInt("http.object.storage.nginx.upload.thread.count");
     }
 
-    public int getHttpStorageUploadThreadCount() {
-        return mpfPropertiesConfig.getInt("http.object.storage.upload.thread.count");
-    }
-
-    public int getHttpStorageUploadSegmentSize() {
-        return mpfPropertiesConfig.getInt("http.object.storage.upload.segment.size");
+    public int getNginxStorageUploadSegmentSize() {
+        return mpfPropertiesConfig.getInt("http.object.storage.nginx.upload.segment.size");
     }
 
     public int getHttpStorageUploadRetryCount() {

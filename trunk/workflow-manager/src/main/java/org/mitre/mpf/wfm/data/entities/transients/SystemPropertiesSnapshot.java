@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,12 +27,14 @@
 package org.mitre.mpf.wfm.data.entities.transients;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
-import org.mitre.mpf.wfm.service.StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Map;
+import java.util.Optional;
 
 // Wrapper class for the system property values that should have been captured in a
 // ImmutableConfiguration object when a batch job is created. The system property values will be
@@ -94,18 +96,28 @@ public class SystemPropertiesSnapshot {
         return Double.valueOf(_properties.get("detection.video.track.overlap.threshold"));
     }
 
-    public StorageBackend.Type getHttpObjectStorageType() throws StorageException {
-        String storageType = _properties.get("http.object.storage.type");
-        try {
-            return StorageBackend.Type.valueOf(storageType);
+    public Optional<URI> getNginxStorageServiceUri() throws StorageException {
+        String uriString = _properties.get("http.object.storage.nginx.service.uri");
+        if (StringUtils.isBlank(uriString)) {
+            return Optional.empty();
         }
-        catch (IllegalArgumentException e) {
-            throw new StorageException("Invalid storage type: " + storageType, e);
-        }
-    }
 
-    public URI getHttpStorageServiceUri() {
-        return URI.create(_properties.get("http.object.storage.service_uri"));
+        try {
+            URI uri = new URI(uriString);
+            if (StringUtils.isBlank(uri.getScheme())) {
+                throw new StorageException(String.format(
+                        "Expected the \"http.object.storage.nginx.service.uri\" property to either be " +
+                                "a valid URI or an empty string but it was \"%s\", which is missing the URI scheme.",
+                        uriString));
+            }
+            return Optional.of(uri);
+        }
+        catch (URISyntaxException e) {
+            throw new StorageException(String.format(
+                    "Expected the \"http.object.storage.nginx.service.uri\" property to either be " +
+                            "a valid URI or an empty string but it was \"%s\", which is invalid due to: %s",
+                    uriString, e), e);
+        }
     }
 
     public boolean isOutputObjectExemplarOnly() {

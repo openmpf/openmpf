@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -35,9 +35,11 @@ import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.event.NotificationProducer;
 
+import java.io.IOException;
+
 @Monitored
 public interface JobCompleteProcessor extends WfmProcessorInterface, NotificationProducer<JobCompleteNotification> {
-	void createOutputObject(TransientJob transientJob, Mutable<BatchJobStatusType> jobStatus) throws WfmProcessingException;
-	void subscribe(NotificationConsumer<JobCompleteNotification> consumer);
-	void unsubscribe(NotificationConsumer<JobCompleteNotification> consumer);
+    void createOutputObject(TransientJob transientJob, Mutable<BatchJobStatusType> jobStatus) throws WfmProcessingException, IOException;
+    void subscribe(NotificationConsumer<JobCompleteNotification> consumer);
+    void unsubscribe(NotificationConsumer<JobCompleteNotification> consumer);
 }

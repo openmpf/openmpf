@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -63,7 +63,7 @@ public interface MpfService {
      * @return A {@link org.mitre.mpf.interop.JsonJobRequest} which summarizes this request.
      */
     public JsonJobRequest createJob(List<JsonMediaInputObject> media,
-        Map<String, Map> algorithmProperties, Map<String, String> jobProperties,
+        Map<String, Map<String, String>> algorithmProperties, Map<String, String> jobProperties,
         String pipelineName, String externalId, boolean buildOutput, int priority);
 
     /**
@@ -86,7 +86,7 @@ public interface MpfService {
      * @return A {@link org.mitre.mpf.interop.JsonJobRequest} which summarizes this request.
      */
     public JsonJobRequest createJob(List<JsonMediaInputObject> media,
-        Map<String, Map> algorithmProperties, Map<String, String> jobProperties,
+        Map<String, Map<String, String>> algorithmProperties, Map<String, String> jobProperties,
         String pipelineName, String externalId, boolean buildOutput, int priority, String callback,
         String method);
 

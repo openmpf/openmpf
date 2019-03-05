@@ -166,39 +166,41 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                         addFrame(mediaAndActionToFrames, media.getId(), actionIndex, detection.getMediaOffsetFrame());
                     }
                     break;
-                case VISUAL_ONLY:
+                case VISUAL_TYPES_ONLY:
                     if (isNonVisualObjectType(track.getType())) {
                         break;
                     }
+                    // fall through
+                case ALL_TYPES:
                     if (_propertiesUtil.getArtifactExtractionPolicyExemplarFramePlus() >= 0) {
                         Detection exemplar = track.getExemplar();
                         int exemplar_frame = exemplar.getMediaOffsetFrame();
-                        LOG.info("Extracting frame {}", exemplar_frame);
+                        LOG.info("Extracting exemplar frame {}", exemplar_frame);
                         addFrame(mediaAndActionToFrames, media.getId(), actionIndex, exemplar_frame);
                         int extract_count = _propertiesUtil.getArtifactExtractionPolicyExemplarFramePlus();
                         while (extract_count > 0) {
                             // before frame: only extract if the frame lies within this track and is not less than 0.
                             if (((exemplar_frame - extract_count) >= 0) &&
                                 ((exemplar_frame - extract_count) >= track.getStartOffsetFrameInclusive())) {
-                                LOG.info("Extracting frame {}", exemplar_frame-extract_count);
+                                LOG.info("Extracting before-frame {}", exemplar_frame-extract_count);
                                 addFrame(mediaAndActionToFrames, media.getId(), actionIndex, exemplar_frame-extract_count);
                             }
                             // after frame: only extract if the frame lies within this track and is not greater than the
                             // last frame in the media.
                             if (((exemplar_frame + extract_count) <= (media.getLength() - 1)) &&
                                 ((exemplar_frame + extract_count) <= track.getEndOffsetFrameInclusive())) {
-                                LOG.info("Extracting frame {}", exemplar_frame+extract_count);
+                                LOG.info("Extracting after-frame {}", exemplar_frame+extract_count);
                                 addFrame(mediaAndActionToFrames, media.getId(), actionIndex, exemplar_frame+extract_count);
                             }
                             extract_count--;
                         }
                     }
                     if (_propertiesUtil.isArtifactExtractionPolicyFirstFrame()) {
-                        LOG.debug("Extracting frame {}", track.getDetections().first().getMediaOffsetFrame());
+                        LOG.debug("Extracting first frame {}", track.getDetections().first().getMediaOffsetFrame());
                         addFrame(mediaAndActionToFrames, media.getId(), actionIndex, track.getDetections().first().getMediaOffsetFrame());
                     }
                     if (_propertiesUtil.isArtifactExtractionPolicyLastFrame()) {
-                        LOG.debug("Extracting frame {}", track.getDetections().last().getMediaOffsetFrame());
+                        LOG.debug("Extracting last frame {}", track.getDetections().last().getMediaOffsetFrame());
                         addFrame(mediaAndActionToFrames, media.getId(), actionIndex, track.getDetections().last().getMediaOffsetFrame());
                     }
                     if (_propertiesUtil.isArtifactExtractionPolicyMiddleFrame()) {
@@ -216,7 +218,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                                 middle_frame = detection.getMediaOffsetFrame();
                             }
                         }
-                        LOG.debug("Extracting frame {}", middle_frame);
+                        LOG.debug("Extracting middle frame {}", middle_frame);
                         addFrame(mediaAndActionToFrames, media.getId(), actionIndex, middle_frame);
                     }
                     if (_propertiesUtil.getArtifactExtractionPolicyTopConfidenceCount() > 0) {
@@ -226,7 +228,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                         // detections are at the start of the list.
                         detections_copy.sort(Comparator.comparing(Detection::getConfidence).reversed().thenComparing(Detection::getMediaOffsetFrame));
                         for (int i = 0; i < _propertiesUtil.getArtifactExtractionPolicyTopConfidenceCount(); i++) {
-                            LOG.debug("frame #{} confidence = {}", detections_copy.get(i).getMediaOffsetFrame(), detections_copy.get(i).getConfidence());
+                            LOG.info("frame #{} confidence = {}", detections_copy.get(i).getMediaOffsetFrame(), detections_copy.get(i).getConfidence());
                             addFrame(mediaAndActionToFrames, media.getId(), actionIndex, detections_copy.get(i).getMediaOffsetFrame());
                         }
                     }

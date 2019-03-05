@@ -33,15 +33,18 @@ public enum ArtifactExtractionPolicy {
 	NONE,
 
 	/** Default: Extract artifacts for tracks associated
-            with a &quot;visual&quot; object type. For example, this
+            with a &quot;visual&quot; detection type. For example, this
             would include faces and cars, but it would exclude speech,
             motion and scene detection. */
-	VISUAL_ONLY,
+	VISUAL_TYPES_ONLY,
+
+	/** Default: Extract artifacts for tracks associated with any detection type. */
+	ALL_TYPES,
 
         /** Extract artifacts for all frames in the track regardless of the track's object type. */
 	ALL_FRAMES;
 
-	public static final ArtifactExtractionPolicy DEFAULT = VISUAL_ONLY;
+	public static final ArtifactExtractionPolicy DEFAULT = VISUAL_TYPES_ONLY;
 
 	/**
 	 * Retrieves the enum value with the given name. If an enum value with the given name does not exist, the defaultValue

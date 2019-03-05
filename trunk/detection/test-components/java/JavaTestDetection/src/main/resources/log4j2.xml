@@ -66,6 +66,5 @@
         <Logger name="org.apache.activemq" level="WARN"/>
         <Logger name="org.springframework.jms" level="WARN"/>
         <Logger name="org.springframework.core" level="WARN"/>
-        <Logger name="org.mitre" level="INFO"/>
     </Loggers>
 </Configuration>

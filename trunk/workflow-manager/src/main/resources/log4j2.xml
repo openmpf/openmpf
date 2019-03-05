@@ -75,7 +75,6 @@
         <Logger name="org.springframework.context.support" level="WARN" />
         <Logger name="org.springframework.scheduling.concurrent" level="WARN" />
         <!-- These are to cleanup junk logging on startup -->
-        <Logger name="org.infinispan" level="INFO"/>
         <Logger name="org.apache.camel.processor.aggregate" level="WARN"/>
         <Logger name="org.hibernate.tool.hbm2ddl" level="WARN"/>
         <Logger name="org.hibernate.cache" level="WARN"/>

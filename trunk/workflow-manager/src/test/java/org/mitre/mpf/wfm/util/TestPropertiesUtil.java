@@ -154,7 +154,7 @@ public class TestPropertiesUtil {
 
         Assert.assertEquals(2, propertiesUtil.getAmqBrokerPurgeWhiteList().size());
 
-        Assert.assertEquals(ArtifactExtractionPolicy.VISUAL_EXEMPLARS_ONLY, propertiesUtil.getArtifactExtractionPolicy());
+        Assert.assertEquals(ArtifactExtractionPolicy.VISUAL_TYPES_ONLY, propertiesUtil.getArtifactExtractionPolicy());
 
         Assert.assertTrue(WritableResource.class.isAssignableFrom(propertiesUtil.getAlgorithmDefinitions().getClass()));
         Assert.assertTrue(propertiesUtil.getAlgorithmDefinitions().exists());

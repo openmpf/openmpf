@@ -57,13 +57,5 @@
             <AppenderRef ref="STDOUT"/>
             <AppenderRef ref="MARKUP_FILE"/>
         </Root>
-
-        <Logger name="org.dstovall" level="WARN"/>
-        <Logger name="org.springframework.context.annotation" level="WARN"/>
-        <Logger name="org.springframework.beans.factory" level="WARN"/>
-        <Logger name="org.apache.xbean.spring" level="WARN"/>
-        <Logger name="org.apache.activemq" level="WARN"/>
-        <Logger name="org.springframework.jms" level="WARN"/>
-        <Logger name="org.springframework.core" level="WARN"/>
     </Loggers>
 </Configuration>

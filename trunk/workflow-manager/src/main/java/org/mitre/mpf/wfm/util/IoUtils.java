@@ -181,27 +181,28 @@ public class IoUtils {
                 throw new WfmProcessingException(use);
             }
         }
+
         File file = new File(path);
         if (file.exists()) {
             return file.getAbsoluteFile().toURI();
-        } else {
-            try {
-                URL url = IoUtils.class.getResource(path);
-                if (url != null) {
-                    return url.toURI();
-                } else {
-                    file = new File(propertiesUtil.getSharePath() + path);
-                    if (file.exists()) {
-                        return file.getAbsoluteFile().toURI();
-                    } else {
-                      throw new WfmProcessingException(String.format("Resource not found when converting %s to URI", path));
-                    }
-                }
-            } catch (URISyntaxException use) {
-                throw new WfmProcessingException
-                        (String.format("Exception occurred when converting path %s to URI", path), use);
-            }
         }
+
+        try {
+            URL url = IoUtils.class.getResource(path);
+            if (url != null) {
+                return url.toURI();
+            }
+        } catch (URISyntaxException use) {
+            throw new WfmProcessingException
+                    (String.format("Exception occurred when converting path %s to URI", path), use);
+        }
+
+        file = new File(propertiesUtil.getSharePath() + path);
+        if (file.exists()) {
+            return file.getAbsoluteFile().toURI();
+        }
+
+        throw new WfmProcessingException(String.format("Resource not found at path %s", path));
     }
 
     public File createTemporaryFile() throws IOException {

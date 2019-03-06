@@ -123,7 +123,7 @@ public class OutputChecker {
 
         JsonActionOutputObject expTrackOutput;
         JsonActionOutputObject actTrackOutput;
-        _errorCollector.checkThat("Expected Type", expectedTypeEntry.getKey(), is(actualTypeEntry.getKey()));
+        _errorCollector.checkThat("Expected Type", actualTypeEntry.getKey(), is(expectedTypeEntry.getKey()));
         while (expIter.hasNext()){
             expTrackOutput = expIter.next();
             actTrackOutput = actIter.next();

@@ -202,7 +202,7 @@ public class IoUtils {
             return file.getAbsoluteFile().toURI();
         }
 
-        throw new WfmProcessingException(String.format("Resource not found at path %s", path));
+        throw new WfmProcessingException(String.format("File not found at path %s", path));
     }
 
     public File createTemporaryFile() throws IOException {

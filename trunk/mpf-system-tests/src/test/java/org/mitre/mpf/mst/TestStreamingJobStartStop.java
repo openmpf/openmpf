@@ -44,6 +44,7 @@ import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
+import org.mitre.mpf.wfm.util.IoUtils;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +57,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
@@ -99,6 +101,9 @@ public class TestStreamingJobStartStop {
 
 	@Autowired
 	private ObjectMapper _objectMapper;
+
+	@Autowired
+	protected IoUtils _ioUtils;
 
 
 	@Test(timeout = 5 * 60_000)
@@ -231,7 +236,7 @@ public class TestStreamingJobStartStop {
 		});
 	}
 
-	private static TransientStreamingJob createJob(long jobId, String algorithm, String pipelineName,
+	private TransientStreamingJob createJob(long jobId, String algorithm, String pipelineName,
 	                                               String mediaPath, int segmentSize, int stallTimeout) {
 
 		TransientStage stage1 = new TransientStage(
@@ -242,8 +247,8 @@ public class TestStreamingJobStartStop {
 
 		TransientPipeline pipeline = new TransientPipeline(pipelineName, "desc",
 		                                                   Collections.singletonList(stage1));
-		URL videoUrl = TestStreamingJobStartStop.class.getResource(mediaPath);
-		TransientStream stream = new TransientStream(124, videoUrl.toString(), segmentSize, Collections.emptyMap());
+		URI videoUri = _ioUtils.findFile(mediaPath);
+		TransientStream stream = new TransientStream(124, videoUri.toString(), segmentSize, Collections.emptyMap());
 
 		return new TransientStreamingJobImpl(
 				jobId, "ext id", pipeline, stream, 1, stallTimeout, false, "mydir",

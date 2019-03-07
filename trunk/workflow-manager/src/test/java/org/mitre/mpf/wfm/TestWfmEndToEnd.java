@@ -169,7 +169,7 @@ public class TestWfmEndToEnd {
 
 		JobRequest jobRequest = mpfService.getJobRequest(jobId);
 
-		Assert.assertTrue(jobRequest.getStatus() == BatchJobStatusType.COMPLETE);
+		Assert.assertEquals(BatchJobStatusType.COMPLETE, jobRequest.getStatus());
 		Assert.assertTrue(jobRequest.getOutputObjectPath() != null);
 
 		Path outputObjectPath = IoUtils.toLocalPath(jobRequest.getOutputObjectPath()).orElse(null);
@@ -191,7 +191,7 @@ public class TestWfmEndToEnd {
 
 		jobRequest = mpfService.getJobRequest(jobId);
 
-		Assert.assertTrue(jobRequest.getStatus() == BatchJobStatusType.COMPLETE);
+		Assert.assertEquals(BatchJobStatusType.COMPLETE, jobRequest.getStatus());
 		Assert.assertTrue(jobRequest.getOutputObjectPath() != null);
 
 		outputObjectPath = IoUtils.toLocalPath(jobRequest.getOutputObjectPath()).orElse(null);

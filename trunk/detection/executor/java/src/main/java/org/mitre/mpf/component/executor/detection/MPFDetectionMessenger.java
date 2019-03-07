@@ -99,9 +99,13 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
                                                                             audioRequest.getStartTime(),
                                                                             audioRequest.getStopTime(),
                                                                             audioRequest.getFeedForwardTrack()));
-                            responseBytes = detectionBuffer.createAudioResponseMessage(msgMetadata, detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS);
+                            responseBytes = detectionBuffer.createAudioResponseMessage(msgMetadata,
+									audioRequest.getStartTime(), audioRequest.getStopTime(),
+									detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS);
                         } catch (MPFComponentDetectionError e) {
-                            responseBytes = detectionBuffer.createAudioResponseMessage(msgMetadata, detectionType, Collections.<MPFAudioTrack>emptyList(), e.getDetectionError());
+                            responseBytes = detectionBuffer.createAudioResponseMessage(msgMetadata,
+									audioRequest.getStartTime(), audioRequest.getStopTime(),
+									detectionType, Collections.<MPFAudioTrack>emptyList(), e.getDetectionError());
                         }
                     } else if (MPFDataType.IMAGE == msgMetadata.getDataType()) {
                         MPFDetectionImageRequest imageRequest = detectionBuffer.getImageRequest();
@@ -128,9 +132,13 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
                                                                             videoRequest.getStartFrame(),
                                                                             videoRequest.getStopFrame(),
                                                                             videoRequest.getFeedForwardTrack()));
-                            responseBytes = detectionBuffer.createVideoResponseMessage(msgMetadata, detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS);
+                            responseBytes = detectionBuffer.createVideoResponseMessage(msgMetadata,
+									videoRequest.getStartFrame(), videoRequest.getStopFrame(),
+									detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS);
                         } catch (MPFComponentDetectionError e) {
-                            responseBytes = detectionBuffer.createVideoResponseMessage(msgMetadata, detectionType, tracks, e.getDetectionError());
+                            responseBytes = detectionBuffer.createVideoResponseMessage(msgMetadata,
+									videoRequest.getStartFrame(), videoRequest.getStopFrame(),
+									detectionType, tracks, e.getDetectionError());
                         }
                     } else if (MPFDataType.UNKNOWN == msgMetadata.getDataType()) {
 						MPFDetectionGenericRequest genericRequest = detectionBuffer.getGenericRequest();
@@ -178,9 +186,11 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
 				}
 
             } else {
+				// TODO: Send error message.
                 LOG.error("Could not parse contents of Detection Request message");
             }
         } catch (InvalidProtocolBufferException | JMSException e) {
+			// TODO: Send error message.
             LOG.error("Could not process detection request message due to Exception ", e);
         }
     }

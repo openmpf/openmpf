@@ -42,7 +42,7 @@ var AdminLogsCtrl = function ( $scope, $log, $http, $interval, $timeout, LogServ
     // 2. Manipulating the textarea string in javascript. Thus, retrieve the log file data from the
     // server in as few requests as possible to prevent unnecessary calls to appendLogText(). Assume
     // that a GET response can handle 300 MB of data, which should be much more than any of the log
-    // file size limits (as configured through logback or log4cxx).
+    // file size limits (as configured through log4j or log4cxx).
 
     // NOTE: maxLines may be greater than maxChars. This simply forces the server to parse a larger
     // chunk of the log file (in a single request) than can be displayed in the text area. It's more

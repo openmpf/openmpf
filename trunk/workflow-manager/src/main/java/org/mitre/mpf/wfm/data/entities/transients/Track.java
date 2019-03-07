@@ -157,8 +157,6 @@ public class Track implements Comparable<Track> {
                 .orElse(null);
 	}
 
-
-
 	@Override
 	public int hashCode() {
 		return Objects.hash(_jobId, _mediaId, _stageIndex, _actionIndex, _startOffsetFrameInclusive,
@@ -170,8 +168,6 @@ public class Track implements Comparable<Track> {
 	public boolean equals(Object obj) {
 	    return obj instanceof Track && compareTo((Track) obj) == 0;
 	}
-
-
 
 	private static final Comparator<Set<Detection>> DETECTION_SET_COMPARATOR = Comparator
 			.nullsFirst(Comparator
@@ -209,8 +205,6 @@ public class Track implements Comparable<Track> {
 		//noinspection ObjectEquality - Just an optimization to avoid comparing all fields when compared to itself.
 		return this == other ? 0 : DEFAULT_COMPARATOR.compare(this, other);
 	}
-
-
 
 	@Override
 	public String toString() {

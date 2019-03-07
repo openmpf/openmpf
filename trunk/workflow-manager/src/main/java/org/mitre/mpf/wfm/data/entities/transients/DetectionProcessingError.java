@@ -30,91 +30,118 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.mitre.mpf.wfm.util.TextUtils;
 
+import java.util.Comparator;
+import java.util.Objects;
+
 public class DetectionProcessingError implements Comparable<DetectionProcessingError> {
 	private long jobId;
-	public long getJobId() { return jobId; }
+
+	public long getJobId() {
+		return jobId;
+	}
 
 	private long mediaId;
-	public long getMediaId() { return mediaId; }
+
+	public long getMediaId() {
+		return mediaId;
+	}
 
 	private int stageIndex;
-	public int getStageIndex() { return stageIndex; }
+
+	public int getStageIndex() {
+		return stageIndex;
+	}
 
 	private int actionIndex;
-	public int getActionIndex() { return actionIndex; }
 
-	private int startOffset;
-	public int getStartOffset() { return startOffset; }
+	public int getActionIndex() {
+		return actionIndex;
+	}
 
-	private int endOffset;
-	public int getEndOffset() { return endOffset; }
+	private int startFrame;
+
+	public int getStartFrame() {
+		return startFrame;
+	}
+
+	private int stopFrame;
+
+	public int getStopFrame() {
+		return stopFrame;
+	}
+
+	private int startTime;
+
+	public int getStartTime() {
+		return startTime;
+	}
+
+	private int stopTime;
+
+	public int getStopTime() {
+		return stopTime;
+	}
 
 	private String error;
-	public String getError() { return error; }
+
+	public String getError() {
+		return error;
+	}
 
 	@JsonCreator
-	public DetectionProcessingError(@JsonProperty("jobId") long jobId, @JsonProperty("mediaId") long mediaId, @JsonProperty("stageIndex") int stageIndex, @JsonProperty("actionIndex") int actionIndex, @JsonProperty("startOffset") int startOffset, @JsonProperty("endOffset") int endOffset, @JsonProperty("error") String error) {
+	public DetectionProcessingError(@JsonProperty("jobId") long jobId,
+									@JsonProperty("mediaId") long mediaId,
+									@JsonProperty("stageIndex") int stageIndex,
+									@JsonProperty("actionIndex") int actionIndex,
+									@JsonProperty("startFrame") int startFrame,
+									@JsonProperty("stopFrame") int stopFrame,
+									@JsonProperty("startTime") int startTime,
+									@JsonProperty("stopTime") int stopTime,
+									@JsonProperty("error") String error) {
 		this.jobId = jobId;
 		this.mediaId = mediaId;
 		this.stageIndex = stageIndex;
 		this.actionIndex = actionIndex;
-		this.startOffset = startOffset;
-		this.endOffset = endOffset;
+		this.startFrame = startFrame;
+		this.stopFrame = stopFrame;
+		this.startTime = startTime;
+		this.stopTime = stopTime;
 		this.error = error;
 	}
 
 	@Override
 	public int hashCode() {
-		int hash = 37;
-		hash = 13 * hash + (int)(jobId ^ (jobId >>> 32));
-		hash = 13 * hash + (int)(mediaId ^ (mediaId >>> 32));
-		hash = 13 * hash + stageIndex;
-		hash = 13 * hash + actionIndex;
-		hash = 13 * hash + startOffset;
-		hash = 13 * hash + endOffset;
-		hash = 13 * hash + TextUtils.nullSafeHashCode(error);
-		return hash;
+		return Objects.hash(jobId, mediaId, stageIndex, actionIndex, startFrame, stopFrame, startTime, stopTime,
+				TextUtils.nullSafeHashCode(error));
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if(obj == null || !(obj instanceof DetectionProcessingError)) {
-			return false;
-		} else {
-			DetectionProcessingError casted = (DetectionProcessingError)obj;
-			return jobId == casted.jobId &&
-				mediaId == casted.mediaId &&
-				stageIndex == casted.stageIndex &&
-				actionIndex == casted.actionIndex &&
-				startOffset == casted.startOffset &&
-				endOffset == casted.endOffset &&
-				TextUtils.nullSafeEquals(error, casted.error);
-		}
+		return this == obj
+				|| (obj instanceof DetectionProcessingError
+				&& compareTo((DetectionProcessingError) obj) == 0);
+	}
+
+	private static final Comparator<DetectionProcessingError> DEFAULT_COMPARATOR = Comparator
+			.nullsFirst(Comparator
+					.comparingLong(DetectionProcessingError::getJobId)
+					.thenComparingLong(DetectionProcessingError::getMediaId)
+					.thenComparingInt(DetectionProcessingError::getStageIndex)
+					.thenComparingInt(DetectionProcessingError::getActionIndex)
+					.thenComparingInt(DetectionProcessingError::getStartFrame)
+					.thenComparingInt(DetectionProcessingError::getStopFrame)
+					.thenComparingInt(DetectionProcessingError::getStartTime)
+					.thenComparingInt(DetectionProcessingError::getStopTime)
+					.thenComparing(DetectionProcessingError::getError, TextUtils::nullSafeCompare));
+
+	@Override
+	public int compareTo(DetectionProcessingError other) {
+		return DEFAULT_COMPARATOR.compare(this, other);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s#<jobId=%d, mediaId=%d, stageIndex=%d, actionIndex=%d, startOffset=%d, endOffset=%d, error='%s'>",
-				this.getClass().getSimpleName(), jobId, mediaId, stageIndex, actionIndex, startOffset, endOffset, error);
-	}
-
-	@Override
-	public int compareTo(DetectionProcessingError other) {
-		if(other == null) {
-			return 1;
-		} else {
-			int comparisonResult;
-			if((comparisonResult = Long.compare(jobId, other.jobId)) == 0 &&
-				(comparisonResult = Long.compare(mediaId, other.mediaId)) == 0 &&
-				(comparisonResult = Integer.compare(stageIndex, other.stageIndex)) == 0 &&
-				(comparisonResult = Integer.compare(actionIndex, other.actionIndex)) == 0 &&
-				(comparisonResult = Integer.compare(startOffset, other.startOffset)) == 0 &&
-				(comparisonResult = Integer.compare(endOffset, other.endOffset)) == 0 &&
-				(comparisonResult = TextUtils.nullSafeCompare(error, other.error)) == 0) {
-				return 0;
-			} else {
-				return comparisonResult;
-			}
-		}
+		return String.format("%s#<jobId=%d, mediaId=%d, stageIndex=%d, actionIndex=%d, startFrame=%d, stopFrame=%d, startTime=%d, stopTime=%d, error='%s'>",
+				this.getClass().getSimpleName(), jobId, mediaId, stageIndex, actionIndex, startFrame, stopFrame, startTime, stopTime, error);
 	}
 }

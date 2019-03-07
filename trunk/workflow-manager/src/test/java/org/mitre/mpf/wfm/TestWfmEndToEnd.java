@@ -230,8 +230,10 @@ public class TestWfmEndToEnd {
 				.setActionIndex(0)
 				.setDataType(DetectionProtobuf.DetectionResponse.DataType.IMAGE)
 				.setError(DetectionProtobuf.DetectionError.BAD_FRAME_SIZE)
-				.setStartIndex(0)
-				.setStopIndex(100)
+				.addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
+						.setDetectionType("UNSOLICITED")
+						.setStartFrame(0)
+						.setStopFrame(100))
 				.setMediaId(id)
 				.setRequestId(60)
 				.build();

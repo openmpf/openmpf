@@ -265,19 +265,30 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
                 for (int stageIndex = 0; stageIndex < transientJob.getPipeline().getStages().size(); stageIndex++) {
                     TransientStage transientStage = transientJob.getPipeline().getStages().get(stageIndex);
+
                     for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
                         TransientAction transientAction = transientStage.getActions().get(actionIndex);
                         String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), transientAction.getName());
 
-                        for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(transientJob, transientMedia.getId(), stageIndex, actionIndex)) {
+                        for (DetectionProcessingError detectionProcessingError :
+                                getDetectionProcessingErrors(transientJob, transientMedia.getId(), stageIndex, actionIndex)) {
+
                             hasDetectionProcessingError = !MpfConstants.REQUEST_CANCELLED.equals(detectionProcessingError.getError());
-                            JsonDetectionProcessingError jsonDetectionProcessingError = new JsonDetectionProcessingError(detectionProcessingError.getStartOffset(), detectionProcessingError.getEndOffset(), detectionProcessingError.getError());
+                            JsonDetectionProcessingError jsonDetectionProcessingError =
+                                    new JsonDetectionProcessingError(detectionProcessingError.getStartFrame(),
+                                                                     detectionProcessingError.getStopFrame(),
+                                                                     detectionProcessingError.getStartTime(),
+                                                                     detectionProcessingError.getStopTime(),
+                                                                     detectionProcessingError.getError());
+
                             if (!mediaOutputObject.getDetectionProcessingErrors().containsKey(stateKey)) {
                                 mediaOutputObject.getDetectionProcessingErrors().put(stateKey, new TreeSet<>());
                             }
+
                             mediaOutputObject.getDetectionProcessingErrors().get(stateKey).add(jsonDetectionProcessingError);
                             if (!StringUtils.equalsIgnoreCase(mediaOutputObject.getStatus(), "COMPLETE")) {
                                 mediaOutputObject.setStatus("INCOMPLETE");
+
                                 if (StringUtils.equalsIgnoreCase(jsonOutputObject.getStatus(), "COMPLETE")) {
                                     jsonOutputObject.setStatus("INCOMPLETE");
                                 }

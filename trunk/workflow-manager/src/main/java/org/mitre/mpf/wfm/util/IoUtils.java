@@ -187,6 +187,13 @@ public class IoUtils {
             return file.getAbsoluteFile().toURI();
         }
 
+        // Give precedence to files in to the share path so that when performing integration tests, we detect a path
+        // that is accessible to all of the nodes.
+        file = new File(propertiesUtil.getSharePath() + path);
+        if (file.exists()) {
+            return file.getAbsoluteFile().toURI();
+        }
+
         try {
             URL url = IoUtils.class.getResource(path);
             if (url != null) {
@@ -195,11 +202,6 @@ public class IoUtils {
         } catch (URISyntaxException use) {
             throw new WfmProcessingException
                     (String.format("Exception occurred when converting path %s to URI", path), use);
-        }
-
-        file = new File(propertiesUtil.getSharePath() + path);
-        if (file.exists()) {
-            return file.getAbsoluteFile().toURI();
         }
 
         throw new WfmProcessingException(String.format("File not found at path %s", path));

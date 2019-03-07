@@ -51,7 +51,7 @@
 
     <Loggers>
         <!-- To change the verbosity of MPF's own logging, change the level in the XML element below. -->
-        <Logger name="org.mitre" level="DEBUG" />
+        <Logger name="org.mitre" level="INFO" />
 
         <Root level="INFO">
             <AppenderRef ref="STDOUT"/>

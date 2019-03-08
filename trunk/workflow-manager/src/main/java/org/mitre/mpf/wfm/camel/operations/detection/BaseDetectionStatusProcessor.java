@@ -82,6 +82,7 @@ public abstract class BaseDetectionStatusProcessor implements Processor {
 		} else if (detectionRequest.hasGenericRequest()) {
 			builder.addGenericResponses(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder()
 					.setDetectionType(error.toString()));
+		}
 
 		exchange.getOut().setBody(builder.build().toByteArray());
 	}

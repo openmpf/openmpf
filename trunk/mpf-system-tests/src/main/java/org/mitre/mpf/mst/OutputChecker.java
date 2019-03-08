@@ -38,6 +38,7 @@ import java.util.SortedSet;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 public class OutputChecker {
 
@@ -48,13 +49,6 @@ public class OutputChecker {
 
     // when doing a fuzzy match and comparing confidence, results can differ by this much (scale is 1-10)
     private static final double deltaFuzzy = 3.0;
-
-    // when doing a fuzzy match, overlap can differ by this much (scale is 1 -100)
-    private static final int fudgeFactor = 30;       // for when running on Jenkins
-    // The subsense motion component has stochastic behavior that requires a
-    // slightly larger fudge factor.
-    private static final int subsenseFudgeFactor = 40;
-//    private static final int fudgeFactor = 40;     // for when running on local VM & comparing with jenkins run
 
     private final MpfErrorCollector _errorCollector;
 
@@ -136,7 +130,13 @@ public class OutputChecker {
     private void compareJsonTrackOutputObjects(SortedSet<JsonTrackOutputObject> expectedTracksSet,
                                                SortedSet<JsonTrackOutputObject> actualTracksSet,
                                                String pipeline){
-        _errorCollector.checkNowThat("Track Count:", actualTracksSet.size(), is(expectedTracksSet.size()));
+
+        if (pipeline.equals("SUBSENSE MOTION DETECTION (WITH TRACKING) PIPELINE"))  {
+            _errorCollector.checkNowThat("Track Count:", actualTracksSet.size(), greaterThanOrEqualTo(expectedTracksSet.size()));
+        } else {
+            _errorCollector.checkNowThat("Track Count:", actualTracksSet.size(), is(expectedTracksSet.size()));
+        }
+
         Iterator<JsonTrackOutputObject> expIter = expectedTracksSet.iterator();
         Iterator<JsonTrackOutputObject> actIter = actualTracksSet.iterator();
 
@@ -163,66 +163,59 @@ public class OutputChecker {
                                                JsonTrackOutputObject actExtrResult,
                                                String pipeline) {
 
-
         if (pipeline.equals("SUBSENSE MOTION DETECTION (WITH TRACKING) PIPELINE"))  {
-            // Compare exemplar frames only for subsense tests, using the fudge
-            // factor specific to the subsense algorithm.
-            compareJsonDetectionOutputObjects(expExtrResult.getExemplar(), actExtrResult.getExemplar(),
-                    subsenseFudgeFactor, pipeline);
-        } else {
-            SortedSet<JsonDetectionOutputObject> expObjLocations = expExtrResult.getDetections();
-            SortedSet<JsonDetectionOutputObject> actObjLocations = actExtrResult.getDetections();
-            Iterator<JsonDetectionOutputObject> expObjIter = expObjLocations.iterator();
-            Iterator<JsonDetectionOutputObject> actObjIter = actObjLocations.iterator();
+            // Compare exemplar frames only for subsense tests
+            compareJsonDetectionOutputObjects(expExtrResult.getExemplar(), actExtrResult.getExemplar(), pipeline);
+            return;
+        }
 
-            _errorCollector.checkThat("StartOffsetFrame", actExtrResult.getStartOffsetFrame(),
-                                      is(expExtrResult.getStartOffsetFrame()));
-            _errorCollector.checkThat("StopOffsetFrame", actExtrResult.getStopOffsetFrame(),
-                                      is(expExtrResult.getStopOffsetFrame()));
+        SortedSet<JsonDetectionOutputObject> expObjLocations = expExtrResult.getDetections();
+        SortedSet<JsonDetectionOutputObject> actObjLocations = actExtrResult.getDetections();
+        Iterator<JsonDetectionOutputObject> expObjIter = expObjLocations.iterator();
+        Iterator<JsonDetectionOutputObject> actObjIter = actObjLocations.iterator();
 
-            //log.info("expObjLocations size is {}", expObjLocations.size());
-            //log.info("actObjLocations size is {}", actObjLocations.size());
+        _errorCollector.checkThat("StartOffsetFrame", actExtrResult.getStartOffsetFrame(),
+                                  is(expExtrResult.getStartOffsetFrame()));
+        _errorCollector.checkThat("StopOffsetFrame", actExtrResult.getStopOffsetFrame(),
+                                  is(expExtrResult.getStopOffsetFrame()));
 
-            _errorCollector.checkThat("Track Confidence", (double) actExtrResult.getConfidence(),
-                                      closeTo(expExtrResult.getConfidence(), 0.01));
+        _errorCollector.checkThat("Track Confidence", (double) actExtrResult.getConfidence(),
+                                  closeTo(expExtrResult.getConfidence(), 0.01));
 
-            _errorCollector.checkThat("TrackProperties", actExtrResult.getTrackProperties(),
-                                      is(expExtrResult.getTrackProperties()));
+        _errorCollector.checkThat("TrackProperties", actExtrResult.getTrackProperties(),
+                                  is(expExtrResult.getTrackProperties()));
 
-            // Check now to avoid NoSuchElementException during iteration
-            _errorCollector.checkNowThat("ObjectLocations size", actObjLocations.size(), is(expObjLocations.size()));
+        // Check now to avoid NoSuchElementException during iteration
+        _errorCollector.checkNowThat("ObjectLocations size", actObjLocations.size(), is(expObjLocations.size()));
 
-            // compare exemplar frames
-            switch(pipeline) {
-                case "OCV FACE DETECTION PIPELINE":
-                case "OCV FACE DETECTION WITH AUTO ORIENTATION PIPELINE":
-                case "TEST DEFAULT MOG MOTION DETECTION PIPELINE":
-                    break;
-                default:
+        // compare exemplar frames
+        switch(pipeline) {
+            case "OCV FACE DETECTION PIPELINE":
+            case "OCV FACE DETECTION WITH AUTO ORIENTATION PIPELINE":
+            case "TEST DEFAULT MOG MOTION DETECTION PIPELINE":
+                break;
+            default:
 
-                    _errorCollector.checkThat("BestFrame", actExtrResult.getExemplar().getOffsetFrame(),
-                                              is(expExtrResult.getExemplar().getOffsetFrame()));
-            }
+                _errorCollector.checkThat("BestFrame", actExtrResult.getExemplar().getOffsetFrame(),
+                                          is(expExtrResult.getExemplar().getOffsetFrame()));
+        }
 
-            while (expObjIter.hasNext()) {
-                compareJsonDetectionOutputObjects(expObjIter.next(), actObjIter.next(), fudgeFactor, pipeline);
-            }
+        while (expObjIter.hasNext()) {
+            compareJsonDetectionOutputObjects(expObjIter.next(), actObjIter.next(), pipeline);
+        }
 
-            // There is NO check for BestFrame on the aforementioned pipelines because the best frames in the actual and
-            // expected output may differ, although on very limited test runs
+        // There is NO check for BestFrame on the aforementioned pipelines because the best frames in the actual and
+        // expected output may differ, although on very limited test runs
 
-            // check that best frame has the highest confidence value in the track, for those pipelines that have Confidence calculated
-//        log.info("Actual BestFrame Confidence={}, highest Confidence in the track={}", actObjLocs.get(actExtrResult.getBestFrame().getPos()).getConfidence(),
-//                bestActConfidence);
-            switch(pipeline) {
-                case "TEST DEFAULT MOG MOTION DETECTION PIPELINE":
-                case "OCV PERSON DETECTION PIPELINE":
-                case "TEST DEFAULT SPHINX SPEECH DETECTION PIPELINE":
-                    break;
-                default:
-                    _errorCollector.checkThat("BestFrame Confidence", (double) actExtrResult.getExemplar().getConfidence(),
-                                              closeTo(expExtrResult.getExemplar().getConfidence(), delta));
-            }
+        // check that best frame has the highest confidence value in the track, for those pipelines that have confidence calculated
+        switch(pipeline) {
+            case "TEST DEFAULT MOG MOTION DETECTION PIPELINE":
+            case "OCV PERSON DETECTION PIPELINE":
+            case "TEST DEFAULT SPHINX SPEECH DETECTION PIPELINE":
+                break;
+            default:
+                _errorCollector.checkThat("BestFrame Confidence", (double) actExtrResult.getExemplar().getConfidence(),
+                                          closeTo(expExtrResult.getExemplar().getConfidence(), delta));
         }
     }
 
@@ -235,7 +228,6 @@ public class OutputChecker {
      */
     private void compareJsonDetectionOutputObjects(JsonDetectionOutputObject expObjLocation,
                                                    JsonDetectionOutputObject actObjLocation,
-                                                   int comparison_delta,
                                                    String pipeline) {
         switch (pipeline) {
             case "OCV FACE DETECTION PIPELINE":

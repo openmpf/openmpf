@@ -229,7 +229,7 @@ public class MPFDetectionBuffer {
 
         DetectionProtobuf.DetectionResponse.AudioResponse.Builder audioResponseBuilder = detectionResponseBuilder.addAudioResponsesBuilder();
         audioResponseBuilder.setStartTime(startTime);
-        audioResponseBuilder.setStopTime(stoptime);
+        audioResponseBuilder.setStopTime(stopTime);
         audioResponseBuilder.setDetectionType(detectionType);
 
         if (!tracks.isEmpty()) {

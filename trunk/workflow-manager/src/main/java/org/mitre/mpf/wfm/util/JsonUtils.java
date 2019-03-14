@@ -39,11 +39,10 @@ import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -59,17 +58,18 @@ public class JsonUtils {
      * Single instance of the ObjectMapper which converts between Java objects and binary JSON. Binary JSON is expected
      * to be significantly more compact than text-based JSON.
      */
-    private ObjectMapper smileObjectMapper;
+    private final ObjectMapper smileObjectMapper;
 
     /**
      * Single instance of the ObjectMapper which converts between Java objects and text-based JSON. While less efficient
      * in terms of space, text-based JSON remains user-readable.
      */
-    @Autowired
-    private ObjectMapper jsonObjectMapper;
+    private final ObjectMapper jsonObjectMapper;
 
-    @PostConstruct
-    private void init() {
+
+    @Inject
+    public JsonUtils(ObjectMapper jsonObjectMapper) {
+        this.jsonObjectMapper = jsonObjectMapper;
         smileObjectMapper = new ObjectMapper(new SmileFactory());
         smileObjectMapper.registerModule(new InstantJsonModule());
     }

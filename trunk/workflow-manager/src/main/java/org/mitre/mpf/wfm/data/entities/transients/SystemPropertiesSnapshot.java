@@ -128,6 +128,30 @@ public class SystemPropertiesSnapshot {
         return Boolean.parseBoolean(_properties.get("mpf.output.objects.last.stage.only"));
     }
 
+    public int getArtifactExtractionPolicyExemplarFramePlus() {
+        return Integer.parseInt(_properties.get("detection.artifact.extraction.policy.exemplar.frame.plus"));
+    }
+
+    public boolean isArtifactExtractionPolicyFirstFrame() {
+        return Boolean.parseBoolean(_properties.get("detection.artifact.extraction.policy.first.frame"));
+    }
+
+    public boolean isArtifactExtractionPolicyLastFrame() {
+        return Boolean.parseBoolean(_properties.get("detection.artifact.extraction.policy.last.frame"));
+    }
+
+    public boolean isArtifactExtractionPolicyMiddleFrame() {
+        return Boolean.parseBoolean(_properties.get("detection.artifact.extraction.policy.middle.frame"));
+    }
+
+    public int getArtifactExtractionPolicyTopConfidenceCount() {
+        return Integer.parseInt(_properties.get("detection.artifact.extraction.policy.top.confidence.count"));
+    }
+
+    public ArtifactExtractionPolicy getDefaultArtifactExtractionPolicy() {
+        return ArtifactExtractionPolicy.parse(_properties.get("detection.artifact.extraction.policy"));
+    }
+
 
     public String lookup(String propertyName) {
         return _properties.get(propertyName);

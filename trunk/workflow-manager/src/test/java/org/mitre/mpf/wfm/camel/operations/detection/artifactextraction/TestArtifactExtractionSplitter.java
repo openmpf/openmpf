@@ -69,9 +69,8 @@ public class TestArtifactExtractionSplitter {
     ////////////////////////////////////////////////////////
     @Test
     public void canGetFirstFrame() {
-        setExtractionProperties(-1, true, false, false, 0);
-
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                createExtractionPropertySnapshot(-1, true, false, false, 0),
                 10, // Exemplar
                 Arrays.asList(5, 9, 10), // Detection frames
                 Arrays.asList(5)); // Expected artifact frames
@@ -79,24 +78,29 @@ public class TestArtifactExtractionSplitter {
 
     @Test
     public void canGetMiddleFrame() {
-        setExtractionProperties(-1, false, true, false, 0);
+        SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
+                -1, false, true, false, 0);
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10, // Exemplar
                 Arrays.asList(5, 9, 10), // Detection frames
                 Arrays.asList(5)); // Expected artifact frames
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10, // Exemplar
                 Arrays.asList(5, 6, 9, 10), // Detection frames
                 Arrays.asList(6)); // Expected artifact frames
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10, // Exemplar
                 Arrays.asList(5, 6, 9, 10, 11), // Detection frames
                 Arrays.asList(9)); // Expected artifact frames
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10, // Exemplar
                 Arrays.asList(5, 6, 7, 8, 9, 10), // Detection frames
                 Arrays.asList(7)); // Expected artifact frames
@@ -104,9 +108,8 @@ public class TestArtifactExtractionSplitter {
 
     @Test
     public void canGetLastFrame() {
-        setExtractionProperties(-1, false, false, true, 0);
-
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                createExtractionPropertySnapshot(-1, false, false, true, 0),
                 10, // Exemplar
                 Arrays.asList(5, 9, 10), // Detection frames
                 Arrays.asList(10)); // Expected artifact frames
@@ -115,14 +118,17 @@ public class TestArtifactExtractionSplitter {
     //////////////////////////////////////////////////////////
     @Test
     public void canGetFirstAndMiddleFrame() {
-        setExtractionProperties(-1, true, true, false, 0);
+        SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
+                -1, true, true, false, 0);
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10,
                 Arrays.asList(5, 9, 10),
                 Arrays.asList(5));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10,
                 Arrays.asList(5, 9, 10, 20),
                 Arrays.asList(5, 10));
@@ -131,14 +137,17 @@ public class TestArtifactExtractionSplitter {
 
     @Test
     public void canGetFirstAndLastFrame() {
-        setExtractionProperties(-1, true, false, true, 0);
+        SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
+                -1, true, false, true, 0);
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10,
                 Arrays.asList(5, 9, 10),
                 Arrays.asList(5, 10));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 5,
                 Arrays.asList(5),
                 Arrays.asList(5));
@@ -146,15 +155,18 @@ public class TestArtifactExtractionSplitter {
 
 
     @Test
-    public void canGetMiddleandLastFrame() {
-        setExtractionProperties(-1, false, true, true, 0);
+    public void canGetMiddleAndLastFrame() {
+        SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
+                -1, false, true, true, 0);
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10,
                 Arrays.asList(5, 9, 10),
                 Arrays.asList(5, 10));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10,
                 Arrays.asList(5, 9, 10, 20),
                 Arrays.asList(10, 20));
@@ -163,8 +175,8 @@ public class TestArtifactExtractionSplitter {
     //////////////////////////////////////////////////////////
     @Test
     public void canGetFirstFrameAndExemplar() {
-        setExtractionProperties(0, true, false, false, 0);
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                createExtractionPropertySnapshot(0, true, false, false, 0),
                 10,
                 Arrays.asList(5, 9, 10),
                 Arrays.asList(5, 10));
@@ -172,8 +184,8 @@ public class TestArtifactExtractionSplitter {
 
     @Test
     public void canGetMiddleFrameAndExemplar() {
-        setExtractionProperties(0, false, true, false, 0);
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                createExtractionPropertySnapshot(0, false, true, false, 0),
                 10,
                 Arrays.asList(5, 9, 10),
                 Arrays.asList(5, 10));
@@ -181,8 +193,8 @@ public class TestArtifactExtractionSplitter {
 
     @Test
     public void canGetLastFrameAndExemplar() {
-        setExtractionProperties(0, false, false, true, 0);
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                createExtractionPropertySnapshot(0, false, false, true, 0),
                 10,
                 Arrays.asList(5, 9, 10),
                 Arrays.asList(10));
@@ -191,7 +203,8 @@ public class TestArtifactExtractionSplitter {
     /////////////////////////////////////////////////////////
     @Test
     public void canGetFirstFrameAndConfidenceCount() {
-        setExtractionProperties(-1, true, false, false, 2);
+        SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
+                -1, true, false, false, 2);
 
         ImmutableMap<Integer, Float> detectionFramesAndConfidences = ImmutableMap.of(
                 5, 0.5f,
@@ -200,6 +213,7 @@ public class TestArtifactExtractionSplitter {
                 14, 0.9f);
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10,
                 detectionFramesAndConfidences,
                 Arrays.asList(5, 10, 14));
@@ -212,6 +226,7 @@ public class TestArtifactExtractionSplitter {
                 14, 0.9f);
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10,
                 detectionFramesAndConfidences,
                 Arrays.asList(5, 10));
@@ -220,7 +235,8 @@ public class TestArtifactExtractionSplitter {
 
     @Test
     public void canGetMiddleFrameAndConfidenceCount() {
-        setExtractionProperties(-1, false, true, false, 2);
+        SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
+                -1, false, true, false, 2);
 
         ImmutableMap<Integer, Float> detectionFramesAndConfidences = ImmutableMap.of(
                 5, 0.5f,
@@ -229,6 +245,7 @@ public class TestArtifactExtractionSplitter {
                 14, 0.9f);
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10,
                 detectionFramesAndConfidences,
                 Arrays.asList(9, 10, 14));
@@ -241,6 +258,7 @@ public class TestArtifactExtractionSplitter {
                 14, 0.9f);
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10,
                 detectionFramesAndConfidences,
                 Arrays.asList(9, 10));
@@ -249,7 +267,8 @@ public class TestArtifactExtractionSplitter {
 
     @Test
     public void canGetLastFrameAndConfidenceCount() {
-        setExtractionProperties(-1, false, false, true, 2);
+        SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
+                -1, false, false, true, 2);
 
         ImmutableMap<Integer, Float> detectionFramesAndConfidences = ImmutableMap.of(
                 5, 0.5f,
@@ -258,6 +277,7 @@ public class TestArtifactExtractionSplitter {
                 14, 0.0f);
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10,
                 detectionFramesAndConfidences,
                 Arrays.asList(5, 10, 14));
@@ -270,6 +290,7 @@ public class TestArtifactExtractionSplitter {
                 14, 0.9f);
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10,
                 detectionFramesAndConfidences,
                 Arrays.asList(10, 14));
@@ -278,29 +299,35 @@ public class TestArtifactExtractionSplitter {
     //////////////////////////////////////////////////////////
     @Test
     public void canGetFramePlus() {
-        setExtractionProperties(2, false, false, false, 0);
+        SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
+                2, false, false, false, 0);
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10,
                 Arrays.asList(5, 9, 10, 20),
                 Arrays.asList(8, 9, 10, 11, 12));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 10,
                 Arrays.asList(5, 9, 10, 11),
                 Arrays.asList(8, 9, 10, 11));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 6,
                 Arrays.asList(5, 6, 9, 10, 11),
                 Arrays.asList(5, 6, 7, 8));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 11,
                 Arrays.asList(5, 9, 10, 11),
                 Arrays.asList(9, 10, 11));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 5,
                 Arrays.asList(5, 9, 10, 11),
                 Arrays.asList(5, 6, 7));
@@ -308,30 +335,27 @@ public class TestArtifactExtractionSplitter {
 
 
     @Test
-    public void canGetFirstFrameandFramePlus() {
-        setExtractionProperties(2, true, false, false, 0);
-
+    public void canGetFirstFrameAndFramePlus() {
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                createExtractionPropertySnapshot(2, true, false, false, 0),
                 10,
                 Arrays.asList(5, 9, 10, 20),
                 Arrays.asList(5, 8, 9, 10, 11, 12));
     }
 
     @Test
-    public void canGetMiddleFrameandFramePlus() {
-        setExtractionProperties(2, false, true, false, 0);
-
+    public void canGetMiddleFrameAndFramePlus() {
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                createExtractionPropertySnapshot(2, false, true, false, 0),
                 16,
                 Arrays.asList(5, 9, 10, 16, 20),
                 Arrays.asList(10, 14, 15, 16, 17, 18));
     }
 
     @Test
-    public void canGetLastFrameandFramePlus() {
-        setExtractionProperties(2, false, false, true, 0);
-
+    public void canGetLastFrameAndFramePlus() {
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                createExtractionPropertySnapshot(2, false, false, true, 0),
                 16,
                 Arrays.asList(5, 9, 10, 16, 20),
                 Arrays.asList(14, 15, 16, 17, 18, 20));
@@ -340,14 +364,17 @@ public class TestArtifactExtractionSplitter {
     //////////////////////////////////////////////////////////
     @Test
     public void canGetAllFrames() {
-        setExtractionProperties(-1, false, false, false, 0);
+        SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
+                -1, false, false, false, 0);
 
         runTest(ArtifactExtractionPolicy.ALL_FRAMES,
+                extractionProps,
                 10,
                 Arrays.asList(5, 9, 10, 20),
                 Arrays.asList(5, 9, 10, 20));
 
         runTest(ArtifactExtractionPolicy.ALL_FRAMES,
+                extractionProps,
                 11,
                 Arrays.asList(11),
                 Arrays.asList(11));
@@ -355,25 +382,22 @@ public class TestArtifactExtractionSplitter {
 
     //////////////////////////////////////////////////////////
 
-
-    private void setExtractionProperties(int framePlus, boolean first, boolean middle, boolean last,
-                                         int confidenceCount) {
-        when(_mockPropertiesUtil.getArtifactExtractionPolicyExemplarFramePlus())
-                .thenReturn(framePlus);
-        when(_mockPropertiesUtil.isArtifactExtractionPolicyFirstFrame())
-                .thenReturn(first);
-        when(_mockPropertiesUtil.isArtifactExtractionPolicyMiddleFrame())
-                .thenReturn(middle);
-        when(_mockPropertiesUtil.isArtifactExtractionPolicyLastFrame())
-                .thenReturn(last);
-        when(_mockPropertiesUtil.getArtifactExtractionPolicyTopConfidenceCount())
-                .thenReturn(confidenceCount);
-
+    private static SystemPropertiesSnapshot createExtractionPropertySnapshot(
+            int framePlus, boolean first, boolean middle, boolean last, int confidenceCount) {
+        ImmutableMap<String, String> properties = ImmutableMap.of(
+                "detection.artifact.extraction.policy.exemplar.frame.plus", String.valueOf(framePlus),
+                "detection.artifact.extraction.policy.first.frame", String.valueOf(first),
+                "detection.artifact.extraction.policy.middle.frame", String.valueOf(middle),
+                "detection.artifact.extraction.policy.last.frame", String.valueOf(last),
+                "detection.artifact.extraction.policy.top.confidence.count", String.valueOf(confidenceCount)
+        );
+        return new SystemPropertiesSnapshot(properties);
     }
 
 
     // Simplified arguments for test cases where confidences don't matter.
     private void runTest(ArtifactExtractionPolicy extractionPolicy,
+                         SystemPropertiesSnapshot systemPropertiesSnapshot,
                          int exemplarFrame,
                          Collection<Integer> detectionFrames,
                          Collection<Integer> expectedFrames) {
@@ -383,12 +407,14 @@ public class TestArtifactExtractionSplitter {
             detectionFramesAndConfidences.put(detectionFrame, 0.5f);
         }
         detectionFramesAndConfidences.put(exemplarFrame, 1.0f);
-        runTest(extractionPolicy, exemplarFrame, detectionFramesAndConfidences, expectedFrames);
+        runTest(extractionPolicy, systemPropertiesSnapshot, exemplarFrame, detectionFramesAndConfidences,
+                expectedFrames);
     }
 
 
     // Full set of parameters for test cases that involve confidence values.
     private void runTest(ArtifactExtractionPolicy extractionPolicy,
+                         SystemPropertiesSnapshot systemPropertiesSnapshot,
                          int exemplarFrame,
                          Map<Integer, Float> detectionFramesAndConfidences,
                          Collection<Integer> expectedFrames) {
@@ -398,6 +424,8 @@ public class TestArtifactExtractionSplitter {
         TransientJob job = mock(TransientJob.class, RETURNS_DEEP_STUBS);
         when(job.getId())
                 .thenReturn(jobId);
+        when(job.getSystemPropertiesSnapshot())
+                .thenReturn(systemPropertiesSnapshot);
         when(_mockInProgressJobs.getJob(jobId))
                 .thenReturn(job);
 

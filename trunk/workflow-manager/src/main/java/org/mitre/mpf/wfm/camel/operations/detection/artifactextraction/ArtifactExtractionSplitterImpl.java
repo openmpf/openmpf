@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
@@ -50,7 +49,6 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.util.*;
 import java.util.function.Function;
-import java.lang.Float;
 
 @Component(ArtifactExtractionSplitterImpl.REF)
 public class ArtifactExtractionSplitterImpl extends WfmSplitter {
@@ -144,7 +142,8 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
                 Collection<Track> tracks
                         = _inProgressBatchJobs.getTracks(job.getId(), media.getId(), stageIndex, actionIndex);
-                processTracks(mediaAndActionToFrames, tracks, media, actionIndex, extractionPolicy);
+                processTracks(mediaAndActionToFrames, tracks, media, actionIndex, extractionPolicy,
+                              job.getSystemPropertiesSnapshot());
             }
         }
 
@@ -157,7 +156,8 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             Iterable<Track> tracks,
             TransientMedia media,
             int actionIndex,
-            ArtifactExtractionPolicy policy) {
+            ArtifactExtractionPolicy policy,
+            SystemPropertiesSnapshot systemPropertiesSnapshot) {
 
         for (Track track : tracks) {
             switch (policy) {
@@ -172,43 +172,48 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                     }
                     // fall through
                 case ALL_TYPES:
-                    if (_propertiesUtil.getArtifactExtractionPolicyExemplarFramePlus() >= 0) {
+                    if (systemPropertiesSnapshot.getArtifactExtractionPolicyExemplarFramePlus() >= 0) {
                         Detection exemplar = track.getExemplar();
                         int exemplarFrame = exemplar.getMediaOffsetFrame();
                         LOG.info("Extracting exemplar frame {}", exemplarFrame);
                         addFrame(mediaAndActionToFrames, media.getId(), actionIndex, exemplarFrame);
-                        int extractCount = _propertiesUtil.getArtifactExtractionPolicyExemplarFramePlus();
+                        int extractCount = systemPropertiesSnapshot.getArtifactExtractionPolicyExemplarFramePlus();
                         while (extractCount > 0) {
                             // before frame: only extract if the frame lies within this track and is not less than 0.
                             if (((exemplarFrame - extractCount) >= 0) &&
                                 ((exemplarFrame - extractCount) >= track.getStartOffsetFrameInclusive())) {
-                                LOG.info("Extracting before-frame {}", exemplarFrame-extractCount);
-                                addFrame(mediaAndActionToFrames, media.getId(), actionIndex, exemplarFrame-extractCount);
+                                LOG.info("Extracting before-frame {}", exemplarFrame - extractCount);
+                                addFrame(mediaAndActionToFrames, media.getId(), actionIndex,
+                                         exemplarFrame - extractCount);
                             }
                             // after frame: only extract if the frame lies within this track and is not greater than the
                             // last frame in the media.
                             if (((exemplarFrame + extractCount) <= (media.getLength() - 1)) &&
                                 ((exemplarFrame + extractCount) <= track.getEndOffsetFrameInclusive())) {
                                 LOG.info("Extracting after-frame {}", exemplarFrame+extractCount);
-                                addFrame(mediaAndActionToFrames, media.getId(), actionIndex, exemplarFrame+extractCount);
+                                addFrame(mediaAndActionToFrames, media.getId(), actionIndex,
+                                         exemplarFrame + extractCount);
                             }
                             extractCount--;
                         }
                     }
-                    if (_propertiesUtil.isArtifactExtractionPolicyFirstFrame()) {
-                        LOG.debug("Extracting first frame {}", track.getDetections().first().getMediaOffsetFrame());
-                        addFrame(mediaAndActionToFrames, media.getId(), actionIndex, track.getDetections().first().getMediaOffsetFrame());
+                    int fistDetectionFrame = track.getDetections().first().getMediaOffsetFrame();
+                    int lastDetectionFrame = track.getDetections().last().getMediaOffsetFrame();
+
+                    if (systemPropertiesSnapshot.isArtifactExtractionPolicyFirstFrame()) {
+                        LOG.debug("Extracting first frame {}", fistDetectionFrame);
+                        addFrame(mediaAndActionToFrames, media.getId(), actionIndex, fistDetectionFrame);
                     }
-                    if (_propertiesUtil.isArtifactExtractionPolicyLastFrame()) {
-                        LOG.debug("Extracting last frame {}", track.getDetections().last().getMediaOffsetFrame());
-                        addFrame(mediaAndActionToFrames, media.getId(), actionIndex, track.getDetections().last().getMediaOffsetFrame());
+                    if (systemPropertiesSnapshot.isArtifactExtractionPolicyLastFrame()) {
+                        LOG.debug("Extracting last frame {}", lastDetectionFrame);
+                        addFrame(mediaAndActionToFrames, media.getId(), actionIndex, lastDetectionFrame);
                     }
-                    if (_propertiesUtil.isArtifactExtractionPolicyMiddleFrame()) {
+                    if (systemPropertiesSnapshot.isArtifactExtractionPolicyMiddleFrame()) {
                         // The goal here is to find the detection in the track that is closest to the "middle"
                         // frame. The middle frame is the frame that is equally distant from the start and stop
                         // frames, but that frame does not necessarily contain a detection in this track, so we
                         // search for the detection in the track that is closest to that middle frame.
-                        int middleIndex = (track.getDetections().first().getMediaOffsetFrame() + track.getDetections().last().getMediaOffsetFrame())/2;
+                        int middleIndex = (fistDetectionFrame + lastDetectionFrame) / 2;
                         int smallestDistance = Integer.MAX_VALUE;
                         int middleFrame = 0;
                         for (Detection detection : track.getDetections()) {
@@ -221,15 +226,20 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                         LOG.debug("Extracting middle frame {}", middleFrame);
                         addFrame(mediaAndActionToFrames, media.getId(), actionIndex, middleFrame);
                     }
-                    if (_propertiesUtil.getArtifactExtractionPolicyTopConfidenceCount() > 0) {
+                    if (systemPropertiesSnapshot.getArtifactExtractionPolicyTopConfidenceCount() > 0) {
                         List<Detection> detectionsCopy = new ArrayList<>(track.getDetections());
                         // Sort the detections by confidence, then by frame number, if two detections have equal
                         // confidence. The sort by confidence is reversed so that the N highest confidence
                         // detections are at the start of the list.
-                        detectionsCopy.sort(Comparator.comparing(Detection::getConfidence).reversed().thenComparing(Detection::getMediaOffsetFrame));
-                        for (int i = 0; i < _propertiesUtil.getArtifactExtractionPolicyTopConfidenceCount(); i++) {
-                            LOG.info("frame #{} confidence = {}", detectionsCopy.get(i).getMediaOffsetFrame(), detectionsCopy.get(i).getConfidence());
-                            addFrame(mediaAndActionToFrames, media.getId(), actionIndex, detectionsCopy.get(i).getMediaOffsetFrame());
+                        detectionsCopy.sort(
+                                Comparator.comparing(Detection::getConfidence)
+                                        .reversed()
+                                        .thenComparing(Detection::getMediaOffsetFrame));
+                        for (int i = 0; i < systemPropertiesSnapshot.getArtifactExtractionPolicyTopConfidenceCount(); i++) {
+                            LOG.info("frame #{} confidence = {}", detectionsCopy.get(i).getMediaOffsetFrame(),
+                                     detectionsCopy.get(i).getConfidence());
+                            addFrame(mediaAndActionToFrames, media.getId(), actionIndex,
+                                     detectionsCopy.get(i).getMediaOffsetFrame());
                         }
                     }
             }
@@ -254,7 +264,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 = _aggregateJobPropertiesUtil.getCombinedProperties(job, media.getId(), stageIndex, actionIndex);
         String extractionPolicyString = combinedProperties.apply(MpfConstants.ARTIFACT_EXTRACTION_POLICY_PROPERTY);
 
-        ArtifactExtractionPolicy defaultPolicy = _propertiesUtil.getArtifactExtractionPolicy();
+        ArtifactExtractionPolicy defaultPolicy = job.getSystemPropertiesSnapshot().getDefaultArtifactExtractionPolicy();
         return ArtifactExtractionPolicy.parse(extractionPolicyString, defaultPolicy);
     }
 

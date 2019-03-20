@@ -31,13 +31,16 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.enums.MediaType;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestIoUtils {
 
@@ -45,6 +48,8 @@ public class TestIoUtils {
     public TemporaryFolder _tempFolder = new TemporaryFolder();
 
     private Path _tempRoot;
+
+    private final IoUtils ioUtils = new IoUtils();
 
     @Before
     public void init() {
@@ -63,7 +68,6 @@ public class TestIoUtils {
         assertFalse(Files.exists(_tempRoot));
     }
 
-
     @Test
     public void doesNotDeleteFilesWhenDeletingEmptyDirs() throws IOException {
         Path emptyDir1 = _tempFolder.newFolder("level_1_dir_1", "level_2_dir_1", "level_3_dir_1").toPath();
@@ -80,5 +84,32 @@ public class TestIoUtils {
         assertFalse(Files.exists(emptyDir1));
         assertFalse(Files.exists(emptyDir2));
         assertFalse(Files.exists(emptyDir3));
+    }
+
+    @Test
+    public void detectTests() throws IOException {
+        String imageType = ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/meds1.jpg"));
+        assertNotNull("The detected audioType must not be null.", imageType);
+
+        String videoType = ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/mpeg_vid.mpg"));
+        assertNotNull("The detected audioType must not be null.", videoType);
+
+        String audioType = ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/green.wav"));
+        assertNotNull("The detected audioType must not be null.", audioType);
+    }
+
+    @Test
+    public void getMediaTypeTests() throws WfmProcessingException, MalformedURLException {
+        URI uri = ioUtils.findFile("/samples/mpeg_vid.mpg");
+        MediaType type = ioUtils.getMediaType(uri.toURL());
+        assertTrue(String.format("mpeg_vid.mpg was expected to be a video, but it was instead '%s'.", type), type == MediaType.VIDEO);
+
+        URI uri2 = ioUtils.findFile("/samples/meds1.jpg");
+        MediaType type2 = ioUtils.getMediaType(uri2.toURL());
+        assertTrue(String.format("meds1.jpg was expected to be an image, but it was instead '%s'.", type2), type2 == MediaType.IMAGE);
+
+        URI uri3 = ioUtils.findFile("/samples/green.wav");
+        MediaType type3 = ioUtils.getMediaType(uri3.toURL());
+        assertTrue(String.format("test.wav was expected to be an audio, but it was instead '%s'.", type3), type3 == MediaType.AUDIO);
     }
 }

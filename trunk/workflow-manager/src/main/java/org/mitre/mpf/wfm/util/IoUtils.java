@@ -189,7 +189,13 @@ public class IoUtils {
 
         // Give precedence to files in to the share path so that when performing integration tests, we detect a path
         // that is accessible to all of the nodes.
-        file = new File(propertiesUtil.getSharePath() + path);
+        String sharePath;
+        if (propertiesUtil != null) {
+            sharePath = propertiesUtil.getSharePath();
+        } else {
+            sharePath = System.getenv("MPF_HOME") + "/share";
+        }
+        file = new File(sharePath + path);
         if (file.exists()) {
             return file.getAbsoluteFile().toURI();
         }

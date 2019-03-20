@@ -87,7 +87,7 @@ public class TestIoUtils {
     }
 
     @Test
-    public void detectTests() throws IOException {
+    public void canDetectMimeType() throws IOException {
         String imageType = ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/meds1.jpg"));
         assertNotNull("The detected audioType must not be null.", imageType);
 
@@ -99,7 +99,7 @@ public class TestIoUtils {
     }
 
     @Test
-    public void getMediaTypeTests() throws WfmProcessingException, MalformedURLException {
+    public void canDetectMediaType() throws WfmProcessingException, MalformedURLException {
         URI uri = ioUtils.findFile("/samples/mpeg_vid.mpg");
         MediaType type = ioUtils.getMediaType(uri.toURL());
         assertTrue(String.format("mpeg_vid.mpg was expected to be a video, but it was instead '%s'.", type), type == MediaType.VIDEO);

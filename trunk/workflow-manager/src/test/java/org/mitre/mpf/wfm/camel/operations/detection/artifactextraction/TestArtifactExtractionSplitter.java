@@ -412,20 +412,20 @@ public class TestArtifactExtractionSplitter {
         SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
                 -1, false, false, false, 0);
 
-        runTest(ArtifactExtractionPolicy.ALL_FRAMES,
+        runTest(ArtifactExtractionPolicy.ALL_DETECTIONS,
                 extractionProps,
                 10,
                 Arrays.asList(5, 9, 10, 20),
                 Arrays.asList(5, 9, 10, 20));
 
-        runTest(ArtifactExtractionPolicy.ALL_FRAMES,
+        runTest(ArtifactExtractionPolicy.ALL_DETECTIONS,
                 extractionProps,
                 11,
                 Arrays.asList(11),
                 Arrays.asList(11));
 
 
-        runTest(ArtifactExtractionPolicy.ALL_FRAMES,
+        runTest(ArtifactExtractionPolicy.ALL_DETECTIONS,
                 createExtractionPropertySnapshot(2, true, false, false, 1),
                 11,
                 Arrays.asList(5, 9, 10, 11, 20),

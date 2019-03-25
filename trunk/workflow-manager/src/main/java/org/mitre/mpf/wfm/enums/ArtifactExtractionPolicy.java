@@ -44,9 +44,9 @@ public enum ArtifactExtractionPolicy {
          * detection type according to the detection.artifact.extraction.policy.* settings. */
 	ALL_TYPES,
 
-        /** Extract artifacts for all frames in the track regardless
+        /** Extract artifacts for all detections in the track regardless
          * of the track's object type and detection.artifact.extraction.policy.* settings. */
-	ALL_FRAMES;
+	ALL_DETECTIONS;
 
 	public static final ArtifactExtractionPolicy DEFAULT = VISUAL_TYPES_ONLY;
 

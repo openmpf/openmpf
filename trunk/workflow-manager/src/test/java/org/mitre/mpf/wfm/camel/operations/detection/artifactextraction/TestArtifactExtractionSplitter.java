@@ -104,6 +104,12 @@ public class TestArtifactExtractionSplitter {
                 10, // Exemplar
                 Arrays.asList(5, 6, 7, 8, 9, 10), // Detection frames
                 Arrays.asList(7)); // Expected artifact frames
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
+                10, // Exemplar
+                Arrays.asList(5, 6, 7, 8, 9, 10, 11), // Detection frames
+                Arrays.asList(8)); // Expected artifact frames
     }
 
     @Test
@@ -148,6 +154,12 @@ public class TestArtifactExtractionSplitter {
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
+                10,
+                Arrays.asList(5, 10),
+                Arrays.asList(5, 10));
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
                 5,
                 Arrays.asList(5),
                 Arrays.asList(5));
@@ -184,20 +196,38 @@ public class TestArtifactExtractionSplitter {
 
     @Test
     public void canGetMiddleFrameAndExemplar() {
+        SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
+                0, false, true, false, 0);
+
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
-                createExtractionPropertySnapshot(0, false, true, false, 0),
+                extractionProps,
                 10,
                 Arrays.asList(5, 9, 10),
                 Arrays.asList(5, 10));
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
+                10, // Exemplar
+                Arrays.asList(5, 6, 7, 8, 9, 10, 11),
+                Arrays.asList(8, 10));
     }
 
     @Test
     public void canGetLastFrameAndExemplar() {
+        SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
+                0, false, false, true, 0);
+
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
-                createExtractionPropertySnapshot(0, false, false, true, 0),
+                extractionProps,
                 10,
                 Arrays.asList(5, 9, 10),
                 Arrays.asList(10));
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
+                9,
+                Arrays.asList(5, 9, 10),
+                Arrays.asList(9, 10));
     }
 
     /////////////////////////////////////////////////////////
@@ -331,16 +361,31 @@ public class TestArtifactExtractionSplitter {
                 5,
                 Arrays.asList(5, 9, 10, 11),
                 Arrays.asList(5, 6, 7));
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
+                5,
+                Arrays.asList(5),
+                Arrays.asList(5));
     }
 
 
     @Test
     public void canGetFirstFrameAndFramePlus() {
+        SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
+                2, true, false, false, 0);
+
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
-                createExtractionPropertySnapshot(2, true, false, false, 0),
+                extractionProps,
                 10,
                 Arrays.asList(5, 9, 10, 20),
                 Arrays.asList(5, 8, 9, 10, 11, 12));
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
+                5,
+                Arrays.asList(5, 6),
+                Arrays.asList(5, 6));
     }
 
     @Test
@@ -378,6 +423,13 @@ public class TestArtifactExtractionSplitter {
                 11,
                 Arrays.asList(11),
                 Arrays.asList(11));
+
+
+        runTest(ArtifactExtractionPolicy.ALL_FRAMES,
+                createExtractionPropertySnapshot(2, true, false, false, 1),
+                11,
+                Arrays.asList(5, 9, 10, 11, 20),
+                Arrays.asList(5, 9, 10, 11, 20));
     }
 
     //////////////////////////////////////////////////////////
@@ -487,10 +539,6 @@ public class TestArtifactExtractionSplitter {
             else {
                 detectionsBuilder.add(createDetection(frameNumber, confidence));
             }
-        }
-        if (exemplar == null) {
-            exemplar = createDetection(exemplarFrame, 10);
-            detectionsBuilder.add(exemplar);
         }
 
         ImmutableSortedSet<Detection> detections = detectionsBuilder.build();

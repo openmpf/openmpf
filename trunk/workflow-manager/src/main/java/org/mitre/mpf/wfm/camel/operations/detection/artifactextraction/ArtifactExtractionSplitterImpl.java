@@ -172,80 +172,96 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                     }
                     // fall through
                 case ALL_TYPES:
-                    if (systemPropertiesSnapshot.getArtifactExtractionPolicyExemplarFramePlus() >= 0) {
-                        Detection exemplar = track.getExemplar();
-                        int exemplarFrame = exemplar.getMediaOffsetFrame();
-                        LOG.info("Extracting exemplar frame {}", exemplarFrame);
-                        addFrame(mediaAndActionToFrames, media.getId(), actionIndex, exemplarFrame);
-                        int extractCount = systemPropertiesSnapshot.getArtifactExtractionPolicyExemplarFramePlus();
-                        while (extractCount > 0) {
-                            // before frame: only extract if the frame lies within this track and is not less than 0.
-                            if (((exemplarFrame - extractCount) >= 0) &&
-                                ((exemplarFrame - extractCount) >= track.getStartOffsetFrameInclusive())) {
-                                LOG.info("Extracting before-frame {}", exemplarFrame - extractCount);
-                                addFrame(mediaAndActionToFrames, media.getId(), actionIndex,
-                                         exemplarFrame - extractCount);
-                            }
-                            // after frame: only extract if the frame lies within this track and is not greater than the
-                            // last frame in the media.
-                            if (((exemplarFrame + extractCount) <= (media.getLength() - 1)) &&
-                                ((exemplarFrame + extractCount) <= track.getEndOffsetFrameInclusive())) {
-                                LOG.info("Extracting after-frame {}", exemplarFrame+extractCount);
-                                addFrame(mediaAndActionToFrames, media.getId(), actionIndex,
-                                         exemplarFrame + extractCount);
-                            }
-                            extractCount--;
-                        }
-                    }
-                    int fistDetectionFrame = track.getDetections().first().getMediaOffsetFrame();
-                    int lastDetectionFrame = track.getDetections().last().getMediaOffsetFrame();
-
-                    if (systemPropertiesSnapshot.isArtifactExtractionPolicyFirstFrame()) {
-                        LOG.debug("Extracting first frame {}", fistDetectionFrame);
-                        addFrame(mediaAndActionToFrames, media.getId(), actionIndex, fistDetectionFrame);
-                    }
-                    if (systemPropertiesSnapshot.isArtifactExtractionPolicyLastFrame()) {
-                        LOG.debug("Extracting last frame {}", lastDetectionFrame);
-                        addFrame(mediaAndActionToFrames, media.getId(), actionIndex, lastDetectionFrame);
-                    }
-                    if (systemPropertiesSnapshot.isArtifactExtractionPolicyMiddleFrame()) {
-                        // The goal here is to find the detection in the track that is closest to the "middle"
-                        // frame. The middle frame is the frame that is equally distant from the start and stop
-                        // frames, but that frame does not necessarily contain a detection in this track, so we
-                        // search for the detection in the track that is closest to that middle frame.
-                        int middleIndex = (fistDetectionFrame + lastDetectionFrame) / 2;
-                        int smallestDistance = Integer.MAX_VALUE;
-                        int middleFrame = 0;
-                        for (Detection detection : track.getDetections()) {
-                            int distance = Math.abs(detection.getMediaOffsetFrame() - middleIndex);
-                            if (distance < smallestDistance) {
-                                smallestDistance = distance;
-                                middleFrame = detection.getMediaOffsetFrame();
-                            }
-                        }
-                        LOG.debug("Extracting middle frame {}", middleFrame);
-                        addFrame(mediaAndActionToFrames, media.getId(), actionIndex, middleFrame);
-                    }
-                    if (systemPropertiesSnapshot.getArtifactExtractionPolicyTopConfidenceCount() > 0) {
-                        List<Detection> detectionsCopy = new ArrayList<>(track.getDetections());
-                        // Sort the detections by confidence, then by frame number, if two detections have equal
-                        // confidence. The sort by confidence is reversed so that the N highest confidence
-                        // detections are at the start of the list.
-                        detectionsCopy.sort(
-                                Comparator.comparing(Detection::getConfidence)
-                                        .reversed()
-                                        .thenComparing(Detection::getMediaOffsetFrame));
-                        for (int i = 0; i < systemPropertiesSnapshot.getArtifactExtractionPolicyTopConfidenceCount(); i++) {
-                            LOG.info("frame #{} confidence = {}", detectionsCopy.get(i).getMediaOffsetFrame(),
-                                     detectionsCopy.get(i).getConfidence());
-                            addFrame(mediaAndActionToFrames, media.getId(), actionIndex,
-                                     detectionsCopy.get(i).getMediaOffsetFrame());
-                        }
-                    }
+                    processExtractionsInTrack(mediaAndActionToFrames, track, media,
+                                              actionIndex, policy, systemPropertiesSnapshot);
             }
         }
     }
 
+
+    private void processExtractionsInTrack(
+            Table<Long, Integer, Set<Integer>> mediaAndActionToFrames,
+            Track track,
+            TransientMedia media,
+            int actionIndex,
+            ArtifactExtractionPolicy policy,
+            SystemPropertiesSnapshot systemPropertiesSnapshot) {
+
+        if (systemPropertiesSnapshot.getArtifactExtractionPolicyExemplarFramePlus() >= 0) {
+            Detection exemplar = track.getExemplar();
+            int exemplarFrame = exemplar.getMediaOffsetFrame();
+            LOG.info("Extracting exemplar frame {}", exemplarFrame);
+            addFrame(mediaAndActionToFrames, media.getId(), actionIndex, exemplarFrame);
+            int extractCount = systemPropertiesSnapshot.getArtifactExtractionPolicyExemplarFramePlus();
+            while (extractCount > 0) {
+                // before frame: only extract if the frame lies within this track and is not less than 0.
+                if (((exemplarFrame - extractCount) >= 0) &&
+                    ((exemplarFrame - extractCount) >= track.getStartOffsetFrameInclusive())) {
+                    LOG.info("Extracting before-frame {}", exemplarFrame - extractCount);
+                    addFrame(mediaAndActionToFrames, media.getId(), actionIndex,
+                             exemplarFrame - extractCount);
+                }
+                // after frame: only extract if the frame lies within this track and is not greater than the
+                // last frame in the media.
+                if (((exemplarFrame + extractCount) <= (media.getLength() - 1)) &&
+                    ((exemplarFrame + extractCount) <= track.getEndOffsetFrameInclusive())) {
+                    LOG.info("Extracting after-frame {}", exemplarFrame+extractCount);
+                    addFrame(mediaAndActionToFrames, media.getId(), actionIndex,
+                             exemplarFrame + extractCount);
+                }
+                extractCount--;
+            }
+        }
+
+        int firstDetectionFrame = track.getDetections().first().getMediaOffsetFrame();
+        int lastDetectionFrame = track.getDetections().last().getMediaOffsetFrame();
+
+        if (systemPropertiesSnapshot.isArtifactExtractionPolicyFirstFrame()) {
+            LOG.debug("Extracting first frame {}", firstDetectionFrame);
+            addFrame(mediaAndActionToFrames, media.getId(), actionIndex, firstDetectionFrame);
+        }
+
+        if (systemPropertiesSnapshot.isArtifactExtractionPolicyLastFrame()) {
+            LOG.debug("Extracting last frame {}", lastDetectionFrame);
+            addFrame(mediaAndActionToFrames, media.getId(), actionIndex, lastDetectionFrame);
+        }
+
+        if (systemPropertiesSnapshot.isArtifactExtractionPolicyMiddleFrame()) {
+            // The goal here is to find the detection in the track that is closest to the "middle"
+            // frame. The middle frame is the frame that is equally distant from the start and stop
+            // frames, but that frame does not necessarily contain a detection in this track, so we
+            // search for the detection in the track that is closest to that middle frame.
+            int middleIndex = (firstDetectionFrame + lastDetectionFrame) / 2;
+            int smallestDistance = Integer.MAX_VALUE;
+            int middleFrame = 0;
+            for (Detection detection : track.getDetections()) {
+                int distance = Math.abs(detection.getMediaOffsetFrame() - middleIndex);
+                if (distance < smallestDistance) {
+                    smallestDistance = distance;
+                    middleFrame = detection.getMediaOffsetFrame();
+                }
+            }
+            LOG.debug("Extracting middle frame {}", middleFrame);
+            addFrame(mediaAndActionToFrames, media.getId(), actionIndex, middleFrame);
+        }
+
+        if (systemPropertiesSnapshot.getArtifactExtractionPolicyTopConfidenceCount() > 0) {
+            List<Detection> detectionsCopy = new ArrayList<>(track.getDetections());
+            // Sort the detections by confidence, then by frame number, if two detections have equal
+            // confidence. The sort by confidence is reversed so that the N highest confidence
+            // detections are at the start of the list.
+            detectionsCopy.sort(
+                Comparator.comparing(Detection::getConfidence)
+                .reversed()
+                .thenComparing(Detection::getMediaOffsetFrame));
+            for (int i = 0; i < systemPropertiesSnapshot.getArtifactExtractionPolicyTopConfidenceCount(); i++) {
+                LOG.info("frame #{} confidence = {}", detectionsCopy.get(i).getMediaOffsetFrame(),
+                         detectionsCopy.get(i).getConfidence());
+                addFrame(mediaAndActionToFrames, media.getId(), actionIndex,
+                         detectionsCopy.get(i).getMediaOffsetFrame());
+            }
+        }
+    }
 
     private static void addFrame(Table<Long, Integer, Set<Integer>> mediaAndActionToFrames,
                                  long mediaId, int actionIndex, int frameNumber) {

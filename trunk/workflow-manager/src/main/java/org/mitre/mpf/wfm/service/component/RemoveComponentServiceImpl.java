@@ -26,13 +26,14 @@
 
 package org.mitre.mpf.wfm.service.component;
 
+import com.google.common.io.MoreFiles;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -40,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -53,17 +53,17 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
     private static final Logger _log = LoggerFactory.getLogger(RemoveComponentServiceImpl.class);
 
-    private final NodeManagerService nodeManagerService;
+    private final NodeManagerService _nodeManagerService;
 
-    private final StreamingServiceManager streamingServiceManager;
+    private final StreamingServiceManager _streamingServiceManager;
 
-    private final ComponentDeploymentService deployService;
+    private final ComponentDeploymentService _deployService;
 
-    private final ComponentStateService componentStateService;
+    private final ComponentStateService _componentStateService;
 
-    private final PipelineService pipelineService;
+    private final PipelineService _pipelineService;
 
-    private final PropertiesUtil propertiesUtil;
+    private final PropertiesUtil _propertiesUtil;
 
     @Inject
     RemoveComponentServiceImpl(
@@ -73,26 +73,30 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
             ComponentStateService componentStateService,
             PipelineService pipelineService,
             PropertiesUtil propertiesUtil) {
-        this.nodeManagerService = nodeManagerService;
-        this.streamingServiceManager = streamingServiceManager;
-        this.deployService = deployService;
-        this.componentStateService = componentStateService;
-        this.pipelineService = pipelineService;
-        this.propertiesUtil = propertiesUtil;
+        _nodeManagerService = nodeManagerService;
+        _streamingServiceManager = streamingServiceManager;
+        _deployService = deployService;
+        _componentStateService = componentStateService;
+        _pipelineService = pipelineService;
+        _propertiesUtil = propertiesUtil;
     }
 
     @Override
     public synchronized void removeComponent(String componentName) {
         try {
-            RegisterComponentModel registerModel = componentStateService
+            RegisterComponentModel registerModel = _componentStateService
                     .getByComponentName(componentName)
                     .orElseThrow(() -> new IllegalStateException(String.format(
                             "Couldn't remove %s because it is not registered as a component", componentName)));
-
-            removeComponent(registerModel, true, true);
+            if (registerModel.isManaged()) {
+                removeComponent(registerModel, true, true);
+            }
+            else {
+                removeUnmanaged(registerModel);
+            }
         }
         catch (Exception ex) {
-            componentStateService.replaceComponentState(componentName, ComponentState.REGISTER_ERROR);
+            _componentStateService.replaceComponentState(componentName, ComponentState.REGISTER_ERROR);
             throw ex;
         }
     }
@@ -104,8 +108,8 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
             _log.warn("Couldn't find the JSON descriptor for {}", registerModel.getComponentName());
         }
         else {
-            String componentTld = getComponentTldFromDescriptorPath(registerModel.getJsonDescriptorPath());
-            deployService.undeployComponent(componentTld);
+            String componentTld = getComponentTopLevelDirName(registerModel.getJsonDescriptorPath());
+            _deployService.undeployComponent(componentTld);
         }
 
 
@@ -118,7 +122,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
                 Files.deleteIfExists(componentPackage);
             }
             catch (IOException ex) {
-                componentStateService.replaceComponentState(
+                _componentStateService.replaceComponentState(
                         registerModel.getComponentName(), ComponentState.REGISTER_ERROR);
                 throw new IllegalStateException(
                         "Couldn't delete the component package at: " + componentPackage.toAbsolutePath(), ex);
@@ -126,16 +130,34 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
         }
 
         if (registerModel.getComponentName() != null) {
-            componentStateService.removeComponent(registerModel.getComponentName());
+            _componentStateService.removeComponent(registerModel.getComponentName());
         }
         else if (registerModel.getPackageFileName() != null) {
-            componentStateService.removePackage(registerModel.getPackageFileName());
+            _componentStateService.removePackage(registerModel.getPackageFileName());
         }
     }
 
+
+    private void removeUnmanaged(RegisterComponentModel registerModel) {
+        deleteCustomPipelines(registerModel, true);
+        Path componentDir = getComponentTopLevelDir(registerModel.getJsonDescriptorPath());
+
+        try {
+            MoreFiles.deleteRecursively(componentDir);
+            _componentStateService.removeComponent(registerModel.getComponentName());
+        }
+        catch (IOException ex) {
+            _componentStateService.replaceComponentState(
+                    registerModel.getComponentName(), ComponentState.REGISTER_ERROR);
+            throw new IllegalStateException(
+                    "Couldn't delete the component directory at: " + componentDir, ex);
+        }
+    }
+
+
     @Override
     public synchronized void unregisterViaFile(String jsonDescriptorPath, boolean deletePackage, boolean recursive) {
-        Optional<RegisterComponentModel> optRegisterModel = componentStateService.get()
+        Optional<RegisterComponentModel> optRegisterModel = _componentStateService.get()
                 .stream()
                 .filter(rcm -> jsonDescriptorPath.equals(rcm.getJsonDescriptorPath()))
                 .findAny();
@@ -145,21 +167,21 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
                 removeComponent(optRegisterModel.get(), deletePackage, recursive);
             }
             catch (Exception ex) {
-               componentStateService.replaceComponentState(
+               _componentStateService.replaceComponentState(
                        optRegisterModel.get().getComponentName(), ComponentState.REGISTER_ERROR);
                 throw ex;
             }
         }
         else {
-            String componentTld = getComponentTldFromDescriptorPath(jsonDescriptorPath);
-            deployService.undeployComponent(componentTld);
+            String componentTld = getComponentTopLevelDirName(jsonDescriptorPath);
+            _deployService.undeployComponent(componentTld);
         }
     }
 
     @Override
     public void removePackage(String componentPackageFileName) {
         Optional<RegisterComponentModel> optRegisterModel =
-                componentStateService.getByPackageFile(componentPackageFileName);
+                _componentStateService.getByPackageFile(componentPackageFileName);
 
         if (optRegisterModel.isPresent()) {
             removeComponent(optRegisterModel.get(), true, true);
@@ -167,14 +189,14 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
         }
 
         Path componentPackage = Paths.get(
-                propertiesUtil.getUploadedComponentsDirectory().getAbsolutePath(), componentPackageFileName);
+                _propertiesUtil.getUploadedComponentsDirectory().getAbsolutePath(), componentPackageFileName);
 
         try {
             Files.deleteIfExists(componentPackage);
-            componentStateService.removePackage(componentPackageFileName);
+            _componentStateService.removePackage(componentPackageFileName);
         }
         catch (IOException ex) {
-            componentStateService.replacePackageState(componentPackageFileName, ComponentState.REGISTER_ERROR);
+            _componentStateService.replacePackageState(componentPackageFileName, ComponentState.REGISTER_ERROR);
             throw new IllegalStateException(
                     "Couldn't delete the component package at: " + componentPackage.toAbsolutePath(), ex);
         }
@@ -183,11 +205,11 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
     @Override
     public void unregisterRetainPackage(String componentPackageFileName) {
-		componentStateService.getByPackageFile(componentPackageFileName)
+        _componentStateService.getByPackageFile(componentPackageFileName)
                 .ifPresent(rcm -> {
                     Path pathToPackage = Paths.get(rcm.getFullUploadedFilePath());
                     removeComponent(rcm, false, true);
-                    componentStateService.addEntryForUploadedPackage(pathToPackage);
+                    _componentStateService.addEntryForUploadedPackage(pathToPackage);
                 });
     }
 
@@ -198,7 +220,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
             removeBatchService(registrationModel.getServiceName());
         }
         if (registrationModel.getStreamingServiceName() != null) {
-            streamingServiceManager.deleteService(registrationModel.getStreamingServiceName());
+            _streamingServiceManager.deleteService(registrationModel.getStreamingServiceName());
         }
         if (registrationModel.getAlgorithmName() != null) {
             removeAlgorithm(registrationModel.getAlgorithmName(), recursive);
@@ -215,24 +237,24 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
     }
 
     private void removePipeline(String pipelineName) {
-        pipelineService.deletePipeline(pipelineName.toUpperCase());
+        _pipelineService.deletePipeline(pipelineName.toUpperCase());
     }
 
     private void removeTask(String taskName, boolean recursive) {
         if (recursive) {
-            pipelineService.getPipelines()
+            _pipelineService.getPipelines()
                     .stream()
                     .filter(pd -> referencesTask(pd, taskName))
                     .map(PipelineDefinition::getName)
                     .forEach(this::removePipeline);
         }
 
-        pipelineService.deleteTask(taskName.toUpperCase());
+        _pipelineService.deleteTask(taskName.toUpperCase());
     }
 
     private void removeAction(String actionName, boolean recursive) {
         if (recursive) {
-            pipelineService.getTasks()
+            _pipelineService.getTasks()
                     .stream()
                     .filter(td -> referencesAction(td, actionName))
                     .map(TaskDefinition::getName)
@@ -240,7 +262,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
         }
 
         try {
-            pipelineService.deleteAction(actionName.toUpperCase());
+            _pipelineService.deleteAction(actionName.toUpperCase());
         } catch (WfmProcessingException e) {
             _log.error("Cannot delete action " + actionName.toUpperCase(), e);
         }
@@ -248,33 +270,38 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
     private void removeAlgorithm(String algorithmName, boolean recursive) {
         if (recursive) {
-            pipelineService.getActions()
+            _pipelineService.getActions()
                     .stream()
                     .filter(ad -> ad.getAlgorithmRef().equalsIgnoreCase(algorithmName))
                     .map(ActionDefinition::getName)
                     .forEach(an -> removeAction(an, true));
         }
 
-        pipelineService.deleteAlgorithm(algorithmName.toUpperCase());
+        _pipelineService.deleteAlgorithm(algorithmName.toUpperCase());
     }
 
     private void removeBatchService(String serviceName) {
-        List<NodeManagerModel> nodeModels = nodeManagerService.getNodeManagerModels();
+        List<NodeManagerModel> nodeModels = _nodeManagerService.getNodeManagerModels();
         for (NodeManagerModel nmm : nodeModels) {
             nmm.getServices()
                     .removeIf(sm -> sm.getServiceName().equals(serviceName));
         }
         try {
-            nodeManagerService.saveAndReloadNodeManagerConfig(nodeModels);
+            _nodeManagerService.saveAndReloadNodeManagerConfig(nodeModels);
         }
         catch (IOException ex) {
             throw new IllegalStateException("Failed to save node manager config", ex);
         }
-        nodeManagerService.removeService(serviceName);
+        _nodeManagerService.removeService(serviceName);
     }
 
-    private static String getComponentTldFromDescriptorPath(String pathToJsonDescriptor){
-        return new File(pathToJsonDescriptor).getParentFile().getParentFile().getName();
+
+    private static String getComponentTopLevelDirName(String pathToJsonDescriptor) {
+        return getComponentTopLevelDir(pathToJsonDescriptor).getFileName().toString();
+    }
+
+    private static Path getComponentTopLevelDir(String pathToJsonDescriptor) {
+        return Paths.get(pathToJsonDescriptor).getParent().getParent();
     }
 
     private static boolean referencesTask(PipelineDefinition pipelineDef, String taskName) {

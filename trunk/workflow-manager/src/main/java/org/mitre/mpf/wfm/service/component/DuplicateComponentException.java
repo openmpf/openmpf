@@ -29,14 +29,7 @@ package org.mitre.mpf.wfm.service.component;
 
 public class DuplicateComponentException extends ComponentRegistrationException {
 
-    private final String _componentPackageFileName;
-
-    public DuplicateComponentException(String componentPackageFileName) {
-        super("An existing component has the same top level directory name.");
-        _componentPackageFileName = componentPackageFileName;
-    }
-
-    public String getComponentPackageFileName() {
-        return _componentPackageFileName;
+    public DuplicateComponentException(String message) {
+        super(message);
     }
 }

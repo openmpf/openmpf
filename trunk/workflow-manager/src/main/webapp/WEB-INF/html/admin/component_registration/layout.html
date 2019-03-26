@@ -95,7 +95,8 @@
                 </button>
             </td>
             <td>
-                <button ng-disabled="!canRemove(component)"
+                <button ng-if="component.managed"
+                        ng-disabled="!canRemove(component)"
                         ng-click="reRegisterClicked(component)"
                         type="button" class="btn btn-warning btn-block btn-xs">
 

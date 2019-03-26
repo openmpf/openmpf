@@ -26,8 +26,10 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.mitre.mpf.rest.api.ResponseMessage;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.service.component.*;
@@ -43,7 +45,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -67,15 +71,17 @@ public class AdminComponentRegistrationController {
 
     private static final Logger log = LoggerFactory.getLogger(AdminComponentRegistrationController.class);
 
-	private final PropertiesUtil _propertiesUtil;
+    private final PropertiesUtil _propertiesUtil;
 
     private final AddComponentService _addComponentService;
-  
-	private final RemoveComponentService _removeComponentService;
+
+    private final RemoveComponentService _removeComponentService;
 
     private final ComponentStateService _componentState;
 
     private final ComponentReRegisterService _reRegisterService;
+
+    private final ObjectMapper _objectMapper;
 
     private static final ReentrantReadWriteLock LOCK = new ReentrantReadWriteLock();
 
@@ -85,12 +91,14 @@ public class AdminComponentRegistrationController {
             AddComponentService addComponentService,
             RemoveComponentService removeComponentService,
             ComponentStateService componentState,
-            ComponentReRegisterService reRegisterService) {
+            ComponentReRegisterService reRegisterService,
+            ObjectMapper objectMapper) {
         _propertiesUtil = propertiesUtil;
         _addComponentService = addComponentService;
         _removeComponentService = removeComponentService;
         _componentState = componentState;
         _reRegisterService = reRegisterService;
+        _objectMapper = objectMapper;
     }
 
 
@@ -99,10 +107,10 @@ public class AdminComponentRegistrationController {
      */
     @RequestMapping(value = {"/components", "/rest/components"}, method = RequestMethod.GET)
     @ResponseBody
-	public List<RegisterComponentModel> getComponentsRest() {
+    public List<RegisterComponentModel> getComponentsRest() {
         return withReadLock(_componentState::get);
     }
-    
+
     /*
      * GET single component info
      */
@@ -138,7 +146,7 @@ public class AdminComponentRegistrationController {
                         .orElseGet(() -> new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR));
             }
             catch (ComponentRegistrationException ex) {
-            	return handleAddComponentExceptions(componentPackageFileName, ex);
+                return handleAddComponentExceptions(componentPackageFileName, ex);
             }
         });
     }
@@ -184,6 +192,44 @@ public class AdminComponentRegistrationController {
     private static ResponseMessage handleRegistrationErrorResponse(
             String componentPackageFileName, String reason, HttpStatus httpStatus) {
         return handleRegistrationErrorResponse(componentPackageFileName, reason, httpStatus, null);
+    }
+
+
+    @ApiOperation("Register unmanaged")
+    @RequestMapping(value = {"/components/registerUnmanaged", "/rest/components/registerUnmanaged"},
+            method = RequestMethod.POST)
+    @ResponseBody
+    public ResponseMessage registerUnmanagedComponent(HttpServletRequest request) {
+        return withWriteLock(() -> {
+            JsonComponentDescriptor descriptor;
+            try (InputStream inputStream = request.getInputStream()) {
+                descriptor = _objectMapper.readValue(inputStream, JsonComponentDescriptor.class);
+            }
+            catch (IOException e) {
+                log.error("Failed to read component descriptor.", e);
+                return new ResponseMessage("Failed to read component descriptor due to: " + e.getMessage(),
+                                           HttpStatus.BAD_REQUEST);
+            }
+
+            boolean alreadyRegistered = _componentState.getByComponentName(descriptor.componentName).isPresent();
+            boolean reRegistered;
+            try {
+                reRegistered = _addComponentService.registerUnmanaged(descriptor);
+            }
+            catch (ComponentRegistrationException e) {
+                return handleAddComponentExceptions(descriptor.componentName, e);
+            }
+
+            if (alreadyRegistered) {
+                if (reRegistered) {
+                    return new ResponseMessage("Modified existing component.", HttpStatus.OK);
+                }
+                return new ResponseMessage("Component already registered.", HttpStatus.OK);
+            }
+            else {
+                return new ResponseMessage("New component registered", HttpStatus.CREATED);
+            }
+        });
     }
 
 
@@ -292,7 +338,7 @@ public class AdminComponentRegistrationController {
         return withWriteLock(() -> {
             Optional<RegisterComponentModel> existingRegisterModel = _componentState.getByComponentName(componentName);
             if (!existingRegisterModel.isPresent()) {
-            	return ResponseEntity.notFound().build();
+                return ResponseEntity.notFound().build();
             }
             _removeComponentService.removeComponent(componentName);
             return ResponseEntity.noContent().build();
@@ -316,14 +362,14 @@ public class AdminComponentRegistrationController {
             method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<?> reRegisterRest(@PathVariable("componentPackageFileName") String componentPackageFileName) {
-    	return withWriteLock(() -> {
+        return withWriteLock(() -> {
             try {
                 RegisterComponentModel componentModel = _reRegisterService
                         .reRegisterComponent(componentPackageFileName);
                 return ResponseEntity.ok(componentModel);
             }
             catch (ComponentRegistrationException e) {
-            	return handleAddComponentExceptions(componentPackageFileName, e);
+                return handleAddComponentExceptions(componentPackageFileName, e);
             }
         });
     }

@@ -173,6 +173,10 @@ public class AdminComponentRegistrationController {
                 || exception instanceof ComponentRegistrationSubsystemException) {
             return handleRegistrationErrorResponse(componentPackage, exception.getMessage(), HttpStatus.CONFLICT);
         }
+        else if (exception instanceof InvalidComponentDescriptorException) {
+            return handleRegistrationErrorResponse(componentPackage, exception.getMessage(),
+                                                   HttpStatus.BAD_REQUEST, exception);
+        }
         else {
             return handleRegistrationErrorResponse(componentPackage, exception.getMessage(),
                                                    HttpStatus.INTERNAL_SERVER_ERROR, exception);
@@ -212,22 +216,20 @@ public class AdminComponentRegistrationController {
             }
 
             boolean alreadyRegistered = _componentState.getByComponentName(descriptor.componentName).isPresent();
-            boolean reRegistered;
             try {
-                reRegistered = _addComponentService.registerUnmanaged(descriptor);
+                boolean reRegistered = _addComponentService.registerUnmanaged(descriptor);
+                if (alreadyRegistered) {
+                    if (reRegistered) {
+                        return new ResponseMessage("Modified existing component.", HttpStatus.OK);
+                    }
+                    return new ResponseMessage("Component already registered.", HttpStatus.OK);
+                }
+                else {
+                    return new ResponseMessage("New component registered", HttpStatus.CREATED);
+                }
             }
             catch (ComponentRegistrationException e) {
                 return handleAddComponentExceptions(descriptor.componentName, e);
-            }
-
-            if (alreadyRegistered) {
-                if (reRegistered) {
-                    return new ResponseMessage("Modified existing component.", HttpStatus.OK);
-                }
-                return new ResponseMessage("Component already registered.", HttpStatus.OK);
-            }
-            else {
-                return new ResponseMessage("New component registered", HttpStatus.CREATED);
             }
         });
     }

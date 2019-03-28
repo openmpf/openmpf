@@ -243,7 +243,8 @@ public class AddComponentServiceImpl implements AddComponentService {
 
 
     @Override
-    public boolean registerUnmanaged(JsonComponentDescriptor descriptor) throws ComponentRegistrationException {
+    public boolean registerUnmanagedComponent(JsonComponentDescriptor descriptor)
+            throws ComponentRegistrationException {
         try {
             RegisterComponentModel existingComponent
                     = _componentStateService.getByComponentName(descriptor.componentName).orElse(null);

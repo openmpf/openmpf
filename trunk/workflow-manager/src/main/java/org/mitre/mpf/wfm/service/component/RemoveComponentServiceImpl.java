@@ -92,7 +92,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
                 removeComponent(registerModel, true, true);
             }
             else {
-                removeUnmanaged(registerModel);
+                removeUnmanagedComponent(registerModel);
             }
         }
         catch (Exception ex) {
@@ -138,7 +138,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
     }
 
 
-    private void removeUnmanaged(RegisterComponentModel registerModel) {
+    private void removeUnmanagedComponent(RegisterComponentModel registerModel) {
         deleteCustomPipelines(registerModel, true);
         Path componentDir = getComponentTopLevelDir(registerModel.getJsonDescriptorPath());
 

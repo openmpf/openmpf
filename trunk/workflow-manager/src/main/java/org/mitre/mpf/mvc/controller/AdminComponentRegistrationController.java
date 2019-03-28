@@ -206,7 +206,7 @@ public class AdminComponentRegistrationController {
         return withWriteLock(() -> {
             boolean alreadyRegistered = _componentState.getByComponentName(descriptor.componentName).isPresent();
             try {
-                boolean reRegistered = _addComponentService.registerUnmanaged(descriptor);
+                boolean reRegistered = _addComponentService.registerUnmanagedComponent(descriptor);
                 if (alreadyRegistered) {
                     if (reRegistered) {
                         return new ResponseMessage("Modified existing component.", HttpStatus.OK);
@@ -214,7 +214,7 @@ public class AdminComponentRegistrationController {
                     return new ResponseMessage("Component already registered.", HttpStatus.OK);
                 }
                 else {
-                    return new ResponseMessage("New component registered", HttpStatus.CREATED);
+                    return new ResponseMessage("New component registered.", HttpStatus.CREATED);
                 }
             }
             catch (ComponentRegistrationException e) {

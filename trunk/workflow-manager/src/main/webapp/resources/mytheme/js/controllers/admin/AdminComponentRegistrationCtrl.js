@@ -267,6 +267,9 @@ function ($scope, Components, NotificationSvc, NodeService, $uibModal) {
         }
     };
 
+    $scope.getSortKey = function(component) {
+        return component.componentName || component.packageFileName;
+    };
 
     $scope.$on('mpf.component.dropzone.sending', function (evt, file) {
         $scope.components.push(Components.newComponent({

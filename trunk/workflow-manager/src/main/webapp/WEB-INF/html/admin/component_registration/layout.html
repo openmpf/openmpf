@@ -65,7 +65,7 @@
         </tr>
         </thead>
         <tbody>
-        <tr ng-repeat="component in components | orderBy:'packageFileName'">
+        <tr ng-repeat="component in components | orderBy:getSortKey">
             <td>{{component.componentName}}</td>
             <td>{{component.packageFileName}}</td>
             <td>{{component.dateUploaded | date:'short'}}</td>

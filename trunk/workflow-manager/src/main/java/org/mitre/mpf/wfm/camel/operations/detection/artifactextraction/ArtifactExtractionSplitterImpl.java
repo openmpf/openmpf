@@ -190,7 +190,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         if (systemPropertiesSnapshot.getArtifactExtractionPolicyExemplarFramePlus() >= 0) {
             Detection exemplar = track.getExemplar();
             int exemplarFrame = exemplar.getMediaOffsetFrame();
-            LOG.info("Extracting exemplar frame {}", exemplarFrame);
+            LOG.debug("Extracting exemplar frame {}", exemplarFrame);
             addFrame(mediaAndActionToFrames, media.getId(), actionIndex, exemplarFrame);
             int extractCount = systemPropertiesSnapshot.getArtifactExtractionPolicyExemplarFramePlus();
             while (extractCount > 0) {
@@ -253,7 +253,9 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 Comparator.comparing(Detection::getConfidence)
                 .reversed()
                 .thenComparing(Detection::getMediaOffsetFrame));
-            for (int i = 0; i < systemPropertiesSnapshot.getArtifactExtractionPolicyTopConfidenceCount(); i++) {
+            int extractCount = Math.min(systemPropertiesSnapshot.getArtifactExtractionPolicyTopConfidenceCount(),
+                                        detectionsCopy.size());
+            for (int i = 0; i < extractCount; i++) {
                 LOG.debug("Extracting frame #{} with confidence = {}", detectionsCopy.get(i).getMediaOffsetFrame(),
                          detectionsCopy.get(i).getConfidence());
                 addFrame(mediaAndActionToFrames, media.getId(), actionIndex,

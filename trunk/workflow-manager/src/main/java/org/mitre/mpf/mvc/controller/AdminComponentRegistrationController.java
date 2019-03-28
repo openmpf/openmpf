@@ -40,14 +40,13 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageConversionException;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -203,18 +202,8 @@ public class AdminComponentRegistrationController {
     @RequestMapping(value = {"/components/registerUnmanaged", "/rest/components/registerUnmanaged"},
             method = RequestMethod.POST)
     @ResponseBody
-    public ResponseMessage registerUnmanagedComponent(HttpServletRequest request) {
+    public ResponseMessage registerUnmanagedComponent(@RequestBody JsonComponentDescriptor descriptor) {
         return withWriteLock(() -> {
-            JsonComponentDescriptor descriptor;
-            try (InputStream inputStream = request.getInputStream()) {
-                descriptor = _objectMapper.readValue(inputStream, JsonComponentDescriptor.class);
-            }
-            catch (IOException e) {
-                log.error("Failed to read component descriptor.", e);
-                return new ResponseMessage("Failed to read component descriptor due to: " + e.getMessage(),
-                                           HttpStatus.BAD_REQUEST);
-            }
-
             boolean alreadyRegistered = _componentState.getByComponentName(descriptor.componentName).isPresent();
             try {
                 boolean reRegistered = _addComponentService.registerUnmanaged(descriptor);
@@ -234,6 +223,11 @@ public class AdminComponentRegistrationController {
         });
     }
 
+    @ExceptionHandler(HttpMessageConversionException.class)
+    public ResponseMessage handle(HttpMessageConversionException exception){
+        // Handles invalid JSON being POSTed to registerUnmanagedComponent
+        return new ResponseMessage(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    }
 
 
     private static final Set<String> acceptableComponentContentTypes =

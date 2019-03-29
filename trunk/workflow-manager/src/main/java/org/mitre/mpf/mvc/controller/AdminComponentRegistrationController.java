@@ -198,7 +198,7 @@ public class AdminComponentRegistrationController {
     }
 
 
-    @ApiOperation("Register unmanaged")
+    @ApiOperation(value = "Register unmanaged", produces = "application/json")
     @RequestMapping(value = {"/components/registerUnmanaged", "/rest/components/registerUnmanaged"},
             method = RequestMethod.POST)
     @ResponseBody

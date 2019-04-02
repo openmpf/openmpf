@@ -29,6 +29,8 @@ package org.mitre.mpf.mvc.controller;
 import com.google.common.collect.ImmutableSet;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.mitre.mpf.rest.api.ResponseMessage;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.service.component.*;
@@ -193,9 +195,24 @@ public class AdminComponentRegistrationController {
     }
 
 
-    @ApiOperation(value = "Register unmanaged", produces = "application/json")
+    @ApiOperation(value = "Register an unmanaged component.",
+                  notes = "An unmanaged component is component that is not started or stopped by the Node Manager so " +
+                          "it must be done externally. If there is no existing component with the same name, " +
+                          "then the component will be registered. If there is an existing unmanaged component and " +
+                          "it has an identical descriptor, nothing is changed. If there is an existing unmanaged " +
+                          "component and the descriptor is different, the existing component will be replaced. " +
+                          "If there is an existing managed component with the same name, registration will fail " +
+                          "with a 409 - Conflict response.",
+                  produces = "application/json")
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Successfully updated existing unmanaged component."),
+            @ApiResponse(code = 201, message = "Successfully registered new component."),
+            @ApiResponse(code = 400, message = "The descriptor was invalid."),
+            @ApiResponse(code = 401, message = "Invalid credentials."),
+            @ApiResponse(code = 409, message = "The component conflicts with an existing registered component.")
+    })
     @RequestMapping(value = {"/components/registerUnmanaged", "/rest/components/registerUnmanaged"},
-            method = RequestMethod.POST)
+                    method = RequestMethod.POST)
     @ResponseBody
     public ResponseMessage registerUnmanagedComponent(@RequestBody JsonComponentDescriptor descriptor) {
         return withWriteLock(() -> {

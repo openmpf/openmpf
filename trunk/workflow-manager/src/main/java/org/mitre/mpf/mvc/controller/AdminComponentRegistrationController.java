@@ -203,7 +203,8 @@ public class AdminComponentRegistrationController {
                           "component and the descriptor is different, the existing component will be replaced. " +
                           "If there is an existing managed component with the same name, registration will fail " +
                           "with a 409 - Conflict response.",
-                  produces = "application/json")
+                  produces = "application/json",
+                  response = ResponseMessage.Message.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successfully updated existing unmanaged component."),
             @ApiResponse(code = 201, message = "Successfully registered new component."),

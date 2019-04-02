@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -80,8 +79,6 @@ public class AdminComponentRegistrationController {
 
     private final ComponentReRegisterService _reRegisterService;
 
-    private final ObjectMapper _objectMapper;
-
     private static final ReentrantReadWriteLock LOCK = new ReentrantReadWriteLock();
 
     @Inject
@@ -90,14 +87,12 @@ public class AdminComponentRegistrationController {
             AddComponentService addComponentService,
             RemoveComponentService removeComponentService,
             ComponentStateService componentState,
-            ComponentReRegisterService reRegisterService,
-            ObjectMapper objectMapper) {
+            ComponentReRegisterService reRegisterService) {
         _propertiesUtil = propertiesUtil;
         _addComponentService = addComponentService;
         _removeComponentService = removeComponentService;
         _componentState = componentState;
         _reRegisterService = reRegisterService;
-        _objectMapper = objectMapper;
     }
 
 

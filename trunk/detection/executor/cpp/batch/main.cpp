@@ -91,7 +91,6 @@ int main(int argc, char* argv[]) {
 
     log4cxx::xml::DOMConfigurator::configure(app_dir + "/../config/Log4cxxConfig.xml");
     log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("org.mitre.mpf.detection");
-    LOG4CXX_INFO(logger, "Created Logger");
 
     if (argc < 4) {
         LOG4CXX_ERROR(logger,
@@ -110,7 +109,6 @@ int main(int argc, char* argv[]) {
     try {
         if (is_python(logger, argc, argv)) {
             PythonComponentHandle component_handle(logger, lib_path);
-            LOG4CXX_INFO(logger, "Created PythonComponentHandle");
             return run_jobs(logger, broker_uri, request_queue, app_dir, component_handle);
         }
         else {
@@ -191,7 +189,6 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
 
     // Instantiate AMQ interface
     MPFMessenger messenger(logger);
-    LOG4CXX_INFO(logger, "Created MPFMessenger");
 
     // Remain in loop handling job request messages
     // until 'q\n' is received on stdin
@@ -210,20 +207,15 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
         tv.tv_sec = 5;
         tv.tv_usec = 0;
 
-        LOG4CXX_INFO(logger, "About to call messenger.Startup(broker_uri, request_queue);");
         messenger.Startup(broker_uri, request_queue);
-        LOG4CXX_INFO(logger, "Finished: messenger.Startup(broker_uri, request_queue);");
 
-        LOG4CXX_INFO(logger, "About to call detection_engine.SetRunDirectory(app_dir + \"/../plugins\")");
         detection_engine.SetRunDirectory(app_dir + "/../plugins");
-        LOG4CXX_INFO(logger, "Finished: detection_engine.SetRunDirectory(app_dir + \"/../plugins\")");
 
-        LOG4CXX_INFO(logger, "About to call detection_engine.Init()");
         if (!detection_engine.Init()) {
             LOG4CXX_ERROR(logger, "Detection component initialization failed, exiting.");
             return -1;
         }
-        LOG4CXX_INFO(logger, "Finished: detection_engine.Init()");
+
         string service_name(getenv("SERVICE_NAME"));
         LOG4CXX_INFO(logger, "Completed initialization of " << service_name << ".");
 
@@ -231,7 +223,6 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
         while (keep_running) {
             //	Sleep for pollingInterval seconds between polls.
             if (gotMessageOnLastPull == false) {
-//                LOG4CXX_INFO(logger, "Sleeping for: " << pollingInterval << " seconds.");
                 sleep(pollingInterval);
             }
             gotMessageOnLastPull = false;
@@ -530,15 +521,11 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
             FD_SET(0, &readfds);
             nfds = select(1, &readfds, NULL, NULL, &tv);
             if (nfds != 0) {
-                LOG4CXX_INFO(logger, "select return code: " << nfds);
                 if (FD_ISSET(0, &readfds)) {
                     bytes_read = read(0, input_buf, input_buf_size);
                 }
                 string std_input(input_buf);
                 std_input.resize(input_buf_size);
-                if (bytes_read > 0) {
-                    LOG4CXX_INFO(logger, "Received the following on stdin: " << std_input);
-                }
                 if ((bytes_read > 0) && (std_input == quit_string)) {
                     LOG4CXX_INFO(logger, "Received quit command.");
                     keep_running = false;
@@ -576,7 +563,6 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                               << request_queue);
     }
 
-    LOG4CXX_INFO(logger, "Shutting down logger.");
     // Close the logger
     log4cxx::LogManager::shutdown();
     return 0;

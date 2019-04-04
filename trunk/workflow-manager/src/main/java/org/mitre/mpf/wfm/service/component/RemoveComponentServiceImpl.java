@@ -89,7 +89,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
                     .orElseThrow(() -> new IllegalStateException(String.format(
                             "Couldn't remove %s because it is not registered as a component", componentName)));
             if (registerModel.isManaged()) {
-                removeComponent(registerModel, true, true);
+                removeManagedComponent(registerModel, true, true);
             }
             else {
                 removeUnmanagedComponent(registerModel);
@@ -101,7 +101,8 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
         }
     }
 
-    private void removeComponent(RegisterComponentModel registerModel, boolean deletePackage, boolean recursive) {
+    private void removeManagedComponent(RegisterComponentModel registerModel,
+                                        boolean deletePackage, boolean recursive) {
         deleteCustomPipelines(registerModel, recursive);
 
         if (registerModel.getJsonDescriptorPath() == null) {
@@ -164,7 +165,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
         if (optRegisterModel.isPresent()) {
             try {
-                removeComponent(optRegisterModel.get(), deletePackage, recursive);
+                removeManagedComponent(optRegisterModel.get(), deletePackage, recursive);
             }
             catch (Exception ex) {
                _componentStateService.replaceComponentState(
@@ -184,7 +185,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
                 _componentStateService.getByPackageFile(componentPackageFileName);
 
         if (optRegisterModel.isPresent()) {
-            removeComponent(optRegisterModel.get(), true, true);
+            removeManagedComponent(optRegisterModel.get(), true, true);
             return;
         }
 
@@ -208,7 +209,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
         _componentStateService.getByPackageFile(componentPackageFileName)
                 .ifPresent(rcm -> {
                     Path pathToPackage = Paths.get(rcm.getFullUploadedFilePath());
-                    removeComponent(rcm, false, true);
+                    removeManagedComponent(rcm, false, true);
                     _componentStateService.addEntryForUploadedPackage(pathToPackage);
                 });
     }

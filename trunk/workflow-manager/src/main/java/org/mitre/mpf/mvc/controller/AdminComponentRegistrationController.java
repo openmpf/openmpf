@@ -196,13 +196,14 @@ public class AdminComponentRegistrationController {
 
 
     @ApiOperation(value = "Register an unmanaged component.",
-                  notes = "An unmanaged component is component that is not started or stopped by the Node Manager so " +
-                          "it must be done externally. If there is no existing component with the same name, " +
-                          "then the component will be registered. If there is an existing unmanaged component and " +
-                          "it has an identical descriptor, nothing is changed. If there is an existing unmanaged " +
-                          "component and the descriptor is different, the existing component will be replaced. " +
-                          "If there is an existing managed component with the same name, registration will fail " +
-                          "with a 409 - Conflict response.",
+                  notes = "An unmanaged component is a component that is not started or stopped by the Node Manager " +
+                          "so it must be done externally. For example, a component that runs in its own Docker " +
+                          "container is considered an unmanaged component. If there is no existing component with " +
+                          "the same name, then the component will be registered. If there is an existing unmanaged " +
+                          "component and it has an identical descriptor, nothing is changed. If there is an " +
+                          "existing unmanaged component and the descriptor is different, the existing component " +
+                          "will be replaced. If there is an existing managed component with the same name, " +
+                          "registration will fail with a 409 - Conflict response.",
                   produces = "application/json",
                   response = ResponseMessage.Message.class)
     @ApiResponses({
@@ -340,9 +341,16 @@ public class AdminComponentRegistrationController {
         });
     }
 
+    @ApiOperation(value = "Remove a component", code = 204)
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "The component was successfully removed."),
+            @ApiResponse(code = 404, message = "There was no component with the specified name.")
+    })
     @RequestMapping(value = {"/components/{componentName}", "/rest/components/{componentName}"},
-            method=RequestMethod.DELETE)
+                    method = RequestMethod.DELETE)
     @ResponseBody
+    // Prevents Swagger from automatically adding 200 as a response status.
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<Void> removeComponentRest(@PathVariable("componentName") String componentName) {
         return withWriteLock(() -> {
             Optional<RegisterComponentModel> existingRegisterModel = _componentState.getByComponentName(componentName);

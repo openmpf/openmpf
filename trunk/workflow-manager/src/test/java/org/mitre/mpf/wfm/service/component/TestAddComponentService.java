@@ -484,6 +484,30 @@ public class TestAddComponentService {
 
 
     @Test
+    public void removesInvalidDescriptorFileWhenRegisteringUnmanagedComponentFails() throws ComponentRegistrationException {
+        when(_mockStateService.getByComponentName(COMPONENT_NAME))
+                .thenReturn(Optional.empty());
+
+        JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();
+
+        doThrow(InvalidComponentDescriptorException.class)
+                .when(_mockDescriptorValidator).validate(descriptor);
+
+
+        try {
+            _addComponentService.registerUnmanagedComponent(descriptor);
+            fail("Expected InvalidComponentDescriptorException");
+        }
+        catch (InvalidComponentDescriptorException ignored) {
+        }
+
+        verifyZeroInteractions(_mockObjectMapper);
+        verify(_mockStateService, never())
+                .update(any());
+    }
+
+
+    @Test
     public void doesNotDeleteAlgorithmIfFailedToAdd() throws ComponentRegistrationException, IOException {
         // Arrange
         JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();

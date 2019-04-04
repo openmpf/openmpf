@@ -245,35 +245,36 @@ public class AddComponentServiceImpl implements AddComponentService {
     @Override
     public boolean registerUnmanagedComponent(JsonComponentDescriptor descriptor)
             throws ComponentRegistrationException {
-        try {
-            RegisterComponentModel existingComponent
-                    = _componentStateService.getByComponentName(descriptor.componentName).orElse(null);
-            if (existingComponent != null) {
-                if (existingComponent.isManaged()) {
-                    throw new DuplicateComponentException(String.format(
-                            "Unable to register %s because there is an existing managed component with the same name.",
-                            descriptor.componentName));
-                }
-                JsonComponentDescriptor existingDescriptor = loadDescriptor(existingComponent.getJsonDescriptorPath());
-                if (existingDescriptor.deepEquals(descriptor)) {
-                    return false;
-                }
-                _removeComponentService.removeComponent(descriptor.componentName);
+
+        RegisterComponentModel existingComponent
+                = _componentStateService.getByComponentName(descriptor.componentName).orElse(null);
+        if (existingComponent != null) {
+            if (existingComponent.isManaged()) {
+                throw new DuplicateComponentException(String.format(
+                        "Unable to register %s because there is an existing managed component with the same name.",
+                        descriptor.componentName));
             }
+            JsonComponentDescriptor existingDescriptor = loadDescriptor(existingComponent.getJsonDescriptorPath());
+            if (existingDescriptor.deepEquals(descriptor)) {
+                return false;
+            }
+            _removeComponentService.removeComponent(descriptor.componentName);
+        }
+
+        RegisterComponentModel registrationModel = new RegisterComponentModel();
+        registrationModel.setComponentName(descriptor.componentName);
+        registrationModel.setManaged(false);
+        registrationModel.setDateUploaded(Instant.now());
+
+        registerDeployedComponent(descriptor, registrationModel);
+        try {
             Path descriptorDir = _propertiesUtil.getPluginDeploymentPath()
                     .resolve(descriptor.componentName)
                     .resolve("descriptor");
             Files.createDirectories(descriptorDir);
             Path descriptorPath = descriptorDir.resolve("descriptor.json");
             _objectMapper.writeValue(descriptorPath.toFile(), descriptor);
-
-            RegisterComponentModel registrationModel = new RegisterComponentModel();
-            registrationModel.setComponentName(descriptor.componentName);
             registrationModel.setJsonDescriptorPath(descriptorPath.toString());
-            registrationModel.setManaged(false);
-            registrationModel.setDateUploaded(Instant.now());
-
-            registerDeployedComponent(descriptor, registrationModel);
 
             registrationModel.setComponentState(ComponentState.REGISTERED);
             registrationModel.setDateRegistered(Instant.now());
@@ -281,10 +282,14 @@ public class AddComponentServiceImpl implements AddComponentService {
             return true;
         }
         catch (IOException e) {
+            _removeComponentService.deleteCustomPipelines(registrationModel, true);
             throw new UncheckedIOException(e);
         }
+        catch (Exception e) {
+            _removeComponentService.deleteCustomPipelines(registrationModel, true);
+            throw e;
+        }
     }
-
 
 
     private JsonComponentDescriptor loadDescriptor(String descriptorPath) throws FailedToParseDescriptorException {

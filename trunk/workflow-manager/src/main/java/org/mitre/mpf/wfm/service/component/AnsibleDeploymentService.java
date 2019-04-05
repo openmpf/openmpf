@@ -110,7 +110,7 @@ public class AnsibleDeploymentService implements ComponentDeploymentService {
             String line;
             while ((line = procOutputReader.readLine()) != null) {
                 if (line.startsWith("skipping") && line.contains("=> (item=")) {
-                	// The "Get the component top level directory" Ansible task prints out each
+                    // The "Get the component top level directory" Ansible task prints out each
                     // file in the component package which pollutes the log.
                     _log.debug(line);
                 }
@@ -142,18 +142,19 @@ public class AnsibleDeploymentService implements ComponentDeploymentService {
         int exitCode = ansibleProc.waitFor();
         if (exitCode == 0) {
             if (descriptorPath == null) {
-            	undeployIfSuccessfullyExtracted(topLevelDirectoryPath);
+                undeployIfSuccessfullyExtracted(topLevelDirectoryPath);
                 throw new IllegalStateException("Couldn't find the descriptor path in ansible output");
             }
             return descriptorPath;
         }
         else if (failedDueToDuplicateError) {
-        	// We do not undeploy the component because an existing component is using
+            // We do not undeploy the component because an existing component is using
             // that top level directory and we don't want to unregister the existing component.
-            throw new DuplicateComponentException(componentPackageFileName);
+            throw new DuplicateComponentException(
+                    "An existing component has the same top level directory name as " + componentPackageFileName);
         }
         else if (failedDueToHostUnreachable) {
-        	// The component archive was never extracted, so we don't undeploy the component.
+            // The component archive was never extracted, so we don't undeploy the component.
             throw new IllegalStateException(UNREACHABLE_ERROR_TEXT);
         }
         else {
@@ -169,7 +170,7 @@ public class AnsibleDeploymentService implements ComponentDeploymentService {
     // duplicate top level directory errors when we try to register again.
     private void undeployIfSuccessfullyExtracted(String topLevelDirectoryPath) {
         if (topLevelDirectoryPath != null)  {
-        	String componentTld = Paths.get(topLevelDirectoryPath).getFileName().toString();
+            String componentTld = Paths.get(topLevelDirectoryPath).getFileName().toString();
             undeployComponent(componentTld);
         }
     }

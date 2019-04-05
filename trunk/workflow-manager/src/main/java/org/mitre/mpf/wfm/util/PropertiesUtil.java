@@ -116,7 +116,7 @@ public class PropertiesUtil {
         outputObjectsDirectory = createOrFail(share, "output-objects", permissions);
         remoteMediaCacheDirectory = createOrFail(share, "remote-media", permissions);
         uploadedComponentsDirectory = createOrFail(share, getComponentUploadDirName(), permissions);
-        createOrFail(getPluginDeploymentPath().toPath(), "",
+        createOrFail(getPluginDeploymentPath(), "",
                 EnumSet.of(
                         PosixFilePermission.OWNER_READ,
                         PosixFilePermission.OWNER_WRITE,
@@ -545,8 +545,8 @@ public class PropertiesUtil {
         return new File(mpfPropertiesConfig.getString("mpf.component.dependency.finder.script"));
     }
 
-    public File getPluginDeploymentPath() {
-        return new File(mpfPropertiesConfig.getString("mpf.plugins.path"));
+    public Path getPluginDeploymentPath() {
+        return Paths.get(mpfPropertiesConfig.getString("mpf.plugins.path"));
     }
 
     public boolean isStartupAutoRegistrationSkipped() {

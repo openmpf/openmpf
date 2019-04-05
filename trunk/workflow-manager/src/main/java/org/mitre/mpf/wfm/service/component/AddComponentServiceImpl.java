@@ -40,12 +40,16 @@ import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mitre.mpf.wfm.service.StreamingServiceModel;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
@@ -58,28 +62,31 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     private static final Logger _log = LoggerFactory.getLogger(AddComponentServiceImpl.class);
 
-    private final PipelineService pipelineService;
+    private final PropertiesUtil _propertiesUtil;
 
-    private final NodeManagerService nodeManagerService;
+    private final PipelineService _pipelineService;
 
-    private final StreamingServiceManager streamingServiceManager;
+    private final NodeManagerService _nodeManagerService;
 
-    private final ComponentDeploymentService deployService;
+    private final StreamingServiceManager _streamingServiceManager;
 
-    private final ComponentStateService componentStateService;
+    private final ComponentDeploymentService _deployService;
 
-    private final ComponentDescriptorValidator componentDescriptorValidator;
+    private final ComponentStateService _componentStateService;
 
-    private final ExtrasDescriptorValidator extrasDescriptorValidator;
+    private final ComponentDescriptorValidator _componentDescriptorValidator;
 
-    private final CustomPipelineValidator customPipelineValidator;
+    private final ExtrasDescriptorValidator _extrasDescriptorValidator;
 
-    private final RemoveComponentService removeComponentService;
+    private final CustomPipelineValidator _customPipelineValidator;
 
-    private final ObjectMapper objectMapper;
+    private final RemoveComponentService _removeComponentService;
+
+    private final ObjectMapper _objectMapper;
 
     @Inject
     AddComponentServiceImpl(
+            PropertiesUtil propertiesUtil,
             PipelineService pipelineService,
             NodeManagerService nodeManagerService,
             StreamingServiceManager streamingServiceManager,
@@ -91,70 +98,72 @@ public class AddComponentServiceImpl implements AddComponentService {
             RemoveComponentService removeComponentService,
             ObjectMapper objectMapper)
     {
-        this.pipelineService = pipelineService;
-        this.nodeManagerService = nodeManagerService;
-        this.streamingServiceManager = streamingServiceManager;
-        this.deployService = deployService;
-        this.componentStateService = componentStateService;
-        this.componentDescriptorValidator = componentDescriptorValidator;
-        this.extrasDescriptorValidator = extrasDescriptorValidator;
-        this.customPipelineValidator = customPipelineValidator;
-        this.removeComponentService = removeComponentService;
-        this.objectMapper = objectMapper;
+        _propertiesUtil = propertiesUtil;
+        _pipelineService = pipelineService;
+        _nodeManagerService = nodeManagerService;
+        _streamingServiceManager = streamingServiceManager;
+        _deployService = deployService;
+        _componentStateService = componentStateService;
+        _componentDescriptorValidator = componentDescriptorValidator;
+        _extrasDescriptorValidator = extrasDescriptorValidator;
+        _customPipelineValidator = customPipelineValidator;
+        _removeComponentService = removeComponentService;
+        _objectMapper = objectMapper;
     }
 
     @Override
     public synchronized RegisterComponentModel registerComponent(String componentPackageFileName) throws ComponentRegistrationException {
-        ComponentState initialState = componentStateService.getByPackageFile(componentPackageFileName)
+        ComponentState initialState = _componentStateService.getByPackageFile(componentPackageFileName)
                 .map(RegisterComponentModel::getComponentState)
                 .filter(Objects::nonNull)
                 .orElse(ComponentState.UNKNOWN);
 
         if (initialState != ComponentState.UPLOADED && initialState != ComponentState.REGISTER_ERROR
                 && initialState != ComponentState.DEPLOYED) {
-            componentStateService.replacePackageState(componentPackageFileName, ComponentState.REGISTER_ERROR);
+            _componentStateService.replacePackageState(componentPackageFileName, ComponentState.REGISTER_ERROR);
             throw new ComponentRegistrationStatusException(initialState);
         }
 
         String descriptorPath;
         try {
-            componentStateService.replacePackageState(componentPackageFileName, ComponentState.REGISTERING);
+            _componentStateService.replacePackageState(componentPackageFileName, ComponentState.REGISTERING);
             if (initialState == ComponentState.DEPLOYED) {
-                descriptorPath = componentStateService.getByPackageFile(componentPackageFileName)
+                descriptorPath = _componentStateService.getByPackageFile(componentPackageFileName)
                         .map(RegisterComponentModel::getJsonDescriptorPath)
-		                .orElse(null);
+                        .orElse(null);
             }
             else {
-                descriptorPath = deployService.deployComponent(componentPackageFileName);
+                descriptorPath = _deployService.deployComponent(componentPackageFileName);
             }
         }
         catch (IllegalStateException | ComponentRegistrationException ex) {
-            componentStateService.replacePackageState(componentPackageFileName, ComponentState.REGISTER_ERROR);
+            _componentStateService.replacePackageState(componentPackageFileName, ComponentState.REGISTER_ERROR);
             throw ex;
         }
 
         // At this point the component package has been successfully extracted
         // so if registration fails after this point the component must be undeployed
         try {
-            RegisterComponentModel currentModel = componentStateService.getByPackageFile(componentPackageFileName)
+            RegisterComponentModel currentModel = _componentStateService.getByPackageFile(componentPackageFileName)
                     .orElseThrow(() -> new ComponentRegistrationStatusException(ComponentState.UNKNOWN));
             currentModel.setJsonDescriptorPath(descriptorPath);
-            componentStateService.update(currentModel);
+            currentModel.setManaged(true);
+            _componentStateService.update(currentModel);
 
             registerDeployedComponent(loadDescriptor(descriptorPath), currentModel);
 
             currentModel.setDateRegistered(Instant.now());
             currentModel.setComponentState(ComponentState.REGISTERED);
-            componentStateService.update(currentModel);
+            _componentStateService.update(currentModel);
 
             String logMsg = "Successfully registered the component from package '" + componentPackageFileName + "'.";
             _log.info(logMsg);
             return currentModel;
         }
         catch (IllegalStateException | ComponentRegistrationException ex) {
-            componentStateService.replacePackageState(componentPackageFileName, ComponentState.REGISTER_ERROR);
+            _componentStateService.replacePackageState(componentPackageFileName, ComponentState.REGISTER_ERROR);
             String topLevelDirectory = Paths.get(descriptorPath).getParent().getParent().getFileName().toString();
-            deployService.undeployComponent(topLevelDirectory);
+            _deployService.undeployComponent(topLevelDirectory);
             throw ex;
         }
     }
@@ -163,16 +172,17 @@ public class AddComponentServiceImpl implements AddComponentService {
     public synchronized void registerDeployedComponent(String descriptorPath) throws ComponentRegistrationException {
         JsonComponentDescriptor descriptor = loadDescriptor(descriptorPath);
 
-        RegisterComponentModel registrationModel = componentStateService
+        RegisterComponentModel registrationModel = _componentStateService
                 .getByComponentName(descriptor.componentName)
                 .orElseGet(RegisterComponentModel::new);
         registrationModel.setComponentName(descriptor.componentName);
         registrationModel.setJsonDescriptorPath(descriptorPath);
+        registrationModel.setManaged(true);
 
         registerDeployedComponent(descriptor, registrationModel);
         registrationModel.setComponentState(ComponentState.REGISTERED);
         registrationModel.setDateRegistered(Instant.now());
-        componentStateService.update(registrationModel);
+        _componentStateService.update(registrationModel);
     }
 
     private void registerDeployedComponent(JsonComponentDescriptor descriptor, RegisterComponentModel model)
@@ -181,12 +191,12 @@ public class AddComponentServiceImpl implements AddComponentService {
         if (descriptor.algorithm == null) {
             _log.warn("Component descriptor file is missing an Algorithm definition.");
             _log.warn("Treating as an extras descriptor file. Will register Actions, Tasks, and Pipelines only.");
-            extrasDescriptorValidator.validate(new JsonExtrasDescriptor(descriptor));
+            _extrasDescriptorValidator.validate(new JsonExtrasDescriptor(descriptor));
         } else {
-            componentDescriptorValidator.validate(descriptor);
+            _componentDescriptorValidator.validate(descriptor);
         }
 
-        customPipelineValidator.validate(descriptor);
+        _customPipelineValidator.validate(descriptor);
 
         AlgorithmDefinition algorithmDef = null;
         String algoName = null;
@@ -207,7 +217,7 @@ public class AddComponentServiceImpl implements AddComponentService {
             Set<String> savedPipelines = savePipelines(descriptor, algorithmDef);
             model.getPipelines().addAll(savedPipelines);
 
-            if (descriptor.algorithm != null) {
+            if (descriptor.algorithm != null && model.isManaged()) {
                 if (descriptor.supportsBatchProcessing()) {
                     String serviceName = saveBatchService(descriptor, algorithmDef);
                     model.setServiceName(serviceName);
@@ -226,14 +236,65 @@ public class AddComponentServiceImpl implements AddComponentService {
                 _log.warn("Component registration failed for {}. Removing child objects.",
                         descriptor.componentName);
             }
-            removeComponentService.deleteCustomPipelines(model, true);
+            _removeComponentService.deleteCustomPipelines(model, true);
             throw ex;
         }
     }
 
+
+    @Override
+    public boolean registerUnmanagedComponent(JsonComponentDescriptor descriptor)
+            throws ComponentRegistrationException {
+
+        RegisterComponentModel existingComponent
+                = _componentStateService.getByComponentName(descriptor.componentName).orElse(null);
+        if (existingComponent != null) {
+            if (existingComponent.isManaged()) {
+                throw new DuplicateComponentException(String.format(
+                        "Unable to register %s because there is an existing managed component with the same name.",
+                        descriptor.componentName));
+            }
+            JsonComponentDescriptor existingDescriptor = loadDescriptor(existingComponent.getJsonDescriptorPath());
+            if (existingDescriptor.deepEquals(descriptor)) {
+                return false;
+            }
+            _removeComponentService.removeComponent(descriptor.componentName);
+        }
+
+        RegisterComponentModel registrationModel = new RegisterComponentModel();
+        registrationModel.setComponentName(descriptor.componentName);
+        registrationModel.setManaged(false);
+        registrationModel.setDateUploaded(Instant.now());
+
+        registerDeployedComponent(descriptor, registrationModel);
+        try {
+            Path descriptorDir = _propertiesUtil.getPluginDeploymentPath()
+                    .resolve(descriptor.componentName)
+                    .resolve("descriptor");
+            Files.createDirectories(descriptorDir);
+            Path descriptorPath = descriptorDir.resolve("descriptor.json");
+            _objectMapper.writeValue(descriptorPath.toFile(), descriptor);
+            registrationModel.setJsonDescriptorPath(descriptorPath.toString());
+
+            registrationModel.setComponentState(ComponentState.REGISTERED);
+            registrationModel.setDateRegistered(Instant.now());
+            _componentStateService.update(registrationModel);
+            return true;
+        }
+        catch (IOException e) {
+            _removeComponentService.deleteCustomPipelines(registrationModel, true);
+            throw new UncheckedIOException(e);
+        }
+        catch (Exception e) {
+            _removeComponentService.deleteCustomPipelines(registrationModel, true);
+            throw e;
+        }
+    }
+
+
     private JsonComponentDescriptor loadDescriptor(String descriptorPath) throws FailedToParseDescriptorException {
         try {
-            return objectMapper.readValue(new File(descriptorPath), JsonComponentDescriptor.class);
+            return _objectMapper.readValue(new File(descriptorPath), JsonComponentDescriptor.class);
         }
         catch (UnrecognizedPropertyException ex) {
             if (ex.getPropertyName().equals("value")
@@ -307,7 +368,7 @@ public class AddComponentServiceImpl implements AddComponentService {
             throws ComponentRegistrationSubsystemException
     {
         try {
-            pipelineService.saveAlgorithm(algoDef);
+            _pipelineService.saveAlgorithm(algoDef);
             _log.info("Successfully added the " + algoDef.getName() + " algorithm");
             return algoDef.getName();
         }
@@ -351,7 +412,7 @@ public class AddComponentServiceImpl implements AddComponentService {
                 .forEach(pdr -> action.getProperties().add(pdr));
 
         try {
-            pipelineService.saveAction(action);
+            _pipelineService.saveAction(action);
             _log.info("Successfully added the {} action for the {} algorithm", actionName, algoName);
         }
         catch (WfmProcessingException ex) {
@@ -393,7 +454,7 @@ public class AddComponentServiceImpl implements AddComponentService {
                 .forEach(adr -> task.getActions().add(adr));
 
         try {
-            pipelineService.saveTask(task);
+            _pipelineService.saveTask(task);
             _log.info("Successfully added the {} task", taskName);
         }
         catch (WfmProcessingException ex) {
@@ -437,7 +498,7 @@ public class AddComponentServiceImpl implements AddComponentService {
                 .forEach(tdr -> pipeline.getTaskRefs().add(tdr));
 
         try {
-            pipelineService.savePipeline(pipeline);
+            _pipelineService.savePipeline(pipeline);
             _log.info("Successfully added the {} pipeline.", pipeline.getName());
         }
         catch (WfmProcessingException ex) {
@@ -449,7 +510,7 @@ public class AddComponentServiceImpl implements AddComponentService {
     private String saveBatchService(JsonComponentDescriptor descriptor, AlgorithmDefinition algorithmDef)
             throws ComponentRegistrationSubsystemException {
         String serviceName = descriptor.componentName;
-        if (nodeManagerService.getServiceModels().containsKey(serviceName)) {
+        if (_nodeManagerService.getServiceModels().containsKey(serviceName)) {
             throw new ComponentRegistrationSubsystemException(String.format(
                     "Couldn't add the %s service because another service already has that name", serviceName));
         }
@@ -483,7 +544,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         algorithmService.setDescription(algorithmDef.getDescription());
         algorithmService.setEnvVars(convertJsonEnvVars(descriptor));
         _log.debug("Created service definition");
-        if (nodeManagerService.addService(algorithmService)) {
+        if (_nodeManagerService.addService(algorithmService)) {
             _log.info("Successfully added the {} service", serviceName);
             return serviceName;
         }
@@ -498,8 +559,8 @@ public class AddComponentServiceImpl implements AddComponentService {
             throws ComponentRegistrationSubsystemException {
 
         String serviceName = descriptor.componentName;
-        boolean existingSvc = streamingServiceManager.getServices().stream()
-		        .anyMatch(s -> s.getServiceName().equals(serviceName));
+        boolean existingSvc = _streamingServiceManager.getServices().stream()
+                .anyMatch(s -> s.getServiceName().equals(serviceName));
         if (existingSvc) {
             throw new ComponentRegistrationSubsystemException(String.format(
                     "Couldn't add the %s streaming service because another service already has that name.",
@@ -514,7 +575,7 @@ public class AddComponentServiceImpl implements AddComponentService {
 
             StreamingServiceModel serviceModel = new StreamingServiceModel(
                     serviceName, algorithmDef.getName(), ComponentLanguage.CPP, libPath, envVars);
-            streamingServiceManager.addService(serviceModel);
+            _streamingServiceManager.addService(serviceModel);
             return serviceName;
         }
         else {

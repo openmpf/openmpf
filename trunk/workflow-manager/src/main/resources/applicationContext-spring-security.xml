@@ -38,7 +38,7 @@
 	<security:http create-session="stateless" pattern="/rest/**">
 		<!-- Use CATALINA_OPTS to set the argument -Dweb.rest.protocol="<value>" where <value> must be set to http or https. -->
 		<security:intercept-url pattern="/**" access="ROLE_USER,ROLE_ADMIN" requires-channel="${web.rest.protocol}"/> <!-- requires-channel="http"/> -->
-		<security:http-basic />
+		<security:http-basic entry-point-ref="restBasicAuthEntryPoint" />
 	</security:http>
 	<!--  to Disable REST security and open up REST uncomment below and comment above -->
 	<!-- <http  pattern="/rest/**" security="none"> </http> -->
@@ -81,7 +81,7 @@
 
 	<bean id="encoder"
 		class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder">
-		<!-- can configure the strength -->		
+		<!-- can configure the strength -->
 		<constructor-arg name="strength" value="12" />
 	</bean>
 

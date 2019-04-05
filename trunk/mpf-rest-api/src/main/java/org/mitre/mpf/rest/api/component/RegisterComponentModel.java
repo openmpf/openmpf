@@ -44,6 +44,7 @@ public class RegisterComponentModel {
 	private List<String> _actions = new ArrayList<>();
 	private List<String> _tasks = new ArrayList<>();
 	private List<String> _pipelines = new ArrayList<>();
+	private boolean _isManaged = true;
 
 
 	public String getPackageFileName() {
@@ -145,5 +146,13 @@ public class RegisterComponentModel {
 
 	public void setPipelines(List<String> pipelines) {
 		_pipelines = pipelines;
+	}
+
+	public boolean isManaged() {
+		return _isManaged;
+	}
+
+	public void setManaged(boolean isManaged) {
+		_isManaged = isManaged;
 	}
 }

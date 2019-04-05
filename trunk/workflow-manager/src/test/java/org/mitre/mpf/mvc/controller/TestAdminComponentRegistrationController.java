@@ -157,6 +157,48 @@ public class TestAdminComponentRegistrationController {
 
 
     @Test
+    public void canRegisterNewUnmanagedComponent() throws ComponentRegistrationException {
+        verifyUnmanagedComponentRegistered(null, true,
+                                           HttpStatus.CREATED, "New component registered.");
+    }
+
+
+    @Test
+    public void canRegisterDuplicateUnmanagedComponent() throws ComponentRegistrationException {
+        verifyUnmanagedComponentRegistered(new RegisterComponentModel(), false,
+                                           HttpStatus.OK, "Component already registered.");
+    }
+
+    @Test
+    public void canModifyExistingUnmanagedComponent() throws ComponentRegistrationException {
+        verifyUnmanagedComponentRegistered(new RegisterComponentModel(), true,
+                                           HttpStatus.OK, "Modified existing component.");
+    }
+
+    private void verifyUnmanagedComponentRegistered(
+            RegisterComponentModel rcm, boolean wasReregistered,
+            HttpStatus expectedStatus, String expectedResponseMessage) throws ComponentRegistrationException {
+
+        when(_mockStateService.getByComponentName(_testComponentName))
+                .thenReturn(Optional.ofNullable(rcm));
+
+        JsonComponentDescriptor descriptor = new JsonComponentDescriptor();
+        descriptor.componentName = _testComponentName;
+
+        when(_mockAddComponentService.registerUnmanagedComponent(descriptor))
+                .thenReturn(wasReregistered);
+
+        ResponseMessage response = _controller.registerUnmanagedComponent(descriptor);
+        assertEquals(expectedStatus, response.getStatusCode());
+        assertEquals(expectedResponseMessage, response.getBody().getMessage());
+
+        verify(_mockAddComponentService)
+                .registerUnmanagedComponent(descriptor);
+
+    }
+
+
+    @Test
     public void canReRegisterComponent() throws ComponentRegistrationException {
         when(_mockReRegisterService.reRegisterComponent(_testPackageName))
                 .thenReturn(_testModel);

@@ -41,12 +41,19 @@
                     <mpf-component-dropzone can-upload="canUploadPackage"></mpf-component-dropzone>
                 </div>
                 <div class="col-md-6 form-group">
-                    <span>Note that all actions performed on managed components will only affect core nodes:</span>
-                    <ul>
-                        <li ng-repeat="coreNode in coreNodes">
-                            {{ coreNode }}
-                        </li>
-                    </ul>
+                    <div ng-if="coreNodes.length">
+                        Note that all actions performed on this page will only affect the workflow manager
+                        and the core nodes shown here:
+                        <ul>
+                            <li ng-repeat="coreNode in coreNodes">
+                                {{ coreNode }}
+                            </li>
+                        </ul>
+                    </div>
+                    <span ng-if="!coreNodes.length">
+                        Note that all actions performed on this page will only affect the workflow manager.
+                        There are no core nodes configured.
+                    </span>
                 </div>
             </div>
 

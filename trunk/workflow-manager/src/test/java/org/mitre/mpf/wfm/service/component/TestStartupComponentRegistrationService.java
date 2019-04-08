@@ -89,7 +89,7 @@ public class TestStartupComponentRegistrationService {
 		when(_mockPropertiesUtil.getUploadedComponentsDirectory())
 				.thenReturn(_componentUploadDir.getRoot());
 		when(_mockPropertiesUtil.getPluginDeploymentPath())
-				.thenReturn(_pluginDeploymentDir.getRoot());
+				.thenReturn(_pluginDeploymentDir.getRoot().toPath());
 		when(_mockPropertiesUtil.isStartupAutoRegistrationSkipped())
 				.thenReturn(false);
 

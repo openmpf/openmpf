@@ -27,15 +27,17 @@
 package org.mitre.mpf.wfm.service.component;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.pipeline.xml.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
+import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -43,10 +45,15 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.collections.Sets;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mitre.mpf.test.TestUtil.eqIgnoreCase;
 import static org.mitre.mpf.test.TestUtil.whereArg;
 import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.COMPONENT_NAME;
@@ -73,7 +80,8 @@ public class TestRemoveComponentService {
     @Mock
     private PipelineService _mockPipelineService;
 
-
+    @Rule
+    public TemporaryFolder _tempDir = new TemporaryFolder();
 
     @Before
     public void init() {
@@ -165,6 +173,45 @@ public class TestRemoveComponentService {
 
         verify(_mockStateService)
                 .removeComponent(COMPONENT_NAME);
+    }
+
+
+    @Test
+    public void testRemoveUnmanagedComponent() throws IOException {
+        Path pluginsDir = _tempDir.newFolder("plugins").toPath();
+        Path otherPluginDir = pluginsDir.resolve("other-plugin");
+        Files.createDirectory(otherPluginDir);
+
+        Path testComponentDir = pluginsDir.resolve(COMPONENT_NAME);
+        Path testDescriptorDir = testComponentDir.resolve("descriptor");
+        Files.createDirectories(testDescriptorDir);
+        Path testDescriptor = testDescriptorDir.resolve("descriptor.json");
+        Files.write(testDescriptor, Collections.singletonList("hello world"));
+
+
+        RegisterComponentModel rcm = new RegisterComponentModel();
+        rcm.setJsonDescriptorPath(testDescriptor.toString());
+        rcm.setManaged(false);
+        rcm.setComponentName(COMPONENT_NAME);
+        rcm.setAlgorithmName("TEST ALGO");
+        rcm.setPipelines(Collections.singletonList("TEST PIPELINE"));
+        when(_mockStateService.getByComponentName(COMPONENT_NAME))
+                .thenReturn(Optional.of(rcm));
+
+        _removeComponentService.removeComponent(COMPONENT_NAME);
+
+        verify(_mockStateService)
+                .removeComponent(COMPONENT_NAME);
+        // Pipeline deletion is more extensively tested in testRecursiveDelete
+        verify(_mockPipelineService)
+                .deleteAlgorithm("TEST ALGO");
+        verify(_mockPipelineService)
+                .deletePipeline("TEST PIPELINE");
+
+        verifyZeroInteractions(_mockNodeManager, _mockStreamingServiceManager, _mockDeploymentService);
+
+        assertTrue(Files.exists(otherPluginDir));
+        assertFalse(Files.exists(testComponentDir));
     }
 
 

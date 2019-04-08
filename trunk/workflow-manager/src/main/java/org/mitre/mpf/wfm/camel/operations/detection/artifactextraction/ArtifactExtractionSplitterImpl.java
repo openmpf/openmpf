@@ -38,10 +38,13 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.data.entities.transients.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -94,6 +97,25 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             LOG.warn("[Job {}|*|*] Artifact extraction will not be performed because this job has been cancelled.",
                      job.getId());
             return Collections.emptyList();
+        }
+        int numPipelineStages = job.getPipeline().getStages().size();
+        LOG.info("number of pipeline stages = {}", numPipelineStages);
+        LOG.info("track merging context stage number {}", trackMergingContext.getStageIndex());
+        SystemPropertiesSnapshot propsSnapshot = job.getSystemPropertiesSnapshot();
+        // If the user has requested output objects for the last stage
+        // only, then return an empty list if this is not the last
+        // stage. Also return an empty list if this is not the last stage,
+        // but the action type of the last stage is MARKUP.
+        if (propsSnapshot.isOutputObjectLastStageOnly()) {
+            List<TransientStage> stages = new ArrayList<>(job.getPipeline().getStages());
+            int lastStageIndex = numPipelineStages-1;
+            if (stages.get(lastStageIndex).getActionType() == ActionType.MARKUP)
+                lastStageIndex = lastStageIndex - 1;
+            if (job.getCurrentStage() < lastStageIndex) {
+                LOG.info("[Job {}|*|*] ARTIFACT EXTRACTION IS SKIPPED for pipeline stage {}.",
+                         job.getId(), job.getCurrentStage());
+                return Collections.emptyList();
+            }
         }
 
         Table<Long, Integer, Set<Integer>> mediaAndActionToFrames

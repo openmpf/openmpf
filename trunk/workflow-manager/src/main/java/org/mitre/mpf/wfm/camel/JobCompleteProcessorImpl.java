@@ -51,6 +51,7 @@ import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
@@ -362,7 +363,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         JsonDetectionOutputObject exemplar = createDetectionOutputObject(track.getExemplar());
 
         AggregateJobPropertiesUtil.PropertyInfo exemplarsOnlyProp = AggregateJobPropertiesUtil.calculateValue(
-                MpfConstants.OUTPUT_EXEMPLARS_ONLY_PROPERTY,
+                MpfConstants.OUTPUT_ARTIFACTS_AND_EXEMPLARS_ONLY_PROPERTY,
                 transientAction.getProperties(),
                 transientJob.getOverriddenJobProperties(),
                 transientAction,
@@ -379,7 +380,15 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
         List<JsonDetectionOutputObject> detections;
         if (exemplarsOnly) {
-            detections = Collections.singletonList(exemplar);
+            // This property requires that the exemplar AND all
+            // extracted frames be available in the output
+            // object. Otherwise, the user might never know that there
+            // were other arifacts extracted.
+            detections = track.getDetections().stream()
+                         .filter(d -> (d.getArtifactExtractionStatus() == ArtifactExtractionStatus.COMPLETED))
+                         .map(d -> createDetectionOutputObject(d))
+                         .collect(toList());
+            detections.add(exemplar);
         }
         else {
             detections = track.getDetections().stream()

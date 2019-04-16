@@ -141,6 +141,29 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
 
+    @Test(timeout = 5 * MINUTES)
+    public void runFaceOcvDetectVideoWithRegionOfInterestUsingPercentAndLocation() throws Exception {
+		String roiActionName = "TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION";
+	    addAction(roiActionName, "FACECV",
+                  ImmutableMap.of(
+                          "SEARCH_REGION_ENABLE_DETECTION", "true",
+                          "SEARCH_REGION_TOP_LEFT_X_DETECTION", "310",
+                          "SEARCH_REGION_TOP_LEFT_Y_DETECTION", "50",
+                          "SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION", "90%",
+                          "SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION", "90%"));
+
+	    String roiTaskName = "TEST OCV FACE WITH ROI PERCENT AND LOCATION TASK";
+	    addTask(roiTaskName, roiActionName);
+
+	    String pipelineName = "TEST OCV FACE WITH ROI PERCENT AND LOCATION PIPELINE";
+	    addPipeline(pipelineName, roiTaskName);
+
+        runSystemTest(pipelineName,
+                "output/face/runFaceOcvDetectVideoWithRegionOfInterestPercentAndLocation.json",
+                "/samples/face/new_face_video.avi");
+    }
+
+
     @Test
     public void runOcvFaceWithUseKeyFrames() {
 		String baseName = "TEST OCV FACE WITH USE_KEY_FRAMES";

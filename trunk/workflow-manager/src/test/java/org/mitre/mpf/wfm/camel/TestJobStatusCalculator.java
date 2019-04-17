@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,87 +26,79 @@
 
 package org.mitre.mpf.wfm.camel;
 
-import junit.framework.Assert;
-import junit.framework.TestCase;
-import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.commons.configuration2.ImmutableConfiguration;
+import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultMessage;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runner.notification.RunListener;
-import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
-@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
-@RunWith(SpringJUnit4ClassRunner.class)
-@RunListener.ThreadSafe
-public class TestJobStatusCalculator extends TestCase {
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.*;
 
-    @Autowired
-    JobStatusCalculator jobStatusCalculator;
+public class TestJobStatusCalculator {
 
-    @Autowired
-    private JsonUtils jsonUtils;
+    @InjectMocks
+    private JobStatusCalculator jobStatusCalculator;
 
-    @Autowired
-    private IoUtils ioUtils;
+    @Mock
+    private InProgressBatchJobsService inProgressJobs;
 
-    @Autowired
-    private CamelContext camelContext;
-
-    @Autowired
-    private PropertiesUtil propertiesUtil;
-
-    @Autowired
-    private Redis redis;
-
-
-    @Test
-    public void testCalculateStatusComplete() throws Exception {
-        final long jobId = 112233;
-        Exchange exchange = new DefaultExchange(camelContext);
-
-        // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
-        TransientJob job = TestUtil.setupJob(jobId, transientDetectionSystemProperties, redis, ioUtils);
-        exchange.getIn().setBody(jsonUtils.serialize(job));
-        redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
-        Assert.assertEquals(BatchJobStatusType.IN_PROGRESS,redis.getBatchJobStatus(jobId));
-        Assert.assertEquals(BatchJobStatusType.COMPLETE, jobStatusCalculator.calculateStatus(exchange));
-    }
-
-    @Test
-    public void testCalculateStatusErrors() throws Exception {
-        final long jobId = 112234;
-        Exchange exchange = new DefaultExchange(camelContext);
-        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
-        TransientJob job = TestUtil.setupJob(jobId, transientDetectionSystemProperties, redis, ioUtils);
-        exchange.getIn().setBody(jsonUtils.serialize(job));
-        redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
-        Assert.assertEquals(BatchJobStatusType.COMPLETE_WITH_ERRORS,jobStatusCalculator.calculateStatus(exchange));
-    }
-
-    @Test
-    public void testCalculateStatusWarnings() throws Exception {
-        final long jobId = 112235;
-        Exchange exchange = new DefaultExchange(camelContext);
-        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
-         TransientJob job = TestUtil.setupJob(jobId, transientDetectionSystemProperties, redis, ioUtils);
-        exchange.getIn().setBody(jsonUtils.serialize(job));
-        redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_WARNINGS);
-        Assert.assertEquals(BatchJobStatusType.COMPLETE_WITH_WARNINGS,jobStatusCalculator.calculateStatus(exchange));
+    @Before
+    public void init() {
+        MockitoAnnotations.initMocks(this);
     }
 
 
+    @Test
+    public void testCalculateStatusComplete() {
+        verifyStateTransition(BatchJobStatusType.IN_PROGRESS, BatchJobStatusType.COMPLETE);
+    }
+
+    @Test
+    public void testCalculateStatusErrors() {
+        verifyStateTransition(BatchJobStatusType.IN_PROGRESS_ERRORS, BatchJobStatusType.COMPLETE_WITH_ERRORS);
+    }
+
+    @Test
+    public void testCalculateStatusWarnings() {
+        verifyStateTransition(BatchJobStatusType.IN_PROGRESS_WARNINGS, BatchJobStatusType.COMPLETE_WITH_WARNINGS);
+    }
+
+
+    private Exchange createExchange(long jobId, BatchJobStatusType initialStatus) {
+        TransientJob job = mock(TransientJob.class);
+        when(job.getStatus())
+                .thenReturn(initialStatus);
+        when(job.getId())
+                .thenReturn(jobId);
+
+        when(inProgressJobs.getJob(jobId))
+                .thenReturn(job);
+
+
+        Message inMessage = new DefaultMessage();
+        inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
+        Exchange exchange = mock(Exchange.class);
+        when(exchange.getIn())
+                .thenReturn(inMessage);
+        return exchange;
+    }
+
+
+    private void verifyStateTransition(BatchJobStatusType from, BatchJobStatusType to) {
+        long jobId = 112235;
+        Exchange exchange = createExchange(jobId, from);
+        BatchJobStatusType finalState = jobStatusCalculator.calculateStatus(exchange);
+        assertEquals(to, finalState);
+
+        verify(inProgressJobs)
+                .setJobStatus(jobId, to);
+    }
 }

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -33,11 +33,11 @@ import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.StreamResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -203,7 +203,7 @@ public class StreamingJobController {
             if ( !streamingJobCreationRequest.isValidRequest() ) {
                 // The streaming job failed the API syntax check, the job request is malformed. Reject the job and send an error response.
                 return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(), "malformed request");
-            } else if ( !StreamResource.isSupportedUriScheme(streamingJobCreationRequest.getStream().getStreamUri()) ) {
+            } else if ( !TransientStream.isSupportedUriScheme(streamingJobCreationRequest.getStream().getStreamUri()) ) {
                 // The streaming job failed the check for supported stream protocol check, so OpenMPF can't process the requested stream URI.
                 // Reject the job and send an error response.
                 return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),
@@ -319,7 +319,7 @@ public class StreamingJobController {
                     streamingJobRequest.getOutputObjectDirectory(), doCleanup,
                     MpfResponse.RESPONSE_CODE_SUCCESS, null);
             } catch (WfmProcessingException e) {
-                log.error("Streaming job with id {} couldn't be cancelled, error is '{}'", jobId, e.getMessage());
+                log.error(String.format("Streaming job with id %s couldn't be cancelled.", jobId), e);
                 cancelResponse = new StreamingJobCancelResponse(jobId,
                     streamingJobRequest.getOutputObjectDirectory(), doCleanup,
                     MpfResponse.RESPONSE_CODE_ERROR, e.getMessage());

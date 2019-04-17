@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -30,8 +30,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.camel.ResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
@@ -54,12 +53,11 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
 	private static final Logger log = LoggerFactory.getLogger(DetectionResponseProcessor.class);
 
 	public MarkupResponseProcessor() {
-		clazz = Markup.MarkupResponse.class;
+		super(Markup.MarkupResponse.class);
 	}
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
-	private Redis redis;
+	private InProgressBatchJobsService inProgressJobs;
 
 	@Autowired
 	@Qualifier(HibernateMarkupResultDaoImpl.REF)
@@ -81,8 +79,8 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
 		markupResult.setMarkupUri(markupResponse.getOutputFileUri());
 		markupResult.setMessage(markupResponse.hasErrorMessage() ? markupResponse.getErrorMessage() : null);
 
-		TransientJob transientJob = redis.getJob(jobId);
-		TransientMedia transientMedia = transientJob.getMedia().get(markupResponse.getMediaIndex());
+		TransientJob transientJob = inProgressJobs.getJob(jobId);
+		TransientMedia transientMedia = transientJob.getMedia(markupResponse.getMediaId());
 		markupResult.setPipeline(transientJob.getPipeline().getName());
 		markupResult.setSourceUri(transientMedia.getUri());
 
@@ -90,10 +88,10 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
 		markupResultDao.persist(markupResult);
 
 		if (markupResult.getMarkupStatus() == MarkupStatus.FAILED) {
-			redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+			inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
 		}
 		if (markupResult.getMarkupStatus() == MarkupStatus.COMPLETE_WITH_WARNING) {
-			redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_WARNINGS);
+			inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_WARNINGS);
 		}
 		return null;
 	}

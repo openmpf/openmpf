@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,6 +27,8 @@
 package org.mitre.mpf.wfm.util;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Maps;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.io.IOUtils;
@@ -35,10 +37,9 @@ import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.EnvVar;
-import org.mitre.mpf.wfm.service.StorageBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,18 +58,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 
 import static java.util.stream.Collectors.*;
 
-@Component(PropertiesUtil.REF)
+@Component
 @Monitored
 public class PropertiesUtil {
 
     private static final Logger log = LoggerFactory.getLogger(PropertiesUtil.class);
-    public static final String REF = "propertiesUtil";
-
 
     @Autowired
     private ApplicationContext appContext;
@@ -203,14 +202,10 @@ public class PropertiesUtil {
                 .collect(toList());
     }
 
-    public TransientDetectionSystemProperties createDetectionSystemPropertiesSnapshot() {
-        Map<String, String> detMap = new HashMap<>();
-        mpfPropertiesConfig.getKeys().forEachRemaining(key -> {
-            if (MpfPropertiesConfigurationBuilder.propertyRequiresSnapshot(key)) {
-                detMap.put(key, mpfPropertiesConfig.getString(key)); // resolve final value
-            }
-        } );
-        return new TransientDetectionSystemProperties(Collections.unmodifiableMap(detMap));
+    public SystemPropertiesSnapshot createSystemPropertiesSnapshot() {
+        Iterator<String> snapshotProps = Iterators.filter(mpfPropertiesConfig.getKeys(),
+                                                          MpfPropertiesConfigurationBuilder::propertyRequiresSnapshot);
+        return new SystemPropertiesSnapshot(Maps.toMap(snapshotProps, mpfPropertiesConfig::getString));
     }
 
     //
@@ -273,10 +268,10 @@ public class PropertiesUtil {
         Files.createDirectories(path);
         return path.toFile();
     }
-    public File createArtifactFile(long jobId, long mediaId, int stageIndex, String name) throws IOException {
+    public Path createArtifactFile(long jobId, long mediaId, int stageIndex, String name) throws IOException {
         Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d/%s", jobId, mediaId, stageIndex, name)).normalize().toAbsolutePath();
         Files.createDirectories(path.getParent());
-        return path.toFile();
+        return path;
     }
 
     private File outputObjectsDirectory;
@@ -294,7 +289,7 @@ public class PropertiesUtil {
      * @return directory that was created under the output objects directory for storage of detection files from this batch job
      * @throws IOException
      */
-    public File createDetectionOutputObjectFile(long jobId) throws IOException {
+    public Path createDetectionOutputObjectFile(long jobId) throws IOException {
         return createOutputObjectsFile(jobId, "detection");
     }
 
@@ -318,8 +313,8 @@ public class PropertiesUtil {
      * @return output object File that was created under the specified output objects directory
      * @throws IOException
      */
-    public File createStreamingOutputObjectsFile(LocalDateTime time, File parentDir) throws IOException {
-        String fileName = String.format("summary-report %s.json", TimeUtils.getLocalDateTimeAsString(time));
+    public File createStreamingOutputObjectsFile(Instant time, File parentDir) throws IOException {
+        String fileName = String.format("summary-report %s.json", TimeUtils.toIsoString(time));
         Path path = Paths.get(parentDir.toURI()).resolve(fileName).normalize().toAbsolutePath();
         Files.createDirectories(path.getParent());
         return path.toFile();
@@ -331,7 +326,7 @@ public class PropertiesUtil {
      * @return File to be used for storing an output object for this job
      * @throws IOException
      */
-    private File createOutputObjectsFile(long jobId, String outputObjectType) throws IOException {
+    private Path createOutputObjectsFile(long jobId, String outputObjectType) throws IOException {
         return createOutputObjectsFile(jobId,outputObjectsDirectory,outputObjectType);
     }
 
@@ -342,11 +337,11 @@ public class PropertiesUtil {
      * @return File to be used for storing an output object for this job
      * @throws IOException
      */
-    private File createOutputObjectsFile(long jobId, File parentDir, String outputObjectType) throws IOException {
+    private static Path createOutputObjectsFile(long jobId, File parentDir, String outputObjectType) throws IOException {
         String fileName = String.format("%d/%s.json", jobId, TextUtils.trimToEmpty(outputObjectType));
         Path path = Paths.get(parentDir.toURI()).resolve(fileName).normalize().toAbsolutePath();
         Files.createDirectories(path.getParent());
-        return path.toFile();
+        return path;
     }
 
     private File remoteMediaCacheDirectory;
@@ -359,11 +354,19 @@ public class PropertiesUtil {
         return new File(markupDirectory, String.valueOf(jobId));
     }
 
-    public Path createMarkupPath(long jobId, long mediaId, String extension) throws IOException {
-        Path path = Paths.get(markupDirectory.toURI()).resolve(String.format("%d/%d/%s%s", jobId, mediaId,
-                UUID.randomUUID(), TextUtils.trimToEmpty(extension))).normalize().toAbsolutePath();
-        Files.createDirectories(path.getParent());
-        return Files.createFile(path);
+
+    public Path createMarkupPath(long jobId, long mediaId, String extension) {
+        try {
+            Path path = Paths.get(markupDirectory.toURI())
+                    .resolve(String.format("%d/%d/%s%s", jobId, mediaId, UUID.randomUUID(), TextUtils.trimToEmpty(extension)))
+                    .normalize()
+                    .toAbsolutePath();
+            Files.createDirectories(path.getParent());
+            return Files.createFile(path);
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     //
@@ -399,19 +402,19 @@ public class PropertiesUtil {
     }
 
     public boolean isTrackMerging() {
-        return mpfPropertiesConfig.getBoolean("detection.track.merging.enabled");
+        return mpfPropertiesConfig.getBoolean("detection.video.track.merging.enabled");
     }
 
     public int getMinAllowableTrackGap() {
-        return mpfPropertiesConfig.getInt("detection.track.min.gap");
+        return mpfPropertiesConfig.getInt("detection.video.track.min.gap");
     }
 
     public int getMinTrackLength() {
-        return mpfPropertiesConfig.getInt("detection.track.minimum.length");
+        return mpfPropertiesConfig.getInt("detection.video.track.min.length");
     }
 
     public double getTrackOverlapThreshold() {
-        return mpfPropertiesConfig.getDouble("detection.track.overlap.threshold");
+        return mpfPropertiesConfig.getDouble("detection.video.track.overlap.threshold");
     }
 
     //
@@ -733,20 +736,16 @@ public class PropertiesUtil {
         }
     }
 
-    public StorageBackend.Type getHttpObjectStorageType() {
-        return mpfPropertiesConfig.get(StorageBackend.Type.class, "http.object.storage.type");
+    public URI getNginxStorageServiceUri() {
+        return mpfPropertiesConfig.get(URI.class, "http.object.storage.nginx.service.uri");
     }
 
-    public URI getHttpStorageServiceUri() {
-        return mpfPropertiesConfig.get(URI.class, "http.object.storage.service_uri");
+    public int getNginxStorageUploadThreadCount() {
+        return mpfPropertiesConfig.getInt("http.object.storage.nginx.upload.thread.count");
     }
 
-    public int getHttpStorageUploadThreadCount() {
-        return mpfPropertiesConfig.getInt("http.object.storage.upload.thread.count");
-    }
-
-    public int getHttpStorageUploadSegmentSize() {
-        return mpfPropertiesConfig.getInt("http.object.storage.upload.segment.size");
+    public int getNginxStorageUploadSegmentSize() {
+        return mpfPropertiesConfig.getInt("http.object.storage.nginx.upload.segment.size");
     }
 
     public int getHttpStorageUploadRetryCount() {

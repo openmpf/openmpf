@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -30,14 +30,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
+import springfox.documentation.schema.AlternateTypeRules;
 import springfox.documentation.service.ApiInfo;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger.web.UiConfiguration;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
+import java.time.Instant;
 
 //reference - http://springfox.github.io/springfox/docs/snapshot/
 @Configuration
@@ -54,12 +56,13 @@ public class SwaggerConfig {
             //  alternative is any(), but that defaults to somewhat useless autogen documentation
             .apis(RequestHandlerSelectors.withMethodAnnotation(
                 io.swagger.annotations.ApiOperation.class))
-            .paths(PathSelectors.any())
+            .paths(PathSelectors.ant("/rest/**"))
             .build()
             // list classes to be ignored in parameters (useful for optional internal parameters)
             .ignoredParameterTypes(javax.servlet.http.HttpSession.class)
             // opt out of auto-generated response code and their default message 
             .useDefaultResponseMessages(false)
+            .alternateTypeRules(AlternateTypeRules.newRule(Instant.class, String.class))
             .apiInfo(apiInfo());
     }
 

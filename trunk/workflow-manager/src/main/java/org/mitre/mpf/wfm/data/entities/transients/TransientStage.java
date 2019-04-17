@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,37 +26,55 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import org.mitre.mpf.interop.JsonStage;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.util.TextUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class TransientStage {
-	private String name;
-	public String getName() { return name; }
+	private final String _name;
+	public String getName() { return _name; }
 
-	private String description;
-	public String getDescription() { return description; }
+	private final String _description;
+	public String getDescription() { return _description; }
 
-	private ActionType actionType;
-	public ActionType getActionType() { return actionType; }
+	private final ActionType _actionType;
+	public ActionType getActionType() { return _actionType; }
 
-	private List<TransientAction> actions;
-	public List<TransientAction> getActions() { return actions; }
+	private final ImmutableList<TransientAction> _actions;
+	public ImmutableList<TransientAction> getActions() { return _actions; }
 
-	@JsonCreator
-	public TransientStage(@JsonProperty("name") String name, @JsonProperty("description") String description, @JsonProperty("actionType") ActionType actionType) {
-		this.name = TextUtils.trimAndUpper(name);
-		this.description = TextUtils.trim(description);
-		this.actionType = actionType;
-		this.actions = new ArrayList<>();
 
-		assert this.name != null : "name must not be null";
-		assert this.actionType != null : "operation must not be null";
+	public TransientStage(String name, String description, ActionType actionType, Iterable<TransientAction> actions) {
+		_name = TextUtils.trimAndUpper(name);
+		_description = TextUtils.trim(description);
+		_actionType = actionType;
+		_actions = ImmutableList.copyOf(actions);
+
+		assert _name != null : "name must not be null";
+		assert _actionType != null : "operation must not be null";
 	}
 
-	public String toString() { return String.format("%s#<name='%s', description='%s', actionType='%s'>", this.getClass().getSimpleName(), name, description, actionType); }
+
+	public static TransientStage from(JsonStage stage) {
+		List<TransientAction> actions = stage.getActions()
+				.stream()
+				.map(TransientAction::from)
+				.collect(ImmutableList.toImmutableList());
+
+		return new TransientStage(
+				stage.getName(),
+                stage.getDescription(),
+				ActionType.valueOf(TextUtils.trimAndUpper(stage.getActionType())),
+				actions);
+	}
+
+
+	@Override
+	public String toString() {
+		return String.format("%s#<name='%s', description='%s', actionType='%s'>", getClass().getSimpleName(),
+		                     _name, _description, _actionType);
+	}
 }

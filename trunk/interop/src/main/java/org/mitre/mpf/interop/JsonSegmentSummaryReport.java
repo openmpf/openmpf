@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,10 +27,8 @@
 package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.*;
-import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
-import org.mitre.mpf.interop.util.TimeUtils;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 
 @JsonTypeName("SegmentSummaryReport")
@@ -39,23 +37,10 @@ import java.util.*;
 public class JsonSegmentSummaryReport {
 
     @JsonProperty("reportDate")
-    @JsonPropertyDescription("The timestamp for this report, local system time. Example: 2018-01-07 10:23:04.6.")
-    private LocalDateTime reportDate = null;
-    public LocalDateTime getReportDate() { return reportDate; }
-    public void setReportDate(LocalDateTime reportDate) { this.reportDate = reportDate; }
-
-    /**
-     * The date/time that this callback is being issued.
-     * @return The date/time that this callback is being issued. This timestamp will be returned as a String
-     * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
-     */
-    @JsonGetter("reportDate")
-    public String getReportDateAsString() { return TimeUtils.getLocalDateTimeAsString(reportDate); }
-    @JsonSetter("reportDate")
-    public void setReportDateFromString(String reportDateStr) throws MpfInteropUsageException {
-        reportDate = TimeUtils.parseStringAsLocalDateTime(reportDateStr);
-    }
-
+    @JsonPropertyDescription("The timestamp for this report, local system time. Example: 2018-12-19T12:12:59.995-05:00")
+    private Instant reportDate = null;
+    public Instant getReportDate() { return reportDate; }
+    public void setReportDate(Instant reportDate) { this.reportDate = reportDate; }
 
     @JsonProperty("jobId")
     @JsonPropertyDescription("The unique identifier assigned to this job by the system.")
@@ -93,10 +78,15 @@ public class JsonSegmentSummaryReport {
     private SortedMap<String, SortedSet<JsonStreamingTrackOutputObject>> types = new TreeMap<>();
     public SortedMap<String, SortedSet<JsonStreamingTrackOutputObject>> getTypes() { return types; }
 
-    public JsonSegmentSummaryReport(LocalDateTime reportDate, long jobId, long segmentId,
-                                    long segmentStartFrame, long segmentStopFrame,
-                                    String detectionType, List<JsonStreamingTrackOutputObject> tracks,
-                                    String errorMessage) {
+    @JsonCreator
+    public JsonSegmentSummaryReport(@JsonProperty("reportDate") Instant reportDate,
+                                    @JsonProperty("jobId") long jobId,
+                                    @JsonProperty("segmentId") long segmentId,
+                                    @JsonProperty("segmentStartFrame") long segmentStartFrame,
+                                    @JsonProperty("segmentStopFrame") long segmentStopFrame,
+                                    @JsonProperty("detectionType") String detectionType,
+                                    @JsonProperty("tracks") List<JsonStreamingTrackOutputObject> tracks,
+                                    @JsonProperty("errorMessage") String errorMessage) {
         this.reportDate = reportDate;
         this.jobId = jobId;
         this.segmentId = segmentId;
@@ -109,19 +99,5 @@ public class JsonSegmentSummaryReport {
         } else {
             types.put(detectionType, new TreeSet<>(tracks));
         }
-    }
-
-    @JsonCreator
-    public static JsonSegmentSummaryReport factory(@JsonProperty("reportDate") String reportDate,
-                                                   @JsonProperty("jobId") long jobId,
-                                                   @JsonProperty("segmentId") long segmentId,
-                                                   @JsonProperty("segmentStartFrame") long segmentStartFrame,
-                                                   @JsonProperty("segmentStopFrame") long segmentStopFrame,
-                                                   @JsonProperty("detectionType") String detectionType,
-                                                   @JsonProperty("tracks") List<JsonStreamingTrackOutputObject> tracks,
-                                                   @JsonProperty("errorMessage") String errorMessage)
-            throws MpfInteropUsageException {
-        return new JsonSegmentSummaryReport(TimeUtils.parseStringAsLocalDateTime(reportDate), jobId, segmentId,
-                segmentStartFrame, segmentStopFrame, detectionType, tracks, errorMessage);
     }
 }

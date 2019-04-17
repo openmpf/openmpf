@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -105,6 +105,8 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 			ContextRefreshedEvent contextRefreshedEvent = (ContextRefreshedEvent) event;
 			ApplicationContext appContext = contextRefreshedEvent.getApplicationContext();
 
+			ThreadUtil.start();
+
 			if (!applicationRefreshed) {
 				log.info("onApplicationEvent: " + appContext.getDisplayName() + " " + appContext.getId()); // DEBUG
 
@@ -151,8 +153,7 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
         healthReportExecutorService = Executors.newSingleThreadScheduledExecutor();
         Runnable task = () -> {
             try {
-                boolean isActive = true; // only send periodic health reports for streaming jobs that are current and active.
-                mpfService.sendStreamingJobHealthReports(isActive);
+                mpfService.sendStreamingJobHealthReports();
             } catch (Exception e) {
                 log.error("startHealthReporting: Exception occurred while sending scheduled health report",e);
             }

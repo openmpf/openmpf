@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,6 +26,9 @@
 
 package org.mitre.mpf.wfm.enums;
 
+import java.net.URI;
+import java.util.stream.Stream;
+
 public enum UriScheme {
 
 	/** Default: The URI scheme is either unknown or undefined. */
@@ -36,18 +39,20 @@ public enum UriScheme {
 	HTTPS(true),
 	RTSP(true);
 
-	private boolean remote;
+	private final boolean remote;
 	public boolean isRemote() { return remote; }
 
 	UriScheme(boolean remote) { this.remote = remote; }
 
 	/** Gets the enumerated value which maps to the case-insensitive input; if no value exists, {@link #UNDEFINED} is returned. */
-	public static UriScheme parse(String scheme) {
-		for ( UriScheme uriScheme : UriScheme.values() ) {
-			if ( uriScheme.name().equalsIgnoreCase(scheme) ) {
-				return uriScheme;
-			}
-		}
-		return UNDEFINED;
+	public static UriScheme parse(String schemeStr) {
+		return Stream.of(values())
+				.filter(schemeEnum -> schemeEnum.name().equalsIgnoreCase(schemeStr))
+				.findAny()
+				.orElse(UNDEFINED);
+	}
+
+	public static UriScheme get(URI uri) {
+		return parse(uri.getScheme());
 	}
 }

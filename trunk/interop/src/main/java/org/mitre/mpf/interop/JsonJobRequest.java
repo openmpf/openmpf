@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -48,8 +48,8 @@ public class JsonJobRequest {
 
 	@JsonProperty("algorithmProperties")
 	@JsonPropertyDescription("Properties to apply to this job's algorithms overriding default, job and pipeline properties.")
-	private Map<String, Map> algorithmProperties;
-	public Map<String, Map> getAlgorithmProperties() { return algorithmProperties; }
+	private Map<String, Map<String, String>> algorithmProperties;
+	public Map<String, Map<String, String>> getAlgorithmProperties() { return algorithmProperties; }
 
 	@JsonProperty("jobProperties")
 	@JsonPropertyDescription("Properties to apply to this job, overriding default and pipeline properties.")
@@ -106,7 +106,7 @@ public class JsonJobRequest {
 										 @JsonProperty("callbackURL") String callbackURL,
 										 @JsonProperty("callbackMethod") String callbackMethod,
 	                                     @JsonProperty("media") List<JsonMediaInputObject> media,
-										 @JsonProperty("algorithmProperties") Map<String, Map> algorithmProperties,
+										 @JsonProperty("algorithmProperties") Map<String, Map<String, String>> algorithmProperties,
 										 @JsonProperty("jobProperties") Map<String, String> jobProperties) {
 		JsonJobRequest jsonJobRequest = new JsonJobRequest(externalId, outputObjectEnabled, pipeline, priority,callbackURL,callbackMethod);
 		if(media != null) {

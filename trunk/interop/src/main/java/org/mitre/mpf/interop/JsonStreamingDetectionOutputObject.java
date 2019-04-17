@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,8 +28,8 @@ package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.*;
 import org.mitre.mpf.interop.util.CompareUtils;
-import org.mitre.mpf.interop.util.TimeUtils;
 
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.SortedMap;
@@ -69,8 +69,8 @@ public class JsonStreamingDetectionOutputObject implements Comparable<JsonStream
 	public int getOffsetFrame() { return offsetFrame; }
 
 	@JsonPropertyDescription("The date and time that this detection was detected")
-	private final String timestamp;
-	public String getTimestamp() { return timestamp; }
+	private final Instant timestamp;
+	public Instant getTimestamp() { return timestamp; }
 
 
 	@JsonCreator
@@ -82,7 +82,7 @@ public class JsonStreamingDetectionOutputObject implements Comparable<JsonStream
 			@JsonProperty("confidence") float confidence,
 			@JsonProperty("detectionProperties") SortedMap<String, String> detectionProperties,
 			@JsonProperty("offsetFrame") int offsetFrame,
-			@JsonProperty("timestamp") String timestamp) {
+			@JsonProperty("timestamp") Instant timestamp) {
 		this.x = x;
 		this.y = y;
 		this.width = width;
@@ -95,25 +95,14 @@ public class JsonStreamingDetectionOutputObject implements Comparable<JsonStream
 		}
 	}
 
-	public JsonStreamingDetectionOutputObject(
-			int x,
-			int y,
-			int width,
-			int height,
-			float confidence,
-			SortedMap<String, String> detectionProperties,
-			int offsetFrame,
-			long timestampMillis) {
-		this(x, y, width, height, confidence, detectionProperties, offsetFrame,
-		     TimeUtils.millisToDateTimeString(timestampMillis));
-	}
 
-
+	@Override
 	public int hashCode() {
 		return Objects.hash(offsetFrame, timestamp, confidence, x, y, width, height, detectionProperties);
 	}
 
 
+	@Override
 	public boolean equals(Object other) {
 		return this == other
 				|| (other instanceof JsonStreamingDetectionOutputObject

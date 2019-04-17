@@ -1,6 +1,8 @@
 {
-    "jobId": 2133,
-    "objectId": "2aef88f3-2364-4a09-a188-fe84ca806732",
+    "jobId": 40,
+    "jobErrors": [],
+    "jobWarnings": [],
+    "objectId": "bb5ccdca-8744-45fc-b105-948a590ebde4",
     "pipeline": {
         "name": "TEST OALPR TEXT DETECTION PIPELINE",
         "description": "TEST OALPR TEXT DETECTION PIPELINE",
@@ -22,16 +24,17 @@
     },
     "priority": 4,
     "siteId": "mpf1",
-    "externalJobId": "bf80198c-8ce3-4144-948e-6aa6ff059ed3",
-    "timeStart": "2018-07-27 11:26:50.0",
-    "timeStop": "2018-07-27 11:31:29.0",
+    "externalJobId": "93187ce3-a059-4dcc-89a4-2ca08abc455d",
+    "timeStart": "2019-02-20T23:04:57-05:00",
+    "timeStop": "2019-02-20T23:08:33-05:00",
     "status": "COMPLETE",
     "algorithmProperties": {},
     "jobProperties": {},
     "media": [
         {
-            "mediaId": 38,
-            "path": "file:/home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/text/lp-ferrari-texas.mp4",
+            "mediaId": 45,
+            "path": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/mpf-system-tests/target/test-classes/samples/text/lp-ferrari-texas.mp4",
+            "detectionProcessingErrors": {},
             "mimeType": "video/mp4",
             "length": 471,
             "sha256": "17d760e5a50b8c65d62131f23e35d97108cf7b727de7c1fd8051ba645a862b0e",
@@ -57,9 +60,9 @@
                                 "stopOffsetTime": 7298,
                                 "type": "TEXT",
                                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 85.74277,
+                                "confidence": 85.149284,
                                 "trackProperties": {
-                                    "TEXT": "DR3D04"
+                                    "TEXT": "DM3D04"
                                 },
                                 "exemplar": {
                                     "offsetFrame": 175,
@@ -68,12 +71,12 @@
                                     "y": 466,
                                     "width": 145,
                                     "height": 115,
-                                    "confidence": 85.74277,
+                                    "confidence": 85.149284,
                                     "detectionProperties": {
-                                        "TEXT": "DR3D04"
+                                        "TEXT": "DM3D04"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-175.png"
                                 },
                                 "detections": [
                                     {
@@ -83,12 +86,12 @@
                                         "y": 466,
                                         "width": 145,
                                         "height": 115,
-                                        "confidence": 85.74277,
+                                        "confidence": 85.149284,
                                         "detectionProperties": {
-                                            "TEXT": "DR3D04"
+                                            "TEXT": "DM3D04"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-175.png"
                                     }
                                 ]
                             },
@@ -115,8 +118,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DMJD04"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-185.png"
                                 },
                                 "detections": [
                                     {
@@ -130,8 +133,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DMJD04"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-185.png"
                                     }
                                 ]
                             },
@@ -158,8 +161,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DJD0"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-187.png"
                                 },
                                 "detections": [
                                     {
@@ -173,8 +176,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DJD0"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-187.png"
                                     }
                                 ]
                             },
@@ -201,8 +204,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDJD"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-188.png"
                                 },
                                 "detections": [
                                     {
@@ -216,8 +219,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDJD"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-188.png"
                                     }
                                 ]
                             },
@@ -244,8 +247,8 @@
                                     "detectionProperties": {
                                         "TEXT": "8DJQD"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-190.png"
                                 },
                                 "detections": [
                                     {
@@ -259,8 +262,8 @@
                                         "detectionProperties": {
                                             "TEXT": "8DJQD"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-190.png"
                                     }
                                 ]
                             },
@@ -287,8 +290,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DJDU4"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-191.png"
                                 },
                                 "detections": [
                                     {
@@ -302,8 +305,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DJDU4"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-191.png"
                                     }
                                 ]
                             },
@@ -330,8 +333,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDBJ00"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-193.png"
                                 },
                                 "detections": [
                                     {
@@ -345,8 +348,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDBJ00"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-193.png"
                                     }
                                 ]
                             },
@@ -373,8 +376,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DBJDQ"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-194.png"
                                 },
                                 "detections": [
                                     {
@@ -388,8 +391,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DBJDQ"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-194.png"
                                     }
                                 ]
                             },
@@ -416,8 +419,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DB3DD4"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-195.png"
                                 },
                                 "detections": [
                                     {
@@ -431,8 +434,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DB3DD4"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-195.png"
                                     }
                                 ]
                             },
@@ -459,8 +462,8 @@
                                     "detectionProperties": {
                                         "TEXT": "3DB3004"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-196.png"
                                 },
                                 "detections": [
                                     {
@@ -474,8 +477,8 @@
                                         "detectionProperties": {
                                             "TEXT": "3DB3004"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-196.png"
                                     },
                                     {
                                         "offsetFrame": 197,
@@ -516,8 +519,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DB3DU"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-198.png"
                                 },
                                 "detections": [
                                     {
@@ -531,8 +534,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DB3DU"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-198.png"
                                     }
                                 ]
                             },
@@ -559,8 +562,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DB3664"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-199.png"
                                 },
                                 "detections": [
                                     {
@@ -574,8 +577,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DB3664"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-199.png"
                                     }
                                 ]
                             },
@@ -602,8 +605,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BD36U"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-200.png"
                                 },
                                 "detections": [
                                     {
@@ -617,8 +620,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BD36U"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-200.png"
                                     }
                                 ]
                             },
@@ -645,8 +648,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-202.png"
                                 },
                                 "detections": [
                                     {
@@ -674,8 +677,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB366"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-202.png"
                                     }
                                 ]
                             },
@@ -702,8 +705,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB3GG"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-204.png"
                                 },
                                 "detections": [
                                     {
@@ -731,8 +734,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB3GG"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-204.png"
                                     }
                                 ]
                             },
@@ -759,8 +762,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-207.png"
                                 },
                                 "detections": [
                                     {
@@ -802,8 +805,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB366"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-207.png"
                                     }
                                 ]
                             },
@@ -830,8 +833,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB3G6"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-208.png"
                                 },
                                 "detections": [
                                     {
@@ -845,8 +848,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB3G6"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-208.png"
                                     },
                                     {
                                         "offsetFrame": 209,
@@ -901,8 +904,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB364"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-211.png"
                                 },
                                 "detections": [
                                     {
@@ -916,8 +919,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB364"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-211.png"
                                     },
                                     {
                                         "offsetFrame": 212,
@@ -958,8 +961,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB3G6"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-214.png"
                                 },
                                 "detections": [
                                     {
@@ -969,7 +972,7 @@
                                         "y": 354,
                                         "width": 202,
                                         "height": 124,
-                                        "confidence": 87.5487,
+                                        "confidence": 87.803734,
                                         "detectionProperties": {
                                             "TEXT": "BDB3G"
                                         },
@@ -987,8 +990,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB3G6"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-214.png"
                                     },
                                     {
                                         "offsetFrame": 215,
@@ -1057,8 +1060,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-218.png"
                                 },
                                 "detections": [
                                     {
@@ -1072,8 +1075,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB366"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-218.png"
                                     },
                                     {
                                         "offsetFrame": 219,
@@ -1114,8 +1117,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB36"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-221.png"
                                 },
                                 "detections": [
                                     {
@@ -1143,8 +1146,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB36"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-221.png"
                                     }
                                 ]
                             },
@@ -1171,8 +1174,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-223.png"
                                 },
                                 "detections": [
                                     {
@@ -1200,8 +1203,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB366"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-223.png"
                                     }
                                 ]
                             },
@@ -1228,8 +1231,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BD36G"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-224.png"
                                 },
                                 "detections": [
                                     {
@@ -1243,8 +1246,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BD36G"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-224.png"
                                     }
                                 ]
                             },
@@ -1271,8 +1274,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB36G"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-237.png"
                                 },
                                 "detections": [
                                     {
@@ -1454,8 +1457,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB36G"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-237.png"
                                     }
                                 ]
                             },
@@ -1482,8 +1485,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-245.png"
                                 },
                                 "detections": [
                                     {
@@ -1595,8 +1598,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB366"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-245.png"
                                     }
                                 ]
                             },
@@ -1623,8 +1626,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB36G"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-246.png"
                                 },
                                 "detections": [
                                     {
@@ -1638,8 +1641,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB36G"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-246.png"
                                     }
                                 ]
                             },
@@ -1666,8 +1669,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-280.png"
                                 },
                                 "detections": [
                                     {
@@ -1887,7 +1890,7 @@
                                         "y": 432,
                                         "width": 203,
                                         "height": 137,
-                                        "confidence": 86.05727,
+                                        "confidence": 85.964165,
                                         "detectionProperties": {
                                             "TEXT": "BUB366"
                                         },
@@ -2143,8 +2146,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB366"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-280.png"
                                     },
                                     {
                                         "offsetFrame": 281,
@@ -2213,8 +2216,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB36"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-284.png"
                                 },
                                 "detections": [
                                     {
@@ -2228,8 +2231,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB36"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-284.png"
                                     },
                                     {
                                         "offsetFrame": 285,
@@ -2270,8 +2273,8 @@
                                     "detectionProperties": {
                                         "TEXT": "1DB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-286.png"
                                 },
                                 "detections": [
                                     {
@@ -2285,8 +2288,8 @@
                                         "detectionProperties": {
                                             "TEXT": "1DB366"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-286.png"
                                     }
                                 ]
                             },
@@ -2313,8 +2316,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB3C6"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-287.png"
                                 },
                                 "detections": [
                                     {
@@ -2328,22 +2331,22 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB3C6"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-287.png"
                                     }
                                 ]
                             },
                             {
                                 "id": "be5d9a4942fc63762c4fe893101fd065d1d46137217cdeb6d5914a326139045e",
                                 "startOffsetFrame": 288,
-                                "stopOffsetFrame": 289,
+                                "stopOffsetFrame": 288,
                                 "startOffsetTime": 12010,
-                                "stopOffsetTime": 12052,
+                                "stopOffsetTime": 12010,
                                 "type": "TEXT",
                                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 85.78858,
+                                "confidence": 85.79649,
                                 "trackProperties": {
-                                    "TEXT": "BUB366"
+                                    "TEXT": "BUB36"
                                 },
                                 "exemplar": {
                                     "offsetFrame": 288,
@@ -2352,12 +2355,12 @@
                                     "y": 366,
                                     "width": 207,
                                     "height": 128,
-                                    "confidence": 85.78858,
+                                    "confidence": 85.79649,
                                     "detectionProperties": {
-                                        "TEXT": "BUB366"
+                                        "TEXT": "BUB36"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-288.png"
                                 },
                                 "detections": [
                                     {
@@ -2367,13 +2370,42 @@
                                         "y": 366,
                                         "width": 207,
                                         "height": 128,
-                                        "confidence": 85.78858,
+                                        "confidence": 85.79649,
                                         "detectionProperties": {
-                                            "TEXT": "BUB366"
+                                            "TEXT": "BUB36"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-288.png"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "362f46f49cc8ecb909d221faa8a15d6bf980a34ba60074110ce89ad8c091a0fe",
+                                "startOffsetFrame": 289,
+                                "stopOffsetFrame": 297,
+                                "startOffsetTime": 12052,
+                                "stopOffsetTime": 12385,
+                                "type": "TEXT",
+                                "source": "+#TEST OALPR TEXT DETECTION ACTION",
+                                "confidence": 89.78324,
+                                "trackProperties": {
+                                    "TEXT": "BDB366"
+                                },
+                                "exemplar": {
+                                    "offsetFrame": 294,
+                                    "offsetTime": 12260,
+                                    "x": 1297,
+                                    "y": 366,
+                                    "width": 210,
+                                    "height": 126,
+                                    "confidence": 89.78324,
+                                    "detectionProperties": {
+                                        "TEXT": "BDB366"
                                     },
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-294.png"
+                                },
+                                "detections": [
                                     {
                                         "offsetFrame": 289,
                                         "offsetTime": 12052,
@@ -2387,36 +2419,7 @@
                                         },
                                         "artifactExtractionStatus": "NOT_ATTEMPTED",
                                         "artifactPath": null
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "038f38e1c4363834c3f547d3c2dc7fe8ccc0d6db3b0ae445f161b222f13ec045",
-                                "startOffsetFrame": 290,
-                                "stopOffsetFrame": 292,
-                                "startOffsetTime": 12093,
-                                "stopOffsetTime": 12177,
-                                "type": "TEXT",
-                                "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 88.27979,
-                                "trackProperties": {
-                                    "TEXT": "BDB366"
-                                },
-                                "exemplar": {
-                                    "offsetFrame": 291,
-                                    "offsetTime": 12135,
-                                    "x": 1297,
-                                    "y": 363,
-                                    "width": 209,
-                                    "height": 137,
-                                    "confidence": 88.27979,
-                                    "detectionProperties": {
-                                        "TEXT": "BDB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
-                                },
-                                "detections": [
                                     {
                                         "offsetFrame": 290,
                                         "offsetTime": 12093,
@@ -2458,36 +2461,7 @@
                                         },
                                         "artifactExtractionStatus": "NOT_ATTEMPTED",
                                         "artifactPath": null
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "362f46f49cc8ecb909d221faa8a15d6bf980a34ba60074110ce89ad8c091a0fe",
-                                "startOffsetFrame": 293,
-                                "stopOffsetFrame": 295,
-                                "startOffsetTime": 12219,
-                                "stopOffsetTime": 12302,
-                                "type": "TEXT",
-                                "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 89.78324,
-                                "trackProperties": {
-                                    "TEXT": "BDB366"
-                                },
-                                "exemplar": {
-                                    "offsetFrame": 294,
-                                    "offsetTime": 12260,
-                                    "x": 1297,
-                                    "y": 366,
-                                    "width": 210,
-                                    "height": 126,
-                                    "confidence": 89.78324,
-                                    "detectionProperties": {
-                                        "TEXT": "BDB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
-                                },
-                                "detections": [
                                     {
                                         "offsetFrame": 293,
                                         "offsetTime": 12219,
@@ -2513,8 +2487,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB366"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-294.png"
                                     },
                                     {
                                         "offsetFrame": 295,
@@ -2529,36 +2503,7 @@
                                         },
                                         "artifactExtractionStatus": "NOT_ATTEMPTED",
                                         "artifactPath": null
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "8e16b3cde1da4ac3f82029400226f1dd6502bd1c0a82ef025a5801aa59a370e0",
-                                "startOffsetFrame": 296,
-                                "stopOffsetFrame": 300,
-                                "startOffsetTime": 12344,
-                                "stopOffsetTime": 12510,
-                                "type": "TEXT",
-                                "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 88.56787,
-                                "trackProperties": {
-                                    "TEXT": "BDB366"
-                                },
-                                "exemplar": {
-                                    "offsetFrame": 297,
-                                    "offsetTime": 12385,
-                                    "x": 1299,
-                                    "y": 377,
-                                    "width": 207,
-                                    "height": 120,
-                                    "confidence": 88.56787,
-                                    "detectionProperties": {
-                                        "TEXT": "BDB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
-                                },
-                                "detections": [
                                     {
                                         "offsetFrame": 296,
                                         "offsetTime": 12344,
@@ -2586,7 +2531,36 @@
                                         },
                                         "artifactExtractionStatus": "NOT_ATTEMPTED",
                                         "artifactPath": null
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "8874da4c6a30bd22a3160eb3523d1d810cba5f592fa42e3499645eb9224ee9d6",
+                                "startOffsetFrame": 298,
+                                "stopOffsetFrame": 298,
+                                "startOffsetTime": 12427,
+                                "stopOffsetTime": 12427,
+                                "type": "TEXT",
+                                "source": "+#TEST OALPR TEXT DETECTION ACTION",
+                                "confidence": 86.045166,
+                                "trackProperties": {
+                                    "TEXT": "BUB36G"
+                                },
+                                "exemplar": {
+                                    "offsetFrame": 298,
+                                    "offsetTime": 12427,
+                                    "x": 1317,
+                                    "y": 364,
+                                    "width": 195,
+                                    "height": 128,
+                                    "confidence": 86.045166,
+                                    "detectionProperties": {
+                                        "TEXT": "BUB36G"
                                     },
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-298.png"
+                                },
+                                "detections": [
                                     {
                                         "offsetFrame": 298,
                                         "offsetTime": 12427,
@@ -2598,9 +2572,38 @@
                                         "detectionProperties": {
                                             "TEXT": "BUB36G"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-298.png"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "432906872d454131bb9af89e80b7016683b806c6b03fbccf49b4d37f50b1c5f5",
+                                "startOffsetFrame": 299,
+                                "stopOffsetFrame": 333,
+                                "startOffsetTime": 12469,
+                                "stopOffsetTime": 13887,
+                                "type": "TEXT",
+                                "source": "+#TEST OALPR TEXT DETECTION ACTION",
+                                "confidence": 90.68145,
+                                "trackProperties": {
+                                    "TEXT": "BDB366"
+                                },
+                                "exemplar": {
+                                    "offsetFrame": 316,
+                                    "offsetTime": 13178,
+                                    "x": 1316,
+                                    "y": 399,
+                                    "width": 214,
+                                    "height": 127,
+                                    "confidence": 90.68145,
+                                    "detectionProperties": {
+                                        "TEXT": "BDB366"
                                     },
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-316.png"
+                                },
+                                "detections": [
                                     {
                                         "offsetFrame": 299,
                                         "offsetTime": 12469,
@@ -2628,36 +2631,7 @@
                                         },
                                         "artifactExtractionStatus": "NOT_ATTEMPTED",
                                         "artifactPath": null
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "0f5f7b9acf7d43561f015c5a5d84534ced3285ee1dee484303b21156e67f1659",
-                                "startOffsetFrame": 301,
-                                "stopOffsetFrame": 304,
-                                "startOffsetTime": 12552,
-                                "stopOffsetTime": 12677,
-                                "type": "TEXT",
-                                "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 89.908295,
-                                "trackProperties": {
-                                    "TEXT": "BDB366"
-                                },
-                                "exemplar": {
-                                    "offsetFrame": 304,
-                                    "offsetTime": 12677,
-                                    "x": 1300,
-                                    "y": 381,
-                                    "width": 209,
-                                    "height": 130,
-                                    "confidence": 89.908295,
-                                    "detectionProperties": {
-                                        "TEXT": "BDB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
-                                },
-                                "detections": [
                                     {
                                         "offsetFrame": 301,
                                         "offsetTime": 12552,
@@ -2713,36 +2687,7 @@
                                         },
                                         "artifactExtractionStatus": "NOT_ATTEMPTED",
                                         "artifactPath": null
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "29a80a96b1e3e96874c97b7a46b24e8068973750946fc12f9201edbb5d539409",
-                                "startOffsetFrame": 305,
-                                "stopOffsetFrame": 307,
-                                "startOffsetTime": 12719,
-                                "stopOffsetTime": 12802,
-                                "type": "TEXT",
-                                "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 89.7403,
-                                "trackProperties": {
-                                    "TEXT": "BDB366"
-                                },
-                                "exemplar": {
-                                    "offsetFrame": 307,
-                                    "offsetTime": 12802,
-                                    "x": 1303,
-                                    "y": 380,
-                                    "width": 213,
-                                    "height": 125,
-                                    "confidence": 89.7403,
-                                    "detectionProperties": {
-                                        "TEXT": "BDB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
-                                },
-                                "detections": [
                                     {
                                         "offsetFrame": 305,
                                         "offsetTime": 12719,
@@ -2784,36 +2729,7 @@
                                         },
                                         "artifactExtractionStatus": "NOT_ATTEMPTED",
                                         "artifactPath": null
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "f3fdc1e60f02b518921ff3b1ba65e0e077f47f6d18646e948ff55fce49b0a585",
-                                "startOffsetFrame": 308,
-                                "stopOffsetFrame": 311,
-                                "startOffsetTime": 12844,
-                                "stopOffsetTime": 12969,
-                                "type": "TEXT",
-                                "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 90.64861,
-                                "trackProperties": {
-                                    "TEXT": "BDB366"
-                                },
-                                "exemplar": {
-                                    "offsetFrame": 310,
-                                    "offsetTime": 12927,
-                                    "x": 1319,
-                                    "y": 392,
-                                    "width": 203,
-                                    "height": 126,
-                                    "confidence": 90.64861,
-                                    "detectionProperties": {
-                                        "TEXT": "BDB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
-                                },
-                                "detections": [
                                     {
                                         "offsetFrame": 308,
                                         "offsetTime": 12844,
@@ -2869,36 +2785,7 @@
                                         },
                                         "artifactExtractionStatus": "NOT_ATTEMPTED",
                                         "artifactPath": null
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "432906872d454131bb9af89e80b7016683b806c6b03fbccf49b4d37f50b1c5f5",
-                                "startOffsetFrame": 312,
-                                "stopOffsetFrame": 333,
-                                "startOffsetTime": 13011,
-                                "stopOffsetTime": 13887,
-                                "type": "TEXT",
-                                "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 90.68145,
-                                "trackProperties": {
-                                    "TEXT": "BDB366"
-                                },
-                                "exemplar": {
-                                    "offsetFrame": 316,
-                                    "offsetTime": 13178,
-                                    "x": 1316,
-                                    "y": 399,
-                                    "width": 214,
-                                    "height": 127,
-                                    "confidence": 90.68145,
-                                    "detectionProperties": {
-                                        "TEXT": "BDB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
-                                },
-                                "detections": [
                                     {
                                         "offsetFrame": 312,
                                         "offsetTime": 13011,
@@ -2966,8 +2853,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB366"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-316.png"
                                     },
                                     {
                                         "offsetFrame": 317,
@@ -3232,8 +3119,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB36"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-336.png"
                                 },
                                 "detections": [
                                     {
@@ -3247,8 +3134,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB36"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-336.png"
                                     },
                                     {
                                         "offsetFrame": 337,
@@ -3303,8 +3190,8 @@
                                     "detectionProperties": {
                                         "TEXT": "8DB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-339.png"
                                 },
                                 "detections": [
                                     {
@@ -3318,8 +3205,8 @@
                                         "detectionProperties": {
                                             "TEXT": "8DB366"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-339.png"
                                     },
                                     {
                                         "offsetFrame": 340,
@@ -3374,8 +3261,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-345.png"
                                 },
                                 "detections": [
                                     {
@@ -3417,8 +3304,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB366"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-345.png"
                                     }
                                 ]
                             },
@@ -3445,8 +3332,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB6"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-346.png"
                                 },
                                 "detections": [
                                     {
@@ -3460,8 +3347,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB6"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-346.png"
                                     },
                                     {
                                         "offsetFrame": 347,
@@ -3502,8 +3389,8 @@
                                     "detectionProperties": {
                                         "TEXT": "8DB364"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-348.png"
                                 },
                                 "detections": [
                                     {
@@ -3517,8 +3404,8 @@
                                         "detectionProperties": {
                                             "TEXT": "8DB364"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-348.png"
                                     }
                                 ]
                             },
@@ -3545,8 +3432,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB34"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-349.png"
                                 },
                                 "detections": [
                                     {
@@ -3560,8 +3447,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB34"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-349.png"
                                     }
                                 ]
                             },
@@ -3588,8 +3475,8 @@
                                     "detectionProperties": {
                                         "TEXT": "PDB364"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-350.png"
                                 },
                                 "detections": [
                                     {
@@ -3603,8 +3490,8 @@
                                         "detectionProperties": {
                                             "TEXT": "PDB364"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-350.png"
                                     }
                                 ]
                             },
@@ -3631,8 +3518,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB36"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-351.png"
                                 },
                                 "detections": [
                                     {
@@ -3646,8 +3533,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB36"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-351.png"
                                     },
                                     {
                                         "offsetFrame": 352,
@@ -3688,8 +3575,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DB3G"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-353.png"
                                 },
                                 "detections": [
                                     {
@@ -3703,8 +3590,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DB3G"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-353.png"
                                     }
                                 ]
                             },
@@ -3731,8 +3618,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DB364"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-354.png"
                                 },
                                 "detections": [
                                     {
@@ -3746,8 +3633,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DB364"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-354.png"
                                     }
                                 ]
                             },
@@ -3774,8 +3661,8 @@
                                     "detectionProperties": {
                                         "TEXT": "FDB36U"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-355.png"
                                 },
                                 "detections": [
                                     {
@@ -3789,8 +3676,8 @@
                                         "detectionProperties": {
                                             "TEXT": "FDB36U"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-355.png"
                                     }
                                 ]
                             },
@@ -3817,8 +3704,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DB304"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-356.png"
                                 },
                                 "detections": [
                                     {
@@ -3832,8 +3719,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DB304"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-356.png"
                                     }
                                 ]
                             },
@@ -3860,8 +3747,8 @@
                                     "detectionProperties": {
                                         "TEXT": "3DDJ0D4"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-359.png"
                                 },
                                 "detections": [
                                     {
@@ -3889,8 +3776,8 @@
                                         "detectionProperties": {
                                             "TEXT": "3DDJ0D4"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-359.png"
                                     }
                                 ]
                             },
@@ -3917,8 +3804,8 @@
                                     "detectionProperties": {
                                         "TEXT": "D3D64"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-363.png"
                                 },
                                 "detections": [
                                     {
@@ -3932,8 +3819,8 @@
                                         "detectionProperties": {
                                             "TEXT": "D3D64"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-363.png"
                                     }
                                 ]
                             },
@@ -3960,8 +3847,8 @@
                                     "detectionProperties": {
                                         "TEXT": "D364"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-367.png"
                                 },
                                 "detections": [
                                     {
@@ -3975,8 +3862,8 @@
                                         "detectionProperties": {
                                             "TEXT": "D364"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-367.png"
                                     }
                                 ]
                             },
@@ -4003,8 +3890,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DB3664I1"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-368.png"
                                 },
                                 "detections": [
                                     {
@@ -4018,8 +3905,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DB3664I1"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-368.png"
                                     }
                                 ]
                             },
@@ -4046,8 +3933,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB3664"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-371.png"
                                 },
                                 "detections": [
                                     {
@@ -4075,8 +3962,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB3664"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-371.png"
                                     }
                                 ]
                             },
@@ -4103,8 +3990,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DB3664D0"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-372.png"
                                 },
                                 "detections": [
                                     {
@@ -4118,8 +4005,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DB3664D0"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-372.png"
                                     },
                                     {
                                         "offsetFrame": 373,
@@ -4160,8 +4047,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-376.png"
                                 },
                                 "detections": [
                                     {
@@ -4189,8 +4076,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DB366"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-376.png"
                                     }
                                 ]
                             },
@@ -4217,8 +4104,8 @@
                                     "detectionProperties": {
                                         "TEXT": "UB36"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-377.png"
                                 },
                                 "detections": [
                                     {
@@ -4232,8 +4119,8 @@
                                         "detectionProperties": {
                                             "TEXT": "UB36"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-377.png"
                                     }
                                 ]
                             },
@@ -4260,8 +4147,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB3664"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-378.png"
                                 },
                                 "detections": [
                                     {
@@ -4275,8 +4162,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB3664"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-378.png"
                                     },
                                     {
                                         "offsetFrame": 379,
@@ -4317,8 +4204,8 @@
                                     "detectionProperties": {
                                         "TEXT": "UB36"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-380.png"
                                 },
                                 "detections": [
                                     {
@@ -4332,8 +4219,8 @@
                                         "detectionProperties": {
                                             "TEXT": "UB36"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-380.png"
                                     }
                                 ]
                             },
@@ -4360,8 +4247,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BB361"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-381.png"
                                 },
                                 "detections": [
                                     {
@@ -4375,8 +4262,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BB361"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-381.png"
                                     }
                                 ]
                             },
@@ -4388,9 +4275,9 @@
                                 "stopOffsetTime": 15972,
                                 "type": "TEXT",
                                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 79.110146,
+                                "confidence": 76.622986,
                                 "trackProperties": {
-                                    "TEXT": "RDB3"
+                                    "TEXT": "RQB3"
                                 },
                                 "exemplar": {
                                     "offsetFrame": 383,
@@ -4399,12 +4286,12 @@
                                     "y": 377,
                                     "width": 131,
                                     "height": 108,
-                                    "confidence": 79.110146,
+                                    "confidence": 76.622986,
                                     "detectionProperties": {
-                                        "TEXT": "RDB3"
+                                        "TEXT": "RQB3"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-383.png"
                                 },
                                 "detections": [
                                     {
@@ -4414,12 +4301,12 @@
                                         "y": 377,
                                         "width": 131,
                                         "height": 108,
-                                        "confidence": 79.110146,
+                                        "confidence": 76.622986,
                                         "detectionProperties": {
-                                            "TEXT": "RDB3"
+                                            "TEXT": "RQB3"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-383.png"
                                     }
                                 ]
                             },
@@ -4431,9 +4318,9 @@
                                 "stopOffsetTime": 16013,
                                 "type": "TEXT",
                                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 79.470276,
+                                "confidence": 77.80259,
                                 "trackProperties": {
-                                    "TEXT": "D364"
+                                    "TEXT": "B364"
                                 },
                                 "exemplar": {
                                     "offsetFrame": 384,
@@ -4442,12 +4329,12 @@
                                     "y": 372,
                                     "width": 136,
                                     "height": 111,
-                                    "confidence": 79.470276,
+                                    "confidence": 77.80259,
                                     "detectionProperties": {
-                                        "TEXT": "D364"
+                                        "TEXT": "B364"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-384.png"
                                 },
                                 "detections": [
                                     {
@@ -4457,12 +4344,12 @@
                                         "y": 372,
                                         "width": 136,
                                         "height": 111,
-                                        "confidence": 79.470276,
+                                        "confidence": 77.80259,
                                         "detectionProperties": {
-                                            "TEXT": "D364"
+                                            "TEXT": "B364"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-384.png"
                                     }
                                 ]
                             },
@@ -4489,8 +4376,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB360"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-386.png"
                                 },
                                 "detections": [
                                     {
@@ -4504,8 +4391,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB360"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-386.png"
                                     }
                                 ]
                             },
@@ -4532,8 +4419,8 @@
                                     "detectionProperties": {
                                         "TEXT": "3DI0"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-388.png"
                                 },
                                 "detections": [
                                     {
@@ -4547,8 +4434,8 @@
                                         "detectionProperties": {
                                             "TEXT": "3DI0"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-388.png"
                                     }
                                 ]
                             },
@@ -4575,8 +4462,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BDB364"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-390.png"
                                 },
                                 "detections": [
                                     {
@@ -4604,8 +4491,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BDB364"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-390.png"
                                     }
                                 ]
                             },
@@ -4632,8 +4519,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DB366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-391.png"
                                 },
                                 "detections": [
                                     {
@@ -4647,8 +4534,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DB366"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-391.png"
                                     }
                                 ]
                             },
@@ -4675,8 +4562,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DB6F"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-392.png"
                                 },
                                 "detections": [
                                     {
@@ -4690,8 +4577,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DB6F"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-392.png"
                                     }
                                 ]
                             },
@@ -4718,8 +4605,8 @@
                                     "detectionProperties": {
                                         "TEXT": "RDB364"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-394.png"
                                 },
                                 "detections": [
                                     {
@@ -4733,8 +4620,8 @@
                                         "detectionProperties": {
                                             "TEXT": "RDB364"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-394.png"
                                     }
                                 ]
                             },
@@ -4746,7 +4633,7 @@
                                 "stopOffsetTime": 16472,
                                 "type": "TEXT",
                                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 82.895,
+                                "confidence": 83.37835,
                                 "trackProperties": {
                                     "TEXT": "DR3664"
                                 },
@@ -4757,12 +4644,12 @@
                                     "y": 287,
                                     "width": 116,
                                     "height": 103,
-                                    "confidence": 82.895,
+                                    "confidence": 83.37835,
                                     "detectionProperties": {
                                         "TEXT": "DR3664"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-395.png"
                                 },
                                 "detections": [
                                     {
@@ -4772,12 +4659,12 @@
                                         "y": 287,
                                         "width": 116,
                                         "height": 103,
-                                        "confidence": 82.895,
+                                        "confidence": 83.37835,
                                         "detectionProperties": {
                                             "TEXT": "DR3664"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-395.png"
                                     }
                                 ]
                             },
@@ -4804,8 +4691,8 @@
                                     "detectionProperties": {
                                         "TEXT": "R6I0"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-397.png"
                                 },
                                 "detections": [
                                     {
@@ -4819,8 +4706,8 @@
                                         "detectionProperties": {
                                             "TEXT": "R6I0"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-397.png"
                                     }
                                 ]
                             },
@@ -4847,8 +4734,8 @@
                                     "detectionProperties": {
                                         "TEXT": "R664"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-399.png"
                                 },
                                 "detections": [
                                     {
@@ -4862,8 +4749,8 @@
                                         "detectionProperties": {
                                             "TEXT": "R664"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-399.png"
                                     }
                                 ]
                             },
@@ -4875,9 +4762,9 @@
                                 "stopOffsetTime": 16681,
                                 "type": "TEXT",
                                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 78.46246,
+                                "confidence": 78.97319,
                                 "trackProperties": {
-                                    "TEXT": "RBB3"
+                                    "TEXT": "RQB3"
                                 },
                                 "exemplar": {
                                     "offsetFrame": 400,
@@ -4886,12 +4773,12 @@
                                     "y": 307,
                                     "width": 102,
                                     "height": 106,
-                                    "confidence": 78.46246,
+                                    "confidence": 78.97319,
                                     "detectionProperties": {
-                                        "TEXT": "RBB3"
+                                        "TEXT": "RQB3"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-400.png"
                                 },
                                 "detections": [
                                     {
@@ -4901,12 +4788,12 @@
                                         "y": 307,
                                         "width": 102,
                                         "height": 106,
-                                        "confidence": 78.46246,
+                                        "confidence": 78.97319,
                                         "detectionProperties": {
-                                            "TEXT": "RBB3"
+                                            "TEXT": "RQB3"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-400.png"
                                     }
                                 ]
                             },
@@ -4918,9 +4805,9 @@
                                 "stopOffsetTime": 16722,
                                 "type": "TEXT",
                                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 76.2855,
+                                "confidence": 77.77816,
                                 "trackProperties": {
-                                    "TEXT": "3664"
+                                    "TEXT": "Q364"
                                 },
                                 "exemplar": {
                                     "offsetFrame": 401,
@@ -4929,12 +4816,12 @@
                                     "y": 311,
                                     "width": 108,
                                     "height": 104,
-                                    "confidence": 76.2855,
+                                    "confidence": 77.77816,
                                     "detectionProperties": {
-                                        "TEXT": "3664"
+                                        "TEXT": "Q364"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-401.png"
                                 },
                                 "detections": [
                                     {
@@ -4944,12 +4831,12 @@
                                         "y": 311,
                                         "width": 108,
                                         "height": 104,
-                                        "confidence": 76.2855,
+                                        "confidence": 77.77816,
                                         "detectionProperties": {
-                                            "TEXT": "3664"
+                                            "TEXT": "Q364"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-401.png"
                                     }
                                 ]
                             },
@@ -4976,8 +4863,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DR36"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-402.png"
                                 },
                                 "detections": [
                                     {
@@ -4991,8 +4878,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DR36"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-402.png"
                                     }
                                 ]
                             },
@@ -5019,8 +4906,8 @@
                                     "detectionProperties": {
                                         "TEXT": "D3664"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-403.png"
                                 },
                                 "detections": [
                                     {
@@ -5034,8 +4921,8 @@
                                         "detectionProperties": {
                                             "TEXT": "D3664"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-403.png"
                                     }
                                 ]
                             },
@@ -5062,8 +4949,8 @@
                                     "detectionProperties": {
                                         "TEXT": "0HHD"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-404.png"
                                 },
                                 "detections": [
                                     {
@@ -5077,22 +4964,22 @@
                                         "detectionProperties": {
                                             "TEXT": "0HHD"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-404.png"
                                     }
                                 ]
                             },
                             {
                                 "id": "ced2b3d382b36f3466be8ff806d0ced70d23cec8056ce1e5ad493823abac9a7a",
                                 "startOffsetFrame": 405,
-                                "stopOffsetFrame": 406,
+                                "stopOffsetFrame": 405,
                                 "startOffsetTime": 16889,
-                                "stopOffsetTime": 16931,
+                                "stopOffsetTime": 16889,
                                 "type": "TEXT",
                                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 77.729,
+                                "confidence": 79.769455,
                                 "trackProperties": {
-                                    "TEXT": "B364"
+                                    "TEXT": "DB34"
                                 },
                                 "exemplar": {
                                     "offsetFrame": 405,
@@ -5101,12 +4988,12 @@
                                     "y": 336,
                                     "width": 111,
                                     "height": 97,
-                                    "confidence": 77.729,
+                                    "confidence": 79.769455,
                                     "detectionProperties": {
-                                        "TEXT": "B364"
+                                        "TEXT": "DB34"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-405.png"
                                 },
                                 "detections": [
                                     {
@@ -5116,13 +5003,42 @@
                                         "y": 336,
                                         "width": 111,
                                         "height": 97,
-                                        "confidence": 77.729,
+                                        "confidence": 79.769455,
                                         "detectionProperties": {
-                                            "TEXT": "B364"
+                                            "TEXT": "DB34"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-405.png"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "70b5a1b6d3b69acc1d3bd7958a9c663ce50f889d570c3a8da21cb98a9c33d280",
+                                "startOffsetFrame": 406,
+                                "stopOffsetFrame": 406,
+                                "startOffsetTime": 16931,
+                                "stopOffsetTime": 16931,
+                                "type": "TEXT",
+                                "source": "+#TEST OALPR TEXT DETECTION ACTION",
+                                "confidence": 76.6967,
+                                "trackProperties": {
+                                    "TEXT": "B364"
+                                },
+                                "exemplar": {
+                                    "offsetFrame": 406,
+                                    "offsetTime": 16931,
+                                    "x": 1473,
+                                    "y": 346,
+                                    "width": 110,
+                                    "height": 96,
+                                    "confidence": 76.6967,
+                                    "detectionProperties": {
+                                        "TEXT": "B364"
                                     },
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-406.png"
+                                },
+                                "detections": [
                                     {
                                         "offsetFrame": 406,
                                         "offsetTime": 16931,
@@ -5134,8 +5050,51 @@
                                         "detectionProperties": {
                                             "TEXT": "B364"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-406.png"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "0e23b7b17ca307633ad00826a15b087238069b734b433039f3948982961c870a",
+                                "startOffsetFrame": 441,
+                                "stopOffsetFrame": 441,
+                                "startOffsetTime": 18390,
+                                "stopOffsetTime": 18390,
+                                "type": "TEXT",
+                                "source": "+#TEST OALPR TEXT DETECTION ACTION",
+                                "confidence": 76.05068,
+                                "trackProperties": {
+                                    "TEXT": "DBJD"
+                                },
+                                "exemplar": {
+                                    "offsetFrame": 441,
+                                    "offsetTime": 18390,
+                                    "x": 1316,
+                                    "y": 448,
+                                    "width": 103,
+                                    "height": 63,
+                                    "confidence": 76.05068,
+                                    "detectionProperties": {
+                                        "TEXT": "DBJD"
+                                    },
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-441.png"
+                                },
+                                "detections": [
+                                    {
+                                        "offsetFrame": 441,
+                                        "offsetTime": 18390,
+                                        "x": 1316,
+                                        "y": 448,
+                                        "width": 103,
+                                        "height": 63,
+                                        "confidence": 76.05068,
+                                        "detectionProperties": {
+                                            "TEXT": "DBJD"
+                                        },
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-441.png"
                                     }
                                 ]
                             },
@@ -5162,8 +5121,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BD34"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-444.png"
                                 },
                                 "detections": [
                                     {
@@ -5177,8 +5136,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BD34"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-444.png"
                                     },
                                     {
                                         "offsetFrame": 445,
@@ -5219,8 +5178,8 @@
                                     "detectionProperties": {
                                         "TEXT": "D3DD"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-446.png"
                                 },
                                 "detections": [
                                     {
@@ -5234,8 +5193,8 @@
                                         "detectionProperties": {
                                             "TEXT": "D3DD"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-446.png"
                                     }
                                 ]
                             },
@@ -5262,8 +5221,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BD83"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-447.png"
                                 },
                                 "detections": [
                                     {
@@ -5277,8 +5236,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BD83"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-447.png"
                                     }
                                 ]
                             },
@@ -5305,8 +5264,8 @@
                                     "detectionProperties": {
                                         "TEXT": "EDJDQ4"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-449.png"
                                 },
                                 "detections": [
                                     {
@@ -5320,8 +5279,8 @@
                                         "detectionProperties": {
                                             "TEXT": "EDJDQ4"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-449.png"
                                     }
                                 ]
                             },
@@ -5348,8 +5307,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BD36"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-451.png"
                                 },
                                 "detections": [
                                     {
@@ -5363,8 +5322,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BD36"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-451.png"
                                     }
                                 ]
                             },
@@ -5391,8 +5350,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DB36"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-453.png"
                                 },
                                 "detections": [
                                     {
@@ -5406,8 +5365,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DB36"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-453.png"
                                     }
                                 ]
                             },
@@ -5434,8 +5393,8 @@
                                     "detectionProperties": {
                                         "TEXT": "BD366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-456.png"
                                 },
                                 "detections": [
                                     {
@@ -5449,8 +5408,8 @@
                                         "detectionProperties": {
                                             "TEXT": "BD366"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-456.png"
                                     }
                                 ]
                             },
@@ -5477,8 +5436,8 @@
                                     "detectionProperties": {
                                         "TEXT": "336I"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-460.png"
                                 },
                                 "detections": [
                                     {
@@ -5492,8 +5451,8 @@
                                         "detectionProperties": {
                                             "TEXT": "336I"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-460.png"
                                     }
                                 ]
                             },
@@ -5520,8 +5479,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DB36"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-463.png"
                                 },
                                 "detections": [
                                     {
@@ -5535,8 +5494,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DB36"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-463.png"
                                     }
                                 ]
                             },
@@ -5563,8 +5522,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DB35"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-465.png"
                                 },
                                 "detections": [
                                     {
@@ -5578,8 +5537,8 @@
                                         "detectionProperties": {
                                             "TEXT": "DB35"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-465.png"
                                     }
                                 ]
                             },
@@ -5591,9 +5550,9 @@
                                 "stopOffsetTime": 19475,
                                 "type": "TEXT",
                                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                                "confidence": 83.326355,
+                                "confidence": 86.03886,
                                 "trackProperties": {
-                                    "TEXT": "DDJ6"
+                                    "TEXT": "DDJ06"
                                 },
                                 "exemplar": {
                                     "offsetFrame": 467,
@@ -5602,12 +5561,12 @@
                                     "y": 421,
                                     "width": 106,
                                     "height": 61,
-                                    "confidence": 83.326355,
+                                    "confidence": 86.03886,
                                     "detectionProperties": {
-                                        "TEXT": "DDJ6"
+                                        "TEXT": "DDJ06"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-467.png"
                                 },
                                 "detections": [
                                     {
@@ -5617,12 +5576,12 @@
                                         "y": 421,
                                         "width": 106,
                                         "height": 61,
-                                        "confidence": 83.326355,
+                                        "confidence": 86.03886,
                                         "detectionProperties": {
-                                            "TEXT": "DDJ6"
+                                            "TEXT": "DDJ06"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-467.png"
                                     }
                                 ]
                             },
@@ -5649,8 +5608,8 @@
                                     "detectionProperties": {
                                         "TEXT": "DD366"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-468.png"
                                 },
                                 "detections": [
                                     {
@@ -5664,20 +5623,20 @@
                                         "detectionProperties": {
                                             "TEXT": "DD366"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/45/0/frame-468.png"
                                     }
                                 ]
                             }
                         ]
                     }
                 ]
-            },
-            "detectionProcessingErrors": {}
+            }
         },
         {
-            "mediaId": 39,
-            "path": "file:/home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/text/lp-v8-texas.mp4",
+            "mediaId": 46,
+            "path": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/mpf-system-tests/target/test-classes/samples/text/lp-v8-texas.mp4",
+            "detectionProcessingErrors": {},
             "mimeType": "video/mp4",
             "length": 486,
             "sha256": "f7043cad6618433d82e15d52a7e187f55f95b94b2e88a36b0e3042cd2a178d41",
@@ -5718,8 +5677,8 @@
                                     "detectionProperties": {
                                         "TEXT": "SR3549"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-8.png"
                                 },
                                 "detections": [
                                     {
@@ -5845,8 +5804,8 @@
                                         "detectionProperties": {
                                             "TEXT": "SR3549"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-8.png"
                                     },
                                     {
                                         "offsetFrame": 9,
@@ -5957,8 +5916,8 @@
                                     "detectionProperties": {
                                         "TEXT": "SR354"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-16.png"
                                 },
                                 "detections": [
                                     {
@@ -5972,8 +5931,8 @@
                                         "detectionProperties": {
                                             "TEXT": "SR354"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-16.png"
                                     }
                                 ]
                             },
@@ -6000,8 +5959,8 @@
                                     "detectionProperties": {
                                         "TEXT": "SR3549"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-27.png"
                                 },
                                 "detections": [
                                     {
@@ -6015,8 +5974,8 @@
                                         "detectionProperties": {
                                             "TEXT": "SR3549"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-27.png"
                                     }
                                 ]
                             },
@@ -6043,8 +6002,8 @@
                                     "detectionProperties": {
                                         "TEXT": "SR3549"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-28.png"
                                 },
                                 "detections": [
                                     {
@@ -6058,8 +6017,8 @@
                                         "detectionProperties": {
                                             "TEXT": "SR3549"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-28.png"
                                     },
                                     {
                                         "offsetFrame": 29,
@@ -6128,8 +6087,8 @@
                                     "detectionProperties": {
                                         "TEXT": "SR3549"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-41.png"
                                 },
                                 "detections": [
                                     {
@@ -6269,8 +6228,8 @@
                                         "detectionProperties": {
                                             "TEXT": "SR3549"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-41.png"
                                     },
                                     {
                                         "offsetFrame": 42,
@@ -6325,8 +6284,8 @@
                                     "detectionProperties": {
                                         "TEXT": "SR3549"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-56.png"
                                 },
                                 "detections": [
                                     {
@@ -6508,8 +6467,8 @@
                                         "detectionProperties": {
                                             "TEXT": "SR3549"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-56.png"
                                     },
                                     {
                                         "offsetFrame": 57,
@@ -6564,8 +6523,8 @@
                                     "detectionProperties": {
                                         "TEXT": "SR3549"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-99.png"
                                 },
                                 "detections": [
                                     {
@@ -7139,8 +7098,8 @@
                                         "detectionProperties": {
                                             "TEXT": "SR3549"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-99.png"
                                     },
                                     {
                                         "offsetFrame": 100,
@@ -8567,8 +8526,8 @@
                                     "detectionProperties": {
                                         "TEXT": "SR3549"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-219.png"
                                 },
                                 "detections": [
                                     {
@@ -8848,8 +8807,8 @@
                                         "detectionProperties": {
                                             "TEXT": "SR3549"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-219.png"
                                     },
                                     {
                                         "offsetFrame": 220,
@@ -9450,8 +9409,8 @@
                                     "detectionProperties": {
                                         "TEXT": "SR3549"
                                     },
-                                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                    "artifactPath": null
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-263.png"
                                 },
                                 "detections": [
                                     {
@@ -9465,16 +9424,15 @@
                                         "detectionProperties": {
                                             "TEXT": "SR3549"
                                         },
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///var/lib/jenkins/jobs/openmpf-github-with-pull-request/workspace/openmpf/trunk/install/share/artifacts/40/46/0/frame-263.png"
                                     }
                                 ]
                             }
                         ]
                     }
                 ]
-            },
-            "detectionProcessingErrors": {}
+            }
         }
     ]
 }

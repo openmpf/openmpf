@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,23 +26,29 @@
 
 package org.mitre.mpf.test;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Objects;
-import java.util.function.Predicate;
+import org.apache.camel.Exchange;
+import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultMessage;
 import org.hamcrest.Description;
-import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientDetectionSystemProperties;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TestUtil {
 
@@ -75,6 +81,10 @@ public class TestUtil {
 
     public static <T, C extends Collection<T>> C nonEmptyCollection() {
         return CustomMatcher.of("Non-empty Collection", c -> !c.isEmpty());
+    }
+
+    public static <K, V, M extends Map<K, V>> M nonEmptyMap() {
+        return CustomMatcher.of("Non-empty Map", m -> !m.isEmpty());
     }
 
 
@@ -113,19 +123,41 @@ public class TestUtil {
         }
     }
 
-    public static TransientJob setupJob(long jobId, TransientDetectionSystemProperties transientDetectionSystemProperties, Redis redis, IoUtils ioUtils) throws WfmProcessingException {
-        TransientPipeline dummyPipeline = new TransientPipeline("dummyPipeline", "dummyDescription");
-        TransientStage dummyStageDet = new TransientStage("dummydummy", "dummyDescription", ActionType.DETECTION);
-        TransientAction dummyAction = new TransientAction("dummyAction", "dummyDescription", "dummyAlgo");
-        dummyAction.setProperties(new HashMap<>());
-        dummyStageDet.getActions().add(dummyAction);
+    public static TransientJob setupJob(
+            long jobId, SystemPropertiesSnapshot systemPropertiesSnapshot,
+            InProgressBatchJobsService inProgressJobs, IoUtils ioUtils) {
+        return setupJob(jobId, systemPropertiesSnapshot, inProgressJobs, ioUtils, Collections.emptyMap(),
+                        Collections.emptyMap());
+    }
 
-        dummyPipeline.getStages().add(dummyStageDet);
-        TransientJob dummyJob = new TransientJob(jobId, "234234", transientDetectionSystemProperties, dummyPipeline, 0, 1, false, false);
-        dummyJob.getMedia().add(new TransientMedia(234234,ioUtils.findFile("/samples/video_01.mp4").toString()));
+    public static TransientJob setupJob(
+            long jobId, SystemPropertiesSnapshot systemPropertiesSnapshot,
+            InProgressBatchJobsService inProgressJobs, IoUtils ioUtils,
+            Map<String, String> jobProperties, Map<String, Map<String, String>> algorithmProperties) {
 
-        redis.persistJob(dummyJob);
-        return dummyJob;
+        TransientAction dummyAction = new TransientAction(
+                "dummyAction", "dummyDescription", "dummyAlgo", Collections.emptyMap());
+        TransientStage dummyStageDet = new TransientStage(
+                "dummydummy", "dummyDescription", ActionType.DETECTION, Collections.singletonList(dummyAction));
+
+        TransientPipeline dummyPipeline = new TransientPipeline(
+                "dummyPipeline", "dummyDescription", Collections.singletonList(dummyStageDet));
+        URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
+        TransientMedia media = new TransientMediaImpl(
+                234234, mediaUri.toString(), UriScheme.FILE, Paths.get(mediaUri), Collections.emptyMap(), null);
+
+        return inProgressJobs.addJob(
+                jobId,
+                "234234",
+                systemPropertiesSnapshot,
+                dummyPipeline,
+                1,
+                false,
+                null,
+                null,
+                Collections.singletonList(media),
+                jobProperties,
+                algorithmProperties);
     }
 
 
@@ -136,6 +168,29 @@ public class TestUtil {
 
     public static boolean almostEqual(double x, double y) {
         return almostEqual(x, y, 0.01);
+    }
+
+
+    public static URI findFile(String path) {
+        try {
+            return TestUtil.class.getResource(path).toURI();
+        }
+        catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    public static Exchange createTestExchange() {
+        return createTestExchange(new DefaultMessage(), new DefaultMessage());
+    }
+
+    public static Exchange createTestExchange(Message inMessage, Message outMessage) {
+        Exchange exchange = mock(Exchange.class);
+        when(exchange.getIn())
+                .thenReturn(inMessage);
+        when(exchange.getOut())
+                .thenReturn(outMessage);
+        return exchange;
     }
 }
 

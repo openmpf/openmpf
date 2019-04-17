@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -84,7 +84,7 @@ public class MediaInspectionRouteBuilder extends RouteBuilder {
 	}
 
 	@Override
-	public void configure() throws Exception {
+	public void configure() {
 		log.debug("Configuring route '{}'.", routeId);
 
 		from(entryPoint)
@@ -96,7 +96,6 @@ public class MediaInspectionRouteBuilder extends RouteBuilder {
 			.choice()
 				.when(header(MpfHeaders.EMPTY_SPLIT).isEqualTo(Boolean.TRUE))
 					.removeHeader(MpfHeaders.EMPTY_SPLIT)
-					.process(JobRetrievalProcessor.REF)
 					.to(exitPoint)
 				.otherwise()
 					.to(MpfEndpoints.MEDIA_INSPECTION_WORK_QUEUE)
@@ -108,7 +107,6 @@ public class MediaInspectionRouteBuilder extends RouteBuilder {
 			.aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)
 			.completionPredicate(new SplitCompletedPredicate())
 			.removeHeader(MpfHeaders.SPLIT_COMPLETED)
-			.process(JobRetrievalProcessor.REF)
 			.to(exitPoint);
 	}
 }

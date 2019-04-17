@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,33 +26,46 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
+import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.interop.JsonAction;
 import org.mitre.mpf.wfm.util.TextUtils;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class TransientAction {
-	private String name;
-	public String getName() { return name; }
+	private final String _name;
+	public String getName() { return _name; }
 
-	private String description;
-	public String getDescription() { return description; }
+	private final String _description;
+	public String getDescription() { return _description; }
 
-	private String algorithm;
-	public String getAlgorithm() { return algorithm; }
+	private final String _algorithm;
+	public String getAlgorithm() { return _algorithm; }
 
-	private Map<String, String> properties;
-	public Map<String, String> getProperties() { return properties; }
-	public void setProperties(Map<String, String> properties) { this.properties = properties; }
+	private final ImmutableMap<String, String> _properties;
+	public ImmutableMap<String, String> getProperties() { return _properties; }
 
-	public TransientAction(@JsonProperty("name") String name, @JsonProperty("description") String description, @JsonProperty("algorithm") String algorithm) {
-		this.name = TextUtils.trimAndUpper(name);
-		this.description = TextUtils.trim(description);
-		this.algorithm = TextUtils.trimAndUpper(algorithm);
-		this.properties = new HashMap<>();
 
-		assert this.name != null : "name must not be null";
-		assert this.algorithm != null : "algorithm must not be null";
+	public TransientAction(String name, String description, String algorithm, Map<String, String> properties) {
+		_name = TextUtils.trimAndUpper(name);
+		_description = TextUtils.trim(description);
+		_algorithm = TextUtils.trimAndUpper(algorithm);
+		_properties = ImmutableMap.copyOf(properties);
+	}
+
+
+	public static TransientAction from(JsonAction action) {
+		Map<String, String> properties = action.getProperties()
+				.entrySet()
+				.stream()
+				.filter(p -> StringUtils.isNotBlank(p.getKey()) && StringUtils.isNotBlank(p.getValue()))
+				.collect(ImmutableMap.toImmutableMap(p -> p.getKey().toUpperCase(), Map.Entry::getValue));
+
+		return new TransientAction(
+                action.getName(),
+                action.getDescription(),
+                action.getAlgorithm(),
+				properties);
 	}
 }

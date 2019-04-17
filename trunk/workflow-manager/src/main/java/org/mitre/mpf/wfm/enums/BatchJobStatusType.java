@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -107,15 +107,15 @@ public enum BatchJobStatusType {
      */
     ERROR(true);
 
-    public static BatchJobStatusType DEFAULT = COMPLETE;
+    private static final BatchJobStatusType DEFAULT = COMPLETE;
 
-    protected boolean terminal;
+    private final boolean _terminal;
 
     public boolean isTerminal() {
-        return terminal;
+        return _terminal;
     }
 
-    BatchJobStatusType(boolean terminal) { this.terminal = terminal; }
+    BatchJobStatusType(boolean terminal) { _terminal = terminal; }
 
 
     /** Finds the BatchJobStatusType which best matches the given input; if no match is found, {@link #DEFAULT} is used. */

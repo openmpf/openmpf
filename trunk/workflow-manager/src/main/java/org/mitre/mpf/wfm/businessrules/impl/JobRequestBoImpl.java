@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -34,8 +34,7 @@ import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.camel.routes.JobCreatorRouteBuilder;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
@@ -56,7 +55,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.util.FileSystemUtils;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,8 +99,7 @@ public class JobRequestBoImpl implements JobRequestBo {
     private JmsUtils jmsUtils;
 
     @Autowired
-    @Qualifier(RedisImpl.REF)
-    private Redis redis;
+    private InProgressBatchJobsService inProgressJobs;
 
     @Autowired
     @Qualifier(HibernateJobRequestDaoImpl.REF)
@@ -131,7 +129,7 @@ public class JobRequestBoImpl implements JobRequestBo {
      * @return
      */
     @Override
-    public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String, Map> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority) {
+    public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String, Map<String, String>> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority) {
 
         JsonJobRequest jsonJobRequest = new JsonJobRequest(TextUtils.trim(externalId), buildOutput, pipelineService.createJsonPipeline(pipelineName), priority);
         if (media != null) {
@@ -141,7 +139,7 @@ public class JobRequestBoImpl implements JobRequestBo {
         // update to add the job algorithm-specific-properties, supporting the priority:
         // action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
         if (algorithmProperties != null) {
-            for (Map.Entry<String, Map> property : algorithmProperties.entrySet()) {
+            for (Map.Entry<String, Map<String, String>> property : algorithmProperties.entrySet()) {
                 jsonJobRequest.getAlgorithmProperties().put(property.getKey().toUpperCase(), property.getValue());
             }
         }
@@ -170,7 +168,7 @@ public class JobRequestBoImpl implements JobRequestBo {
      * @return JSON representation of the job request
      */
     @Override
-    public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String, Map> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority, String callbackURL, String callbackMethod) {
+    public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String, Map<String, String>> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority, String callbackURL, String callbackMethod) {
         log.debug("[createRequest] externalId:" + externalId + " pipeline:" + pipelineName + " buildOutput:" + buildOutput + " priority:" + priority + " callbackURL:" + callbackURL + " callbackMethod:" + callbackMethod);
         String jsonCallbackURL = "";
         String jsonCallbackMethod = "GET";
@@ -189,7 +187,7 @@ public class JobRequestBoImpl implements JobRequestBo {
         // Putting algorithm properties in here supports the priority scheme (from lowest to highest):
         // action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
         if (algorithmProperties != null) {
-            for (Map.Entry<String, Map> property : algorithmProperties.entrySet()) {
+            for (Map.Entry<String, Map<String, String>> property : algorithmProperties.entrySet()) {
                 jsonJobRequest.getAlgorithmProperties().put(property.getKey().toUpperCase(), property.getValue());
             }
         }
@@ -243,8 +241,9 @@ public class JobRequestBoImpl implements JobRequestBo {
 
     /**
      * Will cancel a batch job.
-     * This method will mark the job as cancelled in both REDIS and in the long-term database. The job cancel request will also be sent
-     * along to the components via ActiveMQ using the JobCreatorRouteBuilder.ENTRY_POINT.
+     * This method will mark the job as cancelled in both the TransientJob and in the long-term database.
+     * The job cancel request will also be sent along to the components via ActiveMQ using the
+     * JobCreatorRouteBuilder.ENTRY_POINT.
      *
      * @param jobId
      * @return true if the job was successfully cancelled, false otherwise
@@ -268,8 +267,8 @@ public class JobRequestBoImpl implements JobRequestBo {
         } else {
             log.info("[Job {}:*:*] Cancelling job.", jobId);
 
-            // Mark the job as cancelled in Redis so that future steps in the workflow will know not to continue processing.
-            if (redis.cancel(jobId)) {
+
+            if (inProgressJobs.cancelJob(jobId)) {
                 try {
                     // Try to move any pending work items on the queues to the appropriate cancellation queues.
                     // If this operation fails, any remaining pending items will continue to process, but
@@ -282,7 +281,6 @@ public class JobRequestBoImpl implements JobRequestBo {
                 jobRequest.setStatus(BatchJobStatusType.CANCELLING);
                 jobRequestDao.persist(jobRequest);
             } else {
-                // Warn of the race condition where Redis and the persistent database reflect different states.
                 log.warn("[Job {}:*:*] The job is not in progress and cannot be cancelled at this time.", jobId);
             }
             return true;
@@ -320,9 +318,6 @@ public class JobRequestBoImpl implements JobRequestBo {
         FileSystemUtils.deleteRecursively(propertiesUtil.getJobOutputObjectsDirectory(jobId));
         FileSystemUtils.deleteRecursively(propertiesUtil.getJobMarkupDirectory(jobId));
 
-        redis.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
-        jobStatusBroadcaster.broadcast(jobId, 0, BatchJobStatusType.IN_PROGRESS);
-
         return runInternal(jobRequest, jsonJobRequest, priority);
     }
 
@@ -338,7 +333,7 @@ public class JobRequestBoImpl implements JobRequestBo {
     private JobRequest initializeInternal(JobRequest jobRequest, JsonJobRequest jsonJobRequest) throws WfmProcessingException {
         jobRequest.setPriority(jsonJobRequest.getPriority());
         jobRequest.setStatus(BatchJobStatusType.INITIALIZED);
-        jobRequest.setTimeReceived(new Date());
+        jobRequest.setTimeReceived(Instant.now());
         jobRequest.setInputObject(jsonUtils.serialize(jsonJobRequest));
         jobRequest.setPipeline(jsonJobRequest.getPipeline() == null ? null : TextUtils.trimAndUpper(jsonJobRequest.getPipeline().getName()));
 

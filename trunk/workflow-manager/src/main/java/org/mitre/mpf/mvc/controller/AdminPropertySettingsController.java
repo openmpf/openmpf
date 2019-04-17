@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -110,8 +110,7 @@ public class AdminPropertySettingsController
 	@RequestMapping(value = "/properties", method = RequestMethod.PUT)
     /** Call this method to save system properties that have changed to the custom mpf properties file.
      * If any detection system properties have changed, that are identified as changeable without OpenMPF restart,
-     * then update those detection system properties via PropertiesUtil. The updated detection system properties will also
-     * be stored in REDIS, so updated values can be used in the construction of new pipelines (created using newly created tasks).
+     * then update those detection system properties via PropertiesUtil.
      * Add system message if a restart of OpenMPF is required for any other system property that is changed and
      * requires a restart to apply the change.
      * @param propertyModels list of system properties that have changed since OpenMPF startup.

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -65,10 +65,11 @@ public class PipelineController {
 
     private static final Logger log = LoggerFactory.getLogger(PipelineController.class);
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
-
     @Autowired
     private PipelineService pipelineService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     /*
      *	/pipelines
@@ -104,16 +105,6 @@ public class PipelineController {
                 .stream()
                 .map(c -> new PipelineComponentBasicInfo(c.getName(), c.getDescription()))
                 .collect(Collectors.toSet());
-    }
-
-    //INTERNAL - deprecated
-    //  pipelines2: todo: should remove this after removing usage in
-    //      AppServices.service('PipelineService'... in client code
-    @Deprecated
-    @RequestMapping(value = {"/pipelines/details"}, method = RequestMethod.GET, produces = "application/json")
-    @ResponseBody
-    public String getAvailablePipelinesDetails() {
-        return pipelineService.getPipelineDefinitionAsJson();
     }
 
 

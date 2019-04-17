@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -30,9 +30,11 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,25 +49,32 @@ public class MediaInspectionSplitter extends WfmSplitter {
 	public static final String REF = "mediaInspectionSplitter";
 
 	@Autowired
-	private JsonUtils jsonUtils;
+	private InProgressBatchJobsService inProgressJobs;
 
 	@Override
 	public String getSplitterName() { return REF; }
 
-	public List<Message> wfmSplit(Exchange exchange) throws Exception {
+
+	@Override
+	public List<Message> wfmSplit(Exchange exchange) {
+		long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+		TransientJob transientJob = inProgressJobs.getJob(jobId);
 		List<Message> messages = new ArrayList<>();
-		TransientJob transientJob = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TransientJob.class);
 
 		if(!transientJob.isCancelled()) {
 			// If the job has not been cancelled, perform the split.
 			for (TransientMedia transientMedia : transientJob.getMedia()) {
 				if (!transientMedia.isFailed()) {
 					Message message = new DefaultMessage();
-					message.setBody(jsonUtils.serialize(transientMedia));
+					message.setHeader(MpfHeaders.JOB_ID, jobId);
+					message.setHeader(MpfHeaders.MEDIA_ID, transientMedia.getId());
 					messages.add(message);
 				} else {
 					log.warn("Skipping '{}' ({}). It is in an error state.", transientMedia.getUri(), transientMedia.getId());
 				}
+			}
+			if (messages.isEmpty()) {
+				inProgressJobs.setJobStatus(transientJob.getId(), BatchJobStatusType.ERROR);
 			}
 		} else {
 			log.warn("[Job {}|*|*] Media inspection will not be performed because this job has been cancelled.", transientJob.getId());

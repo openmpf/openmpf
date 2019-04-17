@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,8 +28,7 @@ package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -38,10 +37,9 @@ import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.Date;
+import java.time.Instant;
 
 @Component(EndOfStageProcessor.REF)
 public class EndOfStageProcessor extends WfmProcessor {
@@ -49,8 +47,7 @@ public class EndOfStageProcessor extends WfmProcessor {
 	private static final Logger log = LoggerFactory.getLogger(EndOfStageProcessor.class);
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
-	private Redis redis;
+	private InProgressBatchJobsService inProgressBatchJobs;
 	
 	@Autowired
 	private JobProgress jobProgressStore;
@@ -60,33 +57,31 @@ public class EndOfStageProcessor extends WfmProcessor {
 
 	@Override
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
-		TransientJob job = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TransientJob.class);
-		job.setCurrentStage(job.getCurrentStage() + 1);
+		long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+		inProgressBatchJobs.incrementStage(jobId);
+		TransientJob job = inProgressBatchJobs.getJob(jobId);
 
 		log.info("[Job {}|{}|*] Stage Complete! Progress is now {}/{}.",
-				exchange.getIn().getHeader(MpfHeaders.JOB_ID),
+				jobId,
 				job.getCurrentStage() - 1,
 				job.getCurrentStage(),
 				job.getPipeline().getStages().size());
 
-		exchange.getOut().setBody(jsonUtils.serialize(job));
-		redis.setCurrentTaskIndex(job.getId(), job.getCurrentStage());
 
 		if(job.getCurrentStage() >= job.getPipeline().getStages().size()) {
-			long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
 			//notify of completion - use
 			if(!job.isOutputEnabled()) {
 				jobStatusBroadcaster.broadcast(
 						jobId,
 						100,
 						job.isCancelled() ? BatchJobStatusType.CANCELLED : BatchJobStatusType.COMPLETE,
-						new Date());
+						Instant.now());
 				jobProgressStore.setJobProgress(jobId, 100.0f);
 			} else {
-				jobStatusBroadcaster.broadcast(jobId, 99, BatchJobStatusType.BUILDING_OUTPUT_OBJECT, new Date());
+				jobStatusBroadcaster.broadcast(jobId, 99, BatchJobStatusType.BUILDING_OUTPUT_OBJECT, Instant.now());
 				jobProgressStore.setJobProgress(jobId, 99.0f);
 			}			
-			log.debug("[Job {}|*|*] All stages have completed. Setting the {} flag.", exchange.getIn().getHeader(MpfHeaders.JOB_ID), MpfHeaders.JOB_COMPLETE);
+			log.debug("[Job {}|*|*] All stages have completed. Setting the {} flag.", jobId, MpfHeaders.JOB_COMPLETE);
 			exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, Boolean.TRUE);
 		}
 

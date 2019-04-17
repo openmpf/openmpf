@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -25,6 +25,12 @@
  ******************************************************************************/
 
 package org.mitre.mpf.wfm.enums;
+
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toCollection;
 
 // StreamingJobStatusType enumeration describes all possible job status conditions applicable to a streaming job.
 public enum StreamingJobStatusType {
@@ -85,12 +91,18 @@ public enum StreamingJobStatusType {
      */
     STALLED(false);
 
-    protected boolean terminal;
+    private final boolean _terminal;
 
     public boolean isTerminal() {
-        return terminal;
+        return _terminal;
     }
 
-    StreamingJobStatusType(boolean terminal) { this.terminal = terminal; }
+    StreamingJobStatusType(boolean terminal) { _terminal = terminal; }
 
+
+    public static Collection<StreamingJobStatusType> getNonTerminalStatuses() {
+        return Stream.of(StreamingJobStatusType.values())
+                .filter(s -> !s.isTerminal())
+                .collect(toCollection(() -> EnumSet.noneOf(StreamingJobStatusType.class)));
+    }
 }

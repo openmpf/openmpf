@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,11 +29,12 @@ package org.mitre.mpf.wfm.camel;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionSplitter;
+import org.mitre.mpf.wfm.camel.operations.markup.MarkupStageSplitter;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
 import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.camel.operations.markup.MarkupStageSplitter;
-import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,23 +63,23 @@ public class DefaultStageSplitter extends WfmSplitter implements StageSplitter {
 	private StageSplitter markupStageSplitter;
 
 	@Autowired
-	private JsonUtils jsonUtils;
+	private InProgressBatchJobsService inProgressJobs;
 
 	@Override
 	public String getSplitterName() { return REF; }
 
-	public List<Message> performSplit(TransientJob transientJob, TransientStage transientStage) throws Exception {
-		log.warn("[Job {}|{}|*] Stage {} calls an unsupported operation '{}'. No work will be performed in this stage.",
-				transientJob.getId(), transientJob.getCurrentStage(), transientJob.getCurrentStage(), transientStage.getName());
-		return new ArrayList<Message>(0);
-	}
 
 	@Override
-	public final List<Message> wfmSplit(Exchange exchange) throws Exception {
-		assert exchange.getIn().getBody() != null : "The body of the message must not be null.";
-		assert exchange.getIn().getBody(byte[].class) != null : "The body of the message must be a byte[].";
+	public List<Message> performSplit(TransientJob transientJob, TransientStage transientStage) {
+		log.warn("[Job {}|{}|*] Stage {} calls an unsupported operation '{}'. No work will be performed in this stage.",
+				transientJob.getId(), transientJob.getCurrentStage(), transientJob.getCurrentStage(), transientStage.getName());
+		return new ArrayList<>();
+	}
 
-		TransientJob transientJob = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TransientJob.class);
+
+	@Override
+	public final List<Message> wfmSplit(Exchange exchange) {
+		TransientJob transientJob = inProgressJobs.getJob(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class));
 		TransientStage transientStage = transientJob.getPipeline().getStages().get(transientJob.getCurrentStage());
 		log.info("[Job {}|{}|*] Stage {}/{} - Operation: {} - ActionType: {}.",
 				transientJob.getId(),

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,6 +29,8 @@ package org.mitre.mpf.mst;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
 import org.jgroups.Address;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,25 +52,28 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.AdditionalMatchers.*;
+import static org.mockito.AdditionalMatchers.geq;
+import static org.mockito.AdditionalMatchers.gt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(initializers = TestSystemWithDefaultConfig.AppCtxInit.class)
-@ActiveProfiles("jenkins")
 @DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
 public class TestStreamingJobStartStop {
 
@@ -91,6 +96,9 @@ public class TestStreamingJobStartStop {
 
 	@Autowired
 	private MasterNode _masterNode;
+
+	@Autowired
+	private ObjectMapper _objectMapper;
 
 
 	@Test(timeout = 5 * 60_000)
@@ -117,8 +125,8 @@ public class TestStreamingJobStartStop {
 
 
 		verify(_mockStreamingJobRequestBo, timeout(30_000))
-				.handleJobStatusChange(eq(jobId), or(eq(new StreamingJobStatus(StreamingJobStatusType.TERMINATED)),
-				                                     eq(new StreamingJobStatus(StreamingJobStatusType.CANCELLED))),
+				.handleJobStatusChange(eq(jobId),
+				                       hasStatus(StreamingJobStatusType.TERMINATED, StreamingJobStatusType.CANCELLED),
 				                       gt(test_start_time));
 
 		ArgumentCaptor<JsonSegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(JsonSegmentSummaryReport.class);
@@ -170,8 +178,8 @@ public class TestStreamingJobStartStop {
 
 
 		verify(_mockStreamingJobRequestBo, timeout(60_000))
-				.handleJobStatusChange(eq(jobId), or(eq(new StreamingJobStatus(StreamingJobStatusType.TERMINATED)),
-				                                     eq(new StreamingJobStatus(StreamingJobStatusType.CANCELLED))),
+				.handleJobStatusChange(eq(jobId),
+				                       hasStatus(StreamingJobStatusType.TERMINATED, StreamingJobStatusType.CANCELLED),
 				                       gt(test_start_time));
 
 
@@ -191,7 +199,7 @@ public class TestStreamingJobStartStop {
 
 		URL expectedOutputPath = getClass().getClassLoader()
 				.getResource("output/object/runDarknetDetectVideo.json");
-		JsonOutputObject expectedOutputJson = new ObjectMapper().readValue(expectedOutputPath, JsonOutputObject.class);
+		JsonOutputObject expectedOutputJson = _objectMapper.readValue(expectedOutputPath, JsonOutputObject.class);
 
 		boolean allExpectedTracksFound = expectedOutputJson.getMedia()
 				.stream()
@@ -204,23 +212,42 @@ public class TestStreamingJobStartStop {
 	}
 
 
+	private static StreamingJobStatus hasStatus(StreamingJobStatusType... statuses) {
+		return argThat(new BaseMatcher<StreamingJobStatus>() {
+			@Override
+			public boolean matches(Object item) {
+				if (!(item instanceof StreamingJobStatus)) {
+					return false;
+				}
+				StreamingJobStatus status = (StreamingJobStatus) item;
+				return Stream.of(statuses)
+						.anyMatch(t -> status.getType() == t);
+			}
+			@Override
+			public void describeTo(Description description) {
+				description.appendValueList("", " or ", "", statuses);
+
+			}
+		});
+	}
+
 	private static TransientStreamingJob createJob(long jobId, String algorithm, String pipelineName,
 	                                               String mediaPath, int segmentSize, int stallTimeout) {
 
-		TransientStage stage1 = new TransientStage("stage1", "description", ActionType.DETECTION);
-		stage1.getActions().add(new TransientAction("Action1", "description", algorithm));
+		TransientStage stage1 = new TransientStage(
+				"stage1",
+				"description",
+				ActionType.DETECTION,
+				Collections.singletonList(new TransientAction("Action1", "description", algorithm, Collections.emptyMap())));
 
-		TransientPipeline pipeline = new TransientPipeline(pipelineName, "desc");
-		pipeline.getStages().add(stage1);
+		TransientPipeline pipeline = new TransientPipeline(pipelineName, "desc",
+		                                                   Collections.singletonList(stage1));
 		URL videoUrl = TestStreamingJobStartStop.class.getResource(mediaPath);
-		TransientStream stream = new TransientStream(124, videoUrl.toString());
-		stream.setSegmentSize(segmentSize);
+		TransientStream stream = new TransientStream(124, videoUrl.toString(), segmentSize, Collections.emptyMap());
 
-		TransientStreamingJob streamingJob = new TransientStreamingJob(
-				jobId, "ext id", pipeline, 1, stallTimeout, false, "mydir",
-				false);
-		streamingJob.setStream(stream);
-		return streamingJob;
+		return new TransientStreamingJobImpl(
+				jobId, "ext id", pipeline, stream, 1, stallTimeout, false, "mydir",
+				null, null, Collections.emptyMap(), Collections.emptyMap());
 	}
 
 

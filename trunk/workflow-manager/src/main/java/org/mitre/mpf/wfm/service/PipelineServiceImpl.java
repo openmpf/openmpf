@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,10 +27,7 @@
 package org.mitre.mpf.wfm.service;
 
 import com.thoughtworks.xstream.XStream;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.json.JSONObject;
-import org.json.XML;
 import org.mitre.mpf.interop.JsonAction;
 import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.interop.JsonStage;
@@ -43,7 +40,6 @@ import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
@@ -269,20 +265,6 @@ public class PipelineServiceImpl implements PipelineService {
     @Override
     public SortedSet<String> getTaskNames() {
         return new TreeSet<>(tasks.keySet());
-    }
-
-
-    /** Gets the pipelines definition XML as an JSON string */
-    @Override
-    public String getPipelineDefinitionAsJson() {
-        try (InputStream inputStream = propertiesUtil.getPipelineDefinitions().getInputStream()) {
-            String pipelinesXmlString = IOUtils.toString(inputStream);
-            JSONObject xmlJSONObj = XML.toJSONObject(pipelinesXmlString);
-            return xmlJSONObj.toString();
-        }
-        catch (IOException ex) {
-            throw new UncheckedIOException("Could not read pipeline definition file", ex);
-        }
     }
 
 

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,6 +28,7 @@ package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.*;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
@@ -69,13 +70,13 @@ public class JsonOutputObject {
 
 	@JsonProperty("timeStart")
 	@JsonPropertyDescription("The timestamp indicating when this job was received.")
-	private String timeStart;
-	public String getTimeStart() { return timeStart; }
+	private Instant timeStart;
+	public Instant getTimeStart() { return timeStart; }
 
 	@JsonProperty("timeStop")
 	@JsonPropertyDescription("The timestamp indicating when this job completed.")
-	private String timeStop;
-	public String getTimeStop() { return timeStop; }
+	private Instant timeStop;
+	public Instant getTimeStop() { return timeStop; }
 
 	@JsonProperty("status")
 	@JsonPropertyDescription("The high-level summary status of this job. The expected value is COMPLETE.")
@@ -111,7 +112,7 @@ public class JsonOutputObject {
     public JsonOutputObject(){}
 
 	public JsonOutputObject(long jobId, String objectId, JsonPipeline pipeline, int priority, String siteId,
-	                        String externalJobId, String timeStart, String timeStop, String status) {
+	                        String externalJobId, Instant timeStart, Instant timeStop, String status) {
 		this.jobId = jobId;
 		this.objectId = objectId;
 		this.pipeline = pipeline;
@@ -136,8 +137,8 @@ public class JsonOutputObject {
                 @JsonProperty("priority") int priority,
                 @JsonProperty("siteId") String siteId,
                 @JsonProperty("externalJobId") String externalJobId,
-                @JsonProperty("timeStart") String timeStart,
-                @JsonProperty("timeStop") String timeStop,
+                @JsonProperty("timeStart") Instant timeStart,
+                @JsonProperty("timeStop") Instant timeStop,
                 @JsonProperty("status") String status,
                 @JsonProperty("algorithmProperties") Map<String, Map> algorithmProperties,
                 @JsonProperty("jobProperties") Map<String, String> jobProperties,

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,13 +29,11 @@ package org.mitre.mpf.wfm.camel;
 import com.google.protobuf.MessageLite;
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.util.Map;
 
@@ -43,10 +41,14 @@ public abstract class ResponseProcessor<T extends MessageLite> extends WfmProces
 	private static final Logger log = LoggerFactory.getLogger(ResponseProcessor.class);
 
 	@Autowired
-	@Qualifier(RedisImpl.REF)
-	protected Redis redis;
+	private InProgressBatchJobsService inProgressJobs;
 
-	protected Class<T> clazz;
+	private final Class<T> clazz;
+
+
+	protected ResponseProcessor(Class<T> clazz) {
+		this.clazz = clazz;
+	}
 
 	/**
 	 * When overridden, processes the response received by a component.
@@ -71,7 +73,7 @@ public abstract class ResponseProcessor<T extends MessageLite> extends WfmProces
 		exchange.getOut().getHeaders().put(MpfHeaders.SPLIT_SIZE, exchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE));
 		exchange.getOut().getHeaders().put(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
 
-		if(!redis.containsJob(jobId)) {
+		if(!inProgressJobs.containsJob(jobId)) {
 			// No such job. Repackage the response and send it to the unsolicited responses queue for future analysis.
 			log.warn("[Job {}|*|*] A job with this ID is not known to the system. This message will be ignored.", jobId);
 			exchange.getIn().setHeader(MpfHeaders.UNSOLICITED, Boolean.TRUE.toString());

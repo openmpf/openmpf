@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,210 +26,175 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
-import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.*;
-import org.junit.runner.RunWith;
-import org.junit.runner.notification.RunListener;
-import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
-import org.mitre.mpf.wfm.camel.WfmSplitterInterface;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
-import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.JniLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
-@RunWith(SpringJUnit4ClassRunner.class)
-@RunListener.ThreadSafe
+import java.net.URI;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.Assert.*;
+import static org.mitre.mpf.test.TestUtil.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
+
 public class TestMediaInspectionProcessor {
 	private static final Logger log = LoggerFactory.getLogger(TestMediaInspectionProcessor.class);
 	private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
-	@Autowired
-	private ApplicationContext context;
+    private final InProgressBatchJobsService mockInProgressJobs = mock(InProgressBatchJobsService.class);
 
-	@Autowired
-	private CamelContext camelContext;
+    private final MediaInspectionProcessor mediaInspectionProcessor
+            = new MediaInspectionProcessor(mockInProgressJobs, new IoUtils());
 
-	@Autowired
-	@Qualifier(MediaInspectionProcessor.REF)
-	private WfmProcessorInterface mediaInspectionProcessor;
 
-	@Autowired
-	@Qualifier(MediaInspectionSplitter.REF)
-	private WfmSplitterInterface mediaInspectionSplitter;
-
-    @Autowired
-    private IoUtils ioUtils;
-
-    @Autowired
-    private JsonUtils jsonUtils;
-
-    @Autowired
-    private Redis redis;
-
-    private static final MutableInt SEQUENCE = new MutableInt();
-    public int next() {
-        synchronized (SEQUENCE) {
-            int next = SEQUENCE.getValue();
-            SEQUENCE.increment();
-            return next;
-        }
+    private static final AtomicInteger SEQUENCE = new AtomicInteger();
+    private static int next() {
+        return SEQUENCE.incrementAndGet();
     }
 
+    @BeforeClass
+    public static void initClass() {
+        assertTrue(JniLoader.isLoaded());
+    }
+
+
 	@Test(timeout = 5 * MINUTES)
-	public void testImageInspection() throws Exception {
+	public void testImageInspection() {
 		log.info("Starting image inspection test.");
+		long jobId = next();
+		long mediaId = next();
 
-		TransientMedia transientMedia = new TransientMedia(next(), ioUtils.findFile("/samples/meds1.jpg").toString());
-		Exchange exchange = new DefaultExchange(camelContext);
-		exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
-		exchange.getIn().setBody(jsonUtils.serialize(transientMedia));
-		mediaInspectionProcessor.process(exchange);
+        URI mediaUri = TestUtil.findFile("/samples/meds1.jpg");
+        TransientMediaImpl transientMedia = new TransientMediaImpl(
+                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+                null);
+        Exchange exchange = setupExchange(jobId, transientMedia);
+        mediaInspectionProcessor.process(exchange);
 
-		Object responseBody = exchange.getOut().getBody();
-		Assert.assertTrue("A response body must be set.", responseBody != null);
-		Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
+        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
+        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
-		// Implied assertion: Deserialization works.
-		TransientMedia responseTransientMedia = jsonUtils.deserialize((byte[])responseBody, TransientMedia.class);
-
-		Assert.assertTrue(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-				Boolean.toString(responseTransientMedia.isFailed()),
-				responseTransientMedia.getMessage()),
-				!responseTransientMedia.isFailed());
+		assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
+				Boolean.toString(transientMedia.isFailed()),
+				transientMedia.getMessage()),
+				transientMedia.isFailed());
 
 		String targetType = "image";
-		Assert.assertTrue(String.format("The medium's type should begin with '%s'. Actual: %s.", targetType, responseTransientMedia.getType()),
-				StringUtils.startsWithIgnoreCase(responseTransientMedia.getType(), targetType));
-
 		int targetLength = 1;
-		Assert.assertTrue(String.format("The medium's length should be %d. Actual: %d.", targetLength, responseTransientMedia.getLength()),
-				responseTransientMedia.getLength() == targetLength);
-
 		String targetHash = "c067e7eed23a0fe022140c30dbfa993ae720309d6567a803d111ecec739a6713";//`sha256sum meds1.jpg`
-		Assert.assertTrue(String.format("The medium's hash should have matched '%s'. Actual: %s.", targetHash, responseTransientMedia.getSha256()),
-				targetHash.equalsIgnoreCase(responseTransientMedia.getSha256()));
+
+		verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
+                                        eq(targetLength), anyNonNull());
+		verifyNoJobOrMediaError();
 
 		log.info("Image inspection passed.");
 	}
+
 
 	/** Tests that the results from a video file are sane. */
 	@Test(timeout = 5 * MINUTES)
 	public void testVideoInspection() throws Exception {
 		log.info("Starting video inspection test.");
+        long jobId = next();
+        long mediaId = next();
 
-		TransientMedia transientMedia = new TransientMedia(next(), ioUtils.findFile("/samples/video_01.mp4").toString());
-
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
-        exchange.getIn().setBody(jsonUtils.serialize(transientMedia));
+        URI mediaUri = TestUtil.findFile("/samples/video_01.mp4");
+        TransientMediaImpl transientMedia = new TransientMediaImpl(
+                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+                null);
+        Exchange exchange = setupExchange(jobId, transientMedia);
         mediaInspectionProcessor.process(exchange);
 
-        Object responseBody = exchange.getOut().getBody();
-        Assert.assertTrue("A response body must be set.", responseBody != null);
-        Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
-
-        // Implied assertion: Deserialization works.
-        TransientMedia responseTransientMedia = jsonUtils.deserialize((byte[])responseBody, TransientMedia.class);
-
-        Assert.assertTrue(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-                        Boolean.toString(responseTransientMedia.isFailed()),
-                        responseTransientMedia.getMessage()),
-                !responseTransientMedia.isFailed());
+        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
+        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+        assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
+                        Boolean.toString(transientMedia.isFailed()),
+                                        transientMedia.getMessage()),
+                    transientMedia.isFailed());
 
         String targetType = "video";
-        Assert.assertTrue(String.format("The medium's type should begin with '%s'. Actual: %s.", targetType, responseTransientMedia.getType()),
-                StringUtils.startsWithIgnoreCase(responseTransientMedia.getType(), targetType));
-
         int targetLength = 90; //`ffprobe -show_packets video_01.mp4 | grep video | wc -l`
-        Assert.assertTrue(String.format("The medium's length should be %d. Actual: %d.", targetLength, responseTransientMedia.getLength()),
-                responseTransientMedia.getLength() == targetLength);
-
         String targetHash = "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea"; //`sha256sum video_01.mp4`
-        Assert.assertTrue(String.format("The medium's hash should have matched '%s'. Actual: %s.", targetHash, responseTransientMedia.getSha256()),
-                targetHash.equalsIgnoreCase(responseTransientMedia.getSha256()));
+
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
+                                        eq(targetLength), nonEmptyMap());
+
+        verifyNoJobOrMediaError();
 
         log.info("Video inspection passed.");
     }
 
+
     /** Tests that the results from a video file are sane. */
     @Test(timeout = 5 * MINUTES)
-    public void testVideoInspectionInvalid() throws Exception {
+    public void testVideoInspectionInvalid() {
         log.info("Starting invalid video inspection test.");
+        long jobId = next();
+        long mediaId = next();
 
-        TransientMedia transientMedia = new TransientMedia(next(), ioUtils.findFile("/samples/video_01_invalid.mp4").toString());
-
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
-        exchange.getIn().setBody(jsonUtils.serialize(transientMedia));
+        URI mediaUri = TestUtil.findFile("/samples/video_01_invalid.mp4");
+        TransientMediaImpl transientMedia = new TransientMediaImpl(
+                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+                null);
+        Exchange exchange = setupExchange(jobId, transientMedia);
         mediaInspectionProcessor.process(exchange);
 
-        Object responseBody = exchange.getOut().getBody();
-        Assert.assertTrue("A response body must be set.", responseBody != null);
-        Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
+        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
+        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
-        // Implied assertion: Deserialization works.
-        TransientMedia responseTransientMedia = jsonUtils.deserialize((byte[])responseBody, TransientMedia.class);
-
-        Assert.assertFalse(String.format("The response entity must fail. Actual: %s. Message: %s.",
-                        Boolean.toString(responseTransientMedia.isFailed()),
-                        responseTransientMedia.getMessage()),
-                !responseTransientMedia.isFailed());
+        verifyMediaError(jobId, mediaId);
 
         log.info("Media Inspection correctly handled error on invalid video file.");
-
     }
+
 
 	/** Tests that the results from an audio file are sane. */
 	@Test(timeout = 5 * MINUTES)
-	public void testAudioInspection() throws Exception {
+	public void testAudioInspection() {
 		log.info("Starting audio inspection test.");
+        long jobId = next();
+        long mediaId = next();
 
-		// TODO: Implement test.
-		TransientMedia transientMedia = new TransientMedia(next(), ioUtils.findFile("/samples/green.wav").toString());
-
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
-        exchange.getIn().setBody(jsonUtils.serialize(transientMedia));
+        URI mediaUri = TestUtil.findFile("/samples/green.wav");
+        TransientMediaImpl transientMedia = new TransientMediaImpl(
+                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+                null);
+        Exchange exchange = setupExchange(jobId, transientMedia);
         mediaInspectionProcessor.process(exchange);
 
-        Object responseBody = exchange.getOut().getBody();
-        Assert.assertTrue("A response body must be set.", responseBody != null);
-        Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
+        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
+        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
-        // Implied assertion: Deserialization works.
-        TransientMedia responseTransientMedia = jsonUtils.deserialize((byte[])responseBody, TransientMedia.class);
-
-        Assert.assertTrue(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-                        Boolean.toString(responseTransientMedia.isFailed()),
-                        responseTransientMedia.getMessage()),
-                !responseTransientMedia.isFailed());
+        assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
+                        Boolean.toString(transientMedia.isFailed()),
+                                 transientMedia.getMessage()),
+                transientMedia.isFailed());
 
         String targetType = "audio";
-        Assert.assertTrue(String.format("The medium's type should begin with '%s'. Actual: %s.", targetType, responseTransientMedia.getType()),
-                StringUtils.startsWithIgnoreCase(responseTransientMedia.getType(), targetType));
-
         int targetLength = -1; //`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 green.wav` - actually produces 2.200000
-        Assert.assertTrue(String.format("The medium's length should be %d. Actual: %d.", targetLength, responseTransientMedia.getLength()),
-                responseTransientMedia.getLength() == targetLength);
-
         String targetHash = "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0"; //`sha256sum green.wav`
-        Assert.assertTrue(String.format("The medium's hash should have matched '%s'. Actual: %s.", targetHash, responseTransientMedia.getSha256()),
-                targetHash.equalsIgnoreCase(responseTransientMedia.getSha256()));
+
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
+                                        eq(targetLength), nonEmptyMap());
+
+        verifyNoJobOrMediaError();
 
 		log.info("Audio inspection passed.");
 	}
@@ -238,20 +203,43 @@ public class TestMediaInspectionProcessor {
 	@Test(timeout = 5 * MINUTES)
 	public void testInaccessibleFileInspection() throws Exception {
 		log.info("Starting inaccessible file inspection test.");
+        long jobId = next();
+        long mediaId = next();
 
-		// TODO: Implement test.
-		TransientMedia transientMedia = new TransientMedia(next(), "file:/asdfasfdasdf124124sadfasdfasdf.bin");
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, next());
-        exchange.getIn().setBody(jsonUtils.serialize(transientMedia));
+        URI mediaUri = URI.create("file:/asdfasfdasdf124124sadfasdfasdf.bin");
+		TransientMediaImpl transientMedia = new TransientMediaImpl(
+		        mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+                null);
+        Exchange exchange = setupExchange(jobId, transientMedia);
         mediaInspectionProcessor.process(exchange);
 
-        Object responseBody = exchange.getOut().getBody();
-        TransientMedia responseTransientMedia = jsonUtils.deserialize((byte[])responseBody, TransientMedia.class);
+        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
+        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
-        Assert.assertTrue(responseTransientMedia.isFailed());
-        Assert.assertNotNull(responseTransientMedia.getMessage());  //failed processing but response handled and message body populated.
+        assertTrue(transientMedia.isFailed());
+
+        verifyMediaError(jobId, mediaId);
 
 		log.info("Inaccessible file inspection passed.");
 	}
+
+
+	private void verifyNoJobOrMediaError() {
+	    verify(mockInProgressJobs, never())
+                .addMediaError(anyLong(), anyLong(), any());
+	    verify(mockInProgressJobs, never())
+                .setJobStatus(anyLong(), eq(BatchJobStatusType.ERROR));
+    }
+
+    private void verifyMediaError(long jobId, long mediaId) {
+	    verify(mockInProgressJobs, atLeastOnce())
+                .addMediaError(eq(jobId), eq(mediaId), nonBlank());
+
+	    verify(mockInProgressJobs)
+                .setJobStatus(jobId, BatchJobStatusType.ERROR);
+    }
+
+	private Exchange setupExchange(long jobId, TransientMediaImpl media) {
+	    return MediaTestUtil.setupExchange(jobId, media, mockInProgressJobs);
+    }
 }

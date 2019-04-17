@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -46,7 +46,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Api(value = "Statistics",
      description = "Job statistics")
@@ -128,9 +130,8 @@ public class AdminStatisticsController {
             dataRef.put("valid_count", 0L);
         }
 
-        long time;
         if (jobRequest.getTimeReceived() != null && jobRequest.getTimeCompleted() != null) {
-            time = jobRequest.getTimeCompleted().getTime() - jobRequest.getTimeReceived().getTime();
+            long time = jobRequest.getTimeCompleted().toEpochMilli() - jobRequest.getTimeReceived().toEpochMilli();
             dataRef.put("total_time", (Long) dataRef.get("total_time") + time);
             if ((time <= (Long) dataRef.get("min_time") && (Long) dataRef.get("min_time") > 0 && time > 0) || (Long) dataRef.get("min_time") == 0) {
                 dataRef.put("min_time", time);
@@ -178,7 +179,7 @@ public class AdminStatisticsController {
     }
 
     private AllJobsStatisticsModel getAllJobsStatsInternal() {
-        long start = new Date().getTime();
+        long start = System.currentTimeMillis();
 
         //TODO: this is reusing some code for get jobs - this code needs to be extracted
         List<JobRequest> jobs = mpfService.getAllJobRequests();
@@ -213,7 +214,7 @@ public class AdminStatisticsController {
             //and also can't forget to update the object map!
             objectMap.put(pipeline, singleJobStatisticsModel);
         }
-        long elapsed = (new Date().getTime()) - start;
+        long elapsed = System.currentTimeMillis() - start;
 
         AllJobsStatisticsModel allJobsStatisticsModel = new AllJobsStatisticsModel();
         allJobsStatisticsModel.setElapsedTimeMs(elapsed);

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,33 +28,31 @@ package org.mitre.mpf.videooverlay;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
+import org.mitre.mpf.JniTestUtils;
 
 import java.io.File;
 import java.io.IOException;
 
 public class TestBoundingBoxWriter {
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(TestBoundingBoxWriter.class);
 
     static {
-        String libraryFile = new File("install/lib/libmpfopencvjni.so").getAbsolutePath();
-        log.info("Loading libmpfopencvjni library from '{}'.", libraryFile);
-        System.load(libraryFile);
+        Assert.assertTrue(JniTestUtils.jniLibsLoaded());
     }
 
     @Test
     public void testWriterOnVideo() {
-        writeBoxOnFrames("video-overlay/src/test/resources/samples/five-second-marathon-clip.mkv");
+        writeBoxOnFrames("samples/five-second-marathon-clip-numbered.mp4");
     }
 
     @Test
     public void testWriterOnGif() {
-        writeBoxOnFrames("video-overlay/src/test/resources/samples/face-morphing.gif");
+        writeBoxOnFrames("samples/face-morphing.gif");
     }
 
-    private void writeBoxOnFrames(String filePath) {
+
+    private static void writeBoxOnFrames(String filePath) {
         try {
-            File sourceFile = new File(filePath);
+            File sourceFile = new File(JniTestUtils.getFileResource(filePath));
 
             if (!sourceFile.exists()) {
                 throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));

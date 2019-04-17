@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,14 +26,11 @@
 
 package org.mitre.mpf.rest.api;
 
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonSetter;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.Date;
-import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
-import org.mitre.mpf.interop.util.TimeUtils;
+
+import java.time.Instant;
 
 // swagger includes
 @Api(value = "streaming-jobs")
@@ -72,59 +69,29 @@ public class StreamingJobInfo {
 // 	private float jobProgress;
 //	public float getJobProgress() { return jobProgress; }
 
-	private Date startDate;
+	private Instant startDate;
     /**
      * The start time of this streaming job.
      * @return The start time of this streaming job.
      */
-    public Date getStartDate() {
+    @ApiModelProperty(position = 2, required = true, dataType = "java.lang.String",
+		    value = "streaming job start time, local system time. Example: 2018-12-19T12:12:59.995-05:00")
+    public Instant getStartDate() {
         return startDate;
     }
 
-    @ApiModelProperty(position=2, required = true, dataType="String", value = "streaming job start time, local system time. Example: 2018-01-07 10:23:04.6.")
-    @JsonGetter("startDate")
-    /**
-     * The start time of this streaming job.
-     * @return The start time of this streaming job. This timestamp will be returned as a String
-     * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}. May return null if startDate is never set.
-     */
-    public String getStartDateAsString() {
-        return TimeUtils.getDateAsString(startDate);
-    }
 
-    @JsonSetter("startDate")
-    public void setStartDateFromString(String timestampStr) throws MpfInteropUsageException{
-        if ( timestampStr != null ) {
-            this.startDate = TimeUtils.parseStringAsDate(timestampStr);
-        }
-    }
-
-    private Date endDate;
+    private Instant endDate;
     /**
      * The end time of this streaming job.
      * @return The end time of this streaming job. May be null if this job has not completed.
      */
-    public Date getEndDate() {
+    @ApiModelProperty(position=3, required = true, dataType = "java.lang.String",
+		    value = "streaming job end time, local system time. Example: 2018-12-19T12:12:59.995-05:00 or null if the job hasn't completed.")
+    public Instant getEndDate() {
         return endDate;
     }
 
-    @ApiModelProperty(position=3, required = true, dataType="String", value = "streaming job end time, local system time. Example: 2018-01-08 00:00:00.0 or null if the job hasn't completed.")
-    @JsonGetter("endDate")
-    /**
-     * The end time of this streaming job.
-     * @return The end time of this streaming job. May be null if this job has not completed.
-     * This timestamp will be returned as a String matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
-     */
-    public String getEndDateAsString() {
-        return TimeUtils.getDateAsString(endDate);
-    }
-
-    @JsonSetter("endDate")
-    public void setEndDateFromString(String timestampStr) throws MpfInteropUsageException {
-        if ( timestampStr != null ) {
-            this.endDate = TimeUtils.parseStringAsDate(timestampStr);
-        }
-    }
 
 	private String outputObjectDirectory;
     @ApiModelProperty(position=8, required = true)
@@ -140,31 +107,15 @@ public class StreamingJobInfo {
     @ApiModelProperty(position=9, required = true)
     public String getActivityFrameId() { return activityFrameId; }
 
-    private Date activityTimestamp = null;
+    private Instant activityTimestamp = null;
     /**
      * The detection time associated with the activityFrameId
      * @return The detection time associated with the activityFrameId. May be null if no activity has been detected.
      */
-    public Date getActivityTimestamp() { return activityTimestamp; }
+    @ApiModelProperty(position=10, required = true, dataType = "java.lang.String",
+		    value = "detection time associated with the activityFrameId, local system time. Example: 2018-12-19T12:12:59.995-05:00 or null if there has been no activity found in the job.")
+    public Instant getActivityTimestamp() { return activityTimestamp; }
 
-    @ApiModelProperty(position=10, required = true, dataType="String", value = "detection time associated with the activityFrameId, local system time. Example: 2018-01-07 18:30:00.5 or null if there has been no activity found in the job.")
-    @JsonGetter("activityTimestamp")
-    /**
-     * The detection time associated with the activityFrameId
-     * @return The detection time associated with the activityFrameId.
-     * May be null if no activity has been detected. Otherwise, this timestamp will be returned as a String
-     * matching the TIMESTAMP_PATTERN, which is currently defined as {@value TimeUtils#TIMESTAMP_PATTERN}
-     */
-    public String getActivityTimestampAsString() {
-        return TimeUtils.getDateAsString(activityTimestamp);
-    }
-
-    @JsonSetter("activityTimestamp")
-    public void setActivityTimestampFromString(String timestampStr) throws MpfInteropUsageException {
-        if ( timestampStr != null ) {
-            this.activityTimestamp = TimeUtils.parseStringAsDate(timestampStr);
-        }
-    }
 
 	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
 	//to maintain the use of only standard Java in the model.api classes
@@ -193,8 +144,8 @@ public class StreamingJobInfo {
 	 */
 	public StreamingJobInfo(Long jobId, String pipelineName, int jobPriority, String jobStatus,
                             String jobStatusDetail, float jobProgress,
-                            Date startDate, Date endDate, String outputObjectDirectory,
-                            String streamUri, String activityFrameId, Date activityTimestamp, boolean terminal) {
+                            Instant startDate, Instant endDate, String outputObjectDirectory,
+                            String streamUri, String activityFrameId, Instant activityTimestamp, boolean terminal) {
 		this.jobId = jobId;
 		this.pipelineName = pipelineName;
 		this.jobStatus = jobStatus;

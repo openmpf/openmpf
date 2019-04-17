@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,30 +26,33 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingProcessor;
-import org.mitre.mpf.wfm.data.Redis;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -58,11 +61,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(SpringJUnit4ClassRunner.class)
 @RunListener.ThreadSafe
 public class TestTrackMergingProcessor {
-    private static final Logger log = LoggerFactory.getLogger(TestTrackMergingProcessor.class);
     private static final int MINUTES = 1000 * 60; // 1000 milliseconds/second & 60 seconds/minute.
-
-    @Autowired
-    private ApplicationContext context;
 
     @Autowired
     private CamelContext camelContext;
@@ -78,45 +77,69 @@ public class TestTrackMergingProcessor {
     private JsonUtils jsonUtils;
 
     @Autowired
-    private Redis redis;
+    private InProgressBatchJobsService inProgressJobs;
 
     @Autowired
     private PropertiesUtil propertiesUtil;
 
+    private static final long TEST_JOB_ID = 999999;
+
+
     @Test(timeout = 5 * MINUTES)
-    public void testTrackMergingOn() throws Exception {
+    public void testTrackMergingEnabled() {
         generateAndRunMerge("1", "TRUE", null, null, 4); // Merges tracks 1 & 2
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void testTrackMergingOnGap3() throws Exception {
-        generateAndRunMerge("1", "TRUE", "3", null, 4); // Merges tracks 1 & 2; 3 frame gap still does not merge 3 & 4
-    }
-
-    @Test(timeout = 5 * MINUTES)
-    public void testTrackMergingOnGap4() throws Exception {
-        generateAndRunMerge("1", "TRUE", "4", null, 3); // Merges tracks 1 & 2; merges tracks 3 & 4
-    }
-
-    @Test(timeout = 5 * MINUTES)
-    public void testTrackMergingOff() throws Exception {
+    public void testTrackMergingDisabled() {
         generateAndRunMerge("1", "FALSE", null, null, 5); // No merging
         generateAndRunMerge("1", "FALSE", "200", null, 5); // No merging even with gap set high
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void testMinTrackSizeNoMerge() throws Exception {
+    public void testTrackMergingWithGap3() {
+        generateAndRunMerge("1", "TRUE", "3", null, 4); // Merges tracks 1 & 2; 3 frame gap still does not merge 3 & 4
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void testTrackMergingWithGap4() {
+        generateAndRunMerge("1", "TRUE", "4", null, 3); // Merges tracks 1 & 2; merges tracks 3 & 4
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void testMinTrackSizeNoMerge() {
         generateAndRunMerge("1", "FALSE", null, "100", 3); // Drops tracks 3 & 5
         generateAndRunMerge("1", "FALSE", null, "200", 2); // Drops tracks 3, 4, & 5
         generateAndRunMerge("1", "FALSE", null, "201", 0); // Drops all tracks
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void testMinTrackSizeWithMerge() throws Exception {
+    public void testMinTrackSizeWithMerge() {
         generateAndRunMerge("1", "TRUE", null, "100", 2); // Merges tracks 1 & 2, drops tracks 3 & 5
         generateAndRunMerge("1", "TRUE", null, "300", 1); // Merges tracks 1 & 2 (new track 400 frames), drops tracks 3, 4, & 5
         generateAndRunMerge("1", "TRUE", "3", "130", 1); // Merges tracks 1 & 2, drops tracks 3, 4, & 5
         generateAndRunMerge("1", "TRUE", "4", "130", 2); // Merges tracks 1 & 2, 3 & 4 (new track 130 frames) drops track 5
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void testTrackMergingOnImage() {
+        generateAndRunMerge("/samples/meds1.jpg", "image/jpeg", "1", "TRUE", "1000", "1000", 5); // No tracks merged or dropped
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void testTrackMergingOnAudio() {
+        generateAndRunMerge("/samples/green.wav", "audio/wave", "1", "TRUE", "1000", "1000", 5); // No tracks merged or dropped
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void testTrackMergingOnGenericMedia() {
+        generateAndRunMerge("/samples/NOTICE", "text/plain", "1", "TRUE", "1000", "1000", 5); // No tracks merged or dropped
+    }
+
+    private void generateAndRunMerge(String samplingInterval, String mergeTracks, String minGap, String minTrackSize,
+                                     int expectedTracks) {
+        generateAndRunMerge("/samples/video_01.mp4", "video/mp4", samplingInterval, mergeTracks, minGap, minTrackSize,
+                expectedTracks);
     }
 
     /**
@@ -131,17 +154,13 @@ public class TestTrackMergingProcessor {
      *
      * Track 5 should never merge.  The other tracks may merge or be dropped based on properties.
      */
-    private void generateAndRunMerge(String samplingInterval, String mergeTracks, String minGap, String minTrackSize, int expectedTracks) throws Exception {
-        final long jobId = 999999;
-        final long mediaId = 123456;
+    private void generateAndRunMerge(String filePath, String mediaType, String samplingInterval, String mergeTracks,
+                                     String minGap, String minTrackSize, int expectedTracks) {
         final int stageIndex = 0;
         final int priority = 5;
         Exchange exchange = new DefaultExchange(camelContext);
-        TrackMergingContext mergeContext = new TrackMergingContext(jobId, stageIndex);
+        TrackMergingContext mergeContext = new TrackMergingContext(TEST_JOB_ID, stageIndex);
         exchange.getIn().setBody(jsonUtils.serialize(mergeContext));
-        TransientPipeline trackMergePipeline = new TransientPipeline("trackMergePipeline", "trackMergeDescription");
-
-        TransientStage trackMergeStageDet = new TransientStage("trackMergeDetection", "trackMergeDescription", ActionType.DETECTION);
 
         Map<String, String> mergeProp = new HashMap<>();
         if (samplingInterval != null) {
@@ -156,56 +175,76 @@ public class TestTrackMergingProcessor {
         if (minTrackSize != null) {
             mergeProp.put(MpfConstants.MIN_TRACK_LENGTH, minTrackSize);
         }
-        TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo");
-        detectionAction.setProperties(mergeProp);
-        trackMergeStageDet.getActions().add(detectionAction);
+        TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo", mergeProp);
 
-        trackMergePipeline.getStages().add(trackMergeStageDet);
+        TransientStage trackMergeStageDet = new TransientStage(
+                "trackMergeDetection", "trackMergeDescription", ActionType.DETECTION,
+                Collections.singletonList(detectionAction));
+
+        TransientPipeline trackMergePipeline = new TransientPipeline(
+                "trackMergePipeline", "trackMergeDescription",
+                Collections.singletonList(trackMergeStageDet));
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+        SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
-        TransientJob trackMergeJob = new TransientJob(jobId, "999999", transientDetectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
-        trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
+        URI mediaUri = ioUtils.findFile(filePath);
+        TransientMedia media = inProgressJobs.initMedia(mediaUri.toString(), Collections.emptyMap());
+        long mediaId = media.getId();
 
-        redis.persistJob(trackMergeJob);
+        inProgressJobs.addJob(
+                TEST_JOB_ID,
+                "999999",
+                systemPropertiesSnapshot,
+                trackMergePipeline,
+                priority,
+                false,
+                null,
+                null,
+                Collections.singletonList(media),
+                Collections.emptyMap(),
+                Collections.emptyMap());
+
+        inProgressJobs.addMediaInspectionInfo(TEST_JOB_ID, mediaId, "fake_sha", mediaType, 1,
+                                              Collections.emptyMap());
 
         /*
         * Create overlapping tracks for testing
         */
-        SortedSet<Track> tracks = new TreeSet<Track>();
-        Track track1 = new Track(jobId, mediaId, 0, 0, 0, 199, "VIDEO", 18f);
-        Detection detection1a = new Detection(10,10,52,60,18f,0,0,null);
-        Detection detection1b = new Detection(10,10,52,60,18f,199,0,null);
-        track1.getDetections().add(detection1a);
-        track1.getDetections().add(detection1b);
-        Track track2 = new Track(jobId, mediaId, 0, 0, 200, 399, "VIDEO", 18f);
-        Detection detection2a = new Detection(10,10,52,60,18f,200,0,null);
-        Detection detection2b = new Detection(10,10,52,60,18f,399,0,null);
-        track2.getDetections().add(detection2a);
-        track2.getDetections().add(detection2b);
-        Track track3 = new Track(jobId, mediaId, 0, 0, 470, 477, "VIDEO", 18f);
-        Detection detection3a = new Detection(10,10,52,60,18f,420,0,null);
-        Detection detection3b = new Detection(10,10,52,60,18f,599,0,null);
-        track3.getDetections().add(detection3a);
-        track3.getDetections().add(detection3b);
-        Track track4 = new Track(jobId, mediaId, 0, 0, 480, 599, "VIDEO", 18f);
-        Detection detection4a = new Detection(10,10,52,60,18f,480,0,null);
-        Detection detection4b = new Detection(10,10,52,60,18f,599,0,null);
-        track4.getDetections().add(detection4a);
-        track4.getDetections().add(detection4b);
-        Track track5 = new Track(jobId, mediaId, 0, 0, 600, 610, "VIDEO", 18f);
-        Detection detection5a = new Detection(10,10,89,300,18f,600,0,null);
-        Detection detection5b = new Detection(10,10,84,291,18f,610,0,null);
-        track5.getDetections().add(detection5a);
-        track5.getDetections().add(detection5b);
+        Map<String, String> noProps = Collections.emptyMap();
+        SortedSet<Track> tracks = new TreeSet<>();
+        Detection detection1a = new Detection(10, 10, 52, 60, 18f, 0, 0, noProps);
+        Detection detection1b = new Detection(10, 10, 52, 60, 18f, 199, 0, noProps);
+        Track track1 = new Track(TEST_JOB_ID, mediaId, 0, 0, 0, 199, 0, 0, "TEST", 18f,
+                                 ImmutableSortedSet.of(detection1a, detection1b), noProps);
+
+        Detection detection2a = new Detection(10, 10, 52, 60, 18f, 200, 0, noProps);
+        Detection detection2b = new Detection(10, 10, 52, 60, 18f, 399, 0, noProps);
+        Track track2 = new Track(TEST_JOB_ID, mediaId, 0, 0, 200, 399, 0, 0, "TEST", 18f,
+                                 ImmutableSortedSet.of(detection2a, detection2b), noProps);
+
+        Detection detection3a = new Detection(10, 10, 52, 60, 18f, 420, 0, noProps);
+        Detection detection3b = new Detection(10, 10, 52, 60, 18f, 599, 0, noProps);
+        Track track3 = new Track(TEST_JOB_ID, mediaId, 0, 0, 470, 477, 0, 0, "TEST", 18f,
+                                 ImmutableSortedSet.of(detection3a, detection3b), noProps);
+
+        Detection detection4a = new Detection(10, 10, 52, 60, 18f, 480, 0, noProps);
+        Detection detection4b = new Detection(10, 10, 52, 60, 18f, 599, 0, noProps);
+        Track track4 = new Track(TEST_JOB_ID, mediaId, 0, 0, 480, 599, 0, 0, "TEST", 18f,
+                                 ImmutableSortedSet.of(detection4a, detection4b), noProps);
+
+        Detection detection5a = new Detection(10, 10, 89, 300, 18f, 600, 0, noProps);
+        Detection detection5b = new Detection(10, 10, 84, 291, 18f, 610, 0, noProps);
+        Track track5 = new Track(TEST_JOB_ID, mediaId, 0, 0, 600, 610, 0, 0, "TEST", 18f,
+                                 ImmutableSortedSet.of(detection5a, detection5b), noProps);
+
         tracks.add(track1);
         tracks.add(track2);
         tracks.add(track3);
         tracks.add(track4);
         tracks.add(track5);
 
-        redis.setTracks(jobId,mediaId,0,0,tracks);
+        inProgressJobs.setTracks(TEST_JOB_ID,mediaId,0,0,tracks);
 
         trackMergingProcessor.wfmProcess(exchange);
 
@@ -214,42 +253,57 @@ public class TestTrackMergingProcessor {
         Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
         TrackMergingContext contextResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
         Assert.assertTrue(contextResponse.getStageIndex() == stageIndex);
-        Assert.assertTrue(contextResponse.getJobId() == jobId);
-        Assert.assertEquals(expectedTracks, redis.getTracks(jobId, mediaId, 0, 0).size());
+        Assert.assertTrue(contextResponse.getJobId() == TEST_JOB_ID);
+        Assert.assertEquals(expectedTracks, inProgressJobs.getTracks(TEST_JOB_ID, mediaId, 0, 0).size());
+        inProgressJobs.clearJob(TEST_JOB_ID);
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void testTrackMergingNoTracks() throws Exception {
-        final long jobId = 999999;
+    public void testTrackMergingNoTracks() {
         final long mediaId = 123456;
         final int stageIndex = 0;
         final int priority = 5;
         Exchange exchange = new DefaultExchange(camelContext);
-        TrackMergingContext mergeContext = new TrackMergingContext(jobId, stageIndex);
+        TrackMergingContext mergeContext = new TrackMergingContext(TEST_JOB_ID, stageIndex);
         exchange.getIn().setBody(jsonUtils.serialize(mergeContext));
-        TransientPipeline trackMergePipeline = new TransientPipeline("trackMergePipeline", "trackMergeDescription");
-
-        TransientStage trackMergeStageDet = new TransientStage("trackMergeDetection", "trackMergeDescription", ActionType.DETECTION);
 
         Map<String, String> mergeProp = new HashMap<>();
         mergeProp.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
         mergeProp.put(MpfConstants.MERGE_TRACKS_PROPERTY, "TRUE");
-        TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo");
-        detectionAction.setProperties(mergeProp);
-        trackMergeStageDet.getActions().add(detectionAction);
+        TransientAction detectionAction = new TransientAction(
+                "detectionAction", "detectionDescription", "detectionAlgo", mergeProp);
 
-        trackMergePipeline.getStages().add(trackMergeStageDet);
+        TransientStage trackMergeStageDet = new TransientStage(
+                "trackMergeDetection",
+                "trackMergeDescription", ActionType.DETECTION, Collections.singletonList(detectionAction));
+
+        TransientPipeline trackMergePipeline = new TransientPipeline(
+                "trackMergePipeline", "trackMergeDescription",
+                Collections.singletonList(trackMergeStageDet));
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        TransientDetectionSystemProperties transientDetectionSystemProperties = propertiesUtil.createDetectionSystemPropertiesSnapshot();
+        SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
+        URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
+        TransientMedia media = new TransientMediaImpl(
+                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+                null);
 
-        TransientJob trackMergeJob = new TransientJob(jobId, "999999", transientDetectionSystemProperties, trackMergePipeline, stageIndex, priority, false, false);
-        trackMergeJob.getMedia().add(new TransientMedia(mediaId,ioUtils.findFile("/samples/video_01.mp4").toString()));
+        inProgressJobs.addJob(
+                TEST_JOB_ID,
+                "999999",
+                systemPropertiesSnapshot,
+                trackMergePipeline,
+                priority,
+                false,
+                null,
+                null,
+                Collections.singletonList(media),
+                Collections.emptyMap(),
+                Collections.emptyMap());
 
-        redis.persistJob(trackMergeJob);
-        SortedSet<Track> tracks = new TreeSet<Track>();
+        SortedSet<Track> tracks = new TreeSet<>();
 
-        redis.setTracks(jobId, mediaId, 0, 0, tracks);
+        inProgressJobs.setTracks(TEST_JOB_ID, mediaId, 0, 0, tracks);
 
         trackMergingProcessor.wfmProcess(exchange);
 
@@ -258,25 +312,27 @@ public class TestTrackMergingProcessor {
         Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
         TrackMergingContext contextResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
         Assert.assertTrue(contextResponse.getStageIndex() == stageIndex);
-        Assert.assertTrue(contextResponse.getJobId() == jobId);
-        Assert.assertEquals(0, redis.getTracks(jobId, mediaId, 0, 0).size());
+        Assert.assertTrue(contextResponse.getJobId() == TEST_JOB_ID);
+        Assert.assertEquals(0, inProgressJobs.getTracks(TEST_JOB_ID, mediaId, 0, 0).size());
+        inProgressJobs.clearJob(TEST_JOB_ID);
     }
-
 
     @Test
     public void testTrackLevelInfoRetainedAfterMerge() {
-        Track track1 = new Track(123, 1, 1, 1, 1, 1, "type", 0.25f);
-        track1.getTrackProperties().put("track1_only_prop", "track1_only_val");
-        track1.getTrackProperties().put("same_value_prop", "same_value_val");
-        track1.getTrackProperties().put("diff_value_prop", "diff_value_val1");
+        Map<String, String> track1Props = ImmutableSortedMap.of(
+                "track1_only_prop", "track1_only_val",
+                "same_value_prop", "same_value_val",
+                "diff_value_prop", "diff_value_val1");
+        Track track1 = new Track(123, 1, 1, 1, 1, 1, 0, 0, "type", 0.25f, Collections.emptyList(), track1Props);
 
-        Track track2 = new Track(123, 1, 1, 1, 1, 1, "type", 0.75f);
-        track2.getTrackProperties().put("track2_only_prop", "track2_only_val");
-        track2.getTrackProperties().put("same_value_prop", "same_value_val");
-        track2.getTrackProperties().put("diff_value_prop", "diff_value_val2");
+        Map<String, String> track2Props = ImmutableSortedMap.of(
+                "track2_only_prop", "track2_only_val",
+                "same_value_prop", "same_value_val",
+                "diff_value_prop", "diff_value_val2");
+        Track track2 = new Track(123, 1, 1, 1, 1, 1, 0, 0, "type", 0.75f, Collections.emptyList(), track2Props);
 
         Track merged = TrackMergingProcessor.merge(track1, track2);
-        assertEquals(merged.getConfidence(), 0.75, 0.01);
+        assertEquals(0.75, merged.getConfidence(), 0.01);
 
         SortedMap<String, String> mergedProps = merged.getTrackProperties();
         assertEquals("track1_only_val", mergedProps.get("track1_only_prop"));

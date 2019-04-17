@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -33,35 +33,8 @@ public class FrameCounterJniException extends IOException {
     public int getErrorCode() { return errorCode; }
     public void setErrorCode(int errorCode) { this.errorCode = errorCode; }
 
-    public FrameCounterJniException() { super(); }
     public FrameCounterJniException(int errorCode) {
-        this();
+        super("Error counting frames. Native error code " + errorCode + ".");
         this.errorCode = errorCode;
-    }
-
-    public FrameCounterJniException(String message) { super(message); }
-    public FrameCounterJniException(String message, int errorCode) {
-        this(message);
-        this.errorCode = errorCode;
-    }
-
-    public FrameCounterJniException(String message, Throwable cause) { super(message, cause); }
-    public FrameCounterJniException(String message, Throwable cause, int errorCode) {
-        this(message, cause);
-        this.errorCode = errorCode;
-    }
-
-    public FrameCounterJniException(Throwable cause) { super(cause); }
-    public FrameCounterJniException(Throwable cause, int errorCode) {
-        this(cause);
-        this.errorCode = errorCode;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s#<errorCode=%d, message='%s'>",
-                this.getClass().getSimpleName(),
-                this.getErrorCode(),
-                this.getMessage());
     }
 }

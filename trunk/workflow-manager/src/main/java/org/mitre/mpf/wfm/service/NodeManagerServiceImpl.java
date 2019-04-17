@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -41,7 +41,6 @@ import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.WritableResource;
 
 import java.io.IOException;
@@ -58,7 +57,6 @@ public class NodeManagerServiceImpl implements NodeManagerService {
     public static final Logger log = LoggerFactory.getLogger(NodeManagerService.class);
 
     @Autowired
-    @Qualifier(PropertiesUtil.REF)
     private PropertiesUtil propertiesUtil;
 
     @Autowired

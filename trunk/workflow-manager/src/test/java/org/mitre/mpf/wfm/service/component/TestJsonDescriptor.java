@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.service.component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.mitre.mpf.wfm.pipeline.xml.ValueType;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 
 import java.io.IOException;
 import java.net.URL;
@@ -37,13 +38,15 @@ import static org.junit.Assert.*;
 
 public class TestJsonDescriptor {
 
+    private static final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
+
     @Test
     public void canParseJsonDescriptorForCppComponent() throws IOException {
         JsonComponentDescriptor descriptor = loadDescriptor("CplusplusHelloWorldComponent.json");
 
         assertEquals("CplusplusHelloWorld", descriptor.componentName);
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
-        assertEquals("3.0.0", descriptor.componentVersion);
+        assertEquals("4.0.0", descriptor.componentVersion);
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so", descriptor.batchLibrary);
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfStreamingCplusplusHelloWorld.so", descriptor.streamLibrary);
 
@@ -65,7 +68,7 @@ public class TestJsonDescriptor {
 
         assertEquals("CplusplusHelloCustomPipelinesComponent", descriptor.componentName);
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
-        assertEquals("3.0.0", descriptor.componentVersion);
+        assertEquals("4.0.0", descriptor.componentVersion);
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so", descriptor.batchLibrary);
         assertNull(descriptor.streamLibrary);
 
@@ -116,9 +119,9 @@ public class TestJsonDescriptor {
         assertNull(descriptor.pipelines);
         assertEquals("JavaTestDetection", descriptor.componentName);
         assertEquals(ComponentLanguage.JAVA, descriptor.sourceLanguage);
-        assertEquals("3.0.0", descriptor.componentVersion);
-        assertEquals("3.0.0", descriptor.middlewareVersion);
-        assertEquals("mpf-java-test-detection-component-3.0.0.jar", descriptor.batchLibrary);
+        assertEquals("4.0.0", descriptor.componentVersion);
+        assertEquals("4.0.0", descriptor.middlewareVersion);
+        assertEquals("mpf-java-test-detection-component-4.0.0.jar", descriptor.batchLibrary);
         assertNull(descriptor.streamLibrary);
         assertEquals(1, descriptor.environmentVariables.size());
         JsonComponentDescriptor.EnvironmentVariable envVar = descriptor.environmentVariables.get(0);
@@ -141,7 +144,6 @@ public class TestJsonDescriptor {
 
     private JsonComponentDescriptor loadDescriptor(String fileName) throws IOException {
         URL resource = getClass().getClassLoader().getResource(fileName);
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(resource, JsonComponentDescriptor.class);
+        return _objectMapper.readValue(resource, JsonComponentDescriptor.class);
     }
 }

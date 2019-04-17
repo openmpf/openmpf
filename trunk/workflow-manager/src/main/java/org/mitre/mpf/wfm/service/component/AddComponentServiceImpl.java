@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -47,6 +47,7 @@ import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 
 import static java.util.stream.Collectors.toList;
@@ -142,7 +143,7 @@ public class AddComponentServiceImpl implements AddComponentService {
 
             registerDeployedComponent(loadDescriptor(descriptorPath), currentModel);
 
-            currentModel.setDateRegistered(new Date());
+            currentModel.setDateRegistered(Instant.now());
             currentModel.setComponentState(ComponentState.REGISTERED);
             componentStateService.update(currentModel);
 
@@ -170,7 +171,7 @@ public class AddComponentServiceImpl implements AddComponentService {
 
         registerDeployedComponent(descriptor, registrationModel);
         registrationModel.setComponentState(ComponentState.REGISTERED);
-        registrationModel.setDateRegistered(new Date());
+        registrationModel.setDateRegistered(Instant.now());
         componentStateService.update(registrationModel);
     }
 

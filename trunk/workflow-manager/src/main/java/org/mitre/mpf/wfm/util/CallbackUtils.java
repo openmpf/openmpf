@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,13 +26,6 @@
 
 package org.mitre.mpf.wfm.util;
 
-import java.io.IOException;
-import java.net.SocketTimeoutException;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.concurrent.FutureCallback;
@@ -45,19 +38,22 @@ import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.nio.reactor.ConnectingIOReactor;
 import org.mitre.mpf.interop.JsonHealthReportCollection;
 import org.mitre.mpf.interop.JsonSegmentSummaryReport;
-import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 
 @Component
@@ -72,10 +68,6 @@ public class CallbackUtils {
 
     @Autowired
     private JsonUtils jsonUtils;
-
-    @Autowired
-    @Qualifier(RedisImpl.REF)
-    private Redis redis;
 
     private static CloseableHttpAsyncClient httpAsyncClient;
 
@@ -109,31 +101,28 @@ public class CallbackUtils {
     }
 
     // Send the health report to the URI identified by callbackUri, using the HTTP POST method.
-    public void sendHealthReportCallback(String callbackUri, List<Long> jobIds) {
+    public void sendHealthReportCallback(String callbackUri, List<TransientStreamingJob> jobs) {
 
-        // Get information from REDIS about these streaming jobs. Do this before spawning a thread to avoid
-        // a race condition where the job may be cleared from REDIS before this information can be retrieved.
+        List<JsonHealthReportCollection.JsonHealthReport> reports = jobs
+                .stream()
+                .map(job -> new JsonHealthReportCollection.JsonHealthReport(
+                        job.getId(), job.getExternalId().orElse(null), job.getJobStatus().getType().name(),
+                        job.getJobStatus().getDetail(), String.valueOf(job.getLastActivityFrame()),
+                        job.getLastActivityTime()))
+                .collect(toList());
 
-        // TODO: Consider refactoring this so that Redis only needs to be queried once per job,
-        // instead of multiple times per job to get each of the following pieces of data.
-
-        List<String> externalIds = redis.getExternalIds(jobIds);
-        List<StreamingJobStatus> streamingJobStatuses = redis.getStreamingJobStatuses(jobIds);
-        List<String> jobStatusTypes = streamingJobStatuses.stream().map( jobStatus -> jobStatus.getType().name()).collect(Collectors.toList());
-        List<String> jobStatusDetails = streamingJobStatuses.stream().map( jobStatus -> jobStatus.getDetail()).collect(Collectors.toList());
-        List<String> activityFrameIds = redis.getActivityFrameIdsAsStrings(jobIds);
-        List<String> activityTimestamps = redis.getActivityTimestampsAsStrings(jobIds);
-
+        List<Long> jobIds = jobs.stream()
+                .map(TransientStreamingJob::getId)
+                .collect(toList());
         try {
-            JsonHealthReportCollection jsonBody = new JsonHealthReportCollection(
-                    LocalDateTime.now(), jobIds, externalIds, jobStatusTypes, jobStatusDetails,
-                    activityFrameIds, activityTimestamps);
+            JsonHealthReportCollection jsonBody = new JsonHealthReportCollection(Instant.now(), reports);
 
             sendPostCallback(jsonBody, callbackUri, jobIds, "health report(s)");
-        } catch (WfmProcessingException | MpfInteropUsageException e) {
+        } catch (WfmProcessingException e) {
             log.error(String.format("Error sending health report(s) for job ids %s to %s.", jobIds, callbackUri), e);
         }
     }
+
 
     // Send the summary report to the URI identified by callbackUri, using the HTTP POST method.
     public void sendSummaryReportCallback(JsonSegmentSummaryReport summaryReport, String callbackUri) {

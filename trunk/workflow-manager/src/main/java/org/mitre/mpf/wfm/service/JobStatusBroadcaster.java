@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -35,7 +35,7 @@ import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
-import java.util.Date;
+import java.time.Instant;
 
 @Service
 public class JobStatusBroadcaster {
@@ -52,7 +52,7 @@ public class JobStatusBroadcaster {
         broadcast(jobId, progress, jobStatus, null);
     }
 
-    public void broadcast(long jobId, double progress, BatchJobStatusType jobStatus, Date endDate) {
+    public void broadcast(long jobId, double progress, BatchJobStatusType jobStatus, Instant endDate) {
         if (_propertiesUtil.isBroadcastJobStatusEnabled()) {
             AtmosphereController.broadcast(new JobStatusMessage(jobId, progress, jobStatus, endDate));
         }
@@ -63,7 +63,7 @@ public class JobStatusBroadcaster {
         broadcast(jobId, progress, jobStatus, null);
     }
 
-    public void broadcast(long jobId, double progress, StreamingJobStatusType jobStatus, Date endDate) {
+    public void broadcast(long jobId, double progress, StreamingJobStatusType jobStatus, Instant endDate) {
         if (_propertiesUtil.isBroadcastJobStatusEnabled()) {
             AtmosphereController.broadcast(new JobStatusMessage(jobId, progress, jobStatus, endDate));
         }

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -36,27 +36,8 @@ public class VideoOverlayJniException extends IOException {
     public int getErrorCode() { return errorCode; }
     public void setErrorCode(int errorCode) { this.errorCode = errorCode; }
 
-    public VideoOverlayJniException() { super(); }
     public VideoOverlayJniException(int errorCode) {
-        this();
-        this.errorCode = errorCode;
-    }
-
-    public VideoOverlayJniException(String message) { super(message); }
-    public VideoOverlayJniException(String message, int errorCode) {
-        this(message);
-        this.errorCode = errorCode;
-    }
-
-    public VideoOverlayJniException(String message, Throwable cause) { super(message, cause); }
-    public VideoOverlayJniException(String message, Throwable cause, int errorCode) {
-        this(message, cause);
-        this.errorCode = errorCode;
-    }
-
-    public VideoOverlayJniException(Throwable cause) { super(cause); }
-    public VideoOverlayJniException(Throwable cause, int errorCode) {
-        this(cause);
+        super("Error writing bounding box(es). Native error code " + errorCode + ".");
         this.errorCode = errorCode;
     }
 }

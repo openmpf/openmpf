@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -31,7 +31,9 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.protobuf.ProtobufDataFormat;
-import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.JsonSegmentSummaryReport;
+import org.mitre.mpf.interop.JsonStreamingDetectionOutputObject;
+import org.mitre.mpf.interop.JsonStreamingTrackOutputObject;
 import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
@@ -41,7 +43,7 @@ import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -123,7 +125,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 .collect(toList());
 
         return new JsonSegmentSummaryReport(
-                LocalDateTime.now(),
+                Instant.now(),
                 jobId,
                 protobuf.getSegmentNumber(),
                 protobuf.getSegmentStartFrame(),
@@ -149,8 +151,8 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 Integer.toString(id),
                 protobuf.getStartFrame(),
                 protobuf.getStopFrame(),
-                protobuf.getStartTime(),
-                protobuf.getStopTime(),
+                Instant.ofEpochMilli(protobuf.getStartTime()),
+                Instant.ofEpochMilli(protobuf.getStopTime()),
                 detectionType,
                 /* source, */ // TODO: Populate with component name ("componentName" in .ini file -> JobSettings -> BasicAmqMessageSender::SendSummaryReport)
                 protobuf.getConfidence(),
@@ -170,7 +172,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 protobuf.getConfidence(),
                 convertProperties(protobuf.getDetectionPropertiesList()),
                 protobuf.getFrameNumber(),
-                protobuf.getTime());
+                Instant.ofEpochMilli(protobuf.getTime()));
     }
 
 

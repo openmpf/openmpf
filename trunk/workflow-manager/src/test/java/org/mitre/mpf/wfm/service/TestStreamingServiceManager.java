@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -34,6 +34,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
 import org.mitre.mpf.wfm.service.component.ComponentLanguage;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.InOrder;
 import org.springframework.core.io.FileSystemResource;
@@ -68,7 +69,7 @@ public class TestStreamingServiceManager {
 	public void init() throws IOException {
 		_mockProperties = mock(PropertiesUtil.class);
 
-		_objectMapper = spy(new ObjectMapper());
+		_objectMapper = spy(ObjectMapperFactory.customObjectMapper());
 		_objectWriter = spy(_objectMapper.writerWithDefaultPrettyPrinter());
 		when(_objectMapper.writerWithDefaultPrettyPrinter())
 				.thenReturn(_objectWriter);

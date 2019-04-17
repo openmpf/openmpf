@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,33 +28,30 @@ package org.mitre.mpf.framecounter;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
+import org.mitre.mpf.JniTestUtils;
 
 import java.io.File;
 import java.io.IOException;
 
 public class TestFrameCounter {
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(TestFrameCounter.class);
-
     static {
-        String libraryFile = new File("install/lib/libmpfopencvjni.so").getAbsolutePath();
-        log.info("Loading libmpfopencvjni library from '{}'.", libraryFile);
-        System.load(libraryFile);
+        Assert.assertTrue(JniTestUtils.jniLibsLoaded());
     }
 
     @Test
     public void testFrameCounterOnVideo() {
-        countFrames("video-overlay/src/test/resources/samples/five-second-marathon-clip.mkv", false, 154);
+        countFrames("samples/five-second-marathon-clip-numbered.mp4", false, 2000);
     }
 
     @Test
     public void testFrameCounterOnGif() {
-        countFrames("video-overlay/src/test/resources/samples/face-morphing.gif", true, 29);
+        countFrames("samples/face-morphing.gif", true, 29);
     }
 
-    private void countFrames(String filePath, boolean bruteForce, int expectedCount) {
+
+    private static void countFrames(String filePath, boolean bruteForce, int expectedCount) {
         try {
-            File sourceFile = new File(filePath);
+            File sourceFile = new File(JniTestUtils.getFileResource(filePath));
 
             if (!sourceFile.exists()) {
                 throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -32,12 +32,14 @@ import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.JsonAction;
 import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.interop.JsonStage;
+import org.mitre.mpf.interop.util.InstantJsonModule;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -63,12 +65,13 @@ public class JsonUtils {
      * Single instance of the ObjectMapper which converts between Java objects and text-based JSON. While less efficient
      * in terms of space, text-based JSON remains user-readable.
      */
+    @Autowired
     private ObjectMapper jsonObjectMapper;
 
     @PostConstruct
     private void init() {
         smileObjectMapper = new ObjectMapper(new SmileFactory());
-        jsonObjectMapper = new ObjectMapper();
+        smileObjectMapper.registerModule(new InstantJsonModule());
     }
 
     /** Parses the provided smile binary JSON object as an instance of the specified type or throws an exception if this conversion cannot be performed. */

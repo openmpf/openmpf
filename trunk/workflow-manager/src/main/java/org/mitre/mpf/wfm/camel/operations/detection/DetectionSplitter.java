@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -31,8 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.camel.StageSplitter;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
@@ -60,8 +59,7 @@ public class DetectionSplitter implements StageSplitter {
     public static final String REF = "detectionStageSplitter";
 
     @Autowired
-    @Qualifier(RedisImpl.REF)
-    private Redis redis;
+    private InProgressBatchJobsService inProgressBatchJobs;
 
     @Autowired
     @Qualifier(ImageMediaSegmenter.REF)
@@ -146,10 +144,8 @@ public class DetectionSplitter implements StageSplitter {
                 if (isFirstDetectionStage) {
                     previousTracks = Collections.emptySortedSet();
                 } else {
-                    previousTracks = redis.getTracks(transientJob.getId(),
-                            transientMedia.getId(),
-                            transientJob.getCurrentStage() - 1,
-                            0);
+                    previousTracks = inProgressBatchJobs.getTracks(transientJob.getId(), transientMedia.getId(),
+                                                                   transientJob.getCurrentStage() - 1, 0);
                 }
 
                 // Iterate through each of the actions and segment the media using the properties provided in that action.
@@ -159,7 +155,7 @@ public class DetectionSplitter implements StageSplitter {
                     TransientAction transientAction = transientStage.getActions().get(actionIndex);
 
                     // modifiedMap initialized with algorithm specific properties
-                    Map<String, String> modifiedMap = new HashMap<>(getAlgorithmProperties(transientAction.getAlgorithm(), transientJob.getDetectionSystemPropertiesSnapshot()));
+                    Map<String, String> modifiedMap = new HashMap<>(getAlgorithmProperties(transientAction.getAlgorithm(), transientJob.getSystemPropertiesSnapshot()));
 
                     // current modifiedMap properties overridden by action properties
                     modifiedMap.putAll(transientAction.getProperties());
@@ -203,9 +199,9 @@ public class DetectionSplitter implements StageSplitter {
                     // is available using transientAction.getAlgorithm().  So, see if our algorithm properties include
                     // override of the action (i.e. algorithm) that we are currently processing
                     // Note that this implementation depends on algorithm property keys matching what would be returned by transientAction.getAlgorithm()
-                    if (transientJob.getOverriddenAlgorithmProperties().keySet().contains(transientAction.getAlgorithm())) {
+                    if (transientJob.getOverriddenAlgorithmProperties().containsRow(transientAction.getAlgorithm())) {
                         // this transient job contains the a algorithm property which may override what is in our current action
-                        Map<String, String> job_alg_m = transientJob.getOverriddenAlgorithmProperties().get(transientAction.getAlgorithm());
+                        Map<String, String> job_alg_m = transientJob.getOverriddenAlgorithmProperties().row(transientAction.getAlgorithm());
 
                         // see if any of these algorithm properties are transform properties.  If so, clear the
                         // current set of transform properties from the map to allow for this algorithm properties to
@@ -235,16 +231,17 @@ public class DetectionSplitter implements StageSplitter {
 
                         // Note that single-frame gifs are treated like videos, but have no native frame rate
                         double fps = 1.0;
-                        if (transientMedia.containsMetadata("FPS")) {
-                            fps = Double.valueOf(transientMedia.getMetadata("FPS"));
+                        String fpsFromMetadata = transientMedia.getMetadata("FPS");
+                        if (fpsFromMetadata != null) {
+                            fps = Double.valueOf(fpsFromMetadata);
                         }
 
                         String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
                                 transientAction, transientJob, transientMedia,
-                                transientJob.getDetectionSystemPropertiesSnapshot().getSamplingInterval(), transientJob.getDetectionSystemPropertiesSnapshot().getFrameRateCap(), fps);
+                                transientJob.getSystemPropertiesSnapshot().getSamplingInterval(), transientJob.getSystemPropertiesSnapshot().getFrameRateCap(), fps);
                         modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
 
-                        segmentingPlan = createSegmentingPlan(transientJob.getDetectionSystemPropertiesSnapshot(), modifiedMap);
+                        segmentingPlan = createSegmentingPlan(transientJob.getSystemPropertiesSnapshot(), modifiedMap);
                     }
 
                     List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
@@ -280,10 +277,8 @@ public class DetectionSplitter implements StageSplitter {
                             detectionRequestMessages.size(), transientMedia.getId());
                 }
             } catch (WfmProcessingException e) {
-                redis.setJobStatus(transientJob.getId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
-                transientMedia.setFailed(true);
-                transientMedia.setMessage(e.getMessage());
-                redis.persistMedia(transientJob.getId(), transientMedia);
+                inProgressBatchJobs.setJobStatus(transientJob.getId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
+                inProgressBatchJobs.addMediaError(transientJob.getId(), transientMedia.getId(), e.getMessage());
             }
         }
 
@@ -317,15 +312,15 @@ public class DetectionSplitter implements StageSplitter {
 
 	/**
 	 * Create the segmenting plan using the properties defined for the sub-job.
-	 * @param transientDetectionSystemProperties contains detection system properties whose values were in effect when the transient job was created (will be used as system property default values)
+	 * @param systemPropertiesSnapshot contains detection system properties whose values were in effect when the transient job was created (will be used as system property default values)
 	 * @param properties properties defined for the sub-job
 	 * @return segmenting plan for this sub-job
 	 */
-    private SegmentingPlan createSegmentingPlan(TransientDetectionSystemProperties transientDetectionSystemProperties, Map<String, String> properties) {
-        int targetSegmentLength = transientDetectionSystemProperties.getTargetSegmentLength();
-        int minSegmentLength = transientDetectionSystemProperties.getMinSegmentLength();
-        int samplingInterval = transientDetectionSystemProperties.getSamplingInterval(); // get FRAME_INTERVAL system property
-        int minGapBetweenSegments = transientDetectionSystemProperties.getMinAllowableSegmentGap();
+    private SegmentingPlan createSegmentingPlan(SystemPropertiesSnapshot systemPropertiesSnapshot, Map<String, String> properties) {
+        int targetSegmentLength = systemPropertiesSnapshot.getTargetSegmentLength();
+        int minSegmentLength = systemPropertiesSnapshot.getMinSegmentLength();
+        int samplingInterval = systemPropertiesSnapshot.getSamplingInterval(); // get FRAME_INTERVAL system property
+        int minGapBetweenSegments = systemPropertiesSnapshot.getMinAllowableSegmentGap();
 
         // TODO: Better to use direct map access rather than a loop, but that requires knowing the case of the keys in the map.
         // Enforce case-sensitivity throughout the WFM.
@@ -361,7 +356,7 @@ public class DetectionSplitter implements StageSplitter {
                     try {
                         samplingInterval = Integer.valueOf(property.getValue());
                         if (samplingInterval < 1) {
-                            samplingInterval = transientDetectionSystemProperties.getSamplingInterval(); // get FRAME_INTERVAL system property
+                            samplingInterval = systemPropertiesSnapshot.getSamplingInterval(); // get FRAME_INTERVAL system property
                             log.warn("'{}' is not an acceptable {} value. Defaulting to '{}'.",
                                      MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
                                      property.getValue(),
@@ -414,7 +409,7 @@ public class DetectionSplitter implements StageSplitter {
     }
 
 
-    private Map<String, String> getAlgorithmProperties(String algorithmName, TransientDetectionSystemProperties transientDetectionSystemProperties) {
+    private Map<String, String> getAlgorithmProperties(String algorithmName, SystemPropertiesSnapshot systemPropertiesSnapshot) {
         AlgorithmDefinition algorithm = pipelineService.getAlgorithm(algorithmName);
         if (algorithm == null) {
             return Collections.emptyMap();
@@ -444,7 +439,7 @@ public class DetectionSplitter implements StageSplitter {
         // This processing is most applicable to jobs where the web UI may have been used to update properties between two stages of a pipeline.
         algorithm.getProvidesCollection().getAlgorithmProperties().stream()
                 .filter( pd -> pd.getPropertiesKey() != null )
-                .forEach( pd -> algPropertiesMap.put(pd.getName(), transientDetectionSystemProperties.lookup(pd.getPropertiesKey())));
+                .forEach( pd -> algPropertiesMap.put(pd.getName(), systemPropertiesSnapshot.lookup(pd.getPropertiesKey())));
 
         return algPropertiesMap;
 

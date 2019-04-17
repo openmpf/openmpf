@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,18 +29,20 @@ package org.mitre.mpf.wfm.businessrules.impl;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.interop.*;
-import org.mitre.mpf.interop.util.TimeUtils;
+import org.mitre.mpf.interop.JsonSegmentSummaryReport;
+import org.mitre.mpf.interop.JsonStreamingInputObject;
+import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.RedisImpl;
+import org.mitre.mpf.wfm.data.IdGenerator;
+import org.mitre.mpf.wfm.data.InProgressStreamingJobsService;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
@@ -61,7 +63,11 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.io.UncheckedIOException;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 @Component
@@ -105,8 +111,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     private JsonUtils jsonUtils;
 
     @Autowired
-    @Qualifier(RedisImpl.REF)
-    private Redis redis;
+    private InProgressStreamingJobsService inProgressJobs;
 
     @Autowired
     @Qualifier(HibernateStreamingJobRequestDaoImpl.REF)
@@ -124,64 +129,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     @Autowired
     private JobStatusBroadcaster jobStatusBroadcaster;
 
-    /**
-     * Converts a pipeline represented in JSON to a {@link TransientPipeline} instance.
-     */
-    private TransientPipeline buildPipeline(JsonPipeline jsonPipeline) {
-
-        if (jsonPipeline == null) {
-            return null;
-        }
-
-        String name = jsonPipeline.getName();
-        String description = jsonPipeline.getDescription();
-        TransientPipeline transientPipeline = new TransientPipeline(name, description);
-
-        // Iterate through the pipeline's stages and add them to the pipeline protocol buffer.
-        for (JsonStage stage : jsonPipeline.getStages()) {
-            transientPipeline.getStages().add(buildStage(stage));
-        }
-
-        return transientPipeline;
-    }
-
-    /**
-     * Maps a stage (represented in JSON) to a {@link TransientStage} instance.
-     */
-    private TransientStage buildStage(JsonStage stage) {
-        String name = stage.getName();
-        String description = stage.getDescription();
-        String operation = stage.getActionType();
-
-        TransientStage transientStage = new TransientStage(name, description, ActionType.valueOf(TextUtils.trimAndUpper(operation)));
-
-        // Iterate through the stage's actions and add them to the stage protocol buffer.
-        for (JsonAction action : stage.getActions()) {
-            transientStage.getActions().add(buildAction(action));
-        }
-
-        return transientStage;
-    }
-
-    /**
-     * Maps an action (represented in JSON) to a {@link TransientAction} instance.
-     */
-    private TransientAction buildAction(JsonAction action) {
-        String name = action.getName();
-        String description = action.getDescription();
-        String algorithm = action.getAlgorithm();
-
-        TransientAction transientAction = new TransientAction(name, description, algorithm);
-
-        // Finally, iterate through all of the properties in this action and copy them to the protocol buffer.
-        for (Map.Entry<String, String> property : action.getProperties().entrySet()) {
-            if (StringUtils.isNotBlank(property.getKey()) && StringUtils.isNotBlank(property.getValue())) {
-                transientAction.getProperties().put(property.getKey().toUpperCase(), property.getValue());
-            }
-        }
-
-        return transientAction;
-    }
 
     /**
      * Create and initialize a JSON representation of a streaming job request given the raw parameters.
@@ -282,7 +229,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     /**
-     * Marks a streaming job as CANCELLING in both REDIS and in the long-term database.
+     * Marks a streaming job as CANCELLING in both the TransientStreamingJob and in the long-term database.
      * @param jobId     The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
      * @param doCleanup if true, delete the streaming job files from disk as part of cancelling the streaming job.
      * @exception JobAlreadyCancellingWfmProcessingException may be thrown if the streaming job has already been cancelled or
@@ -317,16 +264,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         }
 
         log.info("[Streaming Job {}:*:*] Cancelling streaming job.", jobId);
-
-        // Mark the streaming job as cancelled in Redis
-        if (!redis.cancel(jobId)) {
-            // Couldn't find the requested job as a batch or as a streaming job in REDIS.
-            // Generate an error for the race condition where Redis and the persistent database reflect different states.
-            throw new JobCancellationInvalidJobIdWfmProcessingException("Streaming job with jobId " + jobId + " is not found, it cannot be cancelled at this time.");
-        }
-
-        redis.setJobStatus(jobId, StreamingJobStatusType.CANCELLING);
-        redis.setDoCleanup(jobId, doCleanup);
+        inProgressJobs.cancelJob(jobId, doCleanup);
 
         // set job status as cancelling, and persist that changed state in the database
         streamingJobRequest.setStatus(StreamingJobStatusType.CANCELLING);
@@ -441,7 +379,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     private StreamingJobRequest initializeInternal(StreamingJobRequest streamingJobRequest, JsonStreamingJobRequest jsonStreamingJobRequest) throws WfmProcessingException {
         streamingJobRequest.setPriority(jsonStreamingJobRequest.getPriority());
         streamingJobRequest.setStatus(StreamingJobStatusType.INITIALIZING);
-        streamingJobRequest.setTimeReceived(new Date());
+        streamingJobRequest.setTimeReceived(Instant.now());
         streamingJobRequest.setInputObject(jsonUtils.serialize(jsonStreamingJobRequest));
         streamingJobRequest.setPipeline(jsonStreamingJobRequest.getPipeline() == null ? null : TextUtils.trimAndUpper(jsonStreamingJobRequest.getPipeline().getName()));
 
@@ -471,18 +409,13 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * @throws WfmProcessingException Exception thrown if there is a failure while creating transient objects
      */
     private StreamingJobRequest runInternal(StreamingJobRequest streamingJobRequestEntity, JsonStreamingJobRequest jsonStreamingJobRequest, int priority) throws WfmProcessingException {
-
-        // First, create the Transient objects (i.e. storage in REDIS). This code was formerly in the job creation processor (Camel) software
-        // get the unique job id that has been assigned for this streaming job.
         long jobId = streamingJobRequestEntity.getId();
         log.info("[Streaming Job {}|*|*] is running at priority {}.", streamingJobRequestEntity.getId(), priority);
 
         String errorMessage = null;
         Exception errorException = null; // If an exception error is caught, save it so it can be provided as root cause for the WfmProcessingException
         try {
-
-            // persist the pipeline and streaming job in REDIS
-            TransientPipeline transientPipeline = buildPipeline(jsonStreamingJobRequest.getPipeline());
+            TransientPipeline transientPipeline = TransientPipeline.from(jsonStreamingJobRequest.getPipeline());
             TransientStreamingJob transientStreamingJob = buildStreamingJob(jobId, streamingJobRequestEntity, transientPipeline, jsonStreamingJobRequest);
             streamingJobMessageSender.launchJob(transientStreamingJob);
 
@@ -503,7 +436,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             try {
                 // make an effort to mark the streaming job as failed in the long-term database
                 streamingJobRequestEntity.setStatus(StreamingJobStatusType.JOB_CREATION_ERROR, errorMessage);
-                streamingJobRequestEntity.setTimeCompleted(new Date());
+                streamingJobRequestEntity.setTimeCompleted(Instant.now());
                 streamingJobRequestEntity = streamingJobRequestDao.persist(streamingJobRequestEntity);
             } catch (Exception persistException) {
                 log.warn("Failed to mark Streaming Job #{} as failed due to an exception. It will remain it its current state until manually changed.", streamingJobRequestEntity, persistException);
@@ -517,50 +450,39 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
     /**
-     * Build a TransientStreamingJob that is persisted in REDIS.
+     * Builds a TransientStreamingJob.
      *
      * @param jobId                     unique id that is assigned to this job
      * @param streamingJobRequestEntity the streaming job request as persisted in the long term database (mysql)
-     * @param transientPipeline         pipeline that has been created for this streaming job that has been persisted in REDIS
+     * @param transientPipeline         pipeline that has been created for this streaming job
      * @param jsonStreamingJobRequest   JSON representation of the streaming job request
-     * @return TransientStreamingJob that is persisted in REDIS
+     * @return TransientStreamingJob
      * @throws InvalidPipelineObjectWfmProcessingException InvalidPipelineObjectWfmProcessingException is thrown if the requested pipeline is invalid.
      */
     private TransientStreamingJob buildStreamingJob(long jobId, StreamingJobRequest streamingJobRequestEntity, TransientPipeline transientPipeline,
                                                     JsonStreamingJobRequest jsonStreamingJobRequest) throws InvalidPipelineObjectWfmProcessingException {
-        TransientStreamingJob transientStreamingJob = new TransientStreamingJob(
+        TransientStreamingJob transientStreamingJob = inProgressJobs.addJob(
                 streamingJobRequestEntity.getId(),
-                jsonStreamingJobRequest.getExternalId(), transientPipeline,
+                jsonStreamingJobRequest.getExternalId(),
+                transientPipeline,
+                buildTransientStream(jsonStreamingJobRequest.getStream()),
                 jsonStreamingJobRequest.getPriority(),
                 jsonStreamingJobRequest.getStallTimeout(),
                 jsonStreamingJobRequest.isOutputObjectEnabled(),
                 jsonStreamingJobRequest.getOutputObjectDirectory(),
-                false,
                 jsonStreamingJobRequest.getHealthReportCallbackUri(),
-                jsonStreamingJobRequest.getSummaryReportCallbackUri());
-
-        transientStreamingJob.getOverriddenJobProperties()
-                .putAll(jsonStreamingJobRequest.getJobProperties());
-
-        // algorithm properties should override any previously set properties (note: priority scheme enforced in DetectionSplitter)
-        transientStreamingJob.getOverriddenAlgorithmProperties()
-                .putAll(jsonStreamingJobRequest.getAlgorithmProperties());
-
-        // add the transient stream to this transient streaming job
-        transientStreamingJob.setStream(buildTransientStream(jsonStreamingJobRequest.getStream()));
-
-        // add the transient streaming job to REDIS
-        redis.persistJob(transientStreamingJob);
+                jsonStreamingJobRequest.getSummaryReportCallbackUri(),
+                jsonStreamingJobRequest.getJobProperties(),
+                jsonStreamingJobRequest.getAlgorithmProperties());
 
         if (transientPipeline == null) {
             String errorMessage = "Pipeline built from " + jsonStreamingJobRequest.getPipeline() + " is invalid.";
-            redis.setJobStatus(jobId, StreamingJobStatusType.JOB_CREATION_ERROR, errorMessage);
+            inProgressJobs.setJobStatus(jobId, StreamingJobStatusType.JOB_CREATION_ERROR, errorMessage);
             throw new InvalidPipelineObjectWfmProcessingException(errorMessage);
         }
 
         // Report the current job status (INITIALIZING). The job will report IN_PROGRESS once the WFM receives a
         // status message from the component process.
-        redis.setJobStatus(jobId, StreamingJobStatusType.INITIALIZING);
         handleJobStatusChange(streamingJobRequestEntity.getId(),
                 new StreamingJobStatus(streamingJobRequestEntity.getStatus()),
                 System.currentTimeMillis());
@@ -568,13 +490,14 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         return transientStreamingJob;
     }
 
-    private TransientStream buildTransientStream(JsonStreamingInputObject json_input_stream) throws WfmProcessingException {
-        TransientStream transientStream = new TransientStream(redis.getNextSequenceValue(),
-                json_input_stream.getStreamUri());
-        transientStream.setSegmentSize(json_input_stream.getSegmentSize());
-        transientStream.setMediaProperties(json_input_stream.getMediaProperties());
-        return transientStream;
+    private static TransientStream buildTransientStream(JsonStreamingInputObject jsonInputStream) {
+        return new TransientStream(
+                IdGenerator.next(),
+                jsonInputStream.getStreamUri(),
+                jsonInputStream.getSegmentSize(),
+                jsonInputStream.getMediaProperties());
     }
+    
 
     /**
      * Complete a streaming job by updating the job in the persistent database(s), make any final callbacks for the job.
@@ -585,20 +508,17 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      */
     @Override
     public void handleJobStatusChange(long jobId, StreamingJobStatus status, long timestamp) {
+        inProgressJobs.setJobStatus(jobId, status);
 
-        // Update status in REDIS and send health report as soon as possible.
-        redis.setJobStatus(jobId, status);
+        TransientStreamingJob transientJob = inProgressJobs.getJob(jobId);
 
-        String healthReportCallbackUri = redis.getHealthReportCallbackURI(jobId);
-        if (healthReportCallbackUri != null) {
-            callbackUtils.sendHealthReportCallback(healthReportCallbackUri, Collections.singletonList(jobId));
-        }
+        transientJob.getHealthReportCallbackURI()
+                .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, Collections.singletonList(transientJob)));
 
-        Date date = new Date(timestamp);
 
         StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
         if (status.isTerminal()) {
-            streamingJobRequest.setTimeCompleted(date);
+            streamingJobRequest.setTimeCompleted(Instant.ofEpochMilli(timestamp));
         }
         streamingJobRequest.setStatus(status.getType());
 
@@ -609,7 +529,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         streamingJobRequestDao.persist(streamingJobRequest);
 
         if (status.isTerminal()) {
-            if (redis.getDoCleanup(jobId)) {
+            if (transientJob.isCleanupEnabled()) {
                 try {
                     cleanup(jobId, streamingJobRequest.getOutputObjectDirectory());
                 } catch (WfmProcessingException e) {
@@ -617,7 +537,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 }
             }
 
-            redis.clearJob(jobId);
+            inProgressJobs.clearJob(jobId);
 
             JobCompleteNotification jobCompleteNotification = new JobCompleteNotification(jobId);
 
@@ -631,7 +551,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 }
             }
 
-            jobStatusBroadcaster.broadcast(jobId, 100, status.getType(), date);
+            jobStatusBroadcaster.broadcast(jobId, 100, status.getType(), Instant.ofEpochMilli(timestamp));
             jobProgressStore.setJobProgress(jobId, 100.0f);
 
             log.info("[Streaming Job {}:*:*] Streaming Job complete!", jobId);
@@ -640,82 +560,49 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     @Override
     public void handleNewActivityAlert(long jobId, long frameId, long timestamp) {
-        redis.setStreamingActivity(jobId, frameId, TimeUtils.millisToDateTime(timestamp));
-        String healthReportCallbackUri = redis.getHealthReportCallbackURI(jobId);
-        if (healthReportCallbackUri != null) {
-            callbackUtils.sendHealthReportCallback(healthReportCallbackUri, Collections.singletonList(jobId));
-        }
+        inProgressJobs.setLastJobActivity(jobId, frameId, Instant.ofEpochMilli(timestamp));
+        TransientStreamingJob job = inProgressJobs.getJob(jobId);
+        job.getHealthReportCallbackURI()
+                .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, Collections.singletonList(job)));
     }
 
     @Override
     public void handleNewSummaryReport(JsonSegmentSummaryReport summaryReport) {
-        // Send summary report as soon as possible.
-        String summaryReportCallbackUri = redis.getSummaryReportCallbackURI(summaryReport.getJobId());
+        TransientStreamingJob transientStreamingJob = inProgressJobs.getJob(summaryReport.getJobId());
 
-        // Include the externalId as obtained from REDIS in the summary report. Note that we should
-        // set the externalId even if the summaryReport isn't sent, because the summaryReport may be written to disk after it is
-        // optionally sent.
-        summaryReport.setExternalId(redis.getExternalId(summaryReport.getJobId()));
+        transientStreamingJob.getExternalId()
+                .ifPresent(summaryReport::setExternalId);
 
-        if (summaryReportCallbackUri != null) {
-            callbackUtils.sendSummaryReportCallback(summaryReport, summaryReportCallbackUri);
-        }
+        transientStreamingJob.getSummaryReportCallbackURI()
+                .ifPresent(uri -> callbackUtils.sendSummaryReportCallback(summaryReport, uri));
 
-        // TODO: Add methods to redis so that we don't need to get the whole transient job.
-        TransientStreamingJob transientStreamingJob = redis.getStreamingJob(summaryReport.getJobId());
-        if (transientStreamingJob != null) {
-            if (transientStreamingJob.isOutputEnabled()) {
-                try {
-                    String outputPath = transientStreamingJob.getOutputObjectDirectory();
-                    File outputFile = propertiesUtil.createStreamingOutputObjectsFile(summaryReport.getReportDate(), new File(outputPath));
-                    jsonUtils.serialize(summaryReport, outputFile);
-                } catch(Exception e) {
-                    log.error("Failed to write the JSON summary report for job '{}' due to an exception.", summaryReport.getJobId(), e);
-                }
+        if (transientStreamingJob.isOutputEnabled()) {
+            try {
+                String outputPath = transientStreamingJob.getOutputObjectDirectory();
+                File outputFile = propertiesUtil.createStreamingOutputObjectsFile(summaryReport.getReportDate(),
+                                                                                  new File(outputPath));
+                jsonUtils.serialize(summaryReport, outputFile);
+            }
+            catch (IOException e) {
+                String message = String.format("Failed to write the JSON summary report for job '%s' due to: %s",
+                                               summaryReport.getJobId(), e.getMessage());
+                throw new UncheckedIOException(message, e);
             }
         }
     }
 
+
     /**
-     * Send health reports to the health report callbacks associated with the streaming jobs.
+     * Send health reports to the health report callbacks associated with the active streaming jobs.
      * Note that OpenMPF supports sending periodic health reports that contain health for all streaming jobs who have
-     * defined the same HealthReportCallbackUri. This method will filter out jobIds for any jobs which are not current streaming jobs,
-     * plus will optionally filter out streaming jobs that have been terminated.
+     * defined the same HealthReportCallbackUri.
      * Note that out-of-cycle health reports that may have been sent due to a change in job status will not
      * delay sending of the periodic (i.e. scheduled) health report.
-     * @param jobIds unique ids for the streaming jobs to be reported on. Must not be null or empty.
-     * @param isActive If true, then streaming jobs which have terminal JobStatus will be
-     * filtered out. Otherwise, all current streaming jobs will be processed.
-     * @throws WfmProcessingException thrown if an error occurs
      */
-    public void sendHealthReports(List<Long> jobIds, boolean isActive) throws WfmProcessingException {
-        if ( jobIds == null ) {
-            throw new WfmProcessingException("Error: jobIds must not be null.");
-        } else if ( jobIds.isEmpty() ) {
-            throw new WfmProcessingException("Error: jobIds must not be empty.");
-        } else {
-            // While we are receiving the list of all job ids known to the system, some of these jobs may not be current streaming jobs in REDIS.
-            // Reduce the List of jobIds to ony include streaming jobIds that are in REDIS. Optionally reduce that set to only include non-terminal jobs.
-            List<Long> currentActiveJobIds = redis.getCurrentStreamingJobs(jobIds, isActive );
-
-            // If there are no active jobs, no health reports will be sent.
-            if ( currentActiveJobIds != null && !currentActiveJobIds.isEmpty() ) {
-
-                // Get the list of health report callback URIs associated with the specified active jobs. Note that
-                // this usage will return unique healthReportCallbackUris. Doing this so streaming jobs which specify
-                // the same healthReportCallbackUri will only POST the health report once to the single healthReportCallbackUri. Note that
-                // POST method is always used for sending health reports, GET method is not supported. The health report that is sent
-                // will contain health for all streaming jobs with the same healthReportCallbackUri.
-                // healthReportCallbackUriToJobIdListMap: key is the healthReportCallbackUri, value is the List of active jobIds that specified that healthReportCallbackUri.
-                Map<String, List<Long>> healthReportCallbackUriToActiveJobIdListMap = redis.getHealthReportCallbackURIAsMap(currentActiveJobIds);
-
-                // For each healthReportCallbackUri, send a health report containing health information for each streaming job
-                // that specified the same healthReportCallbackUri. Note that sendHealthReportCallback method won't be called
-                // if healthReportCallbackUriToJobIdListMap is empty. This would be a possibility if no streaming jobs have
-                // requested that a health report be sent.
-                healthReportCallbackUriToActiveJobIdListMap.forEach(callbackUtils::sendHealthReportCallback);
-            }
-        }
+    @Override
+    public void sendHealthReports() {
+        inProgressJobs.getJobsGroupedByHealthReportUri()
+                .forEach(callbackUtils::sendHealthReportCallback);
     }
 
     @Override

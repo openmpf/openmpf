@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -31,10 +31,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class JobCreationRequest {	
+public class JobCreationRequest {
 	private List<JobCreationMediaData> media = new LinkedList<>();
 	private Map<String, String> jobProperties = new HashMap<>();
-	private Map<String, Map> algorithmProperties = new HashMap<>();
+	private Map<String, Map<String, String>> algorithmProperties = new HashMap<>();
 	private String externalId = null;
 	private String pipelineName = null;
 	private Boolean buildOutput = null; //will use a server side property if null
@@ -57,10 +57,10 @@ public class JobCreationRequest {
 		this.jobProperties = jobProperties;
 	}
 
-	public Map<String, Map> getAlgorithmProperties() {
+	public Map<String, Map<String, String>> getAlgorithmProperties() {
 		return algorithmProperties;
 	}
-	public void setAlgorithmProperties(Map<String, Map> algorithmProperties) {
+	public void setAlgorithmProperties(Map<String, Map<String, String>> algorithmProperties) {
 		this.algorithmProperties = algorithmProperties;
 	}
 
@@ -69,22 +69,22 @@ public class JobCreationRequest {
 	}
 	public void setExternalId(String externalId) {
 		this.externalId = externalId;
-	}	
-	
+	}
+
 	public String getPipelineName() {
 		return pipelineName;
 	}
 	public void setPipelineName(String pipelineName) {
 		this.pipelineName = pipelineName;
 	}
-	
+
 	public Boolean getBuildOutput() {
 		return buildOutput;
 	}
 	public void setBuildOutput(Boolean buildOutput) {
 		this.buildOutput = buildOutput;
 	}
-	
+
 	public Integer getPriority() {
 		return priority;
 	}

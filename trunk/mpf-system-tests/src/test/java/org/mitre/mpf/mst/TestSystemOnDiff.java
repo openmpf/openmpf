@@ -55,10 +55,6 @@ import static org.junit.Assert.*;
  * adding the same to the Run Configuration, if running via IntelliJ.  To verify if output checking is running or not: if
  * you see 'Deserializing ...' in the console or log output, it IS running; if you don't see it, it IS NOT running.
  *
- * If output checking fails, it can be hard to identify where or why.  To better see where the failure was, uncomment
- * this line in logback-test.xml:
- *      <!-- <logger name="org.mitre.mpf.mst" level="DEBUG"/> -->
- *
  * If the structure of the output changes or if an algorithm changes, output checking will undoubtedly fail.  Once it is
  * confirmed that the failure is expected, the outputs should just be regenerated and committed to the repository for
  * future checking. Output checking is designed to catch unintentional or erroneous changes. There are two scripts in the

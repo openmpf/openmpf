@@ -37,7 +37,11 @@ import org.mitre.mpf.wfm.util.ValidAlgoPropValue;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.BiPredicate;
 
 /**
  * This class is only used to avoid manually extracting information from the JSON descriptor file.
@@ -95,6 +99,26 @@ public class JsonComponentDescriptor {
     @Valid
     public List<Pipeline> pipelines;
 
+
+    public boolean deepEquals(JsonComponentDescriptor other) {
+        return other != null
+                && Objects.equals(componentName, other.componentName)
+                && Objects.equals(componentVersion, other.componentVersion)
+                && Objects.equals(middlewareVersion, other.middlewareVersion)
+                && Objects.equals(setupFile, other.setupFile)
+                && Objects.equals(instructionsFile, other.instructionsFile)
+                && sourceLanguage == other.sourceLanguage
+                && Objects.equals(batchLibrary, other.batchLibrary)
+                && Objects.equals(streamLibrary, other.streamLibrary)
+                && collectionDeepEquals(environmentVariables, other.environmentVariables,
+                                        EnvironmentVariable::deepEquals)
+                && algorithm.deepEquals(other.algorithm)
+                && collectionDeepEquals(actions, other.actions, Action::deepEquals)
+                && collectionDeepEquals(tasks, other.tasks, Task::deepEquals)
+                && collectionDeepEquals(pipelines, pipelines, Pipeline::deepEquals);
+    }
+
+
     public static class EnvironmentVariable {
         @NotBlank
         public String name;
@@ -104,6 +128,13 @@ public class JsonComponentDescriptor {
 
         @Pattern(regexp = ":", message = "must be \":\" or null")
         public String sep;
+
+        private boolean deepEquals(EnvironmentVariable other) {
+            return other != null
+                    && Objects.equals(name, other.name)
+                    && Objects.equals(value, other.value)
+                    && Objects.equals(sep, other.sep);
+        }
     }
 
     public static class Algorithm {
@@ -123,13 +154,28 @@ public class JsonComponentDescriptor {
         @NotNull
         @Valid
         public AlgoProvides providesCollection;
+
+        public boolean deepEquals(Algorithm other) {
+            return other != null
+                    && Objects.equals(name, other.name)
+                    && Objects.equals(description, other.description)
+                    && actionType == other.actionType
+                    && requiresCollection.deepEquals(other.requiresCollection)
+                    && providesCollection.deepEquals(other.providesCollection);
+        }
     }
 
     public static class AlgoRequires {
         @NotNull
         @Valid
         public List<@AllNotBlank String> states;
+
+        public boolean deepEquals(AlgoRequires other) {
+            return other != null
+                    && collectionDeepEquals(states, other.states);
+        }
     }
+
 
     public static class AlgoProvides {
         @NotNull
@@ -139,6 +185,12 @@ public class JsonComponentDescriptor {
         @NotNull
         @Valid
         public List<AlgoProvidesProp> properties;
+
+        private boolean deepEquals(AlgoProvides other) {
+            return other != null
+                    && collectionDeepEquals(states, other.states)
+                    && collectionDeepEquals(properties, other.properties, AlgoProvidesProp::deepEquals);
+        }
     }
 
     @ValidAlgoPropValue
@@ -157,6 +209,17 @@ public class JsonComponentDescriptor {
 
         // option B
         public String propertiesKey;
+
+
+        private boolean deepEquals(AlgoProvidesProp other) {
+            return other != null
+                    && Objects.equals(description, other.description)
+                    && Objects.equals(name, other.name)
+                    && type == other.type
+                    && Objects.equals(defaultValue, other.defaultValue)
+                    && Objects.equals(propertiesKey, other.propertiesKey);
+
+        }
     }
 
     public static class Pipeline {
@@ -169,7 +232,15 @@ public class JsonComponentDescriptor {
         @NotEmpty
         @Valid
         public List<@AllNotBlank String> tasks;
+
+        private boolean deepEquals(Pipeline other) {
+            return other != null
+                    && Objects.equals(name, other.name)
+                    && Objects.equals(description, other.description)
+                    && collectionDeepEquals(tasks, other.tasks);
+        }
     }
+
 
     public static class Task {
         @NotBlank
@@ -181,7 +252,15 @@ public class JsonComponentDescriptor {
         @NotEmpty
         @Valid
         public List<@AllNotBlank String> actions;
+
+        private boolean deepEquals(Task other) {
+            return other != null
+                    && Objects.equals(name, other.name)
+                    && Objects.equals(description, other.description)
+                    && collectionDeepEquals(actions, other.actions);
+        }
     }
+
 
     public static class Action {
         @NotBlank
@@ -196,6 +275,14 @@ public class JsonComponentDescriptor {
         @NotNull
         @Valid
         public List<ActionProperty> properties;
+
+        private boolean deepEquals(Action other) {
+            return other != null
+                    && Objects.equals(name, other.name)
+                    && Objects.equals(description, other.description)
+                    && Objects.equals(algorithm, other.algorithm)
+                    && collectionDeepEquals(properties, other.properties, ActionProperty::deepEquals);
+        }
     }
 
     public static class ActionProperty {
@@ -204,5 +291,46 @@ public class JsonComponentDescriptor {
 
         @NotNull
         public String value;
+
+
+        private boolean deepEquals(ActionProperty other) {
+            return other != null
+                    && Objects.equals(name, other.name)
+                    && Objects.equals(value, other.value);
+        }
+    }
+
+
+    private static <T> boolean collectionDeepEquals(Collection<T> collection1, Collection<T> collection2) {
+        return collectionDeepEquals(collection1, collection2, Objects::equals);
+    }
+
+
+    private static <T> boolean collectionDeepEquals(Collection<T> collection1, Collection<T> collection2,
+                                                    BiPredicate <T, T> equalsPred) {
+        if (collection1 == null || collection2 == null) {
+            return collection1 == null && collection2 == null;
+        }
+        if (collection1.size() != collection2.size()) {
+            return false;
+        }
+
+        Iterator<T> iter1 = collection1.iterator();
+        Iterator<T> iter2 = collection2.iterator();
+        while (iter1.hasNext()) {
+            T el1 = iter1.next();
+            T el2 = iter2.next();
+            if (el1 == null || el2 == null) {
+                if (el1 == null && el2 == null) {
+                    continue;
+                }
+                return false;
+            }
+
+            if (!equalsPred.test(el1, el2)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

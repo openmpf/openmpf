@@ -49,7 +49,7 @@ public class TestIoUtils {
 
     private Path _tempRoot;
 
-    private final IoUtils ioUtils = new IoUtils();
+    private final IoUtils _ioUtils = new IoUtils();
 
     @Before
     public void init() {
@@ -88,28 +88,28 @@ public class TestIoUtils {
 
     @Test
     public void canDetectMimeType() throws IOException {
-        String imageType = ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/meds1.jpg"));
+        String imageType = _ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/meds1.jpg"));
         assertNotNull("The detected audioType must not be null.", imageType);
 
-        String videoType = ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/mpeg_vid.mpg"));
+        String videoType = _ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/mpeg_vid.mpg"));
         assertNotNull("The detected audioType must not be null.", videoType);
 
-        String audioType = ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/green.wav"));
+        String audioType = _ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/green.wav"));
         assertNotNull("The detected audioType must not be null.", audioType);
     }
 
     @Test
     public void canDetectMediaType() throws WfmProcessingException, MalformedURLException {
-        URI uri = ioUtils.findFile("/samples/mpeg_vid.mpg");
-        MediaType type = ioUtils.getMediaType(uri.toURL());
+        URI uri = _ioUtils.findFile("/samples/mpeg_vid.mpg");
+        MediaType type = _ioUtils.getMediaType(uri.toURL());
         assertTrue(String.format("mpeg_vid.mpg was expected to be a video, but it was instead '%s'.", type), type == MediaType.VIDEO);
 
-        URI uri2 = ioUtils.findFile("/samples/meds1.jpg");
-        MediaType type2 = ioUtils.getMediaType(uri2.toURL());
+        URI uri2 = _ioUtils.findFile("/samples/meds1.jpg");
+        MediaType type2 = _ioUtils.getMediaType(uri2.toURL());
         assertTrue(String.format("meds1.jpg was expected to be an image, but it was instead '%s'.", type2), type2 == MediaType.IMAGE);
 
-        URI uri3 = ioUtils.findFile("/samples/green.wav");
-        MediaType type3 = ioUtils.getMediaType(uri3.toURL());
+        URI uri3 = _ioUtils.findFile("/samples/green.wav");
+        MediaType type3 = _ioUtils.getMediaType(uri3.toURL());
         assertTrue(String.format("test.wav was expected to be an audio, but it was instead '%s'.", type3), type3 == MediaType.AUDIO);
     }
 }

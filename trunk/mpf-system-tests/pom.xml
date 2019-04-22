@@ -140,6 +140,7 @@
                 <version>2.14</version>
                 <configuration>
                     <argLine>-Djava.library.path=${env.MPF_HOME}/lib</argLine>
+                    <!-- Excluded in the "test" phase of the build, not the "verify" phase. -->
                     <excludes>
                         <exclude>**/TestSystemNightly.java</exclude>
                         <exclude>**/TestSystem.java</exclude>

@@ -42,6 +42,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import javax.jms.*;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.Matchers.any;
@@ -51,7 +52,8 @@ import static org.mockito.Mockito.verify;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestDlqRouteBuilder {
 
-    public static final String ACTIVE_MQ_HOST = "tcp://localhost:61616";
+    public static final String ACTIVE_MQ_HOST =
+            "tcp://" + Optional.ofNullable(System.getenv("ACTIVE_MQ_HOST")).orElse("localhost") + ":61616";
 
     public static final String ENTRY_POINT = "jms://MPF.TEST.ActiveMQ.DLQ";
     public static final String EXIT_POINT = "jms:MPF.TEST.COMPLETED_DETECTIONS";

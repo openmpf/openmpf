@@ -999,9 +999,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.14</version>
                 <configuration>
-                    <excludes>
-                        <exclude>**/TestWorkflowManager.java</exclude>
-                    </excludes>
                     <argLine>-Djava.library.path=${env.MPF_HOME}/lib</argLine>
                 </configuration>
             </plugin>

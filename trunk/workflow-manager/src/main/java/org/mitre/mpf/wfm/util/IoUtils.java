@@ -58,6 +58,9 @@ public class IoUtils {
     @Autowired
     private MediaTypeUtils mediaTypeUtils;
 
+    @Autowired
+    private PropertiesUtil propertiesUtil;
+
     // Detect is thread safe, so only one instance is needed.
     // See: {@link http://grokbase.com/t/tika/user/114qab9908/is-the-method-detect-of-instance-org-apache-tika-tika-thread-safe}
     private final Tika tikaInstance = new Tika();
@@ -178,28 +181,36 @@ public class IoUtils {
                 throw new WfmProcessingException(use);
             }
         }
-        File file = new File(path);
-        if (file.exists()) {
-            return file.getAbsoluteFile().toURI();
-        } else {
-            try {
-                URL url = IoUtils.class.getResource(path);
-                if (url != null) {
-                    return url.toURI();
-                } else {
-                    throw new WfmProcessingException(String.format("Resource not found when converting %s to URI", path));
-                }
-            } catch (URISyntaxException use) {
-                throw new WfmProcessingException
-                        (String.format("Exception occurred when converting path %s to URI", path), use);
-            }
-        }
-    }
 
-    public File createTemporaryFile() throws IOException {
-        File file = File.createTempFile("tmp", ".tmp");
-        file.deleteOnExit();
-        return file;
+        Path filePath = Paths.get(path);
+        if (Files.exists(filePath)) {
+            return filePath.toUri();
+        }
+
+        // Give precedence to files in to the share path so that when performing integration tests we detect a path
+        // that is accessible to all of the nodes.
+        String sharePath;
+        if (propertiesUtil != null) {
+            sharePath = propertiesUtil.getSharePath();
+        } else {
+            sharePath = System.getenv("MPF_HOME") + "/share";
+        }
+        filePath = Paths.get(sharePath + path);
+        if (Files.exists(filePath)) {
+            return filePath.toUri();
+        }
+
+        try {
+            URL url = IoUtils.class.getResource(path);
+            if (url != null) {
+                return Paths.get(url.toURI()).toUri(); // Path.toUri() returns proper "file:///" form of URI.
+            }
+        } catch (URISyntaxException use) {
+            throw new WfmProcessingException
+                    (String.format("Exception occurred when converting path %s to URI", path), use);
+        }
+
+        throw new WfmProcessingException(String.format("File not found at path %s", path));
     }
 
     /***

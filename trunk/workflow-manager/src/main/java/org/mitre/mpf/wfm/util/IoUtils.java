@@ -182,9 +182,9 @@ public class IoUtils {
             }
         }
 
-        File file = new File(path);
-        if (file.exists()) {
-            return file.getAbsoluteFile().toURI();
+        Path filePath = Paths.get(path);
+        if (Files.exists(filePath)) {
+            return filePath.toUri();
         }
 
         // Give precedence to files in to the share path so that when performing integration tests we detect a path
@@ -195,7 +195,7 @@ public class IoUtils {
         } else {
             sharePath = System.getenv("MPF_HOME") + "/share";
         }
-        Path filePath = Paths.get(sharePath + path);
+        filePath = Paths.get(sharePath + path);
         if (Files.exists(filePath)) {
             return filePath.toUri();
         }
@@ -203,7 +203,7 @@ public class IoUtils {
         try {
             URL url = IoUtils.class.getResource(path);
             if (url != null) {
-                return url.toURI();
+                return Paths.get(url.toURI()).toUri(); // Path.toUri() returns proper "file:///" form of URI.
             }
         } catch (URISyntaxException use) {
             throw new WfmProcessingException
@@ -211,12 +211,6 @@ public class IoUtils {
         }
 
         throw new WfmProcessingException(String.format("File not found at path %s", path));
-    }
-
-    public File createTemporaryFile() throws IOException {
-        File file = File.createTempFile("tmp", ".tmp");
-        file.deleteOnExit();
-        return file;
     }
 
     /***

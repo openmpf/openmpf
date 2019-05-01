@@ -49,7 +49,7 @@ import static org.junit.Assert.assertTrue;
 public class TestMediaSegmenter {
 
 	@Test
-	public void testNoSplits() throws Exception {
+	public void testNoSplits() {
 		List<TimePair> results = MediaSegmenter.createSegments(
 				Collections.singletonList(new TimePair(0, 24)), 25, 1, 100);
 		assertEquals(0, results.get(0).getStartInclusive());
@@ -58,7 +58,7 @@ public class TestMediaSegmenter {
 
 
 	@Test
-	public void testSplits() throws Exception {
+	public void testSplits() {
 		List<TimePair> results = MediaSegmenter.createSegments(
 				Collections.singletonList(new TimePair(0, 24)), 10, 1, 100);
 
@@ -73,7 +73,83 @@ public class TestMediaSegmenter {
 	}
 
 	@Test
-	public void testOverlap() throws Exception {
+	public void testFirstSegmentNotDiscarded() {
+		List<TimePair> results = MediaSegmenter.createSegments(
+				Collections.singletonList(new TimePair(0, 3)), 10, 5, 0);
+
+		assertEquals(1, results.size());
+
+		assertEquals(0, results.get(0).getStartInclusive());
+		assertEquals(3, results.get(0).getEndInclusive());
+	}
+
+	@Test
+	public void testShortNonAdjacentSegmentNotDiscarded() {
+		List<TimePair> inputs = new ArrayList<>();
+		inputs.add(new TimePair(0, 11));
+		inputs.add(new TimePair(13, 13));
+
+		List<TimePair> results = MediaSegmenter.createSegments(
+				inputs, 10, 5, 0);
+
+		assertEquals(2, results.size());
+
+		assertEquals(0, results.get(0).getStartInclusive());
+		assertEquals(11, results.get(0).getEndInclusive());
+
+		assertEquals(13, results.get(1).getStartInclusive());
+		assertEquals(13, results.get(1).getEndInclusive());
+	}
+
+	@Test
+	public void testShortAdjacentSegmentNotDiscarded() {
+		List<TimePair> inputs = new ArrayList<>();
+		inputs.add(new TimePair(0, 9));
+		inputs.add(new TimePair(10, 13));
+
+		List<TimePair> results = MediaSegmenter.createSegments(
+				inputs, 10, 5, 0);
+
+		assertEquals(2, results.size());
+
+		assertEquals(0, results.get(0).getStartInclusive());
+		assertEquals(9, results.get(0).getEndInclusive());
+
+		assertEquals(10, results.get(1).getStartInclusive());
+		assertEquals(13, results.get(1).getEndInclusive());
+	}
+
+	@Test
+	public void testSegmentLengthAtLeastMinLength() {
+		List<TimePair> results = MediaSegmenter.createSegments(
+				Collections.singletonList(new TimePair(1, 210)), 100, 10, 0);
+
+		assertEquals(2, results.size());
+
+		assertEquals(1, results.get(0).getStartInclusive());
+		assertEquals(100, results.get(0).getEndInclusive());
+
+		assertEquals(101, results.get(1).getStartInclusive());
+		assertEquals(210, results.get(1).getEndInclusive());
+
+
+		results = MediaSegmenter.createSegments(
+				Collections.singletonList(new TimePair(1, 211)), 100, 10, 0);
+
+		assertEquals(3, results.size());
+
+		assertEquals(1, results.get(0).getStartInclusive());
+		assertEquals(100, results.get(0).getEndInclusive());
+
+		assertEquals(101, results.get(1).getStartInclusive());
+		assertEquals(200, results.get(1).getEndInclusive());
+
+		assertEquals(201, results.get(2).getStartInclusive());
+		assertEquals(211, results.get(2).getEndInclusive());
+	}
+
+	@Test
+	public void testOverlap() {
 		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(10, 20), 0));
 		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(10, 20), 1));
 		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(10, 20), 10));
@@ -96,7 +172,7 @@ public class TestMediaSegmenter {
 	}
 
 	@Test
-	public void testMerge() throws Exception {
+	public void testMerge() {
 		assertEquals(new TimePair(0, 20), MediaSegmenter.merge(new TimePair(0, 15), new TimePair(10, 20)));
 	}
 

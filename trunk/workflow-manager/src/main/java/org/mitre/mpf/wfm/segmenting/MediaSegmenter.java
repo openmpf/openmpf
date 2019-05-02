@@ -204,7 +204,7 @@ public interface MediaSegmenter {
 
 		List<TimePair> result = new ArrayList<>(timePair.length() / targetSegmentLength);
 		for (int start = timePair.getStartInclusive(); start <= timePair.getEndInclusive(); start += targetSegmentLength) {
-			if (timePair.getEndInclusive() <= (start + (targetSegmentLength - 1) + minSegmentLength)) {
+			if (timePair.getEndInclusive() <= (start + (targetSegmentLength - 1) + (minSegmentLength - 1))) {
 				result.add(new TimePair(start, timePair.getEndInclusive()));
 				break;
 			}

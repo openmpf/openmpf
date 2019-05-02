@@ -56,7 +56,6 @@ public class TestMediaSegmenter {
 		assertEquals(24,  results.get(0).getEndInclusive());
 	}
 
-
 	@Test
 	public void testSplits() {
 		List<TimePair> results = MediaSegmenter.createSegments(
@@ -70,6 +69,28 @@ public class TestMediaSegmenter {
 
 		assertEquals(20, results.get(2).getStartInclusive());
 		assertEquals(24, results.get(2).getEndInclusive());
+
+
+		// "Segmenting Media" example from User Guide
+		List<TimePair> inputs = new ArrayList<>();
+		inputs.add(new TimePair(25, 150));
+		inputs.add(new TimePair(175, 275));
+		inputs.add(new TimePair(25, 125));
+		inputs.add(new TimePair(0, 175));
+
+		results = MediaSegmenter.createSegments(
+				inputs, 100, 5, 0);
+
+		assertEquals(3, results.size());
+
+		assertEquals(0, results.get(0).getStartInclusive());
+		assertEquals(99, results.get(0).getEndInclusive());
+
+		assertEquals(100, results.get(1).getStartInclusive());
+		assertEquals(199, results.get(1).getEndInclusive());
+
+		assertEquals(200, results.get(2).getStartInclusive());
+		assertEquals(275, results.get(2).getEndInclusive());
 	}
 
 	@Test
@@ -81,24 +102,6 @@ public class TestMediaSegmenter {
 
 		assertEquals(0, results.get(0).getStartInclusive());
 		assertEquals(3, results.get(0).getEndInclusive());
-	}
-
-	@Test
-	public void testShortNonAdjacentSegmentNotDiscarded() {
-		List<TimePair> inputs = new ArrayList<>();
-		inputs.add(new TimePair(0, 11));
-		inputs.add(new TimePair(13, 13));
-
-		List<TimePair> results = MediaSegmenter.createSegments(
-				inputs, 10, 5, 0);
-
-		assertEquals(2, results.size());
-
-		assertEquals(0, results.get(0).getStartInclusive());
-		assertEquals(11, results.get(0).getEndInclusive());
-
-		assertEquals(13, results.get(1).getStartInclusive());
-		assertEquals(13, results.get(1).getEndInclusive());
 	}
 
 	@Test
@@ -117,35 +120,158 @@ public class TestMediaSegmenter {
 
 		assertEquals(10, results.get(1).getStartInclusive());
 		assertEquals(13, results.get(1).getEndInclusive());
+
+
+		// "Adjacent Segment Present" example from User Guide
+		inputs.clear();
+		inputs.add(new TimePair(0, 99));
+		inputs.add(new TimePair(100, 199));
+		inputs.add(new TimePair(200, 249));
+
+		results = MediaSegmenter.createSegments(
+				inputs, 100, 75, 50);
+
+		assertEquals(2, results.size());
+
+		assertEquals(0, results.get(0).getStartInclusive());
+		assertEquals(99, results.get(0).getEndInclusive());
+
+		assertEquals(100, results.get(1).getStartInclusive());
+		assertEquals(249, results.get(1).getEndInclusive());
+	}
+
+	@Test
+	public void testShortNonAdjacentSegmentNotDiscarded() {
+		List<TimePair> inputs = new ArrayList<>();
+		inputs.add(new TimePair(0, 11));
+		inputs.add(new TimePair(13, 13));
+
+		List<TimePair> results = MediaSegmenter.createSegments(
+				inputs, 10, 5, 0);
+
+		assertEquals(2, results.size());
+
+		assertEquals(0, results.get(0).getStartInclusive());
+		assertEquals(11, results.get(0).getEndInclusive());
+
+		assertEquals(13, results.get(1).getStartInclusive());
+		assertEquals(13, results.get(1).getEndInclusive());
+
+
+		// "No Adjacent Segment" example from User Guide
+		inputs.clear();
+		inputs.add(new TimePair(0, 99));
+		inputs.add(new TimePair(100, 199));
+		inputs.add(new TimePair(200, 249));
+		inputs.add(new TimePair(325, 349));
+
+		results = MediaSegmenter.createSegments(
+				inputs, 100, 75, 50);
+
+		assertEquals(3, results.size());
+
+		assertEquals(0, results.get(0).getStartInclusive());
+		assertEquals(99, results.get(0).getEndInclusive());
+
+		assertEquals(100, results.get(1).getStartInclusive());
+		assertEquals(249, results.get(1).getEndInclusive());
+
+		assertEquals(325, results.get(2).getStartInclusive());
+		assertEquals(349, results.get(2).getEndInclusive());
 	}
 
 	@Test
 	public void testSegmentLengthAtLeastMinLength() {
 		List<TimePair> results = MediaSegmenter.createSegments(
-				Collections.singletonList(new TimePair(1, 210)), 100, 10, 0);
+				Collections.singletonList(new TimePair(0, 208)), 100, 10, 0);
 
 		assertEquals(2, results.size());
 
-		assertEquals(1, results.get(0).getStartInclusive());
-		assertEquals(100, results.get(0).getEndInclusive());
+		assertEquals(0, results.get(0).getStartInclusive());
+		assertEquals(99, results.get(0).getEndInclusive());
 
-		assertEquals(101, results.get(1).getStartInclusive());
-		assertEquals(210, results.get(1).getEndInclusive());
+		assertEquals(100, results.get(1).getStartInclusive());
+		assertEquals(208, results.get(1).getEndInclusive()); // short segment merged into preceding segment
 
 
 		results = MediaSegmenter.createSegments(
-				Collections.singletonList(new TimePair(1, 211)), 100, 10, 0);
+				Collections.singletonList(new TimePair(0, 209)), 100, 10, 0);
 
 		assertEquals(3, results.size());
 
-		assertEquals(1, results.get(0).getStartInclusive());
-		assertEquals(100, results.get(0).getEndInclusive());
+		assertEquals(0, results.get(0).getStartInclusive());
+		assertEquals(99, results.get(0).getEndInclusive());
 
-		assertEquals(101, results.get(1).getStartInclusive());
-		assertEquals(200, results.get(1).getEndInclusive());
+		assertEquals(100, results.get(1).getStartInclusive());
+		assertEquals(199, results.get(1).getEndInclusive());
 
-		assertEquals(201, results.get(2).getStartInclusive());
-		assertEquals(211, results.get(2).getEndInclusive());
+		assertEquals(200, results.get(2).getStartInclusive()); // short segment stands by itself
+		assertEquals(209, results.get(2).getEndInclusive());
+	}
+
+	@Test
+	public void testMinGapBetweenSegments() {
+		List<TimePair> inputs = new ArrayList<>();
+		inputs.add(new TimePair(0, 149));
+		inputs.add(new TimePair(175, 399));
+		inputs.add(new TimePair(500, 899));
+
+		List<TimePair> results = MediaSegmenter.createSegments(
+				inputs, 75, 25, 100);
+
+		assertEquals(12, results.size());
+
+		int offset = 0;
+		for (TimePair result : results.subList(0, 5)) {
+			assertEquals(offset, result.getStartInclusive());
+			assertEquals(offset+74, result.getEndInclusive());
+			offset += 75;
+		}
+
+		assertEquals(offset, results.get(5).getStartInclusive());
+		assertEquals(offset+24, results.get(5).getEndInclusive());
+
+		offset = 500;
+		for (TimePair result : results.subList(6, 11)) {
+			assertEquals(offset, result.getStartInclusive());
+			assertEquals(offset+74, result.getEndInclusive());
+			offset += 75;
+		}
+
+		assertEquals(offset, results.get(11).getStartInclusive());
+		assertEquals(offset+24, results.get(11).getEndInclusive());
+
+
+		// "MIN_GAP_BETWEEN_SEGMENTS" Property" example from User Guide (after track merging)
+		inputs.clear();
+		inputs.add(new TimePair(0, 149));
+		inputs.add(new TimePair(175, 399));
+		inputs.add(new TimePair(500, 899));
+
+		results = MediaSegmenter.createSegments(
+				inputs, 75, 26, 100);
+
+		assertEquals(10, results.size());
+
+		offset = 0;
+		for (TimePair result : results.subList(0, 4)) {
+			assertEquals(offset, result.getStartInclusive());
+			assertEquals(offset+74, result.getEndInclusive());
+			offset += 75;
+		}
+
+		assertEquals(offset, results.get(4).getStartInclusive());
+		assertEquals(offset+99, results.get(4).getEndInclusive());
+
+		offset = 500;
+		for (TimePair result : results.subList(5, 9)) {
+			assertEquals(offset, result.getStartInclusive());
+			assertEquals(offset+74, result.getEndInclusive());
+			offset += 75;
+		}
+
+		assertEquals(offset, results.get(9).getStartInclusive());
+		assertEquals(offset+99, results.get(9).getEndInclusive());
 	}
 
 	@Test

@@ -94,7 +94,7 @@ public class TestMediaSegmenter {
 	}
 
 	@Test
-	public void testFirstSegmentNotDiscarded() {
+	public void testShortFirstSegment() {
 		List<TimePair> results = MediaSegmenter.createSegments(
 				Collections.singletonList(new TimePair(0, 3)), 10, 5, 0);
 
@@ -105,7 +105,7 @@ public class TestMediaSegmenter {
 	}
 
 	@Test
-	public void testShortAdjacentSegmentNotDiscarded() {
+	public void testShortAdjacentSegment() {
 		List<TimePair> inputs = new ArrayList<>();
 		inputs.add(new TimePair(0, 9));
 		inputs.add(new TimePair(10, 13));
@@ -141,7 +141,7 @@ public class TestMediaSegmenter {
 	}
 
 	@Test
-	public void testShortNonAdjacentSegmentNotDiscarded() {
+	public void testShortNonAdjacentSegment() {
 		List<TimePair> inputs = new ArrayList<>();
 		inputs.add(new TimePair(0, 11));
 		inputs.add(new TimePair(13, 13));
@@ -183,6 +183,30 @@ public class TestMediaSegmenter {
 	@Test
 	public void testSegmentLengthAtLeastMinLength() {
 		List<TimePair> results = MediaSegmenter.createSegments(
+				Collections.singletonList(new TimePair(0, 199)), 100, 10, 0);
+
+		assertEquals(2, results.size());
+
+		assertEquals(0, results.get(0).getStartInclusive());
+		assertEquals(99, results.get(0).getEndInclusive());
+
+		assertEquals(100, results.get(1).getStartInclusive());
+		assertEquals(199, results.get(1).getEndInclusive()); // perfect split
+
+
+		results = MediaSegmenter.createSegments(
+				Collections.singletonList(new TimePair(0, 200)), 100, 10, 0);
+
+		assertEquals(2, results.size());
+
+		assertEquals(0, results.get(0).getStartInclusive());
+		assertEquals(99, results.get(0).getEndInclusive());
+
+		assertEquals(100, results.get(1).getStartInclusive());
+		assertEquals(200, results.get(1).getEndInclusive()); // short segment (lower bound) merged into preceding segment
+
+
+		results = MediaSegmenter.createSegments(
 				Collections.singletonList(new TimePair(0, 208)), 100, 10, 0);
 
 		assertEquals(2, results.size());
@@ -191,7 +215,7 @@ public class TestMediaSegmenter {
 		assertEquals(99, results.get(0).getEndInclusive());
 
 		assertEquals(100, results.get(1).getStartInclusive());
-		assertEquals(208, results.get(1).getEndInclusive()); // short segment merged into preceding segment
+		assertEquals(208, results.get(1).getEndInclusive()); // short segment (upper bound) merged into preceding segment
 
 
 		results = MediaSegmenter.createSegments(
@@ -205,8 +229,23 @@ public class TestMediaSegmenter {
 		assertEquals(100, results.get(1).getStartInclusive());
 		assertEquals(199, results.get(1).getEndInclusive());
 
-		assertEquals(200, results.get(2).getStartInclusive()); // short segment stands by itself
-		assertEquals(209, results.get(2).getEndInclusive());
+		assertEquals(200, results.get(2).getStartInclusive());
+		assertEquals(209, results.get(2).getEndInclusive()); // short segment (lower bound) stands by itself
+
+
+		results = MediaSegmenter.createSegments(
+				Collections.singletonList(new TimePair(0, 298)), 100, 10, 0);
+
+		assertEquals(3, results.size());
+
+		assertEquals(0, results.get(0).getStartInclusive());
+		assertEquals(99, results.get(0).getEndInclusive());
+
+		assertEquals(100, results.get(1).getStartInclusive());
+		assertEquals(199, results.get(1).getEndInclusive());
+
+		assertEquals(200, results.get(2).getStartInclusive());
+		assertEquals(298, results.get(2).getEndInclusive()); // short segment (upper bound) stands by itself
 	}
 
 	@Test

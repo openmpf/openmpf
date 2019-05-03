@@ -69,8 +69,8 @@
             "path": "/home/mpf/openmpf-projects/openmpf-components/java/TikaImageDetection"
         },
         {
-            "name": "EASTTextDetection",
-            "path": "/home/mpf/openmpf-projects/openmpf-components/python/EASTTextDetection"
+            "name": "EastTextDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/python/EastTextDetection"
         }
     ]
 }

@@ -50,10 +50,6 @@ public abstract class MPFMessengerBase implements MessageListener {
         this.msgQueueName = msgQueueName;
 
         ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(MPFDetectionMain.ACTIVEMQHOST);
-        ActiveMQPrefetchPolicy policy = new ActiveMQPrefetchPolicy();
-        policy.setQueuePrefetch(1);
-        policy.setTopicPrefetch(1);
-        connectionFactory.setPrefetchPolicy(policy);
         connectionFactory.setCloseTimeout(1);
         connectionFactory.setOptimizeAcknowledge(true);
         

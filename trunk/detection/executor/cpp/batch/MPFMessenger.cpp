@@ -88,11 +88,6 @@ void MPFMessenger::Startup(
         connection_factory_ =
                 new ActiveMQConnectionFactory(broker_uri);
 
-        // Set prefetch policy to 1
-        PrefetchPolicy *policy = new DefaultPrefetchPolicy();
-        policy->setQueuePrefetch(1);
-        policy->setTopicPrefetch(1);
-        connection_factory_->setPrefetchPolicy(policy);
         connection_factory_->setCloseTimeout(1);
         connection_factory_->setOptimizeAcknowledge(true);
 

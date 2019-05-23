@@ -177,7 +177,7 @@ public interface MediaSegmenter {
 	}
 
 	/**
-	 * Divides a large segment into a collection of zero or more segments which respect the target and minimum segment
+	 * Divides a large segment into a collection of one or more segments which respect the target and minimum segment
 	 * length parameters.
 	 *
 	 * If the length of the input is less than the provided targetSegmentLength, then only one segment will be returned.

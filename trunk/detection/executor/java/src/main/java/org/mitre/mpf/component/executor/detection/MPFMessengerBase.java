@@ -27,7 +27,6 @@
 package org.mitre.mpf.component.executor.detection;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.activemq.ActiveMQPrefetchPolicy;
 import org.mitre.mpf.component.api.detection.MPFDetectionComponentInterface;
 
 import javax.jms.*;

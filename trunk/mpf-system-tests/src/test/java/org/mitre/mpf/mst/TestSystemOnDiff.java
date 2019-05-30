@@ -35,6 +35,7 @@ import org.mitre.mpf.interop.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -209,6 +210,57 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 	}
 
 
+	@Test
+	public void runOcvFaceOnRotatedImage() {
+		String pipelineName = "OCV FACE DETECTION PIPELINE";
+
+		List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-af-S419-01_40deg.jpg"));
+		media.get(0).addProperty("ROTATION", "60");
+
+		long jobId = runPipelineOnMedia(pipelineName, media);
+		JsonOutputObject outputObject = getJobOutputObject(jobId);
+
+		boolean allOnRightSide = outputObject.getMedia()
+				.stream()
+				.flatMap(m -> m.getTypes().get("FACE").stream())
+				.flatMap(a -> a.getTracks().stream())
+				.flatMap(t -> t.getDetections().stream())
+				.allMatch(d -> d.getX() > 480);
+
+		assertTrue(allOnRightSide);
+	}
+
+
+	@Test
+	public void runOcvFaceOnRotatedVideo() {
+		List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01_220deg.avi"));
+		media.get(0).addProperty("ROTATION", "220");
+
+		long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media);
+		JsonOutputObject outputObject = getJobOutputObject(jobId);
+
+		assertDetectionExistAndAllMatch(outputObject, d -> d.getX() > 640);
+	}
+
+
+	private static void assertDetectionExistAndAllMatch(JsonOutputObject outputObject,
+	                                                    Predicate<JsonDetectionOutputObject> pred) {
+		List<JsonDetectionOutputObject> detections = outputObject.getMedia()
+				.stream()
+				.flatMap(m -> m.getTypes().values().stream())
+				.flatMap(Collection::stream)
+				.flatMap(a -> a.getTracks().stream())
+				.flatMap(t -> t.getDetections().stream())
+				.collect(toList());
+
+
+        assertFalse("Expected at least one detection, but there weren't any.", detections.isEmpty());
+
+		boolean allMatch = detections.stream().allMatch(pred);
+		assertTrue(allMatch);
+	}
+
+
 	@Test(timeout = 5 * MINUTES)
     public void runMogThenOcvFaceFeedForwardRegionTest() {
 		String actionTaskName = "TEST OCV FACE WITH FEED FORWARD SUPERSET REGION";
@@ -229,6 +281,40 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 	    runFeedForwardRegionTest(pipelineName, "/samples/face/ff-region-motion-face.avi",
 	                             "FACE", firstMotionFrame, maxXMotion);
 	}
+
+//	@Test(timeout = 5 * MINUTES)
+//	public void runMogThenOcvFaceRotatedFeedForwardRegionTest() {
+//		String actionTaskName = "TEST OCV FACE WITH FEED FORWARD SUPERSET REGION";
+//
+//		String actionName = actionTaskName + " ACTION";
+//		addAction(actionName, "FACECV",
+//		          ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION"));
+//
+//		String taskName = actionTaskName + " TASK";
+//		addTask(taskName, actionName);
+//
+//		String pipelineName = "MOG FEED SUPERSET REGION TO OCVFACE PIPELINE";
+//		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+//
+//		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+//
+//
+//		List<JsonDetectionOutputObject> detections = runFeedForwardTest(
+//				pipelineName, "/samples/face/ff-region-motion-face_40deg.avi",
+//				getRotationMap(40), "FACE", firstMotionFrame);
+//
+//		int[] dividingLinePt1 = {198, 146};
+//		int[] dividingLinePt2 = {532, 544};
+//		int x = 0;
+//		int y = 1;
+//		for (JsonDetectionOutputObject detection : detections) {
+//			int d = (detection.getX() - dividingLinePt1[x]) * (dividingLinePt2[y] - dividingLinePt1[y])
+//					- (detection.getY() - dividingLinePt1[y]) * (dividingLinePt2[x] - dividingLinePt1[x]);
+//			boolean isLeftOfLine = d < 0;
+//			System.out.printf("x = %s, y = %s, d = %s", detection.getX(), detection.getY(), d);
+//			assertTrue(isLeftOfLine);
+//		}
+//	}
 
 
 	@Test(timeout = 5 * MINUTES)
@@ -661,8 +747,21 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 	private List<JsonDetectionOutputObject> runFeedForwardTest(
 			String pipelineName, String mediaPath, String detectionType, int firstDetectionFrame) {
+        return runFeedForwardTest(pipelineName, mediaPath, Collections.emptyMap(), detectionType, firstDetectionFrame);
+	}
+
+
+	private static Map<String, String> getRotationMap(double rotation) {
+		return Collections.singletonMap("ROTATION", String.valueOf(rotation));
+	}
+
+
+	private List<JsonDetectionOutputObject> runFeedForwardTest(
+			String pipelineName, String mediaPath, Map<String, String> mediaProperties,
+			String detectionType, int firstDetectionFrame) {
 
 		List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile(mediaPath));
+		media.get(0).getProperties().putAll(mediaProperties);
 
 		long jobId = runPipelineOnMedia(pipelineName, media);
 		JsonOutputObject outputObject = getJobOutputObject(jobId);
@@ -691,7 +790,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
 
-    @Test(timeout = 5 * MINUTES)
+	@Test(timeout = 5 * MINUTES)
     public void runMotionMogDetectVideo() throws Exception {
 		String pipelineName = addDefaultMotionMogPipeline();
 

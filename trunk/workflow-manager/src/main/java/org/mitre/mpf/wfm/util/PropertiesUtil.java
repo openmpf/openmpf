@@ -114,7 +114,8 @@ public class PropertiesUtil {
         artifactsDirectory = createOrFail(share, "artifacts", permissions);
         markupDirectory = createOrFail(share, "markup", permissions);
         outputObjectsDirectory = createOrFail(share, "output-objects", permissions);
-        remoteMediaCacheDirectory = createOrFail(share, "remote-media", permissions);
+        remoteMediaDirectory = createOrFail(share, "remote-media", permissions);
+        temporaryMediaDirectory = createOrFail(share, "tmp", permissions);
         uploadedComponentsDirectory = createOrFail(share, getComponentUploadDirName(), permissions);
         createOrFail(getPluginDeploymentPath(), "",
                 EnumSet.of(
@@ -134,7 +135,8 @@ public class PropertiesUtil {
         log.debug("Artifacts Directory = {}", artifactsDirectory);
         log.debug("Markup Directory = {}", markupDirectory);
         log.debug("Output Objects Directory = {}", outputObjectsDirectory);
-        log.debug("Remote Media Cache Directory = {}", remoteMediaCacheDirectory);
+        log.debug("Remote Media Directory = {}", remoteMediaDirectory);
+        log.debug("Temporary Media Directory = {}", temporaryMediaDirectory);
         log.debug("Uploaded Components Directory = {}", uploadedComponentsDirectory);
     }
 
@@ -344,8 +346,11 @@ public class PropertiesUtil {
         return path;
     }
 
-    private File remoteMediaCacheDirectory;
-    public File getRemoteMediaCacheDirectory() { return remoteMediaCacheDirectory; }
+    private File remoteMediaDirectory;
+    public File getRemoteMediaDirectory() { return remoteMediaDirectory; }
+
+    private File temporaryMediaDirectory;
+    public File getTemporaryMediaDirectory() { return temporaryMediaDirectory; }
 
     private File markupDirectory;
     public File getMarkupDirectory() { return markupDirectory; }

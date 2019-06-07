@@ -102,6 +102,7 @@ int main(int argc, char* argv[]) {
     string lib_path = argv[2];
     string request_queue = argv[3];
 
+    LOG4CXX_DEBUG(logger, "broker uri = " << argv[1]);
     LOG4CXX_DEBUG(logger, "library name = " << argv[2]);
     LOG4CXX_DEBUG(logger, "request queue = " << argv[3]);
 

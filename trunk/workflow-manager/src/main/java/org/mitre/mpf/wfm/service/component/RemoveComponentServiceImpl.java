@@ -144,7 +144,9 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
         Path componentDir = getComponentTopLevelDir(registerModel.getJsonDescriptorPath());
 
         try {
-            MoreFiles.deleteRecursively(componentDir);
+            if (Files.exists(componentDir)) {
+                MoreFiles.deleteRecursively(componentDir);
+            }
             _componentStateService.removeComponent(registerModel.getComponentName());
         }
         catch (IOException ex) {

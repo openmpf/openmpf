@@ -74,6 +74,10 @@
             <id>dtrott</id>
             <url>http://maven.davidtrott.com/repository</url>
         </pluginRepository>
+        <pluginRepository>
+            <id>alfresco-public</id>
+            <url>https://artifacts.alfresco.com/nexus/content/repositories/public</url>
+        </pluginRepository> 
     </pluginRepositories>
 
     <dependencies>
@@ -1008,8 +1012,8 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.tomcat.maven</groupId>
-                <artifactId>tomcat7-maven-plugin</artifactId>
-                <version>2.2</version>
+                <artifactId>tomcat8-maven-plugin</artifactId>
+                <version>3.0-r1756463</version>
                 <configuration>
                     <fork>true</fork>
                     <path>/${project.build.finalName}</path>

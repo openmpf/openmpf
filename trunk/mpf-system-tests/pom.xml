@@ -113,7 +113,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-			            <version>2.14</version>
+			            <version>${maven.surefire.plugin.version}</version>
                         <configuration>
                             <systemPropertyVariables>
                                 <jenkins>true</jenkins>
@@ -142,7 +142,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.14</version>
+                <version>${maven.surefire.plugin.version}</version>
                 <configuration>
                     <argLine>-Djava.library.path=${env.MPF_HOME}/lib</argLine>
                     <!-- Excluded in the "test" phase of the build, not the "verify" phase. -->

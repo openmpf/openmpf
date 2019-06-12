@@ -1016,9 +1016,6 @@
                 <version>1.4.8</version>
                 <configuration>
                     <wait>false</wait>
-                    <properties>
-                        <cargo.servlet.port>${tomcat.port}</cargo.servlet.port>
-                    </properties>
                     <container>
                         <containerId>tomcat8x</containerId>
                         <home>/opt/apache-tomcat</home>
@@ -1029,6 +1026,9 @@
                     </container>
                     <configuration>
                         <type>standalone</type>
+                        <properties>
+                            <cargo.servlet.port>${tomcat.port}</cargo.servlet.port>
+                        </properties>
                     </configuration>
                     <deployables>
                         <deployable>

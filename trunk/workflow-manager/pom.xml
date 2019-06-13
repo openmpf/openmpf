@@ -1026,6 +1026,13 @@
                         <properties>
                             <cargo.servlet.port>${tomcat.port}</cargo.servlet.port>
                         </properties>
+                        <configfiles>
+                            <configfile>
+                                <file>/opt/apache-tomcat/conf/context.xml</file>
+                                <todir>conf/Catalina/localhost/</todir>
+                                <tofile>context.xml.default</tofile>
+                            </configfile>
+                        </configfiles>
                     </configuration>
                     <deployables>
                         <deployable>

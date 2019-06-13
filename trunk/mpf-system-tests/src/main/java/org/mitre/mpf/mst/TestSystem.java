@@ -65,6 +65,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.annotation.PostConstruct;
+import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -218,6 +219,12 @@ public abstract class TestSystem {
                                   propertiesUtil.getJmsPriority());
     }
 
+    protected long runPipelineOnMedia(String pipelineName,
+                                      Map<String, String> jobProperties,
+                                      List<JsonMediaInputObject> media) {
+        return runPipelineOnMedia(pipelineName, media, jobProperties, true, propertiesUtil.getJmsPriority());
+    }
+
 
     protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, boolean buildOutput,
                                       int priority) {
@@ -293,6 +300,31 @@ public abstract class TestSystem {
         catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+
+
+    public List<Point2D.Double> getCorners(JsonDetectionOutputObject detection) {
+        double rotationDegrees = Double.parseDouble(detection.getDetectionProperties()
+                                                            .getOrDefault("ROTATION", "0"));
+        double radians = Math.toRadians(rotationDegrees);
+        double sinVal = Math.sin(radians);
+        double cosVal = Math.cos(radians);
+
+        double corner2X = detection.getX() + detection.getWidth() * cosVal;
+        double corner2Y = detection.getY() - detection.getWidth() * sinVal;
+
+        double corner3X = corner2X + detection.getHeight() * sinVal;
+        double corner3Y = corner2Y + detection.getHeight() * cosVal;
+
+        double corner4X = detection.getX() + detection.getHeight() * sinVal;
+        double corner4Y = detection.getY() + detection.getHeight() * cosVal;
+
+        return Arrays.asList(
+                new Point2D.Double(detection.getX(), detection.getY()),
+                new Point2D.Double(corner2X, corner2Y),
+                new Point2D.Double(corner3X, corner3Y),
+                new Point2D.Double(corner4X, corner4Y));
     }
 
 

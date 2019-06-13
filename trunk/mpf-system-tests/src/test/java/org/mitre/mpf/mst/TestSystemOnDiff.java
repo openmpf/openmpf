@@ -34,6 +34,8 @@ import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 
+import java.awt.*;
+import java.util.List;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -282,39 +284,64 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 	                             "FACE", firstMotionFrame, maxXMotion);
 	}
 
-//	@Test(timeout = 5 * MINUTES)
-//	public void runMogThenOcvFaceRotatedFeedForwardRegionTest() {
-//		String actionTaskName = "TEST OCV FACE WITH FEED FORWARD SUPERSET REGION";
-//
-//		String actionName = actionTaskName + " ACTION";
-//		addAction(actionName, "FACECV",
-//		          ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION"));
-//
-//		String taskName = actionTaskName + " TASK";
-//		addTask(taskName, actionName);
-//
-//		String pipelineName = "MOG FEED SUPERSET REGION TO OCVFACE PIPELINE";
-//		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
-//
-//		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
-//
-//
-//		List<JsonDetectionOutputObject> detections = runFeedForwardTest(
-//				pipelineName, "/samples/face/ff-region-motion-face_40deg.avi",
-//				getRotationMap(40), "FACE", firstMotionFrame);
-//
-//		int[] dividingLinePt1 = {198, 146};
-//		int[] dividingLinePt2 = {532, 544};
-//		int x = 0;
-//		int y = 1;
-//		for (JsonDetectionOutputObject detection : detections) {
-//			int d = (detection.getX() - dividingLinePt1[x]) * (dividingLinePt2[y] - dividingLinePt1[y])
-//					- (detection.getY() - dividingLinePt1[y]) * (dividingLinePt2[x] - dividingLinePt1[x]);
-//			boolean isLeftOfLine = d < 0;
-//			System.out.printf("x = %s, y = %s, d = %s", detection.getX(), detection.getY(), d);
-//			assertTrue(isLeftOfLine);
-//		}
-//	}
+	@Test(timeout = 5 * MINUTES)
+	public void runMogThenOcvFaceRotated40degFeedForwardRegionTest() {
+		String actionTaskName = "TEST OCV FACE WITH FEED FORWARD SUPERSET REGION";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "FACECV",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED SUPERSET REGION TO OCVFACE PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+
+
+		List<JsonDetectionOutputObject> detections = runFeedForwardTest(
+				pipelineName, "/samples/face/ff-region-motion-face_40deg.avi",
+				getRotationMap(40), "FACE", firstMotionFrame);
+
+		assertFalse(detections.isEmpty());
+
+		Polygon polygon = new Polygon(new int[]{0, 80, 799,   0, 0},
+		                              new int[]{0,  0, 779, 779, 0}, 5);
+		assertTrue(detections.stream()
+			.flatMap(d -> getCorners(d).stream())
+            .allMatch(polygon::contains));
+	}
+
+
+	@Test(timeout = 5 * MINUTES)
+	public void runMogThenOcvFaceRotated90degFeedForwardRegionTest() {
+		String actionTaskName = "TEST OCV FACE WITH FEED FORWARD SUPERSET REGION";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "FACECV",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED SUPERSET REGION TO OCVFACE PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+		int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
+
+
+		List<JsonDetectionOutputObject> detections = runFeedForwardTest(
+				pipelineName, "/samples/face/ff-region-motion-face_90deg.avi",
+				getRotationMap(90), "FACE", firstMotionFrame);
+
+		assertFalse(detections.isEmpty());
+
+		assertTrue(detections.stream()
+				.flatMap(d -> getCorners(d).stream())
+				.allMatch(p -> p.getY() > 320));
+	}
 
 
 	@Test(timeout = 5 * MINUTES)
@@ -524,6 +551,57 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 	}
 
 
+	@Test(timeout = 5 * MINUTES)
+	public void runMogThenCaffeRotated60degFeedForwardExactRegionTest() {
+		String actionTaskName = "TEST CAFFE WITH FEED FORWARD EXACT REGION";
+
+		String actionName = actionTaskName + " ACTION";
+		addAction(actionName, "CAFFE",
+		          ImmutableMap.of("FEED_FORWARD_TYPE", "REGION"));
+
+		String taskName = actionTaskName + " TASK";
+		addTask(taskName, actionName);
+
+		String pipelineName = "MOG FEED EXACT REGION TO CAFFE PIPELINE";
+		addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+
+
+		List<JsonMediaInputObject> media = toMediaObjectList(
+				ioUtils.findFile("/samples/object/ff-exact-region-object-motion_60deg.avi"));
+
+		long jobId = runPipelineOnMedia(pipelineName, getRotationMap(60), media);
+		JsonOutputObject outputObject = getJobOutputObject(jobId);
+
+		assertEquals(1, outputObject.getMedia().size());
+		JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
+
+		SortedSet<JsonActionOutputObject> caffeOutputObjects = outputMedia.getTypes().get("CLASS");
+		assertNotNull(caffeOutputObjects);
+
+		SortedSet<JsonActionOutputObject> motionOutputObjects = outputMedia.getTypes().get("MOTION");
+		assertNotNull(motionOutputObjects);
+
+		List<JsonTrackOutputObject> caffeTracks = caffeOutputObjects.stream()
+				.flatMap(o -> o.getTracks().stream())
+				.collect(toList());
+
+		List<JsonTrackOutputObject> motionTracks = motionOutputObjects.stream()
+				.flatMap(o -> o.getTracks().stream())
+				.collect(toList());
+
+		assertTracksMatch(caffeTracks, motionTracks);
+
+
+		List<JsonDetectionOutputObject> caffeDetections = caffeTracks.stream()
+				.flatMap(t -> t.getDetections().stream())
+				.collect(toList());
+
+
+		assertTrue(caffeDetections.stream()
+				           .allMatch(d -> d.getOffsetFrame() >= 31));
+	}
+
+
 	private static void assertTracksMatch(List<JsonTrackOutputObject> tracks1,
 	                                      List<JsonTrackOutputObject> tracks2) {
 		assertEquals(tracks1.size(), tracks2.size());
@@ -552,11 +630,16 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 		while (it1.hasNext()) {
 			JsonDetectionOutputObject d1 = it1.next();
 			JsonDetectionOutputObject d2 = it2.next();
-			assertEquals(d1.getOffsetFrame(), d2.getOffsetFrame());
-			assertEquals(d1.getX(), d2.getX());
-			assertEquals(d1.getY(), d2.getY());
-			assertEquals(d1.getWidth(), d2.getWidth());
-			assertEquals(d1.getHeight(), d2.getHeight());
+			assertEquals(d1.getOffsetFrame(), d2.getOffsetFrame(), 1);
+			assertEquals(d1.getX(), d2.getX(), 1);
+			assertEquals(d1.getY(), d2.getY(), 1);
+			assertEquals(d1.getWidth(), d2.getWidth(), 1);
+			assertEquals(d1.getHeight(), d2.getHeight(), 1);
+
+			assertEquals(
+					Double.parseDouble(d1.getDetectionProperties().getOrDefault("ROTATION", "0")),
+					Double.parseDouble(d2.getDetectionProperties().getOrDefault("ROTATION", "0")),
+                    0.1);
 		}
 	}
 
@@ -757,13 +840,12 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
 	private List<JsonDetectionOutputObject> runFeedForwardTest(
-			String pipelineName, String mediaPath, Map<String, String> mediaProperties,
+			String pipelineName, String mediaPath, Map<String, String> jobProperties,
 			String detectionType, int firstDetectionFrame) {
 
 		List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile(mediaPath));
-		media.get(0).getProperties().putAll(mediaProperties);
 
-		long jobId = runPipelineOnMedia(pipelineName, media);
+		long jobId = runPipelineOnMedia(pipelineName, jobProperties, media);
 		JsonOutputObject outputObject = getJobOutputObject(jobId);
 
 		assertEquals(1, outputObject.getMedia().size());

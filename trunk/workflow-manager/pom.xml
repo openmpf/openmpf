@@ -73,10 +73,6 @@
         <pluginRepository>
             <id>dtrott</id>
             <url>http://maven.davidtrott.com/repository</url>
-        </pluginRepository>
-        <pluginRepository>
-            <id>alfresco-public</id>
-            <url>https://artifacts.alfresco.com/nexus/content/repositories/public</url>
         </pluginRepository> 
     </pluginRepositories>
 

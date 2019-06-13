@@ -30,17 +30,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.wfm.ui.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.List;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -215,15 +210,6 @@ public class ITComponentRegistration {
 
 
     private static void assertOk(ResponseEntity<?> entity) {
-        Logger log = LoggerFactory.getLogger(ITComponentRegistration.class);
-        if (entity.getStatusCode() != HttpStatus.OK) {
-            log.info("#####  Wrong status code: ###########");
-            for (Map.Entry<String, List<String>> entry : entity.getHeaders().entrySet())  {
-                for (String value : entry.getValue()) {
-                    log.info("{}: {}", entry.getKey(), value);
-                }
-            }
-        }
         assertEquals(HttpStatus.OK, entity.getStatusCode());
     }
 }

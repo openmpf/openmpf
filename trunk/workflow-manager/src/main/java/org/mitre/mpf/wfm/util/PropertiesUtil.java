@@ -115,7 +115,7 @@ public class PropertiesUtil {
         markupDirectory = createOrFail(share, "markup", permissions);
         outputObjectsDirectory = createOrFail(share, "output-objects", permissions);
         remoteMediaDirectory = createOrFail(share, "remote-media", permissions);
-        temporaryMediaDirectory = createOrFail(share, "tmp", permissions);
+        temporaryMediaDirectory = createOrClear(share, "tmp", permissions);
         uploadedComponentsDirectory = createOrFail(share, getComponentUploadDirName(), permissions);
         createOrFail(getPluginDeploymentPath(), "",
                 EnumSet.of(
@@ -163,6 +163,18 @@ public class PropertiesUtil {
         }
 
         return child.toAbsolutePath().toFile();
+    }
+
+    private static File createOrClear(Path parent, String subdirectory, Set<PosixFilePermission> permissions)
+            throws IOException, WfmProcessingException {
+        Path child = parent.resolve(subdirectory);
+        if ( Files.exists(child) ) {
+            Files.walk(child)
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+        }
+        return createOrFail(parent, subdirectory, permissions);
     }
 
     public String lookup(String propertyName) {

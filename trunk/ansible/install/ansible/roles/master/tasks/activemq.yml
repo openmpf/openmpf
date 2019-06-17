@@ -141,7 +141,7 @@
    lineinfile: >        
     dest=/opt/apache-activemq-{{activemq_version}}/conf/activemq.xml
     insertafter="<policyEntries>" 
-    line="<policyEntry queue=">" prioritizedMessages="true" useCache="false" expireMessagesPeriod="0" queuePrefetch="1" />"
+    line="<policyEntry queue=">" prioritizedMessages="true" useCache="false" expireMessagesPeriod="0" queuePrefetch="0" />"
     state=present
 
  - name: Check for existing activemq.log link

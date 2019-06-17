@@ -89,15 +89,36 @@ void MPFMessenger::Startup(
         connection_factory_ =
                 new ActiveMQConnectionFactory(broker_uri);
 
-        // Set prefetch policy to 0
+        // Check whether a prefetch policy has been set on the broker
+        // URI. If it has, and its value is 0, then we need to set up
+        // this connection with the same policy in order to get the
+        // consumer to pull messages instead of waiting for a push.
+        // Otherwise, do nothing.
 
-        PrefetchPolicy *policy = new DefaultPrefetchPolicy();
-
-        policy->setQueuePrefetch(0);
-
-        policy->setTopicPrefetch(0);
-
-        connection_factory_->setPrefetchPolicy(policy);
+        LOG4CXX_DEBUG(main_logger_, "Looking for prefetch in \"" << broker_uri << "\"");
+        std::size_t prefetch_pos = broker_uri.find("prefetch");
+        if (prefetch_pos != std::string::npos) {
+            //found prefetch, now look for the value it is set to.
+           std::size_t eq_pos = broker_uri.find_first_of("=", prefetch_pos);
+            if (eq_pos != std::string::npos) {
+                // found the = symbol. Now check whether the next
+                // character is a 0.
+               if (broker_uri.at(eq_pos+1) == '0') {
+                    // Now we need to set the connection prefetch
+                    // policy to 0.
+                   LOG4CXX_INFO(main_logger_, "Setting prefetch to 0");
+                    PrefetchPolicy *policy = new DefaultPrefetchPolicy();
+                    policy->setQueuePrefetch(0);
+                    policy->setTopicPrefetch(0);
+                    connection_factory_->setPrefetchPolicy(policy);
+                }
+            }
+            else {
+                // Found the string "prefetch" but not a value to set
+                // it to.
+                LOG4CXX_WARN(main_logger_, "Broker URI prefetch specified without a value: assuming the default prefetch value is being used.");
+            }
+        }
 
         connection_factory_->setCloseTimeout(1);
         connection_factory_->setOptimizeAcknowledge(true);

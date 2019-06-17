@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.util;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
+import com.google.common.io.MoreFiles;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.io.IOUtils;
@@ -169,12 +170,11 @@ public class PropertiesUtil {
             throws IOException, WfmProcessingException {
         Path child = parent.resolve(subdirectory);
         if ( Files.exists(child) ) {
-            Files.walk(child)
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(File::delete);
+            MoreFiles.deleteDirectoryContents(child);
+            return child.toAbsolutePath().toFile();
+        } else {
+            return createOrFail(parent, subdirectory, permissions);
         }
-        return createOrFail(parent, subdirectory, permissions);
     }
 
     public String lookup(String propertyName) {

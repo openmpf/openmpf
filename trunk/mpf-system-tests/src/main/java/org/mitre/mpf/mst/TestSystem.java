@@ -65,6 +65,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.annotation.PostConstruct;
+import java.awt.*;
 import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
@@ -72,6 +73,7 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URL;
 import java.util.*;
+import java.util.List;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
@@ -161,7 +163,7 @@ public abstract class TestSystem {
 
 
     protected void addAction(String actionName, String algorithmName, Map<String, String> propertySettings) {
-        if (!pipelineService.getActionNames().contains(actionName)) {
+        if (!pipelineService.getActionNames().contains(actionName.toUpperCase())) {
             ActionDefinition actionDef = new ActionDefinition(actionName, algorithmName, actionName);
             for (Map.Entry<String, String> entry : propertySettings.entrySet()) {
                 actionDef.getProperties().add(new PropertyDefinitionRef(entry.getKey(), entry.getValue()));
@@ -172,7 +174,7 @@ public abstract class TestSystem {
 
 
     protected void addTask(String taskName, String... actions) {
-        if (!pipelineService.getTaskNames().contains(taskName)) {
+        if (!pipelineService.getTaskNames().contains(taskName.toUpperCase())) {
             TaskDefinition taskDef = new TaskDefinition(taskName, taskName);
             for (String actionName : actions) {
                 taskDef.getActions().add(new ActionDefinitionRef(actionName));
@@ -182,7 +184,7 @@ public abstract class TestSystem {
     }
 
     protected void addPipeline(String pipelineName, String... tasks) {
-        if (!pipelineService.getPipelineNames().contains(pipelineName)) {
+        if (!pipelineService.getPipelineNames().contains(pipelineName.toUpperCase())) {
             PipelineDefinition pipelineDef = new PipelineDefinition(pipelineName, pipelineName);
             for (String taskName : tasks) {
                 pipelineDef.getTaskRefs().add(new TaskDefinitionRef(taskName));
@@ -325,6 +327,16 @@ public abstract class TestSystem {
                 new Point2D.Double(corner2X, corner2Y),
                 new Point2D.Double(corner3X, corner3Y),
                 new Point2D.Double(corner4X, corner4Y));
+    }
+
+    public boolean allInExpectedRegion(int[] xPoints, int[] yPoints, Collection<JsonDetectionOutputObject> detections) {
+        if (detections.isEmpty()) {
+            return false;
+        }
+        Polygon expectedRegion = new Polygon(xPoints, yPoints, xPoints.length);
+        return detections.stream()
+                .flatMap(d -> getCorners(d).stream())
+                .allMatch(expectedRegion::contains);
     }
 
 

@@ -60,17 +60,17 @@
                 "stopOffsetTime": 0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
-                "confidence": 60.0,
+                "confidence": 61.0,
                 "trackProperties": {
                   "HORIZONTAL_FLIP": "true",
                   "ROTATION": "90.000000"
                 },
                 "exemplar": {
-                  "x": 212,
-                  "y": 367,
-                  "width": 283,
-                  "height": 283,
-                  "confidence": 60.0,
+                  "x": 210,
+                  "y": 366,
+                  "width": 286,
+                  "height": 286,
+                  "confidence": 61.0,
                   "detectionProperties": {
                     "HORIZONTAL_FLIP": "true",
                     "ROTATION": "90.000000"
@@ -83,11 +83,11 @@
                 },
                 "detections": [
                   {
-                    "x": 212,
-                    "y": 367,
-                    "width": 283,
-                    "height": 283,
-                    "confidence": 60.0,
+                    "x": 210,
+                    "y": 366,
+                    "width": 286,
+                    "height": 286,
+                    "confidence": 61.0,
                     "detectionProperties": {
                       "HORIZONTAL_FLIP": "true",
                       "ROTATION": "90.000000"

@@ -31,6 +31,8 @@ import org.hibernate.SessionFactory;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.data.access.JpaDao;
 
+import java.util.List;
+
 @Monitored
 public interface HibernateDao<T> extends JpaDao<T> {
 	/** Sets the session factory associated with this dao. */
@@ -41,4 +43,11 @@ public interface HibernateDao<T> extends JpaDao<T> {
 
 	/** Gets the session associated with the current {@link #getSessionFactory() session factory}. */
 	Session getCurrentSession();
+
+	public List<T> findByPage(final int pageSize, final int offset, String searchTerm, String sortColumn,
+							  String sortOrderDirection);
+
+	public Long countAll();
+
+    public Long countFiltered(String searchTerm);
 }

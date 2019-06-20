@@ -252,6 +252,34 @@ public class MpfServiceImpl implements MpfService {
     }
 
     /**
+     * Get the list of batch job requests by page
+     * @return
+     */
+    @Override
+    public List<JobRequest> getPagedJobRequests(int pageSize, int offset, String searchTerm, String sortColumn,
+                                                String sortOrderDirection) {
+        return jobRequestDao.findByPage(pageSize, offset, searchTerm, sortColumn, sortOrderDirection);
+    }
+
+    /**
+     * Get the count of batch job requests
+     * @return
+     */
+    @Override
+    public Long getJobRequestCount() {
+        return jobRequestDao.countAll();
+    }
+
+    /**
+     * Get the count of batch job requests after filter was applied
+     * @return
+     */
+    @Override
+    public Long getJobRequestCountFiltered(String searchTerm) {
+        return jobRequestDao.countFiltered(searchTerm);
+    }
+
+    /**
      * Get the list of all streaming job requests from the long term database.
      * @return List of all streaming job requests from the long term database.
      */

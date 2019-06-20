@@ -72,8 +72,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URL;
-import java.util.*;
 import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
@@ -329,14 +332,23 @@ public abstract class TestSystem {
                 new Point2D.Double(corner4X, corner4Y));
     }
 
-    public boolean allInExpectedRegion(int[] xPoints, int[] yPoints, Collection<JsonDetectionOutputObject> detections) {
-        if (detections.isEmpty()) {
-            return false;
-        }
+
+    public void assertAllInExpectedRegion(int[] xPoints, int[] yPoints,
+                                          Collection<JsonDetectionOutputObject> detections) {
+
+        assertEquals(xPoints.length, yPoints.length);
+        assertFalse(detections.isEmpty());
+
         Polygon expectedRegion = new Polygon(xPoints, yPoints, xPoints.length);
-        return detections.stream()
+        String outOfRangePoints = detections.stream()
                 .flatMap(d -> getCorners(d).stream())
-                .allMatch(expectedRegion::contains);
+                .filter(pt -> !expectedRegion.contains(pt))
+                .distinct()
+                .map(Object::toString)
+                .collect(Collectors.joining("\n"));
+
+        assertTrue("The following points were not in the expected region:\n" + outOfRangePoints,
+                   outOfRangePoints.isEmpty());
     }
 
 

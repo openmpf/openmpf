@@ -305,10 +305,10 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
         assertFalse(detections.isEmpty());
 
-        assertTrue(allInExpectedRegion(
+        assertAllInExpectedRegion(
                 new int[]{0, 80, 799, 0},
                 new int[]{0,  0, 779, 779},
-                detections));
+                detections);
     }
 
 
@@ -598,10 +598,10 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertTrue(caffeDetections.stream()
                            .allMatch(d -> d.getOffsetFrame() >= 31));
 
-        assertTrue(allInExpectedRegion(
-                new int[] {0,  368, 368, 0},
-                new int[] {80, 308, 397, 397},
-                caffeDetections));
+        assertAllInExpectedRegion(
+                new int[] {-40, 368, 368, -40},
+                new int[] {40, 272, 450, 450},
+                caffeDetections);
 
         Set<String> detectedObjects = caffeDetections.stream()
                 .filter(d -> d.getConfidence() > 0.9)
@@ -652,10 +652,10 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertTrue(caffeDetections.stream()
                            .allMatch(d -> d.getOffsetFrame() >= 31));
 
-        assertTrue(allInExpectedRegion(
+        assertAllInExpectedRegion(
                 new int[] {-52, 368, 368, -40},
                 new int[] {36, 270, 450, 450},
-                caffeDetections));
+                caffeDetections);
 
         Set<String> detectedObjects = caffeDetections.stream()
                 .filter(d -> d.getConfidence() > 0.9)

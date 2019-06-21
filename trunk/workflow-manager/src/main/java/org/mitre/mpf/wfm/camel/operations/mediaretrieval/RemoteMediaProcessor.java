@@ -89,6 +89,7 @@ public class RemoteMediaProcessor extends WfmProcessor {
                     else {
                         downloadFile(jobId, transientMedia);
                     }
+                    transientMedia.getLocalPath().toFile().deleteOnExit();
                 }
                 catch (StorageException e) {
                     String message = handleMediaRetrievalException(

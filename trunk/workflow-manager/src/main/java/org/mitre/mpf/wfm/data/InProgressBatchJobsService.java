@@ -232,7 +232,7 @@ public class InProgressBatchJobsService {
                 errorMessage = checkForLocalFileError(localPath);
             }
             else {
-                localPath = _propertiesUtil.getRemoteMediaCacheDirectory()
+                localPath = _propertiesUtil.getTemporaryMediaDirectory()
                         .toPath()
                         .resolve(UUID.randomUUID().toString())
                         .toAbsolutePath();

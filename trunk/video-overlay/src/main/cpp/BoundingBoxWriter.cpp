@@ -36,6 +36,8 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 
+#include <MPFVideoCapture.h>
+#include <MPFImageReader.h>
 #include "JniHelper.h"
 
 
@@ -99,14 +101,13 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
 
         // Set up the videos...
         std::string sourceVideoPath = jni.ToStdString(sourceVideoPathJString);
-        VideoCapture src(sourceVideoPath);
-        if(!src.isOpened()) {
+        MPF::COMPONENT::MPFVideoCapture src(sourceVideoPath);
+        if(!src.IsOpened()) {
             throw std::runtime_error("Unable to open source video: " + sourceVideoPath);
         }
 
-        Size cvSize = Size(static_cast<int>(src.get(cv::CAP_PROP_FRAME_WIDTH)),
-                           static_cast<int>(src.get(cv::CAP_PROP_FRAME_HEIGHT)));
-        double fps = src.get(cv::CAP_PROP_FPS);
+        Size cvSize = src.GetFrameSize();
+        double fps = src.GetFrameRate();
 
         std::string destinationVideoPath = jni.ToStdString(destinationVideoPathJString);
         VideoWriter dest(destinationVideoPath, VideoWriter::fourcc('M','J','P','G'), fps, cvSize, true);
@@ -260,13 +261,13 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
 
         // Read in the image...
         std::string sourceImagePath = jni.ToStdString(sourceImagePathJString);
-        VideoCapture src(sourceImagePath);
-        if (!src.isOpened()) {
+        MPF::COMPONENT::MPFVideoCapture src(sourceImagePath);
+        if (!src.IsOpened()) {
             throw std::runtime_error("Unable to open source image: " + sourceImagePath);
         }
 
         Mat image;
-        if (!src.read(image) || image.empty()) {
+        if (!src.Read(image) || image.empty()) {
             throw std::runtime_error("Unable to read source image: " + sourceImagePath);
         }
 

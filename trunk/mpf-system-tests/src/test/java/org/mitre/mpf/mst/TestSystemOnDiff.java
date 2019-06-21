@@ -214,20 +214,13 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     public void runOcvFaceOnRotatedImage() {
         String pipelineName = "OCV FACE DETECTION PIPELINE";
 
-        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-af-S419-01_40deg.jpg"));
+        List<JsonMediaInputObject> media = toMediaObjectList(
+                ioUtils.findFile("/samples/face/meds-af-S419-01_40deg.jpg"));
         media.get(0).addProperty("ROTATION", "60");
 
         long jobId = runPipelineOnMedia(pipelineName, media);
         JsonOutputObject outputObject = getJobOutputObject(jobId);
-
-        boolean allOnRightSide = outputObject.getMedia()
-                .stream()
-                .flatMap(m -> m.getTypes().get("FACE").stream())
-                .flatMap(a -> a.getTracks().stream())
-                .flatMap(t -> t.getDetections().stream())
-                .allMatch(d -> d.getX() > 480);
-
-        assertTrue(allOnRightSide);
+        assertDetectionExistAndAllMatch(outputObject, d -> d.getX() > 480);
     }
 
 

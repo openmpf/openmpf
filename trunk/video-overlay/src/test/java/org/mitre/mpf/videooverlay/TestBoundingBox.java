@@ -52,7 +52,7 @@ public class TestBoundingBox {
         // Box1 and Box2 should not reference the same object.
         Assert.assertFalse("box1 == box2 should not be true (they should be different objects)", box1 == box2);
 
-        // Box1 and Box3 should not be the equal (reflexive).
+        // Box1 and Box3 should not be equal (reflexive).
         Assert.assertFalse("box1.equals(box3) should be false", box1.equals(box3));
         Assert.assertFalse("box3.equals(box1) should be false", box3.equals(box1));
     }

@@ -35,6 +35,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import javax.jms.*;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MPFDetectionMain {
 
@@ -57,6 +58,7 @@ public class MPFDetectionMain {
 
         MPFDetectionComponentBase component = null;
         Connection connection = null;
+        AtomicBoolean quitReceived = new AtomicBoolean(false);
 
         try (ClassPathXmlApplicationContext context
                      = new ClassPathXmlApplicationContext("applicationContext.xml")) {
@@ -65,10 +67,16 @@ public class MPFDetectionMain {
             component = initializeComponent(context);
             connection = getConnection(getBrokerUri(args));
 
-            startWatchingStandardIn(connection, Thread.currentThread());
+            startWatchingStandardIn(connection, quitReceived, Thread.currentThread());
 
             String queueName = args[0];
             processMessages(connection, queueName, component);
+        }
+        catch (JMSException e) {
+            if (!quitReceived.get()) {
+                LOG.error(e.getMessage(), e);
+                throw e;
+            }
         }
         catch (Exception e) {
             LOG.error(e.getMessage(), e);
@@ -100,20 +108,23 @@ public class MPFDetectionMain {
     }
 
 
-    private static void startWatchingStandardIn(Connection connection, Thread messageProcessingThread) {
-        Thread watcherThread = new Thread(() -> watchStandardIn(connection, messageProcessingThread),
+    private static void startWatchingStandardIn(Connection connection, AtomicBoolean quitReceivedFlag,
+                                                Thread messageProcessingThread) {
+        Thread watcherThread = new Thread(() -> watchStandardIn(connection, quitReceivedFlag, messageProcessingThread),
                                           "StandardInWatcher");
         // Make the watcher thread a daemon so that it doesn't prevent the JVM from shutting down.
         watcherThread.setDaemon(true);
         watcherThread.start();
     }
 
-    private static void watchStandardIn(Connection connection, Thread messageProcessingThread) {
+    private static void watchStandardIn(Connection connection, AtomicBoolean quitReceivedFlag,
+                                        Thread messageProcessingThread) {
         try {
             while (true) {
                 int inputReadResult = System.in.read();
                 if (inputReadResult == 'q') {
                     LOG.info("Received quit command. Initiating shutdown.");
+                    quitReceivedFlag.set(true);
                     break;
                 }
                 if (inputReadResult == -1) {
@@ -141,7 +152,7 @@ public class MPFDetectionMain {
         }
 
         try {
-            messageProcessingThread.join(10_000);
+            messageProcessingThread.join(1_000);
             if (messageProcessingThread.isAlive()) {
                 LOG.info("Message processing thread did not exit when connection closed, attempting interrupt.");
                 messageProcessingThread.interrupt();

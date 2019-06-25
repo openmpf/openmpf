@@ -6,7 +6,7 @@ Public Domain
 No motion in first 30 frames.
 Starting at frame 31 image on left moves.
 
-# ff-exact-region-object-motion
+# ff-exact-region-object-motion.avi
 Image on left side of frames that moves is from  https://en.wikipedia.org/wiki/Clock#/media/File:Digital-clock-radio-basic_hf.jpg
 Public Domain
 Image in upper left that doesn't move is from https://en.wikipedia.org/wiki/Apple#/media/File:Apples.jpg
@@ -15,3 +15,7 @@ Image on right side of frame is from https://en.wikipedia.org/wiki/Sundial#/medi
 Public Domain
 No motion in first 30 frames.
 Starting at frame 31 digital clock image slides down revealing apple image behind it.
+
+
+# ff-exact-region-object-motion_60deg.avi
+ff-exact-region-object-motion.avi rotated 60 degrees.

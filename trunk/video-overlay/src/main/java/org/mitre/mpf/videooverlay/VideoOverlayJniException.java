@@ -32,12 +32,8 @@ import java.io.IOException;
  * Thrown by BoundingBoxWriter to indicate that the native implementation has encountered an exception.
  */
 public class VideoOverlayJniException extends IOException {
-    private int errorCode;
-    public int getErrorCode() { return errorCode; }
-    public void setErrorCode(int errorCode) { this.errorCode = errorCode; }
 
-    public VideoOverlayJniException(int errorCode) {
-        super("Error writing bounding box(es). Native error code " + errorCode + ".");
-        this.errorCode = errorCode;
+    public VideoOverlayJniException(Throwable cause) {
+        super("Error writing bounding box(es).", cause);
     }
 }

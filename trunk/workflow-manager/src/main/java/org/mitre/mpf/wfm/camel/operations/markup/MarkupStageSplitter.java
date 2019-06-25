@@ -103,20 +103,36 @@ public class MarkupStageSplitter implements StageSplitter {
 	}
 
 
+	private static OptionalDouble getRotation(Map<String, String> properties) {
+		String rotationString = properties.get("ROTATION");
+		if (rotationString == null) {
+			return OptionalDouble.empty();
+		}
+		return OptionalDouble.of(Double.valueOf(rotationString));
+	}
+
+
 	private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor) {
+	    OptionalDouble trackRotation = getRotation(track.getTrackProperties());
+
 		List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
 		Collections.sort(orderedDetections);
 		for (int i = 0; i < orderedDetections.size(); i++) {
 			Detection detection = orderedDetections.get(i);
 			int currentFrame = detection.getMediaOffsetFrame();
 
+			OptionalDouble detectionRotation = getRotation(detection.getDetectionProperties());
+
 			// Create a bounding box at the location.
-			BoundingBox boundingBox = new BoundingBox();
-			boundingBox.setWidth(detection.getWidth());
-			boundingBox.setHeight(detection.getHeight());
-			boundingBox.setX(detection.getX());
-			boundingBox.setY(detection.getY());
-			boundingBox.setColor(trackColor.getRed(), trackColor.getBlue(), trackColor.getGreen());
+			BoundingBox boundingBox = new BoundingBox(
+					detection.getX(),
+					detection.getY(),
+					detection.getWidth(),
+					detection.getHeight(),
+					detectionRotation.orElse(trackRotation.orElse(0)),
+					trackColor.getRed(),
+					trackColor.getGreen(),
+					trackColor.getBlue());
 
 			String objectType = track.getType();
 			if ("SPEECH".equalsIgnoreCase(objectType) || "AUDIO".equalsIgnoreCase(objectType)) {
@@ -145,12 +161,18 @@ public class MarkupStageSplitter implements StageSplitter {
 				// last frame in the interval, the bounding box is very close to the position given by the object
 				// location of the next result. Consequently, the original bounding box appears to resize
 				// and translate to the position and size of the next result's bounding box.
-				BoundingBox nextBoundingBox = new BoundingBox();
-				nextBoundingBox.setWidth(nextDetection.getWidth());
-				nextBoundingBox.setHeight(nextDetection.getHeight());
-				nextBoundingBox.setX(nextDetection.getX());
-				nextBoundingBox.setY(nextDetection.getY());
-				nextBoundingBox.setColor(boundingBox.getColor());
+
+				OptionalDouble nextDetectionRotation = getRotation(nextDetection.getDetectionProperties());
+
+				BoundingBox nextBoundingBox = new BoundingBox(
+						nextDetection.getX(),
+						nextDetection.getY(),
+						nextDetection.getWidth(),
+						nextDetection.getHeight(),
+						nextDetectionRotation.orElse(trackRotation.orElse(0)),
+						boundingBox.getRed(),
+						boundingBox.getBlue(),
+						boundingBox.getGreen());
 				boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection);
 			}
 		}

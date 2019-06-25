@@ -101,7 +101,11 @@ public class MarkupRequestConsumer implements MessageListener {
                     boundingBoxMapEntry.getBoundingBox().getY(),
                     boundingBoxMapEntry.getBoundingBox().getWidth(),
                     boundingBoxMapEntry.getBoundingBox().getHeight(),
-                    boundingBoxMapEntry.getBoundingBox().getColorArgb());
+                    boundingBoxMapEntry.getBoundingBox().getRotationDegrees(),
+                    boundingBoxMapEntry.getBoundingBox().getRed(),
+                    boundingBoxMapEntry.getBoundingBox().getGreen(),
+                    boundingBoxMapEntry.getBoundingBox().getBlue());
+
             map.putOnFrame(boundingBoxMapEntry.getFrameNumber(), boundingBox);
             boxesAdded++;
         }
@@ -124,12 +128,15 @@ public class MarkupRequestConsumer implements MessageListener {
 	    BoundingBoxMap map = new BoundingBoxMap();
 	    int boxesAdded = 0;
 	    for(Markup.BoundingBoxMapEntry boundingBoxMapEntry : markupRequest.getMapEntriesList()) {
-		    BoundingBox boundingBox = new BoundingBox(
-				    boundingBoxMapEntry.getBoundingBox().getX(),
-				    boundingBoxMapEntry.getBoundingBox().getY(),
-				    boundingBoxMapEntry.getBoundingBox().getWidth(),
-				    boundingBoxMapEntry.getBoundingBox().getHeight(),
-				    boundingBoxMapEntry.getBoundingBox().getColorArgb());
+            BoundingBox boundingBox = new BoundingBox(
+                    boundingBoxMapEntry.getBoundingBox().getX(),
+                    boundingBoxMapEntry.getBoundingBox().getY(),
+                    boundingBoxMapEntry.getBoundingBox().getWidth(),
+                    boundingBoxMapEntry.getBoundingBox().getHeight(),
+                    boundingBoxMapEntry.getBoundingBox().getRotationDegrees(),
+                    boundingBoxMapEntry.getBoundingBox().getRed(),
+                    boundingBoxMapEntry.getBoundingBox().getGreen(),
+                    boundingBoxMapEntry.getBoundingBox().getBlue());
 		    map.putOnFrame(boundingBoxMapEntry.getFrameNumber(), boundingBox);
 		    boxesAdded++;
 	    }

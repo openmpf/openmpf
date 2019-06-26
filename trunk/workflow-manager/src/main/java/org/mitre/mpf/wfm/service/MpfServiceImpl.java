@@ -65,7 +65,7 @@ public class MpfServiceImpl implements MpfService {
 
     @Autowired
     @Qualifier(HibernateJobRequestDaoImpl.REF)
-    private HibernateDao<JobRequest> jobRequestDao;
+    private HibernateJobRequestDao jobRequestDao;
 
     @Autowired
     @Qualifier(HibernateStreamingJobRequestDaoImpl.REF)

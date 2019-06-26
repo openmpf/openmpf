@@ -109,69 +109,16 @@ public abstract class AbstractHibernateDao<T> implements HibernateDao<T> {
 	}
 
 	@Override
-	public List<T> findByPage(final int pageSize, final int offset, String searchTerm, String sortColumn,
-							  String sortOrderDirection) {
-		Validate.notNull(clazz);
-
-		if ( searchTerm.equals("") ) {
-			Split split = SimonManager.getStopwatch(profilerName + ".findByPage(int,int,String,String)").start();
-			try {
-				return getCurrentSession().createQuery("from " + clazz.getName() +
-						" order by " + sortColumn + " " + sortOrderDirection)
-						.setFirstResult(offset)
-						.setMaxResults(pageSize)
-						.list();
-			} finally {
-				split.stop();
-			}
-		} else {
-			Split split = SimonManager.getStopwatch(profilerName +
-					".findByPage(int,int,String,String,String,String,String)").start();
-			try {
-				return getCurrentSession().createQuery("from " + clazz.getName() +
-						" where pipeline like concat('%', :searchTerm, '%')" +
-						" or status like concat('%', :searchTerm, '%')" +
-						" or time_received like concat('%', :searchTerm, '%')" +
-						" or time_completed like concat('%', :searchTerm, '%')" +
-						" order by " + sortColumn + " " + sortOrderDirection)
-						.setParameter("searchTerm", searchTerm)
-						.setFirstResult(offset)
-						.setMaxResults(pageSize)
-						.list();
-			} finally {
-				split.stop();
-			}
-		}
-	}
-
-	@Override
-	public Long countAll() {
+	public long countAll() {
 		Validate.notNull(clazz);
 		Split split = SimonManager.getStopwatch(profilerName+".countAll()").start();
 		try {
-			return (Long) getCurrentSession()
+			return (long) getCurrentSession()
 					.createQuery("select count(*) from " + clazz.getName()).list().get(0);
 		} finally {
 			split.stop();
 		}
 	}
-
-    @Override
-    public Long countFiltered(String searchTerm) {
-        Validate.notNull(clazz);
-        Split split = SimonManager.getStopwatch(profilerName+".countFiltered(String)").start();
-        try {
-            return (Long) getCurrentSession()
-                    .createQuery("select count(*) from " + clazz.getName() +
-                            " where pipeline like concat('%', :searchTerm, '%')" +
-                            " or status like concat('%', :searchTerm, '%')" +
-                            " or time_received like concat('%', :searchTerm, '%')" +
-                            " or time_completed like concat('%', :searchTerm, '%')")
-                    .setParameter("searchTerm", searchTerm).list().get(0);
-        } finally {
-            split.stop();
-        }
-    }
 
 	@Override
 	@SuppressWarnings("unchecked")

@@ -173,7 +173,7 @@ public class JobController {
     }
 
 
-    private static final Map<String, String> JOB_TABLE_COLUMN_ORDERINGS
+    private static final Map<String, String> JOB_TABLE_COLUMN_NAMES
             = ImmutableMap.<String, String>builder()
             .put("0", "id")
             .put("1", "pipeline")
@@ -183,13 +183,6 @@ public class JobController {
             .put("5", "priority")
             .build();
 
-    private static <T, U extends Comparable<U>> Comparator<T> nullsFirstCompare(Function<T, U> keyExtractor) {
-        return Comparator.comparing(keyExtractor, Comparator.nullsFirst(Comparator.naturalOrder()));
-    }
-
-    private static <T, U extends Comparable<U>> Comparator<T> nullsLastCompare(Function<T, U> keyExtractor) {
-        return Comparator.comparing(keyExtractor, Comparator.nullsLast(Comparator.naturalOrder()));
-    }
 
     // INTERNAL
     // Parameters come from DataTables library: https://datatables.net/manual/server-side
@@ -202,9 +195,9 @@ public class JobController {
             @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "order[0][column]", defaultValue = "0") String orderByColumn,
             @RequestParam(value = "order[0][dir]", defaultValue = "desc") String orderDirection) {
-        log.info("Params draw:{} start:{},length:{},search:{}", draw, start, length, search); //TODO change this back
+        log.debug("Params draw:{} start:{},length:{},search:{}", draw, start, length, search);
 
-        String sortColumn = JOB_TABLE_COLUMN_ORDERINGS.get(orderByColumn);
+        String sortColumn = JOB_TABLE_COLUMN_NAMES.get(orderByColumn);
 
         //handle paging
         List<SingleJobInfo> jobInfoModels = mpfService.getPagedJobRequests(length, start, search, sortColumn,

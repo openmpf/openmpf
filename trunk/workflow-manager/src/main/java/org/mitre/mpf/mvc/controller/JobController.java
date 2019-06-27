@@ -198,10 +198,11 @@ public class JobController {
         log.debug("Params draw:{} start:{},length:{},search:{}", draw, start, length, search);
 
         String sortColumn = JOB_TABLE_COLUMN_NAMES.get(orderByColumn);
+        String sortOrderDirection = orderDirection.equals("desc") ? orderDirection : "asc";
 
         //handle paging
         List<SingleJobInfo> jobInfoModels = mpfService.getPagedJobRequests(length, start, search, sortColumn,
-                orderDirection).stream()
+                sortOrderDirection).stream()
                 .map(this::convertJob)
                 .collect(toList());
         int recordsTotal = mpfService.getJobRequestCount().intValue();

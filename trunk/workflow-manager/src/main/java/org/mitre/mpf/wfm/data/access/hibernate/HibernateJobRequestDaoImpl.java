@@ -68,9 +68,7 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
 			Split split = SimonManager.getStopwatch(profilerName + ".findByPage(int,int,String,String)").start();
 			try {
 				return getCurrentSession().createQuery("from " + clazz.getName() +
-						" order by :sortColumn :sortOrderDirection")
-						.setParameter("sortColumn", sortColumn)
-						.setParameter("sortOrderDirection", sortOrderDirection)
+						" order by " + sortColumn + " " + sortOrderDirection)
 						.setFirstResult(offset)
 						.setMaxResults(pageSize)
 						.list();
@@ -86,10 +84,8 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
 						" or status like concat('%', :searchTerm, '%')" +
 						" or time_received like concat('%', :searchTerm, '%')" +
 						" or time_completed like concat('%', :searchTerm, '%')" +
-						" order by :sortColumn :sortOrderDirection")
+						" order by " + sortColumn + " " + sortOrderDirection)
 						.setParameter("searchTerm", searchTerm)
-						.setParameter("sortColumn", sortColumn)
-						.setParameter("sortOrderDirection", sortOrderDirection)
 						.setFirstResult(offset)
 						.setMaxResults(pageSize)
 						.list();

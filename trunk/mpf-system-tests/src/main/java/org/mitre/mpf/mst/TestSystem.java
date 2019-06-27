@@ -65,12 +65,18 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.annotation.PostConstruct;
+import java.awt.*;
+import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URL;
+import java.util.List;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
@@ -160,7 +166,7 @@ public abstract class TestSystem {
 
 
     protected void addAction(String actionName, String algorithmName, Map<String, String> propertySettings) {
-        if (!pipelineService.getActionNames().contains(actionName)) {
+        if (!pipelineService.getActionNames().contains(actionName.toUpperCase())) {
             ActionDefinition actionDef = new ActionDefinition(actionName, algorithmName, actionName);
             for (Map.Entry<String, String> entry : propertySettings.entrySet()) {
                 actionDef.getProperties().add(new PropertyDefinitionRef(entry.getKey(), entry.getValue()));
@@ -171,7 +177,7 @@ public abstract class TestSystem {
 
 
     protected void addTask(String taskName, String... actions) {
-        if (!pipelineService.getTaskNames().contains(taskName)) {
+        if (!pipelineService.getTaskNames().contains(taskName.toUpperCase())) {
             TaskDefinition taskDef = new TaskDefinition(taskName, taskName);
             for (String actionName : actions) {
                 taskDef.getActions().add(new ActionDefinitionRef(actionName));
@@ -181,7 +187,7 @@ public abstract class TestSystem {
     }
 
     protected void addPipeline(String pipelineName, String... tasks) {
-        if (!pipelineService.getPipelineNames().contains(pipelineName)) {
+        if (!pipelineService.getPipelineNames().contains(pipelineName.toUpperCase())) {
             PipelineDefinition pipelineDef = new PipelineDefinition(pipelineName, pipelineName);
             for (String taskName : tasks) {
                 pipelineDef.getTaskRefs().add(new TaskDefinitionRef(taskName));
@@ -216,6 +222,12 @@ public abstract class TestSystem {
     protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media) {
         return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), true,
                                   propertiesUtil.getJmsPriority());
+    }
+
+    protected long runPipelineOnMedia(String pipelineName,
+                                      Map<String, String> jobProperties,
+                                      List<JsonMediaInputObject> media) {
+        return runPipelineOnMedia(pipelineName, media, jobProperties, true, propertiesUtil.getJmsPriority());
     }
 
 
@@ -293,6 +305,50 @@ public abstract class TestSystem {
         catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+
+
+    public List<Point2D.Double> getCorners(JsonDetectionOutputObject detection) {
+        double rotationDegrees = Double.parseDouble(detection.getDetectionProperties()
+                                                            .getOrDefault("ROTATION", "0"));
+        double radians = Math.toRadians(rotationDegrees);
+        double sinVal = Math.sin(radians);
+        double cosVal = Math.cos(radians);
+
+        double corner2X = detection.getX() + detection.getWidth() * cosVal;
+        double corner2Y = detection.getY() - detection.getWidth() * sinVal;
+
+        double corner3X = corner2X + detection.getHeight() * sinVal;
+        double corner3Y = corner2Y + detection.getHeight() * cosVal;
+
+        double corner4X = detection.getX() + detection.getHeight() * sinVal;
+        double corner4Y = detection.getY() + detection.getHeight() * cosVal;
+
+        return Arrays.asList(
+                new Point2D.Double(detection.getX(), detection.getY()),
+                new Point2D.Double(corner2X, corner2Y),
+                new Point2D.Double(corner3X, corner3Y),
+                new Point2D.Double(corner4X, corner4Y));
+    }
+
+
+    public void assertAllInExpectedRegion(int[] xPoints, int[] yPoints,
+                                          Collection<JsonDetectionOutputObject> detections) {
+
+        assertEquals(xPoints.length, yPoints.length);
+        assertFalse(detections.isEmpty());
+
+        Polygon expectedRegion = new Polygon(xPoints, yPoints, xPoints.length);
+        String outOfRangePoints = detections.stream()
+                .flatMap(d -> getCorners(d).stream())
+                .filter(pt -> !expectedRegion.contains(pt))
+                .distinct()
+                .map(Object::toString)
+                .collect(Collectors.joining("\n"));
+
+        assertTrue("The following points were not in the expected region:\n" + outOfRangePoints,
+                   outOfRangePoints.isEmpty());
     }
 
 

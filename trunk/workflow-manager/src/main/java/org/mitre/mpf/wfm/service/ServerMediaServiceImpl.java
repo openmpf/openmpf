@@ -130,7 +130,7 @@ public class ServerMediaServiceImpl implements ServerMediaService {
 
 	public List<ServerMediaFile> getFiles(String dirPath, ServletContext context, boolean useCache, boolean recurse) {
 		DirectoryTreeNode node = getAllDirectories(propertiesUtil.getServerMediaTreeRoot(), context,
-				useCache, propertiesUtil.getRemoteMediaCacheDirectory().getAbsolutePath());
+				useCache, propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
 		node = DirectoryTreeNode.find(node, dirPath);
 		return getFiles(node, context, useCache, recurse);
 	}

@@ -45,7 +45,6 @@
             var removeAll = false;
             var directoryMap = {};
             var allowUpload = true;
-            $scope.disableBtns = true;
             var successfulUploads = 0;
             var cancelledUploads = 0;
             var modalShow = false;
@@ -75,7 +74,6 @@
                 $scope.selectedPipelineServer = {};//selected pipeline
                 fileList = [];//current list of files for the selected folder
                 $scope.useUploadView = false;
-                $scope.disableBtns = true;
                 if (!$scope.$$phase) $scope.$apply();
 
                 MediaService.getMaxFileUploadCnt().then(function (max) {
@@ -139,11 +137,6 @@
                 selectedNode = node;
                 $("#directoryTreeview").treeview('selectNode', [node.nodeId, {silent: true}]);
                 $("#breadcrumb").html(node.fullPath);
-                if (node.canUpload) {
-                    $scope.disableBtns = false;
-                } else {
-                    $scope.disableBtns = true;
-                }
                 if (!$scope.$$phase) $scope.$apply();
                 renderFileList();
             };
@@ -248,8 +241,6 @@
                 });
                 $('#directoryTreeview').treeview('selectNode', selectedNode.nodeId);
                 $('#directoryTreeview').treeview('revealNode', [selectedNode.nodeId, {silent: true}]);
-
-                $scope.disableBtns = true;
 
                 //check nodes if necessary
                 updateTreeChecks();
@@ -934,21 +925,18 @@
                     var parent = selectedNode;
                     var path = selectedNode.fullPath + "/" + $scope.newfolder;
                     $log.debug("Adding new folder", path);
-                    $scope.disableBtns = true;
                     if (!$scope.$$phase) $scope.$apply();
                     MediaService.createDirectory(path).then(function (data) {
                         var folder = $scope.newfolder;
                         $scope.newfolder = "";
                         reloadTree(function () {
                             selectFolder(parent.nodeId, folder);
-                            $scope.disableBtns = false;
                             if (!$scope.$$phase) $scope.$apply();
                         });
                     }, function (e) {
                         console.log("error", e);
                         NotificationSvc.error("Cannot create folder '" + $scope.newfolder + "':" + e);
                         $scope.newfolder = "";
-                        $scope.disableBtns = false;
                         if (!$scope.$$phase) $scope.$apply();
                     });
                 }

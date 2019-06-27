@@ -38,17 +38,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-// TODO: Refactor so that there is one common DetectionMessenger for all Java detection components.
-public class MPFDetectionMessenger extends MPFMessengerBase {
-	
+public class MPFDetectionMessenger {
+
     private static final Logger LOG = LoggerFactory.getLogger(MPFDetectionMessenger.class);
 	private static final String usePreprocessorPropertyName = "USE_PREPROCESSOR";
-	
-    public MPFDetectionMessenger(MPFDetectionComponentInterface detector, final String msgQueueName) throws JMSException {
-        super(detector, msgQueueName);
+
+	private final MPFDetectionComponentInterface component;
+	private final Session session;
+
+    public MPFDetectionMessenger(MPFDetectionComponentInterface component, Session session) {
+        this.component = component;
+        this.session = session;
     }
 
-    @Override
     public void onMessage(Message message) {
 		try {
             LOG.info("Detection request received with message length = " + ((BytesMessage) message).getBodyLength());
@@ -81,9 +83,9 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
                 LOG.info("Detection request received with job ID " + msgMetadata.getJobId() +
                          " for media file " + msgMetadata.getDataUri());
 
-				String detectionType = detector.getDetectionType();
+				String detectionType = component.getDetectionType();
 
-				if(detector.supports(msgMetadata.getDataType())) {
+				if(component.supports(msgMetadata.getDataType())) {
 
 					byte[] responseBytes = null;
 
@@ -92,7 +94,7 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
                         MPFDetectionAudioRequest audioRequest = detectionBuffer.getAudioRequest();
                         try {
                             List<MPFAudioTrack> tracks = new ArrayList<>();
-                            tracks = detector.getDetections(new MPFAudioJob(msgMetadata.getJobName(),
+                            tracks = component.getDetections(new MPFAudioJob(msgMetadata.getJobName(),
                                                                             msgMetadata.getDataUri(),
                                                                             msgMetadata.getAlgorithmProperties(),
                                                                             msgMetadata.getMediaProperties(),
@@ -107,7 +109,7 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
                         MPFDetectionImageRequest imageRequest = detectionBuffer.getImageRequest();
                         List<MPFImageLocation> locations = new ArrayList<>();
                         try {
-                            locations = detector.getDetections(new MPFImageJob(msgMetadata.getJobName(),
+                            locations = component.getDetections(new MPFImageJob(msgMetadata.getJobName(),
                                                                                msgMetadata.getDataUri(),
                                                                                msgMetadata.getAlgorithmProperties(),
                                                                                msgMetadata.getMediaProperties(),
@@ -121,7 +123,7 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
                         MPFDetectionVideoRequest videoRequest = detectionBuffer.getVideoRequest();
                         List<MPFVideoTrack> tracks = new ArrayList<>();
                         try {
-                            tracks = detector.getDetections(new MPFVideoJob(msgMetadata.getJobName(),
+                            tracks = component.getDetections(new MPFVideoJob(msgMetadata.getJobName(),
                                                                             msgMetadata.getDataUri(),
                                                                             msgMetadata.getAlgorithmProperties(),
                                                                             msgMetadata.getMediaProperties(),
@@ -136,7 +138,7 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
 						MPFDetectionGenericRequest genericRequest = detectionBuffer.getGenericRequest();
 						try {
 							List<MPFGenericTrack> tracks = new ArrayList<>();
-							tracks = detector.getDetections(new MPFGenericJob(msgMetadata.getJobName(),
+							tracks = component.getDetections(new MPFGenericJob(msgMetadata.getJobName(),
 									msgMetadata.getDataUri(),
 									msgMetadata.getAlgorithmProperties(),
 									msgMetadata.getMediaProperties(),
@@ -154,13 +156,13 @@ public class MPFDetectionMessenger extends MPFMessengerBase {
                         responseBytesMessage = session.createBytesMessage();
                         responseBytesMessage.writeBytes(responseBytes);
                         ProtoUtils.setMsgProperties(headerProperties, responseBytesMessage);
-                        replyProducer = session.createProducer(out);
+	                    MessageProducer replyProducer = session.createProducer(out);
                         replyProducer.send(responseBytesMessage);
                         session.commit();
                         LOG.info("Detection response sent for job ID {}", msgMetadata.getJobId());
                         LOG.debug(responseBytesMessage.toString());
                     } catch (JMSException e) {
-                        LOG.error("Failed to send detection response message due to Exception {}", e);
+                        LOG.error("Failed to send detection response message due to exception: " + e.getMessage(), e);
                     }
 
                 } else {

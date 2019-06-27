@@ -63,12 +63,7 @@ public class TestBoundingBoxWriter {
 
             BoundingBoxMap map = new BoundingBoxMap();
 
-            BoundingBox box = new BoundingBox();
-            box.setX(5);
-            box.setY(5);
-            box.setWidth(15);
-            box.setHeight(15);
-            box.setColor(255, 0, 0);
+            BoundingBox box = new BoundingBox(5, 5, 15, 15, 0, 255, 0, 0);
             map.putOnFrames(1, 20, box);
 
             BoundingBoxWriter writer = new BoundingBoxWriter();

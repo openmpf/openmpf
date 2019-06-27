@@ -120,9 +120,9 @@ public class ServerMediaController {
 
         // if useUploadRoot is set it will take precedence over nodeFullPath
         DirectoryTreeNode node = serverMediaService.getAllDirectories(nodePath, request.getServletContext(), useCache,
-                                                                      propertiesUtil.getRemoteMediaCacheDirectory().getAbsolutePath());
+                                                                      propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
         if(useUploadRoot != null && useUploadRoot){
-            node =  DirectoryTreeNode.find(node, propertiesUtil.getRemoteMediaCacheDirectory().getAbsolutePath());
+            node =  DirectoryTreeNode.find(node, propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
         }
 
         return node;

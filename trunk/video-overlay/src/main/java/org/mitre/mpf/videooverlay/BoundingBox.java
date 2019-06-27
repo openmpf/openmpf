@@ -26,10 +26,12 @@
 
 package org.mitre.mpf.videooverlay;
 
-import org.mitre.mpf.wfm.buffers.*;
+import org.mitre.mpf.wfm.buffers.Markup;
+
+import java.util.Objects;
 
 /**
- * A bounding box is rectangle with a 4-byte ARGB color associated with it. Coordinates are
+ * A bounding box is rectangle with an RGB color associated with it. Coordinates are
  * defined according to <a href="http://docs.oracle.com/javase/tutorial/2d/overview/coordinate.html">Java's 2D API Concepts</a>.
  */
 public class BoundingBox {
@@ -37,142 +39,105 @@ public class BoundingBox {
     /**
      * The x-coordinate of the top-left corner of this bounding box on the given frame.
      */
-    private int x;
-
+    private final int x;
     public int getX() {
         return x;
-    }
-
-    public void setX(int x) {
-        this.x = x;
     }
 
     /**
      * The y-coordinate of the top-left corner of this bounding box on the given frame.
      */
-    private int y;
-
+    private final int y;
     public int getY() {
         return y;
     }
 
-    public void setY(int y) {
-        this.y = y;
-    }
 
     /**
      * The width of the bounding box.
      */
-    private int width;
-
+    private final int width;
     public int getWidth() {
         return width;
     }
 
-    public void setWidth(int width) {
-        this.width = width;
-    }
 
     /**
      * The height of the bounding box.
      */
-    private int height;
-
+    private final int height;
     public int getHeight() {
         return height;
     }
 
-    public void setHeight(int height) {
-        this.height = height;
+
+    private final double rotationDegrees;
+    public double getRotationDegrees() {
+        return rotationDegrees;
     }
 
-    /**
-     * The color of the bounding box as a 4-byte ARGB value.
-     */
-    public int color;
 
-    public int getColor() {
-        return color;
+    private final int red;
+    public int getRed() {
+        return red;
     }
 
-    /**
-     * Sets the color using a 4-byte ARGB integer.
-     *
-     * @param color A 4-byte integer of the form 0xWWXXYYZZ where WW is the hex value for alpha, XX is the hex value for red, YY is the hex value for green, and ZZ is the hex value for blue.
-     */
-    public void setColor(int color) {
-        this.color = color;
+    private final int green;
+    public int getGreen() {
+        return green;
     }
 
-    /**
-     * Equivalent to See {@link #setColor(int, int, int, int) setColor(255, red, green, blue)}.
-     */
-    public void setColor(int red, int green, int blue) {
-        setColor(255, red, green, blue);
+    private final int blue;
+    public int getBlue() {
+        return blue;
     }
 
-    /**
-     * Sets the color of this bounding box according to the given RGBA parameter values.
-     *
-     * @param alpha Must be in range [0,255].
-     * @param red   Must be in range [0,255].
-     * @param green Must be in range [0,255].
-     * @param blue  Must be in range [0,255]
-     */
-    public void setColor(int alpha, int red, int green, int blue) {
-        // Check that each of ARGB is between 0,255 and throw an exception if that is not the case.
-        if (!(0 <= alpha && alpha <= 255)) {
-            throw new IllegalArgumentException("alpha must be in range [0,255]");
-        } else if (!(0 <= red && red <= 255)) {
+
+
+    public BoundingBox(int x, int y, int width, int height, double rotationDegrees, int red, int green, int blue) {
+        if (red < 0 || red > 255) {
             throw new IllegalArgumentException("red must be in range [0,255]");
-        } else if (!(0 <= green && green <= 255)) {
+        }
+        if (green < 0 || green > 255) {
             throw new IllegalArgumentException("green must be in range [0,255]");
-        } else if (!(0 <= blue && blue <= 255)) {
+        }
+        if (blue < 0 || blue > 255) {
             throw new IllegalArgumentException("blue must be in range [0,255]");
         }
 
-        int newColor = 0;
-        newColor = (newColor | ((0x000000FF & alpha) << 24));
-        newColor = (newColor | ((0x000000FF & red) << 16));
-        newColor = (newColor | ((0x000000FF & green) << 8));
-        newColor = (newColor | ((0x000000FF & blue) << 0));
-
-        setColor(newColor);
-    }
-
-    public BoundingBox() { }
-
-    public BoundingBox(int x, int y, int width, int height, int colorArgb) {
-        setX(x);
-        setY(y);
-        setHeight(height);
-        setWidth(width);
-        setColor(colorArgb);
-    }
-
-    public BoundingBox(int x, int y, int width, int height, int a, int r, int g, int b) {
-        this(x, y, width, height, 0);
-        setColor(a, r, g, b);
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.rotationDegrees = rotationDegrees;
+        this.red = red;
+        this.green = green;
+        this.blue = blue;
     }
 
     @Override
     public String toString() {
-        return String.format("%s#<x=%d, y=%d, height=%d, width=%d, color=%d>",
-                this.getClass().getSimpleName(), x, y, height, width, color);
+        return String.format("%s#<x=%d, y=%d, height=%d, width=%d, rotation=%f, color=(%d, %d, %d)>",
+                this.getClass().getSimpleName(), x, y, height, width, rotationDegrees, red, green, blue);
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || !(obj instanceof BoundingBox)) {
-            return false;
-        } else {
-            BoundingBox casted = (BoundingBox) obj;
-            return x == casted.x &&
-                    y == casted.y &&
-                    color == casted.color &&
-                    height == casted.height &&
-                    width == casted.width;
+        if (this == obj) {
+            return true;
         }
+        if (!(obj instanceof BoundingBox)) {
+            return false;
+        }
+        BoundingBox casted = (BoundingBox) obj;
+        return x == casted.x
+                && y == casted.y
+                && height == casted.height
+                && width == casted.width
+                && Double.compare(rotationDegrees, casted.rotationDegrees) == 0
+                && red == casted.red
+                && green == casted.green
+                && blue == casted.blue;
     }
 
     /**
@@ -180,16 +145,19 @@ public class BoundingBox {
      */
     @Override
     public int hashCode() {
-        return color ^ (width * 37) ^ (height * 41) ^ (x * 13) ^ (y * 23);
+        return Objects.hash(x, y, height, width, rotationDegrees, red, green, blue);
     }
 
     public Markup.BoundingBox toProtocolBuffer() {
         return Markup.BoundingBox.newBuilder()
-                .setColorArgb(color)
-                .setHeight(height)
-                .setWidth(width)
                 .setX(x)
                 .setY(y)
+                .setWidth(width)
+                .setHeight(height)
+                .setRotationDegrees(rotationDegrees)
+                .setRed(red)
+                .setBlue(blue)
+                .setGreen(green)
                 .build();
     }
 }

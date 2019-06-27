@@ -60,12 +60,12 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
 		}
 	}
 
-	public List<JobRequest> findByPage(final int pageSize, final int offset, String searchTerm, String sortColumn,
-							  String sortOrderDirection) {
+	public List<JobRequest> findByPage(final int pageSize, final int offset, String sortColumn,
+							  String sortOrderDirection, String searchTerm) {
 		Validate.notNull(clazz);
 
 		if ( searchTerm.equals("") ) {
-			Split split = SimonManager.getStopwatch(profilerName + ".findByPage(int,int,String,String)").start();
+			Split split = SimonManager.getStopwatch(profilerName + ".findByPage(int,int,String,String,\"\")").start();
 			try {
 				return getCurrentSession().createQuery("from " + clazz.getName() +
 						" order by " + sortColumn + " " + sortOrderDirection)
@@ -77,7 +77,7 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
 			}
 		} else {
 			Split split = SimonManager.getStopwatch(profilerName +
-					".findByPage(int,int,String,String,String,String,String)").start();
+					".findByPage(int,int,String,String,String)").start();
 			try {
 				return getCurrentSession().createQuery("from " + clazz.getName() +
 						" where pipeline like concat('%', :searchTerm, '%')" +

@@ -31,8 +31,6 @@ import org.hibernate.SessionFactory;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.data.access.JpaDao;
 
-import java.util.List;
-
 @Monitored
 public interface HibernateDao<T> extends JpaDao<T> {
 	/** Sets the session factory associated with this dao. */

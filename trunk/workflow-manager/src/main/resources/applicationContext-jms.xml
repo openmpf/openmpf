@@ -42,7 +42,7 @@
         <property name="concurrentConsumers" value="2" />
         <property name="transacted" value="false" />
         <property name="deliveryPersistent" value="false" />
-        <property name="maxConcurrentConsumers" value="30" />
+        <property name="maxConcurrentConsumers" value="60" />
         <property name="cacheLevelName" value="CACHE_CONSUMER" />
         <property name="preserveMessageQos" value="true"/>
         <property name="transactionTimeout" value="600"/><!-- in seconds -->
@@ -73,7 +73,7 @@
         <property name="concurrentConsumers" value="2" />
         <property name="transacted" value="false" />
         <property name="deliveryPersistent" value="false" />
-        <property name="maxConcurrentConsumers" value="30" />
+        <property name="maxConcurrentConsumers" value="60" />
         <property name="cacheLevelName" value="CACHE_CONSUMER" />
         <property name="preserveMessageQos" value="true"/>
         <property name="transactionTimeout" value="600"/><!-- in seconds -->

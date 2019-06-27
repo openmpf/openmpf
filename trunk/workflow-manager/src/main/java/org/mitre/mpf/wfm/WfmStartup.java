@@ -33,6 +33,7 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
+import org.mitre.mpf.wfm.service.FileWatcherService;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.service.component.StartupComponentRegistrationService;
@@ -57,6 +58,7 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.servlet.ServletContext;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,7 +89,7 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	private StartupComponentRegistrationService startupRegistrationService;
 
 	@Autowired
-	private ServerMediaService serverMediaService;
+	private FileWatcherService fileWatcherService;
 
 	// used to prevent the initialization behaviors from being executed more than once
 	private static boolean applicationRefreshed = false;
@@ -141,9 +143,11 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 		if (appContext instanceof WebApplicationContext) {
 			WebApplicationContext webContext = (WebApplicationContext) appContext;
 			ServletContext servletContext = webContext.getServletContext();
+			String uploadPath =  propertiesUtil.getRemoteMediaDirectory().getAbsolutePath();
+			fileWatcherService.launchWatcher(propertiesUtil.getServerMediaTreeRoot(), servletContext, uploadPath);
+			// Load existing files on startup since we won't see their creation event
 			ThreadUtil.runAsync(
-					() -> serverMediaService.getFiles(propertiesUtil.getServerMediaTreeRoot(), servletContext,
-					                                  true, true));
+					() -> fileWatcherService.buildInitialCache(propertiesUtil.getServerMediaTreeRoot(), servletContext));
 		}
 	}
 

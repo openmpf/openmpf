@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.service;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaListing;
-import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,9 +37,7 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.ServletContext;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -51,118 +48,43 @@ public class ServerMediaServiceImpl implements ServerMediaService {
 	@Autowired
 	private PropertiesUtil propertiesUtil;
 
-	@Autowired
-	private IoUtils ioUtils;
-
-	public DirectoryTreeNode getAllDirectories(String nodePath, ServletContext context, boolean useCache, String uploadDir){
+	public DirectoryTreeNode getAllDirectories(String nodePath, ServletContext context, String uploadDir){
 		// attempt to get attribute from application scope
 		String attributeName = CACHED_DIRECTORY_STRUCTURE_PREFIX + nodePath;
 
-		if(context.getAttribute(attributeName) != null && useCache){
+		// TODO a directory might be deleted before the cache is updated on the front-end
+		if(context.getAttribute(attributeName) != null){
 			log.debug("Using cached directory structure: " + nodePath);
 			return (DirectoryTreeNode)context.getAttribute(attributeName);
+		} else {
+			log.error("Media file cache is empty");
+			File root = new File(nodePath);
+			return new DirectoryTreeNode(root);
 		}
-
-		// update cache
-		DirectoryTreeNode node = DirectoryTreeNode.fillDirectoryTree(new DirectoryTreeNode(new File(nodePath)), new ArrayList<DirectoryTreeNode>(), uploadDir);
-		context.setAttribute(attributeName, node);
-
-		return node;
 	}
 
-	public List<ServerMediaFile> getFiles(DirectoryTreeNode node, ServletContext context, boolean useCache, boolean recurse) {
+	public List<ServerMediaFile> getFiles(DirectoryTreeNode node, ServletContext context) {
 		List<ServerMediaFile> mediaFiles = new ArrayList<>();
-		File dir = new File(node.getFullPath());
 
 		// attempt to get attribute from application scope
 		String attributeName = CACHED_FILES_PREFIX + node.getFullPath();
 
-		if (context.getAttribute(attributeName) != null && useCache){
+		if (context.getAttribute(attributeName) != null){
 			log.debug("Using cached file listing: " + node.getFullPath());
 			ServerMediaListing listing = (ServerMediaListing)context.getAttribute(attributeName);
 			mediaFiles.addAll(listing.getData());
 		} else {
-			File[] tmpFiles = dir.listFiles(File::isFile);
-
-			List<File> files = new ArrayList<>(); // use real paths
-			List<File> parents = new ArrayList<>(); // use absolute paths
-			for (int i = 0; i < tmpFiles.length; i++) {
-				try {
-					files.add(tmpFiles[i].toPath().toRealPath().toFile()); // resolve symbolic links
-					parents.add(tmpFiles[i].getParentFile());
-				} catch (IOException e) {
-					log.error("Error determining real path: " + e.getMessage());
-				}
-			}
-
-			// filter by approved list of content type
-			List<File> filesFiltered = new ArrayList<>();
-			List<File> parentsFiltered = new ArrayList<>();
-			for (int i = 0; i < files.size(); i++) {
-				if (ioUtils.isApprovedFile(files.get(i))) {
-					filesFiltered.add(files.get(i));
-					parentsFiltered.add(parents.get(i));
-				}
-			}
-			files = filesFiltered;
-			parents = parentsFiltered;
-
-			// build output
-			for (int i = 0; i < files.size(); i++) {
-				// file should have real path, parent should have absolute path
-				mediaFiles.add(new ServerMediaFile(files.get(i), parents.get(i), ioUtils.getMimeType(files.get(i).getAbsolutePath())));
-			}
-
-			// update cache
-			ServerMediaListing listing = new ServerMediaListing(mediaFiles);
-			context.setAttribute(attributeName, listing);
-		}
-
-		// recurse
-		if (recurse && node.getNodes() != null) {
-			for (DirectoryTreeNode subnode : node.getNodes()) {
-				mediaFiles.addAll(getFiles(subnode, context, useCache, recurse));
-			}
+			log.error("Media file cache not found");
 		}
 
 		return mediaFiles;
 	}
 
-	public List<ServerMediaFile> getFiles(String dirPath, ServletContext context, boolean useCache, boolean recurse) {
+	public List<ServerMediaFile> getFiles(String dirPath, ServletContext context) {
 		DirectoryTreeNode node = getAllDirectories(propertiesUtil.getServerMediaTreeRoot(), context,
-				useCache, propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
+				propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
 		node = DirectoryTreeNode.find(node, dirPath);
-		return getFiles(node, context, useCache, recurse);
+		return getFiles(node, context);
 	}
 
-	public void addFilesToCache(String dirPath, List<File> files, ServletContext context) {
-		if (files.isEmpty()) return;
-
-		// attempt to get attribute from application scope
-		String attributeName = CACHED_FILES_PREFIX + dirPath;
-
-		// update cache if it exists; else do nothing
-		if (context.getAttribute(attributeName) != null){
-			ServerMediaListing oldListing = (ServerMediaListing)context.getAttribute(attributeName);
-			List<ServerMediaFile> mediaFiles = new ArrayList<>(oldListing.getData());
-
-			for (File file : files) {
-				try {
-					File realFile = file.toPath().toRealPath().toFile(); // use real path
-					File parent = file.getParentFile(); // use absolute path
-					mediaFiles.add(new ServerMediaFile(realFile, parent, ioUtils.getMimeType(realFile.getAbsolutePath())));
-				} catch (IOException e) {
-					log.error("Error determining real path: " + e.getMessage());
-				}
-			}
-
-			// update cache
-			ServerMediaListing newListing = new ServerMediaListing(mediaFiles);
-			context.setAttribute(attributeName, newListing);
-		}
-	}
-
-	public void addFileToCache(String dirPath, File file, ServletContext context) {
-		addFilesToCache(dirPath, Arrays.asList(file), context);
-	}
 }

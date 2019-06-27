@@ -114,12 +114,12 @@ public class ServerMediaController {
 
     @RequestMapping(value = { "/server/get-all-directories" }, method = RequestMethod.GET)
     @ResponseBody
-    public DirectoryTreeNode getAllDirectories(HttpServletRequest request, @RequestParam(required = false) Boolean useUploadRoot,
-                                               @RequestParam(required = false, defaultValue = "true") boolean useCache){
+    public DirectoryTreeNode getAllDirectories(HttpServletRequest request,
+                                               @RequestParam(required = false) Boolean useUploadRoot) {
         String nodePath = propertiesUtil.getServerMediaTreeRoot();
 
         // if useUploadRoot is set it will take precedence over nodeFullPath
-        DirectoryTreeNode node = serverMediaService.getAllDirectories(nodePath, request.getServletContext(), useCache,
+        DirectoryTreeNode node = serverMediaService.getAllDirectories(nodePath, request.getServletContext(),
                                                                       propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
         if(useUploadRoot != null && useUploadRoot){
             node =  DirectoryTreeNode.find(node, propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
@@ -130,12 +130,12 @@ public class ServerMediaController {
 
     @RequestMapping(value = { "/server/get-all-files" }, method = RequestMethod.GET)
     @ResponseBody
-    public ServerMediaListing getAllFiles(HttpServletRequest request, @RequestParam(required = true) String fullPath,
-                                          @RequestParam(required = false, defaultValue = "true") boolean useCache) {
+    public ServerMediaListing getAllFiles(HttpServletRequest request, @RequestParam(required = true) String fullPath) {
         File dir = new File(fullPath);
         if(!dir.isDirectory() && fullPath.startsWith(propertiesUtil.getServerMediaTreeRoot())) return null; // security check
 
-        List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath, request.getServletContext(), useCache, true);
+        log.info( "All files requested in: " + fullPath );
+        List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath, request.getServletContext());
         return new ServerMediaListing(mediaFiles);
     }
 
@@ -146,8 +146,8 @@ public class ServerMediaController {
     //search is string to filter
     @RequestMapping(value = { "/server/get-all-files-filtered" }, method = RequestMethod.POST)
     @ResponseBody
-    public ServerMediaFilteredListing getAllFilesFiltered(HttpServletRequest request, @RequestParam(value="fullPath", required=true) String fullPath,
-                                                          @RequestParam(required = false, defaultValue = "true") boolean useCache,
+    public ServerMediaFilteredListing getAllFilesFiltered(HttpServletRequest request,
+                                                          @RequestParam(value="fullPath") String fullPath,
                                                           @RequestParam(value="draw", required=false) int draw,
                                                           @RequestParam(value="start", required=false) int start,
                                                           @RequestParam(value="length", required=false) int length,
@@ -157,7 +157,7 @@ public class ServerMediaController {
         File dir = new File(fullPath);
         if(!dir.isDirectory() && fullPath.startsWith(propertiesUtil.getServerMediaTreeRoot())) return null; // security check
 
-        List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath, request.getServletContext(), useCache, false);
+        List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath, request.getServletContext());
 
         // handle sort
         Collections.sort(mediaFiles, (new SortAlphabeticalCaseInsensitive()). // make 'A' come before 'B'

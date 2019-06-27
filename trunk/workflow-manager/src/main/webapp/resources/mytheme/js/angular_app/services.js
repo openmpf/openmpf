@@ -172,24 +172,22 @@ AppServices.service('MediaService', function ($http) {
         return promise;
     };
 
-    this.getAllDirectories = function (useUploadRoot, useCache) {
+    this.getAllDirectories = function (useUploadRoot) {
         var useUploadRoot = useUploadRoot ? useUploadRoot : false;
-        var useCache = (useCache !== undefined) ? useCache : true;
         var promise = $http({
             url: 'server/get-all-directories',
             method: 'GET',
-            params: {'useUploadRoot': useUploadRoot, 'useCache': useCache}
+            params: {'useUploadRoot': useUploadRoot}
         }).then(function (response) {
             return response.data;
         });
         return promise;
     };
-    this.getAllFiles = function (fullPath, useCache) {
-        var useCache = (useCache !== undefined) ? useCache : true;
+    this.getAllFiles = function (fullPath) {
         var promise = $http({
             url: 'server/get-all-files',
             method: 'GET',
-            params: {'fullPath': fullPath, 'useCache': useCache}
+            params: {'fullPath': fullPath}
         }).then(function (response) {
             return response.data;
         });

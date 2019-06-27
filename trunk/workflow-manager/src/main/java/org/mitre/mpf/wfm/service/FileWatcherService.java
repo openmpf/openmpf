@@ -26,24 +26,15 @@
 
 package org.mitre.mpf.wfm.service;
 
-import org.mitre.mpf.mvc.model.DirectoryTreeNode;
-import org.mitre.mpf.mvc.model.ServerMediaFile;
-
 import javax.servlet.ServletContext;
-import java.util.List;
 
-public interface ServerMediaService {
+public interface FileWatcherService {
 
-	// NOTE: Since all users have access to the same directory structure, it is optimal to cache directory and
-	// file information at the application level (as opposed to the session level).
+    // TODO move these fields to a common location
+    public static final String CACHED_DIRECTORY_STRUCTURE_PREFIX = "DirectoryStructure:";
+    public static final String CACHED_FILES_PREFIX = "Files:";
 
-	// TODO move these fields to a common location
-	public static final String CACHED_DIRECTORY_STRUCTURE_PREFIX = "DirectoryStructure:";
-	public static final String CACHED_FILES_PREFIX = "Files:";
+    public void launchWatcher(String nodePath, ServletContext context, String uploadDir);
 
-	public DirectoryTreeNode getAllDirectories(String nodePath, ServletContext context, String uploadDir);
-
-	public List<ServerMediaFile> getFiles(DirectoryTreeNode node, ServletContext context);
-
-	public List<ServerMediaFile> getFiles(String dirPath, ServletContext context);
+    public void buildInitialCache(String dirPath, ServletContext context);
 }

@@ -61,7 +61,7 @@
             var checkedSingleFileInModal = null;
             var checkedFilesInModal = [];
 
-            var init = function (useCache, funct) {//reset
+            var init = function (funct) {//reset
                 $("#loading_url").hide();
                 $("#fileListWrap").css('visibility','hidden');
                 $("#directoryTreeview").html("Loading. Please wait...");
@@ -78,7 +78,7 @@
 
                 MediaService.getMaxFileUploadCnt().then(function (max) {
 
-                    MediaService.getAllDirectories(false, useCache).then(function (dirs) {
+                    MediaService.getAllDirectories(false).then(function (dirs) {
                         serverDirs = [];
                         serverDirs.push(dirs);
                         treeDirs = serverDirs;
@@ -98,7 +98,7 @@
                         maxFileUploadCnt = max;
                         buildDropzone();
 
-                        MediaService.getAllFiles(dirs.fullPath, useCache).then(function (nodeData) {
+                        MediaService.getAllFiles(dirs.fullPath).then(function (nodeData) {
                             $.each(nodeData.data, function (idx, anode) {
                                 // need to update counts
                                 if (anode.directory) {
@@ -142,12 +142,12 @@
             };
 
             $scope.refreshRequest = function () {//refresh button for updating directory tree
-                init(false);
+                init();
             };
 
             //pull data from the server
             var reloadTree = function (funct) {
-                init(true, funct);
+                init(funct);
             };
 
             var renderTree = function () {
@@ -1032,6 +1032,6 @@
                 }
             };
 
-            init(true);//get this party started
+            init();//get this party started
         }]);
 })();

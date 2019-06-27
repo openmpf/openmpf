@@ -180,8 +180,6 @@ public class MediaController {
 			}
 		}
 
-		serverMediaService.addFilesToCache(desiredpath, successFiles, request.getServletContext());
-
 		return urlResultMap;
 	}
 
@@ -237,8 +235,6 @@ public class MediaController {
 				stream.close();
 				log.info("Completed upload and write of {} to {} ContentType:{}", newFile.getPath(), newFile.getAbsolutePath(),contentType);
 
-				serverMediaService.addFileToCache(desiredPathParam, newFile, request.getServletContext());
-
 				return new ResponseEntity<>(filename, HttpStatus.OK);
 			}
 		} catch (IOException badWrite) {
@@ -258,7 +254,7 @@ public class MediaController {
 
 	@RequestMapping(value = {"/media/create-remote-media-directory"}, method = RequestMethod.POST)
 	@ResponseStatus(value = HttpStatus.CREATED) //return 201 for post
-	public ResponseEntity createRemoteMediaDirectory(@RequestParam("serverpath") String serverpath,HttpServletRequest request,  HttpServletResponse response){
+	public ResponseEntity createRemoteMediaDirectory(@RequestParam("serverpath") String serverpath, HttpServletRequest request,  HttpServletResponse response){
 		if(serverpath == null ) {
 			return new ResponseEntity<>("{\"error\":\"invalid parameter\"}", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
@@ -269,7 +265,7 @@ public class MediaController {
 			if(!dir.exists()){
 				if(dir.mkdir()){
 					log.debug("Directory added:"+dir.getAbsolutePath());
-					serverMediaService.getAllDirectories(propertiesUtil.getServerMediaTreeRoot(), request.getServletContext(),false, uploadPath);//reload the directories
+					serverMediaService.getAllDirectories(propertiesUtil.getServerMediaTreeRoot(), request.getServletContext(), uploadPath);//reload the directories
 					return new ResponseEntity<>("{\"dir\":\""+dir.getAbsolutePath()+"\"}", HttpStatus.OK);
 				}else{
 					return new ResponseEntity<>("{\"error\":\"Cannot Create Folder\"}", HttpStatus.INTERNAL_SERVER_ERROR);

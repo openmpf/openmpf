@@ -84,6 +84,8 @@ public class DirectoryTreeNode {
 
     public static DirectoryTreeNode fillDirectoryTree(DirectoryTreeNode node, List<DirectoryTreeNode> seenNodes, String uploadDir) {
 
+        // TODO possibly re-work this
+
         List<Path> dirs = new ArrayList<Path>();
         Path folder = Paths.get(node.getFullPath());
 

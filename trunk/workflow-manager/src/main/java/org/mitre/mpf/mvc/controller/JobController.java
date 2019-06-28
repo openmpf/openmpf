@@ -33,13 +33,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.exceptions.InvalidPropertyWfmProcessingException;
 import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
@@ -69,7 +67,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
@@ -179,7 +180,7 @@ public class JobController {
             .put("1", "pipeline")
             .put("2", "time_received")
             .put("3", "time_completed")
-            .put("4", "complete")
+            .put("4", "status")
             .put("5", "priority")
             .build();
 

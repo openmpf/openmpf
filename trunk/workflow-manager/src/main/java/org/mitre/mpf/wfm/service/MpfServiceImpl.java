@@ -256,9 +256,9 @@ public class MpfServiceImpl implements MpfService {
      * @return
      */
     @Override
-    public List<JobRequest> getPagedJobRequests(int pageSize, int offset, String sortColumn, String sortOrderDirection,
-                                                String searchTerm) {
-        return jobRequestDao.findByPage(pageSize, offset, sortColumn, sortOrderDirection, searchTerm);
+    public List<JobRequest> getPagedJobRequests(int pageSize, int offset, String searchTerm, String sortColumn,
+                                                String sortOrderDirection) {
+        return jobRequestDao.findByPage(pageSize, offset, searchTerm, sortColumn, sortOrderDirection);
     }
 
     /**

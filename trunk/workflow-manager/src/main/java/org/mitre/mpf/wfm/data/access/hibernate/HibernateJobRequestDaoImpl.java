@@ -65,7 +65,7 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
 		Validate.notNull(clazz);
 
 		if ( searchTerm.equals("") ) {
-			Split split = SimonManager.getStopwatch(profilerName + ".findByPage(int,int,\"\",String,String)").start();
+			Split split = SimonManager.getStopwatch(profilerName + ".findByPage(int,int,Empty,String,String)").start();
 			try {
 				return getCurrentSession().createQuery("from " + clazz.getName() +
 						" order by " + sortColumn + " " + sortOrderDirection)

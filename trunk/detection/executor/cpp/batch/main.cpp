@@ -102,6 +102,7 @@ int main(int argc, char* argv[]) {
     string lib_path = argv[2];
     string request_queue = argv[3];
 
+    LOG4CXX_DEBUG(logger, "broker uri = " << argv[1]);
     LOG4CXX_DEBUG(logger, "library name = " << argv[2]);
     LOG4CXX_DEBUG(logger, "request queue = " << argv[3]);
 
@@ -339,7 +340,7 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                             }
 
                             msg_metadata->time_elapsed = time.elapsed();
-                            
+
                             if (rc != MPF_DETECTION_SUCCESS) {
                                 LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Video detection method returned an error for " << data_uri);
                             }
@@ -527,6 +528,7 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                 string std_input(input_buf);
                 std_input.resize(input_buf_size);
                 if ((bytes_read > 0) && (std_input == quit_string)) {
+                    LOG4CXX_INFO(logger, "Received quit command.");
                     keep_running = false;
                 }
             }

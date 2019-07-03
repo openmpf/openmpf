@@ -109,6 +109,18 @@ public abstract class AbstractHibernateDao<T> implements HibernateDao<T> {
 	}
 
 	@Override
+	public long countAll() {
+		Validate.notNull(clazz);
+		Split split = SimonManager.getStopwatch(profilerName+".countAll()").start();
+		try {
+			return (long) getCurrentSession()
+					.createQuery("select count(*) from " + clazz.getName()).list().get(0);
+		} finally {
+			split.stop();
+		}
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public T persist(final T entity) {
 		Validate.notNull(entity);

@@ -215,6 +215,22 @@ public interface MpfService {
     public List<JobRequest> getAllJobRequests();
 
     /**
+     * Get the list of batch job requests by page.
+     */
+    public List<JobRequest> getPagedJobRequests(int pageSize, int offset, String searchTerm, String sortColumn,
+                                                String sortOrderDirection);
+
+    /**
+     * Get a count of the JobRequest (batch job) instances in the persistent data store.
+     */
+    public Long getJobRequestCount();
+
+    /**
+     * Get a count of the JobRequest (batch job) instances in the persistent data store, filtered by search term.
+     */
+    public Long getJobRequestCountFiltered(String searchTerm);
+
+    /**
      * Gets all of the StreamingJobRequest (streaming job) instances in the persistent data store.
      */
     public List<StreamingJobRequest> getAllStreamingJobRequests();

@@ -29,24 +29,30 @@ package org.mitre.mpf.wfm.service.component;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mitre.mpf.test.TestUtil.anyNonNull;
 import static org.mitre.mpf.test.TestUtil.whereArg;
 import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.*;
@@ -56,6 +62,9 @@ public class TestAddComponentService {
 
     @InjectMocks
     private AddComponentServiceImpl _addComponentService;
+
+    @Mock
+    private PropertiesUtil _mockPropertiesUtil;
 
     @Mock
     private PipelineService _mockPipelineService;
@@ -86,6 +95,8 @@ public class TestAddComponentService {
 
     private static final String _testPackageName = "test-package.tar.gz";
 
+    @Rule
+    public TemporaryFolder _tempDir = new TemporaryFolder();
 
     @Before
     public void init() {
@@ -207,11 +218,11 @@ public class TestAddComponentService {
 
         // Verify mocked methods
 
-	    String expectedAlgoName = descriptor.algorithm.name.toUpperCase();
+        String expectedAlgoName = descriptor.algorithm.name.toUpperCase();
 
-	    verifyDescriptorAlgoSaved(descriptor);
+        verifyDescriptorAlgoSaved(descriptor);
 
-	    verify(_mockPipelineService)
+        verify(_mockPipelineService)
                 .saveAction(whereArg(ad -> ad.getName().contains(expectedAlgoName)
                         && ad.getAlgorithmRef().equals(expectedAlgoName)
                         && ad.getProperties().isEmpty() ));
@@ -297,9 +308,26 @@ public class TestAddComponentService {
         _addComponentService.registerComponent(_testPackageName);
 
         // Assert
+        assertNeverUndeployed();
+
         verify(_mockStateService)
                 .replacePackageState(_testPackageName, ComponentState.REGISTERING);
 
+        verifyCustomPipelinesSaved(descriptor);
+
+        verify(_mockNodeManager)
+                .addService(whereArg(s -> s.getName().equals(COMPONENT_NAME)));
+
+        verify(_mockStreamingServiceManager)
+                .addService(whereArg(
+                        s -> s.getServiceName().equals(COMPONENT_NAME)
+                                && s.getAlgorithmName().equals(descriptor.algorithm.name.toUpperCase())
+                                && s.getEnvironmentVariables().size() == descriptor.environmentVariables.size()));
+    }
+
+
+
+    private void verifyCustomPipelinesSaved(JsonComponentDescriptor descriptor) {
         verify(_mockStateService, atLeastOnce())
                 .update(whereArg(
                         rcm -> rcm.getActions().containsAll(ACTION_NAMES)
@@ -335,18 +363,147 @@ public class TestAddComponentService {
                         p.getName().equals(PIPELINE_NAME)
                                 && p.getDescription().contains("description")
                                 && p.getTaskRefs().size() == 2));
-
-        verify(_mockNodeManager)
-                .addService(whereArg(s -> s.getName().equals(COMPONENT_NAME)));
-
-        verify(_mockStreamingServiceManager)
-                .addService(whereArg(
-                        s -> s.getServiceName().equals(COMPONENT_NAME)
-                                && s.getAlgorithmName().equals(descriptor.algorithm.name.toUpperCase())
-                                && s.getEnvironmentVariables().size() == descriptor.environmentVariables.size()));
+    }
 
 
-        assertNeverUndeployed();
+    @Test
+    public void canAddNewUnmanagedComponent() throws ComponentRegistrationException, IOException {
+        when(_mockPropertiesUtil.getPluginDeploymentPath())
+                .thenReturn(_tempDir.newFolder("plugins").toPath());
+
+        when(_mockStateService.getByComponentName(COMPONENT_NAME))
+                .thenReturn(Optional.empty());
+
+
+        JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();
+
+
+        boolean wasModified = _addComponentService.registerUnmanagedComponent(descriptor);
+        assertTrue(wasModified);
+
+        verifyZeroInteractions(_mockRemoveComponentService, _mockNodeManager);
+        verifySuccessfullyAddedUnmanagedComponent(descriptor);
+    }
+
+
+    @Test
+    public void canReplaceExistingUnmanagedComponent() throws ComponentRegistrationException, IOException {
+        when(_mockPropertiesUtil.getPluginDeploymentPath())
+                .thenReturn(_tempDir.newFolder("plugins").toPath());
+
+        JsonComponentDescriptor existingDescriptor = TestDescriptorFactory.getWithCustomPipeline();
+        // Just pick a random field to change
+        existingDescriptor.algorithm.requiresCollection.states = Collections.singletonList("asdf");
+
+        RegisterComponentModel alreadyRegisteredComponent = new RegisterComponentModel();
+        alreadyRegisteredComponent.setManaged(false);
+        String existingDescriptorPath = "/tmp/fake/path/descriptor.json";
+        alreadyRegisteredComponent.setJsonDescriptorPath(existingDescriptorPath);
+
+        when(_mockStateService.getByComponentName(COMPONENT_NAME))
+                .thenReturn(Optional.of(alreadyRegisteredComponent));
+        when(_mockObjectMapper.readValue(new File(existingDescriptorPath), JsonComponentDescriptor.class))
+                .thenReturn(existingDescriptor);
+
+
+        JsonComponentDescriptor newDescriptor = TestDescriptorFactory.getWithCustomPipeline();
+
+
+        boolean wasModified = _addComponentService.registerUnmanagedComponent(newDescriptor);
+        assertTrue(wasModified);
+
+        verifyZeroInteractions(_mockNodeManager);
+        verify(_mockRemoveComponentService)
+                .removeComponent(COMPONENT_NAME);
+
+        verifySuccessfullyAddedUnmanagedComponent(newDescriptor);
+    }
+
+
+    private void verifySuccessfullyAddedUnmanagedComponent(JsonComponentDescriptor descriptor) throws IOException {
+        Path expected_descriptor_dir = _tempDir.getRoot().toPath().resolve("plugins/" + COMPONENT_NAME + "/descriptor");
+        Path expected_descriptor_path = expected_descriptor_dir.resolve("descriptor.json");
+        assertTrue(Files.isDirectory(expected_descriptor_dir));
+        verify(_mockObjectMapper)
+                .writeValue(expected_descriptor_path.toFile(), descriptor);
+
+        verifyCustomPipelinesSaved(descriptor);
+
+        ArgumentCaptor<RegisterComponentModel> rcmCaptor = ArgumentCaptor.forClass(RegisterComponentModel.class);
+        verify(_mockStateService)
+                .update(rcmCaptor.capture());
+        RegisterComponentModel registerModel = rcmCaptor.getValue();
+        assertFalse(registerModel.isManaged());
+        assertEquals(COMPONENT_NAME, registerModel.getComponentName());
+        assertEquals(expected_descriptor_path.toAbsolutePath().toString(), registerModel.getJsonDescriptorPath());
+        assertTrue(registerModel.getDateUploaded().isAfter(Instant.now().minusSeconds(30)));
+        assertTrue(registerModel.getDateRegistered().isAfter(Instant.now().minusSeconds(30)));
+        assertEquals(ComponentState.REGISTERED, registerModel.getComponentState());
+    }
+
+
+    @Test
+    public void doesNotChangeAnythingWhenExistingUnmanagedComponentIsIdentical() throws IOException, ComponentRegistrationException {
+        RegisterComponentModel existingUnmanaged = new RegisterComponentModel();
+        existingUnmanaged.setManaged(false);
+        existingUnmanaged.setJsonDescriptorPath(DESCRIPTOR_PATH);
+        JsonComponentDescriptor existingDescriptor = TestDescriptorFactory.getWithCustomPipeline();
+
+        when(_mockStateService.getByComponentName(COMPONENT_NAME))
+                .thenReturn(Optional.of(existingUnmanaged));
+        when(_mockObjectMapper.readValue(new File(DESCRIPTOR_PATH), JsonComponentDescriptor.class))
+                .thenReturn(existingDescriptor);
+
+        JsonComponentDescriptor newDescriptor = TestDescriptorFactory.getWithCustomPipeline();
+        boolean wasModified = _addComponentService.registerUnmanagedComponent(newDescriptor);
+        assertFalse(wasModified);
+
+
+        verifyZeroInteractions(_mockRemoveComponentService, _mockDescriptorValidator, _mockPipelineValidator,
+                               _mockPipelineService, _mockNodeManager);
+
+        verify(_mockObjectMapper, never())
+                .writeValue(any(File.class), any());
+
+        verify(_mockStateService, never())
+                .update(any());
+    }
+
+
+    @Test(expected = DuplicateComponentException.class)
+    public void doesNotOverwriteManagedComponentWithUnmanaged() throws ComponentRegistrationException {
+        RegisterComponentModel existingManaged = new RegisterComponentModel();
+        existingManaged.setManaged(true);
+
+        when(_mockStateService.getByComponentName(COMPONENT_NAME))
+                .thenReturn(Optional.of(existingManaged));
+
+        JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();
+        _addComponentService.registerUnmanagedComponent(descriptor);
+    }
+
+
+    @Test
+    public void removesInvalidDescriptorFileWhenRegisteringUnmanagedComponentFails() throws ComponentRegistrationException {
+        when(_mockStateService.getByComponentName(COMPONENT_NAME))
+                .thenReturn(Optional.empty());
+
+        JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();
+
+        doThrow(InvalidComponentDescriptorException.class)
+                .when(_mockDescriptorValidator).validate(descriptor);
+
+
+        try {
+            _addComponentService.registerUnmanagedComponent(descriptor);
+            fail("Expected InvalidComponentDescriptorException");
+        }
+        catch (InvalidComponentDescriptorException ignored) {
+        }
+
+        verifyZeroInteractions(_mockObjectMapper);
+        verify(_mockStateService, never())
+                .update(any());
     }
 
 

@@ -32,7 +32,6 @@ import org.mitre.mpf.mvc.MpfServiceException;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,10 +91,10 @@ public class MediaController {
 			log.error(err);
 			throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR,err);
 		};
-		String webTmpDirectory = propertiesUtil.getRemoteMediaCacheDirectory().getAbsolutePath();
+		String remoteMediaDirectory = propertiesUtil.getRemoteMediaDirectory().getAbsolutePath();
 		//verify the desired path
 		File desiredPath = new File(desiredpath);
-		if (!desiredPath.exists() || !desiredPath.getAbsolutePath().startsWith(webTmpDirectory)) {//make sure it is valid and within the remote-media directory
+		if (!desiredPath.exists() || !desiredPath.getAbsolutePath().startsWith(remoteMediaDirectory)) {//make sure it is valid and within the remote-media directory
 			log.error(err);
 			throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, err);
 		}
@@ -195,12 +194,12 @@ public class MediaController {
 		String desiredPathParam = request.getParameter("desiredpath");
 		log.debug("Upload to Directory:"+desiredPathParam);
 		if(desiredPathParam == null) return new ResponseEntity<>("{\"error\":\"desiredPathParam Empty\"}", HttpStatus.INTERNAL_SERVER_ERROR);
-		String webTmpDirectory = propertiesUtil.getRemoteMediaCacheDirectory().getAbsolutePath();
+		String remoteMediaDirectory = propertiesUtil.getRemoteMediaDirectory().getAbsolutePath();
 
 		try {
 			//verify the desired path
 			File desiredPath = new File(desiredPathParam);
-			if(!desiredPath.exists() || !desiredPath.getAbsolutePath().startsWith(webTmpDirectory)) {//make sure it is valid and within the remote-media directory
+			if(!desiredPath.exists() || !desiredPath.getAbsolutePath().startsWith(remoteMediaDirectory)) {//make sure it is valid and within the remote-media directory
 				String err = "Error with desired path: "+desiredPathParam;
 				log.error(err);
 				return new ResponseEntity<>("{\"error\":\"" + err + "\"}", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -263,7 +262,7 @@ public class MediaController {
 		if(serverpath == null ) {
 			return new ResponseEntity<>("{\"error\":\"invalid parameter\"}", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-		String uploadPath =  propertiesUtil.getRemoteMediaCacheDirectory().getAbsolutePath();
+		String uploadPath =  propertiesUtil.getRemoteMediaDirectory().getAbsolutePath();
 		log.info("CreateRemoteMediaDirectory: ServerPath:" + serverpath + " uploadPath:" + uploadPath);
 		if(serverpath.startsWith(uploadPath)){
 			File dir = new File(serverpath);

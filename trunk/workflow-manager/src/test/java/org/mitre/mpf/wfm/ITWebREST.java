@@ -39,6 +39,7 @@ import org.mitre.mpf.interop.JsonCallbackBody;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.ui.Utils;
+import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,6 +106,8 @@ public class ITWebREST {
 
 	private static final ObjectMapper objectMapper = ObjectMapperFactory.customObjectMapper();
 
+	private static final IoUtils ioUtils = new IoUtils();
+
 	private static long job_created_id = -1L;
 	private static boolean test_ready = true;
 	private static String JSONstring;
@@ -157,7 +160,7 @@ public class ITWebREST {
 		startTest("test1ProcessMedia",url);
 
 		//a video will be good to test being able to cancel before completion!
-		String mediaPathUrl = getClass().getClassLoader().getResource("samples/new_face_video.avi").toURI().toURL().toExternalForm();
+		String mediaPathUrl = ioUtils.findFile("/samples/new_face_video.avi").toString();
 
 		JobCreationRequest jobCreationRequest = new JobCreationRequest();
 		jobCreationRequest.getMedia().add(new JobCreationMediaData(mediaPathUrl));
@@ -398,8 +401,8 @@ public class ITWebREST {
 		String detPipeline = "OCV FACE DETECTION PIPELINE";
 
 		//a video will be good to test being able to cancel before completion!
-		String resourcePath = "samples/new_face_video.avi";
-		String mediaPathUrl = getClass().getClassLoader().getResource(resourcePath).toURI().toURL().toExternalForm();
+		String resourcePath = "/samples/new_face_video.avi";
+		String mediaPathUrl = ioUtils.findFile(resourcePath).toString();
 
 		JobCreationRequest jobCreationRequest = new JobCreationRequest();
 		jobCreationRequest.getMedia().add(new JobCreationMediaData(mediaPathUrl));

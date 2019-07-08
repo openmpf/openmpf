@@ -125,7 +125,7 @@
       lineinfile:
         dest: "{{ mpf_home }}/data/nodeServicesPalette.json"
         regexp: '(.*)mpf-markup-.*\.jar(.*)'
-        line: '\1mpf-markup-4.0.0.jar\2'
+        line: '\1mpf-markup-4.1.0.jar\2'
         state: present
         backrefs: yes
       when: palette_file_st.stat.exists

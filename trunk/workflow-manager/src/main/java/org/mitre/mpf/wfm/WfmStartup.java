@@ -141,13 +141,11 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 
 	private void startFileIndexing(ApplicationContext appContext)  {
 		if (appContext instanceof WebApplicationContext) {
-			WebApplicationContext webContext = (WebApplicationContext) appContext;
-			ServletContext servletContext = webContext.getServletContext();
 			String uploadPath =  propertiesUtil.getRemoteMediaDirectory().getAbsolutePath();
-			fileWatcherService.launchWatcher(propertiesUtil.getServerMediaTreeRoot(), servletContext, uploadPath);
+			fileWatcherService.launchWatcher(propertiesUtil.getServerMediaTreeRoot(), uploadPath);
 			// Load existing files on startup since we won't see their creation event
 			ThreadUtil.runAsync(
-					() -> fileWatcherService.buildInitialCache(propertiesUtil.getServerMediaTreeRoot(), servletContext));
+					() -> fileWatcherService.buildInitialCache(propertiesUtil.getServerMediaTreeRoot()));
 		}
 	}
 

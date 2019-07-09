@@ -332,6 +332,10 @@
                             dataSrc: function (json) {//function after ajax returns
                                 directoryMap[selectedNode.fullPath].total = json.recordsTotal;//save info about the number of files
                                 return json.data;
+                            },
+                            error: function () {
+                                alert("The selected directory was deleted");
+                                reloadTree();
                             }
                         },
                         columns: [

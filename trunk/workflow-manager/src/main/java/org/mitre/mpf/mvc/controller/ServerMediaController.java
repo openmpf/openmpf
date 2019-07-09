@@ -49,7 +49,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -65,6 +67,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -116,11 +119,9 @@ public class ServerMediaController {
     @ResponseBody
     public DirectoryTreeNode getAllDirectories(HttpServletRequest request,
                                                @RequestParam(required = false) Boolean useUploadRoot) {
-        String nodePath = propertiesUtil.getServerMediaTreeRoot();
 
         // if useUploadRoot is set it will take precedence over nodeFullPath
-        DirectoryTreeNode node = serverMediaService.getAllDirectories(nodePath, request.getServletContext(),
-                                                                      propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
+        DirectoryTreeNode node = serverMediaService.getAllDirectories();
         if(useUploadRoot != null && useUploadRoot){
             node =  DirectoryTreeNode.find(node, propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
         }
@@ -131,11 +132,12 @@ public class ServerMediaController {
     @RequestMapping(value = { "/server/get-all-files" }, method = RequestMethod.GET)
     @ResponseBody
     public ServerMediaListing getAllFiles(HttpServletRequest request, @RequestParam(required = true) String fullPath) {
-        File dir = new File(fullPath);
-        if(!dir.isDirectory() && fullPath.startsWith(propertiesUtil.getServerMediaTreeRoot())) return null; // security check
+        Path dir = Paths.get(fullPath);
+        if(!dir.toFile().isDirectory() || !dir.toAbsolutePath().startsWith(propertiesUtil.getServerMediaTreeRoot()))
+            return null; // security check
 
         log.info( "All files requested in: " + fullPath );
-        List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath, request.getServletContext());
+        List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath);
         return new ServerMediaListing(mediaFiles);
     }
 
@@ -146,18 +148,24 @@ public class ServerMediaController {
     //search is string to filter
     @RequestMapping(value = { "/server/get-all-files-filtered" }, method = RequestMethod.POST)
     @ResponseBody
-    public ServerMediaFilteredListing getAllFilesFiltered(HttpServletRequest request,
-                                                          @RequestParam(value="fullPath") String fullPath,
-                                                          @RequestParam(value="draw", required=false) int draw,
-                                                          @RequestParam(value="start", required=false) int start,
-                                                          @RequestParam(value="length", required=false) int length,
-                                                          @RequestParam(value="search", required=false) String search){
+    public ResponseEntity<ServerMediaFilteredListing> getAllFilesFiltered(HttpServletRequest request,
+                                                                         @RequestParam(value="fullPath") String fullPath,
+                                                                         @RequestParam(value="draw", required=false) int draw,
+                                                                         @RequestParam(value="start", required=false) int start,
+                                                                         @RequestParam(value="length", required=false) int length,
+                                                                         @RequestParam(value="search", required=false) String search){
         log.debug("Params fullPath:{} draw:{} start:{} length:{} search:{} ",fullPath, draw, start, length, search);
 
         File dir = new File(fullPath);
-        if(!dir.isDirectory() && fullPath.startsWith(propertiesUtil.getServerMediaTreeRoot())) return null; // security check
+        if (!dir.exists()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        else if (!dir.isDirectory() || !Paths.get(fullPath).toAbsolutePath().startsWith(propertiesUtil.getServerMediaTreeRoot())) {
+            // security check
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
 
-        List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath, request.getServletContext());
+        List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath);
 
         // handle sort
         Collections.sort(mediaFiles, (new SortAlphabeticalCaseInsensitive()). // make 'A' come before 'B'
@@ -179,7 +187,8 @@ public class ServerMediaController {
         end = (end > mediaFiles.size())? mediaFiles.size() : end;
         start = (start <= end)? start : end;
 
-        return new ServerMediaFilteredListing(draw, mediaFiles.size(), mediaFiles.size(), mediaFiles.subList(start, end));
+        return ResponseEntity.ok(new
+                ServerMediaFilteredListing(draw, mediaFiles.size(), mediaFiles.size(), mediaFiles.subList(start, end)));
     }
 
     /***

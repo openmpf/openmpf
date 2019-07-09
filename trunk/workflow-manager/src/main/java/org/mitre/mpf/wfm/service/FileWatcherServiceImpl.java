@@ -33,10 +33,10 @@ import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.ServletContext;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -58,22 +58,41 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 
 @Service
+@Singleton
 public class FileWatcherServiceImpl implements FileWatcherService {
 
     private static final Logger log = LoggerFactory.getLogger(FileWatcherServiceImpl.class);
 
-    @Autowired
     private PropertiesUtil propertiesUtil;
-
-    @Autowired
     private IoUtils ioUtils;
+
+    private HashMap<Path, ServerMediaListing> fileCache = new HashMap<>();
+    private DirectoryTreeNode rootDirectoryTreeCache;
 
     private final HashMap<WatchKey, Path> watcherMap = new HashMap<>();
     private WatchService watcher;
-
     private boolean watcherInstantiated = false;
 
-    public void launchWatcher(String nodePath, ServletContext context, String uploadDir) {
+    @Inject
+    public FileWatcherServiceImpl(PropertiesUtil propertiesUtil, IoUtils ioUtils) {
+        this.propertiesUtil = propertiesUtil;
+        this.ioUtils = ioUtils;
+
+        File mediaRoot = new File(propertiesUtil.getServerMediaTreeRoot());
+        rootDirectoryTreeCache = new DirectoryTreeNode(mediaRoot);
+        rootDirectoryTreeCache.fillDirectoryTree(rootDirectoryTreeCache, new ArrayList<>(),
+                propertiesUtil.getServerMediaTreeRoot());
+    }
+
+    public HashMap<Path, ServerMediaListing> getFileCache() {
+        return fileCache;
+    }
+
+    public DirectoryTreeNode getRootDirectoryTreeCache() {
+        return rootDirectoryTreeCache;
+    }
+
+    public void launchWatcher(String nodePath, String uploadDir) {
         if (!watcherInstantiated) {
             try {
                 this.watcher = FileSystems.getDefault().newWatchService();
@@ -84,7 +103,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
             Path cacheFolder = Paths.get(nodePath);
             walkAndRegisterDirectories(cacheFolder);
-            Thread thread = new Thread(() -> watcherThreadService(watcher, context));
+            Thread thread = new Thread(() -> watcherThreadService(watcher));
             thread.setDaemon(true);
             thread.start();
             watcherInstantiated = true;
@@ -119,7 +138,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         this.watcherMap.put(key, dir);
     }
 
-    private void watcherThreadService(WatchService watcher, ServletContext context) {
+    private void watcherThreadService(WatchService watcher) {
         log.info("Watcher task started");
         try {
             WatchKey key;
@@ -136,10 +155,10 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                     Path child = dir.resolve(eventPath);
                     if (event.kind() == ENTRY_CREATE) {
                         File newFile = new File(child.toAbsolutePath().toString());
-                        addToCache(newFile, context);
+                        addToCache(newFile);
                     } else if (event.kind() == ENTRY_DELETE) {
                         File removedItem = new File(child.toAbsolutePath().toString());
-                        removeFromCache(removedItem, context);
+                        removeFromCache(removedItem);
                         log.debug("File deleted: " + event.context());
                     } else {
                         log.debug("Unknown event type occurred: " + event.kind() + ", context: " + event.context());
@@ -162,18 +181,15 @@ public class FileWatcherServiceImpl implements FileWatcherService {
      * Should only be used on startup to load the initial cache
      *
      * @param dirPath
-     * @param context
      */
-    public void buildInitialCache(String dirPath, ServletContext context) {
+    public void buildInitialCache(String dirPath) {
 
-        DirectoryTreeNode node = new DirectoryTreeNode(new File(dirPath));
-        DirectoryTreeNode.fillDirectoryTree(node, new ArrayList<>(), dirPath);
+        DirectoryTreeNode node = this.rootDirectoryTreeCache;
         node = DirectoryTreeNode.find(node, dirPath);
 
         File dir = new File(node.getFullPath());
 
         // attempt to get attribute from application scope
-        String attributeName = CACHED_DIRECTORY_STRUCTURE_PREFIX + propertiesUtil.getServerMediaTreeRoot();
 
         List<ServerMediaFile> mediaFiles = new ArrayList<>();
         prepareFilesForCache(dir, mediaFiles);
@@ -181,15 +197,13 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         // recurse
         if (node.getNodes() != null) {
             for (DirectoryTreeNode subNode : node.getNodes()) {
-                buildInitialCache(subNode.getFullPath(), context);
+                buildInitialCache(subNode.getFullPath());
             }
         }
 
-        // update cache
-        context.setAttribute(attributeName, node);
+        // update file cache
         ServerMediaListing listing = new ServerMediaListing(mediaFiles);
-        attributeName = CACHED_FILES_PREFIX + node.getFullPath();
-        context.setAttribute(attributeName, listing);
+        fileCache.put(Paths.get(node.getFullPath()), listing);
     }
 
     private void prepareFilesForCache(File item, List<ServerMediaFile> currentFiles) {
@@ -211,19 +225,6 @@ public class FileWatcherServiceImpl implements FileWatcherService {
             }
         }
 
-        // filter by approved list of content type
-        List<File> filesFiltered = new ArrayList<>();
-        List<File> parentsFiltered = new ArrayList<>();
-        for (int i = 0; i < files.size(); i++) {
-            // FIXME this will never return false because MediaTypeUtils.parse() never returns null
-            if (ioUtils.isApprovedFile(files.get(i))) {
-                filesFiltered.add(files.get(i));
-                parentsFiltered.add(parents.get(i));
-            }
-        }
-        files = filesFiltered;
-        parents = parentsFiltered;
-
         // build output
         List<ServerMediaFile> mediaFiles = new ArrayList<>();
         for (int i = 0; i < files.size(); i++) {
@@ -235,57 +236,57 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         currentFiles.addAll(mediaFiles);
     }
 
-    private void addToCache(File item, ServletContext context) {
+    private void addToCache(File item) {
         if (item == null) return;
 
-        String attributeName = CACHED_FILES_PREFIX + item.getParentFile().getAbsolutePath();
-        // attempt to get attribute from application scope
+        Path parentFilePath = Paths.get(item.getParentFile().getAbsolutePath());
+        Path filePath = Paths.get(item.getAbsolutePath());
 
-        // update cache if it exists; else do nothing
-        if (context.getAttribute(attributeName) != null) {
+        // update cache if it exists; else log an error
+        if (fileCache.get(parentFilePath) != null) {
             if (item.isDirectory()) {
-                context.setAttribute(CACHED_FILES_PREFIX + item.getAbsolutePath(),
-                        new ServerMediaListing(new ArrayList<>()));
+                fileCache.put(filePath, new ServerMediaListing(new ArrayList<>()));
                 walkAndRegisterDirectories(Paths.get(item.getAbsolutePath()));
                 log.debug("Directory added to cache: " + item.getAbsolutePath());
             } else {
-                ServerMediaListing oldListing = (ServerMediaListing) context.getAttribute(attributeName);
+                ServerMediaListing oldListing = fileCache.get(parentFilePath);
                 List<ServerMediaFile> mediaFiles = new ArrayList<>(oldListing.getData());
                 prepareFilesForCache(item, mediaFiles);
 
                 // update cache
                 ServerMediaListing newListing = new ServerMediaListing(mediaFiles);
-                context.setAttribute(attributeName, newListing);
-                log.debug("File" + item.getName() + " added to cache: " + attributeName);
+                fileCache.put(parentFilePath, newListing);
+                log.debug("File" + item.getName() + " added to cache: " + filePath);
             }
             // Update directory tree
-            DirectoryTreeNode node = DirectoryTreeNode.fillDirectoryTree((DirectoryTreeNode) context.getAttribute(
-                    CACHED_DIRECTORY_STRUCTURE_PREFIX + propertiesUtil.getServerMediaTreeRoot()),
+            DirectoryTreeNode oldNode = rootDirectoryTreeCache;
+            rootDirectoryTreeCache = oldNode.fillDirectoryTree(oldNode,
                     new ArrayList<>(), propertiesUtil.getServerMediaTreeRoot());
-            context.setAttribute(CACHED_DIRECTORY_STRUCTURE_PREFIX +
-                    propertiesUtil.getServerMediaTreeRoot(), node);
+        } else {
+            log.error("Item created in directory that was not cached: " + item.getAbsolutePath());
         }
     }
 
-    private void removeFromCache(File item, ServletContext context) {
+    private void removeFromCache(File item) {
         if (item == null) return;
 
         // attempt to get attribute from application scope
-        String attributeName = CACHED_DIRECTORY_STRUCTURE_PREFIX + propertiesUtil.getServerMediaTreeRoot();
+        Path removedItem = item.toPath().toAbsolutePath();
+        Path parentDir = removedItem.getParent();
 
         // update cache if it exists; else do nothing
-        if (context.getAttribute(attributeName) != null) {
+        if (fileCache.get(parentDir) != null) {
             // cannot determine file type since it has been deleted
-            if (context.getAttribute(CACHED_FILES_PREFIX + item.getAbsolutePath()) != null) {
+            if (fileCache.get(removedItem) != null) {
                 // directory
                 // The OS will delete files from the lowest level up, therefore we do not need to worry about
                 // subdirectories or sub files. This directory is guaranteed to be empty since those deletion events
                 // will have cleared everything below it from the cache
-                context.removeAttribute(CACHED_FILES_PREFIX + item.getAbsolutePath());
+                fileCache.remove(removedItem);
                 WatchKey deletedDirKey = null;
                 for (WatchKey key : watcherMap.keySet()) {
                     Path path = watcherMap.get(key);
-                    if (path.toAbsolutePath().toString().equals(item.getAbsolutePath())) {
+                    if (path.equals(Paths.get(item.getAbsolutePath()))) {
                         deletedDirKey = key;
                         break;
                     }
@@ -297,8 +298,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                 log.debug("Directory removed from cache: " + item.getAbsolutePath());
             } else {
                 // file
-                attributeName = CACHED_FILES_PREFIX + item.getParentFile().getAbsolutePath();
-                ServerMediaListing oldListing = (ServerMediaListing) context.getAttribute(attributeName);
+                ServerMediaListing oldListing = fileCache.get(parentDir);
 
                 List<ServerMediaFile> mediaFiles = new ArrayList<>();
                 for (ServerMediaFile cachedFile : oldListing.getData()) {
@@ -312,15 +312,15 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
                 // update cache
                 ServerMediaListing newListing = new ServerMediaListing(mediaFiles);
-                context.setAttribute(attributeName, newListing);
+                fileCache.put(parentDir, newListing);
             }
             // update directory tree
-            DirectoryTreeNode node = DirectoryTreeNode.fillDirectoryTree((DirectoryTreeNode) context.getAttribute(
-                    CACHED_DIRECTORY_STRUCTURE_PREFIX + propertiesUtil.getServerMediaTreeRoot()),
+            DirectoryTreeNode oldNode = rootDirectoryTreeCache;
+            rootDirectoryTreeCache = oldNode.fillDirectoryTree(oldNode,
                     new ArrayList<>(), propertiesUtil.getServerMediaTreeRoot());
-            context.setAttribute(CACHED_DIRECTORY_STRUCTURE_PREFIX +
-                    propertiesUtil.getServerMediaTreeRoot(), node);
-            log.debug("File" + item.getName() + " added to cache: " + attributeName);
+            log.debug("File" + item.getName() + " added to cache: " + item.getAbsolutePath());
+        } else {
+            log.error("Item deleted in a directory that was not cached: " + item.getAbsolutePath());
         }
     }
 

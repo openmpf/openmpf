@@ -53,6 +53,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 
@@ -93,8 +95,9 @@ public class MediaController {
 		};
 		String remoteMediaDirectory = propertiesUtil.getRemoteMediaDirectory().getAbsolutePath();
 		//verify the desired path
-		File desiredPath = new File(desiredpath);
-		if (!desiredPath.exists() || !desiredPath.getAbsolutePath().startsWith(remoteMediaDirectory)) {//make sure it is valid and within the remote-media directory
+		Path desiredPath = Paths.get(desiredpath);
+		if (!desiredPath.toFile().exists() || !desiredPath.toAbsolutePath().startsWith(remoteMediaDirectory)) {
+			//make sure it is valid and within the remote-media directory
 			log.error(err);
 			throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, err);
 		}
@@ -196,8 +199,9 @@ public class MediaController {
 
 		try {
 			//verify the desired path
-			File desiredPath = new File(desiredPathParam);
-			if(!desiredPath.exists() || !desiredPath.getAbsolutePath().startsWith(remoteMediaDirectory)) {//make sure it is valid and within the remote-media directory
+			Path desiredPath = Paths.get(desiredPathParam).toAbsolutePath();
+			if(!desiredPath.toFile().exists() || !desiredPath.startsWith(remoteMediaDirectory)) {
+				//make sure it is valid and within the remote-media directory
 				String err = "Error with desired path: "+desiredPathParam;
 				log.error(err);
 				return new ResponseEntity<>("{\"error\":\"" + err + "\"}", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -227,7 +231,7 @@ public class MediaController {
 				}
 
 				//get a new filename
-				newFile = ioUtils.getNewFileName(desiredPath.getAbsolutePath(), filename);
+				newFile = ioUtils.getNewFileName(desiredPath.toString(), filename);
 
 				//save the file
 				BufferedOutputStream stream =  new BufferedOutputStream(new FileOutputStream(newFile));
@@ -260,13 +264,12 @@ public class MediaController {
 		}
 		String uploadPath =  propertiesUtil.getRemoteMediaDirectory().getAbsolutePath();
 		log.info("CreateRemoteMediaDirectory: ServerPath:" + serverpath + " uploadPath:" + uploadPath);
-		if(serverpath.startsWith(uploadPath)){
-			File dir = new File(serverpath);
-			if(!dir.exists()){
-				if(dir.mkdir()){
-					log.debug("Directory added:"+dir.getAbsolutePath());
-					serverMediaService.getAllDirectories(propertiesUtil.getServerMediaTreeRoot(), request.getServletContext(), uploadPath);//reload the directories
-					return new ResponseEntity<>("{\"dir\":\""+dir.getAbsolutePath()+"\"}", HttpStatus.OK);
+		Path dir = Paths.get(serverpath).toAbsolutePath();
+		if(dir.startsWith(uploadPath)){
+			if(!dir.toFile().exists()){
+				if(dir.toFile().mkdir()){
+					log.debug("Directory added:"+dir);
+					return new ResponseEntity<>("{\"dir\":\""+dir+"\"}", HttpStatus.OK);
 				}else{
 					return new ResponseEntity<>("{\"error\":\"Cannot Create Folder\"}", HttpStatus.INTERNAL_SERVER_ERROR);
 				}

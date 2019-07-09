@@ -26,15 +26,19 @@
 
 package org.mitre.mpf.wfm.service;
 
-import javax.servlet.ServletContext;
+import org.mitre.mpf.mvc.model.DirectoryTreeNode;
+import org.mitre.mpf.mvc.model.ServerMediaListing;
+
+import java.nio.file.Path;
+import java.util.HashMap;
 
 public interface FileWatcherService {
 
-    // TODO move these fields to a common location
-    public static final String CACHED_DIRECTORY_STRUCTURE_PREFIX = "DirectoryStructure:";
-    public static final String CACHED_FILES_PREFIX = "Files:";
+    public void launchWatcher(String nodePath, String uploadDir);
 
-    public void launchWatcher(String nodePath, ServletContext context, String uploadDir);
+    public void buildInitialCache(String dirPath);
 
-    public void buildInitialCache(String dirPath, ServletContext context);
+    public HashMap<Path, ServerMediaListing> getFileCache();
+
+    public DirectoryTreeNode getRootDirectoryTreeCache();
 }

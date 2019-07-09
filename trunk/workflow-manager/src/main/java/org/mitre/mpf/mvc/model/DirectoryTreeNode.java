@@ -42,6 +42,7 @@ public class DirectoryTreeNode {
     private String fullPath = null;
     private List<DirectoryTreeNode> nodes = null;
     private boolean canUpload = false;
+    private static DirectoryStream.Filter<Path> directoryFilter = entry -> (Files.isDirectory(entry));
 
     public DirectoryTreeNode(File f) {
         this.text = f.getName();
@@ -60,36 +61,20 @@ public class DirectoryTreeNode {
         return this.fullPath;
     }
 
-    public void setFullPath(String path) {
-        this.fullPath = path;
-    }
-
     public List<DirectoryTreeNode> getNodes() {
         return this.nodes;
     }
 
-    public void addNode(DirectoryTreeNode node) {
+    private void addNode(DirectoryTreeNode node) {
         this.nodes.add(node);
     }
 
-    public boolean isCanUpload() {
-        return canUpload;
-    }
+    public DirectoryTreeNode fillDirectoryTree(DirectoryTreeNode node, List<DirectoryTreeNode> seenNodes, String uploadDir) {
 
-    public void setCanUpload(boolean canUpload) {
-        this.canUpload = canUpload;
-    }
-
-    public static DirectoryStream.Filter<Path> DirectoryFilter = entry -> (Files.isDirectory(entry));
-
-    public static DirectoryTreeNode fillDirectoryTree(DirectoryTreeNode node, List<DirectoryTreeNode> seenNodes, String uploadDir) {
-
-        // TODO possibly re-work this
-
-        List<Path> dirs = new ArrayList<Path>();
+        List<Path> dirs = new ArrayList<>();
         Path folder = Paths.get(node.getFullPath());
 
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(folder, DirectoryFilter)) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(folder, directoryFilter)) {
             for (Path entry : stream) {
                 dirs.add(entry);
             }
@@ -98,8 +83,8 @@ public class DirectoryTreeNode {
             return node;
         }
 
-        if(dirs.size() > 0) {
-            node.nodes = new ArrayList<DirectoryTreeNode>();
+        if (dirs.size() > 0) {
+            node.nodes = new ArrayList<>();
             for (Path child : dirs) {
                 Path realPath = null;
                 try {
@@ -120,8 +105,7 @@ public class DirectoryTreeNode {
 
                     // only keep track of the nodes we've seen in this branch of the file tree;
                     // it's okay for two separate branches to have the same symbolic links as long as there are no cycles
-                    List<DirectoryTreeNode> seenNodesCopy = new ArrayList<DirectoryTreeNode>();
-                    seenNodesCopy.addAll(seenNodes);
+                    List<DirectoryTreeNode> seenNodesCopy = new ArrayList<>(seenNodes);
                     seenNodesCopy.add(realChildNode);
 
                     node.addNode(fillDirectoryTree(new DirectoryTreeNode(child.toFile()), seenNodesCopy, uploadDir)); // use absolute path
@@ -143,7 +127,7 @@ public class DirectoryTreeNode {
         return node;
     }
 
-    public static DirectoryTreeNode find(DirectoryTreeNode node,String fullPath) {
+    public static DirectoryTreeNode find(DirectoryTreeNode node, String fullPath) {
         if (node.getFullPath().equals(fullPath)) return node;
         if (node.nodes != null) {
             DirectoryTreeNode found = null;
@@ -157,8 +141,8 @@ public class DirectoryTreeNode {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof  DirectoryTreeNode) {
-            DirectoryTreeNode other = (DirectoryTreeNode)obj;
+        if (obj instanceof DirectoryTreeNode) {
+            DirectoryTreeNode other = (DirectoryTreeNode) obj;
             return fullPath.equals(other.getFullPath());
         }
         return false;

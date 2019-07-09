@@ -29,62 +29,39 @@ package org.mitre.mpf.wfm.service;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaListing;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.ServletContext;
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class ServerMediaServiceImpl implements ServerMediaService {
 
-	private static final Logger log = LoggerFactory.getLogger(ServerMediaServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(ServerMediaServiceImpl.class);
 
-	@Autowired
-	private PropertiesUtil propertiesUtil;
+    @Autowired
+    private FileWatcherService fileCacheService;
 
-	public DirectoryTreeNode getAllDirectories(String nodePath, ServletContext context, String uploadDir){
-		// attempt to get attribute from application scope
-		String attributeName = CACHED_DIRECTORY_STRUCTURE_PREFIX + nodePath;
+    public DirectoryTreeNode getAllDirectories() {
+        return fileCacheService.getRootDirectoryTreeCache();
+    }
 
-		// TODO a directory might be deleted before the cache is updated on the front-end
-		if(context.getAttribute(attributeName) != null){
-			log.debug("Using cached directory structure: " + nodePath);
-			return (DirectoryTreeNode)context.getAttribute(attributeName);
-		} else {
-			log.error("Media file cache is empty");
-			File root = new File(nodePath);
-			return new DirectoryTreeNode(root);
-		}
-	}
-
-	public List<ServerMediaFile> getFiles(DirectoryTreeNode node, ServletContext context) {
-		List<ServerMediaFile> mediaFiles = new ArrayList<>();
-
-		// attempt to get attribute from application scope
-		String attributeName = CACHED_FILES_PREFIX + node.getFullPath();
-
-		if (context.getAttribute(attributeName) != null){
-			log.debug("Using cached file listing: " + node.getFullPath());
-			ServerMediaListing listing = (ServerMediaListing)context.getAttribute(attributeName);
-			mediaFiles.addAll(listing.getData());
-		} else {
-			log.error("Media file cache not found");
-		}
-
-		return mediaFiles;
-	}
-
-	public List<ServerMediaFile> getFiles(String dirPath, ServletContext context) {
-		DirectoryTreeNode node = getAllDirectories(propertiesUtil.getServerMediaTreeRoot(), context,
-				propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
-		node = DirectoryTreeNode.find(node, dirPath);
-		return getFiles(node, context);
-	}
+    public List<ServerMediaFile> getFiles(String dirPathName) {
+        List<ServerMediaFile> mediaFiles = new ArrayList<>();
+        Path dirPath = Paths.get(dirPathName).toAbsolutePath();
+        ServerMediaListing cachedFileNames = fileCacheService.getFileCache().get(dirPath);
+        if (cachedFileNames != null) {
+            log.debug("Using cached file listing: " + dirPath);
+            mediaFiles.addAll(cachedFileNames.getData());
+        } else {
+            log.error("Media file cache not found");
+        }
+        return mediaFiles;
+    }
 
 }

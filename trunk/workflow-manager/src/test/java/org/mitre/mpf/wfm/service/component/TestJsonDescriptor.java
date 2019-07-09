@@ -46,7 +46,7 @@ public class TestJsonDescriptor {
 
         assertEquals("CplusplusHelloWorld", descriptor.componentName);
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
-        assertEquals("4.0.0", descriptor.componentVersion);
+        assertEquals("4.1.0", descriptor.componentVersion);
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so", descriptor.batchLibrary);
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfStreamingCplusplusHelloWorld.so", descriptor.streamLibrary);
 
@@ -68,7 +68,7 @@ public class TestJsonDescriptor {
 
         assertEquals("CplusplusHelloCustomPipelinesComponent", descriptor.componentName);
         assertEquals(ComponentLanguage.CPP, descriptor.sourceLanguage);
-        assertEquals("4.0.0", descriptor.componentVersion);
+        assertEquals("4.1.0", descriptor.componentVersion);
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so", descriptor.batchLibrary);
         assertNull(descriptor.streamLibrary);
 

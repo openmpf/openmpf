@@ -4,6 +4,7 @@
   "middlewareVersion": "4.0.0",
   "sourceLanguage": "c++",
   "batchLibrary": "${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so",
+  "mediaTypesSupported": ["VIDEO", "IMAGE"],
   "environmentVariables": [
     {
       "name": "LD_LIBRARY_PATH",

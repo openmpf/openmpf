@@ -88,6 +88,10 @@ public class JsonComponentDescriptor {
 
     @NotNull
     @Valid
+    public List<String> mediaTypesSupported;
+
+    @NotNull
+    @Valid
     public Algorithm algorithm;
 
     @Valid
@@ -110,6 +114,7 @@ public class JsonComponentDescriptor {
                 && sourceLanguage == other.sourceLanguage
                 && Objects.equals(batchLibrary, other.batchLibrary)
                 && Objects.equals(streamLibrary, other.streamLibrary)
+                && collectionDeepEquals(mediaTypesSupported, other.mediaTypesSupported)
                 && collectionDeepEquals(environmentVariables, other.environmentVariables,
                                         EnvironmentVariable::deepEquals)
                 && algorithm.deepEquals(other.algorithm)

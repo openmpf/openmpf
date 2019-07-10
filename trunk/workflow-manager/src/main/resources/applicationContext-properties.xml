@@ -41,6 +41,22 @@
         <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/share/config/mediaType.properties</value></constructor-arg>
     </bean>
 
+    <bean id="videoComponentPropsFile" class="org.springframework.core.io.FileSystemResource">
+        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/share/config/mpf-video-component.properties</value></constructor-arg>
+    </bean>
+
+    <bean id="imageComponentPropsFile" class="org.springframework.core.io.FileSystemResource">
+        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/share/config/mpf-image-component.properties</value></constructor-arg>
+    </bean>
+
+    <bean id="audioComponentPropsFile" class="org.springframework.core.io.FileSystemResource">
+        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/share/config/mpf-audio-component.properties</value></constructor-arg>
+    </bean>
+
+    <bean id="unknownComponentPropsFile" class="org.springframework.core.io.FileSystemResource">
+        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/share/config/mpf-unknown-component.properties</value></constructor-arg>
+    </bean>
+
     <beans profile="default">
         <!-- Order is important. Files at the top override files at the bottom. -->
         <util:list id="propFiles" value-type="org.springframework.core.io.Resource">

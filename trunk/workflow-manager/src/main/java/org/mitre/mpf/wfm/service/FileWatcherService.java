@@ -34,9 +34,7 @@ import java.util.HashMap;
 
 public interface FileWatcherService {
 
-    public void launchWatcher(String nodePath, String uploadDir);
-
-    public void buildInitialCache(String dirPath);
+    public void launchWatcher(String nodePath);
 
     public HashMap<Path, ServerMediaListing> getFileCache();
 

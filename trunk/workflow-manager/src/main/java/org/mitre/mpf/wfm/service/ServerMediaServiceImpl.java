@@ -31,9 +31,9 @@ import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaListing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.inject.Inject;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -44,8 +44,12 @@ public class ServerMediaServiceImpl implements ServerMediaService {
 
     private static final Logger log = LoggerFactory.getLogger(ServerMediaServiceImpl.class);
 
-    @Autowired
     private FileWatcherService fileCacheService;
+
+    @Inject
+    public ServerMediaServiceImpl(FileWatcherService fileCacheService) {
+        this.fileCacheService = fileCacheService;
+    }
 
     public DirectoryTreeNode getAllDirectories() {
         return fileCacheService.getRootDirectoryTreeCache();

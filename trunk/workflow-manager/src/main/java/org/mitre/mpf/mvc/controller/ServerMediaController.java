@@ -46,7 +46,6 @@ import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
@@ -58,6 +57,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
@@ -83,21 +83,29 @@ public class ServerMediaController {
 
     private static final Logger log = LoggerFactory.getLogger(ServerMediaController.class);
 
-    @Autowired
     private PropertiesUtil propertiesUtil;
 
-    @Autowired
     private ServerMediaService serverMediaService;
 
-    @Autowired
     private HibernateJobRequestDao jobRequestDao;
 
-    @Autowired
     private JsonUtils jsonUtils;
 
-    @Autowired
     private S3StorageBackend s3StorageBackend;
 
+    @Inject
+    public ServerMediaController(
+            PropertiesUtil propertiesUtil,
+            ServerMediaService serverMediaService,
+            HibernateJobRequestDao jobRequestDao,
+            JsonUtils jsonUtils,
+            S3StorageBackend s3StorageBackend) {
+        this.propertiesUtil = propertiesUtil;
+        this.serverMediaService = serverMediaService;
+        this.jobRequestDao = jobRequestDao;
+        this.jsonUtils = jsonUtils;
+        this.s3StorageBackend = s3StorageBackend;
+    }
 
     public class SortAlphabeticalCaseInsensitive implements Comparator<Object> {
         public int compare(Object o1, Object o2) {

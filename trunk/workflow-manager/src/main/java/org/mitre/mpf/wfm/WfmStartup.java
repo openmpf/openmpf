@@ -34,9 +34,10 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import org.mitre.mpf.wfm.service.FileWatcherService;
+import org.mitre.mpf.wfm.service.FileWatcherServiceImpl;
 import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.service.component.StartupComponentRegistrationService;
+import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
@@ -57,8 +58,6 @@ import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
-import javax.servlet.ServletContext;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,7 +88,7 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	private StartupComponentRegistrationService startupRegistrationService;
 
 	@Autowired
-	private FileWatcherService fileWatcherService;
+	private IoUtils ioUtils;
 
 	// used to prevent the initialization behaviors from being executed more than once
 	private static boolean applicationRefreshed = false;
@@ -141,11 +140,10 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 
 	private void startFileIndexing(ApplicationContext appContext)  {
 		if (appContext instanceof WebApplicationContext) {
-			String uploadPath =  propertiesUtil.getRemoteMediaDirectory().getAbsolutePath();
-			fileWatcherService.launchWatcher(propertiesUtil.getServerMediaTreeRoot(), uploadPath);
+			FileWatcherService fileWatcherService = new FileWatcherServiceImpl(propertiesUtil, ioUtils);
 			// Load existing files on startup since we won't see their creation event
 			ThreadUtil.runAsync(
-					() -> fileWatcherService.buildInitialCache(propertiesUtil.getServerMediaTreeRoot()));
+					() -> fileWatcherService.launchWatcher(propertiesUtil.getServerMediaTreeRoot()));
 		}
 	}
 

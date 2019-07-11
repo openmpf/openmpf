@@ -34,7 +34,7 @@ use utf8;
 use JSON;
 use File::Basename;
 
-my $mpfVersion = "4.0.0";
+my $mpfVersion = "4.1.0";
 my $ansibleRepoPath = "/mpfdata/ansible/install/repo";
 
 # The following hashes use the name of the packaging element as a key, and the source path

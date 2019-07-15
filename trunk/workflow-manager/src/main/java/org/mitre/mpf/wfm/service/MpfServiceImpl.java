@@ -65,7 +65,7 @@ public class MpfServiceImpl implements MpfService {
 
     @Autowired
     @Qualifier(HibernateJobRequestDaoImpl.REF)
-    private HibernateDao<JobRequest> jobRequestDao;
+    private HibernateJobRequestDao jobRequestDao;
 
     @Autowired
     @Qualifier(HibernateStreamingJobRequestDaoImpl.REF)
@@ -249,6 +249,34 @@ public class MpfServiceImpl implements MpfService {
     @Override
     public List<JobRequest> getAllJobRequests() {
         return jobRequestDao.findAll();
+    }
+
+    /**
+     * Get the list of batch job requests by page
+     * @return
+     */
+    @Override
+    public List<JobRequest> getPagedJobRequests(int pageSize, int offset, String searchTerm, String sortColumn,
+                                                String sortOrderDirection) {
+        return jobRequestDao.findByPage(pageSize, offset, searchTerm, sortColumn, sortOrderDirection);
+    }
+
+    /**
+     * Get the count of batch job requests
+     * @return
+     */
+    @Override
+    public Long getJobRequestCount() {
+        return jobRequestDao.countAll();
+    }
+
+    /**
+     * Get the count of batch job requests after filter was applied
+     * @return
+     */
+    @Override
+    public Long getJobRequestCountFiltered(String searchTerm) {
+        return jobRequestDao.countFiltered(searchTerm);
     }
 
     /**

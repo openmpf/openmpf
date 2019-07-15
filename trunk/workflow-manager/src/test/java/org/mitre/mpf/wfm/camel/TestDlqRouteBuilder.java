@@ -68,8 +68,8 @@ public class TestDlqRouteBuilder {
             "java.lang.Throwable: duplicate from store for queue://MPF.DETECTION_DUMMY_REQUEST";
     public static final String DLQ_OTHER_FAILURE_CAUSE = "SOME OTHER FAILURE";
 
-    public static final int SLEEP_TIME_MILLISEC = 500;
-    public static final int RECEIVE_TIMEOUT_MILLISEC = 500;
+    public static final int SLEEP_TIME_MILLISEC = 1500;
+    public static final int RECEIVE_TIMEOUT_MILLISEC = 1500;
 
     private CamelContext camelContext;
     private ConnectionFactory connectionFactory;

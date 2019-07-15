@@ -30,14 +30,22 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class JobPageModel extends SingleJobInfo{
-	private int markupCount = 0;
-	public int getMarkupCount() {return markupCount;}
-	public void setMarkupCount(int value){markupCount = value;}
-	public boolean outputFileExists = false;
+public class JobPageModel extends SingleJobInfo {
 
-	public JobPageModel() {}
-	public JobPageModel(SingleJobInfo job) {
-		super(job.getJobId(),  job.getPipelineName(), job.getJobPriority(),job.getJobStatus(),job.getJobProgress(),job.getStartDate(),job.getEndDate(),job.getOutputObjectPath(),job.isTerminal());
-	}
+    private boolean outputFileExists = false;
+
+    public boolean isOutputFileExists() {
+        return outputFileExists;
+    }
+
+    public void setOutputFileExists(boolean outputFileExists) {
+        this.outputFileExists = outputFileExists;
+    }
+
+    public JobPageModel() {
+    }
+
+    public JobPageModel(SingleJobInfo job) {
+        super(job.getJobId(), job.getPipelineName(), job.getJobPriority(), job.getJobStatus(), job.getJobProgress(), job.getStartDate(), job.getEndDate(), job.getOutputObjectPath(), job.isTerminal());
+    }
 }

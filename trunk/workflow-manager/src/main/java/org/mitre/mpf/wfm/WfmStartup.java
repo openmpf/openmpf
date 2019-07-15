@@ -90,6 +90,9 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	@Autowired
 	private IoUtils ioUtils;
 
+	@Autowired
+	private FileWatcherService fileWatcherService;
+
 	// used to prevent the initialization behaviors from being executed more than once
 	private static boolean applicationRefreshed = false;
 	public boolean isApplicationRefreshed() { return  applicationRefreshed; }
@@ -140,10 +143,8 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 
 	private void startFileIndexing(ApplicationContext appContext)  {
 		if (appContext instanceof WebApplicationContext) {
-			FileWatcherService fileWatcherService = new FileWatcherServiceImpl(propertiesUtil, ioUtils);
 			// Load existing files on startup since we won't see their creation event
-			ThreadUtil.runAsync(
-					() -> fileWatcherService.launchWatcher(propertiesUtil.getServerMediaTreeRoot()));
+			fileWatcherService.launchWatcher(propertiesUtil.getServerMediaTreeRoot());
 		}
 	}
 

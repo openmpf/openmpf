@@ -107,7 +107,6 @@ public class FileWatcherServiceImpl implements FileWatcherService {
             thread.setDaemon(true);
             thread.start();
             watcherInstantiated = true;
-            buildInitialCache(propertiesUtil.getServerMediaTreeRoot());
         }
     }
 
@@ -140,6 +139,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
     }
 
     private void watcherThreadService(WatchService watcher) {
+        buildInitialCache(propertiesUtil.getServerMediaTreeRoot());
         log.info("Watcher task started");
         try {
             WatchKey key;
@@ -184,6 +184,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
      * @param dirPath
      */
     private void buildInitialCache(String dirPath) {
+        log.debug("Building initial cache");
 
         DirectoryTreeNode node = this.rootDirectoryTreeCache;
         node = DirectoryTreeNode.find(node, dirPath);

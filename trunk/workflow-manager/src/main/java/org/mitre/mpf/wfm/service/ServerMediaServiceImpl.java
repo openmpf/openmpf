@@ -58,7 +58,7 @@ public class ServerMediaServiceImpl implements ServerMediaService {
     public List<ServerMediaFile> getFiles(String dirPathName) {
         List<ServerMediaFile> mediaFiles = new ArrayList<>();
         Path dirPath = Paths.get(dirPathName).toAbsolutePath();
-        ServerMediaListing cachedFileNames = fileCacheService.getFileCache().get(dirPath);
+        ServerMediaListing cachedFileNames = fileCacheService.getFileListByPath(dirPath);
         if (cachedFileNames != null) {
             log.debug("Using cached file listing: " + dirPath);
             mediaFiles.addAll(cachedFileNames.getData());

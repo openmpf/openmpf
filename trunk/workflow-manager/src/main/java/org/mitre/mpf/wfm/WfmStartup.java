@@ -71,6 +71,9 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	private static final Logger log = LoggerFactory.getLogger(WfmStartup.class);
 
 	@Autowired
+	private WebApplicationContext applicationContext;
+
+	@Autowired
 	@Qualifier(HibernateJobRequestDaoImpl.REF)
 	private HibernateJobRequestDao jobRequestDao;
 
@@ -130,7 +133,7 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 				}
 
 				purgeServerStartupSystemMessages();
-				startFileIndexing(appContext);
+				startFileIndexing();
 				startupRegistrationService.registerUnregisteredComponents();
                 startHealthReporting();
 				applicationRefreshed = true;
@@ -141,11 +144,9 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 		}
 	}
 
-	private void startFileIndexing(ApplicationContext appContext)  {
-		if (appContext instanceof WebApplicationContext) {
-			// Load existing files on startup since we won't see their creation event
-			fileWatcherService.launchWatcher(propertiesUtil.getServerMediaTreeRoot());
-		}
+	private void startFileIndexing()  {
+		// Load existing files on startup since we won't see their creation event
+		fileWatcherService.launchWatcher(propertiesUtil.getServerMediaTreeRoot());
 	}
 
 

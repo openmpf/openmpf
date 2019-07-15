@@ -53,6 +53,7 @@ import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.when;
@@ -82,7 +83,6 @@ public class TestServerMediaController {
     private static final String _testFileName1 = "test-video.mp4";
     private static final String _testFileName2 = "test-document.pdf";
     private static final String _testFileName3 = "test-image.png";
-    private FileWatcherService fileWatcherService;
     private ServerMediaService serverMediaService;
     private File mediaBase;
 
@@ -90,7 +90,7 @@ public class TestServerMediaController {
     public TemporaryFolder _tempFolder = new TemporaryFolder();
 
     @Before
-    public void init() {
+    public void init() throws InterruptedException {
         MockitoAnnotations.initMocks(this);
 
         mediaBase = _tempFolder.getRoot();
@@ -105,8 +105,9 @@ public class TestServerMediaController {
         serverMediaService = new ServerMediaServiceImpl(fileCacheService);
         _controller = new ServerMediaController(_mockProperties, serverMediaService, _mockJobRequestDao,
                 _mockJsonUtils, _mockS3StorageBackend);
-        fileWatcherService = new FileWatcherServiceImpl(_mockProperties, _mockIoUtils);
         fileCacheService.launchWatcher(mediaBase.getAbsolutePath());
+        // wait for cache to load
+        Thread.sleep(200);
     }
 
     // get-all-directories
@@ -175,6 +176,7 @@ public class TestServerMediaController {
         Thread.sleep(200);
         DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest, true);
 
+        assertNotNull(rootNode.getNodes());
         assertEquals(1, rootNode.getNodes().size());
         DirectoryTreeNode subNode = rootNode.getNodes().get(0);
         assertEquals(subNode.getFullPath(), subFolder.getAbsolutePath());

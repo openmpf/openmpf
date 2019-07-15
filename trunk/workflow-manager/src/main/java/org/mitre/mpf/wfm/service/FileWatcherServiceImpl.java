@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.service;
 
+import org.apache.logging.log4j.core.util.FileWatcher;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaListing;
@@ -53,6 +54,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
@@ -66,11 +68,9 @@ public class FileWatcherServiceImpl implements FileWatcherService {
     private PropertiesUtil propertiesUtil;
     private IoUtils ioUtils;
 
-    private HashMap<Path, ServerMediaListing> fileCache = new HashMap<>();
+    private Map<Path, ServerMediaListing> fileCache = new HashMap<>();
     private DirectoryTreeNode rootDirectoryTreeCache;
 
-    private final HashMap<WatchKey, Path> watcherMap = new HashMap<>();
-    private WatchService watcher;
     private boolean watcherInstantiated = false;
 
     @Inject
@@ -84,8 +84,8 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                 propertiesUtil.getServerMediaTreeRoot());
     }
 
-    public HashMap<Path, ServerMediaListing> getFileCache() {
-        return fileCache;
+    public ServerMediaListing getFileListByPath(Path path) {
+        return fileCache.get(path);
     }
 
     public DirectoryTreeNode getRootDirectoryTreeCache() {
@@ -94,28 +94,20 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
     public void launchWatcher(String nodePath) {
         if (!watcherInstantiated) {
-            try {
-                this.watcher = FileSystems.getDefault().newWatchService();
-            } catch (IOException e) {
-                log.error("Failed to get watch service: ");
-                throw new UncheckedIOException(e);
-            }
-
             Path cacheFolder = Paths.get(nodePath);
-            walkAndRegisterDirectories(cacheFolder);
-            Thread thread = new Thread(() -> watcherThreadService(watcher));
+            Thread thread = new Thread(() -> watcherThreadService(cacheFolder));
             thread.setDaemon(true);
             thread.start();
             watcherInstantiated = true;
         }
     }
 
-    private void walkAndRegisterDirectories(final Path start) {
+    private void walkAndRegisterDirectories(final Path start, WatchService watcher, Map<WatchKey, Path> watcherMap) {
         // register directory and sub-directories
         try {
             Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    registerDirectory(dir);
+                    registerDirectory(dir, watcher, watcherMap);
                     return FileVisitResult.CONTINUE;
                 }
             });
@@ -125,22 +117,39 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         }
     }
 
-    private void registerDirectory(Path dir) {
+    private void registerDirectory(Path dir, WatchService watcher, Map<WatchKey, Path> watcherMap) {
         // register the base media directory with a file watcher service, listening for file creation or deletion
         WatchKey key;
         try {
             key = dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE);
+            log.info("File watcher registered for directory: " + dir);
+            watcherMap.put(key, dir);
         } catch (IOException e) {
             log.error("Failed to register file watcher: " + dir);
             throw new UncheckedIOException(e);
         }
-        log.info("File watcher registered for directory: " + dir);
-        this.watcherMap.put(key, dir);
     }
 
-    private void watcherThreadService(WatchService watcher) {
+    private void watcherThreadService(Path cacheFolder) {
+        // Initialize watcher and cache
+        WatchService watcher;
+        try {
+            watcher = FileSystems.getDefault().newWatchService();
+        } catch (IOException e) {
+            log.error("Failed to get watch service: ");
+            throw new UncheckedIOException(e);
+        }
+        Map<WatchKey, Path> watcherMap = new HashMap<>();
+
+        // Initialize caches
+        walkAndRegisterDirectories(cacheFolder, watcher, watcherMap);
         buildInitialCache(propertiesUtil.getServerMediaTreeRoot());
+
         log.info("Watcher task started");
+        fileEventLoop(watcher, watcherMap);
+    }
+
+    private void fileEventLoop(WatchService watcher, Map<WatchKey, Path> watcherMap) {
         try {
             WatchKey key;
             while ((key = watcher.take()) != null) { // blocks until watcher.take() returns an event
@@ -156,10 +165,10 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                     Path child = dir.resolve(eventPath);
                     if (event.kind() == ENTRY_CREATE) {
                         File newFile = new File(child.toAbsolutePath().toString());
-                        addToCache(newFile);
+                        addToCache(newFile, watcher, watcherMap);
                     } else if (event.kind() == ENTRY_DELETE) {
                         File removedItem = new File(child.toAbsolutePath().toString());
-                        removeFromCache(removedItem);
+                        removeFromCache(removedItem, watcherMap);
                         log.debug("File deleted: " + event.context());
                     } else {
                         log.debug("Unknown event type occurred: " + event.kind() + ", context: " + event.context());
@@ -238,7 +247,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         currentFiles.addAll(mediaFiles);
     }
 
-    private void addToCache(File item) {
+    private void addToCache(File item, WatchService watcher, Map<WatchKey, Path> watcherMap) {
         if (item == null) return;
 
         Path parentFilePath = Paths.get(item.getParentFile().getAbsolutePath());
@@ -248,7 +257,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         if (fileCache.get(parentFilePath) != null) {
             if (item.isDirectory()) {
                 fileCache.put(filePath, new ServerMediaListing(new ArrayList<>()));
-                walkAndRegisterDirectories(Paths.get(item.getAbsolutePath()));
+                walkAndRegisterDirectories(Paths.get(item.getAbsolutePath()), watcher, watcherMap);
                 log.debug("Directory added to cache: " + item.getAbsolutePath());
             } else {
                 ServerMediaListing oldListing = fileCache.get(parentFilePath);
@@ -269,7 +278,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         }
     }
 
-    private void removeFromCache(File item) {
+    private void removeFromCache(File item, Map<WatchKey, Path> watcherMap) {
         if (item == null) return;
 
         // attempt to get attribute from application scope

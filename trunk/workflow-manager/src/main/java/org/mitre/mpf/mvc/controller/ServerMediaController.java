@@ -67,6 +67,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -75,7 +76,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 
-@Api(value = "Server Media",description = "Server media retrieval")
+@Api(value = "Server Media", description = "Server media retrieval")
 @Controller
 @Scope("request")
 @Profile("website")
@@ -109,42 +110,42 @@ public class ServerMediaController {
 
     public class SortAlphabeticalCaseInsensitive implements Comparator<Object> {
         public int compare(Object o1, Object o2) {
-            ServerMediaFile s1 = (ServerMediaFile)o1;
-            ServerMediaFile s2 = (ServerMediaFile)o2;
+            ServerMediaFile s1 = (ServerMediaFile) o1;
+            ServerMediaFile s2 = (ServerMediaFile) o2;
             return s1.getName().toLowerCase().compareTo(s2.getName().toLowerCase());
         }
     }
 
     public class SortAlphabeticalCaseSensitive implements Comparator<Object> {
         public int compare(Object o1, Object o2) {
-            ServerMediaFile s1 = (ServerMediaFile)o1;
-            ServerMediaFile s2 = (ServerMediaFile)o2;
+            ServerMediaFile s1 = (ServerMediaFile) o1;
+            ServerMediaFile s2 = (ServerMediaFile) o2;
             return s1.getName().compareTo(s2.getName());
         }
     }
 
-    @RequestMapping(value = { "/server/get-all-directories" }, method = RequestMethod.GET)
+    @RequestMapping(value = {"/server/get-all-directories"}, method = RequestMethod.GET)
     @ResponseBody
     public DirectoryTreeNode getAllDirectories(HttpServletRequest request,
                                                @RequestParam(required = false) Boolean useUploadRoot) {
 
         // if useUploadRoot is set it will take precedence over nodeFullPath
         DirectoryTreeNode node = serverMediaService.getAllDirectories();
-        if(useUploadRoot != null && useUploadRoot){
-            node =  DirectoryTreeNode.find(node, propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
+        if (useUploadRoot != null && useUploadRoot) {
+            node = DirectoryTreeNode.find(node, propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
         }
 
         return node;
     }
 
-    @RequestMapping(value = { "/server/get-all-files" }, method = RequestMethod.GET)
+    @RequestMapping(value = {"/server/get-all-files"}, method = RequestMethod.GET)
     @ResponseBody
     public ServerMediaListing getAllFiles(HttpServletRequest request, @RequestParam(required = true) String fullPath) {
         Path dir = Paths.get(fullPath);
-        if(!dir.toFile().isDirectory() || !dir.toAbsolutePath().startsWith(propertiesUtil.getServerMediaTreeRoot()))
+        if (!Files.isDirectory(dir) || !dir.toAbsolutePath().startsWith(propertiesUtil.getServerMediaTreeRoot()))
             return null; // security check
 
-        log.info( "All files requested in: " + fullPath );
+        log.info("All files requested in: " + fullPath);
         List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath);
         return new ServerMediaListing(mediaFiles);
     }
@@ -154,21 +155,20 @@ public class ServerMediaController {
     //length is how many to return
     //start is offset from 0
     //search is string to filter
-    @RequestMapping(value = { "/server/get-all-files-filtered" }, method = RequestMethod.POST)
+    @RequestMapping(value = {"/server/get-all-files-filtered"}, method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<ServerMediaFilteredListing> getAllFilesFiltered(HttpServletRequest request,
-                                                                         @RequestParam(value="fullPath") String fullPath,
-                                                                         @RequestParam(value="draw", required=false) int draw,
-                                                                         @RequestParam(value="start", required=false) int start,
-                                                                         @RequestParam(value="length", required=false) int length,
-                                                                         @RequestParam(value="search", required=false) String search){
-        log.debug("Params fullPath:{} draw:{} start:{} length:{} search:{} ",fullPath, draw, start, length, search);
+                                                                          @RequestParam(value = "fullPath") String fullPath,
+                                                                          @RequestParam(value = "draw", required = false) int draw,
+                                                                          @RequestParam(value = "start", required = false) int start,
+                                                                          @RequestParam(value = "length", required = false) int length,
+                                                                          @RequestParam(value = "search", required = false) String search) {
+        log.debug("Params fullPath:{} draw:{} start:{} length:{} search:{} ", fullPath, draw, start, length, search);
 
         File dir = new File(fullPath);
         if (!dir.exists()) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-        else if (!dir.isDirectory() || !Paths.get(fullPath).toAbsolutePath().startsWith(propertiesUtil.getServerMediaTreeRoot())) {
+        } else if (!dir.isDirectory() || !Paths.get(fullPath).toAbsolutePath().startsWith(propertiesUtil.getServerMediaTreeRoot())) {
             // security check
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
@@ -177,10 +177,10 @@ public class ServerMediaController {
 
         // handle sort
         Collections.sort(mediaFiles, (new SortAlphabeticalCaseInsensitive()). // make 'A' come before 'B'
-                thenComparing(new SortAlphabeticalCaseSensitive()) );         // make 'A' come before 'a'
+                thenComparing(new SortAlphabeticalCaseSensitive()));         // make 'A' come before 'a'
 
         // handle search
-        if(search != null && search.length() > 0) {
+        if (search != null && search.length() > 0) {
             List<ServerMediaFile> searchResults = new ArrayList<>();
             for (ServerMediaFile mediaFile : mediaFiles) {
                 if (mediaFile.getName().toLowerCase().contains(search.toLowerCase())) {
@@ -192,8 +192,8 @@ public class ServerMediaController {
 
         // handle paging
         int end = start + length;
-        end = (end > mediaFiles.size())? mediaFiles.size() : end;
-        start = (start <= end)? start : end;
+        end = (end > mediaFiles.size()) ? mediaFiles.size() : end;
+        start = (start <= end) ? start : end;
 
         return ResponseEntity.ok(new
                 ServerMediaFilteredListing(draw, mediaFiles.size(), mediaFiles.size(), mediaFiles.subList(start, end)));
@@ -211,7 +211,7 @@ public class ServerMediaController {
     public void serve(HttpServletResponse response, @RequestParam(value = "nodeFullPath", required = true) String nodeFullPath) throws IOException, URISyntaxException {
         //TODO: this set of lines is also used in the MarkupController - create a single method
         File f = new File(nodeFullPath);
-        if(f.canRead()) {
+        if (f.canRead()) {
             FileUtils.copyFile(f, response.getOutputStream());
             response.flushBuffer();
         } else {
@@ -224,7 +224,6 @@ public class ServerMediaController {
         //TODO: adjust the content type based on the image type
         //response.setContentLength(MediaType.);
     }
-
 
 
     @RequestMapping(value = "/server/download", method = RequestMethod.GET)
@@ -252,7 +251,7 @@ public class ServerMediaController {
             try (InputStream inputStream = s3Object.getObjectContent()) {
                 ObjectMetadata metadata = s3Object.getObjectMetadata();
                 IoUtils.writeContentAsAttachment(inputStream, response, s3Object.getKey(), metadata.getContentType(),
-                                                 metadata.getContentLength());
+                        metadata.getContentLength());
             }
             return;
         }
@@ -266,7 +265,7 @@ public class ServerMediaController {
         URLConnection urlConnection = mediaUrl.openConnection();
         try (InputStream inputStream = urlConnection.getInputStream()) {
             IoUtils.writeContentAsAttachment(inputStream, response, fileName, urlConnection.getContentType(),
-                                             urlConnection.getContentLength());
+                    urlConnection.getContentLength());
         }
     }
 }

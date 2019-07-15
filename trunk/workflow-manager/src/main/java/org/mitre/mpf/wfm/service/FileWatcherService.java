@@ -36,7 +36,7 @@ public interface FileWatcherService {
 
     public void launchWatcher(String nodePath);
 
-    public HashMap<Path, ServerMediaListing> getFileCache();
+    public ServerMediaListing getFileListByPath(Path path);
 
     public DirectoryTreeNode getRootDirectoryTreeCache();
 }

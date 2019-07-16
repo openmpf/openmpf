@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.service;
 
-import org.apache.logging.log4j.core.util.FileWatcher;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaListing;
@@ -65,6 +64,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
     private static final Logger log = LoggerFactory.getLogger(FileWatcherServiceImpl.class);
 
+    // Injected
     private PropertiesUtil propertiesUtil;
     private IoUtils ioUtils;
 

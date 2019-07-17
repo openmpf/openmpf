@@ -59,7 +59,7 @@ public class TestDlqRouteBuilder {
     public static final String EXIT_POINT = "jms:MPF.TEST.COMPLETED_DETECTIONS";
     public static final String AUDIT_EXIT_POINT = "jms://MPF.TEST.DLQ_PROCESSED_MESSAGES";
     public static final String INVALID_EXIT_POINT = "jms:MPF.TEST.DLQ_INVALID_MESSAGES";
-    public static final String ROUTE_ID = "Test DLQ Route";
+    public static final String ROUTE_ID_PREFIX = "Test DLQ Route";
     public static final String SELECTOR_REPLY_TO = "queue://MPF.TEST.COMPLETED_DETECTIONS";
 
     public static final String BAD_SELECTOR_REPLY_TO = "queue://MPF.TEST.BAD.COMPLETED_DETECTIONS";
@@ -99,7 +99,7 @@ public class TestDlqRouteBuilder {
         session = connection.createSession(true, Session.AUTO_ACKNOWLEDGE);
 
         DlqRouteBuilder dlqRouteBuilder = new DlqRouteBuilder(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT,
-                INVALID_EXIT_POINT, ROUTE_ID, SELECTOR_REPLY_TO);
+                INVALID_EXIT_POINT, ROUTE_ID_PREFIX, SELECTOR_REPLY_TO);
 
         dlqRouteBuilder.setContext(camelContext);
         camelContext.addRoutes(dlqRouteBuilder);
@@ -217,8 +217,8 @@ public class TestDlqRouteBuilder {
     // No reply-to tests
 
     @Test
-    public void ignoreNoReplyToAndDupFailure() throws Exception {
-        runTest(ENTRY_POINT, null, DLQ_DUPLICATE_FAILURE_CAUSE, false, true);
+    public void dropNoReplyToAndDupFailure() throws Exception {
+        runTest(ENTRY_POINT, null, DLQ_DUPLICATE_FAILURE_CAUSE, false, false);
     }
 
     @Test
@@ -234,8 +234,8 @@ public class TestDlqRouteBuilder {
     // Bad reply-to tests
 
     @Test
-    public void ignoreBadReplyToAndDupFailure() throws Exception {
-        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, DLQ_DUPLICATE_FAILURE_CAUSE, false, true);
+    public void dropBadReplyToAndDupFailure() throws Exception {
+        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, DLQ_DUPLICATE_FAILURE_CAUSE, false, false);
     }
 
     @Test
@@ -251,17 +251,17 @@ public class TestDlqRouteBuilder {
     // Good reply-to tests
 
     @Test
-    public void dropDupFailure() throws Exception {
+    public void dropGoodReplyToAndDupFailure() throws Exception {
         runTest(ENTRY_POINT, SELECTOR_REPLY_TO, DLQ_DUPLICATE_FAILURE_CAUSE, false, false);
     }
 
     @Test
-    public void handleNoFailure() throws Exception {
+    public void handleGoodReplyToAndNoFailure() throws Exception {
         runTest(ENTRY_POINT, SELECTOR_REPLY_TO, null, true, false);
     }
 
     @Test
-    public void handleNonDupFailure() throws Exception {
+    public void handleGoodReplyToAndNonDupFailure() throws Exception {
         runTest(ENTRY_POINT, SELECTOR_REPLY_TO, DLQ_OTHER_FAILURE_CAUSE, true, false);
     }
 }

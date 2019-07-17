@@ -107,7 +107,7 @@ public class TestServerMediaController {
                 _mockJsonUtils, _mockS3StorageBackend);
         fileCacheService.launchWatcher(mediaBase.getAbsolutePath());
         // wait for cache to load
-        Thread.sleep(200);
+        Thread.sleep(100);
     }
 
     // get-all-directories
@@ -123,7 +123,7 @@ public class TestServerMediaController {
     public void getAllDirectoriesNested() throws IOException, InterruptedException {
         File subFolder = _tempFolder.newFolder("nested-folder");
 
-        Thread.sleep(200);
+        Thread.sleep(100);
         DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest, true);
 
         assertEquals(1, rootNode.getNodes().size());
@@ -136,7 +136,7 @@ public class TestServerMediaController {
     public void getDirectoriesAfterDelete() throws IOException, InterruptedException {
         File subFolder = _tempFolder.newFolder("nested-folder");
 
-        Thread.sleep(200);
+        Thread.sleep(100);
         DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest, true);
 
         assertEquals(1, rootNode.getNodes().size());
@@ -145,10 +145,36 @@ public class TestServerMediaController {
 
         Assert.assertTrue(subFolder.delete());
 
-        Thread.sleep(200);
+        Thread.sleep(100);
         rootNode = _controller.getAllDirectories(_mockRequest, true);
 
         Assert.assertNull(rootNode.getNodes());
+    }
+
+    @Test
+    public void getDirectoriesAfterEvents() throws IOException, InterruptedException {
+        File subFolder = _tempFolder.newFolder("nested-folder");
+
+        Thread.sleep(100);
+        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest, true);
+
+        assertEquals(1, rootNode.getNodes().size());
+        DirectoryTreeNode subNode = rootNode.getNodes().get(0);
+        assertEquals(subNode.getFullPath(), subFolder.getAbsolutePath());
+
+        File file = new File(subFolder.getAbsolutePath() + "/" + _testFileName1);
+        Assert.assertTrue(file.createNewFile());
+
+        Thread.sleep(100);
+        DirectoryTreeNode newTree = _controller.getAllDirectories(_mockRequest, true);
+
+        Assert.assertEquals(rootNode, newTree);
+
+        Assert.assertTrue(file.delete());
+        Thread.sleep(100);
+        newTree = _controller.getAllDirectories(_mockRequest, true);
+
+        Assert.assertEquals(rootNode, newTree);
     }
 
     // get-all-files
@@ -160,7 +186,7 @@ public class TestServerMediaController {
         _tempFolder.newFile(_testFileName3);
 
         Assert.assertTrue(file.exists());
-        Thread.sleep(200);
+        Thread.sleep(100);
         ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath());
 
         assertEquals(3, mediaListing.getData().size());
@@ -173,7 +199,7 @@ public class TestServerMediaController {
     public void getAllFilesNestedFolder() throws IOException, InterruptedException {
         File subFolder = _tempFolder.newFolder("nested-folder");
 
-        Thread.sleep(200);
+        Thread.sleep(100);
         DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest, true);
 
         assertNotNull(rootNode.getNodes());
@@ -188,7 +214,7 @@ public class TestServerMediaController {
         File file3 = new File(subFolder.getAbsolutePath() + "/" + _testFileName3);
         Assert.assertTrue(file3.createNewFile());
 
-        Thread.sleep(200);
+        Thread.sleep(100);
         ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath());
 
         assertEquals(3, mediaListing.getData().size());
@@ -204,7 +230,7 @@ public class TestServerMediaController {
         _tempFolder.newFile(_testFileName3);
 
         Assert.assertTrue(file.exists());
-        Thread.sleep(200);
+        Thread.sleep(100);
         ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath());
 
         assertEquals(3, mediaListing.getData().size());
@@ -213,7 +239,7 @@ public class TestServerMediaController {
         assertEquals(_testFileName3, mediaListing.getData().get(2).getName());
 
         Assert.assertTrue(file.delete());
-        Thread.sleep(200);
+        Thread.sleep(100);
         mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath());
 
         assertEquals(2, mediaListing.getData().size());
@@ -225,7 +251,7 @@ public class TestServerMediaController {
     public void getFilesFromDeletedDirectory() throws IOException, InterruptedException {
         File subFolder = _tempFolder.newFolder("nested-folder");
 
-        Thread.sleep(200);
+        Thread.sleep(100);
         DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest, true);
 
         assertEquals(1, rootNode.getNodes().size());
@@ -235,7 +261,7 @@ public class TestServerMediaController {
         File file = new File(subFolder.getAbsolutePath() + "/" + _testFileName1);
         Assert.assertTrue(file.createNewFile());
 
-        Thread.sleep(200);
+        Thread.sleep(100);
         ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath());
         assertEquals(1, mediaListing.getData().size());
         assertEquals(_testFileName1, mediaListing.getData().get(0).getName());
@@ -243,7 +269,7 @@ public class TestServerMediaController {
         Assert.assertTrue(file.delete());
         Assert.assertTrue(subFolder.delete());
 
-        Thread.sleep(200);
+        Thread.sleep(100);
         rootNode = _controller.getAllDirectories(_mockRequest, true);
         Assert.assertNull(rootNode.getNodes());
 
@@ -266,7 +292,7 @@ public class TestServerMediaController {
         _tempFolder.newFile(_testFileName3);
 
         Assert.assertTrue(file.exists());
-        Thread.sleep(200);
+        Thread.sleep(100);
         ResponseEntity<ServerMediaFilteredListing> mediaListingResult = _controller.getAllFilesFiltered(_mockRequest,
                 mediaBase.getAbsolutePath(), 1 , 0, 10, "");
 
@@ -284,7 +310,7 @@ public class TestServerMediaController {
         _tempFolder.newFile(_testFileName3);
 
         Assert.assertTrue(file.exists());
-        Thread.sleep(200);
+        Thread.sleep(100);
         ResponseEntity<ServerMediaFilteredListing> mediaListingResult = _controller.getAllFilesFiltered(_mockRequest,
                 mediaBase.getAbsolutePath(), 1 , 0, 10, "mp4");
 
@@ -307,7 +333,7 @@ public class TestServerMediaController {
     @Test
     public void getFilesFilteredDeletedDirectory() throws IOException, InterruptedException {
         File subFolder = _tempFolder.newFolder("nested-folder");
-        Thread.sleep(200);
+        Thread.sleep(100);
         DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest, true);
 
         assertEquals(1, rootNode.getNodes().size());
@@ -318,7 +344,7 @@ public class TestServerMediaController {
         Assert.assertTrue(file.createNewFile());
         Assert.assertTrue(file.exists());
 
-        Thread.sleep(200);
+        Thread.sleep(100);
         ResponseEntity<ServerMediaFilteredListing> mediaListingResult = _controller.getAllFilesFiltered(_mockRequest,
                 subFolder.getAbsolutePath(), 1 , 0, 10, "");
         ServerMediaListing mediaListing = mediaListingResult.getBody();
@@ -328,7 +354,7 @@ public class TestServerMediaController {
         Assert.assertTrue(file.delete());
         Assert.assertTrue(subFolder.delete());
 
-        Thread.sleep(200);
+        Thread.sleep(100);
         rootNode = _controller.getAllDirectories(_mockRequest, true);
 
         assertNull(rootNode.getNodes());

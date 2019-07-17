@@ -118,7 +118,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
     }
 
     private void registerDirectory(Path dir, WatchService watcher, Map<WatchKey, Path> watcherMap) {
-        // register the base media directory with a file watcher service, listening for file creation or deletion
+        // register the current media directory with a file watcher service, listening for file creation or deletion
         WatchKey key;
         try {
             key = dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE);
@@ -143,6 +143,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
         // Initialize caches
         walkAndRegisterDirectories(cacheFolder, watcher, watcherMap);
+        // Load existing files on startup since we won't see their creation event
         buildInitialCache(propertiesUtil.getServerMediaTreeRoot());
 
         log.info("Watcher task started");
@@ -205,16 +206,16 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         List<ServerMediaFile> mediaFiles = new ArrayList<>();
         prepareFilesForCache(dir, mediaFiles);
 
-        // recurse
+        // update file cache
+        ServerMediaListing listing = new ServerMediaListing(mediaFiles);
+        fileCache.put(Paths.get(node.getFullPath()), listing);
+
+        // go through nested folders
         if (node.getNodes() != null) {
             for (DirectoryTreeNode subNode : node.getNodes()) {
                 buildInitialCache(subNode.getFullPath());
             }
         }
-
-        // update file cache
-        ServerMediaListing listing = new ServerMediaListing(mediaFiles);
-        fileCache.put(Paths.get(node.getFullPath()), listing);
     }
 
     private void prepareFilesForCache(File item, List<ServerMediaFile> currentFiles) {
@@ -270,7 +271,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                 log.debug("File" + item.getName() + " added to cache: " + filePath);
             }
             // Update directory tree
-            DirectoryTreeNode oldNode =  new DirectoryTreeNode(parentFilePath.toFile());
+            DirectoryTreeNode oldNode =  new DirectoryTreeNode(propertiesUtil.getRemoteMediaDirectory());
             rootDirectoryTreeCache = oldNode.fillDirectoryTree(oldNode,
                     new ArrayList<>(), propertiesUtil.getServerMediaTreeRoot());
         } else {
@@ -326,7 +327,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                 fileCache.put(parentDir, newListing);
             }
             // update directory tree
-            DirectoryTreeNode oldNode = new DirectoryTreeNode(parentDir.toFile());
+            DirectoryTreeNode oldNode = new DirectoryTreeNode(propertiesUtil.getRemoteMediaDirectory());
             rootDirectoryTreeCache = oldNode.fillDirectoryTree(oldNode,
                     new ArrayList<>(), propertiesUtil.getServerMediaTreeRoot());
             log.debug("Item " + item.getName() + " remove from cache: " + item.getAbsolutePath());

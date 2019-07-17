@@ -34,10 +34,8 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import org.mitre.mpf.wfm.service.FileWatcherService;
-import org.mitre.mpf.wfm.service.FileWatcherServiceImpl;
 import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.component.StartupComponentRegistrationService;
-import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
@@ -50,7 +48,6 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.WebApplicationContext;
 
 import javax.management.MBeanServerConnection;
 import javax.management.MBeanServerInvocationHandler;
@@ -71,9 +68,6 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	private static final Logger log = LoggerFactory.getLogger(WfmStartup.class);
 
 	@Autowired
-	private WebApplicationContext applicationContext;
-
-	@Autowired
 	@Qualifier(HibernateJobRequestDaoImpl.REF)
 	private HibernateJobRequestDao jobRequestDao;
 
@@ -89,9 +83,6 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 
 	@Autowired
 	private StartupComponentRegistrationService startupRegistrationService;
-
-	@Autowired
-	private IoUtils ioUtils;
 
 	@Autowired
 	private FileWatcherService fileWatcherService;
@@ -145,7 +136,6 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	}
 
 	private void startFileIndexing()  {
-		// Load existing files on startup since we won't see their creation event
 		fileWatcherService.launchWatcher(propertiesUtil.getServerMediaTreeRoot());
 	}
 

@@ -42,7 +42,9 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import javax.jms.*;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.mockito.Matchers.any;
@@ -68,8 +70,11 @@ public class TestDlqRouteBuilder {
             "java.lang.Throwable: duplicate from store for queue://MPF.DETECTION_DUMMY_REQUEST";
     public static final String DLQ_OTHER_FAILURE_CAUSE = "SOME OTHER FAILURE";
 
-    public static final int SLEEP_TIME_MILLISEC = 500;
-    public static final int RECEIVE_TIMEOUT_MILLISEC = 500;
+    // Ensure the number of test messages is greater than the queue prefetch, which is 1 by default.
+    public static final int NUM_MESSAGES_PER_TEST = 5;
+
+    public static final int SLEEP_TIME_MILLISEC = 1500;
+    public static final int RECEIVE_TIMEOUT_MILLISEC = 1500;
 
     private CamelContext camelContext;
     private ConnectionFactory connectionFactory;
@@ -147,32 +152,36 @@ public class TestDlqRouteBuilder {
         return message;
     }
 
-    private void checkLeftover(String dest, String replyTo, String deliveryFailureCause, String jmsCorrelationId,
+    private void checkLeftover(String dest, String replyTo, String deliveryFailureCause, Set<String> jmsCorrelationIds,
                                  boolean isLeftover) throws JMSException, InvalidProtocolBufferException {
-        BytesMessage message = (BytesMessage) receiveMessage(dest);
+        Set<String> unseenJmsCorrelationIds = new HashSet<>(jmsCorrelationIds);
 
-        if (!isLeftover) {
-            Assert.assertNull(message);
-            return;
+        while (true) {
+            BytesMessage message = (BytesMessage) receiveMessage(dest);
+
+            if (!isLeftover || unseenJmsCorrelationIds.isEmpty()) {
+                Assert.assertNull(message);
+                return;
+            }
+
+            Assert.assertNotNull(message);
+
+            if (replyTo == null) {
+                Assert.assertNull(message.getJMSReplyTo());
+            } else {
+                Assert.assertEquals(replyTo, message.getJMSReplyTo().toString());
+            }
+
+            Assert.assertEquals(deliveryFailureCause,
+                    message.getStringProperty(DlqRouteBuilder.DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY));
+
+            byte[] protoBytes = new byte[(int) message.getBodyLength()];
+            message.readBytes(protoBytes);
+            DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.parseFrom(protoBytes);
+            Assert.assertEquals("TEST ACTION", detectionRequest.getActionName());
+
+            Assert.assertTrue(unseenJmsCorrelationIds.remove(message.getJMSCorrelationID()));
         }
-
-        Assert.assertNotNull(message);
-
-        if (replyTo == null) {
-            Assert.assertNull(message.getJMSReplyTo());
-        } else {
-            Assert.assertEquals(replyTo, message.getJMSReplyTo().toString());
-        }
-
-        Assert.assertEquals(deliveryFailureCause,
-                message.getStringProperty(DlqRouteBuilder.DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY));
-
-        byte[] protoBytes = new byte[(int)message.getBodyLength()];
-        message.readBytes(protoBytes);
-        DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.parseFrom(protoBytes);
-        Assert.assertEquals("TEST ACTION", detectionRequest.getActionName());
-
-        Assert.assertEquals(jmsCorrelationId, message.getJMSCorrelationID());
     }
 
     private String sendDlqMessage(String dest, String replyTo, String deliveryFailureCause) throws JMSException {
@@ -208,10 +217,15 @@ public class TestDlqRouteBuilder {
 
     private void runTest(String dest, String replyTo, String deliveryFailureCause, boolean isHandled,
                          boolean isLeftover) throws Exception {
-        String jmsCorrelationId = sendDlqMessage(dest, replyTo, deliveryFailureCause);
+        Set<String> jmsCorrelationIds = new HashSet<>();
+        for (int i = 0; i < NUM_MESSAGES_PER_TEST; i++) {
+            jmsCorrelationIds.add(sendDlqMessage(dest, replyTo, deliveryFailureCause));
+        }
+
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        verify(mockDetectionDeadLetterProcessor, times(isHandled ? 1 : 0)).process(any());
-        checkLeftover(dest, replyTo, deliveryFailureCause, jmsCorrelationId, isLeftover);
+        verify(mockDetectionDeadLetterProcessor, times(isHandled ? NUM_MESSAGES_PER_TEST : 0)).process(any());
+
+        checkLeftover(dest, replyTo, deliveryFailureCause, jmsCorrelationIds, isLeftover);
     }
 
     // No reply-to tests

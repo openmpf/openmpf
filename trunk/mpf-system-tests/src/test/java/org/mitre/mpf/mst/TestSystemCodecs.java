@@ -29,6 +29,10 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
                 .findAny()
                 .isPresent();
 
+        if (!detectionFound && outputObject.getJobErrors() != null) {
+            System.out.println(outputObject.getStatus());
+            System.err.println(outputObject.getJobErrors());
+        }
         Assert.assertTrue(detectionFound);
     }
 
@@ -51,6 +55,10 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
                 .findAny()
                 .isPresent();
 
+        if (!detectionFound && outputObject.getJobErrors() != null) {
+            System.out.println(outputObject.getStatus());
+            System.err.println(outputObject.getJobErrors());
+        }
         Assert.assertTrue(detectionFound);
     }
 
@@ -73,6 +81,10 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
                 .findAny()
                 .isPresent();
 
+        if (!detectionFound && outputObject.getJobErrors() != null) {
+            System.out.println(outputObject.getStatus());
+            System.err.println(outputObject.getJobErrors());
+        }
         Assert.assertTrue(detectionFound);
     }
 
@@ -95,6 +107,10 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
                 .findAny()
                 .isPresent();
 
+        if (!detectionFound && outputObject.getJobErrors() != null) {
+            System.out.println(outputObject.getStatus());
+            System.err.println(outputObject.getJobErrors());
+        }
         Assert.assertTrue(detectionFound);
     }
 
@@ -103,7 +119,7 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
         String pipelineName = "OCV FACE DETECTION PIPELINE";
         addPipeline(pipelineName);
 
-        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/h265_mp3.mp4"));
+        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/h265_aac.mp4"));
 
         long jobId = runPipelineOnMedia(pipelineName, media);
         JsonOutputObject outputObject = getJobOutputObject(jobId);
@@ -117,6 +133,10 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
                 .findAny()
                 .isPresent();
 
+        if (!detectionFound && outputObject.getJobErrors() != null) {
+            System.out.println(outputObject.getStatus());
+            System.err.println(outputObject.getJobErrors());
+        }
         Assert.assertTrue(detectionFound);
     }
 
@@ -139,6 +159,10 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
                 .findAny()
                 .isPresent();
 
+        if (!detectionFound && outputObject.getJobErrors() != null) {
+            System.out.println(outputObject.getStatus());
+            System.err.println(outputObject.getJobErrors());
+        }
         Assert.assertTrue(detectionFound);
     }
 
@@ -161,6 +185,10 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
                 .findAny()
                 .isPresent();
 
+        if (!detectionFound && outputObject.getJobErrors() != null) {
+            System.out.println(outputObject.getStatus());
+            System.err.println(outputObject.getJobErrors());
+        }
         Assert.assertTrue(detectionFound);
     }
 
@@ -183,6 +211,10 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
                 .findAny()
                 .isPresent();
 
+        if (!detectionFound && outputObject.getJobErrors() != null) {
+            System.out.println(outputObject.getStatus());
+            System.err.println(outputObject.getJobErrors());
+        }
         Assert.assertTrue(detectionFound);
     }
 
@@ -205,6 +237,10 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
                 .findAny()
                 .isPresent();
 
+        if (!detectionFound && outputObject.getJobErrors() != null) {
+            System.out.println(outputObject.getStatus());
+            System.err.println(outputObject.getJobErrors());
+        }
         Assert.assertTrue(detectionFound);
     }
 

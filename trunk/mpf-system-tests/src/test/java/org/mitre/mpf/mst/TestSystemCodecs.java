@@ -32,6 +32,7 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
         if (!detectionFound && outputObject.getJobErrors() != null) {
             System.out.println(outputObject.getStatus());
             System.err.println(outputObject.getJobErrors());
+            System.out.println(outputObject.getMedia());
         }
         Assert.assertTrue(detectionFound);
     }
@@ -58,6 +59,7 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
         if (!detectionFound && outputObject.getJobErrors() != null) {
             System.out.println(outputObject.getStatus());
             System.err.println(outputObject.getJobErrors());
+            System.out.println(outputObject.getMedia());
         }
         Assert.assertTrue(detectionFound);
     }
@@ -84,6 +86,7 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
         if (!detectionFound && outputObject.getJobErrors() != null) {
             System.out.println(outputObject.getStatus());
             System.err.println(outputObject.getJobErrors());
+            System.out.println(outputObject.getMedia());
         }
         Assert.assertTrue(detectionFound);
     }
@@ -110,6 +113,7 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
         if (!detectionFound && outputObject.getJobErrors() != null) {
             System.out.println(outputObject.getStatus());
             System.err.println(outputObject.getJobErrors());
+            System.out.println(outputObject.getMedia());
         }
         Assert.assertTrue(detectionFound);
     }
@@ -136,6 +140,7 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
         if (!detectionFound && outputObject.getJobErrors() != null) {
             System.out.println(outputObject.getStatus());
             System.err.println(outputObject.getJobErrors());
+            System.out.println(outputObject.getMedia());
         }
         Assert.assertTrue(detectionFound);
     }
@@ -162,6 +167,7 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
         if (!detectionFound && outputObject.getJobErrors() != null) {
             System.out.println(outputObject.getStatus());
             System.err.println(outputObject.getJobErrors());
+            System.out.println(outputObject.getMedia());
         }
         Assert.assertTrue(detectionFound);
     }
@@ -188,6 +194,7 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
         if (!detectionFound && outputObject.getJobErrors() != null) {
             System.out.println(outputObject.getStatus());
             System.err.println(outputObject.getJobErrors());
+            System.out.println(outputObject.getMedia());
         }
         Assert.assertTrue(detectionFound);
     }
@@ -214,6 +221,7 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
         if (!detectionFound && outputObject.getJobErrors() != null) {
             System.out.println(outputObject.getStatus());
             System.err.println(outputObject.getJobErrors());
+            System.out.println(outputObject.getMedia());
         }
         Assert.assertTrue(detectionFound);
     }
@@ -223,7 +231,7 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
         String pipelineName = "OCV FACE DETECTION PIPELINE";
         addPipeline(pipelineName);
 
-        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/vp8_vorbis.ogg"));
+        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/vp8_opus.webm"));
 
         long jobId = runPipelineOnMedia(pipelineName, media);
         JsonOutputObject outputObject = getJobOutputObject(jobId);
@@ -240,6 +248,7 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
         if (!detectionFound && outputObject.getJobErrors() != null) {
             System.out.println(outputObject.getStatus());
             System.err.println(outputObject.getJobErrors());
+            System.out.println(outputObject.getMedia());
         }
         Assert.assertTrue(detectionFound);
     }

@@ -227,7 +227,7 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void runFaceOcvDetectImageVp8Vorbis() {
+    public void runFaceOcvDetectImageVp8Opus() {
         String pipelineName = "OCV FACE DETECTION PIPELINE";
         addPipeline(pipelineName);
 

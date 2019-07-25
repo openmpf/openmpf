@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.camel;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.broker.jmx.QueueViewMBean;
 import org.apache.activemq.camel.component.ActiveMQComponent;
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.jms.JmsComponent;
@@ -42,22 +43,28 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import javax.jms.*;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import javax.management.MBeanServerConnection;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.ObjectName;
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.remote.JMXServiceURL;
+import java.util.*;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestDlqRouteBuilder {
 
     public static final String ACTIVE_MQ_HOST =
-            "tcp://" + Optional.ofNullable(System.getenv("ACTIVE_MQ_HOST")).orElse("localhost") + ":61616";
+            Optional.ofNullable(System.getenv("ACTIVE_MQ_HOST")).orElse("localhost");
+    public static final String ACTIVE_MQ_BROKER_JMX_URI =
+            "service:jmx:rmi:///jndi/rmi://" + ACTIVE_MQ_HOST + ":1099/jmxrmi";
+    public static final String ACTIVE_MQ_BROKER_URI = "tcp://" + ACTIVE_MQ_HOST + ":61616";
 
-    public static final String ENTRY_POINT = "jms://MPF.TEST.ActiveMQ.DLQ";
+    public static final String ENTRY_POINT = "activemq:MPF.TEST.ActiveMQ.DLQ";
     public static final String EXIT_POINT = "jms:MPF.TEST.COMPLETED_DETECTIONS";
     public static final String AUDIT_EXIT_POINT = "jms://MPF.TEST.DLQ_PROCESSED_MESSAGES";
     public static final String INVALID_EXIT_POINT = "jms:MPF.TEST.DLQ_INVALID_MESSAGES";
@@ -70,11 +77,10 @@ public class TestDlqRouteBuilder {
             "java.lang.Throwable: duplicate from store for queue://MPF.DETECTION_DUMMY_REQUEST";
     public static final String DLQ_OTHER_FAILURE_CAUSE = "SOME OTHER FAILURE";
 
-    // Ensure the number of test messages is greater than the queue prefetch, which is 1 by default.
     public static final int NUM_MESSAGES_PER_TEST = 5;
 
-    public static final int SLEEP_TIME_MILLISEC = 1500;
-    public static final int RECEIVE_TIMEOUT_MILLISEC = 1500;
+    public static final int HANDLE_TIMEOUT_MILLISEC = 10_000; // time for messages to be processed by the DetectionDeadLetterProcessor
+    public static final int LEFTOVER_RECEIVE_TIMEOUT_MILLISEC = 10_000; // time for leftover message to be received from queue
 
     private CamelContext camelContext;
     private ConnectionFactory connectionFactory;
@@ -93,7 +99,7 @@ public class TestDlqRouteBuilder {
         simpleRegistry.put(DetectionDeadLetterProcessor.REF, mockDetectionDeadLetterProcessor);
         camelContext = new DefaultCamelContext(simpleRegistry);
 
-        connectionFactory = new ActiveMQConnectionFactory(ACTIVE_MQ_HOST);
+        connectionFactory = new ActiveMQConnectionFactory(ACTIVE_MQ_BROKER_URI);
         activeMQComponent = ActiveMQComponent.jmsComponentAutoAcknowledge(connectionFactory);
         camelContext.addComponent("jms", activeMQComponent);
         camelContext.start();
@@ -109,7 +115,7 @@ public class TestDlqRouteBuilder {
         dlqRouteBuilder.setContext(camelContext);
         camelContext.addRoutes(dlqRouteBuilder);
 
-        clearoutMessages(ENTRY_POINT);
+        purgeQueue(ENTRY_POINT);
     }
 
     @After
@@ -122,31 +128,37 @@ public class TestDlqRouteBuilder {
         }
     }
 
-    private String getJmsOrQueueShortName(String fullName) {
-        return fullName.replaceAll(".*//", "");
+    private String getQueueShortName(String fullName) {
+        return fullName.replaceAll(".*//", "").replaceAll(".*:", "");
     }
 
-    private void clearoutMessages(String dest) throws JMSException {
-        Destination dlqDestination = session.createQueue(getJmsOrQueueShortName(dest));
+    private void purgeQueue(String queue) throws Exception {
+        Hashtable<String, String> params = new Hashtable<>();
+        params.put("type", "Broker");
+        params.put("brokerName", "localhost");
+        params.put("destinationType", "Queue");
+        params.put("destinationName", getQueueShortName(queue));
+        ObjectName queueObjectName = ObjectName.getInstance("org.apache.activemq", params);
+
+        JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(ACTIVE_MQ_BROKER_JMX_URI));
+        MBeanServerConnection mBeanServerConnection = connector.getMBeanServerConnection();
+
+        QueueViewMBean queueMbean = MBeanServerInvocationHandler.newProxyInstance(
+                mBeanServerConnection, queueObjectName, QueueViewMBean.class, true);
+        queueMbean.purge();
+    }
+
+    private Message receiveMessage(String dest, boolean expectingMessage) throws JMSException {
+        Destination dlqDestination = session.createQueue(getQueueShortName(dest));
         MessageConsumer messageConsumer = session.createConsumer(dlqDestination);
 
         Message message;
-        while ((message = messageConsumer.receive(RECEIVE_TIMEOUT_MILLISEC)) != null) { // don't wait
-            if (message.getJMSCorrelationID() != null) {
-                System.out.println("Clearing out message from " + dest + " with JMSCorrelationID " + message.getJMSCorrelationID());
-            } else {
-                System.out.println("Clearing out message from " + dest);
-            }
+        if (expectingMessage) {
+            message = messageConsumer.receive(LEFTOVER_RECEIVE_TIMEOUT_MILLISEC);
+        } else {
+            message = messageConsumer.receiveNoWait(); // should not have to wait since dropped messages are prefetched
         }
 
-        session.commit();
-        messageConsumer.close();
-    }
-
-    private Message receiveMessage(String dest) throws JMSException {
-        Destination dlqDestination = session.createQueue(getJmsOrQueueShortName(dest));
-        MessageConsumer messageConsumer = session.createConsumer(dlqDestination);
-        Message message = messageConsumer.receive(RECEIVE_TIMEOUT_MILLISEC);
         session.commit();
         messageConsumer.close();
         return message;
@@ -157,9 +169,11 @@ public class TestDlqRouteBuilder {
         Set<String> unseenJmsCorrelationIds = new HashSet<>(jmsCorrelationIds);
 
         while (true) {
-            BytesMessage message = (BytesMessage) receiveMessage(dest);
+            boolean expectingMessage = isLeftover && !unseenJmsCorrelationIds.isEmpty();
 
-            if (!isLeftover || unseenJmsCorrelationIds.isEmpty()) {
+            BytesMessage message = (BytesMessage) receiveMessage(dest, expectingMessage);
+
+            if (!expectingMessage) {
                 Assert.assertNull(message);
                 return;
             }
@@ -196,7 +210,7 @@ public class TestDlqRouteBuilder {
         message.writeBytes(detectionRequest.toByteArray());
 
         if (replyTo != null) {
-            Destination replyToDestination = session.createQueue(getJmsOrQueueShortName(replyTo));
+            Destination replyToDestination = session.createQueue(getQueueShortName(replyTo));
             message.setJMSReplyTo(replyToDestination);
         }
 
@@ -207,7 +221,7 @@ public class TestDlqRouteBuilder {
         String jmsCorrelationId = UUID.randomUUID().toString();
         message.setJMSCorrelationID(jmsCorrelationId);
 
-        Destination dlqDestination = session.createQueue(getJmsOrQueueShortName(dest));
+        Destination dlqDestination = session.createQueue(getQueueShortName(dest));
         MessageProducer messageProducer = session.createProducer(dlqDestination);
         messageProducer.send(message);
         session.commit();
@@ -222,8 +236,8 @@ public class TestDlqRouteBuilder {
             jmsCorrelationIds.add(sendDlqMessage(dest, replyTo, deliveryFailureCause));
         }
 
-        Thread.sleep(SLEEP_TIME_MILLISEC);
-        verify(mockDetectionDeadLetterProcessor, times(isHandled ? NUM_MESSAGES_PER_TEST : 0)).process(any());
+        verify(mockDetectionDeadLetterProcessor,
+                timeout(HANDLE_TIMEOUT_MILLISEC).times(isHandled ? NUM_MESSAGES_PER_TEST : 0)).process(any());
 
         checkLeftover(dest, replyTo, deliveryFailureCause, jmsCorrelationIds, isLeftover);
     }

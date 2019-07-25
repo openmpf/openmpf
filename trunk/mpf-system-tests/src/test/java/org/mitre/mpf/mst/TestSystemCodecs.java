@@ -38,33 +38,6 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void runFaceOcvDetectImageSpeex() {
-        String pipelineName = "SPHINX SPEECH DETECTION PIPELINE";
-        addPipeline(pipelineName);
-
-        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/speech/speex.spx"));
-
-        long jobId = runPipelineOnMedia(pipelineName, media);
-        JsonOutputObject outputObject = getJobOutputObject(jobId);
-
-        boolean detectionFound = outputObject.getMedia()
-                .stream()
-                .flatMap(m -> m.getTypes().values().stream())
-                .flatMap(Collection::stream)
-                .flatMap(a -> a.getTracks().stream())
-                .flatMap(t -> t.getDetections().stream())
-                .findAny()
-                .isPresent();
-
-        if (!detectionFound && outputObject.getJobErrors() != null) {
-            System.out.println(outputObject.getStatus());
-            System.err.println(outputObject.getJobErrors());
-            System.out.println(outputObject.getMedia());
-        }
-        Assert.assertTrue(detectionFound);
-    }
-
-    @Test(timeout = 5 * MINUTES)
     public void runFaceOcvDetectImageH264AAC() {
         String pipelineName = "OCV FACE DETECTION PIPELINE";
         addPipeline(pipelineName);
